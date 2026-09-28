@@ -4,12 +4,14 @@
 |---------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | Module ID                 | AIT                                                                                                                         |
 | Module name               | AI Tour Matching                                                                                                            |
-| Spec version              | v0.1                                                                                                                        |
+| Spec version | v0.2 — consistency revision |
 | Author (team member)      | Group G                                                                                                                     |
-| Date                      | 22/09/2026                                                                                                                  |
-| Status                    | Clarified                                                                                                                   |
-| Approved by (Client role) |                                                                                                                             |
+| Date | 28/09/2026 |
+| Status | Revised — pending human approval |
+| Approved by (Client role) | Pending human approval |
 | DBIZ2 source              | Function List rows **F-MATCH-01 .. F-MATCH-16**; Use Case **UC-DIS-05**; Screens **AIT121, EXP017, DSC122, DSC033, COM048** |
+
+Shared actor/state/field definitions: [Consistency Contract](../docs/consistency-contract.md). Exact current Function contracts are in §5/5.1. Technical choices and unresolved field-design questions are explicitly separated there.
 
 **1. Purpose and scope (mandatory)**
 
@@ -150,252 +152,120 @@ The Screen List describes AIT121 as a single chat-based matching screen where re
 
 - Time-decay batch runs while new signals are being written.
 
+### Consistency acceptance examples
+
+| AC ID | Given / When | Expected result |
+|---|---|---|
+| AC-AIT-ORDER | Agency supplies complete critical tour fields | Build current profile before retrieval/ranking; no use of undefined profile. |
+| AC-AIT-FAIL | AI extraction unavailable | Show Temporary AI Failure and Retry; no fabricated rule-based match. |
+| AC-AIT-CLARIFY | Agency omits group_size | Ask clarification and reanalyze added context before final results. |
+
 **4. Flows (mandatory)**
 
 **4.1 Usage flow**
 
-**MERMAID**
-
-> graph TD
->
-> classDef default fill:#FFFFFF,stroke:#000000,stroke-width:1.5px,color:#000000;
->
-> classDef startend fill:#FFFFFF,stroke:#000000,stroke-width:2.5px,color:#000000;
->
-> TA_Start(\["0. Start: Tour Agency"\])
->
-> TA1\["1. Open AI Matching Assistant"\]
->
-> TA2\[/"2. Input Natural Language Request"/\]
->
-> TA3{"3. AI Needs Clarification?"}
->
-> TA4\[/"4. Provide Missing Info"/\]
->
-> TA5\["5. View AI Recommendations\n(Scores & Explanations)"\]
->
-> TA6{"6. Switch/Case:\nSelect Follow-up Action"}
->
-> TA7\["7a. View Full Detail"\]
->
-> TA8\["7b. Request Quote"\]
->
-> TA9\["7c. Initiate Chat"\]
->
-> TA_End(\["8. End: Session Recorded for Learning Loop"\])
->
-> TA_Start --\> TA1 --\> TA2 --\> TA3
->
-> TA3 -- "Yes" --\> TA4 --\> TA5
->
-> TA3 -- "No" --\> TA5
->
-> TA5 --\> TA6
->
-> TA6 -- "Detail" --\> TA7 --\> TA_End
->
-> TA6 -- "Quote" --\> TA8 --\> TA_End
->
-> TA6 -- "Chat" --\> TA9 --\> TA_End
->
-> class TA_Start,TA_End startend;
+```mermaid
+graph TD
+  A["Agency AIT121: requirements"] --> E{"AI available?"}
+  E -->|No| F["Temporary AI Failure / Retry"]
+  F --> A
+  E -->|Yes| C{"Critical fields sufficient?"}
+  C -->|No| Q["Clarify or cancel"]
+  Q -->|Additional context| A
+  C -->|Yes| P["Build Tour Preference Profile"]
+  P --> R["Retrieve seeded Village candidates with Verified Provider profiles → filter → rank"]
+  R --> N{"Meets threshold?"}
+  N -->|No| NM["No-match / refine"]
+  N -->|Yes| D["Show results"]
+  D --> V["DSC033 detail or COM048 chat/quote"]
+```
 
 **4.2 Sequence for the main flow**
 
-**MERMAID**
-
+```mermaid
 sequenceDiagram
-    title Module 3: AI Tour Matching
-    actor Agency as Tour Agency
-    participant Frontend
-    participant Backend
-    participant AIEngine as AI Matching Engine
-    participant Database
-
-    Note over Agency, Database: UC-DIS-05 - AI Tour Matching
-
-    Note over Agency, Database: 1. Submit & Understand Tour Requirements
-    Agency->>Frontend: Enter tour requirements in natural language
-    activate Agency
-    activate Frontend
-    Frontend->>Backend: submitTourRequirements(requirements)
-    activate Backend
-    Backend->>AIEngine: analyzeRequirements(requirements)
-    activate AIEngine
-    AIEngine->>AIEngine: callOpenAI(requirements)
-
-    alt OpenAI responds within timeout
-        AIEngine->>AIEngine: parsedRequirements
-        AIEngine->>AIEngine: Extract tour context
-        AIEngine->>AIEngine: Extract constraints
-        AIEngine->>AIEngine: Extract preferences
-        AIEngine->>AIEngine: Infer semantic preferences
-        AIEngine->>AIEngine: Check requirement completeness
-    else OpenAI timeout or error
-        AIEngine->>AIEngine: timeoutError
-        AIEngine->>AIEngine: Fallback to rule-based requirement extraction
-        AIEngine->>AIEngine: Extract tour context rule-based
-        AIEngine->>AIEngine: Extract constraints rule-based
-        AIEngine->>AIEngine: Check requirement completeness
-        AIEngine-->>Backend: fallbackModeActive
-        Backend-->>Frontend: fallbackModeActive
-        Frontend-->>Agency: Display using simplified matching
-    end
-
-    Note over Agency, Database: 2. Clarify Missing Requirements or 3. AI Matching and Recommendation
-    alt Requirements are incomplete
-        AIEngine->>AIEngine: Identify missing critical criteria
-        AIEngine->>AIEngine: Generate contextual follow-up question
-        AIEngine-->>Backend: followUpQuestion
-        Backend-->>Frontend: followUpQuestion
-        Frontend-->>Agency: Display follow-up question
-        Agency->>Frontend: Provide clarification
-        Frontend->>Backend: submitClarification(response)
-        Backend->>AIEngine: updateConversationContext(response)
-        AIEngine->>AIEngine: Re-analyze requirements
-        AIEngine->>AIEngine: Check requirement completeness
-    else Requirements are complete
-        Note over Backend, Database: 3. AI Matching and Recommendation
-        Backend->>AIEngine: findVerifiedLPsAndExperiences(tourPreferenceProfile)
-        AIEngine->>Database: getVerifiedLPAndExperiences(tourPreferenceProfile)
-        Database-->>AIEngine: candidateLPsAndExperiences
-        AIEngine->>AIEngine: Check hard constraints
-        AIEngine->>AIEngine: Evaluate preferences
-        AIEngine->>AIEngine: Evaluate route and distance
-
-        alt AI ranking available
-            AIEngine->>AIEngine: refineRanking(candidateLPsAndExperiences, tourPreferenceProfile)
-            alt OpenAI responds within timeout
-                AIEngine->>AIEngine: refinedScoresAndExplanations
-                AIEngine->>AIEngine: Calculate match scores
-                AIEngine->>AIEngine: Rank candidates
-                AIEngine->>AIEngine: Generate match explanations
-            else OpenAI timeout or error
-                AIEngine->>AIEngine: timeoutError
-                AIEngine->>AIEngine: Fallback to rule-based scoring
-                AIEngine->>AIEngine: Calculate match scores rule-based weights
-                AIEngine->>AIEngine: Rank candidates
-                AIEngine->>AIEngine: Generate generic match explanations rule-based
-                AIEngine-->>Backend: fallbackModeActive
-                Backend-->>Frontend: fallbackModeActive
+    actor Agency
+    participant UI as AIT121
+    participant API as Backend
+    participant AI as AI Engine
+    participant DB as Database
+    participant Maps as Maps Service
+    Note over Agency,UI: UC-DIS-05; authenticated Agency only
+    Agency->>UI: Natural-language requirements
+    UI->>API: analyzeRequirements (F-MATCH-02/03)
+    API->>AI: Extract tour context and constraints
+    alt AI unavailable
+        API-->>UI: Temporary AI Failure with Retry; no fallback matching result
+    else Extraction succeeds
+        loop Missing critical fields until sufficient input or user cancels
+            API-->>UI: Clarification question
+            Agency->>UI: Additional context
+            UI->>API: Reanalyze updated requirements
+        end
+        API->>AI: Build Tour Preference Profile (F-MATCH-04)
+        AI-->>API: tour_preference_profile
+        API->>DB: Retrieve eligible Verified candidates (F-MATCH-05)
+        API->>Maps: Distance/route inputs where required
+        alt Required external calculation fails
+            API-->>UI: Unable to complete matching; retry, no fabricated distance
+        else Candidate data available
+            API->>AI: Filter hard constraints, normalize factors, rank (F-MATCH-06/07)
+            AI-->>API: Scored candidates and explanations
+            alt No candidate meets threshold
+                API-->>UI: No-match result with refinement guidance
+            else Eligible ranked candidates
+                API-->>UI: Ranked Experience/Village cards
+                Agency->>UI: View, Chat or Request Quote
+                UI->>API: Record permitted preference signal; Quote once per Agency–Experience
+                API->>DB: Update shared preference profile and chat context
+                API-->>UI: DSC033 or COM048
             end
         end
-
-        AIEngine-->>Backend: rankedRecommendations
-        Backend-->>Frontend: rankedRecommendations
-        Frontend-->>Agency: Display ranked LP or Experience with match score and reasons
-        opt Fallback mode was used
-            Frontend-->>Agency: Display results based on simplified matching
-        end
     end
-
-    Note over Agency, Database: 4. Record Agency Preference Signals
-    loop During Matching Session
-        Agency->>Frontend: View or Request Quote or Chat or Book or Schedule
-        Frontend->>Backend: recordPreferenceSignal(signal)
-        Backend->>Database: savePreferenceSignal(agencyId, sessionId, signal)
-        Database-->>Backend: signalSaved
-    end
-
-    Note over Agency, Database: 5. Analyze Preference Signals
-    Backend->>Database: getCurrentSessionSignals(agencyId, sessionId)
-    Database-->>Backend: currentSessionSignals
-    Backend->>AIEngine: analyzePreferenceSignals(currentSessionSignals)
-    AIEngine->>AIEngine: Identify common factors among interacted items
-    AIEngine->>AIEngine: Identify recurring preference patterns
-    AIEngine->>AIEngine: Infer related preferences from non-interacted items
-
-    Note over Agency, Database: 6. Detect Session End
-    alt Agency closes AI matching chat
-        Frontend->>Backend: closeMatchingSession(sessionId)
-    else 30-minute inactivity timeout
-        Backend->>Backend: detectSessionTimeout(sessionId)
-    end
-
-    Note over Agency, Database: 7. Create Tour Preference Profile
-    AIEngine->>AIEngine: Map semantic requirements
-    AIEngine->>AIEngine: Assign preference weights
-    AIEngine->>AIEngine: Generate Tour Preference Profile
-    AIEngine-->>Backend: tourPreferenceProfile
-    Backend-->>Frontend: tourPreferenceProfile
+    Note over API,DB: Shared preference profile/time decay; Book/Schedule are not learning signals
+```
 
 **5. Functional requirements (mandatory)**
 
-| **FR ID**  | **DBIZ2 Subfunction ID** | **Requirement (system MUST ...)**                                                                                                               | **Actor**           | **Priority** |
-|------------|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|--------------|
-| **FR-001** | F-MATCH-01               | Allow only an authenticated Tour Agency to open the AI Tour Matching Assistant and redirect unauthorized Guests to Login.                       | Tour Agency / Guest | Must         |
-| **FR-002** | F-MATCH-02               | Capture the Tour Agency's natural-language tour requirements within the matching conversation.                                                  | Tour Agency         | Must         |
-| **FR-003** | F-MATCH-03               | Analyze and clarify tour requirements, identify missing critical information and ask follow-up questions where necessary. If AI processing is temporarily unavailable, preserve the conversation, return a Temporary AI Failure state with retry available, and do not proceed to candidate scoring from incomplete AI output. | System              | Must         |
-| **FR-004** | F-MATCH-04               | Convert understood requirements into a structured Tour Preference Profile containing constraints, attributes, inferred preferences and weights. | System              | Must         |
-| **FR-005** | F-MATCH-05               | Retrieve candidate Experiences belonging to eligible Verified Local Providers from verified villages; Providers without a currently published Verified profile version must be excluded. | System              | Must         |
-| **FR-006** | F-MATCH-06               | Calculate route/distance compatibility and remove candidates that fail mandatory constraints.                                                   | System              | Must         |
-| **FR-007** | F-MATCH-07               | Score and rank eligible candidates using Experience fit, route relevance, preference alignment, distinctiveness and configured ranking factors. | System              | Must         |
-| **FR-008** | F-MATCH-08               | Display top recommendations and additional suitable suggestions with concise match explanations.                                                | System              | Must         |
-| **FR-009** | F-MATCH-09               | Allow the Agency to refine requirements and regenerate recommendations within the conversation.                                                 | Tour Agency         | Must         |
-| **FR-010** | F-MATCH-10               | Save or update an Agency Preference Profile based on the completed matching session.                                                            | System              | Should       |
-| **FR-011** | F-MATCH-11               | Verify permission and initiate Request Quote or Chat from a matching recommendation without creating a Booking, reusing the persistent Quote Request per Agency–Experience pair and the Active Chat per Agency–Local Provider pair where applicable. | System              | Should       |
-| **FR-012** | F-MATCH-12               | Display appropriate fallback options when no candidate satisfies the matching threshold.                                                        | System              | Must         |
-| **FR-013** | F-MATCH-13               | Detect the end of a matching-linked Chat interaction window for post-matching learning when the Chat is explicitly closed or inactive for 30 minutes; this event does not itself close the persistent Chat. | System              | Should       |
-| **FR-014** | F-MATCH-14               | Extract preference signals from a matching-linked Chat session.                                                                                 | System              | Should       |
-| **FR-015** | F-MATCH-15               | Apply exponential time decay with a 30-day half-life to historical and recent preference signals.                                               | System              | Should       |
-| **FR-016** | F-MATCH-16               | Update the Agency Preference Profile and immediately generate a reranked Explore list for that same Agency using the reweighted signals, without changing the global Explore ranking for other users. | System              | Should       |
+| FR ID | Function List ID | Requirement — system MUST | Actor | Priority |
+|---|---|---|---|---|
+| FR-001 | F-MATCH-01 | Open a conversation session for Tour Agency to input tour requirements using natural language. <br>ACCESS CONTROL:<br>- Tour Agency: Full access, AI Matching interface shown<br>- Guest: CANNOT see AI Matching feature interface at all (button/feature not visible, not just disabled). Redirect to Login page if Guest tries to access /ai-matching URL<br>This feature is Tour Agencies ONLY. | Tour Agency / Guest | Must |
+| FR-002 | F-MATCH-02 | Capture Agency's natural language description of the tourist group, tour, requirements, and expectations. | Tour Agency | Must |
+| FR-003 | F-MATCH-03 | Analyze the Agency's natural-language input to extract tour context, route/travel preferences, Experience preferences and operational requirements. Check whether critical matching information is sufficiently complete. If important information is missing or unclear, generate contextual follow-up questions and incorporate the Agency's response into the matching context. If the AI service times out or is unavailable, preserve the conversation and return Temporary AI Failure with a retry option. Do not invent extracted requirements or proceed with candidate scoring from incomplete AI output. | System | Must |
+| FR-004 | F-MATCH-04 | Convert the understood tour requirements into a structured Tour Preference Profile containing hard constraints, matching attributes, inferred preferences and relative preference weights. | System | Must |
+| FR-005 | F-MATCH-05 | Retrieve candidate Experiences belonging to eligible Local Providers with currently published Verified profiles from the seeded Village catalog based on the Tour Preference Profile. Providers without a currently published Verified profile version are excluded from AI Matching. Village itself has no separate verification lifecycle in MVP. | System | Must |
+| FR-006 | F-MATCH-06 | Calculate route/distance compatibility and filter candidates against mandatory constraints such as date/date-range availability, capacity, budget and route feasibility. This is a preliminary hard-constraint check at day or date-range level. Exact start/end time-slot availability, operating-window fit, overlap and atomic occupancy are validated later when F-SCHED-03 creates the Booking. | System | Must |
+| FR-007 | F-MATCH-07 | Evaluate eligible candidates based on Experience fit, route relevance, preference alignment, distinctiveness and other configured ranking factors. Calculate overall match scores and produce a ranked candidate list. | System | Must |
+| FR-008 | F-MATCH-08 | Generate and display the highest-ranked Experience recommendations and additional suitable suggestions, together with concise explanations of why each recommendation matches the Agency's requirements. Tour Agency can View Details, Request Quote or Chat with the Provider. | System | Must |
+| FR-009 | F-MATCH-09 | Allow Agency to add/modify requirements and continue the conversation.Update Tour Preference Profile and re-run matching when Agency changes requirements. | Tour Agency | Must |
+| FR-010 | F-MATCH-10 | Save or update the Agency Preference Profile using preferences identified from the completed AI Matching session. The profile is Agency-specific and may be reused by future AI Matching sessions and personalized Explore ranking. | System | Should |
+| FR-011 | F-MATCH-11 | When Tour Agency selects Request Quote or Chat from a recommendation, system verifies permission through F-AUTH-16. For Request Quote, create a Quote Request record and open the Chat with relevant Experience/Agency context. For direct Chat, open or create the conversation without creating a new Quote Request. Booking is created later by Local Provider through Schedule/Booking. Quote Request uniqueness is enforced per Agency–Experience pair. The first Request Quote creates the Quote Request. Subsequent Request Quote actions for the same Agency and Experience reuse the same Quote Request and do not create duplicates, including after a Booking is created or cancelled.<br><br>Chat sessions are scoped per Agency–Local Provider pair, not per Experience or Quote Request. If an Active Chat already exists between the Agency and the Local Provider, reuse that Chat and append the new Experience/Quote Request context as a message. If no Active Chat exists, create a new Active Chat. Closed Chat sessions are retained as history and are never reopened. | System | Should |
+| FR-012 | F-MATCH-12 | If no matches found (score < threshold), suggest criteria relaxation (extend budget, extend distance, relax dates) or prompt to continue conversation. | System | Must |
+| FR-013 | F-MATCH-13 | Detect the end of an AI-Matching-related interaction window when either: (1) the participant explicitly closes the Chat through F-CHAT-04, or (2) the conversation has been inactive for 30 minutes. Generate a post-matching learning event for subsequent signal processing. | System | Should |
+| FR-014 | F-MATCH-14 | Extract signals from chat: experience interest level, questions asked, follow-up indicators. Signals are used to update the Agency Preference Profile and evaluate recommendation quality; foundational AI model retraining is outside MVP. Tour Agency CANNOT see interaction logs. Signals are extracted from Chat text using the AI semantic classifier and mapped only to the fixed signal taxonomy above. Explicit platform actions such as Request Quote are captured deterministically rather than inferred from text. | System | Should |
+| FR-015 | F-MATCH-15 | Apply historical time decay to Agency preference signals so that newer matching and post-matching interaction signals receive greater influence than older signals. The background process runs periodically and produces reweighted Agency preference signals for future matching and Explore personalization. | System | Should |
+| FR-016 | F-MATCH-16 | Update the Agency Preference Profile using the reweighted signals from F-MATCH-15 and re-rank Explore results for that specific Agency. The update applies only to the individual Agency and does not modify the global Explore ranking for other users. | System | Should |
 
 **5.1 Input / Output contract**
 
-| **FR ID**  | **Input field(s)**               | **Type**                    | **Required** | **Output field(s)**               | **Type** | **Notes / validation**                                                    |
-|------------|----------------------------------|-----------------------------|--------------|-----------------------------------|----------|---------------------------------------------------------------------------|
-| **FR-001** | page_request                     | HTTP Request                | Yes          | ai_matching_view                  | UI View  | Returned only to authorized Tour Agency.                                  |
-|            | session_role                     | Enum                        | Yes          | matching_session_id               | ID       | Optional output; created when an authorized Tour Agency successfully opens the AI Matching interface. |
-|            |                                  |                             |              | login_redirect_url                | URL      | Optional; Guest only.                                                     |
-| **FR-002** | matching_session_id              | ID                          | Yes          | conversation_message              | Object{message_id, session_id, sender, text, sent_at} | — |
-|            | message_text                     | Text, max 2000 characters   | Yes          |                                   |          | Must not be empty.                                                        |
-| **FR-003** | conversation_context             | Array<Message>              | Yes          | tour_context                      | Object{tour_purpose, group_size, visitor_profile, target_date_or_range, desired_duration, origin_or_route, travel_intensity, distance_preference, experience_types, experience_intensity, budget, special_requirements} | Fields are optional individually; output object is required. |
-|            |                                  |                             |              | is_complete                       | Boolean  | True when group_size, target_date_or_range, origin_or_route and at least one Experience preference are available. |
-|            |                                  |                             |              | follow_up_questions               | Array<String> | Optional — only for missing/unclear critical fields. |
-|            |                                  |                             |              | processing_status                 | Enum\[Success, Temporary AI Failure\] | Required. |
-|            |                                  |                             |              | retry_available                   | Boolean  | Required.                                                                  |
-| **FR-004** | tour_context                     | Object                      | Yes          | tour_preference_profile           | Object   | Contains hard_constraints, matching_attributes, inferred_preferences and preference_weights. |
-|            | domain_attributes                | Array<Enum\[Tour Purpose, Group Size, Visitor Profile, Duration, Route, Travel Intensity, Distance Preference, Experience Type, Experience Intensity, Commercial/Shopping Preference, Availability/Capacity, Budget\]> | Yes | | | Non-hard-constraint preference_weights use Decimal 0–1 and are normalized so their total equals 1.0. |
-| **FR-005** | tour_preference_profile          | Object                      | Yes          | candidates                        | Array<Object{experience_id, provider_id, village_id}> | May be empty; Providers without a currently published Verified profile version are excluded. |
-|            | verified_catalog                 | Data Source                 | Yes          |                                   |          | Verified catalog source.                                                  |
-| **FR-006** | candidates                       | Array<Object{experience_id, provider_id, village_id}> | Yes | eligible_candidates | Array<Object> | Required — from F-MATCH-05; may be empty after filtering. |
-|            | route                            | Object{origin_address: String, destination_address: String Optional, waypoints: Array<String> Optional} | Yes | route_distance_data | Array<Object{experience_id, distance_km, travel_time_minutes}> | Route derived from Tour Context; Google Maps routing service used. |
-|            | candidate_locations              | Array<Object{experience_id, location}> | Yes | | | Resolved for the candidates. |
-|            | hard_constraints                 | Object{availability, capacity, budget} | Yes | | | Route feasibility is evaluated together with these mandatory constraints. |
-| **FR-007** | eligible_candidates              | Array<Object>               | Yes          | ranked_candidates                 | Array<Object{experience_id, match_score, experience_fit_score, rank}> | match_score and experience_fit_score are Decimal 0–100; rank >= 1. |
-|            | tour_preference_profile          | Object                      | Yes          |                                   |          | —                                                                         |
-| **FR-008** | ranked_candidates                | Array<Object>               | Yes          | top_matches                       | Array<Object{experience_id, rank, match_score, explanation}> | Required — maximum 5 highest-ranked eligible Experiences. |
-|            |                                  |                             |              | additional_suggestions            | Array<Object> | Optional — up to 5 additional eligible Experiences after the Top 5. |
-| **FR-009** | matching_session_id              | ID                          | Yes          | conversation_message              | Object   | —                                                                         |
-|            | message_text                     | Text                        | Yes          | updated_tour_preference_profile   | Object   | Optional — when requirements change.                                      |
-|            |                                  |                             |              | updated_recommendations           | Array<Object> | Optional — when matching is re-run.                                    |
-| **FR-010** | agency_id                        | ID                          | Yes          | agency_preference_profile         | Object   | Persistent Agency-specific preference profile updated from the completed matching session. |
-|            | matching_session_id              | ID                          | Yes          | updated_at                        | DateTime | Required.                                                                  |
-|            | tour_preference_profile          | Object                      | Yes          |                                   |          | —                                                                         |
-| **FR-011** | experience_id                    | ID                          | Yes          | chat_session_id                   | ID       | Required for both Request Quote and Chat.                                 |
-|            | agency_id                        | ID                          | Yes          | quote_request_id                  | ID       | Optional — Request Quote only; persistent for the Agency–Experience pair. |
-|            | action_source                    | Enum\[Request Quote, Chat\] | Yes        | is_new_request                    | Boolean  | Optional — Request Quote only; true only for the first request for that Agency–Experience pair. |
-|            | matching_session_id              | ID                          | No           |                                   |          | Chat is scoped per Agency–Local Provider pair; reuse an existing Active Chat, otherwise create a new Active Chat. Closed Chats remain history and are not reopened. |
-| **FR-012** | matching_criteria                | Tour Preference Profile     | Yes          | relaxation_suggestions            | Array<Object{criterion: Enum\[Budget, Distance, Dates\], suggested_value}> | Optional. |
-|            | results                          | Array<Object>               | Yes          | conversation_prompt               | Text     | Optional.                                                                 |
-|            | score_threshold                  | Decimal 0–100               | Yes          |                                   |          | Default 60.                                                               |
-| **FR-013** | chat_session_id                  | ID                          | Yes          | chat_session_end_event            | Object{chat_session_id, ended_at, end_reason: Enum\[Chat Closed, Inactive 30 min\]} | Required — learning-window end event; does not close the Chat. |
-|            | last_activity_at                 | DateTime                    | Yes          |                                   |          | —                                                                         |
-|            | agency_id                        | ID                          | Yes          |                                   |          | —                                                                         |
-|            | experience_id                    | ID                          | Yes          |                                   |          | —                                                                         |
-|            | matching_session_id              | ID                          | Yes          |                                   |          | Matching-linked Chats only.                                               |
-|            | chat_closed_event                | Object{chat_session_id, closed_at} | No     |                                   |          | Optional — from F-CHAT-04.                                                |
-| **FR-014** | chat_messages                    | Array<Message>              | Yes          | preference_signals                | Array<Object{signal_type, value, confidence_score, captured_at}> | signal_type is one of Positive Experience Interest, Negative Experience Interest, Price Concern, Availability Concern, Capacity Concern, Route/Distance Concern, Experience Preference, Follow-up Intent. |
-|            | chat_session_metadata            | Object                      | Yes          |                                   |          | Explicit platform actions such as Request Quote are captured deterministically rather than inferred from Chat text. |
-|            | experience_id                    | ID                          | Yes          |                                   |          | —                                                                         |
-|            | previous_tour_preference_profile | Object                      | Yes          |                                   |          | —                                                                         |
-| **FR-015** | historical_signals               | Array<Object>               | Yes          | reweighted_signals                | Array<Object{signal, weight: Decimal}> | effective_weight = base_weight × 0.5^(age_days / 30). |
-|            | recent_matching_signals          | Array<Object>               | No           |                                   |          | —                                                                         |
-|            | chat_signals                     | Array<Object>               | No           |                                   |          | —                                                                         |
-|            | decay_parameters                 | Object{model: Enum\[Exponential Half-life\], half_life_days: Integer = 30} | Yes | | | Required. |
-| **FR-016** | agency_preference_profile        | Object                      | Yes          | updated_agency_preference_profile | Object   | Required — Agency-specific.                                               |
-|            | reweighted_signals               | Array<Object>               | Yes          | reranked_explore_list             | Array<Object{experience_id: ID, rank: Integer, score: Decimal}> | Required — generated immediately for the affected Agency only. |
-|            |                                  |                             |              | updated_at                        | DateTime | Required.                                                                  |
+| FR ID | Input fields and validation | Required | Output fields | Notes |
+|---|---|---|---|---|
+| FR-001 | page_request (HTTP request; Required)<br>session_role (Enum; Required — used to block Guest) | As specified per field | ai_matching_view (UI View; Optional — Tour Agency)<br><br>matching_session_id (ID; Optional — created when an authorized Tour Agency successfully opens the AI Matching interface)<br><br>login_redirect_url (URL; Optional — Guest) | Same contract as F-MATCH-01; optional fields are not required. |
+| FR-002 | matching_session_id (ID; Required)<br><br>message_text (Text, max 2000 characters; Required) | As specified per field | conversation_message (Object{message_id, session_id, sender, text, sent_at}; Required) | Same contract as F-MATCH-02; optional fields are not required. |
+| FR-003 | conversation_context (Array<Message>; Required) | As specified per field | tour_context (Object{<br>  tour_purpose: String Optional,<br>  group_size: Integer Optional,<br>  visitor_profile: String Optional,<br>  target_date_or_range: Object Optional,<br>  desired_duration: Integer Optional,<br>  origin_or_route: Object Optional,<br>  travel_intensity: Enum[Low, Medium, High] Optional,<br>  distance_preference: Object Optional,<br>  experience_types: Array<Enum> Optional,<br>  experience_intensity: Enum[Low, Medium, High] Optional,<br>  budget: Object Optional,<br>  special_requirements: Array<String> Optional<br>}; Required)<br><br>is_complete (Boolean; Required — true when group_size, target_date_or_range, origin_or_route and at least one experience preference are available)<br><br>follow_up_questions (Array<String>; Optional — only for missing/unclear critical fields)<br><br>processing_status (Enum[Success, Temporary AI Failure]; Required)<br><br>retry_available (Boolean; Required) | Same contract as F-MATCH-03; optional fields are not required. |
+| FR-004 | tour_context (Object; Required)<br><br>domain_attributes (Array<Enum[<br>  Tour Purpose,<br>  Group Size,<br>  Visitor Profile,<br>  Duration,<br>  Route,<br>  Travel Intensity,<br>  Distance Preference,<br>  Experience Type,<br>  Experience Intensity,<br>  Commercial/Shopping Preference,<br>  Availability/Capacity,<br>  Budget<br>]>; Required) | As specified per field | tour_preference_profile (Object; Required), with:<br>- hard_constraints (Object; Required)<br>- matching_attributes (Array; Required)<br>- inferred_preferences (Array; Optional)<br>- preference_weights (Map<String, Decimal 0–1>; Required — non-hard-constraint preference weights are normalized so their total equals 1.0) | Same contract as F-MATCH-04; optional fields are not required. |
+| FR-005 | tour_preference_profile (Object; Required)<br>seeded_village_catalog (Data source; Required)<br>verified_provider_catalog (Data source; Required) | As specified per field | candidates (Array<Object{experience_id, provider_id, village_id}>; Required — may be empty) | Same contract as F-MATCH-05; optional fields are not required. |
+| FR-006 | candidates (Array<Object{experience_id, provider_id, village_id}>; Required — from F-MATCH-05)<br><br>route (Object{<br>  origin_address: String,<br>  destination_address: String Optional,<br>  waypoints: Array<String> Optional<br>}; Required — derived from Tour Context)<br><br>candidate_locations (Array<Object{experience_id, location}>; Required — resolved for the candidates)<br><br>hard_constraints (Object{availability, capacity, budget}; Required) | As specified per field | eligible_candidates (Array<Object>; Required — candidates that satisfy mandatory availability, capacity, budget and route constraints; may be empty)<br><br>route_distance_data (Array<Object{<br>  experience_id,<br>  distance_km,<br>  travel_time_minutes<br>}>; Required — calculated using the configured Google Maps routing service) | Same contract as F-MATCH-06; optional fields are not required. |
+| FR-007 | eligible_candidates (Array<Object>; Required)<br>tour_preference_profile (Object; Required) | As specified per field | ranked_candidates (Array<Object>; Required), each with:<br>- experience_id (ID; Required)<br>- match_score (Decimal 0–100; Required)<br>- experience_fit_score (Decimal 0–100; Required)<br>- rank (Integer >= 1; Required) | Same contract as F-MATCH-07; optional fields are not required. |
+| FR-008 | ranked_candidates (Array<Object>; Required) | As specified per field | top_matches (Array<Object{experience_id, rank, match_score, explanation}>; Required — maximum 5 highest-ranked eligible Experiences)<br><br>additional_suggestions (Array<Object>; Optional — up to 5 additional eligible Experiences after the Top 5) | Same contract as F-MATCH-08; optional fields are not required. |
+| FR-009 | matching_session_id (ID; Required)<br>message_text (Text; Required) | As specified per field | conversation_message (Object; Required)<br>updated_tour_preference_profile (Object; Optional — when requirements change)<br>updated_recommendations (Array<Object>; Optional — when matching is re-run) | Same contract as F-MATCH-09; optional fields are not required. |
+| FR-010 | agency_id (ID; Required)<br>matching_session_id (ID; Required)<br>tour_preference_profile (Object; Required) | As specified per field | agency_preference_profile (Object; Required — persistent Agency-specific preference profile updated from the completed matching session)<br><br>updated_at (DateTime; Required) | Same contract as F-MATCH-10; optional fields are not required. |
+| FR-011 | experience_id (ID; Required)<br>agency_id (ID; Required — from session)<br>action_source (Enum[Request Quote, Chat]; Required)<br>matching_session_id (ID; Optional) | As specified per field | chat_session_id (ID; Required)<br><br>quote_request_id (ID; Optional — Request Quote only; references one persistent Quote Request for the Agency–Experience pair)<br><br>is_new_request (Boolean; Optional — Request Quote only) | Same contract as F-MATCH-11; optional fields are not required. |
+| FR-012 | matching_criteria (Tour Preference Profile; Required)<br>results (Array<Object>; Required — empty or below threshold)<br>score_threshold (Decimal 0–100; Required — default 60) | As specified per field | relaxation_suggestions (Array<Object{criterion: Enum[Budget, Distance, Dates], suggested_value}>; Optional)<br>conversation_prompt (Text; Optional) | Same contract as F-MATCH-12; optional fields are not required. |
+| FR-013 | chat_session_id (ID; Required)<br>last_activity_at (DateTime; Required)<br>agency_id (ID; Required)<br>experience_id (ID; Required)<br>matching_session_id (ID; Required — only matching-linked chats)<br>chat_closed_event (Object{chat_session_id, closed_at}; Optional — from F-CHAT-04) | As specified per field | chat_session_end_event (Object{chat_session_id, ended_at, end_reason: Enum[Chat Closed, Inactive 30 min]}; Required — does not close the Chat) | Same contract as F-MATCH-13; optional fields are not required. |
+| FR-014 | chat_messages (Array<Message>; Required)<br>chat_session_metadata (Object; Required)<br>experience_id (ID; Required)<br>previous_tour_preference_profile (Object; Required) | As specified per field | preference_signals (Array<Object{<br>  signal_type: Enum[<br>    Positive Experience Interest,<br>    Negative Experience Interest,<br>    Price Concern,<br>    Availability Concern,<br>    Capacity Concern,<br>    Route/Distance Concern,<br>    Experience Preference,<br>    Follow-up Intent<br>  ],<br>  value,<br>  confidence_score: Decimal 0–1,<br>  captured_at<br>}>; Required) | Same contract as F-MATCH-14; optional fields are not required. |
+| FR-015 | historical_signals (Array<Object>; Required)<br>recent_matching_signals (Array<Object>; Optional)<br>chat_signals (Array<Object>; Optional)<br>decay_parameters (Object{<br>  model: Enum[Exponential Half-life],<br>  half_life_days: Integer = 30<br>}; Required) | As specified per field | reweighted_signals (Array<Object{signal, weight: Decimal}>; Required)<br>effective_weight = base_weight × 0.5^(age_days / 30) | Same contract as F-MATCH-15; optional fields are not required. |
+| FR-016 | agency_preference_profile (Object; Required)<br>reweighted_signals (Array<Object>; Required) | As specified per field | updated_agency_preference_profile (Object; Required)<br><br>reranked_explore_list (Array<Object{<br>  experience_id: ID,<br>  rank: Integer,<br>  score: Decimal<br>}>; Required — generated immediately for the affected Agency only)<br><br>updated_at (DateTime; Required) | Same contract as F-MATCH-16; optional fields are not required. |
 
 **5.2 Business rules**
 
@@ -444,14 +314,9 @@ sequenceDiagram
 
 **7. Screens involved**
 
-| **Screen ID** | **Screen name**        | **Priority** | **Screen Spec File**          |
-|---------------|------------------------|--------------|-------------------------------|
-| **AIT121**    | AI Tour Matching       | Must         | screens/screen-spec-AIT121.md |
-| **EXP017**    | Explore                | Must         | screens/screen-spec-EXP017.md |
-| **DSC122**    | Provider Profile       | Must         | screens/screen-spec-DSC122.md |
-| **DSC033**    | Experience Detail      | Must         | screens/screen-spec-DSC033.md |
-| **COM048**    | Chat                   | Should       | screens/screen-spec-COM048.md |
-| **—**         | Request Quote – Action | —            | Not a separate screen         |
+| Screen ID | Screen name | Functions in this module |
+|---|---|---|
+| AIT121 | AI Tour Matching | F-MATCH-01, F-MATCH-02, F-MATCH-03, F-MATCH-04, F-MATCH-05, F-MATCH-06, F-MATCH-07, F-MATCH-08, F-MATCH-09, F-MATCH-10, F-MATCH-11, F-MATCH-12, F-MATCH-13, F-MATCH-14, F-MATCH-15, F-MATCH-16 |
 
 **8. Success criteria (mandatory)**
 
@@ -472,11 +337,11 @@ sequenceDiagram
 
 - Tour Agency is authenticated before a Matching Session can begin.
 
-- Candidate retrieval uses only Providers/Experiences already marked Verified by their responsible modules.
+- Candidate retrieval uses Experiences of Providers with a published Verified profile; Experience has no separate verification state.
 
 - Profile Management and Schedule/Booking provide the data required for price, capacity, location and availability constraints.
 
-- AI Tour Matching and Explore may share an Agency Preference Profile.
+- AI Tour Matching and Explore use the same shared Agency Preference Profile.
 
 - F-MATCH-13–16 are treated as the **post-matching learning loop** within the AI Tour Matching module even though their Function Name currently says Update Explore After Chat with Time Decay.
 
@@ -490,34 +355,34 @@ sequenceDiagram
 
 | **\#** | **Question**                                                                                                                                                                                                      | **Blocking?** | **Owner**    | **Status** | **Answer / Decsion**                                                                                                                                           |
 |--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|--------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1      | Is matching_session_id created when AIT121 opens or only after the Agency sends its first message?                                                                                                                | No            | Tech / BA    | Closed     | Created when an authorized Tour Agency successfully opens the AI Matching interface. |
-| 2      | What is the maximum length of a natural-language matching message?                                                                                                                                                | No            | Tech         | Closed     | 2,000 characters. |
-| 3      | What exact fields are extracted into tour_context?                                                                                                                                                                | Yes           | BA / AI      | Closed     | tour_purpose, group_size, visitor_profile, target_date_or_range, desired_duration, origin_or_route, travel_intensity, distance_preference, experience_types, experience_intensity, budget, and special_requirements. |
-| 4      | Which fields are considered critical before requirements are “complete”?                                                                                                                                          | Yes           | BA / AI      | Closed     | group_size, target_date_or_range, origin_or_route, and at least one Experience preference. |
-| 5      | What is the canonical matching-domain attribute taxonomy?                                                                                                                                                         | Yes           | BA / AI      | Closed     | Tour Purpose, Group Size, Visitor Profile, Duration, Route, Travel Intensity, Distance Preference, Experience Type, Experience Intensity, Commercial/Shopping Preference, Availability/Capacity, and Budget. |
-| 6      | What weight scale/normalization rule is used in Tour Preference Profile?                                                                                                                                          | Yes           | AI / Tech    | Closed     | Non-hard-constraint preference weights use a decimal scale from 0.0 to 1.0 and are normalized so their total equals 1.0. |
-| 7      | What exact route structure is required: origin, destination and/or waypoints?                                                                                                                                     | Yes           | BA / Tech    | Closed     | origin_address is required; destination_address is optional; waypoints are optional. The structure is used for route/distance calculation, not turn-by-turn directions. |
-| 8      | What units are used for distance and travel time?                                                                                                                                                                 | No            | Tech         | Closed     | Kilometers (km) and Minutes (min).                                                                                                                             |
-| 9      | Is Google Maps definitively the route/distance source for F-MATCH-06?                                                                                                                                             | No            | Tech         | Closed     | Yes, Google Maps API (Distance Matrix).                                                                                                                        |
-| 10     | Is match_score represented as 0–1, 0–100, or another scale?                                                                                                                                                       | Yes           | AI / BA      | Closed     | 0–100 percentage scale for better user readability.                                                                                                            |
-| 11     | How many Top Matches are displayed before Additional Suggestions?                                                                                                                                                 | No            | UI/UX / BA   | Closed     | Up to 5 Top Matches, followed by up to 5 additional eligible suggestions. |
-| 12     | What is the exact schema of the saved Agency Preference Profile?                                                                                                                                                  | Yes           | BA / AI      | Closed     | A JSON object mapping domain attributes (e.g., category, price tier, vibes) to their accumulated, time-decayed weights.                                        |
-| 13     | What fields constitute a Quote Request record?                                                                                                                                                                    | Yes           | BA           | Closed     | The matching contract requires quote_request_id, agency_id and experience_id as the persistent Quote Request identity/context. Requested date, group size and initial message are not part of the canonical F-MATCH-11 uniqueness rule. |
-| 14     | When should an existing Quote Request be reused rather than creating a new one?                                                                                                                                   | Yes           | BA           | Closed     | Reuse the same persistent Quote Request for every subsequent Request Quote action involving the same Agency–Experience pair, regardless of date, Booking creation or later Booking cancellation. |
-| 15     | What score threshold defines the no-match condition?                                                                                                                                                              | Yes           | AI / BA      | Closed     | Default threshold: 60/100. |
-| 16     | Does a 30-minute inactivity period truly “end” a persistent Chat, or only close a learning-analysis window?                                                                                                       | Yes           | BA / Tech    | Closed     | It only closes the learning-analysis window; the Chat session itself remains persistent.                                                                       |
-| 17     | What Chat signal types are extracted and how are they calculated?                                                                                                                                                 | Yes           | AI / BA      | Closed     | Fixed signal taxonomy: Positive Experience Interest, Negative Experience Interest, Price Concern, Availability Concern, Capacity Concern, Route/Distance Concern, Experience Preference, and Follow-up Intent. Chat-text signals are extracted by the AI semantic classifier with confidence scores; explicit platform actions such as Request Quote are captured deterministically rather than inferred from text. |
-| 18     | Is “AI model retraining” actually part of MVP execution, or should the learning loop only update Agency Preference Profiles?                                                                                      | Yes           | Product / AI | Closed     | F-MATCH-14 captures signals that may be retained for downstream/future model improvement. The AI Tour Matching MVP itself does not execute foundational model retraining. |
-| 19     | How is decay calculated between/beyond the stated reference points 1h=1.0, 1 week=0.5 and 1 month=0.2?                                                                                                            | Yes           | AI           | Closed     | Use exponential half-life decay with half_life_days = 30: effective_weight = base_weight × 0.5^(age_days / 30). |
-| 20     | Does F-MATCH-16 return a complete reranked Explore list or only an updated preference profile consumed later by F-EXPLORE-10?                                                                                     | Yes           | BA / AI      | Closed     | It returns the updated Agency Preference Profile and immediately generates a reranked Explore list for that same Agency, together with updated_at. It does not modify the global Explore ranking for other Agencies. |
-| 21     | Should the Sequence Diagram be expanded to explicitly cover F-MATCH-11–16?                                                                                                                                        | No            | BA           | Closed     | No. These are asynchronous background processes. Treat them as system background jobs and document them via text to avoid modifying the main sequence diagram. |
-| 22     | The current sequence records Book / Schedule as preference signals, while the final Function List explicitly exposes View Details, Quote and Chat from matching. Should Booking/Schedule remain matching signals? | No            | BA           | Closed     | No. Booking/Schedule are not part of the canonical F-MATCH-14 signal taxonomy in the current Function List. Explicit platform actions such as Request Quote are captured deterministically; Booking/Schedule should not be treated as AIT matching signals unless the Function List is revised. |
+| 1 | Is matching_session_id created when AIT121 opens or only after the Agency sends its first message? | No | Tech / BA | Closed | Created when an authorized Tour Agency successfully opens the AI Matching interface. |
+| 2 | What is the maximum length of a natural-language matching message? | No | Tech | Closed | 2,000 characters. |
+| 3 | What exact fields are extracted into tour_context? | No | BA / AI | Closed | tour_purpose, group_size, visitor_profile, target_date_or_range, desired_duration, origin_or_route, travel_intensity, distance_preference, experience_types, experience_intensity, budget, and special_requirements. |
+| 4 | Which fields are considered critical before requirements are “complete”? | No | BA / AI | Closed | group_size, target_date_or_range, origin_or_route, and at least one Experience preference. |
+| 5 | What is the canonical matching-domain attribute taxonomy? | No | BA / AI | Closed | Tour Purpose, Group Size, Visitor Profile, Duration, Route, Travel Intensity, Distance Preference, Experience Type, Experience Intensity, Commercial/Shopping Preference, Availability/Capacity, and Budget. |
+| 6 | What weight scale/normalization rule is used in Tour Preference Profile? | No | AI / Tech | Closed | Non-hard-constraint preference weights use a decimal scale from 0.0 to 1.0 and are normalized so their total equals 1.0. |
+| 7 | What exact route structure is required: origin, destination and/or waypoints? | No | BA / Tech | Closed | origin_address is required; destination_address is optional; waypoints are optional. The structure is used for route/distance calculation, not turn-by-turn directions. |
+| 8 | What units are used for distance and travel time? | No | Tech | Closed | Kilometers (km) and Minutes (min). |
+| 9 | Is Google Maps definitively the route/distance source for F-MATCH-06? | No | Tech | Closed | Yes, Google Maps API (Distance Matrix). |
+| 10 | Is match_score represented as 0–1, 0–100, or another scale? | No | AI / BA | Closed | 0–100 percentage scale for better user readability. |
+| 11 | How many Top Matches are displayed before Additional Suggestions? | No | UI/UX / BA | Closed | Up to 5 Top Matches, followed by up to 5 additional eligible suggestions. |
+| 12 | What is the exact schema of the saved Agency Preference Profile? | No | BA / AI | Closed | A JSON object mapping domain attributes (e.g., category, price tier, vibes) to their accumulated, time-decayed weights. |
+| 13 | What fields constitute a Quote Request record? | No | BA | Closed | The matching contract requires quote_request_id, agency_id and experience_id as the persistent Quote Request identity/context. Requested date, group size and initial message are not part of the canonical F-MATCH-11 uniqueness rule. |
+| 14 | When should an existing Quote Request be reused rather than creating a new one? | No | BA | Closed | Reuse the same persistent Quote Request for every subsequent Request Quote action involving the same Agency–Experience pair, regardless of date, Booking creation or later Booking cancellation. |
+| 15 | What score threshold defines the no-match condition? | No | AI / BA | Closed | Default threshold: 60/100. |
+| 16 | Does a 30-minute inactivity period truly “end” a persistent Chat, or only close a learning-analysis window? | No | BA / Tech | Closed | It only closes the learning-analysis window; the Chat session itself remains persistent. |
+| 17 | What Chat signal types are extracted and how are they calculated? | No | AI / BA | Closed | Fixed signal taxonomy: Positive Experience Interest, Negative Experience Interest, Price Concern, Availability Concern, Capacity Concern, Route/Distance Concern, Experience Preference, and Follow-up Intent. Chat-text signals are extracted by the AI semantic classifier with confidence scores; explicit platform actions such as Request Quote are captured deterministically rather than inferred from text. |
+| 18 | Is “AI model retraining” actually part of MVP execution, or should the learning loop only update Agency Preference Profiles? | No | Product / AI | Closed | F-MATCH-14 captures signals that may be retained for downstream/future model improvement. The AI Tour Matching MVP itself does not execute foundational model retraining. |
+| 19 | How is decay calculated between/beyond the stated reference points 1h=1.0, 1 week=0.5 and 1 month=0.2? | No | AI | Closed | Use exponential half-life decay with half_life_days = 30: effective_weight = base_weight × 0.5^(age_days / 30). |
+| 20 | Does F-MATCH-16 return a complete reranked Explore list or only an updated preference profile consumed later by F-EXPLORE-10? | No | BA / AI | Closed | It returns the updated Agency Preference Profile and immediately generates a reranked Explore list for that same Agency, together with updated_at. It does not modify the global Explore ranking for other Agencies. |
+| 21 | Should the Sequence Diagram be expanded to explicitly cover F-MATCH-11–16? | No | BA | Closed | No. These are asynchronous background processes. Treat them as system background jobs and document them via text to avoid modifying the main sequence diagram. |
+| 22 | The current sequence records Book / Schedule as preference signals, while the final Function List explicitly exposes View Details, Quote and Chat from matching. Should Booking/Schedule remain matching signals? | No | BA | Closed | No. Booking/Schedule are not part of the canonical F-MATCH-14 signal taxonomy in the current Function List. Explicit platform actions such as Request Quote are captured deterministically; Booking/Schedule should not be treated as AIT matching signals unless the Function List is revised. |
 
 **11. Traceability to DBIZ2**
 
 | **Spec section**               | **DBIZ2 source**           | **Location**                                                                                                                                                                          |
 |--------------------------------|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic, sections 1.1 System Objectives and 1.2 System Main Functions – AI Tour Matching**                                                                                  |
+| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic1, sections 1.1 System Objectives and 1.2 System Main Functions – AI Tour Matching**                                                                                  |
 | **4.1 Usage flow**             | Usage Flow figure          | **sheet Schematic2, Tour Agency flow: “Choose Discovery Method” → “Input Natural Language” → “Use AI Tour Matching Assistant” → “View Local Provider Detail” → interaction decision** |
 | **4.2 Sequence**               | Sequence Diagram figure    | **sheet Schematic2, Module 3: AI Tour Matching – UC-DIS-05**                                                                                                                          |
 | **5. Functional requirements** | Function List              | **sheet FL&Cost1, F-MATCH-01 .. F-MATCH-16**                                                                                                                                          |

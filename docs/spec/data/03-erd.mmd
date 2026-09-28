@@ -1,0 +1,130 @@
+%% ---
+%% artifact: 03-erd.mmd (conceptual ERD)
+%% step: S3
+%% generated: 2026-09-28
+%% sources: FUNCTIONS, FIELDS, ENTITIES, RULES, SCENARIOS, FLOWS (all present)
+%% ---
+%% Conceptual model only: business entities and relationships, no attributes/keys/technical columns.
+%% Cardinality + optionality in crow's foot. Line type: -- identifying (child cannot exist without parent), .. non-identifying.
+%% Per-relationship reading (LEFT RIGHT | forward | reverse | which side may be zero | citation):
+%% ROLE USER_ACCOUNT | A role classifies zero or more user accounts. | Each user account has exactly one role. | many (a new role may have no accounts) | F-AUTH-15/16
+%% ROLE ROLE_PERMISSION | A role is granted zero or more permissions through role-permission links. | Each role-permission link belongs to exactly one role. | many | AUT §6; F-AUTH-15/16
+%% PERMISSION ROLE_PERMISSION | A permission is assigned to zero or more roles. | Each role-permission link references exactly one permission. | many | AUT §6; F-AUTH-15/16
+%% USER_ACCOUNT SESSION | A user account opens zero or more sessions. | Each session belongs to exactly one user account. | many (a user may never have logged in) | F-AUTH-07/09/17
+%% USER_ACCOUNT PASSWORD_RESET_TOKEN | A user account receives zero or more reset tokens. | Each reset token belongs to exactly one user account. | many | F-AUTH-11/12
+%% USER_ACCOUNT ACCOUNT_STATUS_HISTORY | A user account accrues zero or more status-history events. | Each status-history event belongs to one user account. | many | F-AUTH-18/22; Q-08
+%% USER_ACCOUNT AUDIT_LOG | A user account performs zero or more audited actions. | Each audit entry names at most one actor account. | many | AUT §6
+%% VILLAGE UBND_VILLAGE_ASSIGNMENT | A village scopes zero or more UBND assignments. | Each UBND assignment names exactly one village. | many | F-AUTH-19
+%% USER_ACCOUNT UBND_VILLAGE_ASSIGNMENT | A user account (UBND) holds at most one village assignment. | Each assignment belongs to exactly one UBND account. | child optional (only UBND admins hold one) | F-AUTH-19/16
+%% AGENCY_REGISTRATION_REQUEST REGISTRATION_OTP_CHALLENGE | A registration request is verified by zero or more OTP challenges. | Each OTP challenge belongs to one registration request. | many | F-AUTH-23
+%% AGENCY_REGISTRATION_REQUEST REGISTRATION_RESUBMISSION_TOKEN | A registration request may issue zero or more resubmission tokens. | Each resubmission token belongs to one registration request. | many | F-AUTH-18/26; Q-02
+%% AGENCY_REGISTRATION_REQUEST REGISTRATION_SUBMISSION_VERSION | A registration request contains one or more submission versions. | Each submission version belongs to one registration request. | at least one | F-AUTH-02/04/26
+%% REGISTRATION_SUBMISSION_VERSION REGISTRATION_DOCUMENT | A submission version attaches zero or more registration documents. | Each registration document belongs to one submission version. | many | F-AUTH-02/26; Q-03
+%% STORED_FILE REGISTRATION_DOCUMENT | A stored file backs zero or more registration-document links. | Each registration-document link points to one stored file. | many | Q-03
+%% REGISTRATION_SUBMISSION_VERSION AGENCY_REVIEW_RECORD | A submission version is reviewed by zero or more HDT decisions. | Each review record judges one submission version or one major change. | many | F-AUTH-18/26
+%% AGENCY_MAJOR_CHANGE_REQUEST AGENCY_REVIEW_RECORD | A major-change request is reviewed by zero or more HDT decisions. | Each review record may judge one major change. | many | F-PROFILE-02; F-AUTH-18
+%% USER_ACCOUNT AGENCY_REVIEW_RECORD | An HDT user decides zero or more review records. | Each review record is decided by one HDT user. | many | F-AUTH-18
+%% AGENCY_REGISTRATION_REQUEST AGENCY_PROFILE | A registration request becomes at most one approved Agency profile. | Each Agency profile originates from one registration request. | child optional (only approved requests become a profile) | F-AUTH-04; F-PROFILE-01
+%% USER_ACCOUNT AGENCY_PROFILE | A user account represents at most one Agency profile. | Each Agency profile is owned by one user account. | child optional | F-PROFILE-01/02
+%% AGENCY_PROFILE AGENCY_MAJOR_CHANGE_REQUEST | An Agency profile proposes zero or more major-change requests. | Each major-change request belongs to one Agency profile. | many | F-PROFILE-02
+%% USER_ACCOUNT PROVIDER_PROFILE | A user account represents at most one Provider profile. | Each Provider profile is owned by one user account. | child optional | F-AUTH-20; F-PROFILE-03
+%% VILLAGE PROVIDER_PROFILE | A village includes zero or more Provider profiles. | Each Provider profile belongs to exactly one village. | many (a village may have no providers) | F-PROFILE-03/04
+%% PROVIDER_PROFILE PROVIDER_PROFILE_VERSION | A Provider profile has one or more content versions. | Each version belongs to one Provider profile. | at least one | F-PROFILE-04/05; Q-04
+%% PROVIDER_PROFILE_VERSION PROVIDER_VERIFICATION_REVIEW | A Provider version is reviewed in zero or more UBND decisions. | Each verification review judges one Provider version. | many | F-PROFILE-05
+%% PROVIDER_PROFILE_VERSION PROVIDER_VERSION_MEDIA | A Provider version snapshots zero or more media links. | Each version-media link belongs to one Provider version. | many | F-PROFILE-04/05; Q-04
+%% STORED_FILE PROVIDER_VERSION_MEDIA | A stored file backs zero or more version-media links. | Each version-media link points to one stored file. | many | Q-03
+%% USER_ACCOUNT PROVIDER_VERIFICATION_REVIEW | A UBND user decides zero or more verification reviews. | Each verification review is decided by one UBND user. | many | F-PROFILE-05
+%% PROVIDER_PROFILE PROVIDER_OPERATING_HOURS | A Provider profile configures zero or more weekly operating windows. | Each operating window belongs to one Provider profile. | many (absent windows mean no availability) | F-PROFILE-04; F-SCHED-09
+%% PROVIDER_PROFILE EXPERIENCE | A Provider profile offers zero or more Experiences. | Each Experience belongs to exactly one Provider profile. | many | F-PROFILE-06
+%% EXPERIENCE EXPERIENCE_DISCOUNT_RULE | An Experience carries zero or more discount rules. | Each discount rule belongs to one Experience. | many | F-PROFILE-06; PRF Q23
+%% EXPERIENCE PROFILE_MEDIA | An Experience is illustrated by zero or more media links. | Each media link references at most one Experience owner. | many | F-PROFILE-06
+%% PROVIDER_PROFILE PROFILE_MEDIA | A Provider profile is illustrated by zero or more media links. | Each media link references at most one Provider owner. | many | F-PROFILE-04
+%% AGENCY_PROFILE PROFILE_MEDIA | An Agency profile is illustrated by zero or more media links. | Each media link references at most one Agency owner. | many | F-PROFILE-02
+%% STORED_FILE PROFILE_MEDIA | A stored file backs zero or more profile-media links. | Each profile-media link points to one stored file. | many | F-PROFILE-02/04/06
+%% PROVIDER_PROFILE AI_DESCRIPTION_DRAFT | A Provider profile receives zero or more AI description drafts. | Each draft targets at most one Provider owner. | many | F-PROFILE-07; Q-10
+%% EXPERIENCE AI_DESCRIPTION_DRAFT | An Experience receives zero or more AI description drafts. | Each draft targets at most one Experience owner. | many | F-PROFILE-07; Q-10
+%% AGENCY_PROFILE MATCHING_SESSION | An Agency profile starts zero or more matching sessions. | Each matching session belongs to one Agency profile. | many | F-MATCH-01
+%% MATCHING_SESSION MATCHING_MESSAGE | A matching session contains zero or more messages. | Each matching message belongs to one matching session. | many | F-MATCH-02/09
+%% MATCHING_SESSION TOUR_PREFERENCE_PROFILE | A matching session derives at most one tour preference profile. | Each tour preference profile belongs to one matching session. | child optional (built only after enough input) | F-MATCH-03/04
+%% MATCHING_SESSION RECOMMENDATION_RESULT | A matching session produces zero or more recommendation results. | Each recommendation result belongs to one matching session. | many (persistence Q-10) | F-MATCH-05..08; Q-10
+%% EXPERIENCE RECOMMENDATION_RESULT | An Experience appears in zero or more recommendation results. | Each recommendation result names one Experience. | many | F-MATCH-05..08
+%% AGENCY_PROFILE AGENCY_PREFERENCE_PROFILE | An Agency profile owns at most one preference profile. | Each preference profile belongs to one Agency profile. | child optional (new Agency has none) | F-MATCH-10/16; F-EXPLORE-09
+%% AGENCY_PROFILE PREFERENCE_SIGNAL | An Agency profile emits zero or more preference signals. | Each preference signal belongs to one Agency profile. | many | F-MATCH-14/15; F-EXPLORE-07..09
+%% AGENCY_PROFILE QUOTE_REQUEST | An Agency profile sends zero or more quote requests. | Each quote request comes from one Agency profile. | many | F-MATCH-11; F-EXPLORE-11
+%% EXPERIENCE QUOTE_REQUEST | An Experience receives zero or more quote requests. | Each quote request targets one Experience. | many | F-MATCH-11; F-EXPLORE-11
+%% AGENCY_PROFILE EXPLORE_SESSION | An Agency profile browses zero or more Explore sessions. | Each Explore session is linked to at most one Agency (Guest sessions have none). | many | F-EXPLORE-05/06
+%% EXPLORE_SESSION EXPLORE_INTERACTION | An Explore session records zero or more interactions. | Each interaction belongs to one Explore session. | many | F-EXPLORE-05..07/13
+%% RANKING_PARAMETER_VERSION RANKING_QUALITY_ASSESSMENT | A ranking parameter version is measured by zero or more quality assessments. | Each quality assessment evaluates one ranking version. | many | F-EXPLORE-14..17
+%% AGENCY_PROFILE BOOKING | An Agency profile attends zero or more Bookings. | Each Booking is for one Agency profile. | many | F-SCHED-03..07
+%% PROVIDER_PROFILE BOOKING | A Provider profile hosts zero or more Bookings. | Each Booking is hosted by one Provider profile. | many | F-SCHED-03..07
+%% EXPERIENCE BOOKING | An Experience is reserved in zero or more Bookings. | Each Booking reserves one Experience. | many | F-SCHED-03
+%% BOOKING BOOKING_STATUS_HISTORY | A Booking changes through one or more status-history events. | Each status-history event belongs to one Booking. | at least one (creation event) | F-SCHED-05/06/08
+%% AGENCY_PROFILE CHAT_SESSION | An Agency profile participates in zero or more chat sessions. | Each chat session has exactly one Agency profile. | many | F-CHAT-01
+%% PROVIDER_PROFILE CHAT_SESSION | A Provider profile participates in zero or more chat sessions. | Each chat session has exactly one Provider profile. | many | F-CHAT-01
+%% CHAT_SESSION CHAT_PARTICIPANT | A chat session has one or more participant records. | Each participant record belongs to one chat session. | at least one | F-CHAT-01/03
+%% USER_ACCOUNT CHAT_PARTICIPANT | A user account joins zero or more chat sessions as a participant. | Each participant record names one user account. | many | F-CHAT-01/03
+%% CHAT_SESSION CHAT_MESSAGE | A chat session contains zero or more messages. | Each chat message belongs to one chat session. | many | F-CHAT-02/03
+%% CHAT_MESSAGE CHAT_ATTACHMENT | A chat message carries zero or more attachments. | Each attachment belongs to one chat message. | many | F-CHAT-05; Q-03
+%% STORED_FILE CHAT_ATTACHMENT | A stored file backs zero or more chat attachments. | Each chat attachment points to one stored file. | many | Q-03
+%% USER_ACCOUNT NOTIFICATION | A user account receives zero or more notifications. | Each notification targets one recipient account. | many | contract §Dashboard
+erDiagram
+    ROLE ||--o{ USER_ACCOUNT : classifies
+    ROLE ||--o{ ROLE_PERMISSION : granted_through
+    PERMISSION ||--o{ ROLE_PERMISSION : assigned_through
+    USER_ACCOUNT ||--o{ SESSION : opens
+    USER_ACCOUNT ||--o{ PASSWORD_RESET_TOKEN : receives
+    USER_ACCOUNT ||--o{ ACCOUNT_STATUS_HISTORY : records
+    USER_ACCOUNT ||--o{ AUDIT_LOG : performs
+    VILLAGE ||--o{ UBND_VILLAGE_ASSIGNMENT : scopes
+    USER_ACCOUNT ||--o| UBND_VILLAGE_ASSIGNMENT : holds
+    AGENCY_REGISTRATION_REQUEST ||--o{ REGISTRATION_OTP_CHALLENGE : verified_by
+    AGENCY_REGISTRATION_REQUEST ||--o{ REGISTRATION_RESUBMISSION_TOKEN : authorizes_edit_with
+    AGENCY_REGISTRATION_REQUEST ||--|{ REGISTRATION_SUBMISSION_VERSION : contains
+    REGISTRATION_SUBMISSION_VERSION ||--o{ REGISTRATION_DOCUMENT : attaches
+    STORED_FILE ||--o{ REGISTRATION_DOCUMENT : backs
+    REGISTRATION_SUBMISSION_VERSION ||--o{ AGENCY_REVIEW_RECORD : reviewed_by
+    AGENCY_MAJOR_CHANGE_REQUEST ||--o{ AGENCY_REVIEW_RECORD : reviewed_in
+    USER_ACCOUNT ||--o{ AGENCY_REVIEW_RECORD : decides
+    AGENCY_REGISTRATION_REQUEST ||--o| AGENCY_PROFILE : becomes
+    USER_ACCOUNT ||--o| AGENCY_PROFILE : represents
+    AGENCY_PROFILE ||--o{ AGENCY_MAJOR_CHANGE_REQUEST : proposes
+    USER_ACCOUNT ||--o| PROVIDER_PROFILE : represents
+    VILLAGE ||--o{ PROVIDER_PROFILE : includes
+    PROVIDER_PROFILE ||--|{ PROVIDER_PROFILE_VERSION : has
+    PROVIDER_PROFILE_VERSION ||--o{ PROVIDER_VERIFICATION_REVIEW : reviewed_in
+    PROVIDER_PROFILE_VERSION ||--o{ PROVIDER_VERSION_MEDIA : snapshots
+    STORED_FILE ||--o{ PROVIDER_VERSION_MEDIA : backs
+    USER_ACCOUNT ||--o{ PROVIDER_VERIFICATION_REVIEW : decides
+    PROVIDER_PROFILE ||--o{ PROVIDER_OPERATING_HOURS : configures
+    PROVIDER_PROFILE ||--o{ EXPERIENCE : offers
+    EXPERIENCE ||--o{ EXPERIENCE_DISCOUNT_RULE : prices
+    EXPERIENCE ||--o{ PROFILE_MEDIA : illustrated_by
+    PROVIDER_PROFILE ||--o{ PROFILE_MEDIA : illustrated_by
+    AGENCY_PROFILE ||--o{ PROFILE_MEDIA : illustrated_by
+    STORED_FILE ||--o{ PROFILE_MEDIA : backs
+    PROVIDER_PROFILE ||--o{ AI_DESCRIPTION_DRAFT : receives
+    EXPERIENCE ||--o{ AI_DESCRIPTION_DRAFT : receives
+    AGENCY_PROFILE ||--o{ MATCHING_SESSION : starts
+    MATCHING_SESSION ||--o{ MATCHING_MESSAGE : contains
+    MATCHING_SESSION ||--o| TOUR_PREFERENCE_PROFILE : derives
+    MATCHING_SESSION ||--o{ RECOMMENDATION_RESULT : produces
+    EXPERIENCE ||--o{ RECOMMENDATION_RESULT : recommended_in
+    AGENCY_PROFILE ||--o| AGENCY_PREFERENCE_PROFILE : owns
+    AGENCY_PROFILE ||--o{ PREFERENCE_SIGNAL : emits
+    AGENCY_PROFILE ||--o{ QUOTE_REQUEST : sends
+    EXPERIENCE ||--o{ QUOTE_REQUEST : receives
+    AGENCY_PROFILE ||--o{ EXPLORE_SESSION : browses
+    EXPLORE_SESSION ||--o{ EXPLORE_INTERACTION : records
+    RANKING_PARAMETER_VERSION ||--o{ RANKING_QUALITY_ASSESSMENT : measured_by
+    AGENCY_PROFILE ||--o{ BOOKING : attends
+    PROVIDER_PROFILE ||--o{ BOOKING : hosts
+    EXPERIENCE ||--o{ BOOKING : reserved_in
+    BOOKING ||--|{ BOOKING_STATUS_HISTORY : changes_through
+    AGENCY_PROFILE ||--o{ CHAT_SESSION : participates_in
+    PROVIDER_PROFILE ||--o{ CHAT_SESSION : participates_in
+    CHAT_SESSION ||--|{ CHAT_PARTICIPANT : has
+    USER_ACCOUNT ||--o{ CHAT_PARTICIPANT : joins
+    CHAT_SESSION ||--o{ CHAT_MESSAGE : contains
+    CHAT_MESSAGE ||--o{ CHAT_ATTACHMENT : carries
+    STORED_FILE ||--o{ CHAT_ATTACHMENT : backs
+    USER_ACCOUNT ||--o{ NOTIFICATION : receives

@@ -1,5 +1,8 @@
 # System Configuration
 
+Proposed implementation architecture for the Plan step; technology choices are not yet an implementation commitment. Engines are logical modules in one backend, not separately deployed microservices. Admin is one actor with HDT/UBND subtypes. Authentication uses an opaque server-side session; lifetime and transport are Plan decisions, not JWT assumptions. Private legal/chat documents use authenticated storage and permission-checked access. SMS, VNAT lookup, escrow and E2EE are not MVP integrations.
+
+
 ```mermaid
 graph TD
   classDef default fill:#FFFFFF,stroke:#000000,stroke-width:1.5px,color:#000000;
@@ -39,7 +42,7 @@ graph TD
     end
     subgraph Data_Tier ["4. Data Tier"]
       direction TB
-      DB["PostgreSQL<br/>(Relational DB)"]:::database
+      DB["PostgreSQL<br/>(Relational DB<br/>+ notifications / audit metadata)"]:::database
       Cache["In-Memory Cache<br/>(Public-safe Data / node-cache)"]:::database
     end
   end
@@ -49,7 +52,8 @@ graph TD
     Cloudinary["Cloudinary<br/>(Image Upload / Optimization / Crop Preview)"]:::external
     OpenAI["OpenAI API<br/>(LLM / Intent Extraction / Description Refinement)"]:::external
     GoogleMaps["Google Maps API<br/>(Maps / Coordinates / Route & Distance)"]:::external
-    MailService["Email Delivery Service<br/>(Resend / SMTP via Nodemailer)<br/>(Reset Link / Credentials / Approval Email)"]:::external
+    MailService["Email Delivery Service<br/>(Resend / SMTP via Nodemailer)<br/>(Registration OTP / Reset Link / Credentials / Approval Email)"]:::external
+    PrivateStore["Private Object Storage<br/>(Legal / Chat files)"]:::external
   end
 
   %% Client → Presentation
@@ -59,7 +63,7 @@ graph TD
   Admin -->|"Authenticated Request"| UI
 
   %% Presentation → Backend
-  UI -->|"HTTPS / REST<br/>(JWT: 24h | Refresh: 7d)"| API
+  UI -->|"HTTPS / REST<br/>(Opaque server-side session)"| API
 
   %% Public requests
   API -->|"Public Requests<br/>(Rate-Limited / No Auth)"| Cache
@@ -98,5 +102,7 @@ graph TD
   AIEngine -->|"Route & Distance Calculation"| GoogleMaps
 
   %% Transactional emails (auth-related: reset link, credentials, approval status)
-  AuthLayer -->|"Transactional Email<br/>(Reset Link / Credentials / Approval Status)"| MailService
+  AuthLayer -->|"Transactional Email<br/>(Registration OTP / Reset Link / Credentials / Approval Status)"| MailService
+  CoreEngine -->|"Private file upload / signed access"| PrivateStore
+  CoreEngine -->|"Create in-app notification records"| DB
 ```

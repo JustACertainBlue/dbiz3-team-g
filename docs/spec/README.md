@@ -1,66 +1,18 @@
-\# Hanoi Artisan Bridge
+# Hanoi Artisan Bridge Specification Package
 
+Group G, DBIZ3 Session4. Current revision:28 September2026; pending human approval.
 
+- [Shared actor, state and field contract](docs/consistency-contract.md)
+- [Use Case table required by the lecturer](docs/architecture/use-case-diagram.md)
+- [Function List](docs/function-list.md)
+- [Screen List](docs/screen-list.md)
+- [Current context](docs/architecture/context.md)
+- [System Configuration proposal](docs/architecture/system%20configuration.md)
+- [Usage Flow](docs/architecture/usage%20flow.md)
+- [Sequence Diagrams](docs/architecture/sequence-diagram%20%5B4%5D.md)
+- [Traceability matrix](docs/traceability-matrix.md)
+- [Revision review and changed-file list](docs/revision-summary.md)
+- Module Specs: `specs/spec-AUT.md`, `spec-PRF.md`, `spec-AIT.md`, `spec-EXP.md`, `spec-BKG.md`, `spec-ADM.md`, `spec-IAC.md`.
+- Screen Specs: `screens/screen-spec-<ID>.md`; each spec references its existing PNG mockup in `screens/img/`.
 
-DBIZ3 Session 4 AI-ready Specification Package.
-
-
-
-\## Project Structure
-
-
-
-\- `docs/`
-
-&#x20; - `architecture/` – Context Diagram, System Configuration, Usage Flow
-
-&#x20; - `function-list.md` – MVP Function List
-
-&#x20; - `screen-list.md` – MVP Screen List
-
-
-
-\- `specs/`
-
-&#x20; - Module Spec Documents (`spec-<MODULE-ID>.md`)
-
-
-
-\- `screens/`
-
-&#x20; - Screen Specifications (`screen-spec-<SCREEN-ID>.md`)
-
-&#x20; - `img/` – Cropped screen mockups
-
-
-
-\## Modules
-
-
-
-\- AUT – Authentication, Access \& User Management
-
-\- PRF – Profile Management
-
-\- AIT – AI Tour Matching
-
-\- EXP – Explore
-
-\- BKG – Schedule / Booking
-
-\- ADM – Admin Dashboard
-
-\- IAC – In-app Chat
-
-
-
-\## Notes
-
-
-
-\- Module specs are located in `specs/`.
-
-\- Screen specs are located in `screens/`.
-
-\- Architecture and system-level documentation are located in `docs/`.
-
+Admin remains one actor with HDT/UBND subtypes. Use Case stays in table format. The DBIZ2 workbook, context DOCX and PNG mockups are preserved without modification. Stack/transport choices belong to Plan; unresolved field-design questions are listed in the shared contract. This revision does not add payment/staff-management features or change arrival/completion business rules.

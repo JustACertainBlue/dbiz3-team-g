@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-PRF.md` |
 | Mockup image | `img/PRF021.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** The authorized highest-level Agency user taps "Edit Profile" on PRF019 to update company information, tour preferences/characteristics and contact information.
+Allows the authorized highest-level Agency user to edit company information, tour preferences/characteristics, and contact information.
 
-**The user leaves this screen when:** The user discards changes or saves the profile.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,96 +24,67 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Breadcrumb (Home / Travel Agencies / Agency / Edit Profile) | Navigation | Static + Agency name | Yes | — |
-| 2 | Locked license badge | Text | Inbound operator license (locked) | Yes | — |
-| 3 | Page title "Edit Agency Profile" + subtitle | Header | Static | Yes | — |
-| 4 | Section "01. Core Legal Identity & Enterprise Details" | Header | Static | Yes | — |
-| 5 | Company Legal Name (English) input | Input | `company_name` | Yes | ≤255 chars |
-| 6 | Company Legal Name (Vietnamese) input | Input | `company_name` (VN) | Yes | ≤255 chars |
-| 7 | Corporate Tax ID (MST) input — locked | Input | Tax ID | Yes | Read-only; editing triggers a major-change re-review if ever changed (module spec Q6) |
-| 8 | Inbound Operator License No. input — locked | Input | License no. | Yes | Read-only, VNAT-audited |
-| 9 | Registered Business Address / HQ input | Input | `location` | Yes | Structured address (street, ward, district, city/province) per module spec Q2 |
-| 10 | Established Year input | Input | Established year | No | — |
-| 11 | Operating Status field | Input | Status text | No | — |
-| 12 | Verified statutory document row + "View Document" | File/Button | Uploaded registration certificate | No | — |
-| 13 | "Platform Performance & Trust Accreditation" info box (read-only) | Text | Years Active, Fair Pay SLA, Hubs — computed | No | Read-only, audited quarterly |
-| 14 | Section "02. Curatorial Statement & Markets" + "AI Refine Text" | Header/Button | — | Yes | AI Refine triggers FR-007, BR-012/013 |
-| 15 | Curatorial Statement textarea | Input | `description` | No | ≤1000 chars |
-| 16 | Core Client Demographics selectable cards (3, checkbox) | Toggle | `tour_types`-adjacent classification | No | — |
-| 17 | Primary Sourcing Geographic Markets chips + "+ Add Market" | Tag list | Market list | No | — |
-| 18 | Section "04. Tour Preferences & Matchmaking Criteria" | Header | Static | Yes | — |
-| 19 | Frequently Sourced Group Sizes selectable cards (3, checkbox) | Toggle | `tour_types` attribute | No | — |
-| 20 | Preferred Experience & Service Types selectable cards (4, checkbox) | Toggle | `tour_types` attribute | No | — |
-| 21 | Target Craft Disciplines chips + "+ Add Discipline" | Tag list | `tour_types` attribute | No | — |
-| 22 | Specialized Mobility & Accessibility Request Protocol textarea | Input | Free text | No | — |
-| 23 | Section "03. Contact & Field Liaison" | Header | Static | Yes | — |
-| 24 | Lead Tour Director fields (Name*, Title, Hanoi Hotline*, Secondary Hotline, Dispatch Email*) | Input | `contact_info` | Yes for starred fields | Hotline format; email format |
-| 25 | Secondary Field Liaison fields (Name, Role, Email) | Input | `contact_info` | No | Email format |
-| 26 | Average Response Velocity SLA input | Input | SLA text | No | — |
-| 27 | "Verified Operator Badge Active" box (read-only) | Text | Compliance badge | No | — |
-| 28 | Autosave status line | Text | "Last autosaved Xm ago" | Yes | — |
-| 29 | "Discard Changes" button | Button | — | Yes | Confirms if dirty |
-| 30 | "Save Agency Profile" button | Button | — | Yes | Validates required fields; triggers HDT re-review if Company Name or Tax ID changed (BR — module spec Q6) |
+| 1 | Edit Agency Profile | Heading | Edit Agency Profile | No | Static screen title |
+| 2 | Agency id | Input | `agency_id` — F-PROFILE-02 | Yes | agency_id (ID; Required — own organization) |
+| 3 | Company name | Input | `company_name` — F-PROFILE-02 | No | company_name (String, max 255; Optional) |
+| 4 | Tax id | Input | `tax_id` — F-PROFILE-02 | No | tax_id (String, 10 or 13 numeric digits; Optional) |
+| 5 | Location | Structured input | `location` — F-PROFILE-02 | No | location (Object{street, ward, district, city_province}; Optional) |
+| 6 | Description | Input | `description` — F-PROFILE-02 | No | description (Text, max 1000; Optional) |
+| 7 | Contact info | Structured input | `contact_info` — F-PROFILE-02 | No | contact_info (Object{contact_person_name, phone_number, business_email}; Optional) |
+| 8 | Team size | Input | `team_size` — F-PROFILE-02 | No | team_size (Integer > 0; Optional) |
+| 9 | Tour types | Structured input | `tour_types` — F-PROFILE-02 | No | tour_types (Array<Enum>; Optional) |
+| 10 | Images | File input | `images` — F-PROFILE-02 | No | images (Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>; Optional) |
+| 11 | Current approved legal information | Read-only panel | F-PROFILE-02 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 12 | Pending legal-change review status | Read-only panel | F-PROFILE-02 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 13 | Save | Button / navigation | Major legal changes enter HDT review; non-major changes apply immediately | No | Enabled only when the linked permission/validation guard succeeds |
+| 14 | Discard | Button / navigation | No mutation | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Fully pre-filled form matching the saved Agency profile, as in the mockup | Editing an existing profile |
-| Empty (no data) | Optional fields (Curatorial Statement, preference chips, Secondary Liaison) render blank with placeholder guidance; required Legal Identity fields must already be filled from Registration (F-AUTH-02) so this section is never blank | First edit after registration, before any optional fields have been set |
-| Loading | Skeleton form while the profile loads; autosave indicator shows "Saving…" during background autosave; "Save Agency Profile" shows a spinner while saving | Screen opens; autosave fires; explicit save submitted |
-| Error | Inline field-level errors (required field empty, invalid email/phone format); a top banner if the save conflicts with a concurrent edit | Validation fails; save request fails |
-| Success / confirmation | Toast "Profile saved," autosave timestamp updates; if Company Name or Tax ID changed, an additional notice explains the change was submitted for HDT re-review | Save succeeds |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | "Discard Changes" | tap | Confirms, reverts unsaved edits | `PRF019` |
-| 2 | "Save Agency Profile" | tap | Validates and saves. If the change is a major change (Company Name or Tax ID), a blocking confirmation modal informs the user the changes will trigger re-review; the user must confirm before the changes are submitted for re-review | `PRF019` |
-| 3 | "AI Refine Text" | tap | Sends the curatorial statement for AI drafting (FR-007) | stays (inline) |
-| 4 | Selectable demographic/preference cards | tap | Toggles selection | stays |
-| 5 | "+ Add Market" / "+ Add Discipline" | tap | Opens a picker and adds the chip | stays |
-| 6 | Chip remove (×) | tap | Removes that market/discipline | stays |
-| 7 | "View Document" | tap | Opens the registration PDF | stays (opens file) |
+| 1 | Save | Select | Major legal changes enter HDT review; non-major changes apply immediately | PRF019 |
+| 2 | Discard | Select | No mutation | PRF019 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Only the authorized highest-level Agency user can reach and submit this form. Non-highest-level Agency staff cannot access this screen at all — it is fully inaccessible rather than read-only. | Screen List overview, module spec Q7 |
-| SR-002 | An Agency can save only its own profile. | BR-001 |
-| SR-003 | Corporate Tax ID and Inbound Operator License No. are locked/read-only in this form. | Mockup (locked badges) |
-| SR-004 | Changing Company Name or Tax ID is a major change and triggers HDT re-review. | Module spec Q6 (Closed) |
-| SR-005 | AI-refined text never auto-replaces the saved Curatorial Statement without explicit Provider/Agency acceptance. | BR-011, BR-012, BR-013 |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-002 | Allows the authorized Agency user to update its own permitted Agency profile information. |
-| FR-007 | Provides inline AI-refined drafting for the Curatorial Statement. |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| PRF | FR-002 | F-PROFILE-02 | Edit Agency Information |
 
 ## 8. Responsive and accessibility notes
 
 - Smallest supported width: 360px
 - What collapses or stacks on a narrow screen: the two-column section layout (01/02/04 main column vs. 03 sidebar) stacks to a single column; selectable-card grids drop to one card per row.
-- Text that must remain readable (contrast, minimum size): "Locked"/"VNAT Audited" tags and the read-only Platform Performance box must be visually distinguishable from editable fields (e.g., muted background) at all widths.
+- Text that must remain readable (contrast, minimum size): "Locked" tags and the read-only Platform Performance box must be visually distinguishable from editable fields (e.g., muted background) at all widths.
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | After saving a major change, a blocking confirmation modal informs the user that the changes will trigger re-review. The user must confirm before the changes are submitted for re-review. | Yes | Closed |
-| 2 | Non-highest-level Agency staff cannot access this screen. It is fully inaccessible rather than read-only. | No | Closed |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none."
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

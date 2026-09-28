@@ -4,12 +4,14 @@
 |---------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | Module ID                 | ADM                                                                                                                            |
 | Module name               | Admin Dashboard                                                                                                                |
-| Spec version              | v0.1                                                                                                                           |
+| Spec version | v0.2 — consistency revision |
 | Author (team member)      | Group G                                                                                                                        |
-| Date                      | 22/09/2026                                                                                                                     |
-| Status                    | Clarified                                                                                                                      |
-| Approved by (Client role) |                                                                                                                                |
+| Date | 28/09/2026 |
+| Status | Revised — pending human approval |
+| Approved by (Client role) | Pending human approval |
 | DBIZ2 source              | Function List rows **F-ADMIN-01 .. F-ADMIN-10**; Use Case **UC-ADM-01**; Screen ADM095, ADM117, ADM118, VER146, VER119, ADM079 |
+
+Shared actor/state/field definitions: [Consistency Contract](../docs/consistency-contract.md). Exact current Function contracts are in §5/5.1. Technical choices and unresolved field-design questions are explicitly separated there.
 
 **1. Purpose and scope (mandatory)**
 
@@ -127,145 +129,81 @@ UC-ADM-01 maps to all F-ADMIN functions.
 
 - Booking/account status values change while aggregated metrics are being calculated.
 
+### Consistency acceptance examples
+
+| AC ID | Given / When | Expected result |
+|---|---|---|
+| AC-ADM-SCOPE | UBND changes village filter request to another village | Backend rejects/forces assigned scope; no cross-village data. |
+| AC-ADM-PAIR | One Agency has10 Booked bookings with one Provider | Frequency10, distinct pair count1; these are not Total Bookings substitutes. |
+| AC-ADM-FILTER | Admin applies Agency and Provider list filters | AND intersection; permitted booking table/top pair rows refresh. |
+
 **4. Flows (mandatory)**
 
 **4.1 Usage flow**
 
-**MERMAID**
-
-> graph TD
->
-> classDef default fill:#FFFFFF,stroke:#000000,stroke-width:1.5px,color:#000000;
->
-> classDef startend fill:#FFFFFF,stroke:#000000,stroke-width:2.5px,color:#000000;
->
-> A_Start(\["0. Start: Admin (HDT & UBND)"\])
->
-> A1\["1. Access Dashboard Overview"\]
->
-> A2{"2. Data Scope Check\n(System automated)"}
->
-> A3\["3a. Load Platform-wide Data\n(HDT)"\]
->
-> A4\["3b. Load Assigned Village Data\n(UBND)"\]
->
-> A5\["4. View Overview Metric Cards"\]
->
-> A6\[/"5. Apply Filters (Time, Village, Org)"/\]
->
-> A_End(\["8. End"\])
->
-> A_Start --\> A1 --\> A2
->
-> A2 -- "Role: HDT" --\> A3 --\> A5
->
-> A2 -- "Role: UBND" --\> A4 --\> A5
->
-> A5 --\> A6 --\> A_End
->
-> class A_Start,A_End startend;
+```mermaid
+graph TD
+  A["Admin ADM079"] --> R{"admin_type"}
+  R -->|HDT| H["Platform-wide permitted filters"]
+  R -->|UBND| U["Fixed assigned village"]
+  H --> D["Load cards/charts/trend/booking list/top10 pairs"]
+  U --> D
+  D --> F["Change filters → refresh permitted metrics"]
+  F --> D
+  A --> M["ADM095 account management"]
+```
 
 **4.2 Sequence for the main flow**
 
-**MERMAID**
-
+```mermaid
 sequenceDiagram
-
-title Module 6: Admin Dashboard
-
-actor Admin
-
-participant Frontend
-
-participant Backend
-
-participant Database
-
-Note over Admin, Database: UC-ADM-01: View Dashboard
-
-Admin-\>\>Frontend: Open Admin Dashboard
-
-activate Admin
-
-activate Frontend
-
-Frontend-\>\>Backend: getDashboardOverview()
-
-activate Backend
-
-Backend-\>\>Database: getDashboardOverview()
-
-activate Database
-
-Database--\>\>Backend: dashboardOverview
-
-deactivate Database
-
-Backend--\>\>Frontend: dashboardOverview
-
-Frontend--\>\>Admin: Display Dashboard Overview
-
-deactivate Backend
-
-deactivate Frontend
-
-deactivate Admin
+    actor Admin
+    participant UI as ADM079
+    participant API as Backend
+    participant DB as Database
+    Note over Admin,UI: UC-ADM-01; one actor ADMIN, subtype HDT/UBND
+    Admin->>UI: Select time/village/Agency/Provider filters
+    UI->>API: loadDashboardMetrics (F-ADMIN-01..10)
+    API->>API: Check ADMIN and admin_type; force assigned village for UBND
+    alt Unauthorized scope or invalid date range
+        API-->>UI: Permission/validation error; no unauthorized data
+    else Permitted scope
+        API->>DB: Aggregate account status, profile status, activity, bookings and distinct pairs
+        DB-->>API: Scoped metrics, booking trend/list, top10 collaboration pairs
+        API-->>UI: Four cards, charts, result tables and filters
+        Note over UI: No invented drill-down; metric tables read-only
+    end
+```
 
 **5. Functional requirements (mandatory)**
 
-| **FR ID**  | **DBIZ2 Subfunction ID** | **Requirement (system MUST ...)**                                                              | **Actor**        | **Priority** |
-|------------|--------------------------|------------------------------------------------------------------------------------------------|------------------|--------------|
-| **FR-001** | F-ADMIN-01               | Display the Admin Dashboard using a role-specific layout and scope for HDT and UBND.           | System           | Must         |
-| **FR-002** | F-ADMIN-02               | Load and aggregate Dashboard metrics according to role, scope and active filters.              | System           | Must         |
-| **FR-003** | F-ADMIN-03               | Display summary metric cards for Agencies, Providers, Bookings and active collaborations.      | System           | Must         |
-| **FR-004** | F-ADMIN-04               | Apply a time-period filter across applicable Dashboard metrics.                                | HDT / UBND Admin | Should       |
-| **FR-005** | F-ADMIN-05               | Allow HDT to filter by village while keeping UBND fixed to its assigned village.               | HDT / UBND Admin | Must         |
-| **FR-006** | F-ADMIN-06               | Filter Dashboard lists by permitted Agency and/or Provider selections.                         | HDT / UBND Admin | Should       |
-| **FR-007** | F-ADMIN-07               | Display Agency registration/status and activity metrics within the Admin's permitted scope.    | HDT / UBND Admin | Must         |
-| **FR-008** | F-ADMIN-08               | Display Provider status, verification and activity metrics within the Admin's permitted scope. | HDT / UBND Admin | Must         |
-| **FR-009** | F-ADMIN-09               | Display Booking status, trend and Booking-list metrics within the Admin's permitted scope.     | HDT / UBND Admin | Must         |
-| **FR-010** | F-ADMIN-10               | Display Agency–Provider collaboration-frequency metrics within the Admin's permitted scope.    | HDT / UBND Admin | Should       |
+| FR ID | Function List ID | Requirement — system MUST | Actor | Priority |
+|---|---|---|---|---|
+| FR-001 | F-ADMIN-01 | Load and display main dashboard interface with metric cards, charts, and filters. Layout adapts based on user role: HDT sees platform-wide view with all controls enabled. UBND sees own village view with village filter pre-set and grayed out. Dashboard shows: summary cards (agency count, provider count, booking count), charts (booking status breakdown, collaboration frequency), and filter panel. | System | Must |
+| FR-002 | F-ADMIN-02 | Query and aggregate all metrics data based on user role and filter criteria. Calls backend APIs to fetch: Agency counts + status breakdown, Provider counts by village + status breakdown, Booking counts by status, Collaboration data (agency-provider pairs). HDT fetches platform-wide data. UBND fetches data for assigned village only (scoped query). | System | Must |
+| FR-003 | F-ADMIN-03 | Display summary metric cards at the top of the Dashboard:<br><br>Total Agencies<br>Total Providers<br>Total Bookings<br>Active Collaborations<br><br>Each card shows headline value, optional trend versus the comparable previous period, and a supporting sub-label.<br>Active Collaboration = one unique Agency–Provider pair having at least one Booking currently in On hold or Booked status within the selected reporting scope.<br><br>Comparable previous period = the immediately preceding period with the same number of calendar days as the selected current period. | System | Must |
+| FR-004 | F-ADMIN-04 | Apply time period filter to all dashboard metrics. Filter options: Last 7 days, Last 30 days, Last 90 days, Last year, Custom date range. When filter applied → all metrics recalculate and charts update. Default: Last 30 days. | Admin HDT/UBND | Should |
+| FR-005 | F-ADMIN-05 | Apply village filter to relevant metrics. HDT can select any village or "All Villages". UBND has village pre-set to assigned village (cannot change). When filter applied → metrics for selected village update. Affects: Provider counts, Booking data, Collaboration data. | Admin HDT/UBND | Must |
+| FR-006 | F-ADMIN-06 | Apply Agency or Provider filter to metric result tables/lists. HDT can select any Agency/Provider. UBND can select Providers in own village or Agencies that interacted with own village. When filter applied → metric lists (booking list, collaboration pairs) update. Supports search/autocomplete for quick selection.<br><br>Agency and Provider filters may be applied independently or together. When both are selected, the filters are combined using AND and the result contains only records involving the selected Agency–Provider pair. | Admin HDT/UBND | Should |
+| FR-007 | F-ADMIN-07 | Display Agency account-status breakdown using the canonical statuses: Pending Approval, Approved, Rejected and Disabled. Separately display Agency activity metrics for Agencies with relevant bookings/interactions during the selected reporting period. Metric rows/charts are read-only in MVP; no drill-down/clickable-row navigation is required. | Admin HDT/UBND | Must |
+| FR-008 | F-ADMIN-08 | Display Provider account-status and profile-verification metrics separately by village. Account status uses Active / Disabled. Profile verification uses Draft / Pending Verification / Verified / Revision Required. Also display Provider activity distribution by craft type and other defined activity dimensions. Metric rows/charts are read-only in MVP; no drill-down/clickable-row navigation is required. | Admin HDT/UBND | Must |
+| FR-009 | F-ADMIN-09 | Display: (1) Booking status breakdown (On hold, Booked, Completed, Cancelled) with counts + percentages as stacked bar/donut chart. (2) Booking count trend line over selected time period (daily/weekly/monthly granularity) as line chart. (3) Booking list table matching filter criteria with sortable columns (Date, Agency, Provider, Experience, Status, Price). All metrics scoped by time period, village. HDT platform-wide, UBND own village only.<br><br>Trend granularity is derived automatically from the selected date range:<br>- 1–31 days: Daily<br>- 32–180 days: Weekly<br>- more than 180 days: Monthly. | Admin HDT/UBND | Must |
+| FR-010 | F-ADMIN-10 | Display Agency–Provider collaboration frequency as a ranked list of the top 10 collaborating pairs. Each row shows Agency name, Provider name, Booking count and last collaboration date. Collaboration frequency counts Booked and Completed Bookings only; On hold and Cancelled Bookings do not contribute to the collaboration count. The list may be sorted by Frequency or Recency. HDT sees platform-wide collaboration data; UBND sees only collaborations involving Local Providers within its assigned village. | Admin HDT/UBND | Should |
 
 **5.1 Input / Output contract**
 
-| **FR ID**  | **Input field(s)**         | **Type**            | **Required** | **Output field(s)**   | **Type**                   | **Notes / validation**                               |
-|------------|----------------------------|---------------------|--------------|-----------------------|----------------------------|------------------------------------------------------|
-| **FR-001** | role                       | Enum\[HDT, UBND\]   | Yes          | dashboard_view        | UI View                    | Layout/scope depends on role.                        |
-|            | assigned_village_id        | ID                  | No           |                       |                            | Required for UBND context.                           |
-| **FR-002** | role                       | Enum\[HDT, UBND\]   | Yes          | metrics               | Object                     | Aggregated by role/scope.                            |
-|            | assigned_village_id        | ID                  | No           |                       |                            | UBND only.                                           |
-|            | date_from, date_to         | Date                | No           |                       |                            | Default last 30 days.                                |
-|            | village_id                 | ID                  | No           |                       |                            | HDT may choose; UBND fixed.                          |
-|            | agency_id                  | ID                  | No           |                       |                            | Optional filter.                                     |
-|            | provider_id                | ID                  | No           |                       |                            | Optional filter.                                     |
-| **FR-003** | metrics                    | Object              | Yes          | metric_cards          | Array<Object>              | Active Collaboration = one unique Agency–Provider pair having at least one Booking currently in On hold or Booked status within the selected reporting scope. Comparable previous period = the immediately preceding period with the same number of calendar days as the selected period. |
-|            |                            |                     |              | label                 | Enum\[Total Agencies, Total Providers, Total Bookings, Active Collaborations\] | Required for each card. |
-|            |                            |                     |              | value                 | Integer                    | Required for each card.                              |
-|            |                            |                     |              | trend_pct             | Decimal                    | Optional — omitted when no comparable previous period exists. |
-|            |                            |                     |              | trend_direction       | Enum\[Up, Down, Flat\]     | Optional.                                            |
-|            |                            |                     |              | sub_label             | String                     | Required for each card.                              |
-| **FR-004** | period_preset              | Enum                | Yes          | filtered_metrics      | Object                     | Default Last 30 days.                                |
-|            | start_date, end_date       | Date                | No           |                       |                            | Required for Custom range.                           |
-| **FR-005** | village_id                 | ID                  | No           | filtered_metrics      | Object                     | null = All Villages for HDT; fixed village for UBND. |
-|            | time_filter                | Object              | Yes          |                       |                            | —                                                    |
-| **FR-006** | agency_id                  | ID                  | No           | filtered_lists        | Object                     | Includes Booking list and collaboration pairs.       |
-|            | provider_id                | ID                  | No           |                       |                            | Agency and Provider filters may be applied independently or together; when both are provided, they are combined using AND and only records involving the selected Agency–Provider pair are returned. |
-|            | search_query               | String              | No           |                       |                            | Used for autocomplete.                               |
-| **FR-007** | agency_status_breakdown    | Map<Enum\[Pending Approval, Approved, Rejected, Disabled\], Integer> | Yes | status_chart_data | Array | Uses the canonical Agency account statuses. |
-|            | activity_data              | Array               | Yes          | activity_distribution | Array                      | Agency is Active when it performs at least one Request Quote, Chat action, or participates in at least one Booking during the selected reporting period. |
-|            |                            |                     |              | active_agency_count   | Integer                    | —                                                    |
-|            |                            |                     |              | trend_pct             | Decimal                    | Optional.                                            |
-| **FR-008** | provider_account_status_by_village | Array<Object{village_id, account_status: Enum\[Active, Disabled\], count}> | Yes | account_status_village_matrix | Array<Object> | Account status is reported separately from profile verification status. |
-|            | provider_verification_status_by_village | Array<Object{village_id, verification_status: Enum\[Draft, Pending Verification, Verified, Revision Required\], count}> | Yes | verification_status_village_matrix | Array<Object> | Uses the canonical Provider verification statuses. |
-|            | activity_data              | Array<Object>       | Yes          | activity_distribution | Array<Object{craft_type, activity_type: Enum\[Quote Request, Chat, Booking\], count}> | Provider activity is reported by craft type and activity type. |
-|            |                            |                     |              | active_provider_count | Integer                    | Provider with at least one Quote Request received, Chat interaction, or Booking during the selected reporting period. |
-|            |                            |                     |              | booking_count         | Integer                    | —                                                    |
-| **FR-009** | status_counts              | Map<Enum,Integer>   | Yes          | status_chart_data     | Array                      | Statuses: On hold / Booked / Completed / Cancelled.  |
-|            | time_series                | Array               | Yes          | trend_chart_data      | Array                      | Granularity is derived automatically: 1–31 days = Daily; 32–180 days = Weekly; more than 180 days = Monthly. |
-|            | booking_records            | Array               | Yes          | booking_table         | Array                      | Date, Agency, Provider, Experience, Status, Price.   |
-| **FR-010** | collaboration_data         | Array<Object{agency_id, provider_id, booking_count}> | Yes | top_pairs | Array<Object{agency_name, provider_name, booking_count, last_date}> | booking_count includes Booked and Completed Bookings only; On hold and Cancelled do not count. Maximum 10 pairs. |
-|            |                            |                     |              | sort_by               | Enum\[Frequency, Recency\] | Required.                                            |
-|            |                            |                     |              | visualization_type    | Enum\[Ranked List\]        | Required — MVP.                                      |
+| FR ID | Input fields and validation | Required | Output fields | Notes |
+|---|---|---|---|---|
+| FR-001 | role (Enum[ADMIN]; Required — from session)<br>admin_type (Enum[HDT, UBND]; Required — from session)<br>assigned_village_id (ID; Optional — UBND only) | As specified per field | dashboard_view (UI View; Required — role-specific layout) | Same contract as F-ADMIN-01; optional fields are not required. |
+| FR-002 | role (Enum[ADMIN]; Required — from session)<br>admin_type (Enum[HDT, UBND]; Required — from session)<br>assigned_village_id (ID; Optional — UBND only)<br>date_from, date_to (Date; Optional — default last 30 days)<br>village_id (ID; Optional)<br>agency_id (ID; Optional)<br>provider_id (ID; Optional) | As specified per field | metrics (Object; Required), with:<br>- agency_counts_by_status (Map<Enum, Integer>; Required)<br>- provider_counts_by_village_and_status (Array<Object>; Required)<br>- booking_counts_by_status (Map<Enum, Integer>; Required)<br>- collaboration_pairs (Array<Object>; Required) | Same contract as F-ADMIN-02; optional fields are not required. |
+| FR-003 | metrics (Object; Required) | As specified per field | metric_cards (Array<Object>; Required), each with:<br>- label (Enum[Total Agencies, Total Providers, Total Bookings, Active Collaborations]; Required)<br>- value (Integer; Required)<br>- trend_pct (Decimal; Optional — none without a comparable previous period)<br>- trend_direction (Enum[Up, Down, Flat]; Optional)<br>- sub_label (String; Required) | Same contract as F-ADMIN-03; optional fields are not required. |
+| FR-004 | period_preset (Enum[Last 7 days, Last 30 days, Last 90 days, Last year, Custom]; Required — default Last 30 days)<br>start_date (Date; Optional — Custom only)<br>end_date (Date; Optional — Custom only) | As specified per field | filtered_metrics (Object; Required) | Same contract as F-ADMIN-04; optional fields are not required. |
+| FR-005 | village_id (ID; Optional — null means All Villages for HDT; fixed to the assigned village for UBND)<br>time_filter (Object; Required) | As specified per field | filtered_metrics (Object; Required) | Same contract as F-ADMIN-05; optional fields are not required. |
+| FR-006 | agency_id (ID; Optional)<br><br>provider_id (ID; Optional)<br><br>search_query (String; Optional — autocomplete) | As specified per field | filtered_lists (Object{booking_list, collaboration_pairs}; Required) | Same contract as F-ADMIN-06; optional fields are not required. |
+| FR-007 | agency_status_breakdown (Map<Enum[Pending Approval, Approved, Rejected, Disabled], Integer>; Required)<br>activity_data (Array<Object>; Required — an Agency is Active when it performs at least one Request Quote, Chat action, or participates in at least one Booking during the selected reporting period) | As specified per field | status_chart_data (Array<Object{status, count, pct}>; Required)<br><br>activity_distribution (Array<Object>; Required)<br><br>active_agency_count (Integer; Required)<br><br>trend_pct (Decimal; Optional) | Same contract as F-ADMIN-07; optional fields are not required. |
+| FR-008 | provider_account_status_by_village (Array<Object{village_id, account_status: Enum[Active, Disabled], count}>; Required)<br>provider_verification_status_by_village (Array<Object{village_id, verification_status: Enum[Draft, Pending Verification, Verified, Revision Required], count}>; Required)<br>activity_data (Array<Object>; Required) | As specified per field | account_status_village_matrix (Array<Object>; Required)<br><br>verification_status_village_matrix (Array<Object>; Required)<br><br>activity_distribution (Array<Object{<br>  craft_type,<br>  activity_type: Enum[Quote Request, Chat, Booking],<br>  count<br>}>; Required)<br><br>active_provider_count (Integer; Required — Provider with at least one Quote Request received, Chat interaction, or Booking during the selected reporting period)<br><br>booking_count (Integer; Required) | Same contract as F-ADMIN-08; optional fields are not required. |
+| FR-009 | status_counts (Map<Enum[On hold, Booked, Completed, Cancelled], Integer>; Required)<br>time_series (Array<Object{period_start: Date, count: Integer}>; Required — granularity derived from the selected date range)<br>booking_records (Array<Object>; Required) | As specified per field | status_chart_data (Array<Object{status, count, pct}>; Required)<br>trend_chart_data (Array<Object{period_start, count}>; Required)<br>booking_table (Array<Object{date, agency_name, provider_name, experience_name, status, price}>; Required) | Same contract as F-ADMIN-09; optional fields are not required. |
+| FR-010 | collaboration_data (Array<Object{<br>  agency_id,<br>  provider_id,<br>  booking_count<br>}>; Required — booking_count includes Booked and Completed Bookings only; On hold and Cancelled do not count as completed collaboration activity) | As specified per field | top_pairs (Array<Object{<br>  agency_name,<br>  provider_name,<br>  booking_count,<br>  last_date<br>}>; Required — maximum 10 pairs)<br><br>sort_by (Enum[Frequency, Recency]; Required)<br><br>visualization_type (Enum[Ranked List]; Required — MVP) | Same contract as F-ADMIN-10; optional fields are not required. |
 
 **5.2 Business rules**
 
@@ -307,16 +245,9 @@ deactivate Admin
 
 **7. Screens involved**
 
-| **Screen ID** | **Screen name**          | **Priority** | **Screen Spec file**          |
-|---------------|--------------------------|--------------|-------------------------------|
-| **ADM095**    | User Management          | Must         | screens/screen-spec-ADM095.md |
-| **ADM117**    | Create Account           | Must         | screens/screen-spec-ADM117.md |
-| **ADM118**    | View Account Information | Must         | screens/screen-spec-ADM118.md |
-| **VER146**    | View Submitted Profile   | Must         | screens/screen-spec-VER146.md |
-| **VER119**    | Account Information      | Must         | screens/screen-spec-VER119.md |
-| **ADM079**    | Admin Dashboard          | Must         | screens/screen-spec-ADM079.md |
-
-ADM079 is the primary Admin Dashboard screen. ADM095, ADM117, ADM118, VER146 and VER119 are related Admin screens involved in the broader Admin journey but their account-management and verification behaviors are specified under the Authentication / Profile Management modules.
+| Screen ID | Screen name | Functions in this module |
+|---|---|---|
+| ADM079 | Admin Dashboard | F-ADMIN-01, F-ADMIN-02, F-ADMIN-03, F-ADMIN-04, F-ADMIN-05, F-ADMIN-06, F-ADMIN-07, F-ADMIN-08, F-ADMIN-09, F-ADMIN-10 |
 
 **8. Success criteria (mandatory)**
 
@@ -347,7 +278,7 @@ ADM079 is the primary Admin Dashboard screen. ADM095, ADM117, ADM118, VER146 and
 
 - F-ADMIN-03 references drill-down behavior in older wording, but drill-down/entity-detail functionality is not treated as part of this module because no F-ADMIN-11/12 exists.
 
-- The current Admin Sequence Diagram only represents initial dashboard loading.
+- The current Admin sequence includes scoped filter updates and all metric outputs.
 
 - The current Usage Flow is broader than this module and includes Account Management/Profile/Booking monitoring steps belonging partly to other modules.
 
@@ -357,32 +288,32 @@ ADM079 is the primary Admin Dashboard screen. ADM095, ADM117, ADM118, VER146 and
 
 | **\#** | **Question**                                                                                                                                                                   | **Blocking?** | **Owner**  | **Status** | **Answer/Question**                                                                                                                                         |
 |--------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1      | What exactly defines an **Active Agency** in F-ADMIN-03/F-ADMIN-07?                                                                                                            | **Yes**       | BA         | Closed     | An Agency that performs at least one Request Quote, Chat action, or participates in at least one Booking during the selected reporting period. |
-| 2      | F-ADMIN-07 uses Agency statuses Pending, Approved, Active, Disabled, but Authentication uses Pending Approval, Approved, Rejected, Disabled. Which status set is canonical?    | **Yes**       | BA         | Closed     | The Authentication set is canonical: Pending Approval, Approved, Rejected, Disabled.                                                                        |
-| 3      | Should Rejected Agencies appear in Agency metrics?                                                                                                                             | **Yes**       | BA         | Closed     | Rejected remains part of the canonical account-status breakdown. No separate exclusion from activity metrics is defined by the current Function List. |
-| 4      | Does “Active Agency” mean account status or recent Booking/interaction activity?                                                                                               | **Yes**       | BA         | Closed     | It refers to recent interaction activity (Bookings/Chats), not just the account status.                                                                     |
-| 5      | Provider metrics mention verified vs unverified, while Profile Management uses Pending Verification / Verified / Revision Required. Which categories should Dashboard display? | **Yes**       | BA         | Closed     | Use the Profile Management set: Draft, Pending Verification, Verified, and Revision Required. |
-| 6      | How should Provider capacity be grouped in activity distribution?                                                                                                              | No            | BA         | Closed     | Superseded / not used in the current Function List. Provider activity distribution is reported by craft_type and activity_type [Quote Request, Chat, Booking]. |
-| 7      | Can Agency and Provider filters be applied simultaneously in F-ADMIN-06?                                                                                                       | No            | BA / UI    | Closed     | Yes. Agency and Provider filters may be used independently or together. When both are selected, they are combined using AND and only records involving the selected Agency–Provider pair are returned. |
-| 8      | How are autocomplete results scoped for UBND Agency/Provider filters?                                                                                                          | No            | BA         | Closed     | Scoped strictly to Providers within the assigned village and Agencies that have historically interacted with them.                                          |
-| 9      | For Booking trend charts, is daily/weekly/monthly granularity user-selected or derived automatically from date range?                                                          | No            | UI/UX / BA | Closed     | Derived automatically: 1–31 days = Daily; 32–180 days = Weekly; more than 180 days = Monthly. |
-| 10     | Which Booking statuses count as an Agency–Provider **collaboration** in F-ADMIN-10?                                                                                            | **Yes**       | BA         | Closed     | Booked and Completed. On hold and Cancelled do not count toward F-ADMIN-10 collaboration frequency. |
-| 11     | Is a Quote/Chat without a Booking considered a collaboration?                                                                                                                  | **Yes**       | BA         | Closed     | No. Only actual Bookings count as a collaboration for these metrics.                                                                                        |
-| 12     | Should F-ADMIN-10 show top 10, top 20, or a configurable number of pairs?                                                                                                      | No            | UI/UX      | Closed     | Top 10 pairs.                                                                                                                                               |
-| 13     | Which visualization is used for Collaboration Metrics in MVP: heatmap, network graph or ranked list?                                                                           | No            | UI/UX      | Closed     | Ranked list (simplest and most effective for MVP).                                                                                                          |
-| 14     | F-ADMIN-03 and F-ADMIN-07 mention clickable/drill-down rows while entity drill-down is outside current F-ADMIN scope. Should clickability be removed?                          | **Yes**       | BA / UI    | Closed     | Yes, remove clickability. Entity drill-down is out of scope for the MVP dashboard.                                                                          |
-| 15     | Does F-ADMIN-09 Booking list open a read-only monitoring summary, remain non-clickable, or link to another existing screen?                                                    | **Yes**       | BA / UI    | Closed     | Remain non-clickable. It acts strictly as a read-only monitoring summary list.                                                                              |
-| 16     | What exactly qualifies as “account activity” mentioned in ADM079 Screen Overview?                                                                                              | No            | BA         | Closed     | Logins, profile updates, and booking/chat initiations.                                                                                                      |
-| 17     | F-ADMIN-02 defaults to Last 30 days. Are all-time counts in F-ADMIN-03 exempt from that filter, or should every card respect the period?                                       | **Yes**       | BA         | Closed     | Every card must respect the selected time period filter to ensure data consistency across the dashboard.                                                    |
-| 18     | How is “Active Collaborations” on the metric card defined?                                                                                                                     | **Yes**       | BA         | Closed     | The number of unique Agency–Provider pairs that have at least one On hold or Booked Booking in the selected reporting scope. |
-| 19     | Should Provider activity count Chat interactions, Bookings, or both? F-ADMIN-08 mentions both.                                                                                 | **Yes**       | BA         | Closed     | Quote Request, Chat and Booking are separate Provider activity types. A Provider is Active when at least one of these activities occurs during the selected reporting period. |
-| 20     | Should the Module 6 Sequence Diagram be expanded to include filters and F-ADMIN-07–10 metric retrieval?                                                                        | No            | BA         | Closed     | No. Treat filter updates and metric retrieval as standard background data fetches and document them via text to avoid cluttering the sequence diagram.      |
+| 1 | What exactly defines an **Active Agency** in F-ADMIN-03/F-ADMIN-07? | No | BA | Closed | An Agency that performs at least one Request Quote, Chat action, or participates in at least one Booking during the selected reporting period. |
+| 2 | F-ADMIN-07 uses Agency statuses Pending, Approved, Active, Disabled, but Authentication uses Pending Approval, Approved, Rejected, Disabled. Which status set is canonical? | No | BA | Closed | The Authentication set is canonical: Pending Approval, Approved, Rejected, Disabled. |
+| 3 | Should Rejected Agencies appear in Agency metrics? | No | BA | Closed | Rejected remains part of the canonical account-status breakdown. No separate exclusion from activity metrics is defined by the current Function List. |
+| 4 | Does “Active Agency” mean account status or recent Booking/interaction activity? | No | BA | Closed | It refers to recent interaction activity (Bookings/Chats), not just the account status. |
+| 5 | Provider metrics mention verified vs unverified, while Profile Management uses Pending Verification / Verified / Revision Required. Which categories should Dashboard display? | No | BA | Closed | Use the Profile Management set: Draft, Pending Verification, Verified, and Revision Required. |
+| 6 | How should Provider capacity be grouped in activity distribution? | No | BA | Closed | Superseded / not used in the current Function List. Provider activity distribution is reported by craft_type and activity_type [Quote Request, Chat, Booking]. |
+| 7 | Can Agency and Provider filters be applied simultaneously in F-ADMIN-06? | No | BA / UI | Closed | Yes. Agency and Provider filters may be used independently or together. When both are selected, they are combined using AND and only records involving the selected Agency–Provider pair are returned. |
+| 8 | How are autocomplete results scoped for UBND Agency/Provider filters? | No | BA | Closed | Scoped strictly to Providers within the assigned village and Agencies that have historically interacted with them. |
+| 9 | For Booking trend charts, is daily/weekly/monthly granularity user-selected or derived automatically from date range? | No | UI/UX / BA | Closed | Derived automatically: 1–31 days = Daily; 32–180 days = Weekly; more than 180 days = Monthly. |
+| 10 | Which Booking statuses count as an Agency–Provider **collaboration** in F-ADMIN-10? | No | BA | Closed | Booked and Completed. On hold and Cancelled do not count toward F-ADMIN-10 collaboration frequency. |
+| 11 | Is a Quote/Chat without a Booking considered a collaboration? | No | BA | Closed | No. Only actual Bookings count as a collaboration for these metrics. |
+| 12 | Should F-ADMIN-10 show top 10, top 20, or a configurable number of pairs? | No | UI/UX | Closed | Top 10 pairs. |
+| 13 | Which visualization is used for Collaboration Metrics in MVP: heatmap, network graph or ranked list? | No | UI/UX | Closed | Ranked list (simplest and most effective for MVP). |
+| 14 | F-ADMIN-03 and F-ADMIN-07 mention clickable/drill-down rows while entity drill-down is outside current F-ADMIN scope. Should clickability be removed? | No | BA / UI | Closed | Yes, remove clickability. Entity drill-down is out of scope for the MVP dashboard. |
+| 15 | Does F-ADMIN-09 Booking list open a read-only monitoring summary, remain non-clickable, or link to another existing screen? | No | BA / UI | Closed | Remain non-clickable. It acts strictly as a read-only monitoring summary list. |
+| 16 | What exactly qualifies as “account activity” mentioned in ADM079 Screen Overview? | No | BA | Closed | Logins, profile updates, and booking/chat initiations. |
+| 17 | F-ADMIN-02 defaults to Last 30 days. Are all-time counts in F-ADMIN-03 exempt from that filter, or should every card respect the period? | No | BA | Closed | Every card must respect the selected time period filter to ensure data consistency across the dashboard. |
+| 18 | How is “Active Collaborations” on the metric card defined? | No | BA | Closed | The number of unique Agency–Provider pairs that have at least one On hold or Booked Booking in the selected reporting scope. |
+| 19 | Should Provider activity count Chat interactions, Bookings, or both? F-ADMIN-08 mentions both. | No | BA | Closed | Quote Request, Chat and Booking are separate Provider activity types. A Provider is Active when at least one of these activities occurs during the selected reporting period. |
+| 20 | Should the Module 6 Sequence Diagram be expanded to include filters and F-ADMIN-07–10 metric retrieval? | No | BA | Closed | Yes. Current sequence includes scoped filter requests, metrics, booking trend/list and top10 pairs. |
 
 **11. Traceability to DBIZ2**
 
 | **Spec section**               | **DBIZ2 source**           | **Location**                                                                                                                                                   |
 |--------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic, sections 1.1 System Objectives and 1.2 System Main Functions – Admin Dashboard**                                                            |
+| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic1, sections 1.1 System Objectives and 1.2 System Main Functions – Admin Dashboard**                                                            |
 | **4.1 Usage flow**             | Usage Flow figure          | **sheet Schematic2, Admin flow: “View Admin Dashboard” → “Role == HDT?” → Admin actions → “View all Profiles (Read-only Mode)” → “View all Booking Statuses”** |
 | **4.2 Sequence**               | Sequence Diagram figure    | **sheet Schematic2, Module 6: Admin Dashboard – UC-ADM-01 View Dashboard**                                                                                     |
 | **5. Functional requirements** | Function List              | **sheet FL&Cost1, F-ADMIN-01 .. F-ADMIN-10**                                                                                                                   |

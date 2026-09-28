@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` |
 | Mockup image | `img/PAS014.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** The user successfully submits their email on the Enter Registered Email screen.
+Confirmation screen after email submission. Message: "We've sent a password reset link to your email. Please check your inbox and follow the link within 15 minutes. Didn't receive it? Check spam or request a new link." Includes: "Resend Link" button, "Back to Login" link.
 
-**The user leaves this screen when:** They click the reset link in their email (external, lands on PAS142), click "I have the link — Continue", or click "Use a different email".
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,46 +24,43 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Left panel branding | Text | "HANOI ARTISAN BRIDGE", "Administration Portal", tagline "Account recovery.", version stamp | No | — |
-| 2 | Step indicator (1–4) | Stepper | Step 2 "Check email" active | No | — |
-| 3 | Icon | Image | Envelope/mail glyph | No | — |
-| 4 | Heading | Text | "Check your email" | No | — |
-| 5 | Subheading | Text | "We sent a password reset link to" | No | — |
-| 6 | Submitted email | Text | The email the user entered on PAS011 | No | — |
-| 7 | Info box | Text | "Click the link in the email to continue. The link expires in 30 minutes. Check your spam folder if you don't see it." | No | — |
-| 8 | I have the link — Continue | Button (primary) | Proceeds as if the reset link was opened | No | — |
-| 9 | Use a different email | Link | Returns to email entry | No | — |
+| 1 | Check Your Email | Heading | Check Your Email | No | Static screen title |
+| 2 | If an account exists, a reset link has been sent | Read-only panel | F-AUTH-11 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 3 | Back to login | Button / navigation | No demo Continue-to-reset action | No | Enabled only when the linked permission/validation guard succeeds |
+| 4 | Resend | Button / navigation | Apply same rate limit; reset page is reached only from valid email token link | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Confirmation screen with the submitted email address shown, as in mockup | Screen load right after PAS011 submission |
-| Empty (no data) | Not applicable — the submitted email is always present, having come from the prior screen | N/A |
-| Loading | Not applicable on initial load; if "Resend"/"Continue" triggers a request, that button shows a spinner while pending | User taps a button that triggers a network call |
-| Error | Banner "Could not resend the email, please try again" if resend fails | Resend action fails server-side |
-| Success / confirmation | This screen is itself a confirmation state; "I have the link — Continue" proceeds to Set New Password | User has clicked the emailed link or the Continue button |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | I have the link — Continue | tap | Advances the flow (in a real flow, this is normally reached by clicking the emailed link with a reset token) | `PAS142` |
-| 2 | Use a different email | tap | Returns to email entry to correct/resubmit | `PAS011` |
+| 1 | Back to login | Select | No demo Continue-to-reset action | AUT009 |
+| 2 | Resend | Select | Apply same rate limit; reset page is reached only from valid email token link | PAS011 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | The reset link is time-limited (30 minutes per the info box) | Mockup body text |
-| SR-002 | The real trigger to reach PAS142 is normally the emailed link (with a token), not the in-app Continue button — the Continue button on this mockup is a convenience/demo path | Screen List describes PAS142 as reached via "reset link from email" |
-| SR-003 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | This confirmation is not authorization to reset. PAS142 is reachable from the email token link, not a demo button. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-PAS-02 | Confirms the reset email was sent and sets expectations on next steps |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-011 | F-AUTH-11 | Validate email, generate token & send recovery email |
 
 ## 8. Responsive and accessibility notes
 
@@ -71,19 +68,14 @@
 - What collapses or stacks on a narrow screen: dark branding panel stacks above the content
 - Text that must remain readable (contrast, minimum size): info box text ≥13px, sufficient contrast on light gray background
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Is there a visible "Resend Link" action on this screen, per the original Screen List description, or only "I have the link — Continue" / "Use a different email" as shown in this mockup? | Yes | Resolved — no "Resend Link" action on this screen; only "I have the link — Continue" and "Use a different email" (per element inventory §3) |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

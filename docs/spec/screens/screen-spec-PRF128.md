@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-PRF.md` |
 | Mockup image | `img/PRF128.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** A Local Provider taps "Edit Provider Profile" on PRF127 to edit its own business information, using the same field structure as Provider Profile, with inline AI Refine for the description.
+Allows a Local Provider to edit its own business information. Uses the same field structure as Provider Profile, with inline AI Refine for the description.
 
-**The user leaves this screen when:** The Provider discards changes or saves the profile.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,79 +24,61 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Breadcrumb (Home / Provider Portal / Edit Workshop Profile) + "Mode: Interactive Edit Profile" | Navigation | Static | Yes | — |
-| 2 | Verified guild badge + registry ID | Text | `verification_status`, Village registry ID | Yes | — |
-| 3 | Page title "Edit Provider Profile" + subtitle | Header | Static | Yes | — |
-| 4 | "Cancel / Discard" button | Button | — | Yes | Confirms if dirty |
-| 5 | "Save Changes" button (top) | Button | — | Yes | Validates required fields |
-| 6 | Section "01 Core Workshop Identity & Master Artisan" | Header | Static | Yes | — |
-| 7 | Workshop / Enterprise Legal Name input | Input | `business_name` | Yes | ≤255 chars; a change here counts as a major change (module spec Q16) |
-| 8 | Master Artisan Name input | Input | `artisan_names` | No | — |
-| 9 | Generation & Guild Title input | Input | Free text | No | — |
-| 9a | "AI Refine" action on long-form Description field | Button | Triggers FR-007 draft, inline within the Description field | No | AI Refinement is available directly within the field via this action; no separate screen is required (module spec Q, Closed). Draft must be explicitly Accepted/Edited before it replaces the field (BR-012, BR-013) |
-| 10 | Affiliated Craft Village Guild field — locked | Input | `Village` reference | Yes | Read-only, Locked/Certified |
-| 11 | Establishment Year input | Input | Establishment year | No | — |
-| 12 | Private Group Capacity (B2B) input | Input | B2B capacity | No | — |
-| 13 | Craft Specialties & Search Tags chips + "+ Add Specialty" | Tag list | `craft_type` / specialty tags | No | Enum per module spec Q9 for `craft_type`; free specialty tags TBD |
-| 14 | Master Artisan Archival Photo upload | Image upload | `Profile Image` (portrait) | Yes | Min 1200×900px; JPG/JPEG/PNG/WEBP, max 10MB (BR-008) |
-| 15 | "Replace" / "Remove" buttons (photo) | Button | — | Yes | — |
-| 16 | Guild Status dropdown | Input | Enum (e.g. Founding Member) | No | — |
-| 17 | Dispatch Coordination field | Input | Dispatch access text | No | — |
-| 18 | Section "02 Workshop Facilities & Capacity Specifications" — 3 cards (Station Apparatus, Studio & Gallery Area, Kiln Specification), each with title/detail/metric fields | Input | Facility attributes | No | — |
-| 19 | Section "03 Architectural Grounds & Facility Gallery" — drag & drop dropzone + "Browse Files from Computer" | Image upload | `Profile Image` array (min 6, up to 12) | Yes (at least 6 photos) | PNG/JPG/WebP, up to 15MB each, recommended 21:9 or 16:9 |
-| 20 | Gallery thumbnail tiles (6) with Edit/Remove links and a "Cover" tag on one tile | Image upload | `Profile Image` array | Yes | The Architectural Grounds & Facility Gallery requires a minimum of 6 photos and allows up to 12 photos (module spec, Closed) |
-| 21 | Section "04 Offered Workshop Experiences (Quick Status)" + "Open Experience Management Portal →" link | Header/Link | — | No | — |
-| 22 | Mini Experience cards (3) with status tag, title, B2B price, "Edit Details" link, "Listed" checkbox | Card/Toggle | `Experience` summary + publish toggle | No | Toggling "Listed" applies the same validation rules as editing the Experience directly on EXP070, including the minimum 3 required images (BR-009); an Experience that does not meet the required conditions cannot be marked Listed from here |
-| 23 | Section "05 Logistics, Transit & On-Site Dispatch" | Header | Static | Yes | — |
-| 24 | Direct Dispatch Hotline input | Input | Phone | No | Phone format |
-| 25 | Workshop Lead Coordinator input | Input | Coordinator name + languages | No | — |
-| 26 | Coach Parking & Pier Turnaround Logistics textarea | Input | Free text | No | — |
-| 27 | Verified Accessibility & On-Site Amenities checklist (4 items) | Toggle | Amenity flags | No | — |
-| 28 | Autosave status line | Text | "Last autosaved Xm ago · All changes synced to B2B verified registry" | Yes | — |
-| 29 | "Discard Changes" button (bottom) | Button | — | Yes | — |
-| 30 | "Save Provider Profile" button (bottom) | Button | — | Yes | Same validation as top Save Changes |
+| 1 | Edit Provider Profile | Heading | Edit Provider Profile | No | Static screen title |
+| 2 | Provider id | System context (not editable) | `provider_id` — F-PROFILE-04 | Yes | provider_id (ID; Required) |
+| 3 | Business name | Input | `business_name` — F-PROFILE-04 | Conditional | business_name (String, max 255; Required for submission) |
+| 4 | Craft type | Select | `craft_type` — F-PROFILE-04 | Conditional | craft_type (Enum[Ceramics, Silk/Textile, Woodcarving, Food/Culinary, Metalwork, Paper/Painting, Other]; Required for submission) |
+| 5 | Artisan names | Structured input | `artisan_names` — F-PROFILE-04 | No | artisan_names (Array<String>; Optional) |
+| 6 | Business registration number | Input | `business_registration_number` — F-PROFILE-04 | Conditional | business_registration_number (String; Required for submission) |
+| 7 | Business registration certificate | File input | `business_registration_certificate` — F-PROFILE-04 | Conditional | business_registration_certificate (File[PDF/JPG/JPEG/PNG], max 10MB; Required for submission) |
+| 8 | Location address | Input | `location_address` — F-PROFILE-04 | Conditional | location_address (String; Required for submission) |
+| 9 | Description | Input | `description` — F-PROFILE-04 | No | description (Text, max 1000; Optional) |
+| 10 | Operating hours | Structured input | `operating_hours` — F-PROFILE-04 | No | operating_hours ( Object{ Monday: Array<TimeRange> Optional, Tuesday: Array<TimeRange> Optional, Wednesday: Array<TimeRange> Optional, Thursday: Array<TimeRange> Optional, Friday: Array<TimeRange> Optional, Saturday: Array<TimeRange> Optional, Sunday: Array<TimeRange> Optional }; Optional — recurring weekly Provider operating hours used as the baseline availability source for F-SCHED-09 ) |
+| 11 | Booking conditions | Structured input | `booking_conditions` — F-PROFILE-04 | No | booking_conditions (Object; Optional) |
+| 12 | Profile images | File input | `profile_images` — F-PROFILE-04 | No | profile_images (Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>; Optional) |
+| 13 | Description draft preview: Accept / Edit / Regenerate / Discard | Read-only panel | F-PROFILE-04, F-PROFILE-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 14 | Current profile review and published status | Read-only panel | F-PROFILE-04, F-PROFILE-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 15 | Save Changes | Button / navigation | Incomplete profile stays Draft; complete first save submits Pending Verification | No | Enabled only when the linked permission/validation guard succeeds |
+| 16 | Discard | Button / navigation | No autosave | No | Enabled only when the linked permission/validation guard succeeds |
+| 17 | AI Refine | Button / navigation | Accept/Edit/Regenerate/Discard before replacing description | No | Enabled only when the linked permission/validation guard succeeds |
+| 18 | Manage Experiences | Button / navigation | Create/Update/Delete; no publish toggle | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Fully pre-filled form matching the saved Provider profile, as in the mockup | Editing an existing, previously completed profile |
-| Empty (no data) | All fields render blank with placeholder guidance and no gallery photos; the Save action is the same "Save Changes" button but on first submission it both saves the profile and moves `verification_status` to `Pending Verification` | First login after account creation, before the Provider has ever completed its profile (module spec assumption: Provider account creation precedes profile completion) |
-| Loading | Skeleton form while the existing profile loads; photo upload tiles show progress bars; Save buttons show a spinner and disable while saving | Screen opens; photo uploads; save submitted |
-| Error | Inline field-level errors (required field empty, unsupported image format/size/resolution per BR-008); a top banner on save conflict | Validation fails; image rejected; save request fails |
-| Success / confirmation | Toast "Changes saved" (subsequent edits) or "Profile submitted for verification" (first-ever save, per module spec Q29); autosave timestamp updates | Save succeeds |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | "Cancel / Discard" / "Discard Changes" | tap | Confirms, reverts unsaved edits | `PRF127` |
-| 2 | "Save Changes" / "Save Provider Profile" | tap | Validates and saves; on first-ever save, submits for UBND verification | `PRF127` |
-| 3 | "Replace" / "Remove" (archival photo) | tap | Opens upload widget / removes the photo | stays |
-| 4 | Gallery dropzone / "Browse Files from Computer" | tap or drag | Opens Cloudinary upload widget for additional photos | stays |
-| 5 | Gallery tile "Edit" / "Remove" | tap | Edits caption or removes that photo | stays |
-| 6 | "+ Add Specialty" | tap | Adds a specialty tag | stays |
-| 7 | "Open Experience Management Portal →" | tap | Opens the full Experience list | `EXP067` |
-| 8 | Mini card "Edit Details" | tap | Opens that Experience in edit mode | `EXP070` |
-| 9 | Mini card "Listed" checkbox | tap | Toggles that Experience's publish status | stays |
+| 1 | Save Changes | Select | Incomplete profile stays Draft; complete first save submits Pending Verification | PRF127 |
+| 2 | Discard | Select | No autosave | PRF127 |
+| 3 | AI Refine | Select | Accept/Edit/Regenerate/Discard before replacing description | stay |
+| 4 | Manage Experiences | Select | Create/Update/Delete; no publish toggle | EXP067 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | A Local Provider can save only its own Provider profile. | BR-002 |
-| SR-002 | The first "Save Changes" after account creation submits the completed profile for UBND verification, setting `verification_status = Pending Verification`. | Module spec Q29 (Closed), BR-006 |
-| SR-003 | Changing Business Name, Craft Type, or Business Registration details is a major change requiring UBND re-verification. | Module spec Q16 (Closed) |
-| SR-004 | Uploaded images must meet BR-008 (JPG/JPEG/PNG/WEBP, ≤10MB, ≥1280×720; the archival portrait additionally requires ≥1200×900). | BR-008 |
-| SR-005 | The Affiliated Craft Village Guild field is locked/read-only in this form. | Mockup (Locked/Certified tag) |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Incomplete Save Changes remains Draft; the first complete save submits Pending Verification. No autosave. A major revision of a Verified profile retains the previously published Verified version until approval. | Function List and shared consistency contract |
+| SR-004 | Operating hours are optional weekly ranges; no configured ranges means no calculated available periods. Images <=10MB and >=1280×720; a portrait additionally needs height>=900, hence minimum1280×900. No independent six-photo submission requirement. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-004 | Allows the Local Provider to update its own business profile, description and profile media. |
-| FR-006 | Provides a quick publish/unpublish toggle for the Provider's own Experiences from the "Offered Workshop Experiences (Quick Status)" section. |
-| FR-007 | Provides inline AI-refined drafting for the Provider's long-form Description field via the "AI Refine" action associated with that field; no separate screen is required. |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| PRF | FR-004 | F-PROFILE-04 | Edit Local Provider Profile |
+| PRF | FR-007 | F-PROFILE-07 | Generate Standardized Description |
 
 ## 8. Responsive and accessibility notes
 
@@ -104,21 +86,14 @@
 - What collapses or stacks on a narrow screen: the two-column layout within Section 01 (fields + archival photo) stacks; the 3 facility cards in Section 02 stack to one column; the gallery thumbnail grid in Section 03 drops from a 6-wide to a 2-wide grid.
 - Text that must remain readable (contrast, minimum size): the "Locked/Certified" tag on the Village field and the "Cover" tag on the gallery must remain visible against thumbnail backgrounds at reduced widths.
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | AI Refinement is available directly within the Provider's long-form Description field via the "AI Refine" action associated with the field; no separate screen is required. | Yes | Closed |
-| 2 | The Architectural Grounds & Facility Gallery requires at least 6 photos and allows up to 12 photos. | No | Closed |
-| 3 | Yes. Toggling "Listed" from the mini Experience card applies the same validation rules as editing the Experience directly. An Experience cannot be marked "Listed" unless it meets the required conditions, including the minimum 3 required images. | Yes | Closed |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none."
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

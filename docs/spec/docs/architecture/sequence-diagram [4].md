@@ -1,681 +1,355 @@
-```mermaid
-sequenceDiagram
-    title Module 1: Authentication, Access & User Management
-    actor LP
-    participant Frontend
-    participant Backend
-    participant Database
+# Sequence Diagrams
 
-    Note over LP, Database: UC-ACC-02: Log In
-    LP->>Frontend: Enter login credentials
-    activate Frontend
-    Frontend->>Backend: login(credentials)
-    activate Backend
-    Backend->>Database: checkUserCredentials(credentials)
-    activate Database
-    Database-->>Backend: loginResult
-    deactivate Database
-    Backend->>Database: getRole(lpId)
-    activate Database
-    Database-->>Backend: role
-    deactivate Database
-    Backend-->>Frontend: loginSuccess("User")
-    Frontend-->>LP: Display login status
-    deactivate Backend
-    deactivate Frontend
+Component-level lifelines are intentional. Screen IDs in notes connect each sequence to the required Use Case table and Screen List. Admin is one actor with HDT/UBND authorization subtypes. Read the [shared contract](../consistency-contract.md).
 
-    Note over LP, Database: UC-ACC-03: Log Out
-    LP->>Frontend: Select Logout
-    activate Frontend
-    Frontend->>Backend: logout()
-    activate Backend
-    Backend->>Backend: terminateSession()
-    Backend-->>Frontend: logoutSuccess
-    Frontend-->>LP: Display logout result
-    deactivate Backend
-    deactivate Frontend
-
-    Note over LP, Database: UC-ACC-04: Forgot Password
-    LP->>Frontend: Select "Forgot Password"
-    activate Frontend
-    Frontend-->>LP: Display password recovery form
-    LP->>Frontend: Enter account email
-    Frontend->>Backend: requestPasswordReset(email)
-    activate Backend
-    Backend->>Database: findUserByEmail(email)
-    activate Database
-    Database-->>Backend: userAccount
-    deactivate Database
-    Backend->>Backend: generateResetToken()
-    Backend->>Database: saveResetToken(userId, resetToken)
-    activate Database
-    Database-->>Backend: tokenSaved
-    deactivate Database
-    Backend-->>Frontend: resetLinkGenerated
-    Frontend-->>LP: Display password reset instructions
-    deactivate Backend
-    deactivate Frontend
-
-    Note over LP, Database: UC-ACC-05: Change Password
-    LP->>Frontend: Select "Change Password"
-    activate Frontend
-    Frontend-->>LP: Display change password form
-    LP->>Frontend: Enter current password and new password
-    Frontend->>Backend: changePassword(currentPassword, newPassword)
-    activate Backend
-    Backend->>Database: verifyCurrentPassword(lpId, currentPassword)
-    activate Database
-    Database-->>Backend: passwordVerified
-    deactivate Database
-    alt Current password is correct
-        Backend->>Backend: hashNewPassword(newPassword)
-        Backend->>Database: updatePassword(lpId, newPasswordHash)
-        activate Database
-        Database-->>Backend: passwordUpdated
-        deactivate Database
-        Backend-->>Frontend: changePasswordSuccess
-        Frontend-->>LP: Display password changed successfully
-    else Current password is incorrect
-        Backend-->>Frontend: changePasswordFailed
-        Frontend-->>LP: Display incorrect current password
-    end
-    deactivate Backend
-    deactivate Frontend
-```
+## AUT
 
 ```mermaid
 sequenceDiagram
-    title Module 1: Authentication, Access & User Management
-    actor Agency as Tour Agency
-    participant Frontend
-    participant Backend
-    participant Database
-
-    Note over Agency, Database: UC-ACC-01: Register Account
-    Agency->>Frontend: Enter account information
-    activate Agency
-    activate Frontend
-    Frontend->>Backend: createAgencyAccount(accountData)
-    activate Backend
-    Backend->>Backend: validateAccountData()
-    Backend->>Database: insertAgencyAccount(accountData, "Pending")
-    activate Database
-    Database-->>Backend: accountSaved
-    deactivate Database
-    Backend-->>Frontend: registrationPending
-    Frontend-->>Agency: Display registration pending
-    deactivate Backend
-    deactivate Frontend
-    deactivate Agency
-```
-```mermaid
-sequenceDiagram
-    title Module 1: Authentication, Access & User Management
+    actor Guest
+    actor Member
     actor Admin
-    participant Frontend
-    participant Backend
-    participant Database
-    Note over Admin, Database: UC-ACC-07, UC-ACC-08: Create Account
-    Admin->>Frontend: Enter LP account information
-    activate Admin
-    activate Frontend
-    Frontend->>Backend: createLPAccount(accountData, villageId)
-    activate Backend
-    Backend->>Backend: validateAccountData()
-    Backend->>Database: insertLPAccount(accountData, "User", villageId)
-    activate Database
-    Database-->>Backend: accountSaved
-    deactivate Database
-    Backend-->>Frontend: accountCreated
-    Frontend-->>Admin: Display account created
-    deactivate Backend
-    deactivate Frontend
-    deactivate Admin
-    Note over Admin, Database: UC-ACC-06: Verify Agency
-    Admin->>Frontend: Select Pending Account
-    activate Admin
-    activate Frontend
-    Frontend->>Backend: getAccountDetails(accountId)
-    activate Backend
-    Backend->>Database: getAccountDetails(accountId)
-    activate Database
-    Database-->>Backend: accountDetails
-    deactivate Database
-    Backend-->>Frontend: accountDetails
-    Frontend-->>Admin: Display Account Details
-    deactivate Backend
-    Admin->>Frontend: Click "Verify"
-    Frontend->>Backend: verifyAccount(accountId)
-    activate Backend
-    Backend->>Database: updateAccountStatus(accountId, "Verified")
-    activate Database
-    Database-->>Backend: statusUpdated
-    deactivate Database
-    Backend-->>Frontend: verificationSuccess
-    Frontend-->>Admin: Display account as "Verified"
-    deactivate Backend
-    deactivate Frontend
-    deactivate Admin
-    Note over Admin, Database: UC-ACC-09: Manage Accounts
-    Admin->>Frontend: Toggle Enable / Disable
-    Frontend->>Backend: updateAgencyStatus(agencyId, status)
-    activate Backend
-    Backend->>Database: updateAgencyStatus(agencyId, status)
-    activate Database
-    Database-->>Backend: statusUpdated
-    deactivate Database
-    Backend-->>Frontend: statusUpdateSuccess
-    Frontend-->>Admin: Display updated account status
-    deactivate Backend
+    participant UI as Frontend
+    participant API as Backend
+    participant DB as Database
+    participant Mail as Email Service
+    Note over Guest,UI: UC-ACC-01 REG003→REG115→REG116
+    Guest->>UI: Submit registration
+    UI->>API: validateRegistration (F-AUTH-02/03)
+    alt Invalid fields or duplicate email
+        API-->>UI: validation_errors; no account created
+    else Valid unique registration
+        API->>DB: Create registration request and return registration_request_id (F-AUTH-02)
+        API->>Mail: Issue OTP for existing request (F-AUTH-23)
+        Guest->>UI: Enter OTP on REG115
+        UI->>API: verifyOTP(registration_request_id, otp)
+        alt Wrong, expired or attempts exhausted
+            API-->>UI: Defined OTP error; no account created
+        else Verified
+            API->>DB: Create Agency Pending Approval from verified registration_request (F-AUTH-04)
+            API-->>UI: REG116 pending-review confirmation
+        end
+    end
+    Note over Member,UI: UC-ACC-02 AUT009
+    Member->>UI: Email and password
+    UI->>API: authenticate (F-AUTH-06/07)
+    API->>DB: Read password hash and current status
+    alt Invalid credentials or ineligible/Disabled account
+        API-->>UI: Error; no authenticated session
+    else Eligible credentials
+        API->>DB: Create opaque session and permission context
+        API-->>UI: role, admin_type when ADMIN, permissions, must_change_password
+        UI-->>Member: ACC129 password panel if required; else ADM079/EXP017/DSH018
+    end
+    Note over Member,UI: UC-ACC-04 PAS011→PAS014; email link→PAS142→PAS143
+    Member->>UI: Request recovery by email
+    UI->>API: requestReset (F-AUTH-11)
+    API->>API: Rate limit 3/email and 5/IP per15min
+    opt Eligible known email
+        API->>DB: Store one-use token with15min expiry
+        API->>Mail: Send token link; token never returned to requesting client
+    end
+    API-->>UI: Same generic result for known/unknown email
+    Member->>UI: Open emailed token link on PAS142 and submit new password
+    UI->>API: resetPassword(token,new_password,confirm_password)
+    alt Invalid/expired/consumed token or invalid password
+        API-->>UI: Defined error; no password update
+    else Valid
+        API->>DB: Atomically update hash and consume token
+        API-->>UI: PAS143 success
+    end
+    Note over Member,UI: UC-ACC-05 ACC129 Change Password panel
+    Member->>UI: Current/new/confirm password
+    UI->>API: changePassword (F-AUTH-14)
+    API->>DB: Verify current hash and persist valid replacement with audit
+    API-->>UI: Defined failure or password_updated_at; clear required-change guard on success
+    Note over Admin,UI: UC-ACC-07/08 ADM117; Admin actor with HDT/UBND subtype
+    Admin->>UI: Create account
+    UI->>API: createUBND(HDT) or createProvider(UBND)
+    API->>API: Check subtype and village scope (F-AUTH-16)
+    alt Forbidden subtype/scope or invalid input
+        API-->>UI: Error; no account created
+    else Allowed
+        API->>DB: Create Active account, must_change_password=true
+        opt Provider target
+            API->>DB: Create empty Draft Provider profile in assigned village
+        end
+        API->>Mail: Temporary credentials
+        API-->>UI: Created record and separate credential delivery status
+    end
+    Note over Admin,UI: UC-ACC-09 ADM095/ADM118
+    Admin->>UI: Disable/enable/reset password
+    UI->>API: accountAction (F-AUTH-22)
+    API->>API: Check subtype/resource scope
+    API->>DB: Apply permitted action; disable invalidates all sessions immediately
+    API-->>UI: Result or permission error
+    Note over Member,UI: UC-ACC-10 ACC129/ACC130; UC-ACC-03 AUT026
+    Member->>UI: Edit permitted personal fields or logout
+    UI->>API: updateOwnAccount (F-AUTH-25) or logout (F-AUTH-09)
+    API->>DB: Owner validation then persist personal fields, or invalidate session
+    API-->>UI: ACC129 updated account or AUT009 logged-out result
 ```
+
+## PRF
 
 ```mermaid
 sequenceDiagram
-    title Module 2: Profile Management
-    actor LP as Local Provider
+    actor Agency
+    actor Provider
     actor Admin
-    participant Frontend
-    participant Backend
-    participant Database
-    Note over LP, Database: UC-PRO-03 - View Local Provider Profile
-    LP->>Frontend: Open Profile
-    Frontend->>Backend: getProviderProfile(lpId)
-    Backend->>Database: getProviderProfile(lpId)
-    Database-->>Backend: profileData
-    Backend-->>Frontend: profileData
-    Frontend-->>LP: Display Provider Profile
-    Note over LP, Database: UC-PRO-04 - Manage Provider Profile
-    LP->>Frontend: Open Profile Management
-    Frontend->>Backend: getProviderProfile(lpId)
-    Backend->>Database: getProviderProfile(lpId)
-    Database-->>Backend: profileData
-    Backend-->>Frontend: profileData
-    Frontend-->>LP: Display Provider Profile
-    LP->>Frontend: Fill / Update Information
-    LP->>Frontend: Enter / Edit Description
-    opt AI Refinement
-        LP->>Frontend: Click "AI Refinement"
-        Frontend->>Backend: refineDescription(description)
-        Backend->>Backend: generateRefinedDescription(description)
-        Backend-->>Frontend: refinedDescription
-        Frontend-->>LP: Display refined description
-        LP->>Frontend: Accept / Edit refined description
+    participant UI as Frontend
+    participant API as Backend
+    participant DB as Database
+    participant AI as AI Service
+    Note over Agency,UI: UC-PRO-01 PRF019→PRF021
+    Agency->>UI: Edit own Agency profile
+    UI->>API: updateAgencyProfile (F-PROFILE-02)
+    API->>API: Check owner and validate fields
+    alt Major company_name/tax_id change
+        API->>DB: Store pending revision; keep Approved account/current legal version
+    else Non-major change
+        API->>DB: Apply immediately with change log
     end
-    LP->>Frontend: Save Profile
-    Frontend->>Backend: saveProviderProfile(profileData, images)
-    Backend->>Database: saveProviderProfile(profileData, images)
-    Database-->>Backend: profileSaved
-    Backend-->>Frontend: saveSuccess
-    Frontend-->>LP: Display updated profile
-    Note over LP, Database: UC-PRO-05 - Manage Experiences
-    LP->>Frontend: Open Experience Management
-    Frontend->>Backend: getExperiences(lpId)
-    Backend->>Database: getExperiences(lpId)
-    Database-->>Backend: experiences
-    Backend-->>Frontend: experiences
-    Frontend-->>LP: Display Experiences
-    LP->>Frontend: Create / Edit Experience
-    LP->>Frontend: Enter / Edit Experience Description
-    opt AI Refinement
-        LP->>Frontend: Click "AI Refinement"
-        Frontend->>Backend: refineExperienceDescription(description)
-        Backend->>Backend: generateRefinedDescription(description)
-        Backend-->>Frontend: refinedDescription
-        Frontend-->>LP: Display refined description
-        LP->>Frontend: Accept / Edit refined description
+    API-->>UI: Updated profile and major_change_review_status
+    Note over Provider,UI: UC-PRO-04 PRF127→PRF128
+    Provider->>UI: Save own profile including weekly operating hours
+    UI->>API: updateProviderProfile (F-PROFILE-04)
+    API->>API: Check ownership and validate supplied values
+    alt Incomplete initial profile
+        API->>DB: Save Draft
+    else Complete first submission or major revision
+        API->>DB: Save submitted revision Pending Verification; retain existing Verified publication
+    else Permitted non-major change
+        API->>DB: Apply change and audit
     end
-    LP->>Frontend: Save Experience
-    Frontend->>Backend: saveExperience(experienceData, images)
-    Backend->>Database: saveExperience(experienceData, images)
-    Database-->>Backend: experienceSaved
-    Backend-->>Frontend: saveSuccess
-    Frontend-->>LP: Display updated Experience
-    Note over Admin, Database: UC-PRO-06 - Verify Provider Profile
-    Admin->>Frontend: Open Provider Profile for review
-    Frontend->>Backend: getProviderProfile(providerId)
-    Backend->>Database: getProviderProfile(providerId)
-    Database-->>Backend: profileData
-    Backend-->>Frontend: profileData
-    Frontend-->>Admin: Display submitted Profile
-
-    alt Approve
-        Admin->>Frontend: Select "Approve"
-        Frontend->>Backend: approveProviderProfile(providerId)
-        Backend->>Database: updateProfileVerificationStatus(providerId, "Verified")
-        Database-->>Backend: statusUpdated
-        Backend-->>Frontend: approveSuccess
-        Frontend-->>Admin: Display profile status "Verified"
-    else Request Revision
-        Admin->>Frontend: Select "Request Revision"
-        Admin->>Frontend: Enter revision comments
-        Frontend->>Backend: requestProfileRevision(providerId, comments)
-        Backend->>Database: updateProfileVerificationStatus(providerId, "Revision Required")
-        Backend->>Database: saveRevisionComments(providerId, comments)
-        Database-->>Backend: statusUpdated
-        Backend-->>Frontend: revisionRequested
-        Frontend-->>Admin: Display profile status "Revision Required"
-        Frontend-->>LP: Display revision comments
+    API-->>UI: Editable/review status and published version status
+    Note over Admin,UI: UC-PRO-06 VER146/VER119; ADMIN subtype UBND
+    Admin->>UI: Approve or Request Revision with required comments
+    UI->>API: reviewProvider (F-PROFILE-05)
+    API->>API: Check assigned village, submitted status and comments
+    API->>DB: Persist review; Approve publishes Verified version, Request Revision retains last publication
+    API-->>UI: verification_status, reviewer_id, reviewed_at; account remains Active
+    Note over Admin,UI: UC-ACC-06 VER146 Agency variant; ADMIN subtype HDT
+    Admin->>UI: Approve/Request More Information/Reject
+    UI->>API: reviewAgency (F-AUTH-18, review_type)
+    API->>DB: Persist decision; major-change review does not disable Approved account
+    API-->>UI: Target-specific account/revision result plus email/in-app notification status
+    opt Request More Information for initial registration
+        API->>DB: Store review decision and submission version
+        API->>Mail: Send single-use secure edit link
+        Guest->>UI: Open REG003 through secure edit link and revise request (F-AUTH-26)
+        UI->>API: resubmitRegistration(registration_request_id, token, updated_data)
+        API->>DB: Store new submission version; return request to HDT review
+    end
+    Note over Provider,UI: UC-PRO-05 EXP067/068/069/070/132
+    Provider->>UI: Create/Update/Delete Experience
+    UI->>API: manageExperience (F-PROFILE-06)
+    API->>DB: Check ownership and active/history references
+    alt Invalid fields, locked field or active booking deletion
+        API-->>UI: Validation error; no mutation
+    else Historical references and Delete
+        API->>DB: Archive, preserve booking history
+    else No references and Delete
+        API->>DB: Hard delete
+    else Valid Create/Update
+        API->>DB: Persist Experience; refresh Explore/matching source
+    end
+    API-->>UI: Permitted result
+    opt AI description refinement on PRF128/EXP069/070
+        Provider->>UI: AI Refine
+        UI->>API: generateDescription (F-PROFILE-07)
+        API->>AI: Request factual rewrite
+        AI-->>UI: Draft or service failure
+        Provider->>UI: Accept/Edit/Regenerate/Discard
+        Note over UI,DB: Only accepted/edited text may be saved through the owning profile action
     end
 ```
 
+## AIT
+
 ```mermaid
 sequenceDiagram
-    title Module 2: Profile Management
-    actor Agency as Tour Agency
-    participant Frontend
-    participant Backend
-    participant Database
-
-    Note over Agency, Database: UC-PRO-02: View Agency Profile
-    Agency->>Frontend: Open Profile
-    Frontend->>Backend: getAgencyProfile(agencyId)
-    Backend->>Database: getAgencyProfile(agencyId)
-    Database-->>Backend: profileData
-    Backend-->>Frontend: profileData
-    Frontend-->>Agency: Display Agency Profile
-
-    Note over Agency, Database: UC-PRO-01: Manage Agency Profile
-    Agency->>Frontend: Edit Profile Information
-    Agency->>Frontend: Save Profile
-    Frontend->>Backend: saveAgencyProfile(profileData)
-    Backend->>Database: saveAgencyProfile(profileData)
-    Database-->>Backend: profileSaved
-    Backend-->>Frontend: saveSuccess
-    Frontend-->>Agency: Display updated profile
-```
-```mermaid
-sequenceDiagram
-    title Module 3: AI Tour Matching
-    actor Agency as Tour Agency
-    participant Frontend
-    participant Backend
-    participant AIEngine as AI Matching Engine
-    participant Database
-
-    Note over Agency, Database: UC-DIS-05 - AI Tour Matching
-
-    Note over Agency, Database: 1. Submit & Understand Tour Requirements
-    Agency->>Frontend: Enter tour requirements in natural language
-    activate Agency
-    activate Frontend
-    Frontend->>Backend: submitTourRequirements(requirements)
-    activate Backend
-    Backend->>AIEngine: analyzeRequirements(requirements)
-    activate AIEngine
-    AIEngine->>AIEngine: callOpenAI(requirements)
-
-    alt OpenAI responds within timeout
-        AIEngine->>AIEngine: parsedRequirements
-        AIEngine->>AIEngine: Extract tour context
-        AIEngine->>AIEngine: Extract constraints
-        AIEngine->>AIEngine: Extract preferences
-        AIEngine->>AIEngine: Infer semantic preferences
-        AIEngine->>AIEngine: Check requirement completeness
-    else OpenAI timeout or error
-        AIEngine->>AIEngine: timeoutError
-        AIEngine->>AIEngine: Fallback to rule-based requirement extraction
-        AIEngine->>AIEngine: Extract tour context rule-based
-        AIEngine->>AIEngine: Extract constraints rule-based
-        AIEngine->>AIEngine: Check requirement completeness
-        AIEngine-->>Backend: fallbackModeActive
-        Backend-->>Frontend: fallbackModeActive
-        Frontend-->>Agency: Display using simplified matching
-    end
-
-    Note over Agency, Database: 2. Clarify Missing Requirements or 3. AI Matching and Recommendation
-    alt Requirements are incomplete
-        AIEngine->>AIEngine: Identify missing critical criteria
-        AIEngine->>AIEngine: Generate contextual follow-up question
-        AIEngine-->>Backend: followUpQuestion
-        Backend-->>Frontend: followUpQuestion
-        Frontend-->>Agency: Display follow-up question
-        Agency->>Frontend: Provide clarification
-        Frontend->>Backend: submitClarification(response)
-        Backend->>AIEngine: updateConversationContext(response)
-        AIEngine->>AIEngine: Re-analyze requirements
-        AIEngine->>AIEngine: Check requirement completeness
-    else Requirements are complete
-        Note over Backend, Database: 3. AI Matching and Recommendation
-        Backend->>AIEngine: findVerifiedLPsAndExperiences(tourPreferenceProfile)
-        AIEngine->>Database: getVerifiedLPAndExperiences(tourPreferenceProfile)
-        Database-->>AIEngine: candidateLPsAndExperiences
-        AIEngine->>AIEngine: Check hard constraints
-        AIEngine->>AIEngine: Evaluate preferences
-        AIEngine->>AIEngine: Evaluate route and distance
-
-        alt AI ranking available
-            AIEngine->>AIEngine: refineRanking(candidateLPsAndExperiences, tourPreferenceProfile)
-            alt OpenAI responds within timeout
-                AIEngine->>AIEngine: refinedScoresAndExplanations
-                AIEngine->>AIEngine: Calculate match scores
-                AIEngine->>AIEngine: Rank candidates
-                AIEngine->>AIEngine: Generate match explanations
-            else OpenAI timeout or error
-                AIEngine->>AIEngine: timeoutError
-                AIEngine->>AIEngine: Fallback to rule-based scoring
-                AIEngine->>AIEngine: Calculate match scores rule-based weights
-                AIEngine->>AIEngine: Rank candidates
-                AIEngine->>AIEngine: Generate generic match explanations rule-based
-                AIEngine-->>Backend: fallbackModeActive
-                Backend-->>Frontend: fallbackModeActive
+    actor Agency
+    participant UI as AIT121
+    participant API as Backend
+    participant AI as AI Engine
+    participant DB as Database
+    participant Maps as Maps Service
+    Note over Agency,UI: UC-DIS-05; authenticated Agency only
+    Agency->>UI: Natural-language requirements
+    UI->>API: analyzeRequirements (F-MATCH-02/03)
+    API->>AI: Extract tour context and constraints
+    alt AI unavailable
+        API-->>UI: Temporary AI Failure with Retry; no fallback matching result
+    else Extraction succeeds
+        loop Missing critical fields until sufficient input or user cancels
+            API-->>UI: Clarification question
+            Agency->>UI: Additional context
+            UI->>API: Reanalyze updated requirements
+        end
+        API->>AI: Build Tour Preference Profile (F-MATCH-04)
+        AI-->>API: tour_preference_profile
+        API->>DB: Retrieve eligible Verified candidates (F-MATCH-05)
+        API->>Maps: Distance/route inputs where required
+        alt Required external calculation fails
+            API-->>UI: Unable to complete matching; retry, no fabricated distance
+        else Candidate data available
+            API->>AI: Filter hard constraints, normalize factors, rank (F-MATCH-06/07)
+            AI-->>API: Scored candidates and explanations
+            alt No candidate meets threshold
+                API-->>UI: No-match result with refinement guidance
+            else Eligible ranked candidates
+                API-->>UI: Ranked Experience/Village cards
+                Agency->>UI: View, Chat or Request Quote
+                UI->>API: Record permitted preference signal; Quote once per Agency–Experience
+                API->>DB: Update shared preference profile and chat context
+                API-->>UI: DSC033 or COM048
             end
         end
+    end
+    Note over API,DB: Shared preference profile/time decay; Book/Schedule are not learning signals
+```
 
-        AIEngine-->>Backend: rankedRecommendations
-        Backend-->>Frontend: rankedRecommendations
-        Frontend-->>Agency: Display ranked LP or Experience with match score and reasons
-        opt Fallback mode was used
-            Frontend-->>Agency: Display results based on simplified matching
+## EXP
+
+```mermaid
+sequenceDiagram
+    actor Visitor as Guest or Agency
+    participant UI as EXP120 or EXP017
+    participant API as Backend
+    participant DB as Database
+    participant Worker
+    Note over Visitor,UI: UC-DIS-01/02/03/04
+    Visitor->>UI: Browse/filter/open detail
+    UI->>API: getExplore or getExperienceDetail
+    API->>DB: Read eligible public catalog and permitted fields
+    alt Guest
+        API-->>UI: Public fields including capacity/availability summary; restricted prices/contact masked
+        Note over UI: DSC123/DSC124; AI interface hidden
+    else Approved Agency
+        API-->>UI: Permitted detail, prices/contact; DSC122/DSC033
+        opt Request Quote
+            UI->>API: requestQuote(experience_id, optional dates/group)
+            API->>DB: Check Agency–Experience one-request guard and resolve Active pair chat
+            API-->>UI: COM048 initial quote message or existing request result
         end
     end
-
-    Note over Agency, Database: 4. Record Agency Preference Signals
-    loop During Matching Session
-        Agency->>Frontend: View or Request Quote or Chat or Book or Schedule
-        Frontend->>Backend: recordPreferenceSignal(signal)
-        Backend->>Database: savePreferenceSignal(agencyId, sessionId, signal)
-        Database-->>Backend: signalSaved
+    opt Authorized preference tracking under F-EXPLORE-05..10
+        UI->>API: Record eligible views/clicks/dwell with defined identity/consent
+        API->>DB: Update shared preference using current thresholds and 30-day decay
     end
-
-    Note over Agency, Database: 5. Analyze Preference Signals
-    Backend->>Database: getCurrentSessionSignals(agencyId, sessionId)
-    Database-->>Backend: currentSessionSignals
-    Backend->>AIEngine: analyzePreferenceSignals(currentSessionSignals)
-    AIEngine->>AIEngine: Identify common factors among interacted items
-    AIEngine->>AIEngine: Identify recurring preference patterns
-    AIEngine->>AIEngine: Infer related preferences from non-interacted items
-
-    Note over Agency, Database: 6. Detect Session End
-    alt Agency closes AI matching chat
-        Frontend->>Backend: closeMatchingSession(sessionId)
-    else 30-minute inactivity timeout
-        Backend->>Backend: detectSessionTimeout(sessionId)
-    end
-
-    Note over Agency, Database: 7. Create Tour Preference Profile
-    AIEngine->>AIEngine: Map semantic requirements
-    AIEngine->>AIEngine: Assign preference weights
-    AIEngine->>AIEngine: Generate Tour Preference Profile
-    AIEngine-->>Backend: tourPreferenceProfile
-    Backend-->>Frontend: tourPreferenceProfile
+    Worker->>DB: Daily F-EXPLORE-13 aggregation, retention30d
+    Worker->>API: Weekly/monthly KPI evaluation and proposed tuning version
+    API->>DB: Save Draft ranking-parameter version
+    Note over API,DB: Human approval promotes Draft to Active and retires prior Active; no auto-activation
 ```
+
+## BKG
 
 ```mermaid
 sequenceDiagram
-    title Module 4: Explore
-    actor Agency as Tour Agency
-    participant Frontend
-    participant Backend
-    participant Database
-
-    Note over Agency, Database: UC-DIS-01: Browse Explore
-    Frontend->>Backend: getExploreContent(agencyId)
-    Backend->>Database: getVerifiedLPsAndExperiences()
-    Database-->>Backend: verifiedLPs
-    Backend-->>Frontend: exploreLPs
-    Frontend-->>Agency: Display Explore Page with LP / Experience cards
-
-    Agency->>Frontend: Browse Explore LPs
-    Agency->>Frontend: Select LP / Experience
-    Frontend->>Backend: getLPExperienceDetails(lpId)
-    Backend->>Database: getVerifiedLPProfile(lpId)
-    Database-->>Backend: profileData
-    Backend-->>Frontend: profileData
-    Frontend-->>Agency: Display LP / Experience details
-
-    Note over Agency, Database: UC-DIS-03: View Provider
-    Agency->>Frontend: Select Provider
-    Frontend->>Backend: getProviderProfile(providerId)
-    Backend->>Database: getProviderProfile(providerId)
-    Database-->>Backend: providerProfile
-    Backend-->>Frontend: providerProfile
-    Frontend-->>Agency: Display Provider Profile
-
-    Note over Agency, Database: UC-DIS-04: View Experience
-    Agency->>Frontend: Select Experience
-    Frontend->>Backend: getExperienceDetails(experienceId)
-    Backend->>Database: getExperienceDetails(experienceId)
-    Database-->>Backend: experienceDetails
-    Backend-->>Frontend: experienceDetails
-    Frontend-->>Agency: Display Experience Details
-
-    Note over Agency, Database: UC-DIS-02: Explore Experiences
-    Frontend->>Backend: recordExperienceAction(agencyId, experienceId, actionType)
-    Backend->>Database: saveExperienceAction(agencyId, experienceId, actionType)
-    Backend->>Backend: analyzeExperiencePreferences(agencyId)
-    Backend->>Database: getAgencyExperiencePreference(agencyId)
-    Database-->>Backend: existingPreference
-    Backend->>Backend: updatePreferenceWeights(experienceSignals, existingPreference)
-    Backend->>Database: saveAgencyExperiencePreference(agencyId, updatedPreference)
-    Backend->>Backend: reRankExperiences(verifiedLPs, updatedPreference)
-    Backend-->>Frontend: updatedExploreLPs
-    Frontend-->>Agency: Display updated Explore Experiences
-
-    Note over Backend, Database: KPI Tuning (Background Job)
-    Backend->>Database: calculateRankingKPIs()
-    Database-->>Backend: kpiMetrics
-    Backend->>Backend: tuneRankingWeights(kpiMetrics)
-    Backend->>Database: saveRankingAlgorithmVersion(updatedWeights)
+    actor Provider
+    actor Agency
+    participant UI as Frontend
+    participant API as Backend
+    participant DB as Database
+    participant Worker
+    Note over Provider,UI: UC-BOOK-02 SCH139; operating hours edited only on PRF128
+    UI->>API: Calculate availability (F-SCHED-09)
+    API->>DB: Read operating hours and On hold/Booked occupancy
+    API-->>UI: Calculated slots; no operating hours means no available periods
+    Note over Provider,UI: UC-BOOK-04 BKG134
+    Provider->>UI: Select Agency ID, Experience, time, group and agreed total price
+    UI->>API: createBooking (F-SCHED-03)
+    API->>API: Validate ownership, Agency identity and input
+    API->>DB: Atomically recheck availability and create On hold, expires_at=created_at+72h
+    alt Conflict/validation/permission failure
+        API-->>UI: Defined error; no Booking or schedule block committed
+    else Commit succeeds
+        API->>DB: Persist booking event and Agency schedule projection
+        API->>API: Resolve Active pair Chat and send booking auto-message (F-SCHED-08)
+        API-->>UI: BKG135 On hold
+        API-->>Agency: BKG137/SCH141 includes own On hold
+    end
+    Note over Provider,Worker: UC-BOOK-05 BKG144; confirm vs72h expiry race
+    par Provider action
+        Provider->>API: Update fields or target_status Booked/Cancelled
+        API->>DB: Lock/check current state and original deadline, then permitted atomic transition
+    and Expiry worker
+        Worker->>API: Expire due On hold booking
+        API->>DB: Conditional On hold→Cancelled if deadline reached; record automatic expiry once
+    end
+    Note over API,DB: At expiry boundary confirmation fails; only one transition wins. Repeated worker does not duplicate events/messages.
+    API->>DB: Synchronize resulting schedule and occupancy
+    API->>API: Deliver linked chat update; retry without duplicating the committed booking event
+    Note over Provider,UI: F-SCHED-06 BKG136; retain current arrival/completion requirement
+    Provider->>UI: Mark Group Arrival
+    UI->>API: markArrival(booking_id)
+    API->>DB: Check owner, Booked status and now>=start_at; set Completed and arrived_at once
+    API-->>UI: BKG135 result or defined invalid-state/time error
+    Note over Agency,UI: UC-BOOK-01/03 SCH141/BKG137/BKG138; Agency read-only
+    Agency->>API: Read own schedule/booking details
+    API->>DB: Scope by own organization
+    API-->>Agency: Canonical status and latest update; no other Agency details
+    Note over Provider,UI: UC-BOOK-06 BKG133 uses F-SCHED-10, own bookings only
 ```
+
+## ADM
 
 ```mermaid
 sequenceDiagram
-    title Module 5: Schedule / Booking Management
-    actor Agency as Tour Agency
-    participant Frontend
-    participant Backend
-    participant Database
-
-    Note over Agency, Database: UC-BOOK-01: View Schedule
-    Agency->>Frontend: Open Local Provider Public Schedule
-    Frontend->>Backend: getLocalProviderSchedule(providerId)
-    Backend->>Database: getLocalProviderSchedule(providerId)
-    Database-->>Backend: providerSchedule
-    Backend-->>Frontend: providerSchedule
-    Frontend-->>Agency: Display Local Provider Public Schedule
-
-    Note over Agency, Database: UC-BOOK-03: View Bookings
-    Agency->>Frontend: Open My Bookings
-    Frontend->>Backend: getAgencyBookings(agencyId)
-    Backend->>Database: getAgencyBookings(agencyId)
-    Database-->>Backend: bookingList
-    Backend-->>Frontend: bookingList
-    Frontend-->>Agency: Display Booking List
-
-    Agency->>Frontend: Select Booking
-    Frontend->>Backend: getBookingDetails(bookingId)
-    Backend->>Database: getBookingDetails(bookingId)
-    Database-->>Backend: bookingDetails
-    Backend-->>Frontend: bookingDetails
-    Frontend-->>Agency: Display Booking Details
-```
-
-```mermaid
-sequenceDiagram
-    title Module 5: Schedule / Booking Management
-    actor LP as Local Provider
-    participant Frontend
-    participant Backend
-    participant Database
-    participant Worker as Background Worker
-
-    Note over LP, Database: UC-BOOK-03 - Manage Availability
-    LP->>Frontend: Open Availability Management
-    Frontend->>Backend: getAvailability(lpId)
-    Backend->>Database: getAvailability(lpId)
-    Database-->>Backend: availabilityData
-    Backend-->>Frontend: availabilityData
-    Frontend-->>LP: Display Availability Calendar
-
-    LP->>Frontend: Update Available / Unavailable Dates
-    LP->>Frontend: Save Availability
-    Frontend->>Backend: saveAvailability(lpId, availabilityData)
-    Backend->>Database: saveAvailability(lpId, availabilityData)
-    Database-->>Backend: availabilitySaved
-    Backend-->>Frontend: saveSuccess
-    Frontend-->>LP: Display updated Availability Calendar
-
-    Note over LP, Database: UC-BOOK-04 - Create Booking
-    Note over LP, Database: Every newly created booking MUST have initial status "On hold" for 72 hours. The corresponding time slot is immediately blocked on the Provider Public Schedule as an On hold block and synchronized to the Agency Private Schedule.
-    LP->>Frontend: Enter agreed booking details
-
-    alt Confirm and Create Booking
-        LP->>Frontend: Click "Confirm and Create Booking"
-        Frontend->>Backend: createBooking(bookingData, "Confirmed")
-        Backend->>Database: saveBooking(bookingData, "Confirmed")
-        Database-->>Backend: bookingConfirmed
-        Backend->>Database: updateLPSchedule(bookingId)
-        Database-->>Backend: lpScheduleUpdated
-        Backend->>Database: updateAgencyPrivateSchedule(bookingId)
-        Database-->>Backend: agencyScheduleUpdated
-        Backend-->>Frontend: bookingConfirmed
-        Frontend-->>LP: Display booking status "Confirmed"
-    else Save as On Hold
-        LP->>Frontend: Click "Save as On Hold"
-        Frontend->>Backend: createBooking(bookingData, "On hold")
-        Backend->>Database: saveBooking(bookingData, "On hold")
-        Database-->>Backend: bookingCreated
-        Backend->>Database: updateLPSchedule(bookingId)
-        Database-->>Backend: lpScheduleUpdated
-        Backend->>Database: updateAgencyPrivateSchedule(bookingId)
-        Database-->>Backend: agencyScheduleUpdated
-        Backend-->>Frontend: bookingCreated
-        Frontend-->>LP: Display booking status "On hold"
-    end
-
-    Note over Worker, Database: 72-hour On Hold Expiry (Background Process)
-    alt Provider confirms within 72 hours
-        Note over LP, Database: Booking proceeds via UC-BOOK-05 (status advances to Booked)
-    else 72 hours elapse without confirmation
-        Worker->>Backend: checkHoldExpiry(bookingId)
-        Backend->>Database: getBooking(bookingId)
-        Database-->>Backend: bookingData
-        Backend->>Database: releaseLPSchedule(bookingId)
-        Database-->>Backend: lpScheduleReleased
-        Backend->>Database: updateAgencyPrivateSchedule(bookingId)
-        Database-->>Backend: agencyScheduleUpdated
-    end
-
-    Note over LP, Database: UC-BOOK-05 - Manage Booking
-    LP->>Frontend: Open Booking
-    Frontend->>Backend: getBookingDetail(bookingId)
-    Backend->>Database: getBookingDetail(bookingId)
-    Database-->>Backend: bookingDetail
-    Backend-->>Frontend: bookingDetail
-    Frontend-->>LP: Display Booking Detail
-
-    alt Edit Booking
-        LP->>Frontend: Click "Edit Booking"
-        Frontend-->>LP: Display editable booking fields
-        LP->>Frontend: Edit booking information
-        LP->>Frontend: Select status Confirmed / Completed / Cancelled
-
-        alt Save Changes
-            LP->>Frontend: Click "Save Changes"
-            Frontend->>Backend: updateBooking(bookingId, updatedData)
-            Backend->>Database: updateBooking(bookingId, updatedData)
-            Database-->>Backend: bookingUpdated
-            Backend->>Database: updateLPSchedule(bookingId)
-            Database-->>Backend: lpScheduleUpdated
-            Backend->>Database: updateAgencyPrivateSchedule(bookingId)
-            Database-->>Backend: agencyScheduleUpdated
-            Backend-->>Frontend: updateSuccess
-            Frontend-->>LP: Display updated Booking Detail
-        else Cancel Changes
-            LP->>Frontend: Click "Cancel Changes"
-            Frontend-->>LP: Discard changes
-            Frontend-->>LP: Display Booking Detail
-        end
-    else Mark Group Arrival
-        LP->>Frontend: Click "Mark Group Arrival"
-        Frontend->>Backend: markGroupArrival(bookingId)
-        Backend->>Database: saveGroupArrival(bookingId)
-        Database-->>Backend: arrivalRecorded
-        Backend-->>Frontend: arrivalRecorded
-        Frontend-->>LP: Display "Group Arrived"
-    end
-```
-
-```mermaid
-sequenceDiagram
-    title Module 6: Admin Dashboard
     actor Admin
-    participant Frontend
-    participant Backend
-    participant Database
-
-    Note over Admin, Database: UC-ADM-01: View Dashboard
-    Admin->>Frontend: Open Admin Dashboard
-    activate Admin
-    activate Frontend
-    Frontend->>Backend: getDashboardOverview()
-    activate Backend
-    Backend->>Database: getDashboardOverview()
-    activate Database
-    Database-->>Backend: dashboardOverview
-    deactivate Database
-    Backend-->>Frontend: dashboardOverview
-    Frontend-->>Admin: Display Dashboard Overview
-    deactivate Backend
-    deactivate Frontend
-    deactivate Admin
+    participant UI as ADM079
+    participant API as Backend
+    participant DB as Database
+    Note over Admin,UI: UC-ADM-01; one actor ADMIN, subtype HDT/UBND
+    Admin->>UI: Select time/village/Agency/Provider filters
+    UI->>API: loadDashboardMetrics (F-ADMIN-01..10)
+    API->>API: Check ADMIN and admin_type; force assigned village for UBND
+    alt Unauthorized scope or invalid date range
+        API-->>UI: Permission/validation error; no unauthorized data
+    else Permitted scope
+        API->>DB: Aggregate account status, profile status, activity, bookings and distinct pairs
+        DB-->>API: Scoped metrics, booking trend/list, top10 collaboration pairs
+        API-->>UI: Four cards, charts, result tables and filters
+        Note over UI: No invented drill-down; metric tables read-only
+    end
 ```
+
+## IAC
 
 ```mermaid
 sequenceDiagram
-    title Module 7: In-app Chat
-    actor Provider as Local Provider
-    actor Agency as Tour Agency
-    participant Frontend
-    participant Backend
-    participant Database
-
-    Note over Provider, Database: UC-COM-01: Chat
-    alt Tour Agency starts chat
-        Agency->>Frontend: Select Chat
-        Frontend->>Backend: startChat(agencyId, providerId)
-    else Local Provider starts chat
-        Provider->>Frontend: Select Chat
-        Frontend->>Backend: startChat(providerId, agencyId)
-    end
-
-    Backend->>Database: createOrGetChatSession(participantIds)
-    Database-->>Backend: chatSession
-    Backend-->>Frontend: chatSessionReady
-    Frontend-->>Agency: Display chat interface
-    Frontend-->>Provider: Display chat interface
-
-    loop While chat session is active
-        alt Tour Agency sends message
-            Agency->>Frontend: Send message(text)
-            Frontend->>Backend: sendMessage(sessionId, senderId, text)
-            Backend->>Database: saveMessage(sessionId, senderId, text)
-            Database-->>Backend: messageSaved
-            Backend-->>Frontend: deliverMessage(message)
-            Frontend-->>Provider: Display incoming message
-        else Local Provider sends message
-            Provider->>Frontend: Send message(text)
-            Frontend->>Backend: sendMessage(sessionId, senderId, text)
-            Backend->>Database: saveMessage(sessionId, senderId, text)
-            Database-->>Backend: messageSaved
-            Backend-->>Frontend: deliverMessage(message)
-            Frontend-->>Agency: Display incoming message
+    actor Participant as Agency or Local Provider
+    participant UI as COM048 or COM065
+    participant API as Backend
+    participant DB as Database
+    participant Store as Private Document Storage
+    Note over Participant,UI: UC-COM-01; Agency direct initiation, Provider needs Quote/Booking context
+    Participant->>UI: Open Chat
+    UI->>API: openChat (F-CHAT-01)
+    API->>API: Check participants, source context and permission
+    API->>DB: Atomically reuse/create at most one Active Chat per Agency–Provider pair
+    API-->>UI: Active session plus contextual IDs; Closed histories remain separate
+    UI->>API: Read last50 messages and chat list (F-CHAT-03)
+    API->>DB: Participant-only history, cursor pagination and unread counter
+    API-->>UI: Authorized history
+    Participant->>UI: Send text or attach on COM125/COM126
+    UI->>API: F-CHAT-02 text<=4000 or F-CHAT-05 files1–5,<=10MB each
+    alt Invalid content/file, Closed session or denied participant
+        API-->>UI: Error; no message created
+    else Valid
+        opt Attachments
+            API->>Store: Store validated private files
         end
+        API->>DB: Persist message with sender/time/context and update chat preview
+        API-->>UI: message_id and sent_at
     end
-
-    alt Tour Agency ends chat
-        Agency->>Frontend: End Chat
-        Frontend->>Backend: endChat(sessionId)
-    else Local Provider ends chat
-        Provider->>Frontend: End Chat
-        Frontend->>Backend: endChat(sessionId)
-    end
-
-    Backend->>Database: saveConversation(sessionId)
-    Database-->>Backend: conversationSaved
-    Backend->>Database: closeChatSession(sessionId)
-    Database-->>Backend: sessionClosed
-    Backend-->>Frontend: chatSessionClosed
-    Frontend-->>Agency: Display chat ended
-    Frontend-->>Provider: Display chat ended
+    Participant->>UI: Switch page/thread
+    Note over UI,DB: Navigation does not close Active Chat
+    Participant->>UI: Explicit Close Chat
+    UI->>API: closeChat (F-CHAT-04)
+    API->>DB: Check participant; Active→Closed with closed_by/closed_at; retain history
+    API-->>UI: Closed read-only history
+    Note over UI,DB: New interaction creates a new Active session; no reopening Closed session
 ```

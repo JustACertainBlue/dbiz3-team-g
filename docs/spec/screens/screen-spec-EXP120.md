@@ -6,15 +6,15 @@
 | Screen name | Public Explore |
 | Actor | Guest |
 | Priority | Must |
-| Belongs to module | `spec-M04-EXPLORE.md` |
+| Belongs to module | `spec-EXP.md` |
 | Mockup image | `img/EXP120.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** An unauthenticated visitor (Guest) opens the platform's public landing/discovery page, either directly or via a shared link.
+Public discovery screen for Guests. Shows only basic publicly available Village/Experience information. Price and contact details are hidden; public capacity and availability summary remain visible. Search and restricted actions redirect to Login.
 
-**The user leaves this screen when:** they click Login or Register as Agency (go to `AUT009` / `REG003`), open a Village or Experience card (go to `DSC123` / `DSC124`), or trigger any restricted action (search, AI Tour Matching, quote/chat/availability buttons), which redirects them to `AUT009`.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,65 +24,52 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Logo + tagline | Header/Text | Static brand text "HANOI ARTISAN BRIDGE / TRAVEL AGENCY PORTAL" | Yes | — |
-| 2 | Primary nav | Header | Explore (active), AI Tour Matching 🔒, Bookings 🔒, Messages 🔒, Schedules 🔒 | Yes | Locked items are disabled links, not hidden |
-| 3 | Login button | Button | Static label "LOGIN" | Yes | — |
-| 4 | Register as Agency button | Button | Static label "REGISTER AS AGENCY" | Yes | — |
-| 5 | Account icon | Button | Guest avatar placeholder | Yes | — |
-| 6 | Page title | Text | "Explore Craft Villages & Artisan Experiences" | Yes | — |
-| 7 | Page subtitle | Text | Static description copy | No | — |
-| 8 | Search input | Input | Placeholder "Filter craft type, village, or keywords…" | No | Guest input is accepted but any submit action redirects to login rather than executing a search |
-| 9 | AI Tour Matching button | Button | Static label, adjacent to search input | Yes | — |
-| 10 | "Featured Craft Village Experiences" section header | Text | Static | Yes | — |
-| 11 | Village card (×4) | Card/List | badge (e.g. "Cluster Highlight" / craft-type tag), distance/region tag, image, region + est. year, village name, craft tags, 2-line description, "Details →" link | Yes (per card) | Only published/verified villages render |
-| 12 | B2B CTA banner | Card | Icon + "B2B CONTRACT RATES & PRIVATE MASTER SLOTS" eyebrow, "Are you a Tour Operator or Inbound Agency?" heading, body copy, "Sign In to Access" button, "Register Agency" button | Yes | — |
-| 13 | "Immersive Masterclasses" section header | Text | Static + pax-range badge ("Min 4 – Max 15 Pax") | Yes | — |
-| 14 | Masterclass row (×2) | Card | image, village/duration/technique/capacity meta, title, description, pax range, "Public Ref: ~ X đ/pax" note, "View Details" link, "🔒 Agency Rate & Slots" button | Yes (per card) | Net/agency rate never rendered to Guest |
-| 15 | "Half-Day & Cultural Excursions" section header | Text | Static | Yes | — |
-| 16 | Excursion card (×3) | Card | image, village, duration, title, description, capacity, "🔒 Agency Group Quote" button | Yes (per card) | — |
-| 17 | "Endangered & Living Heritage" section header | Text | Static | Yes | — |
-| 18 | Heritage guild row (×2) | List | image, village/craft-type, "Max N Pax", title, description, "🔒 Request Master Availability" button | Yes (per row) | Only Guest-safe fields shown; no price |
-| 19 | Footer | Footer | Brand name, tagline, copyright, system ref | Yes | — |
+| 1 | Public Explore | Heading | Public Explore | No | Static screen title |
+| 2 | Analytics consent | Input | `analytics_consent` — F-EXPLORE-05 | No — optional consent | analytics_consent (Boolean; Required for Guest non-essential analytics) |
+| 3 | Public Experience cards and pagination | Read-only panel | F-EXPLORE-01, F-EXPLORE-02, F-EXPLORE-03, F-EXPLORE-04, F-EXPLORE-05 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 4 | Restricted price/contact notice | Read-only panel | F-EXPLORE-01, F-EXPLORE-02, F-EXPLORE-03, F-EXPLORE-04, F-EXPLORE-05 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 5 | Provider detail | Button / navigation | Public fields only | No | Enabled only when the linked permission/validation guard succeeds |
+| 6 | Experience detail | Button / navigation | Public fields only | No | Enabled only when the linked permission/validation guard succeeds |
+| 7 | Login | Button / navigation | Restricted actions require login; AI navigation is hidden | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Fully populated sections as shown in the mockup, with all restricted fields masked behind lock icons | Page loads with published village/experience data |
-| Empty (no data) | Section header remains; card area replaced with "No craft villages or experiences are published yet. Please check back soon." | Backend returns zero published Villages/Experiences |
-| Loading | Skeleton placeholders (grey blocks) in place of each card image/text row; search bar and nav render immediately | Initial page load, before card data resolves |
-| Error | Section-level banner: "We couldn't load experiences right now." with a "Retry" button; page chrome (header/footer) still renders | Card/village data fetch fails |
-| Success / confirmation | Not applicable — this is a browse-only screen with no submission action | — |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Login button | tap | — | `AUT009` |
-| 2 | Register as Agency button | tap | — | `REG003` |
-| 3 | Account icon | tap | — | `AUT009` |
-| 4 | Search input | type + submit | Redirects silently (no inline hint) instead of searching | `AUT009` |
-| 5 | AI Tour Matching (nav or button) | tap | — | `AUT009` |
-| 6 | Village card / "Details →" | tap | Opens the Village Profile screen, with B2B-only fields (B2B Rate, Max Capacity) masked for the unauthenticated Guest | `VIL030` (Guest-masked view) |
-| 7 | Masterclass / Excursion / Heritage "View Details" | tap | Opens public experience detail | `DSC124` |
-| 8 | Any 🔒 locked action button | tap | — | `AUT009` |
-| 9 | "Sign In to Access" (CTA banner) | tap | — | `AUT009` |
-| 10 | "Register Agency" (CTA banner) | tap | — | `REG003` |
+| 1 | Provider detail | Select | Public fields only | DSC123 |
+| 2 | Experience detail | Select | Public fields only | DSC124 |
+| 3 | Login | Select | Restricted actions require login; AI navigation is hidden | AUT009 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Price, availability, and contact details are never rendered for Guests; hidden fields show a lock icon plus a CTA to log in | Screen List, EXP120 overview |
-| SR-002 | Any restricted action (search, chat, quote, schedule) redirects an unauthenticated user to `AUT009` | Screen List, EXP120 overview |
-| SR-003 | Village card navigation goes to `VIL030` itself (rendered with B2B-only fields masked for Guests), not a separate public village page; Provider and Experience card navigation stays within the fully public scope (`DSC123`/`DSC124`), never the unmasked authenticated views (`DSC122`/`DSC033`) | Clarified answer, open question #1 |
-| SR-004 | The search-box redirect to `AUT009` on submit is silent — no inline hint or message is shown explaining that login is required | Clarified answer, open question #2 |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | No AI feature/navigation for Guest. Guest sees public capacity and public availability summary; pricing/contact/other Agency booking data remain restricted. | Function List and shared consistency contract |
+| SR-004 | Analytics consent is optional and starts false. Accept/refuse does not block browsing; only consented anonymous non-essential analytics may be recorded; no Guest personalization. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| — | [NEEDS CLARIFICATION: module spec `spec-M04-EXPLORE.md` with FR IDs not yet available] |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| EXP | FR-001 | F-EXPLORE-01 | Load Initial Experience/Activity Listing |
+| EXP | FR-002 | F-EXPLORE-02 | Display Experience/Activity Card |
+| EXP | FR-003 | F-EXPLORE-03 | Display Full Experience & Provider Profile |
+| EXP | FR-004 | F-EXPLORE-04 | Display Related Activities & Provider Suggestions |
+| EXP | FR-005 | F-EXPLORE-05 | Record Click & View Events on Experience Cards |
 
 ## 8. Responsive and accessibility notes
 
@@ -90,25 +77,14 @@
 - What collapses or stacks on a narrow screen: primary nav collapses to a menu icon; the 4-column Featured Village grid stacks to 1 column; Masterclass rows stack image above text; Excursion/Heritage cards stack to 1 column
 - Text that must remain readable: lock-icon CTA labels and "Details →" links need sufficient contrast against the light-grey card background (currently placeholder greyscale)
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Is there a dedicated public Village page, or do Village cards route straight to `DSC123` Public Provider Profile? — **Answer:** Village cards route straight to `VIL030`. There is no separate public Village page — Guests reach the same Village Profile screen, with B2B-only fields (B2B Rate, Max Capacity) masked. | No | Resolved |
-| 2 | Does typing in the search box before submit show any inline hint that login is required, or is the redirect silent? — **Answer:** The redirect is silent — no inline hint is shown. | No | Resolved |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
-
----
-
-Template source: DBIZ3, VJCBI College - FTU, Session 4. Built on the DBIZ2 Screen Design
-structure (Screen List and Screen Layout), per DBIZ3 Syllabus v3.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

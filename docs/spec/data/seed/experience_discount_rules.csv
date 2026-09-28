@@ -1,0 +1,9 @@
+rule_id,experience_id,rule_kind,pax_threshold,discount_percentage
+0be81c10-a73f-56ce-8e6e-4ff4a60bdd84,c9f9faf7-2987-5ae4-b1ed-95c095fcce69,Group Discount,5,5
+0d82e41b-9f8f-548d-9f8c-aa5f3e36d149,800b5192-03c7-5953-849b-32a321e12a47,Special Rate,12,0
+17436ecf-2cdd-5391-9b16-2ea98a728961,b70bd0fa-6a81-5aec-9ff6-5303210b2fad,Group Discount,8,8
+46a7263b-a91e-550f-9a04-6d5c6d5f590d,8e485337-5a2c-5703-9fbf-5e0c6492cd87,Group Discount,11,11
+5139f399-07cd-5472-93bb-b3e10dac9427,d95bc77b-5e7b-53a6-a8af-5ccaabb485d8,Group Discount,7,7
+a457f362-dc04-5e50-9575-f35c1bc2e60b,bad51dc8-1529-506a-8302-cb0b1d95954c,Group Discount,9,9
+d3132ab1-45ff-51ee-b893-5765fded639c,67a2cbab-850c-5f69-b496-59f2e9a5f594,Group Discount,10,10
+e21d6ba2-b24f-5cd2-8a6c-df965e906c4c,c8281688-2dc1-5cb1-9ff6-139df04ba562,Group Discount,6,6

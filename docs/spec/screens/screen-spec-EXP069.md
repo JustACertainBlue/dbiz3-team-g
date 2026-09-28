@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-PRF.md` |
 | Mockup image | `img/EXP069.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** A Local Provider taps "+ New Experience" on EXP067 to create a new Experience with required description, images, price, capacity, availability and booking conditions.
+Creates a new Experience with required information such as description, images, price, capacity, availability, and booking conditions.
 
-**The user leaves this screen when:** The Provider discards the draft, saves it as a draft, or publishes/creates it.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,74 +24,62 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | "Back to Experience Management / New Listing" breadcrumb | Navigation | Static | Yes | — |
-| 2 | "Live Creation Mode" status text | Text | Static | No | — |
-| 3 | "Discard Draft" button | Button | — | Yes | Confirms before discarding if any field has content |
-| 4 | "Save as Draft" button | Button | — | Yes | Saves with status = Draft; no field minimums enforced except what the platform always requires |
-| 5 | "Publish / Create Experience" button | Button | — | Yes | Enforces BR-009 (≥3 image categories) and BR-010 (price>0, capacity>0, notice_period≥0) before publish succeeds |
-| 6 | Experience Title field | Input | `name` | Yes | Non-empty; recommended 40–70 chars |
-| 7 | "Short Lead Introduction" textarea + char counter | Input | `description` (lead/hook) | Yes | Max 240 characters (per counter shown) |
-| 8 | "AI Refine" button (lead intro) | Button | Triggers FR-007 draft | No | Draft must be explicitly Accepted/Edited before it replaces the field (BR-012, BR-013) |
-| 9 | "Workshop Media Gallery" — Primary cover upload slot | Image upload | `Experience Image` (category: cover) | Yes | JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720 (BR-008) |
-| 10 | Gallery slot 2 ("Craft Process") with remove (×) | Image upload | `Experience Image` | Yes (part of min. 3 required categories) | Same as above |
-| 11 | "+ Add Photo" slot (up to 8 gallery items) | Image upload | `Experience Image` | Yes (at least 3 categories total: Activity/Experience, Space/Location, Product/Result) | Same as above; BR-009 |
-| 12 | "Curatorial Overview & Cultural Significance" textarea + B/I toolbar | Input | `description` (long form) | Yes | — |
-| 13 | "AI Refine Narrative Tone" button | Button | Triggers FR-007 draft | No | Same BR-012/BR-013 rule |
-| 14 | "Session Structure & Schedule" — step cards + "+ Add Step" | List/Input | Structured run-of-show | Yes | At least one step recommended; each step needs a time range and title |
-| 15 | "Participant Guidelines & Accessibility" — policy cards + "+ Add Policy/Guideline" | List/Input | `booking_conditions` / accessibility entries | No | — |
-| 16 | Quick-add preset chips (Child Friendly / Photography Rules / Dietary-Allergens) | Button | Inserts a pre-filled policy card | No | — |
-| 17 | "Experience Rate Card" — price input | Input | `price_per_person` | Yes | Decimal > 0 (BR-010); currency VND |
-| 18 | Rate inclusions helper text | Text | Free text | No | — |
-| 19 | "Capacity & Logistics" — Max Capacity input | Input | `max_participants` | Yes | Integer > 0 (BR-010) |
-| 20 | Duration input | Input | `duration` | Yes | Number > 0. Stored in minutes; displayed in hours on the UI — the system converts the stored value to hours for display and converts the entered hours back to minutes when saving |
-| 21 | Languages Supported chips + "+ Add Language" | Tag list | Languages | No | — |
-| 22 | "Location" card | Card/Text | Defaults to Provider's main location per module spec Q28 | Yes | — |
-| 23 | "Organization & Village Context" card (provider + village links) | Card | Read-only Provider/Village reference | No | — |
-| 24 | Cancellation Policy selector, plus optional free-text "Notes" field | Input | `cancellation_policy`, captured as structured predefined rules plus an optional free-text notes field for additional context (module spec Q25) | Yes for the rule selector; notes are optional | Must select one of the predefined cancellation policy rules; the free-text notes field has no minimum |
-
-Note: Group discounts / special rates are out of scope for MVP and are not entered or managed on this screen.
+| 1 | Add Experience | Heading | Add Experience | No | Static screen title |
+| 2 | Provider id | System context (not editable) | `provider_id` — F-PROFILE-06 | Yes | provider_id (ID; Required) |
+| 3 | Operation | System context (not editable) | `operation` — F-PROFILE-06 | Yes | operation (Enum[Create, Update, Delete]; Required) |
+| 4 | Experience id | System context (not editable) | `experience_id` — F-PROFILE-06 | Conditional | experience_id ( ID; Required for Update/Delete; omitted for Create ) |
+| 5 | Name | Input | `name` — F-PROFILE-06 | Conditional | name ( String; Required for Create; Optional for Update; omitted for Delete ) |
+| 6 | Description | Input | `description` — F-PROFILE-06 | Conditional | description ( Text; Required for Create; Optional for Update; omitted for Delete ) |
+| 7 | Category | Select | `category` — F-PROFILE-06 | Conditional | category ( Enum[Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo]; Required for Create; Optional for Update; omitted for Delete ) |
+| 8 | Duration | Input | `duration` — F-PROFILE-06 | Conditional | duration ( Integer > 0, minutes; Required for Create; Optional for Update; omitted for Delete ) |
+| 9 | Images | File input | `images` — F-PROFILE-06 | Conditional | images ( Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>; Required for Create; Optional for Update; omitted for Delete ) |
+| 10 | Price per person | Input | `price_per_person` — F-PROFILE-06 | Conditional | price_per_person ( Decimal > 0, VND; Required for Create; Optional for Update; omitted for Delete ) |
+| 11 | Max participants | Input | `max_participants` — F-PROFILE-06 | Conditional | max_participants ( Integer > 0; Required for Create; Optional for Update; omitted for Delete ) |
+| 12 | Notice period | Input | `notice_period` — F-PROFILE-06 | Conditional | notice_period ( Integer >= 0, hours; Required for Create; Optional for Update; omitted for Delete ) |
+| 13 | Cancellation policy | Structured input | `cancellation_policy` — F-PROFILE-06 | Conditional | cancellation_policy ( Object{rules: Array<Object{threshold_hours, fee_percentage}>, notes: Text Optional}; Required for Create; Optional for Update; omitted for Delete ) |
+| 14 | Experience location address | Input | `experience_location_address` — F-PROFILE-06 | Conditional | experience_location_address (String; Required for Create; Optional for Update; omitted for Delete) |
+| 15 | Group discounts | Structured input | `group_discounts` — F-PROFILE-06 | No | group_discounts (Array<Object{pax_threshold: Integer > 0, discount_percentage: Decimal 0–100}>; Optional — existing PRF Q23 rule schema) |
+| 16 | Special rates | Structured input | `special_rates` — F-PROFILE-06 | No | special_rates (Array<Object{pax_threshold: Integer > 0, discount_percentage: Decimal 0–100}>; Optional — existing PRF Q23 rule schema) |
+| 17 | Description draft preview: Accept / Edit / Regenerate / Discard | Read-only panel | F-PROFILE-06, F-PROFILE-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 18 | Create Experience | Button / navigation | Enforce Create required fields and three image categories; no Draft/Publish operation | No | Enabled only when the linked permission/validation guard succeeds |
+| 19 | Discard | Button / navigation | No mutation | No | Enabled only when the linked permission/validation guard succeeds |
+| 20 | AI Refine | Button / navigation | Explicit Accept/Edit required | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default / Empty | A blank form with guidance placeholder text in every field, as in the mockup — for a creation screen the default state *is* the empty state | Screen just opened for a new Experience |
-| Loading | "Publish"/"Save as Draft" buttons show a spinner and disable while the request is in flight; image slots show upload progress bars while photos upload | User submits, or an image is uploading |
-| Error | Inline field-level errors (e.g. "Price must be greater than 0," "At least 3 photo categories are required," "Capacity must be a positive number") plus a top-of-form summary banner; image slot shows a rejection message if format/size/resolution fails BR-008 | Validation fails on Publish, or an image upload is rejected |
-| Success / confirmation | Toast "Experience published" (or "Draft saved") and redirect | Publish succeeds → redirect to `EXP068`; Save as Draft succeeds → redirect to `EXP067` with the new Draft row visible |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | "Discard Draft" | tap | Confirms, then discards all entered content | `EXP067` |
-| 2 | "Save as Draft" | tap | Saves with status = Draft | `EXP067` |
-| 3 | "Publish / Create Experience" | tap | Validates BR-009/BR-010; on success creates the Experience as Published | `EXP068` |
-| 4 | "AI Refine" (lead intro or narrative tone) | tap | Sends `original_description` + `profile_context` to the AI engine and returns a draft for Accept/Edit/Regenerate/Discard | stays (inline) |
-| 5 | "+ Add Photo" / "Change Photo" / "Crop / Reframe" | tap | Opens the Cloudinary upload/crop widget | stays |
-| 6 | "+ Add Step" | tap | Adds a blank step card to the run-of-show | stays |
-| 7 | "+ Add Policy / Guideline" / quick-add chips | tap | Adds a policy card, pre-filled for quick-add chips | stays |
-| 8 | "+ Add Language" | tap | Opens a language picker and adds the selected chip | stays |
-| 9 | "View Provider Profile →" | tap | Opens this Provider's own profile | `PRF127` |
-| 10 | "Explore Van Phuc Village →" | tap | Opens the affiliated Village profile | `VIL030` |
+| 1 | Create Experience | Select | Enforce Create required fields and three image categories; no Draft/Publish operation | EXP068 |
+| 2 | Discard | Select | No mutation | EXP067 |
+| 3 | AI Refine | Select | Explicit Accept/Edit required | stay |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Publish is blocked until at least 3 required image categories (Activity/Experience, Space/Location, Product/Result) are present. | BR-009 |
-| SR-002 | Publish is blocked unless price > 0, capacity > 0 and notice period ≥ 0. | BR-010 |
-| SR-003 | An AI-refined draft can never silently overwrite the original text; the Provider must Accept, Edit, Regenerate or Discard it. | BR-011, BR-012, BR-013 |
-| SR-004 | The new Experience is owned by, and only editable by, the creating Provider. | BR-002 |
-| SR-005 | Save as Draft does not enforce the full publish-time validation set, letting the Provider return later to complete it. | Inferred from "Save as Draft" vs "Publish" distinction in mockup |
-| SR-006 | `cancellation_policy` is a structured rule selection; the accompanying free-text notes field is optional and does not replace the structured rule. | Module spec Q25 (Closed) |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Create requires all F-PROFILE-06 Create fields. No Save Draft/Publish operation. Description is a single saved field; any lead preview is derived and is not a second competing description value. | Function List and shared consistency contract |
+| SR-004 | group_discounts and special_rates are optional existing pricing data; leave empty when absent. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-006 | Creates a new Experience owned by this Provider, with pricing, capacity, images and booking conditions. |
-| FR-007 | Provides inline AI-refined description drafting for the lead introduction and the long-form curatorial overview. |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| PRF | FR-006 | F-PROFILE-06 | Manage Experiences, Pricing, Images & Booking Conditions |
+| PRF | FR-007 | F-PROFILE-07 | Generate Standardized Description |
 
 ## 8. Responsive and accessibility notes
 
@@ -99,22 +87,14 @@ Note: Group discounts / special rates are out of scope for MVP and are not enter
 - What collapses or stacks on a narrow screen: the right-hand sidebar (Rate Card, Capacity & Logistics, Location, Organization & Village Context) moves below the main form on narrow screens; the media gallery grid drops to a single column.
 - Text that must remain readable (contrast, minimum size): character counters and the "[MIN. 3 PHOTOS REQUIRED]" helper must stay visible near their field even after the form stacks.
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Group discounts / special rates are out of scope for MVP. They are not entered or managed on this screen. | No | Closed |
-| 2 | Yes. `cancellation_policy` is captured on this screen as structured predefined rules, not free text. | Yes | Closed |
-| 3 | `duration` is stored in minutes but displayed in hours on the UI. The system converts the stored value to hours for display and converts the entered hours back to minutes when saving. | Yes | Closed |
-| 4 | Does `cancellation_policy` also support a free-text notes field alongside the structured rule? — **Answer:** Yes, an optional free-text notes field is included for additional context (module spec Q25); it does not replace the structured rule selection. | No | Closed |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none."
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

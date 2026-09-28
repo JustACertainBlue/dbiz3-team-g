@@ -4,17 +4,17 @@
 |---|---|
 | Screen ID | `VIL030` |
 | Screen name | Village Profile |
-| Actor | Tour Agency / Local Provider / Admin / Guest (masked view) |
+| Actor | Tour Agency / Local Provider / Admin |
 | Priority | Must |
-| Belongs to module | `spec-M04-EXPLORE.md` |
+| Belongs to module | `spec-PRF.md` / `spec-EXP.md` |
 | Mockup image | `img/VIL030.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** An authenticated user (Tour Agency, Local Provider, or Admin) opens a specific Village from `EXP017`, a Provider card, or an Experience's village link. A Guest can also reach this same screen (e.g. via a Village card on `EXP120`), but with B2B-only fields such as B2B Rate and Max Capacity masked. A Local Provider only ever opens this screen for their own affiliated village — never another village — and sees it rendered the same way an Agency does for that village.
+View-only Village profile containing Village information, Local Provider cards belonging to the Village, and featured Experiences. Provider cards link to Provider Profile; Experience cards link to Experience Detail.
 
-**The user leaves this screen when:** they navigate to a Provider Profile, an Experience Detail, back to Explore via the breadcrumb, or open the account/avatar menu.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,58 +24,46 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Header nav | Header | Logo, Explore / AI Tour Matching / Bookings / Schedule / Messages, avatar menu | Yes | No lock icons (authenticated) |
-| 2 | Breadcrumb | Text | "Home / Craft Villages / [Village name] (Vietnamese name)" | Yes | Last crumb is current page, non-clickable |
-| 3 | Heritage badge | Text/Tag | e.g. "National Intangible Cultural Heritage · Est. Xth Century" | No | — |
-| 4 | Village title | Header | Village name (English) + Vietnamese name | Yes | Village name field |
-| 5 | Location line | Text | Region description with pin icon | Yes | Village location field |
-| 6 | Description paragraph | Text | Village history/heritage summary | Yes | — |
-| 7 | Hero image | Image | Village photo placeholder + caption | No | Falls back to placeholder if no photo uploaded |
-| 8 | Stat card (×4) | Card | label ("Spec 0N // Category"), large stat value, title, description | Yes (per card) | Heritage/Guilds/Proximity/Logistics fields |
-| 9 | "Registered Village Providers" section header | Text | "[02] Guild Directory" eyebrow + heading + intro copy | Yes | — |
-| 10 | Provider card (×N) | Card | type badge, provider ID, provider name (+ Vietnamese), Master label/value, Focus label/value, Inventory badge ("N Experiences Available"), "View Provider Profile →" button, "Chat with Provider" button | Yes (per card) | Only verified providers listed under this village |
-| 11 | "Featured Experiences in Village" section header | Text | "[03] Bookable Modules" eyebrow + heading + "TOTAL: NN MODULES" counter | Yes | Counter = total experiences across all providers in village |
-| 12 | Experience row (×N) | List | type tag (e.g. Hands-On Workshop / Masterclass / Demonstration & Ceremony), host label, title, description, Duration/Capacity/B2B Rate stats, "View Details >" button | Yes (per row) | B2B Rate and Max Capacity are masked (shown as locked/hidden) for Guest viewers; a Local Provider only ever views this row set for their own affiliated village, rendered unmasked exactly as an Agency sees it |
-| 13 | "Village Governance & Heritage Codex" section | Text | "[04]" eyebrow + heading + 2 paragraphs + metrics box (label/value rows) | No | — |
-| 14 | "Visitor Access & Ground Transport" section | List | "[05]" eyebrow + heading + 3 items (icon, title, description) | No | — |
-| 15 | Footer | Footer | Brand, terms, copyright, system ref | Yes | — |
+| 1 | Village Profile | Heading | Village Profile | No | Static screen title |
+| 2 | Village information | Read-only panel | F-PROFILE-03, F-EXPLORE-02 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 3 | Provider cards | Read-only panel | F-PROFILE-03, F-EXPLORE-02 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 4 | Featured Experience cards | Read-only panel | F-PROFILE-03, F-EXPLORE-02 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 5 | Provider card | Button / navigation | Agency/Guest/own Provider view; Admin read-only PRF view | No | Enabled only when the linked permission/validation guard succeeds |
+| 6 | Experience card | Button / navigation | Actor-appropriate permitted view | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Fully populated village page as shown; for an authenticated Tour Agency, Local Provider (own village), or Admin, all fields render unmasked. For a Guest, the same layout renders with B2B Rate and Max Capacity masked/locked in each Experience row | Village data, providers, and experiences all resolve |
-| Empty (no data) | Provider Directory shows "No providers are currently registered to this village."; Bookable Modules shows "No experiences are currently published for this village." | Village exists but has zero verified providers/experiences |
-| Loading | Skeleton blocks for hero image, stat cards, provider cards, and experience rows; header/breadcrumb render immediately | Initial navigation into the screen, before data resolves |
-| Error | Full-section banner: "We couldn't load this village's details." with a "Retry" button | Village data fetch fails or village ID is invalid |
-| Success / confirmation | Not applicable — screen is view-only, no submission | — |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Breadcrumb "Craft Villages" | tap | — | `EXP017` |
-| 2 | Provider card "View Provider Profile →" | tap | — | `DSC122` |
-| 3 | Provider card "Chat with Provider" | tap | Opens/creates a chat thread with that provider | `COM048` (Tour Agency) / `COM065` (Local Provider) |
-| 4 | Experience row "View Details >" | tap | — | `DSC033` |
-| 5 | Avatar/account menu | tap | Opens shared dropdown | `ACC129` / `ACC130` / Logout (`AUT026`) |
+| 1 | Provider card | Select | Agency/Guest/own Provider view; Admin read-only PRF view | DSC122 / DSC123 / PRF127 |
+| 2 | Experience card | Select | Actor-appropriate permitted view | DSC033 / DSC124 / EXP068 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Only verified/published providers and experiences appear on this screen | Screen List, VIL030 overview |
-| SR-002 | The screen is strictly view-only; no edit controls render for any actor, including Admin | Screen List, VIL030 overview: "View-only" |
-| SR-003 | "TOTAL: NN MODULES" reflects the full count of experiences across the village's providers, independent of how many rows are shown in the featured list | Inferred from mockup (3 rows shown vs "TOTAL: 07 MODULES") |
-| SR-004 | A Guest can open this screen (e.g. from a Village card on `EXP120`), but B2B-only fields — B2B Rate and Max Capacity — are masked/locked in the Experience row; all other content (heritage info, provider directory, descriptions) renders the same as the authenticated view | Clarified answer, open question #1 |
-| SR-005 | A Local Provider can only open this screen for their own affiliated village, never another village; when they do, the screen renders unmasked exactly as it does for an Agency | Clarified answer, open question #2 |
-| SR-006 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Read-only seeded Village catalog. Provider cannot chat with another Provider. Capacity masking does not override public fields. A missing optional rating is omitted; no fabricated rating/review source. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| — | [NEEDS CLARIFICATION: module spec `spec-M04-EXPLORE.md` with FR IDs not yet available] |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| PRF | FR-003 | F-PROFILE-03 | Display Local Provider Profile |
+| EXP | FR-002 | F-EXPLORE-02 | Display Experience/Activity Card |
 
 ## 8. Responsive and accessibility notes
 
@@ -83,25 +71,14 @@
 - What collapses or stacks on a narrow screen: the 4-column stat grid becomes 2 columns then 1; the 3-column provider directory stacks to 1 column; two-column Governance/Logistics footer sections stack vertically
 - Text that must remain readable: metric-box values (Heritage Integrity Metrics) use small monospace-style text and need a minimum readable size on mobile
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Does a Guest ever reach a restricted version of this screen, or is `VIL030` authenticated-only per the actor list? — **Answer:** Yes, a Guest can reach `VIL030` with masked information such as B2B Rate and Max Capacity. | No | Resolved |
-| 2 | Does a Local Provider viewing another village see the same B2B Rate column as a Tour Agency, or is it masked for that actor? — **Answer:** A Local Provider does not view another village — only the village they belong to, rendered the same way an Agency sees it. | No | Resolved |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
-
----
-
-Template source: DBIZ3, VJCBI College - FTU, Session 4. Built on the DBIZ2 Screen Design
-structure (Screen List and Screen Layout), per DBIZ3 Syllabus v3.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

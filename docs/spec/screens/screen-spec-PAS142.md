@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` |
 | Mockup image | `img/PAS142.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** The user clicks the password reset link from their email (or, in this mockup's flow, "I have the link — Continue" on PAS014).
+User clicks reset link from email and lands here. Form includes: New Password field (with complexity requirements visible), Confirm Password field, "Update Password" button, "Back to Login" link. Validates: Password complexity, passwords match.
 
-**The user leaves this screen when:** They submit a valid, matching new password via "Update password".
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,48 +24,43 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Left panel branding | Text | "HANOI ARTISAN BRIDGE", "Administration Portal", tagline "Account recovery.", version stamp | No | — |
-| 2 | Step indicator (1–4) | Stepper | Steps 1–3 marked complete/active | No | — |
-| 3 | Heading | Text | "Set new password" | No | — |
-| 4 | Subheading | Text | "Choose a strong password for your account." | No | — |
-| 5 | New Password | Input (masked) | New password value | Yes | Minimum 8 characters, must include uppercase, lowercase, a number, and a special character; spaces are not allowed |
-| 6 | Show/hide (eye icon) | Toggle | Reveals/masks New Password | No | — |
-| 7 | Password requirements checklist | Inline validation list | Live checklist showing each rule (≥8 characters, uppercase, lowercase, number, special character, no spaces) with a check/cross per item as the user types | No | Each item updates in real time against the New Password value |
-| 8 | Confirm Password | Input (masked) | Repeated password value | Yes | Must exactly match New Password |
-| 9 | Show/hide (eye icon) | Toggle | Reveals/masks Confirm Password | No | — |
-| 10 | Update password | Button (primary) | Submits the new password | No | Disabled until both fields are valid and match |
+| 1 | Set New Password | Heading | Set New Password | No | Static screen title |
+| 2 | Recovery token | System context (not editable) | `recovery_token` — F-AUTH-12 | Yes | recovery_token (String; Required) |
+| 3 | New password | Masked input | `new_password` — F-AUTH-12 | Yes | new_password (String, masked, 8–64 characters; Required — must contain at least 1 uppercase letter, 1 lowercase letter, 1 number and 1 special character; whitespace not allowed) |
+| 4 | Confirm password | Masked input | `confirm_password` — F-AUTH-12 | Yes | confirm_password (String, masked; Required — must exactly match new_password) |
+| 5 | Reset password | Button / navigation | Validate unexpired unused token and password; invalid token causes no mutation | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Both password fields empty with placeholder dots, Update password disabled | Screen load via a valid reset token |
-| Empty (no data) | Same as default — no persisted data on this screen | N/A |
-| Loading | Update password button shows spinner and is disabled while the request is sent | User taps Update password |
-| Error | Inline error "Passwords do not match" or "Password does not meet complexity requirements"; banner "This reset link has expired or is invalid, please request a new one" if the token is bad | Client validation fails, or the reset token is expired/invalid |
-| Success / confirmation | Navigates to Password Updated | New password saved successfully |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | New Password / Confirm Password | type | Live validation of complexity and match | stays |
-| 2 | Update password | tap | Validates and saves the new password | `PAS143` |
+| 1 | Reset password | Select | Validate unexpired unused token and password; invalid token causes no mutation | PAS143 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Update password stays disabled until New Password meets all complexity rules (≥8 characters, uppercase, lowercase, number, special character, no spaces) and Confirm Password matches exactly | Clarification |
-| SR-003 | Password requirements are surfaced as a live inline checklist next to the New Password field, not just static helper text | Clarification |
-| SR-002 | The reset link/token expires after a set window (30 minutes per PAS014); an expired token should route the user back to request a new link | PAS014 info box |
-| SR-004 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Expired, invalid or consumed token prevents update. Successful reset consumes the token. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-PAS-03 | Lets the user set a new password after verifying identity via emailed link |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-012 | F-AUTH-12 | Verify token, validate new password & update |
 
 ## 8. Responsive and accessibility notes
 
@@ -73,19 +68,14 @@
 - What collapses or stacks on a narrow screen: dark branding panel stacks above the form
 - Text that must remain readable (contrast, minimum size): helper text ≥12px, input text ≥14px
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Full password complexity ruleset beyond "minimum 8 characters" | Yes | Resolved — ≥8 chars, uppercase, lowercase, number, special character, no spaces; see SR-001 |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

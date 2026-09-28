@@ -4,17 +4,17 @@
 |---|---|
 | Screen ID | `AUT026` |
 | Screen name | Logout Confirmation |
-| Actor | All Actors |
+| Actor | All Authenticated Users |
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` |
 | Mockup image | `img/AUT026.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** The user explicitly initiates logout by clicking any "Log out" button or logout icon in the app (e.g. from the Account Dropdown, or the logout icon in the Admin sidebar footer). It is displayed as a modal/overlay on top of whatever screen the user was on — the underlying screen does not need its own mockup for this dialog to apply.
+Confirmation dialog before ending the current session.
 
-**The user leaves this screen when:** They confirm ("Sign out") or dismiss ("Cancel") the dialog.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,45 +24,41 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Dialog overlay | Modal | Dims the underlying screen | No | — |
-| 2 | Icon | Image | Logout/sign-out glyph | No | — |
-| 3 | Dialog title | Text | "Sign out" | No | — |
-| 4 | Dialog body text | Text | "Are you sure you want to sign out? Any unsaved changes will be lost." | No | — |
-| 5 | Cancel | Button (secondary) | Dismisses dialog | No | — |
-| 6 | Sign out | Button (primary) | Confirms logout | No | — |
+| 1 | Logout Confirmation | Heading | Logout Confirmation | No | Static screen title |
+| 2 | Confirm logout | Button / navigation | Invalidate server session and clear client state | No | Enabled only when the linked permission/validation guard succeeds |
+| 3 | Cancel | Button / navigation | No session change | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Dialog as shown with both actions enabled | Dialog opens from Log Out click |
-| Empty (no data) | Not applicable — dialog has no data-dependent content | N/A |
-| Loading | Sign out button shows spinner and is disabled while the session is being ended | User taps Sign out |
-| Error | Inline text under the buttons "Could not sign out, please try again" | Logout request fails server-side |
-| Success / confirmation | Dialog closes, user is redirected to Login | Logout succeeds |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Cancel | tap | Closes dialog, no change to session | previous screen (stays) |
-| 2 | Sign out | tap | Ends session, clears local auth state | `AUT009` |
-| 3 | Click outside dialog / Esc key | tap/key | Same as Cancel | previous screen (stays) |
+| 1 | Confirm logout | Select | Invalidate server session and clear client state | AUT009 |
+| 2 | Cancel | Select | No session change | stay |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Warns the user that unsaved changes will be lost, implying no auto-save happens on logout | Mockup body text |
-| SR-002 | This confirmation is shared across all actors and entry points that trigger logout | Screen List actor: "All Actors" |
-| SR-003 | The dialog renders as a modal/overlay reused from any screen with a logout trigger; it is not a standalone page | Clarification |
-| SR-004 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-AUT-02 | Prevents accidental loss of session/unsaved work on logout |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-009 | F-AUTH-09 | Terminate session and display confirmation |
 
 ## 8. Responsive and accessibility notes
 
@@ -70,19 +66,14 @@
 - What collapses or stacks on a narrow screen: dialog becomes near full-width with side margins; buttons remain side by side unless width is under ~320px, then they stack
 - Text that must remain readable (contrast, minimum size): body text ≥14px, sufficient contrast against the dimmed overlay
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Which forms/screens actually have unsaved-state that this warning applies to? | No | Open — copy is generic and applies regardless; specific screens TBD |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

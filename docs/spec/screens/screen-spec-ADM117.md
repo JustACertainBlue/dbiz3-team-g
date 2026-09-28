@@ -4,17 +4,17 @@
 |---|---|
 | Screen ID | `ADM117` |
 | Screen name | Create Account |
-| Actor | HDT Admin / UBND Admin |
+| Actor | Admin (HDT / UBND) |
 | Priority | Must |
-| Belongs to module | `spec-AUT.md` and `spec-ADM.md` |
+| Belongs to module | `spec-AUT.md` |
 | Mockup image | `img/ADM117.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** Admin clicks "Create Account" on the User Management screen.
+Admins can create accounts within their permission scope. HDT creates Admin subtype UBND; only UBND creates Local Provider accounts, within its one assigned village. Responsibilities and data access follow the associated actor and administrative scope.
 
-**The user leaves this screen when:** They click "Create Account" to submit, or "Cancel" / the close (×) icon to dismiss the modal.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,77 +24,53 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Modal title | Header | "Create Account" | No | — |
-| 2 | Close (×) | Button | Dismisses modal | No | — |
-| 3 | Full Name | Input | `user.full_name` | Yes | Non-empty |
-| 4 | Email Address | Input | `user.email` | Yes | Valid email format, must not already exist |
-| 5 | Organization | Input | `user.organization` | Yes | Non-empty |
-| 6 | Generated Password | Input (masked) | System-generated password | Yes | Read-only, system generated |
-| 7 | Show/hide password (eye icon) | Toggle | Reveals/masks password field | No | — |
-| 8 | Regenerate | Button | Generates a new random password | No | — |
-| 9 | Copy | Button | Copies password to clipboard | No | — |
-| 10 | Password helper text | Text | "System-generated. User must change on first login." | No | — |
-| 11 | Role | Dropdown | `user.role`, e.g. "Local Provider" | Yes | Must be one of the roles this Admin is permitted to create |
-| 12 | Permissions section header | Text | "Permissions" with "Select all" / "Clear" links | No | — |
-| 13 | Permission group: Profile (+ group checkbox) | Checkbox group | View own provider profile, Update own profile information | No | At least a sensible default set is pre-checked per role |
-| 14 | Permission group: Experience Management (+ group checkbox, "indeterminate" state shown) | Checkbox group | Create experiences, Edit experiences/pricing/capacity, Manage experience media, Update availability & slots | No | — |
-| 15 | Permission group: Requests & Bookings (+ group checkbox) | Checkbox group | View incoming requests, Create bookings, Manage & update own bookings | No | — |
-| 16 | Permission group: Collaboration (+ group checkbox, unchecked) | Checkbox group | Chat with agencies, View collaborating agency profiles | No | — |
-| 17 | Permissions selected counter | Text | "N permissions selected" | No | — |
-| 18 | Cancel | Button (secondary) | Closes modal without saving | No | — |
-| 19 | Create Account | Button (primary) | Submits the new account | No | Disabled until all required fields are valid |
-
-### 3.1 Role-specific default permission presets
-
-| Role | Permission Group | Default Permissions |
-|---|---|---|
-| **Local Provider** | Profile | View & edit own provider profile |
-| | Experience Management | Create, edit, delete experiences; upload/manage media; manage availability |
-| | Requests & Bookings | View and manage incoming requests; view/manage bookings |
-| | Collaboration | Chat with agencies; control agency visibility of provider information |
-| | Notifications | View and manage notifications |
-| **Craft Village (UBND)** | Village & Provider Data | View & manage assigned village/provider data within assigned territory |
-| | Provider Account Management | Create Local Provider accounts; activate/deactivate account status |
-| | Verification | Verify/reject Local Providers and their experiences within assigned territory |
-| | Bookings & Activity | View bookings and activity data within assigned territory |
-
-Selecting a Role in the dropdown pre-checks the permission groups/items listed for that role above; the Admin may adjust individual checkboxes before saving.
+| 1 | Create Account | Heading | Create Account | No | Static screen title |
+| 2 | Name | Input | `name` — F-AUTH-19 | Yes | name (String; Required) |
+| 3 | Email | Input | `email` — F-AUTH-19 | Yes | email (Email; Required) |
+| 4 | Phone | Input | `phone` — F-AUTH-19 | Yes | phone (String; Required — 10–15 digits with optional leading +) |
+| 5 | Assigned village id | Input | `assigned_village_id` — F-AUTH-19 | Yes | assigned_village_id (ID; Required) |
+| 6 | Role | System context (not editable) | `role` — F-AUTH-19 | Yes | role (Enum[ADMIN]; Required — system-assigned) |
+| 7 | Admin type | System context (not editable) | `admin_type` — F-AUTH-19 | Yes | admin_type (Enum[UBND]; Required — system-assigned) |
+| 8 | Provider name | Input | `provider_name` — F-AUTH-20 | Yes | provider_name (String; Required) |
+| 9 | Address | Input | `address` — F-AUTH-20 | Yes | address (String; Required) |
+| 10 | Contact | Structured input | `contact` — F-AUTH-20 | Yes | contact (Object{ contact_person_name: String, phone_number: String }; Required) |
+| 11 | Village id | Input | `village_id` — F-AUTH-20 | Yes | village_id (ID; Required — taken from the UBND assignment, not entered manually) |
+| 12 | Create | Button / navigation | Create Active account; send temporary credentials email; failure shown separately from account result | No | Enabled only when the linked permission/validation guard succeeds |
+| 13 | Cancel | Button / navigation | No mutation | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Empty required fields, a freshly generated password, and a default permission set for the selected role | Modal opens |
-| Empty (no data) | All text inputs blank with placeholder text visible (as shown); no role selected yet shows no permission groups | Modal just opened before any role is picked |
-| Loading | Create Account button shows spinner and is disabled while the request is in flight | User taps Create Account |
-| Error | Inline error text under invalid field (e.g. "Email already in use", "Full name is required"); modal stays open | Validation fails client-side or server-side |
-| Success / confirmation | Modal closes, toast "Account created for {name}", new row appears in User Management table | Account created successfully |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Role dropdown | select | Updates the permission groups shown to match the role's applicable permissions | stays |
-| 2 | Regenerate | tap | Replaces the generated password | stays |
-| 3 | Copy | tap | Copies password, shows brief "Copied" confirmation | stays |
-| 4 | Group checkbox | tap | Selects/deselects all permissions within that group | stays |
-| 5 | Cancel / Close (×) | tap | Closes modal, discards input | `ADM095` (returns to underlying screen) |
-| 6 | Create Account | tap | Validates and creates the account | `ADM095` (modal closes, table refreshes) |
+| 1 | Create | Select | Create Active account; send temporary credentials email; failure shown separately from account result | ADM095 |
+| 2 | Cancel | Select | No mutation | ADM095 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Role options are limited by Admin scope: HDT can create UBND Admin and Local Provider accounts; UBND can create Local Provider accounts only | Screen List Screen Overview |
-| SR-002 | Password is always system-generated; the Admin cannot type a custom password | Mockup — read-only styled password field |
-| SR-003 | Permission checkboxes default to a role-appropriate preset, which the Admin may adjust before saving (see §3.1 for the full preset table) | Clarification |
-| SR-004 | The generated password is not emailed automatically; the Admin must share it with the new user manually (e.g. via the Copy button) | Clarification |
-| SR-005 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | HDT creates UBND with assigned village; UBND creates Provider in its assigned village. Role permissions are fixed by the shared matrix, not free-form checkboxes. Temporary credentials are emailed. | Function List and shared consistency contract |
+
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-ADM-02 | Enables scoped account creation with explicit permission assignment |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-019 | F-AUTH-19 | HDT create UBND account |
+| AUT | FR-020 | F-AUTH-20 | UBND create account for Local Provider |
 
 ## 8. Responsive and accessibility notes
 
@@ -102,20 +78,14 @@ Selecting a Role in the dropdown pre-checks the permission groups/items listed f
 - What collapses or stacks on a narrow screen: two-column permission rows stack to single column; modal becomes full-screen sheet
 - Text that must remain readable (contrast, minimum size): form labels ≥12px uppercase, input text ≥14px
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Full list of role-specific default permission presets | Yes | Resolved — see §3.1 |
-| 2 | Is email delivery of the generated password automatic, or does the Admin need to share it manually via Copy? | No | Resolved — manual, via the Copy button; see SR-004 |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

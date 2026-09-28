@@ -1,0 +1,13 @@
+scenario_id,fixture,expected_result
+ordinary-01,five linked agency-provider-experience pairs,valid
+boundary-otp,"otp attempt=5, resend=3, invalidated at exact expiry",expired/terminal challenge
+empty-village,DEMO-HN-004,zero providers
+empty-provider,1d8b5294-8216-51fa-a140-4f9a5e1b606a,zero experiences
+empty-agency,058f298f-2b63-568e-af51-6938bc22fe1d,zero bookings
+exception-cancelled,0dad1515-209a-5024-be64-8ceaa940ea7f,terminal historical booking
+exception-closed-chat,8532f8a8-c4ce-5c0c-8ae8-466dca018316,terminal immutable chat
+exception-rejected-registration,158c0349-02e9-5d93-8179-d99248d5cce1,Rejected with immutable review
+exception-provider-revision,1d8b5294-8216-51fa-a140-4f9a5e1b606a,version 1 remains published; version 2 requires revision
+reject-overlap,60903ccd-79b2-5180-bfca-667471381215,Slot Unavailable for overlapping active booking
+permission-ubnd-scope,0ae96632-7dda-5594-8a80-8812a5af2055,access limited to assigned village
+kpi-period,bookings + booking_status_history,created-at period and as-of status are reproducible

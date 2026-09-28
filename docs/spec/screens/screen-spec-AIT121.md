@@ -6,15 +6,15 @@
 | Screen name | AI Tour Matching |
 | Actor | Tour Agency |
 | Priority | Must |
-| Belongs to module | `spec-AIT.md` — AI Tour Matching |
+| Belongs to module | `spec-AIT.md` |
 | Mockup image | `img/AIT121.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** The Agency selects "AI Tour Matching" in the main nav after login, to describe tour needs in natural language and receive matching Village/Experience results directly in the conversation.
+Single chat-based matching screen. Agency describes its tour needs in natural language; AI analyzes and refines the requirements and returns matching Villages/Experiences directly within the conversation. The Agency can continue refining or open details/chat from result cards.
 
-**The user leaves this screen when:** The Agency navigates to another nav item (Explore, Bookings, Schedule, Messages), or taps an action on a result card (View Experience Detail → DSC033, Chat → COM048, Request Quote → opens COM048 with the quote message pre-sent, Check Availability Now → SCH140).
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,104 +24,79 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Top nav bar | Header | Explore / AI Tour Matching (active, "AI" badge) / Bookings / Messages / Schedule — global nav | Yes | — |
-| 2 | Account info (top right) | Text | Agency name, verified badge, "Tier X Operator • ID: <account ID>" from `spec-PRF019.md` §5.1 | Yes | — |
-| 3 | Notification bell | Toggle/Button | Unread notification count | No | — |
-| 4 | Avatar dropdown | Button | Opens Account Dropdown (ACC129, ACC130, Logout) | Yes | — |
-| 5 | "New Tour Inquiry" button | Button | Starts a new chat session | Yes | — |
-| 6 | Sidebar collapse icon | Toggle | Collapses/expands the inquiry-history sidebar | No | — |
-| 7 | Search inquiry history | Input | Searches by session name / inquiry ID | No | No minimum character requirement |
-| 8 | Inquiry history list (grouped by Today / Previous 7 Days / Previous 30 Days) | List | Each item: group name, material tag, timestamp, Session ID (`#AIM-xxxx`) | Yes | — |
-| 9 | Session header | Text | Active session name, "Session #AIM-xxxx" tag, "Craft Intent Engine v4.2" tag, sync status line | Yes | — |
-| 10 | AI message bubble | Text | AI response content, timestamp, "HANOI ARTISAN ASSISTANT" label | Yes | — |
-| 11 | User message bubble | Text | Agency's input content, timestamp, sender label (dispatch) | Yes | — |
-| 12 | Match result card | List item | Match % badge, classification label (Best Fit / High Cultural Affinity / Alternative Option), "B2B NET RATE" price (₫/pax), Experience name, location + distance + travel time, "Match Rationale" block, preview image placeholder, 4 action buttons | Yes | Only rendered for matches ≥ 70% (see SR-003) |
-| 13 | "Check Availability Now" button | Button | Opens the provider's open availability slots for this Experience | Yes | Only enabled once match results have returned |
-| 14 | "View Experience Detail" button | Button | Navigates to DSC033 | Yes | — |
-| 15 | "Request Custom Quote" button | Button | Opens COM048 with an auto-sent quote-request message (per Request Quote – Action); sendable once per Experience | Yes | Disabled if already requested for that Experience |
-| 16 | "Chat" button | Button | Opens COM048 with the corresponding provider | Yes | — |
-| 17 | Quick Actions row | Button group | "Select Option 1", "Select Option 2", "Adjust Transit Limit" — contextual shortcut actions | No | See SR-001, SR-002 |
-| 18 | Chat input box | Input | Enter additional requirements (dietary, mobility, VIP...) | No | Length capped per system config |
-| 19 | Attach icon | Button | Attaches a file to the message | No | — |
-| 20 | Mic icon | Button | Voice input | No | — |
-| 21 | "Send" button | Button | Sends the message to the AI | Yes | Disabled when input is empty |
-| 22 | Footer status line | Text | "AI Assistant synchronized with Hanoi Craft Federation Quotas", Session ID | No | — |
+| 1 | AI Tour Matching | Heading | AI Tour Matching | No | Static screen title |
+| 2 | Tour-requirement conversation and composer | Read-only panel | F-MATCH-01, F-MATCH-02, F-MATCH-03, F-MATCH-04, F-MATCH-05, F-MATCH-06, F-MATCH-07, F-MATCH-08, F-MATCH-09, F-MATCH-10, F-MATCH-11, F-MATCH-12, F-MATCH-13, F-MATCH-14, F-MATCH-15, F-MATCH-16 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 3 | Clarification question | Read-only panel | F-MATCH-01, F-MATCH-02, F-MATCH-03, F-MATCH-04, F-MATCH-05, F-MATCH-06, F-MATCH-07, F-MATCH-08, F-MATCH-09, F-MATCH-10, F-MATCH-11, F-MATCH-12, F-MATCH-13, F-MATCH-14, F-MATCH-15, F-MATCH-16 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 4 | Top matches and additional suggestions | Read-only panel | F-MATCH-01, F-MATCH-02, F-MATCH-03, F-MATCH-04, F-MATCH-05, F-MATCH-06, F-MATCH-07, F-MATCH-08, F-MATCH-09, F-MATCH-10, F-MATCH-11, F-MATCH-12, F-MATCH-13, F-MATCH-14, F-MATCH-15, F-MATCH-16 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 5 | No-match / Temporary AI Failure and Retry | Read-only panel | F-MATCH-01, F-MATCH-02, F-MATCH-03, F-MATCH-04, F-MATCH-05, F-MATCH-06, F-MATCH-07, F-MATCH-08, F-MATCH-09, F-MATCH-10, F-MATCH-11, F-MATCH-12, F-MATCH-13, F-MATCH-14, F-MATCH-15, F-MATCH-16 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 6 | Send requirements / clarification | Button / navigation | Analyze→clarify loop→build profile→retrieve→filter→rank | No | Enabled only when the linked permission/validation guard succeeds |
+| 7 | View Experience | Button / navigation | Matched candidate | No | Enabled only when the linked permission/validation guard succeeds |
+| 8 | Chat / Request Quote | Button / navigation | Retain Experience context; no separate quote form | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Sidebar shows inquiry history; main panel shows the most recent session, or is empty if none exists | Agency opens the screen |
-| Empty (no data) | Sidebar has no inquiry history; main panel shows only the AI's greeting inviting the Agency to describe its needs | Agency's first time using the feature, no Session yet |
-| Loading | AI message bubble shows an "analyzing..." state in place of result cards; action buttons are disabled | Agency just sent a request; AI is processing matching |
-| Error / No strong matches | System error: AI message bubble shows an error with a "Retry" button. No-match case: bubble shows "No strong matches found" and suggests refining the search criteria — triggered when no Experience reaches the 70% minimum match threshold (SR-003) | AI matching fails, or no Experience clears the 70% threshold |
-| Success / confirmation | 1–3 match result cards render in full with % badge, price, rationale, and action buttons, all ≥ 70% match | AI returns at least one match ≥ 70% |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | New Tour Inquiry | tap | Creates a new Session, clears prior context, focuses the input | stays (AIT121) |
-| 2 | Inquiry history item | tap | Loads that Session's conversation | stays (AIT121) |
-| 3 | Search inquiry history | type | Filters the list by keyword | stays (AIT121) |
-| 4 | Chat input + Send | type, tap | Sends the request; AI analyzes and returns new match results | stays (AIT121) |
-| 5 | Check Availability Now | tap | Opens the provider's availability for the Experience | `SCH140` |
-| 6 | View Experience Detail | tap | Opens the Experience detail page | `DSC033` |
-| 7 | Request Custom Quote | tap | Opens Chat and auto-sends a quote-request message | `COM048` |
-| 8 | Chat | tap | Opens Chat with the corresponding provider | `COM048` |
-| 9 | Quick Action — Adjust Transit Limit | tap | Sends the corresponding command as a message to the AI Matching Session immediately; no confirmation modal or extra input step | stays (AIT121) |
-| 10 | Quick Action — Select Option 1 / Select Option 2 | tap | Auto-sends the selected match to the AI Matching Session. AI then: (1) shows full detail of the selected Experience, (2) returns closely related/similar Experiences based on it, (3) keeps it as the reference point for further refinement. No confirmation modal or extra input step | stays (AIT121) |
-| 11 | Avatar dropdown | tap | Opens Account Dropdown | stays (opens overlay) |
+| 1 | Send requirements / clarification | Select | Analyze→clarify loop→build profile→retrieve→filter→rank | stay |
+| 2 | View Experience | Select | Matched candidate | DSC033 |
+| 3 | Chat / Request Quote | Select | Retain Experience context; no separate quote form | COM048 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Any Quick Action click auto-sends the corresponding command as a message to the AI Matching Session and is processed immediately — no confirmation modal or extra input step | Clarification |
-| SR-002 | "Select Option 1/2" is a direct-select Quick Action: on click, the system auto-sends the selected match to the AI Matching Session, which then (a) displays the selected Experience's full detail, (b) returns closely related/similar Experiences based on it, and (c) retains it as the reference point for subsequent refinement/follow-up actions | Clarification |
-| SR-003 | Minimum match threshold is 70%. Results below 70% are never presented as recommended matches. If no Experience reaches 70%, the screen shows the "No strong matches found" state and suggests refining the search criteria | Clarification |
-| SR-004 | At most 3 match result cards are shown per AI response turn | Mockup |
-| SR-005 | Agency interaction behavior within a session is recorded to update preferences and re-rank future recommendations | Screen List (EXP017) |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Matching profile is built before retrieval; clarification loops until sufficient input or cancellation. AI unavailable returns Temporary AI Failure with Retry, not unapproved rule-based extraction. | Function List and shared consistency contract |
+| SR-004 | Quote identity is Agency–Experience. Book/Schedule are not preference signals in this MVP. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| `AIT FR-001` | Provides the authenticated AI Tour Matching interface for Tour Agencies. |
-| `AIT FR-002` | Captures the Agency's natural-language tour requirements through the matching conversation input. |
-| `AIT FR-003` | Displays AI clarification questions and allows the Agency to provide missing or refined requirements. |
-| `AIT FR-005` | Presents verified Provider/Experience candidates returned by the matching process. |
-| `AIT FR-006` | Surfaces route, distance, availability, capacity and other hard-constraint information used to determine eligible matches. |
-| `AIT FR-007` | Displays ranked match results with match percentages and ordering produced by the matching engine. |
-| `AIT FR-008` | Renders top recommendations and additional suitable options with concise match explanations. |
-| `AIT FR-009` | Allows the Agency to refine requirements and regenerate recommendations within the same matching conversation. |
-| `AIT FR-011` | Provides Request Quote and Chat actions from a matching recommendation without creating a Booking directly. |
-| `AIT FR-012` | Displays the no-strong-match state and prompts the Agency to refine or relax its criteria when no acceptable match is returned. |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AIT | FR-001 | F-MATCH-01 | Open AI Matching Assistant |
+| AIT | FR-002 | F-MATCH-02 | Capture Natural Language Input |
+| AIT | FR-003 | F-MATCH-03 | Analyze & Clarify Tour Requirements |
+| AIT | FR-004 | F-MATCH-04 | Build Tour Preference Profile |
+| AIT | FR-005 | F-MATCH-05 | Retrieve seeded Village & verified Provider Experience candidates |
+| AIT | FR-006 | F-MATCH-06 | Check Route & Hard Constraints |
+| AIT | FR-007 | F-MATCH-07 | Score & Rank Candidates |
+| AIT | FR-008 | F-MATCH-08 | Generate & Display Recommendations |
+| AIT | FR-009 | F-MATCH-09 | Refine Matching Results |
+| AIT | FR-010 | F-MATCH-10 | Save Agency Preference Profile |
+| AIT | FR-011 | F-MATCH-11 | Initiate Quote Request / Chat |
+| AIT | FR-012 | F-MATCH-12 | Display Fallback Options |
+| AIT | FR-013 | F-MATCH-13 | Supporting background process — no direct UI control |
+| AIT | FR-014 | F-MATCH-14 | Supporting background process — no direct UI control |
+| AIT | FR-015 | F-MATCH-15 | Supporting background process — no direct UI control |
+| AIT | FR-016 | F-MATCH-16 | Supporting background process — no direct UI control |
+
 ## 8. Responsive and accessibility notes
 
 - Smallest supported width: 360px
 - What collapses or stacks on a narrow screen: the inquiry-history sidebar collapses into an icon/drawer; result cards switch from a horizontal (image + text) layout to a stacked layout
 - Text that must remain readable (contrast, minimum size): the match % badge and B2B net rate price need high contrast, minimum 14px
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-
-None — all open questions resolved.
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [~] Every element that displays data names the field it displays, matching the module spec. *(`spec-AIT.md` now available — AIT-owned fields map cleanly: Session header → `matching_session_id`; AI/User message bubbles → `Conversation Message` entity; Match % badge → `match_score` (0–100 scale, FR-007/Q10); route/distance/travel time → `route_distance_data` (FR-006); Match Rationale → `explanation` (FR-008/Recommendation entity). Still unmapped: classification label (Best Fit/High Cultural Affinity/Alternative Option), price, Experience name, and preview image are not defined as fields anywhere in `spec-AIT.md` — they come from Profile Management (`PRF`), which is out of scope for this module spec and not yet provided. **Conflict found:** this screen's SR-003 sets the minimum match threshold at 70%, but `spec-AIT.md` Open Question #15 resolves the no-match threshold at 40/100 — these need to be reconciled (are 40–69% matches shown at all, and if so, as what?).)*
-
----
-
-Template source: DBIZ3, VJCBI College - FTU, Session 4. Built on the DBIZ2 Screen Design
-structure (Screen List and Screen Layout), per DBIZ3 Syllabus v3.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

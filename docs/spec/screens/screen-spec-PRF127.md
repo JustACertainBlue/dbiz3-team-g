@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-PRF.md` |
 | Mockup image | `img/PRF127.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** A Local Provider opens its own workshop profile (e.g. via "My Business" in the account menu, or the dashboard) to review business information, description, contact information, Experiences, and its associated Village, as the Provider itself sees it.
+Profile of the current Local Provider, including business information, description, contact information, Experiences, and its associated Village. The Village name links to Village Profile.
 
-**The user leaves this screen when:** The Provider taps "Edit Provider Profile," opens the Village link, opens an Experience, or navigates via the top nav.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,68 +24,47 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Global nav (Dashboard, Experience Management, Bookings, Schedule, Messages) | Header | Static links | Yes | — |
-| 2 | Workshop identity chip (verified check + role) | Header | `business_name`, role label | Yes | — |
-| 3 | User avatar / name / role | Header | Logged-in Provider user | Yes | — |
-| 4 | Breadcrumb (Provider Portal / Workshop Profile / [Workshop] (Lead Admin)) | Navigation | `business_name` | Yes | — |
-| 5 | "Access Level: Full Management" label | Text | Session role/permission | No | — |
-| 6 | "Provider Administration" label | Text | Static | Yes | — |
-| 7 | "Edit Provider Profile" button | Button | — | Yes | — |
-| 8 | Verified badge | Text | `verification_status = Verified` | Yes | — |
-| 9 | Workshop title | Header | `business_name` | Yes | — |
-| 10 | Master artisan / subtitle | Text | `artisan_names` | No | — |
-| 11 | Location line | Text | `location` | Yes | — |
-| 12 | Specialty tag chips (Est. year, craft tags) | Tag list | Craft specialty tags | No | — |
-| 13 | "Direct Chat with Master" button | Button | — | No | Hidden on this screen: the button is only available when viewing another Provider's profile, not the profile owner's own view |
-| 14 | Hero image | Image | Primary `profile_images` item | Yes | — |
-| 15 | Guild Status / B2B Capacity info row | Text | Provider profile fields | No | — |
-| 16 | "Workshop Facilities & Capacity" section (3 cards) | Card | Facility attributes | No | — |
-| 17 | Gallery carousel + slide controls + thumbnail strip (6 items) | Image | `profile_images` array | Yes | BR-008 |
-| 18 | "Offered Workshop Experiences" section (3 cards) | Card | `Experience` entities owned by this Provider | Yes | — |
-| 19 | "View Details" link (per card) | Link | Navigates to owner Experience detail | Yes | — |
-| 20 | Card CTA button, labeled "Edit" (replaces "Booking" shown in mockup) | Button | Opens the Experience editing flow for this Provider-owned Experience | Yes | — |
-| 21 | "Village Affiliation" section | Card | `Village` entity | Yes | — |
-| 22 | Registry number box | Text | `Village` registry data | No | — |
-| 23 | "Master Artisan Logistics & On-Site Dispatch" box | Card | Dispatch contact fields (read-only here; editable via PRF128) | No | — |
-| 24 | Footer nav & legal links | Footer | Static | Yes | — |
+| 1 | Provider Profile | Heading | Provider Profile | No | Static screen title |
+| 2 | Workshop identity and craft type | Read-only panel | F-PROFILE-03 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 3 | Description and image gallery | Read-only panel | F-PROFILE-03 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 4 | Own Experiences and operating hours | Read-only panel | F-PROFILE-03 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 5 | Profile verification status | Read-only panel | F-PROFILE-03 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 6 | Edit own profile | Button / navigation | Provider only | No | Enabled only when the linked permission/validation guard succeeds |
+| 7 | Experiences | Button / navigation | Own Experience management | No | Enabled only when the linked permission/validation guard succeeds |
+| 8 | Village | Button / navigation | Read-only village | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Full Provider profile as the owner sees it, matching the mockup | Profile exists and has been completed at least once |
-| Empty (no data) | A first-time Provider (post account creation, pre profile completion) sees a "Complete your profile" prompt in place of the populated sections, with a direct link to Edit Provider Profile | `verification_status` is not yet set / profile fields are unfilled (per module spec assumption: "Provider can log in while its business profile is not yet Verified") |
-| Pending Verification | A status banner indicates the profile is under review; editing remains available via "Edit Provider Profile," but the profile cannot be listed until approved | `verification_status = Pending Verification` |
-| Revision Required | A banner shows the revision feedback and provides an "Edit Profile" action to address the required changes and resubmit | `verification_status = Revision Required` |
-| Loading | Skeleton blocks for header, hero image, facility cards, and Experience cards | Screen just opened |
-| Error | Full-page error ("Couldn't load your profile — Retry") | Fetch fails |
-| Success / confirmation | Toast "Profile updated" (or, on first-ever save, "Profile submitted for verification") shown here after redirect from `PRF128` | Returning from a successful Edit Provider Profile save |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | "Edit Provider Profile" | tap | Opens the edit form, pre-filled | `PRF128` |
-| 2 | Nav: Dashboard / Experience Management / Bookings / Schedule / Messages | tap | Navigates to that module | `DSH018` / `EXP067` / `BKG133` / `SCH139` / `COM065` |
-| 3 | Carousel arrows / thumbnails | tap | Cycles/selects gallery image | stays |
-| 4 | Experience "View Details" | tap | Opens this Provider's own Experience in owner view | `EXP068` |
-| 4a | Experience card "Edit" button | tap | Opens the Experience editing flow | `EXP070` |
-| 5 | "Bat Trang Ceramic Village Guild" title | tap | Opens the affiliated Village profile | `VIL030` |
-| 6 | Avatar | tap | Opens account dropdown | Account Dropdown (—) |
+| 1 | Edit own profile | Select | Provider only | PRF128 |
+| 2 | Experiences | Select | Own Experience management | EXP067 |
+| 3 | Village | Select | Read-only village | VIL030 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | This screen shows the same profile content the Provider itself owns and can only be reached by that Provider's authenticated session (or an Admin in read-only mode via a separate Admin screen). | BR-002, BR-003 |
-| SR-002 | Editing happens exclusively via PRF128; this screen is view-only. | Consistent with the module's view/edit split |
-| SR-003 | The verification badge reflects the Provider's actual `verification_status` (Verified / Pending Verification / Revision Required), not always "Verified" as shown in the mockup. | BR-006 |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-004 | Displays the Local Provider's own business profile, description, contact information, Experiences and associated Village. |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| PRF | FR-003 | F-PROFILE-03 | Display Local Provider Profile |
 
 ## 8. Responsive and accessibility notes
 
@@ -93,21 +72,14 @@
 - What collapses or stacks on a narrow screen: same stacking pattern as DSC122 (hero stacks, facility/Experience cards stack, thumbnail strip scrolls horizontally).
 - Text that must remain readable (contrast, minimum size): verification status badge text must remain legible and distinguishable across all three possible states (Verified / Pending Verification / Revision Required), not color alone.
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | The "Direct Chat with Master" button is hidden when the viewer is the profile owner; it is only available when viewing another Provider's profile. | Yes | Closed |
-| 2 | For the Provider's own Experience cards, "Booking" is replaced with "Edit." Clicking it opens the Experience editing flow in EXP070. | Yes | Closed |
-| 3 | Pending Verification: a status banner indicates the profile is under review; editing remains available, but the profile cannot be listed until approved. Revision Required: a banner shows the revision feedback and provides an "Edit Profile" action to address the required changes and resubmit. | Yes | Closed |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none" (screen is view-only).
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

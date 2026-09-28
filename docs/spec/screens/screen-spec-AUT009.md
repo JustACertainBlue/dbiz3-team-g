@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` |
 | Mockup image | `img/AUT009.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** A user navigates directly to the login URL, or a Guest is redirected here when attempting a restricted action.
+Shared login screen for Tour Agency, Local Provider, UBND, and HDT. Guests are redirected here when attempting a restricted action.
 
-**The user leaves this screen when:** They successfully sign in (redirected to their role's home screen), or tap "Forgot your password?" to start password recovery.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,50 +24,51 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Left panel branding | Text/Image | "HANOI ARTISAN BRIDGE", "Partner Portal", tagline "One platform for craft villages, tour agencies & operators.", version stamp | No | — |
-| 2 | Heading | Text | "Welcome back" | No | — |
-| 3 | Subheading | Text | "Sign in to your account — craft village, tour agency, or admin." | No | — |
-| 4 | Email Address | Input | Login email | Yes | Valid email format, must match a registered account |
-| 5 | Password | Input (masked) | Login password | Yes | Non-empty |
-| 6 | Show/hide password (eye icon) | Toggle | Reveals/masks password field | No | — |
-| 7 | Sign in | Button (primary) | Submits credentials | No | Disabled until both fields are filled |
-| 8 | Forgot your password? | Link | Starts password recovery | No | — |
+| 1 | Login | Heading | Login | No | Static screen title |
+| 2 | Email | Input | `email` — F-AUTH-06 | Yes | email (Email; Required) |
+| 3 | Password | Masked input | `password` — F-AUTH-06 | Yes | password (String, masked; Required) |
+| 4 | Login | Button / navigation | Use F-AUTH-08 routing and must_change_password guard | No | Enabled only when the linked permission/validation guard succeeds |
+| 5 | Forgot password | Button / navigation | Open token-link recovery | No | Enabled only when the linked permission/validation guard succeeds |
+| 6 | Register | Button / navigation | Open Agency registration | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Empty email/password fields with placeholder text, Sign in enabled once both are filled | Screen load |
-| Empty (no data) | Same as default — this screen has no persisted data to be "empty" of | N/A (applies default) |
-| Loading | Sign in button shows spinner and is disabled while authenticating | User taps Sign in |
-| Error | Inline error text under field(s) for invalid format; banner above the form "Incorrect email or password" for bad credentials. If the Agency account status is Pending, an inline error within the form reads: "Your account is pending approval. Please wait for your account to be reviewed." If the Agency account status is Rejected, an inline error within the form reads: "Your account has been rejected. Please contact the administrator for more information." No separate error page or modal is shown for either case. | Client validation fails, credentials are rejected, or the Agency account status is Pending/Rejected |
-| Success / confirmation | Redirect to the user's role-specific home screen (no confirmation screen shown) | Sign in succeeds |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Email / Password | type | Live format validation | stays |
-| 2 | Eye icon | tap | Toggles password visibility | stays |
-| 3 | Sign in | tap | Validates and authenticates | Tour Agency → `EXP017`; Local Provider → `DSH018`; HDT/UBND Admin → `ADM079`; Guest is not applicable (Guests do not log in) |
-| 4 | Forgot your password? | tap | Navigates to password recovery | `PAS011` |
+| 1 | Login | Select | Use F-AUTH-08 routing and must_change_password guard | ACC129 / ADM079 / EXP017 / DSH018 |
+| 2 | Forgot password | Select | Open token-link recovery | PAS011 |
+| 3 | Register | Select | Open Agency registration | REG003 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | This is a single shared login screen for Tour Agency, Local Provider, UBND, and HDT — the destination screen after login depends on the account's role | Screen List Screen Overview |
-| SR-002 | A Guest attempting a restricted action is redirected here; on successful login they land on the restricted destination they originally requested, not always the default home screen | Screen List Screen Overview |
-| SR-003 | Sign in stays disabled until both Email Address and Password have values | Mockup — placeholder-only fields imply required inputs |
-| SR-004 | A Pending or Rejected Agency account gets a specific inline error message instead of a generic auth failure message (see States §4) | Clarification |
-| SR-005 | Session length is controlled entirely by system authentication policy; it is not user-configurable and there is no "Remember me" option in the UI | Clarification |
-| SR-006 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Wrong credentials, Pending Approval, Rejected or Disabled return a defined error and create no session. ADMIN carries admin_type=HDT/UBND. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-AUT-01 | Provides the single authentication entry point for all authenticated actors |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-005 | F-AUTH-05 | Display login interface |
+| AUT | FR-006 | F-AUTH-06 | Capture and verify credentials |
+| AUT | FR-007 | F-AUTH-07 | Authenticate, check account status & load role |
+| AUT | FR-008 | F-AUTH-08 | Route to role-specific landing |
+| AUT | FR-015 | F-AUTH-15 | Initialize user role & permissions on login |
+| AUT | FR-017 | F-AUTH-17 | Verify account status & role consistency |
 
 ## 8. Responsive and accessibility notes
 
@@ -75,20 +76,14 @@
 - What collapses or stacks on a narrow screen: the dark left branding panel stacks above the form instead of sitting beside it
 - Text that must remain readable (contrast, minimum size): form labels ≥12px uppercase, white-on-dark branding text maintains 4.5:1 contrast
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Exact messaging shown when a pending/rejected Agency account attempts to log in | Yes | Resolved — see States §4 and SR-004 |
-| 2 | Is there a "Remember me" or session-length control? | No | Resolved — none exists; see SR-005 |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

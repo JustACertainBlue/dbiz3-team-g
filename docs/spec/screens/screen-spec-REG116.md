@@ -4,17 +4,17 @@
 |---|---|
 | Screen ID | `REG116` |
 | Screen name | Registration Status |
-| Actor | Tour Agency |
+| Actor | Guest |
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` |
 | Mockup image | `img/REG116.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** The Agency successfully completes OTP verification (REG115) and submits the full registration application.
+Displays the Agency registration status, Pending Approval after verified registration; subsequent review uses Approved/Rejected, without conflating Provider verification.
 
-**The user leaves this screen when:** They click "Return to Explore" or "Download Submission Summary (PDF)", or click one of the curated workshop cards.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,83 +24,61 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Header | Header | "← Explore Villages" link, logo + "B2B Travel Agency Portal", "Support Desk" link, avatar icon | No | — |
-| 2 | Breadcrumb | Text | "Onboarding Workflow • Phase 03 of 03" | No | — |
-| 3 | Security protocol badge | Badge | "Security Protocol: ED25519-TLS Certified" | No | — |
-| 4 | Step tracker (3 steps) | Stepper | Step 01 Completed, Step 02 Verified, Step 03 In Progress | No | — |
-| 5 | Application filing dossier card header | Card | Clock icon, "Application Filing Dossier", dossier code `application.dossier_code` (e.g. REG-2025-HAN-8409) | No | — |
-| 6 | Official registration status badge | Badge | `application.status` e.g. "● Pending Heritage Audit" | No | — |
-| 7 | "Submission Confirmed" label | Text | Static | No | — |
-| 8 | Heading | Text | "Application Submitted Successfully." | No | — |
-| 9 | Body copy | Text | Thank-you / explanation message | No | — |
-| 10 | Verification Timeline & Checklist panel | Card | "Estimated SLA: ≤ 24 working hours" | No | — |
-| 11 | Step 1: Receipt of Dossier & Contact OTP Verification | Checklist item | Status "Completed" | No | — |
-| 12 | Step 2: Tour Operator License & Tax ID Verification | Checklist item | Status "Under Review (24H)" | No | — |
-| 13 | Step 3: B2B Portal Activation, Net Rates & Master Artisan Dispatch | Checklist item | Status "Pending Audit" | No | — |
-| 14 | Return to Explore | Button (primary) | Navigates to public discovery | No | — |
-| 15 | Download Submission Summary (PDF) | Link | Downloads a PDF summary of the submission | No | — |
-| 16 | Dossier Metadata panel | Card | Tax ID, Agency Name, License Tier, Contact Person, Submission Time, Primary Region — all from `application.*` | No | — |
-| 17 | Expedited Audit / Urgent Verification panel | Card | B2B Partner Hotline, Priority Verification Desk email, instructions to reference the dossier code | No | — |
-| 18 | "While waiting for review, your agency may explore:" section | Text | Static | No | — |
-| 19 | "View Full 48 Heritage Destinations" | Link | Navigates to full village list | No | — |
-| 20 | Curated workshop cards (×3) | Card | Village name, region tag, description, max capacity, "B2B Net Avail. After Audit" note | No | — |
-| 21 | Footer | Text/Links | Copyright, Operator Compliance, Fair Trade & Preservation Terms, Agency Support | No | — |
+| 1 | Registration Status | Heading | Registration Status | No | Static screen title |
+| 2 | Registration submitted — Pending Approval | Read-only panel | F-AUTH-04 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 3 | Requested changes and review comment | Read-only panel | F-AUTH-18 — when HDT selected Request More Information | Conditional | Shows the latest requested changes without exposing internal review data. |
+| 4 | Edit and resubmit registration | Button / secure-link action | F-AUTH-26 | Conditional | Visible only when the latest review decision is Request More Information and the single-use edit link is valid. |
+| 5 | Sign in | Button / navigation | Account remains Pending Approval until HDT approves | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Full confirmation screen as shown, with Step 1 complete and Steps 2–3 pending/in review | Screen load right after successful application submission |
-| Empty (no data) | Not applicable — dossier metadata is always populated once an application exists; if curated workshops cannot be loaded, that section is hidden or shows "No preview workshops available right now" | Curated workshops recommendation service returns nothing |
-| Loading | Skeleton in place of Dossier Metadata and curated workshop cards while they load; core confirmation message renders immediately | Screen mounts, secondary data still loading |
-| Error | Banner "Could not load your dossier details, please refresh" if metadata fails to load; PDF download shows an inline error if generation fails | Metadata fetch or PDF generation fails |
-| Success / confirmation | This screen is itself the success/confirmation state of the registration flow | Application submitted |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Return to Explore | tap | Navigates to discovery | `EXP120` (public, since the Agency account is not yet approved) |
-| 2 | Download Submission Summary (PDF) | tap | Downloads a PDF | stays |
-| 3 | View Full 48 Heritage Destinations | tap | Navigates to full village browse | `VIL030` (list context) |
-| 4 | Curated workshop card | tap | Opens that Village's profile | `VIL030` |
+| 1 | Edit and resubmit registration | Select | Open the existing registration form with a single-use edit token valid for 24 hours | REG003 |
+| 2 | Sign in | Select | Account remains Pending Approval until HDT approves | AUT009 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Displays the Agency registration status: submitted, pending verification, approved, or rejected | Screen List Screen Overview for REG116 |
-| SR-002 | Verification is expected within a stated SLA (24 working hours per the mockup) | Mockup — "Estimated SLA: ≤ 24 working hours" |
-| SR-003 | Until approval, the Agency cannot access B2B pricing/booking features; only public browsing is available | Mockup — curated cards labeled "B2B Net Avail. After Audit" |
-| SR-004 | Both approval and rejection outcomes are communicated to the Agency by email, not by an in-app screen state. On approval, the Agency logs in normally afterward | Clarification |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | The account is created only after validated registration and successful F-AUTH-23, with Pending Approval. | Function List and shared consistency contract |
+| SR-004 | Request More Information keeps the account Pending Approval. The Guest may edit and resubmit through F-AUTH-26 using a single-use token valid for 24 hours; a replacement token or successful resubmission invalidates older active tokens. Each submission version and review decision is retained. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| F-AUTH-04 | Displays the outcome of account creation: this screen loads once F-AUTH-04 has created the Agency account (status `Pending Approval`) after OTP verification (F-AUTH-23) has succeeded, and shows the resulting dossier/confirmation |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-004 | F-AUTH-04 | Create Agency Account and Save to System |
+| AUT | FR-026 | F-AUTH-26 | Revise and Resubmit Agency Registration |
 
 ## 8. Responsive and accessibility notes
 
 - Smallest supported width: 768px
-- What collapses or stacks on a narrow screen: the two-column layout (main dossier panel / sidebar metadata) stacks to a single column; the 3 workshop cards stack vertically
+- What collapses or stacks on a narrow screen: the two-column layout (main status panel / sidebar metadata) stacks to a single column; the related information cards stack vertically
 - Text that must remain readable (contrast, minimum size): status badges ≥12px with sufficient contrast, heading ≥28px
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | What does this screen show for a Rejected application? | Yes | Resolved — nothing is shown in-app for rejection; the Agency is notified by email instead. This screen does not have a distinct "Rejected" state. |
-| 2 | What happens once the application is fully Approved — does the Agency see an updated version of this screen, or are they redirected elsewhere? | Yes | Resolved — the Agency is notified by email once approved. There is no in-app "Approved" state of this screen; the Agency simply logs in as usual afterward via `AUT009`. |
-| 3 | Module spec `spec-AUT.md` lists "OTP-based Agency registration" as explicitly out of scope, and its flow/sequence diagrams and FR-001–004 show submission going straight to `Pending Approval` with no OTP step, conflicting with this screen's "Shown when" (arrival via REG115 OTP verification). | Yes | Resolved — F-AUTH-04 has been revised to explicitly require successful OTP verification via F-AUTH-23 before account creation, confirming this screen's "Shown when" (arrival via REG115) matches the documented flow. See §7 and matching updates in `screen-spec-REG003.md` §9 and `screen-spec-REG115.md` §9. |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

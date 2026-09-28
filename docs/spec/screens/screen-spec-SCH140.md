@@ -6,15 +6,15 @@
 | Screen name | Provider Schedule – Agency View |
 | Actor | Tour Agency |
 | Priority | Must |
-| Belongs to module | `spec-BKG.md` |
+| Belongs to module | `spec-BKG.md` / `spec-EXP.md` |
 | Mockup image | `img/SCH140.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** A logged-in Tour Agency user navigates to a specific Local Provider's public schedule, typically from that provider's Village/Provider profile ("Back to Explore" trail) to check availability before requesting a quote.
+Logged-in Agency views a Local Provider's public schedule. Calculated operating windows and anonymous Booked/On hold occupancy are shown; other Agencies and their booking details remain hidden.
 
-**The user leaves this screen when:** They click "← Back to Explore" (returns to VIL030/discovery), submit "Request Quote" (triggers a Chat quote-request per the Quote Request action), or navigate away via the top nav.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,66 +24,48 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Top nav bar | Header | Logo, nav links (Explore / AI Tour Matching / Bookings / Schedule active / Messages), Agency identity | Yes | — |
-| 2 | Breadcrumb | Link | "← Back to Explore / Provider Schedule: Vun Art Cooperative" | Yes | Navigates back |
-| 3 | Confidentiality badge | Badge | "🔒 B2B Confidential Masking Active" | No | Indicates other agencies' data is hidden |
-| 4 | Location subtitle | Text | "Van Phuc Silk Village, Ha Dong" | No | — |
-| 5 | Page title | Header | "Vun Art Cooperative — Availability & Dispatch Calendar" | Yes | — |
-| 6 | Page description | Text | Static subtitle explaining masking of identities/pricing | No | — |
-| 7 | View toggle | Toggle | Month / Week / Day | Yes | Exactly one active |
-| 8 | Month navigator | Control | "October 2024" with prev/next chevrons | Yes | Changes displayed month |
-| 9 | Legend | Legend | Booked (filled), On Hold (dashed outline), Open cells (unrestricted/available), info tooltip on masking policy | No | — |
-| 10 | Calendar grid | Calendar | 7-column month grid; each day cell shows only time + status chips (e.g. "08:30 [BOOKED]", "14:00 [ON HOLD]") with no agency names/pax counts; weekend/maintenance day labels shown | Yes | Never displays another agency's identity or booking details |
-| 11 | Selected day highlight | State | "Active" tag + border on the currently selected cell (Oct 24) | Yes | Exactly one cell selected at a time |
-| 12 | Panel: Selected Operating Date | Card | Date, Slot ID chip ("SLOT ID #VUN-2410"), provider/studio name | Yes | Reflects the selected calendar cell |
-| 13 | Daily Sessions summary | Text | "2 Slots Total", "1 Open / 1 Booked" | Yes | Computed from the day's slots |
-| 14 | Slot detail card | Card | Time range, status badge ("Booked"), session title, description, "Agency Details: CONFIDENTIAL / RESTRICTED" note | Yes | Never reveals the booking agency's identity |
-| 15 | Panel: Request Quote / Allotment Inquiry | Card | "Instant Desk" tag, subtitle "Direct B2B dispatch to Vun Art desk" | Yes | — |
-| 16 | Select Experience dropdown | Input (select, required) | Lists this provider's Experiences (e.g. "Silk Scrap Mosaic Art Workshop (Main Studio)") | Yes | Must select one Experience |
-| 17 | Target Date input | Input (date, optional) | Pre-filled with the selected calendar day | No | Must be a valid date if provided |
-| 18 | Delegation (Pax) input | Input (number) | Value 12, "MAX 12" helper | Yes | Must be > 0 and ≤ Experience max capacity |
-| 19 | Preferred Operating Window | Button group (select-one) | 08:30–11:30 / 14:00–17:00 (selected) / Flexible | Yes | Exactly one selected |
-| 20 | Request Quote button | Button | Primary CTA | Yes | Enabled once Experience and Pax are valid |
-| 21 | SLA helper text | Text | "Direct inquiry routed to Vun Art dispatch desk. SLA < 2 hrs." — informational copy only, not a system-enforced SLA | No | — |
-| 22 | Inclusions note | Text | Checkmark + static text on what confirmed bookings include | No | — |
-| 23 | Panel: Lead Artisan Cooperative Profile | Card | Avatar initials, guild name, tagline ("Social Enterprise • 28 Masters & Apprentices"), short description | No | Read-only, from Provider Profile |
-| 24 | Footer | Footer | Company info, links, copyright | No | — |
+| 1 | Provider Schedule – Agency View | Heading | Provider Schedule – Agency View | No | Static screen title |
+| 2 | Calculated available windows | Read-only panel | F-SCHED-01, F-SCHED-09, F-EXPLORE-11 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 3 | Anonymous On hold / Booked occupancy | Read-only panel | F-SCHED-01, F-SCHED-09, F-EXPLORE-11 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 4 | Optional quote context: Experience, date and group | Read-only panel | F-SCHED-01, F-SCHED-09, F-EXPLORE-11 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 5 | Select day | Button / navigation | Read calculated availability, mask other Agency identities | No | Enabled only when the linked permission/validation guard succeeds |
+| 6 | Request Quote | Button / navigation | Optional dates/pax; once per Agency–Experience; no separate mandatory form | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Calendar populated with Booked/On Hold chips (masked) for the month; a day pre-selected with its detail and the Request Quote form ready | Screen load with an existing schedule for the provider |
-| Empty (no data) | Calendar shows all cells as open/available; selected-day panel shows "No sessions scheduled — fully available"; Request Quote form remains usable | Provider has no bookings in the displayed month |
-| Loading | Calendar cells and right-hand panels show skeleton placeholders; view toggle and month navigator remain interactive but stale until load completes | Screen mount, or after changing month/view |
-| Error | Calendar area replaced by an inline error message ("Couldn't load this provider's schedule") with a Retry action | API/network failure fetching schedule data |
-| Success / confirmation | After Request Quote submits, a confirmation state appears (e.g. toast "Quote request sent") and the button becomes disabled/relabeled, since the same Experience can only be requested once per the Quote Request rule | Request Quote submitted successfully |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Back to Explore | tap | Returns to provider/village discovery | `VIL030` |
-| 2 | Day cell | tap | Selects that day; right panel updates; Target Date pre-fills | stays on `SCH140` |
-| 3 | View toggle (Month/Week/Day) | tap | Changes calendar layout granularity | stays on `SCH140` |
-| 4 | Month navigator | tap | Moves the calendar to the previous/next month | stays on `SCH140` |
-| 5 | Preferred Operating Window buttons | tap | Selects the desired window for the quote request | stays on `SCH140` |
-| 6 | Request Quote button | tap | Opens Chat and auto-sends the initial quote-request message for the selected Experience (per the Quote Request action) | Chat (`COM065`) |
+| 1 | Select day | Select | Read calculated availability, mask other Agency identities | stay |
+| 2 | Request Quote | Select | Optional dates/pax; once per Agency–Experience; no separate mandatory form | COM048 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Other Agencies' identities and booking details are never shown — only Booked/On-hold time slots are visible, with agency/pax/pricing masked | Explicit in Screen List description for SCH140 |
-| SR-002 | Canceled blocks return to open inventory and are not shown as Booked/On Hold | Mockup legend note: "Canceled blocks returned to open inventory" |
-| SR-003 | Request Quote can only be triggered once by the same Agency for the same Experience + Target Date combination; a repeat request for that same Experience and date does not create a duplicate quote request (a different date, or a different Experience, is allowed) | Cross-reference with "Request Quote - Action" row in the Screen List; Clarification (Module 5) |
-| SR-004 | Delegation (Pax) cannot exceed the selected Experience's max capacity | Mockup: "MAX 12" helper text |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Available periods require configured operating hours; zero bookings does not mean fully available. Only anonymous On hold/Booked occupancy is public in this authenticated schedule. | Function List and shared consistency contract |
+| SR-004 | Quote group/date/window are optional context, not an extra mandatory form. Duplicate request guard uses Agency–Experience, not target date. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-001 | Lets a logged-in Agency view a Local Provider's public schedule with only Booked/On-hold time slots shown (Agency access to F-SCHED-01 confirmed by module spec Open Question 24) |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| BKG | FR-001 | F-SCHED-01 | Display Public Schedule |
+| BKG | FR-009 | F-SCHED-09 | Calculate Provider Availability |
+| EXP | FR-011 | F-EXPLORE-11 | Request Quote from Experience Card/Detail |
 
 ## 8. Responsive and accessibility notes
 
@@ -91,20 +73,14 @@
 - What collapses or stacks on a narrow screen: the calendar grid and the right-hand panels (selected date, request quote, cooperative profile) stack vertically; the Preferred Operating Window button group wraps or becomes a dropdown
 - Text that must remain readable (contrast, minimum size): Booked vs. On Hold chip styling must remain distinguishable at small size and not rely on color alone (dashed vs. filled, per the legend)
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | [NEEDS CLARIFICATION: Does the "SLA < 2 hrs" figure reflect a real service-level commitment the system enforces, or is it purely informational copy?] **Resolved:** Purely informational copy; not system-enforced. | No | Resolved |
-| 2 | [NEEDS CLARIFICATION: What exactly counts as "the same Experience/activity" for the one-time Request Quote restriction — same Experience only, or same Experience + date?] **Resolved:** Same Experience + Target Date combination. A repeat request for a different date (or a different Experience) is allowed. | Yes | Resolved |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

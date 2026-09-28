@@ -1,0 +1,6 @@
+message_id,chat_session_id,sender_user_id,text,message_kind,booking_id,sent_at
+881c3731-7a76-5985-9661-b460a2212f74,475b0c6a-e952-518c-b3fa-87b3dd4f1265,81c4fc0c-a527-5505-abbf-ea5b186973bf,[DEMO] Tôi muốn nhận báo giá cho trải nghiệm này.,Quote Request,,2026-08-22T01:00:00+00:00
+afbf3dc1-81d1-53e1-a994-311b062c0043,2f1c8c06-f7c7-56cf-96f5-85b10264ecac,c84b2823-de1b-583b-bf68-f866e3dd329f,[DEMO] Tôi muốn nhận báo giá cho trải nghiệm này.,Quote Request,,2026-08-23T01:00:00+00:00
+f52f232d-9320-5a65-9924-eaf00c7e056a,da470ca9-493b-56a9-b812-6043943c57b8,82768a6e-d975-5a63-9f1f-0abaf5fc022f,[DEMO] Tôi muốn nhận báo giá cho trải nghiệm này.,Quote Request,,2026-08-24T01:00:00+00:00
+5147baee-8843-5a06-b35f-73e916708977,8532f8a8-c4ce-5c0c-8ae8-466dca018316,2793a8c3-022a-5bf1-ac96-fd95cf654405,[DEMO] Tôi muốn nhận báo giá cho trải nghiệm này.,Quote Request,,2026-08-25T01:00:00+00:00
+2de49404-993a-54db-9c09-6f3b7a3a2549,5f46d8a6-e283-5594-bb9c-5dfb8972407c,bdfeddb7-8b35-5df1-99b5-06705537469f,[DEMO] Tôi muốn nhận báo giá cho trải nghiệm này.,Quote Request,,2026-08-26T01:00:00+00:00

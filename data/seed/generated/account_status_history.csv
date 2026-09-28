@@ -1,0 +1,18 @@
+history_id,user_id,from_status,to_status,changed_by,changed_at,reason
+440d6ce0-562d-5f61-84df-bfffb328bc54,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,,Active,,2026-05-05T01:00:00+00:00,Synthetic initial status
+9d12b150-80cb-5760-8ee9-d2224ceef613,0ae96632-7dda-5594-8a80-8812a5af2055,,Active,,2026-05-06T01:00:00+00:00,Synthetic initial status
+93ba2f18-3ab6-5e2d-8492-59afafbb9bfc,87fcdcf0-b765-5d25-89db-49523ba82f38,,Active,,2026-05-07T01:00:00+00:00,Synthetic initial status
+a5374a33-109a-58df-afb0-1695b4bf6db0,81c4fc0c-a527-5505-abbf-ea5b186973bf,,Approved,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-05-15T01:00:00+00:00,Synthetic initial status
+df60356f-6776-5230-ba5a-3333f9f59097,c84b2823-de1b-583b-bf68-f866e3dd329f,,Approved,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-05-16T01:00:00+00:00,Synthetic initial status
+dab8610a-a663-53e7-8143-84ef9992c1e1,82768a6e-d975-5a63-9f1f-0abaf5fc022f,,Approved,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-05-17T01:00:00+00:00,Synthetic initial status
+0b7507ec-06fe-5f6a-b7d1-6cf3df6c531b,2793a8c3-022a-5bf1-ac96-fd95cf654405,,Approved,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-05-18T01:00:00+00:00,Synthetic initial status
+c206fb63-7189-5c88-826d-f1142b5e85db,bdfeddb7-8b35-5df1-99b5-06705537469f,,Approved,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-05-19T01:00:00+00:00,Synthetic initial status
+68529992-c16b-53c7-b0ac-0dde7585e465,2f2282f0-c4d3-5777-8ff5-e4706e2ce780,,Approved,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-05-20T01:00:00+00:00,Synthetic initial status
+a49d0222-727c-58b7-a1d5-d3aceb1f4d5b,cbb9a50e-c512-53d0-9044-ad6ce7abd6f8,,Active,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-06-04T01:00:00+00:00,Synthetic initial status
+01c85a7e-4bf7-5c5f-af23-e27897abed13,36676282-8961-57b2-94d8-dccdcfc642dd,,Active,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-06-05T01:00:00+00:00,Synthetic initial status
+ccfa3087-0f9f-51c2-b1cd-1460ebe934d8,b9901e48-eb37-5971-a601-5151713871ab,,Active,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-06-06T01:00:00+00:00,Synthetic initial status
+5cc2b614-d9a4-5b40-8e02-d6d3d3214338,31bebc45-b549-5451-a802-b2aafc1438f0,,Active,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-06-07T01:00:00+00:00,Synthetic initial status
+1504c95f-8841-5d46-b0d0-4a75826cced6,285422ee-471d-51ed-b828-5018488a9a7d,,Active,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-06-08T01:00:00+00:00,Synthetic initial status
+d2a6a3e3-11f3-51c6-be54-bd815cddb234,731a9330-5f5d-524a-b663-7ecd6993b60c,,Active,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-06-09T01:00:00+00:00,Synthetic initial status
+4b23e554-86f8-50c6-adae-7a8a97f113ae,e8aa1eb7-fc66-52a0-ab03-e576dea2f10e,,Pending Approval,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-06-23T01:00:00+00:00,Synthetic initial status
+3555ac92-00b9-503d-bba5-7530ef2b2d3e,338ba574-23f7-5106-b884-b4c424ac6562,,Rejected,7a8478f8-6c09-5cf3-8db6-7dba559b36c1,2026-06-24T01:00:00+00:00,Synthetic initial status

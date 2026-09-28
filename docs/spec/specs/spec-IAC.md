@@ -4,12 +4,14 @@
 |---------------------------|-------------------------------------------------------------------------------------------------------------------|
 | Module ID                 | IAC                                                                                                               |
 | Module name               | In-app Chat                                                                                                       |
-| Spec version              | v0.1                                                                                                              |
+| Spec version | v0.2 — consistency revision |
 | Author (team member)      | Group G                                                                                                           |
-| Date                      | 22/09/2026                                                                                                        |
-| Status                    | Clarified                                                                                                         |
-| Approved by (Client role) |                                                                                                                   |
+| Date | 28/09/2026 |
+| Status | Revised — pending human approval |
+| Approved by (Client role) | Pending human approval |
 | DBIZ2 source              | Function List rows **F-CHAT-01 .. F-CHAT-05**; Use Case **UC-COM-01**; Screens **COM048, COM065, COM125, COM126** |
+
+Shared actor/state/field definitions: [Consistency Contract](../docs/consistency-contract.md). Exact current Function contracts are in §5/5.1. Technical choices and unresolved field-design questions are explicitly separated there.
 
 **1. Purpose and scope (mandatory)**
 
@@ -35,7 +37,7 @@
 
 - Upload one or more supported documents to an active Chat.
 
-- Select existing generated Agency dossier documents or verified Provider assets where available.
+- Select files from the user's device and attach supported documents to an Active Chat.
 
 - Attach documents to the current Chat conversation and relevant context.
 
@@ -161,207 +163,102 @@ F-CHAT-01 explicitly references permission validation through F-AUTH-16 and allo
 
 ## AI Matching/Explore opens Chat without an Experience context.
 
-## Booking-related context is supplied but no defined Chat-from-Booking entry point exists.
+## Booking context points to a record outside the participant scope; deny access.
 
 ## An uploaded file uses an unsupported format.
 
-## An uploaded file exceeds the 25 MB per-file limit.
+## An uploaded file exceeds the 10 MB per-file limit.
 
 ## A multi-file attachment contains one or more invalid files.
 
 ## File upload succeeds but attachment to the Chat fails.
 
 
+### Consistency acceptance examples
+
+| AC ID | Given / When | Expected result |
+|---|---|---|
+| AC-IAC-PAIR | Same pair opens Chat for two Experiences simultaneously | At most one Active Chat; both contexts attach to it. |
+| AC-IAC-NAV | Participant changes page or selected thread | Chat stays Active; only explicit Close changes state. |
+| AC-IAC-CLOSED | Participant starts new interaction after explicit Close | New Active session; Closed history immutable. |
+| AC-IAC-FILE | Upload five valid10MB files versus six/oversize files | Valid batch permitted; invalid batch creates no attachment message. |
+
 **4. Flows (mandatory)**
 
 **4.1 Usage flow**
 
-**MERMAID**
-
-> graph TD
->
-> classDef default fill:#FFFFFF,stroke:#000000,stroke-width:1.5px,color:#000000;
->
-> classDef startend fill:#FFFFFF,stroke:#000000,stroke-width:2.5px,color:#000000;
->
-> C_Start(\["0. Start: Agency / Local Provider"\])
->
-> C1\["1. Initiate Chat Session\n(From Explore, Detail, or Booking)"\]
->
-> C2\[/"2. Input Message / Attach Files"/\]
->
-> C3\["3. Real-time Message Exchange"\]
->
-> C4{"4. Session Action"}
->
-> C5\["5. Close Chat Session"\]
->
-> C6\["6. System Saves Conversation History"\]
->
-> C_End(\["7. End"\])
->
-> C_Start --\> C1 --\> C2 --\> C3 --\> C4
->
-> C4 -- "Reply" --\> C2
->
-> C4 -- "End" --\> C5 --\> C6 --\> C_End
->
-> class C_Start,C_End startend;
+```mermaid
+graph TD
+  P["Authorized Agency/Provider"] --> C["Resolve existing Active pair chat or create new"]
+  C --> H["COM048/COM065 history; last50 with pagination"]
+  H --> T["Send text<=4000 or files1–5<=10MB each"]
+  T --> V{"Valid Active participant and content?"}
+  V -->|No| E["Error; no message"]
+  V -->|Yes| S["Persist and deliver message"]
+  S --> H
+  H --> N["Navigate away: keep Active"]
+  H --> X["Explicit Close Chat"]
+  X --> R["Closed read-only; retain history"]
+  R -->|New interaction| C
+```
 
 **4.2 Sequence for the main flow**
 
-**MERMAID**
-
+```mermaid
 sequenceDiagram
-
-title Module 7: In-app Chat
-
-actor Provider as Local Provider
-
-actor Agency as Tour Agency
-
-participant Frontend
-
-participant Backend
-
-participant Database
-
-Note over Provider, Database: UC-COM-01: Chat
-
-alt Tour Agency starts chat
-
-Agency-\>\>Frontend: Select Chat
-
-Frontend-\>\>Backend: startChat(agencyId, providerId)
-
-else Local Provider starts chat
-
-Provider-\>\>Frontend: Select Chat
-
-Frontend-\>\>Backend: startChat(providerId, agencyId)
-
-end
-
-Backend-\>\>Database: createOrGetChatSession(participantIds)
-
-Database--\>\>Backend: chatSession
-
-Backend--\>\>Frontend: chatSessionReady
-
-Frontend--\>\>Agency: Display chat interface
-
-Frontend--\>\>Provider: Display chat interface
-
-loop While chat session is active
-
-alt Tour Agency sends message
-
-Agency-\>\>Frontend: Send message(text)
-
-Frontend-\>\>Backend: sendMessage(sessionId, senderId, text)
-
-Backend-\>\>Database: saveMessage(sessionId, senderId, text)
-
-Database--\>\>Backend: messageSaved
-
-Backend--\>\>Frontend: deliverMessage(message)
-
-Frontend--\>\>Provider: Display incoming message
-
-else Local Provider sends message
-
-Provider-\>\>Frontend: Send message(text)
-
-Frontend-\>\>Backend: sendMessage(sessionId, senderId, text)
-
-Backend-\>\>Database: saveMessage(sessionId, senderId, text)
-
-Database--\>\>Backend: messageSaved
-
-Backend--\>\>Frontend: deliverMessage(message)
-
-Frontend--\>\>Agency: Display incoming message
-
-end
-
-opt Authorized participant attaches document
-Agency->>Frontend: Attach supported document(s)
-Frontend->>Backend: attachDocuments(sessionId, senderId, filesOrAssetIds)
-Backend->>Database: saveChatAttachments(sessionId, senderId, attachments)
-Database-->>Backend: attachmentsSaved
-Backend-->>Frontend: attachmentMessage
-Frontend-->>Provider: Display attached document(s)
-end
-
-end
-
-alt Tour Agency ends chat
-
-Agency-\>\>Frontend: End Chat
-
-Frontend-\>\>Backend: endChat(sessionId)
-
-else Local Provider ends chat
-
-Provider-\>\>Frontend: End Chat
-
-Frontend-\>\>Backend: endChat(sessionId)
-
-end
-
-Backend-\>\>Database: saveConversation(sessionId)
-
-Database--\>\>Backend: conversationSaved
-
-Backend-\>\>Database: closeChatSession(sessionId)
-
-Database--\>\>Backend: sessionClosed
-
-Backend--\>\>Frontend: chatSessionClosed
-
-Frontend--\>\>Agency: Display chat ended
-
-Frontend--\>\>Provider: Display chat ended
+    actor Participant as Agency or Local Provider
+    participant UI as COM048 or COM065
+    participant API as Backend
+    participant DB as Database
+    participant Store as Private Document Storage
+    Note over Participant,UI: UC-COM-01; Agency direct initiation, Provider needs Quote/Booking context
+    Participant->>UI: Open Chat
+    UI->>API: openChat (F-CHAT-01)
+    API->>API: Check participants, source context and permission
+    API->>DB: Atomically reuse/create at most one Active Chat per Agency–Provider pair
+    API-->>UI: Active session plus contextual IDs; Closed histories remain separate
+    UI->>API: Read last50 messages and chat list (F-CHAT-03)
+    API->>DB: Participant-only history, cursor pagination and unread counter
+    API-->>UI: Authorized history
+    Participant->>UI: Send text or attach on COM125/COM126
+    UI->>API: F-CHAT-02 text<=4000 or F-CHAT-05 files1–5,<=10MB each
+    alt Invalid content/file, Closed session or denied participant
+        API-->>UI: Error; no message created
+    else Valid
+        opt Attachments
+            API->>Store: Store validated private files
+        end
+        API->>DB: Persist message with sender/time/context and update chat preview
+        API-->>UI: message_id and sent_at
+    end
+    Participant->>UI: Switch page/thread
+    Note over UI,DB: Navigation does not close Active Chat
+    Participant->>UI: Explicit Close Chat
+    UI->>API: closeChat (F-CHAT-04)
+    API->>DB: Check participant; Active→Closed with closed_by/closed_at; retain history
+    API-->>UI: Closed read-only history
+    Note over UI,DB: New interaction creates a new Active session; no reopening Closed session
+```
 
 **5. Functional requirements (mandatory)**
 
-| **FR ID**  | **DBIZ2 Subfunction ID** | **Requirement (system MUST ...)**                                                                                                                              | **Actor**                    | **Priority** |
-|------------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|--------------|
-| **FR-001** | F-CHAT-01                | Open an existing permitted Chat session or create a new one between a Tour Agency and Local Provider, retaining relevant interaction context where applicable. | Tour Agency / Local Provider | Should       |
-| **FR-002** | F-CHAT-02                | Allow only Chat participants to send supported text messages and store each message in the conversation history.                                               | Tour Agency / Local Provider | Should       |
-| **FR-003** | F-CHAT-03                | Display the logged-in user's Chat list and authorized message history with unread counts and pagination.                                                       | Tour Agency / Local Provider | Should       |
-| FR-004     | F-CHAT-04                | Allow an authorized Tour Agency or Local Provider participant to close an active Chat session while retaining its existing conversation history.               | Tour Agency / Local Provider | Should       |
-| **FR-005** | F-CHAT-05                | Allow an authorized Chat participant to upload or select one or more supported documents and attach them to an active Chat session.                           | Tour Agency / Local Provider | Should       |
+| FR ID | Function List ID | Requirement — system MUST | Actor | Priority |
+|---|---|---|---|---|
+| FR-001 | F-CHAT-01 | Tour Agency may initiate Chat from AI Matching, Explore or Provider Profile.<br><br>Local Provider may initiate a Chat only when an existing Quote Request or Booking establishes a valid business context with the Agency.<br><br>A Closed Chat is immutable and is never reopened. If a new interaction is required after closure, F-CHAT-01 creates a new Active Chat while retaining the historical Closed Chat.<br><br>At most one Active Chat exists for an Agency–Local Provider pair at a time. Experience ID, Quote Request ID and Booking ID provide message/business context but do not define separate Chat threads. | Tour Agency / Local Provider | Must |
+| FR-002 | F-CHAT-02 | Send text message in active chat. Actor: Tour Agency or Local Provider (permission verified by F-AUTH-16 - only participants can send). Message includes: text content, timestamp, sender_id. System stores message in chat history. Message delivered immediately (no queue). Update "last_message_timestamp" for chat list. Support: plain text + basic markdown (bold, italic) for MVP. F-CHAT-02 handles text/basic-markdown messages. Document attachments are handled separately by F-CHAT-05. | Tour Agency / Local Provider | Must |
+| FR-003 | F-CHAT-03 | Display all chats for logged-in user with: (1) Chat List section showing: chat participants (name, organization), last message preview, last message timestamp, unread count. Sort by most recent first. (2) Chat History section (when chat opened) showing all messages in chronological order (oldest → newest). Display: message text, sender name, timestamp. Pagination: load last 50 messages, older on scroll. Tour Agency sees only chats with providers. Local Provider sees only chats with agencies. Permission verified by F-AUTH-16 - cannot view other users' chats. | Tour Agency / Local Provider | Must |
+| FR-004 | F-CHAT-04 | Allows an authorized Tour Agency or Local Provider participant to close an active Chat session when the conversation or negotiation is considered finished. The system verifies that the requester is a participant of the Chat, changes the Chat session status from Active to Closed, records who closed the session and when it was closed, and retains all existing message history for later viewing. Closing a Chat does not delete the conversation or its messages. A later conversation between the same parties creates a new Active Chat through F-CHAT-01 and does not modify the Closed session. | Tour Agency / Local Provider | Should |
+| FR-005 | F-CHAT-05 | Allows an authorized Tour Agency or Local Provider participant to attach and send a supported document within an Active Chat session. The system validates participant permission and file constraints before storing the attachment reference and associating it with the Chat message. | Tour Agency / Local Provider | Should |
 
 **5.1 Input / Output contract**
 
-| **FR ID**  | **Input field**    | **Type**                                       | **Required** | **Output field**       | **Type**                                                                   | **Notes / validation**                                   |
-|------------|--------------------|------------------------------------------------|--------------|------------------------|----------------------------------------------------------------------------|----------------------------------------------------------|
-| **FR-001** | initiator_id       | ID                                             | Yes          | chat_session_id        | ID                                                                         | Taken from authenticated session.                        |
-|            | recipient_id       | ID                                             | Yes          | is_new_session         | Boolean                                                                    | Existing conversation should be reused when appropriate. |
-|            | source             | Enum\[AI Matching, Explore, Provider Profile\] | Yes          |                        | Local Provider initiation source is not fully represented by current enum. |                                                          |
-|            | experience_id      | ID                                             | No           |                        | Context association only.                                                  |                                                          |
-|            | booking_id         | ID                                             | No           |                        | No defined Booking entry point currently exists.                           |                                                          |
-|            | permission_granted | Boolean                                        | Yes          |                        | Result of F-AUTH-16.                                                       |                                                          |
-| **FR-002** | chat_session_id    | ID                                             | Yes          | message_id             | ID                                                                         | Sender must belong to Chat.                              |
-|            | message_text       | Text                                           | Yes          | sent_at                | DateTime                                                                   | Plain text + bold/italic markdown; max length TBD.       |
-|            | sender_id          | ID                                             | Yes          | last_message_timestamp | DateTime                                                                   | From authenticated session.                              |
-|            | permission_granted | Boolean                                        | Yes          |                        | Verified through F-AUTH-16.                                                |                                                          |
-| **FR-003** | user_id            | ID                                             | Yes          | chat_list              | Array                                                                      | Sorted most recent first.                                |
-|            | role               | Enum\[Tour Agency, Local Provider\]            | Yes          | message_history        | Array                                                                      | Latest 50 per page when Chat opened.                     |
-|            | chat_session_id    | ID                                             | No           | has_more_messages      | Boolean                                                                    | Required only for history.                               |
-|            | before_cursor      | String                                         | No           |                        | Loads older messages.                                                      |                                                          |
-|            | permission_granted | Boolean                                        | Yes          |                        | User cannot access another user's Chat.                                    |                                                          |
-| **FR-004** | chat_session_id    | ID                                             | Yes          | chat_status            | Enum\[Closed\]                                                             | Chat must exist.                                         |
-|            | closed_by          | ID                                             | Yes          | closed_at              | DateTime                                                                   | Must be one of the Chat participants.                    |
-|            | permission_granted | Boolean                                        | Yes          | success_message        | String                                                                     | Verified through F-AUTH-16.                              |
-|            | close_reason       | Text                                           | No           |                        |                                                                            | Optional unless business decides otherwise.              |
-| **FR-005** | chat_session_id    | ID                                             | Yes          | attachment_ids         | Array<ID>                                                                  | Chat must exist and sender must be a participant.         |
-|            | sender_id          | ID                                             | Yes          | message_id             | ID                                                                         | Taken from authenticated session.                         |
-|            | uploaded_files     | Array<File>                                    | Conditional  | attached_files         | Array<Object>                                                              | Required when no existing asset is selected.              |
-|            | selected_asset_ids | Array<ID>                                      | Conditional  | sent_at                | DateTime                                                                   | Agency Dossier / Provider Vault assets.                   |
-|            | source_type        | Enum[Upload, AgencyDossier, ProviderVault]     | Yes          | validation_errors      | Array<String>?                                                             | Identifies document source.                               |
-|            | active_reference_id| ID                                             | No           |                        |                                                                            | Booking / Experience context where applicable.            |
+| FR ID | Input fields and validation | Required | Output fields | Notes |
+|---|---|---|---|---|
+| FR-001 | initiator_id (ID; Required — from session)<br><br>recipient_id (ID; Required)<br><br>source (Enum[AI Matching, Explore, Provider Profile, Quote Request, Booking]; Required)<br><br>experience_id (ID; Optional)<br><br>quote_request_id (ID; Optional — required when source = Quote Request)<br><br>booking_id (ID; Optional — required when source = Booking)<br><br>permission_granted (Boolean; Required — from F-AUTH-16) | As specified per field | chat_session_id (ID; Required)<br><br>chat_status (Enum[Active]; Required)<br><br>is_new_session (Boolean; Required — false when an Active Chat already exists for the Agency–Local Provider pair; true when a new Active Chat is created) | Same contract as F-CHAT-01; optional fields are not required. |
+| FR-002 | chat_session_id (ID; Required — Chat must be Active)<br>message_text (Text, plain text + bold/italic markdown, max 4000 characters; Required)<br>sender_id (ID; Required — from session)<br>permission_granted (Boolean; Required — from F-AUTH-16) | As specified per field | message_id (ID; Required)<br>sent_at (DateTime; Required)<br>last_message_timestamp (DateTime; Required) | Same contract as F-CHAT-02; optional fields are not required. |
+| FR-003 | user_id (ID; Required — from session)<br>role (Enum[Tour Agency, Local Provider]; Required)<br>chat_session_id (ID; Optional — when viewing history)<br>before_cursor (String; Optional — loads older messages)<br>permission_granted (Boolean; Required — from F-AUTH-16) | As specified per field | chat_list (Array<Object>; Required), each with:<br>- chat_session_id (ID; Required)<br>- chat_status (Enum[Active, Closed]; Required)<br>- participant_name (String; Required)<br>- organization (String; Required)<br>- last_message_preview (String; Optional)<br>- last_message_at (DateTime; Optional)<br>- unread_count (Integer; Required)<br><br>message_history (Array<Object{<br>  message_id,<br>  text: Text Optional,<br>  attachments: Array<Object{<br>    attachment_id,<br>    file_name,<br>    file_type,<br>    file_size<br>  }> Optional,<br>  sender_name,<br>  sent_at<br>}>, 50 per page; Optional — returned when chat_session_id is provided)<br><br>has_more_messages (Boolean; Optional — returned when chat_session_id is provided) | Same contract as F-CHAT-03; optional fields are not required. |
+| FR-004 | chat_session_id (ID; Required)<br>closed_by (ID; Required — from authenticated session)<br>close_reason (Text; Optional)<br>permission_granted (Boolean; Required — verified by F-AUTH-16) | As specified per field | chat_session_id (ID; Required)<br><br>chat_status (Enum[Closed]; Required — Closed is terminal for that Chat session; the session cannot be reopened)<br><br>closed_at (DateTime; Required)<br><br>closed_by (ID; Required)<br><br>success_message (String; Required) | Same contract as F-CHAT-04; optional fields are not required. |
+| FR-005 | chat_session_id (ID; Required — Chat must be Active)<br><br>sender_id (ID; Required — from authenticated session)<br><br>files (Array<File>, 1–5 files; Required — allowed formats PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG; maximum 10MB per file)<br><br>permission_granted (Boolean; Required — verified by F-AUTH-16) | As specified per field | message_id (ID; Required)<br><br>attachments (Array<Object{<br>  attachment_id,<br>  file_name,<br>  file_type,<br>  file_size<br>}>; Required)<br><br>sent_at (DateTime; Required) | Same contract as F-CHAT-05; optional fields are not required. |
 
 **5.2 Business rules**
 
@@ -375,8 +272,8 @@ Frontend--\>\>Provider: Display chat ended
 | **BR-006** | Messages are stored as immutable history in MVP; users cannot edit or delete them. | Maintains communication traceability. |
 | **BR-007** | MVP Chat supports plain text plus basic bold/italic markdown. | Defines the supported text-messaging scope. |
 | **BR-008** | Chat supports document attachments for authorized Tour Agency and Local Provider participants. | Supports B2B document exchange within collaboration. |
-| **BR-009** | Only PDF, DOCX, XLSX, JPG and PNG files up to 25 MB per file are supported. | Defines the MVP attachment boundary. |
-| **BR-010** | One or more documents may be attached in a single attachment action. | Supports COM125/COM126 multi-select behavior. |
+| **BR-009** | Only PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG and PNG files up to10MB per file are supported. | Defines the MVP attachment boundary. |
+| **BR-010** | One to five documents may be attached in a single attachment action. | Supports COM125/COM126 multi-select behavior. |
 | **BR-011** | Attached documents become part of persistent Chat history and follow the same participant-access rules as the parent Chat session. | Maintains security and communication traceability. |
 | **BR-012** | Chat/Experience/Booking context is an association to the conversation, not a document attachment. | Distinguishes contextual metadata from uploaded documents. |
 | **BR-013** | Chat list is sorted by latest-message time, newest first. | Surfaces active conversations. |
@@ -387,7 +284,7 @@ Frontend--\>\>Provider: Display chat ended
 | **BR-018** | Chat does not itself create a Booking. | Booking remains Local Provider-controlled. |
 | **BR-019** | Only a participant of the Chat may close that Chat session. | Prevents unauthorized lifecycle changes. |
 | **BR-020** | Closing a Chat does not delete its messages, attachments or conversation history. | Preserves collaboration records. |
-| **BR-021** | A Closed Chat does not accept new messages or attachments unless it is explicitly reopened according to the defined business rule. | Maintains clear Chat lifecycle state. |
+| **BR-021** | A Closed Chat never accepts new messages/attachments and is never reopened; a later interaction creates a new Active Chat. | Maintains clear Chat lifecycle state. |
 
 **6. Key entities (mandatory)**
 
@@ -404,12 +301,13 @@ Frontend--\>\>Provider: Display chat ended
 
 **7. Screens involved**
 
-| **Screen ID** | **Screen name** | **Priority** | **Screen Spec file**          |
-|---------------|-----------------|--------------|-------------------------------|
-| COM048        | Chat            | Should       | screens/screen-spec-COM048.md |
-| COM065        | Chat            | Should       | screens/screen-spec-COM065.md |
-| COM125        | Attach Document | Should       | screens/screen-spec-COM125.md |
-| COM126        | Attach Document | Should       | screens/screen-spec-COM126.md |
+| Screen ID | Screen name | Functions in this module |
+|---|---|---|
+| COM048 | Chat | F-CHAT-01, F-CHAT-02, F-CHAT-03, F-CHAT-04 |
+| COM065 | Chat | F-CHAT-01, F-CHAT-02, F-CHAT-03, F-CHAT-04 |
+| COM125 | Attach Document | F-CHAT-05 |
+| COM126 | Attach Document | F-CHAT-05 |
+| DSH018 | Local Provider Dashboard | F-CHAT-03 |
 
 **8. Success criteria (mandatory)**
 
@@ -427,9 +325,9 @@ Frontend--\>\>Provider: Display chat ended
 | **SC-010** | Experience or Booking context can open the relevant conversation without creating or modifying a Booking automatically. | Trigger Chat from each supported context and inspect Chat and Booking records. |
 | **SC-011** | An authorized participant can close an active Chat session.                                                   | Close a Chat using Agency and Provider accounts.                             |
 | **SC-012** | A non-participant cannot close another user's Chat.                                                           | Attempt close using unrelated account.                                       |
-| **SC-013** | Closing a Chat preserves all existing message history.                                                        | Close Chat, reopen/view history and compare messages.                        |
-| **SC-014** | A Closed Chat cannot accept new messages unless reopening is explicitly supported.                            | Attempt to send into a Closed Chat.                                          |
-| **SC-015** | Unsupported file formats or files larger than 25 MB are rejected before attachment. | Attempt to attach an invalid format and an oversized file. |
+| **SC-013** | Closing a Chat preserves all existing message history.                                                        | Close Chat, view read-only history and compare messages.                        |
+| **SC-014** | A Closed Chat cannot accept new messages; opening history does not reopen the session.                            | Attempt to send into a Closed Chat.                                          |
+| **SC-015** | Unsupported file formats or files larger than 10 MB are rejected before attachment. | Attempt to attach an invalid format and an oversized file. |
 
 **9. Assumptions**
 
@@ -457,27 +355,27 @@ Frontend--\>\>Provider: Display chat ended
 
 | **\#** | **Question**                                                                                                                                                                       | **Blocking?** | **Owner**   | **Status** | **Answer/Decision**                                                                                                                                            |
 |--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|-------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1      | What is the maximum allowed message_text length?                                                                                                                                   | **Yes**       | BA / Tech   | Closed     | 2,000 characters.                                                                                                                                              |
-| 2      | The Function List allows Local Provider as an actor but source only lists AI Matching, Explore and Provider Profile. What source value represents a Local Provider-initiated Chat? | **Yes**       | BA          | Open       | **"Booking Management"** (Schedule) or **"Agency Profile"**, or Add Chat opened from the Chat button as a source value.                                        |
-| 3      | Which exact UI entry point allows Local Provider to initiate a new Chat with an Agency?                                                                                            | **Yes**       | UI/UX / BA  | Closed     | Local Provider can initiate a new Chat from the **Agency Profile** screen via the **“Chat”** action, or through a "Chat" button on the Booking Details screen. |
-| 4      | When deciding whether an existing Chat should be reused, is uniqueness based only on Agency + Provider, or Agency + Provider + Experience/context?                                 | **Yes**       | BA / Tech   | Closed     | **Agency + Provider + Experience** (context-specific threading is required to avoid mixing different negotiations).                                            |
-| 5      | If the same Agency and Provider discuss multiple Experiences, should they share one conversation or separate Experience-specific chats?                                            | **Yes**       | Client / BA | Closed     | One Conversation                                                                                                                                               |
-| 6      | F-CHAT-01 includes optional booking_id, but no current entry point opens Chat from a Booking. Should Booking be added as a source or should booking_id be removed?                 | No            | BA          | Closed     | **Add Booking as a source.** Post-booking communication is a critical real-world workflow.                                                                     |
-| 7      | What exact context message is auto-populated when Chat is opened from AI Matching or Explore?                                                                                      | No            | BA / UI     | Closed     | A system-generated message block containing the Experience Name, link, and a standard greeting (e.g., "I am interested in this experience").                   |
-| 10     | Is unread count tracked per message or maintained as a conversation-level counter?                                                                                                 | No            | Tech        | Closed     | Maintained as a conversation-level counter.                                                                                                                    |
-| 11     | Does opening a conversation immediately mark all loaded messages as read?                                                                                                          | No            | BA / Tech   | Closed     | Yes. Opening the conversation immediately resets the counter to 0.                                                                                             |
-| 12     | Is a separate “read receipt” (Seen) required per message? Current F-CHAT functions do not define one.                                                                              | No            | BA          | Closed     | No. A per-message read receipt (Seen) is out of scope for MVP.                                                                                                 |
-| 13     | Should Chat support explicit archived conversations, or are all persistent Chats permanently visible in the list?                                                                  | No            | Product     | Closed     | Permanently visible in the list (sorted by most recent). Archiving is out of scope for MVP.                                                                    |
-| 14     | After a Chat is Closed, can either participant reopen the same session, or must a new Chat session be created?                                                                     | Yes           | BA / Client | Closed     | Participant reopen the same session                                                                                                                            |
-| 15     | If the same Agency and Provider start Chat again after a previous session was Closed, should the old history remain in the same thread or a new thread?                            | Yes           | BA / Client | Closed     | The old history remain in the same thread                                                                                                                      |
-| 16     | Is a close reason required or optional?                                                                                                                                            | No            | BA          | Closed     | Optional.                                                                                                                                                      |
-| 17     | Does 30-minute inactivity in F-MATCH-13 only end the AI learning window, or can it ever automatically close F-CHAT-04?                                                             | Yes           | BA / AI     | Closed     | It **only** ends the learning analysis window. It does NOT automatically close the Chat session.                                                               |
+| 1 | What is the maximum allowed message_text length? | No | BA / Tech | Closed | 4000 characters, as F-CHAT-02. |
+| 2 | The Function List allows Local Provider as an actor but source only lists AI Matching, Explore and Provider Profile. What source value represents a Local Provider-initiated Chat? | No | BA | Closed | Use source=Quote Request or Booking for Provider initiation; Agency may also use AI Matching/Explore/Provider Profile. |
+| 3 | Which exact UI entry point allows Local Provider to initiate a new Chat with an Agency? | No | UI/UX / BA | Closed | Agency may initiate directly; Provider requires an existing Quote Request or Booking context. |
+| 4 | When deciding whether an existing Chat should be reused, is uniqueness based only on Agency + Provider, or Agency + Provider + Experience/context? | No | BA / Tech | Closed | At most one Active Chat per Agency–Provider pair; Experience/Quote/Booking IDs are context, not separate threads. |
+| 5 | If the same Agency and Provider discuss multiple Experiences, should they share one conversation or separate Experience-specific chats? | No | Client / BA | Closed | Reuse the existing Active Chat for the pair regardless of context. Closed Chat is terminal. |
+| 6 | F-CHAT-01 includes optional booking_id, but no current entry point opens Chat from a Booking. Should Booking be added as a source or should booking_id be removed? | No | BA | Closed | **Add Booking as a source.** Post-booking communication is a critical real-world workflow. |
+| 7 | What exact context message is auto-populated when Chat is opened from AI Matching or Explore? | No | BA / UI | Closed | A system-generated message block containing the Experience Name, link, and a standard greeting (e.g., "I am interested in this experience"). |
+| 10 | Is unread count tracked per message or maintained as a conversation-level counter? | No | Tech | Closed | Maintained as a conversation-level counter. |
+| 11 | Does opening a conversation immediately mark all loaded messages as read? | No | BA / Tech | Closed | Yes. Opening the conversation immediately resets the counter to 0. |
+| 12 | Is a separate “read receipt” (Seen) required per message? Current F-CHAT functions do not define one. | No | BA | Closed | No visible per-message read receipt. unread_count is conversation-level; booking messages retain internal recipient_read_status for F-SCHED-08. |
+| 13 | Should Chat support explicit archived conversations, or are all persistent Chats permanently visible in the list? | No | Product | Closed | Permanently visible in the list (sorted by most recent). Archiving is out of scope for MVP. |
+| 14 | After a Chat is Closed, can either participant reopen the same session, or must a new Chat session be created? | No | BA / Client | Closed | Closed is immutable. Navigating away does not close the Chat; explicit Close Chat creates a terminal Closed session. |
+| 15 | If the same Agency and Provider start Chat again after a previous session was Closed, should the old history remain in the same thread or a new thread? | No | BA / Client | Closed | Create a new Active Chat after closure; retain the historical Closed session. |
+| 16 | Is a close reason required or optional? | No | BA | Closed | Optional. |
+| 17 | Does 30-minute inactivity in F-MATCH-13 only end the AI learning window, or can it ever automatically close F-CHAT-04? | No | BA / AI | Closed | It **only** ends the learning analysis window. It does NOT automatically close the Chat session. |
 
 **11. Traceability to DBIZ2**
 
 | **Spec section**               | **DBIZ2 source**           | **Location**                                                                                                                                                 |
 |--------------------------------|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic, sections 1.1 System Objectives and 1.2 System Main Functions – In-app Chat**                                                              |
+| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic1, sections 1.1 System Objectives and 1.2 System Main Functions – In-app Chat**                                                              |
 | **4.1 Usage flow**             | Usage Flow figure          | **sheet Schematic2, Tour Agency flow: “Choose Interaction” → “Input Message” → “Communicate via Chat”; Local Provider Chat flow** |
 | **4.2 Sequence**               | Sequence Diagram figure    | **sheet Schematic2, Module 7: In-app Chat – UC-COM-01 Chat**                                                                                                 |
 | **5. Functional requirements** | Function List              | **sheet FL&Cost1, F-CHAT-01 .. F-CHAT-05**                                                                                                                   |

@@ -1,0 +1,9 @@
+history_id,booking_id,from_status,to_status,changed_by,changed_at,reason
+08a6fa43-2caf-5b54-bd6a-7be0462f90d6,54d7a276-90a2-5c70-be22-cb59ea95ea14,,On hold,5fe7e62e-bc12-5d8c-a763-51e25123cc50,2026-09-25T08:00:00+07:00,Cập nhật theo vòng đời đặt chỗ
+42af80e0-ba74-5985-ae5f-07cebf35fc05,0d7cb86c-36c2-5c6e-876d-2437c0e5b4e4,On hold,Booked,fab5a747-a1b4-5795-9e7e-384cbc706952,2026-09-25T08:00:00+07:00,Cập nhật theo vòng đời đặt chỗ
+4776b576-fc35-513a-b144-0e4089900b76,eeb1ab28-7c02-51d8-b81a-921a6bde8b53,On hold,Cancelled,2060ffb8-f0f0-57e8-811d-5757e2b7ee3a,2026-09-28T08:00:00+07:00,Khách hủy lịch
+a90b176e-1dc8-5aea-85da-c75af05e1e0f,5782011c-b56d-5b61-bc01-80dd210c769c,On hold,Booked,48255ede-2e52-565b-8369-4547416e6e8d,2026-09-24T08:00:00+07:00,Cập nhật theo vòng đời đặt chỗ
+bf8ea3aa-c747-5c9a-84ce-6a0099bcac24,0971a1b6-32e2-5581-a02d-d9636e22e1b6,On hold,Completed,40ed08b5-27a5-55b4-aea3-e8e80352ee76,2026-09-26T08:00:00+07:00,Cập nhật theo vòng đời đặt chỗ
+d549a7dd-c44c-5721-94d2-54a25b5137cb,f55711e1-d354-5c03-a8b3-466ace045472,On hold,Cancelled,c16aa32d-c70f-5c76-b3d5-22f920da4e52,2026-09-26T08:00:00+07:00,Khách hủy lịch
+d5a93a6a-90a5-5aa1-98f5-99b711593653,4bf17b30-9819-5c47-b745-06be7171087b,On hold,Booked,c2c7fe0d-e2cb-5402-ac90-3cd427c2e669,2026-09-24T08:00:00+07:00,Cập nhật theo vòng đời đặt chỗ
+d8b8ac07-8db5-581c-bcfc-3762a6ed43a8,c6b8aaea-1377-5017-9805-de0406b515e3,On hold,Completed,f9061ac5-dc4a-54c1-9c58-4ecc031709dc,2026-09-27T08:00:00+07:00,Cập nhật theo vòng đời đặt chỗ

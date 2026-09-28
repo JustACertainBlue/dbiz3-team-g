@@ -1,2 +1,0 @@
-challenge_id,registration_request_id,email,otp_verifier,issued_at,expires_at,used_at,invalidated_at,attempt_count,resend_sequence
-e491dc09-e624-5c25-bcc3-6383678c093f,09867d73-77b4-52a4-9a7d-137d4029a032,agency.pending.demo@example.invalid,$demo$otp-verifier,2026-08-17T01:00:00+00:00,2026-08-17T01:10:00+00:00,,2026-08-17T01:10:00+00:00,5,3

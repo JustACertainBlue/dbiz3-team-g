@@ -1,0 +1,462 @@
+[
+  {
+    "entity": "roles",
+    "csv_file": "roles.csv",
+    "row_count": 3,
+    "ordinary_rows": "3 (complete closed domain)",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Documented schema-domain exception"
+  },
+  {
+    "entity": "permissions",
+    "csv_file": "permissions.csv",
+    "row_count": 10,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "role_permissions",
+    "csv_file": "role_permissions.csv",
+    "row_count": 10,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "villages",
+    "csv_file": "villages.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "inactive village has no active experience",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "user_accounts",
+    "csv_file": "user_accounts.csv",
+    "row_count": 26,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "account with no active session",
+    "exceptional_state_row": "Disabled account",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "account_status_history",
+    "csv_file": "account_status_history.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "ubnd_village_assignments",
+    "csv_file": "ubnd_village_assignments.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "sessions",
+    "csv_file": "sessions.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "revoked session",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "password_reset_tokens",
+    "csv_file": "password_reset_tokens.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "unused token",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "agency_registration_requests",
+    "csv_file": "agency_registration_requests.csv",
+    "row_count": 10,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "Rejected and Request More Information",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "registration_otp_challenges",
+    "csv_file": "registration_otp_challenges.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "attempt=5 and resend=3 row",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "invalidated terminal challenge",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "registration_resubmission_tokens",
+    "csv_file": "registration_resubmission_tokens.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "invalidated token",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "registration_submission_versions",
+    "csv_file": "registration_submission_versions.csv",
+    "row_count": 10,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "stored_files",
+    "csv_file": "stored_files.csv",
+    "row_count": 40,
+    "ordinary_rows": "5+",
+    "boundary_row": "10 MiB maximum file-size row",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "registration_documents",
+    "csv_file": "registration_documents.csv",
+    "row_count": 10,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "agency_profiles",
+    "csv_file": "agency_profiles.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "agency row with no dependent matching requirement",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "agency_major_change_requests",
+    "csv_file": "agency_major_change_requests.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "Rejected request",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "agency_review_records",
+    "csv_file": "agency_review_records.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "review outcome retained",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "provider_profiles",
+    "csv_file": "provider_profiles.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "provider with archived/no active experience case",
+    "exceptional_state_row": "Revision Required profile",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "provider_profile_versions",
+    "csv_file": "provider_profile_versions.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "Revision Required version",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "provider_verification_reviews",
+    "csv_file": "provider_verification_reviews.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "Request Revision review",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "provider_operating_hours",
+    "csv_file": "provider_operating_hours.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "experiences",
+    "csv_file": "experiences.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "notice_period_hours=0 and max_participants=1 row",
+    "empty_case": "archived experience has no active booking",
+    "exceptional_state_row": "archived experience",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "experience_discount_rules",
+    "csv_file": "experience_discount_rules.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "discount_percentage=0 row",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "profile_media",
+    "csv_file": "profile_media.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "display_order=0",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "provider_version_media",
+    "csv_file": "provider_version_media.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "ai_description_drafts",
+    "csv_file": "ai_description_drafts.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "unaccepted draft",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "matching_sessions",
+    "csv_file": "matching_sessions.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "nullable conversation context supported",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "matching_messages",
+    "csv_file": "matching_messages.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "tour_preference_profiles",
+    "csv_file": "tour_preference_profiles.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "incomplete profile",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "recommendation_results",
+    "csv_file": "recommendation_results.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "scores at 0 and 100",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "agency_preference_profiles",
+    "csv_file": "agency_preference_profiles.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "preference_signals",
+    "csv_file": "preference_signals.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "confidence=1 and base_weight=0",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "quote_requests",
+    "csv_file": "quote_requests.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "explore_sessions",
+    "csv_file": "explore_sessions.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "anonymous session has no Agency",
+    "exceptional_state_row": "open session",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "explore_interactions",
+    "csv_file": "explore_interactions.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "duration_on_previous_screen=0",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "ranking_parameter_versions",
+    "csv_file": "ranking_parameter_versions.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "Retired version",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "ranking_quality_assessments",
+    "csv_file": "ranking_quality_assessments.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "score=0",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "bookings",
+    "csv_file": "bookings.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "Cancelled booking",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "booking_status_history",
+    "csv_file": "booking_status_history.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "Cancelled transition",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "chat_sessions",
+    "csv_file": "chat_sessions.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "Closed chat",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "chat_participants",
+    "csv_file": "chat_participants.csv",
+    "row_count": 16,
+    "ordinary_rows": "5+",
+    "boundary_row": "unread_count=0",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "chat_messages",
+    "csv_file": "chat_messages.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "Booking Update has no human sender",
+    "exceptional_state_row": "system Booking Update",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "chat_attachments",
+    "csv_file": "chat_attachments.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "N/A: association/event row; empty state is represented by its parent",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "notifications",
+    "csv_file": "notifications.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "unread row has empty read_at",
+    "exceptional_state_row": "failed email delivery",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "audit_logs",
+    "csv_file": "audit_logs.csv",
+    "row_count": 8,
+    "ordinary_rows": "5+",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "system event has empty actor_user_id",
+    "exceptional_state_row": "system retention-check result",
+    "result": "Covered with applicability stated"
+  }
+]

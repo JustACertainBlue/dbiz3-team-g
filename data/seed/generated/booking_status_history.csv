@@ -1,9 +1,0 @@
-history_id,booking_id,from_status,to_status,changed_by,changed_at,reason
-f2863fdd-64d9-5e68-8f28-03934471df85,bec367f3-c330-5480-a8b3-71069caa4aa1,,On hold,cbb9a50e-c512-53d0-9044-ad6ce7abd6f8,2026-09-16T01:00:00+00:00,Booking created
-3b227f89-256d-55a7-98d9-0422241cad9c,e5f67680-b7e0-5665-8204-0dcfa8979761,,On hold,36676282-8961-57b2-94d8-dccdcfc642dd,2026-09-14T01:00:00+00:00,Booking created
-1b43cc2b-afd8-5e8d-baee-05ae3ffe27fb,e5f67680-b7e0-5665-8204-0dcfa8979761,On hold,Booked,36676282-8961-57b2-94d8-dccdcfc642dd,2026-09-14T03:00:00+00:00,Synthetic lifecycle case
-ad81a32c-2ded-59eb-95a9-e75346324513,57089f50-f615-5d1b-bdd3-0225895abb37,,On hold,b9901e48-eb37-5971-a601-5151713871ab,2026-08-07T01:00:00+00:00,Booking created
-06df66f2-1910-5cf7-8ac9-63c5dbdab6ee,57089f50-f615-5d1b-bdd3-0225895abb37,On hold,Booked,b9901e48-eb37-5971-a601-5151713871ab,2026-08-07T02:00:00+00:00,Synthetic confirmation
-6f7c9f5a-0792-5345-9090-2d1b7766b895,57089f50-f615-5d1b-bdd3-0225895abb37,Booked,Completed,b9901e48-eb37-5971-a601-5151713871ab,2026-08-07T03:00:00+00:00,Synthetic lifecycle case
-cc5e195f-a9a9-500a-9802-ef98e07fe201,0dad1515-209a-5024-be64-8ceaa940ea7f,,On hold,31bebc45-b549-5451-a802-b2aafc1438f0,2026-08-17T01:00:00+00:00,Booking created
-87e29b5a-d67e-50be-a8bb-91e845ea9314,0dad1515-209a-5024-be64-8ceaa940ea7f,On hold,Cancelled,31bebc45-b549-5451-a802-b2aafc1438f0,2026-08-17T03:00:00+00:00,Synthetic lifecycle case

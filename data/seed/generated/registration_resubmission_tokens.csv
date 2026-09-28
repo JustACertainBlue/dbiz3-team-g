@@ -1,2 +1,0 @@
-token_id,registration_request_id,token_verifier,issued_at,expires_at,used_at,invalidated_at
-e36fb072-4b3d-5445-903c-6100e6be2792,09867d73-77b4-52a4-9a7d-137d4029a032,$demo$resubmit-verifier,2026-08-26T01:00:00+00:00,2026-08-27T01:00:00+00:00,2026-08-26T13:00:00+00:00,

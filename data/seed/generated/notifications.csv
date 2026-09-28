@@ -1,2 +1,0 @@
-notification_id,recipient_user_id,event_type,source_type,source_id,payload,created_at,read_at,email_delivery_status
-c42b298c-2a7f-54db-8f20-8ecd091efc00,e8aa1eb7-fc66-52a0-ab03-e576dea2f10e,Registration Resubmitted,Agency Registration,09867d73-77b4-52a4-9a7d-137d4029a032,"{""version_no"":2}",2026-08-27T01:00:00+00:00,,Success

@@ -1,0 +1,9 @@
+village_id,source_code,name,district,city_province,is_active
+20896522-6235-5699-aeaf-f48b8150d895,DEMO-HN-BATTRANG,Bát Tràng,Gia Lâm,Hà Nội,true
+3527fadf-18ef-58d0-95c6-dc3729650f6a,DEMO-HN-DAO-THUC,Đào Thục,Đông Anh,Hà Nội,true
+688d408b-9d98-5b66-bfa7-659a67462108,DEMO-HN-CHUONG,Chuông,Thanh Oai,Hà Nội,true
+6dfbb5e9-f92e-58a0-b090-d67cea160f62,DEMO-HN-HA-THAI,Hạ Thái,Thường Tín,Hà Nội,false
+85ec7215-3ec1-5792-afcc-a72d89a3a214,DEMO-HN-SONDONG,Sơn Đồng,Hoài Đức,Hà Nội,true
+b1017646-ec89-58d1-aaa9-df783b1c2506,DEMO-HN-QUATDONG,Quất Động,Thường Tín,Hà Nội,true
+c0d0d95f-d59c-5c35-946a-f397e380dd14,DEMO-HN-VANPHUC,Vạn Phúc,Hà Đông,Hà Nội,true
+e482884e-7190-56cf-bc03-4e69614b1fe5,DEMO-HN-PHU-VINH,Phú Vinh,Chương Mỹ,Hà Nội,true

@@ -205,160 +205,119 @@ The Screen List describes AIT121 as a single chat-based matching screen where re
 **MERMAID**
 
 sequenceDiagram
-
-title Module 3: AI Tour Matching
-
-actor Agency as Tour Agency
-
-participant Frontend
-
-participant Backend
-
-participant AIEngine as AI Matching Engine
-
-participant Database
-
-Note over Agency, Database: UC-DIS-05 - AI Tour Matching
-
-Note over Agency, Database: 1. Submit & Understand Tour Requirements
-
-Agency-\>\>Frontend: Enter tour requirements in natural language
-
-activate Agency
-
-activate Frontend
-
-Frontend-\>\>Backend: submitTourRequirements(requirements)
-
-activate Backend
-
-Backend-\>\>AIEngine: analyzeRequirements(requirements)
-
-activate AIEngine
-
-AIEngine-\>\>AIEngine: Extract tour context
-
-AIEngine-\>\>AIEngine: Extract constraints
-
-AIEngine-\>\>AIEngine: Extract preferences
-
-AIEngine-\>\>AIEngine: Infer semantic preferences
-
-AIEngine-\>\>AIEngine: Check requirement completeness
-
-Note over Agency, Database: 2. Clarify Missing Requirements / 3. AI Matching & Recommendation
-
-alt Requirements are incomplete
-
-AIEngine-\>\>AIEngine: Identify missing critical criteria
-
-AIEngine-\>\>AIEngine: Generate contextual follow-up question
-
-AIEngine--\>\>Backend: followUpQuestion
-
-Backend--\>\>Frontend: followUpQuestion
-
-Frontend--\>\>Agency: Display follow-up question
-
-Agency-\>\>Frontend: Provide clarification
-
-Frontend-\>\>Backend: submitClarification(response)
-
-Backend-\>\>AIEngine: updateConversationContext(response)
-
-AIEngine-\>\>AIEngine: Re-analyze requirements
-
-AIEngine-\>\>AIEngine: Check requirement completeness
-
-else Requirements are complete
-
-Note over Backend, Database: 3. AI Matching & Recommendation
-
-Backend-\>\>AIEngine: findVerifiedLPsAndExperiences(tourPreferenceProfile)
-
-AIEngine-\>\>Database: getVerifiedLPAndExperiences(tourPreferenceProfile)
-
-Database--\>\>AIEngine: candidateLPsAndExperiences
-
-AIEngine-\>\>AIEngine: Check hard constraints
-
-AIEngine-\>\>AIEngine: Evaluate preferences
-
-AIEngine-\>\>AIEngine: Evaluate route and distance
-
-AIEngine-\>\>AIEngine: Calculate match scores
-
-AIEngine-\>\>AIEngine: Rank candidates
-
-AIEngine-\>\>AIEngine: Generate match explanations
-
-AIEngine--\>\>Backend: rankedRecommendations
-
-Backend--\>\>Frontend: rankedRecommendations
-
-Frontend--\>\>Agency: Display ranked LP / Experience with match score and reasons
-
-end
-
-Note over Agency, Database: 4. Record Agency Preference Signals
-
-loop During Matching Session
-
-Agency-\>\>Frontend: View / Request Quote / Chat / Book / Schedule
-
-Frontend-\>\>Backend: recordPreferenceSignal(signal)
-
-Backend-\>\>Database: savePreferenceSignal(agencyId, sessionId, signal)
-
-Database--\>\>Backend: signalSaved
-
-end
-
-Note over Agency, Database: 5. Analyze Preference Signals
-
-Backend-\>\>Database: getCurrentSessionSignals(agencyId, sessionId)
-
-Database--\>\>Backend: currentSessionSignals
-
-Backend-\>\>AIEngine: analyzePreferenceSignals(currentSessionSignals)
-
-AIEngine-\>\>AIEngine: Identify common factors among interacted items
-
-AIEngine-\>\>AIEngine: Identify recurring preference patterns
-
-AIEngine-\>\>AIEngine: Infer related preferences from non-interacted items
-
-Note over Agency, Database: 6. Detect Session End
-
-alt Agency closes AI matching chat
-
-Frontend-\>\>Backend: closeMatchingSession(sessionId)
-
-else 30-minute inactivity timeout
-
-Backend-\>\>Backend: detectSessionTimeout(sessionId)
-
-end
-
-Note over Agency, Database: 7. Create Tour Preference Profile
-
-AIEngine-\>\>AIEngine: Map semantic requirements
-
-AIEngine-\>\>AIEngine: Assign preference weights
-
-AIEngine-\>\>AIEngine: Generate Tour Preference Profile
-
-AIEngine--\>\>Backend: tourPreferenceProfile
-
-Backend--\>\>Frontend: tourPreferenceProfile
-
-deactivate AIEngine
-
-deactivate Backend
-
-deactivate Frontend
-
-deactivate Agency
+    title Module 3: AI Tour Matching
+    actor Agency as Tour Agency
+    participant Frontend
+    participant Backend
+    participant AIEngine as AI Matching Engine
+    participant Database
+
+    Note over Agency, Database: UC-DIS-05 - AI Tour Matching
+
+    Note over Agency, Database: 1. Submit & Understand Tour Requirements
+    Agency->>Frontend: Enter tour requirements in natural language
+    activate Agency
+    activate Frontend
+    Frontend->>Backend: submitTourRequirements(requirements)
+    activate Backend
+    Backend->>AIEngine: analyzeRequirements(requirements)
+    activate AIEngine
+    AIEngine->>AIEngine: callOpenAI(requirements)
+
+    alt OpenAI responds within timeout
+        AIEngine->>AIEngine: parsedRequirements
+        AIEngine->>AIEngine: Extract tour context
+        AIEngine->>AIEngine: Extract constraints
+        AIEngine->>AIEngine: Extract preferences
+        AIEngine->>AIEngine: Infer semantic preferences
+        AIEngine->>AIEngine: Check requirement completeness
+    else OpenAI timeout or error
+        AIEngine->>AIEngine: timeoutError
+        AIEngine->>AIEngine: Fallback to rule-based requirement extraction
+        AIEngine->>AIEngine: Extract tour context rule-based
+        AIEngine->>AIEngine: Extract constraints rule-based
+        AIEngine->>AIEngine: Check requirement completeness
+        AIEngine-->>Backend: fallbackModeActive
+        Backend-->>Frontend: fallbackModeActive
+        Frontend-->>Agency: Display using simplified matching
+    end
+
+    Note over Agency, Database: 2. Clarify Missing Requirements or 3. AI Matching and Recommendation
+    alt Requirements are incomplete
+        AIEngine->>AIEngine: Identify missing critical criteria
+        AIEngine->>AIEngine: Generate contextual follow-up question
+        AIEngine-->>Backend: followUpQuestion
+        Backend-->>Frontend: followUpQuestion
+        Frontend-->>Agency: Display follow-up question
+        Agency->>Frontend: Provide clarification
+        Frontend->>Backend: submitClarification(response)
+        Backend->>AIEngine: updateConversationContext(response)
+        AIEngine->>AIEngine: Re-analyze requirements
+        AIEngine->>AIEngine: Check requirement completeness
+    else Requirements are complete
+        Note over Backend, Database: 3. AI Matching and Recommendation
+        Backend->>AIEngine: findVerifiedLPsAndExperiences(tourPreferenceProfile)
+        AIEngine->>Database: getVerifiedLPAndExperiences(tourPreferenceProfile)
+        Database-->>AIEngine: candidateLPsAndExperiences
+        AIEngine->>AIEngine: Check hard constraints
+        AIEngine->>AIEngine: Evaluate preferences
+        AIEngine->>AIEngine: Evaluate route and distance
+
+        alt AI ranking available
+            AIEngine->>AIEngine: refineRanking(candidateLPsAndExperiences, tourPreferenceProfile)
+            alt OpenAI responds within timeout
+                AIEngine->>AIEngine: refinedScoresAndExplanations
+                AIEngine->>AIEngine: Calculate match scores
+                AIEngine->>AIEngine: Rank candidates
+                AIEngine->>AIEngine: Generate match explanations
+            else OpenAI timeout or error
+                AIEngine->>AIEngine: timeoutError
+                AIEngine->>AIEngine: Fallback to rule-based scoring
+                AIEngine->>AIEngine: Calculate match scores rule-based weights
+                AIEngine->>AIEngine: Rank candidates
+                AIEngine->>AIEngine: Generate generic match explanations rule-based
+                AIEngine-->>Backend: fallbackModeActive
+                Backend-->>Frontend: fallbackModeActive
+            end
+        end
+
+        AIEngine-->>Backend: rankedRecommendations
+        Backend-->>Frontend: rankedRecommendations
+        Frontend-->>Agency: Display ranked LP or Experience with match score and reasons
+        opt Fallback mode was used
+            Frontend-->>Agency: Display results based on simplified matching
+        end
+    end
+
+    Note over Agency, Database: 4. Record Agency Preference Signals
+    loop During Matching Session
+        Agency->>Frontend: View or Request Quote or Chat or Book or Schedule
+        Frontend->>Backend: recordPreferenceSignal(signal)
+        Backend->>Database: savePreferenceSignal(agencyId, sessionId, signal)
+        Database-->>Backend: signalSaved
+    end
+
+    Note over Agency, Database: 5. Analyze Preference Signals
+    Backend->>Database: getCurrentSessionSignals(agencyId, sessionId)
+    Database-->>Backend: currentSessionSignals
+    Backend->>AIEngine: analyzePreferenceSignals(currentSessionSignals)
+    AIEngine->>AIEngine: Identify common factors among interacted items
+    AIEngine->>AIEngine: Identify recurring preference patterns
+    AIEngine->>AIEngine: Infer related preferences from non-interacted items
+
+    Note over Agency, Database: 6. Detect Session End
+    alt Agency closes AI matching chat
+        Frontend->>Backend: closeMatchingSession(sessionId)
+    else 30-minute inactivity timeout
+        Backend->>Backend: detectSessionTimeout(sessionId)
+    end
+
+    Note over Agency, Database: 7. Create Tour Preference Profile
+    AIEngine->>AIEngine: Map semantic requirements
+    AIEngine->>AIEngine: Assign preference weights
+    AIEngine->>AIEngine: Generate Tour Preference Profile
+    AIEngine-->>Backend: tourPreferenceProfile
+    Backend-->>Frontend: tourPreferenceProfile
 
 **5. Functional requirements (mandatory)**
 

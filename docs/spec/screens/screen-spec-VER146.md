@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Screen ID | `VER146` |
-| Screen name | View Submitted Profile |
+| Screen name | View Pending Profile |
 | Actor | HDT Admin / UBND Admin |
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` and `spec-ADM.md` |

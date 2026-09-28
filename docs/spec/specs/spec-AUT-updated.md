@@ -368,33 +368,33 @@ participant Database
 
 Note over LP, Database: UC-ACC-02: Log In
 
-LP-\>\>Frontend: Enter login credentials
+LP->>Frontend: Enter login credentials
 
 activate Frontend
 
-Frontend-\>\>Backend: login(credentials)
+Frontend->>Backend: login(credentials)
 
 activate Backend
 
-Backend-\>\>Database: checkUserCredentials(credentials)
+Backend->>Database: checkUserCredentials(credentials)
 
 activate Database
 
-Database--\>\>Backend: loginResult
+Database-->>Backend: loginResult
 
 deactivate Database
 
-Backend-\>\>Database: getRole(lpId)
+Backend->>Database: getRole(lpId)
 
 activate Database
 
-Database--\>\>Backend: role
+Database-->>Backend: role
 
 deactivate Database
 
-Backend--\>\>Frontend: loginSuccess("User")
+Backend-->>Frontend: loginSuccess("User")
 
-Frontend--\>\>LP: Display login status
+Frontend-->>LP: Display login status
 
 deactivate Backend
 
@@ -402,19 +402,19 @@ deactivate Frontend
 
 Note over LP, Database: UC-ACC-03: Log Out
 
-LP-\>\>Frontend: Select Logout
+LP->>Frontend: Select Logout
 
 activate Frontend
 
-Frontend-\>\>Backend: logout()
+Frontend->>Backend: logout()
 
 activate Backend
 
-Backend-\>\>Backend: terminateSession()
+Backend->>Backend: terminateSession()
 
-Backend--\>\>Frontend: logoutSuccess
+Backend-->>Frontend: logoutSuccess
 
-Frontend--\>\>LP: Display logout result
+Frontend-->>LP: Display logout result
 
 deactivate Backend
 
@@ -422,39 +422,39 @@ deactivate Frontend
 
 Note over LP, Database: UC-ACC-04: Forgot Password
 
-LP-\>\>Frontend: Select "Forgot Password"
+LP->>Frontend: Select "Forgot Password"
 
 activate Frontend
 
-Frontend--\>\>LP: Display password recovery form
+Frontend-->>LP: Display password recovery form
 
-LP-\>\>Frontend: Enter account email
+LP->>Frontend: Enter account email
 
-Frontend-\>\>Backend: requestPasswordReset(email)
+Frontend->>Backend: requestPasswordReset(email)
 
 activate Backend
 
-Backend-\>\>Database: findUserByEmail(email)
+Backend->>Database: findUserByEmail(email)
 
 activate Database
 
-Database--\>\>Backend: userAccount
+Database-->>Backend: userAccount
 
 deactivate Database
 
-Backend-\>\>Backend: generateResetToken()
+Backend->>Backend: generateResetToken()
 
-Backend-\>\>Database: saveResetToken(userId, resetToken)
+Backend->>Database: saveResetToken(userId, resetToken)
 
 activate Database
 
-Database--\>\>Backend: tokenSaved
+Database-->>Backend: tokenSaved
 
 deactivate Database
 
-Backend--\>\>Frontend: resetLinkGenerated
+Backend-->>Frontend: resetLinkGenerated
 
-Frontend--\>\>LP: Display password reset instructions
+Frontend-->>LP: Display password reset instructions
 
 deactivate Backend
 
@@ -462,47 +462,47 @@ deactivate Frontend
 
 Note over LP, Database: UC-ACC-05: Change Password
 
-LP-\>\>Frontend: Select "Change Password"
+LP->>Frontend: Select "Change Password"
 
 activate Frontend
 
-Frontend--\>\>LP: Display change password form
+Frontend-->>LP: Display change password form
 
-LP-\>\>Frontend: Enter current password and new password
+LP->>Frontend: Enter current password and new password
 
-Frontend-\>\>Backend: changePassword(currentPassword, newPassword)
+Frontend->>Backend: changePassword(currentPassword, newPassword)
 
 activate Backend
 
-Backend-\>\>Database: verifyCurrentPassword(lpId, currentPassword)
+Backend->>Database: verifyCurrentPassword(lpId, currentPassword)
 
 activate Database
 
-Database--\>\>Backend: passwordVerified
+Database-->>Backend: passwordVerified
 
 deactivate Database
 
 alt Current password is correct
 
-Backend-\>\>Backend: hashNewPassword(newPassword)
+Backend->>Backend: hashNewPassword(newPassword)
 
-Backend-\>\>Database: updatePassword(lpId, newPasswordHash)
+Backend->>Database: updatePassword(lpId, newPasswordHash)
 
 activate Database
 
-Database--\>\>Backend: passwordUpdated
+Database-->>Backend: passwordUpdated
 
 deactivate Database
 
-Backend--\>\>Frontend: changePasswordSuccess
+Backend-->>Frontend: changePasswordSuccess
 
-Frontend--\>\>LP: Display password changed successfully
+Frontend-->>LP: Display password changed successfully
 
 else Current password is incorrect
 
-Backend--\>\>Frontend: changePasswordFailed
+Backend-->>Frontend: changePasswordFailed
 
-Frontend--\>\>LP: Display incorrect current password
+Frontend-->>LP: Display incorrect current password
 
 end
 
@@ -524,29 +524,29 @@ participant Database
 
 Note over Agency, Database: UC-ACC-01: Register Account
 
-Agency-\>\>Frontend: Enter account information
+Agency->>Frontend: Enter account information
 
 activate Agency
 
 activate Frontend
 
-Frontend-\>\>Backend: createAgencyAccount(accountData)
+Frontend->>Backend: createAgencyAccount(accountData)
 
 activate Backend
 
-Backend-\>\>Backend: validateAccountData()
+Backend->>Backend: validateAccountData()
 
-Backend-\>\>Database: insertAgencyAccount(accountData, "Pending")
+Backend->>Database: insertAgencyAccount(accountData, "Pending")
 
 activate Database
 
-Database--\>\>Backend: accountSaved
+Database-->>Backend: accountSaved
 
 deactivate Database
 
-Backend--\>\>Frontend: registrationPending
+Backend-->>Frontend: registrationPending
 
-Frontend--\>\>Agency: Display registration pending
+Frontend-->>Agency: Display registration pending
 
 deactivate Backend
 
@@ -568,29 +568,29 @@ participant Database
 
 Note over Admin, Database: UC-ACC-07, UC-ACC-08: Create Account
 
-Admin-\>\>Frontend: Enter LP account information
+Admin->>Frontend: Enter LP account information
 
 activate Admin
 
 activate Frontend
 
-Frontend-\>\>Backend: createLPAccount(accountData, villageId)
+Frontend->>Backend: createLPAccount(accountData, villageId)
 
 activate Backend
 
-Backend-\>\>Backend: validateAccountData()
+Backend->>Backend: validateAccountData()
 
-Backend-\>\>Database: insertLPAccount(accountData, "User", villageId)
+Backend->>Database: insertLPAccount(accountData, "User", villageId)
 
 activate Database
 
-Database--\>\>Backend: accountSaved
+Database-->>Backend: accountSaved
 
 deactivate Database
 
-Backend--\>\>Frontend: accountCreated
+Backend-->>Frontend: accountCreated
 
-Frontend--\>\>Admin: Display account created
+Frontend-->>Admin: Display account created
 
 deactivate Backend
 
@@ -600,47 +600,47 @@ deactivate Admin
 
 Note over Admin, Database: UC-ACC-06: Verify Agency
 
-Admin-\>\>Frontend: Select Pending Account
+Admin->>Frontend: Select Pending Account
 
 activate Admin
 
 activate Frontend
 
-Frontend-\>\>Backend: getAccountDetails(accountId)
+Frontend->>Backend: getAccountDetails(accountId)
 
 activate Backend
 
-Backend-\>\>Database: getAccountDetails(accountId)
+Backend->>Database: getAccountDetails(accountId)
 
 activate Database
 
-Database--\>\>Backend: accountDetails
+Database-->>Backend: accountDetails
 
 deactivate Database
 
-Backend--\>\>Frontend: accountDetails
+Backend-->>Frontend: accountDetails
 
-Frontend--\>\>Admin: Display Account Details
+Frontend-->>Admin: Display Account Details
 
 deactivate Backend
 
-Admin-\>\>Frontend: Click "Verify"
+Admin->>Frontend: Click "Verify"
 
-Frontend-\>\>Backend: verifyAccount(accountId)
+Frontend->>Backend: verifyAccount(accountId)
 
 activate Backend
 
-Backend-\>\>Database: updateAccountStatus(accountId, "Verified")
+Backend->>Database: updateAccountStatus(accountId, "Verified")
 
 activate Database
 
-Database--\>\>Backend: statusUpdated
+Database-->>Backend: statusUpdated
 
 deactivate Database
 
-Backend--\>\>Frontend: verificationSuccess
+Backend-->>Frontend: verificationSuccess
 
-Frontend--\>\>Admin: Display account as "Verified"
+Frontend-->>Admin: Display account as "Verified"
 
 deactivate Backend
 
@@ -650,23 +650,23 @@ deactivate Admin
 
 Note over Admin, Database: UC-ACC-09: Manage Accounts
 
-Admin-\>\>Frontend: Toggle Enable / Disable
+Admin->>Frontend: Toggle Enable / Disable
 
-Frontend-\>\>Backend: updateAgencyStatus(agencyId, status)
+Frontend->>Backend: updateAgencyStatus(agencyId, status)
 
 activate Backend
 
-Backend-\>\>Database: updateAgencyStatus(agencyId, status)
+Backend->>Database: updateAgencyStatus(agencyId, status)
 
 activate Database
 
-Database--\>\>Backend: statusUpdated
+Database-->>Backend: statusUpdated
 
 deactivate Database
 
-Backend--\>\>Frontend: statusUpdateSuccess
+Backend-->>Frontend: statusUpdateSuccess
 
-Frontend--\>\>Admin: Display updated account status
+Frontend-->>Admin: Display updated account status
 
 deactivate Backend
 

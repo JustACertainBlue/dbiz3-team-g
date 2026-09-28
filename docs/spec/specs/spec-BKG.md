@@ -383,154 +383,107 @@ Backend--\>\>Frontend: bookingDetails
 Frontend--\>\>Agency: Display Booking Details
 
 sequenceDiagram
-
-title Module 5: Schedule / Booking Management
-
-actor LP as Local Provider
-
-participant Frontend
-
-participant Backend
-
-participant Database
-
-Note over LP, Database: UC-BOOK-02 - View Calculated Availability (superseded: operating-hours editing moved to F-PROFILE-04 / PRF module; no Unavailable/Blackout in MVP — see Open Question #25)
-
-LP-\>\>Frontend: Open Provider Schedule
-
-Frontend-\>\>Backend: getCalculatedAvailability(lpId)
-
-Backend-\>\>Database: getOperatingHours(lpId) [from F-PROFILE-04 data]
-
-Backend-\>\>Database: getActiveBookingBlocks(lpId)
-
-Database--\>\>Backend: operatingHours, activeBookingBlocks
-
-Backend--\>\>Frontend: calculatedAvailability
-
-Frontend--\>\>LP: Display Availability Calendar (read-only; edit operating hours via F-PROFILE-04)
-
-Note over LP, Database: UC-BOOK-04 - Create Booking
-
-LP-\>\>Frontend: Enter agreed booking details
-
-alt Confirm and Create Booking
-
-LP-\>\>Frontend: Click "Confirm and Create Booking"
-
-Frontend-\>\>Backend: createBooking(bookingData, "Confirmed")
-
-Backend-\>\>Database: saveBooking(bookingData, "Confirmed")
-
-Database--\>\>Backend: bookingConfirmed
-
-Backend-\>\>Database: updateLPSchedule(bookingId)
-
-Database--\>\>Backend: lpScheduleUpdated
-
-Backend-\>\>Database: updateAgencyPrivateSchedule(bookingId)
-
-Database--\>\>Backend: agencyScheduleUpdated
-
-Backend--\>\>Frontend: bookingConfirmed
-
-Frontend--\>\>LP: Display booking status "Confirmed"
-
-else Save as On Hold
-
-LP-\>\>Frontend: Click "Save as On Hold"
-
-Frontend-\>\>Backend: createBooking(bookingData, "On hold")
-
-Backend-\>\>Database: saveBooking(bookingData, "On hold")
-
-Database--\>\>Backend: bookingCreated
-
-Backend-\>\>Database: updateLPSchedule(bookingId)
-
-Database--\>\>Backend: lpScheduleUpdated
-
-Backend-\>\>Database: updateAgencyPrivateSchedule(bookingId)
-
-Database--\>\>Backend: agencyScheduleUpdated
-
-Backend--\>\>Frontend: bookingCreated
-
-Frontend--\>\>LP: Display booking status "On hold"
-
-end
-
-Note over LP, Database: UC-BOOK-05 - Manage Booking
-
-LP-\>\>Frontend: Open Booking
-
-Frontend-\>\>Backend: getBookingDetail(bookingId)
-
-Backend-\>\>Database: getBookingDetail(bookingId)
-
-Database--\>\>Backend: bookingDetail
-
-Backend--\>\>Frontend: bookingDetail
-
-Frontend--\>\>LP: Display Booking Detail
-
-alt Edit Booking
-
-LP-\>\>Frontend: Click "Edit Booking"
-
-Frontend--\>\>LP: Display editable booking fields
-
-LP-\>\>Frontend: Edit booking information
-
-LP-\>\>Frontend: Select status Confirmed / Completed / Cancelled
-
-alt Save Changes
-
-LP-\>\>Frontend: Click "Save Changes"
-
-Frontend-\>\>Backend: updateBooking(bookingId, updatedData)
-
-Backend-\>\>Database: updateBooking(bookingId, updatedData)
-
-Database--\>\>Backend: bookingUpdated
-
-Backend-\>\>Database: updateLPSchedule(bookingId)
-
-Database--\>\>Backend: lpScheduleUpdated
-
-Backend-\>\>Database: updateAgencyPrivateSchedule(bookingId)
-
-Database--\>\>Backend: agencyScheduleUpdated
-
-Backend--\>\>Frontend: updateSuccess
-
-Frontend--\>\>LP: Display updated Booking Detail
-
-else Cancel Changes
-
-LP-\>\>Frontend: Click "Cancel Changes"
-
-Frontend--\>\>LP: Discard changes
-
-Frontend--\>\>LP: Display Booking Detail
-
-end
-
-else Mark Group Arrival
-
-LP-\>\>Frontend: Click "Mark Group Arrival"
-
-Frontend-\>\>Backend: markGroupArrival(bookingId)
-
-Backend-\>\>Database: saveGroupArrival(bookingId)
-
-Database--\>\>Backend: arrivalRecorded
-
-Backend--\>\>Frontend: arrivalRecorded
-
-Frontend--\>\>LP: Display "Group Arrived"
-
-end
+    title Module 5: Schedule / Booking Management
+    actor LP as Local Provider
+    participant Frontend
+    participant Backend
+    participant Database
+    participant Worker as Background Worker
+
+    Note over LP, Database: UC-BOOK-03 - Manage Availability
+    LP->>Frontend: Open Availability Management
+    Frontend->>Backend: getAvailability(lpId)
+    Backend->>Database: getAvailability(lpId)
+    Database-->>Backend: availabilityData
+    Backend-->>Frontend: availabilityData
+    Frontend-->>LP: Display Availability Calendar
+
+    LP->>Frontend: Update Available / Unavailable Dates
+    LP->>Frontend: Save Availability
+    Frontend->>Backend: saveAvailability(lpId, availabilityData)
+    Backend->>Database: saveAvailability(lpId, availabilityData)
+    Database-->>Backend: availabilitySaved
+    Backend-->>Frontend: saveSuccess
+    Frontend-->>LP: Display updated Availability Calendar
+
+    Note over LP, Database: UC-BOOK-04 - Create Booking
+    LP->>Frontend: Enter agreed booking details
+
+    alt Confirm and Create Booking
+        LP->>Frontend: Click "Confirm and Create Booking"
+        Frontend->>Backend: createBooking(bookingData, "Confirmed")
+        Backend->>Database: saveBooking(bookingData, "Confirmed")
+        Database-->>Backend: bookingConfirmed
+        Backend->>Database: updateLPSchedule(bookingId)
+        Database-->>Backend: lpScheduleUpdated
+        Backend->>Database: updateAgencyPrivateSchedule(bookingId)
+        Database-->>Backend: agencyScheduleUpdated
+        Backend-->>Frontend: bookingConfirmed
+        Frontend-->>LP: Display booking status "Confirmed"
+    else Save as On Hold
+        LP->>Frontend: Click "Save as On Hold"
+        Frontend->>Backend: createBooking(bookingData, "On hold")
+        Backend->>Database: saveBooking(bookingData, "On hold")
+        Database-->>Backend: bookingCreated
+        Backend->>Database: updateLPSchedule(bookingId)
+        Database-->>Backend: lpScheduleUpdated
+        Backend->>Database: updateAgencyPrivateSchedule(bookingId)
+        Database-->>Backend: agencyScheduleUpdated
+        Backend-->>Frontend: bookingCreated
+        Frontend-->>LP: Display booking status "On hold"
+    end
+
+    Note over Worker, Database: 72-hour On Hold Expiry (Background Process)
+    alt Provider confirms within 72 hours
+        Note over LP, Database: Booking proceeds via UC-BOOK-05 (status advances to Booked)
+    else 72 hours elapse without confirmation
+        Worker->>Backend: checkHoldExpiry(bookingId)
+        Backend->>Database: getBooking(bookingId)
+        Database-->>Backend: bookingData
+        Backend->>Database: releaseLPSchedule(bookingId)
+        Database-->>Backend: lpScheduleReleased
+        Backend->>Database: updateAgencyPrivateSchedule(bookingId)
+        Database-->>Backend: agencyScheduleUpdated
+    end
+
+    Note over LP, Database: UC-BOOK-05 - Manage Booking
+    LP->>Frontend: Open Booking
+    Frontend->>Backend: getBookingDetail(bookingId)
+    Backend->>Database: getBookingDetail(bookingId)
+    Database-->>Backend: bookingDetail
+    Backend-->>Frontend: bookingDetail
+    Frontend-->>LP: Display Booking Detail
+
+    alt Edit Booking
+        LP->>Frontend: Click "Edit Booking"
+        Frontend-->>LP: Display editable booking fields
+        LP->>Frontend: Edit booking information
+        LP->>Frontend: Select status Confirmed / Completed / Cancelled
+
+        alt Save Changes
+            LP->>Frontend: Click "Save Changes"
+            Frontend->>Backend: updateBooking(bookingId, updatedData)
+            Backend->>Database: updateBooking(bookingId, updatedData)
+            Database-->>Backend: bookingUpdated
+            Backend->>Database: updateLPSchedule(bookingId)
+            Database-->>Backend: lpScheduleUpdated
+            Backend->>Database: updateAgencyPrivateSchedule(bookingId)
+            Database-->>Backend: agencyScheduleUpdated
+            Backend-->>Frontend: updateSuccess
+            Frontend-->>LP: Display updated Booking Detail
+        else Cancel Changes
+            LP->>Frontend: Click "Cancel Changes"
+            Frontend-->>LP: Discard changes
+            Frontend-->>LP: Display Booking Detail
+        end
+    else Mark Group Arrival
+        LP->>Frontend: Click "Mark Group Arrival"
+        Frontend->>Backend: markGroupArrival(bookingId)
+        Backend->>Database: saveGroupArrival(bookingId)
+        Database-->>Backend: arrivalRecorded
+        Backend-->>Frontend: arrivalRecorded
+        Frontend-->>LP: Display "Group Arrived"
+    end
 
 **5. Functional requirements (mandatory)**
 

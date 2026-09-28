@@ -322,7 +322,7 @@ UC-ACC-09 maps to F-AUTH-21, F-AUTH-22 and F-AUTH-16.
 >
 > %% Branch 1: Login
 >
-> C2\[/"2a. Input Credentials"/\]
+> C2\[/"2a. Input Email, Password"/\]
 >
 > C3\["3a. System Assigns JWT (24h)\n& Refresh Token (7d)"\]
 >

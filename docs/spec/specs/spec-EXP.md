@@ -253,92 +253,54 @@ UC-DIS-04 maps to F-EXPLORE-03, F-EXPLORE-04 and F-EXPLORE-12.
 **MERMAID**
 
 sequenceDiagram
-
-title Module 4: Explore
-
-actor Agency as Tour Agency
-
-participant Frontend
-
-participant Backend
-
-participant Database
-
-Note over Agency, Database: UC-DIS-01: Browse Explore
-
-Frontend-\>\>Backend: getExploreContent(agencyId)
-
-Backend-\>\>Database: getVerifiedLPsAndExperiences()
-
-Database--\>\>Backend: verifiedLPs
-
-Backend--\>\>Frontend: exploreLPs
-
-Frontend--\>\>Agency: Display Explore Page with LP / Experience cards
-
-Agency-\>\>Frontend: Browse Explore LPs
-
-Agency-\>\>Frontend: Select LP / Experience
-
-Frontend-\>\>Backend: getLPExperienceDetails(lpId)
-
-Backend-\>\>Database: getVerifiedLPProfile(lpId)
-
-Database--\>\>Backend: profileData
-
-Backend--\>\>Frontend: profileData
-
-Frontend--\>\>Agency: Display LP / Experience details
-
-Note over Agency, Database: UC-DIS-03: View Provider
-
-Agency-\>\>Frontend: Select Provider
-
-Frontend-\>\>Backend: getProviderProfile(providerId)
-
-Backend-\>\>Database: getProviderProfile(providerId)
-
-Database--\>\>Backend: providerProfile
-
-Backend--\>\>Frontend: providerProfile
-
-Frontend--\>\>Agency: Display Provider Profile
-
-Note over Agency, Database: UC-DIS-04: View Experience
-
-Agency-\>\>Frontend: Select Experience
-
-Frontend-\>\>Backend: getExperienceDetails(experienceId)
-
-Backend-\>\>Database: getExperienceDetails(experienceId)
-
-Database--\>\>Backend: experienceDetails
-
-Backend--\>\>Frontend: experienceDetails
-
-Frontend--\>\>Agency: Display Experience Details
-
-Note over Agency, Database: UC-DIS-02: Explore Experiences
-
-Frontend-\>\>Backend: recordExperienceAction(agencyId, experienceId, actionType)
-
-Backend-\>\>Database: saveExperienceAction(agencyId, experienceId, actionType)
-
-Backend-\>\>Backend: analyzeExperiencePreferences(agencyId)
-
-Backend-\>\>Database: getAgencyExperiencePreference(agencyId)
-
-Database--\>\>Backend: existingPreference
-
-Backend-\>\>Backend: updatePreferenceWeights(experienceSignals, existingPreference)
-
-Backend-\>\>Database: saveAgencyExperiencePreference(agencyId, updatedPreference)
-
-Backend-\>\>Backend: reRankExperiences(verifiedLPs, updatedPreference)
-
-Backend--\>\>Frontend: updatedExploreLPs
-
-Frontend--\>\>Agency: Display updated Explore Experiences
+    title Module 4: Explore
+    actor Agency as Tour Agency
+    participant Frontend
+    participant Backend
+    participant Database
+    Note over Agency, Database: UC-DIS-01: Browse Explore
+    Frontend->>Backend: getExploreContent(agencyId)
+    Backend->>Database: getVerifiedLPsAndExperiences()
+    Database-->>Backend: verifiedLPs
+    Backend-->>Frontend: exploreLPs
+    Frontend-->>Agency: Display Explore Page with LP / Experience cards
+    Agency->>Frontend: Browse Explore LPs
+    Agency->>Frontend: Select LP / Experience
+    Frontend->>Backend: getLPExperienceDetails(lpId)
+    Backend->>Database: getVerifiedLPProfile(lpId)
+    Database-->>Backend: profileData
+    Backend-->>Frontend: profileData
+    Frontend-->>Agency: Display LP / Experience details
+    Note over Agency, Database: UC-DIS-03: View Provider
+    Agency->>Frontend: Select Provider
+    Frontend->>Backend: getProviderProfile(providerId)
+    Backend->>Database: getProviderProfile(providerId)
+    Database-->>Backend: providerProfile
+    Backend-->>Frontend: providerProfile
+    Frontend-->>Agency: Display Provider Profile
+    Note over Agency, Database: UC-DIS-04: View Experience
+    Agency->>Frontend: Select Experience
+    Frontend->>Backend: getExperienceDetails(experienceId)
+    Backend->>Database: getExperienceDetails(experienceId)
+    Database-->>Backend: experienceDetails
+    Backend-->>Frontend: experienceDetails
+    Frontend-->>Agency: Display Experience Details
+    Note over Agency, Database: UC-DIS-02: Explore Experiences
+    Frontend->>Backend: recordExperienceAction(agencyId, experienceId, actionType)
+    Backend->>Database: saveExperienceAction(agencyId, experienceId, actionType)
+    Backend->>Backend: analyzeExperiencePreferences(agencyId)
+    Backend->>Database: getAgencyExperiencePreference(agencyId)
+    Database-->>Backend: existingPreference
+    Backend->>Backend: updatePreferenceWeights(experienceSignals, existingPreference)
+    Backend->>Database: saveAgencyExperiencePreference(agencyId, updatedPreference)
+    Backend->>Backend: reRankExperiences(verifiedLPs, updatedPreference)
+    Backend-->>Frontend: updatedExploreLPs
+    Frontend-->>Agency: Display updated Explore Experiences
+    Note over Backend, Database: KPI Tuning (Background Job)
+    Backend->>Database: calculateRankingKPIs()
+    Database-->>Backend: kpiMetrics
+    Backend->>Backend: tuneRankingWeights(kpiMetrics)
+    Backend->>Database: saveRankingAlgorithmVersion(updatedWeights)
 
 **5. Functional requirements (mandatory)**
 

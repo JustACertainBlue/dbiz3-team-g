@@ -1,4 +1,4 @@
-<span class="comment-start" id="0" author="Khánh Linh Vũ" date="2026-09-22T19:41:54Z">mai cần check nd + format lại</span>**Spec**<span class="comment-end" id="0"></span> **Document: Authentication, Access & User Management**
+<span class="comment-start" id="0" author="Khánh Linh Vũ" date="2026-09-22T19:41:54Z"></span>**Spec**<span class="comment-end" id="0"></span> **Document: Authentication, Access & User Management**
 
 | **Field**                 | **Value**                                                                                                                                                                                          |
 |---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

@@ -13,7 +13,6 @@ The current MVP scope, priorities and business decisions are defined in [docs/pr
 | [data/](data/) | Canonical data model, ERDs, PostgreSQL schema, seed data and validation scripts |
 | [AGENTS.md](AGENTS.md) | Instructions and safe commands for AI coding agents |
 | [tools/](tools/) | Repository environment checks |
-| [GITHUB_GUIDE_VI.md](GITHUB_GUIDE_VI.md) | Vietnamese Git and GitHub guide for team members |
 
 ## Quick checks
 

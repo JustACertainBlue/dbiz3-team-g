@@ -1,0 +1,9 @@
+matching_session_id,hard_constraints,matching_attributes,inferred_preferences,preference_weights,is_complete,updated_at
+0ddd8bdf-b535-5004-87da-b767b35c5942,"{""max_price"":500000}","{""category"":""Thủ công truyền thống""}",,"{""price"":0.4,""location"":0.6}",false,2026-09-20T10:00:00+07:00
+2f7589c1-6fd1-5e37-a84d-96f6271e972b,"{""max_price"":500000}","{""category"":""Thủ công truyền thống""}","{""pace"":""chậm""}","{""price"":0.4,""location"":0.6}",true,2026-09-20T10:00:00+07:00
+3e64df1b-4002-5447-a8a2-c2188537cc14,"{""max_price"":500000}","{""category"":""Thủ công truyền thống""}","{""pace"":""chậm""}","{""price"":0.4,""location"":0.6}",true,2026-09-20T10:00:00+07:00
+5cb18d1d-6f86-5b0f-8163-d3945054f75e,"{""max_price"":500000}","{""category"":""Thủ công truyền thống""}","{""pace"":""chậm""}","{""price"":0.4,""location"":0.6}",true,2026-09-20T10:00:00+07:00
+7afef7d2-2d15-56a3-b93f-72de637f0976,"{""max_price"":500000}","{""category"":""Thủ công truyền thống""}","{""pace"":""chậm""}","{""price"":0.4,""location"":0.6}",true,2026-09-20T10:00:00+07:00
+7b47149d-df42-51bb-888f-5276705084d7,"{""max_price"":500000}","{""category"":""Thủ công truyền thống""}","{""pace"":""chậm""}","{""price"":0.4,""location"":0.6}",true,2026-09-20T10:00:00+07:00
+c0bd5380-1410-5b8d-87b4-096b3551535c,"{""max_price"":500000}","{""category"":""Thủ công truyền thống""}","{""pace"":""chậm""}","{""price"":0.4,""location"":0.6}",true,2026-09-20T10:00:00+07:00
+fb8dee73-96ba-56c1-b6d1-17041b6ed031,"{""max_price"":500000}","{""category"":""Thủ công truyền thống""}","{""pace"":""chậm""}","{""price"":0.4,""location"":0.6}",true,2026-09-20T10:00:00+07:00

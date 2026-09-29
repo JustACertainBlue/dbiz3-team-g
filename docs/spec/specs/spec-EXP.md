@@ -1,15 +1,17 @@
-**Spec Document: Explore**
+# Spec Document: Explore
 
 | **Field**                 | **Value**                                                                                                                                                    |
 |---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Module ID                 | EXP                                                                                                                                                          |
 | Module name               | Explore                                                                                                                                                      |
-| Spec version              | v0.1                                                                                                                                                         |
+| Spec version | v0.2 — consistency revision |
 | Author (team member)      | Group G                                                                                                                                                      |
-| Date                      | 22/09/2026                                                                                                                                                   |
-| Status                    | Clarified                                                                                                                                                    |
-| Approved by (Client role) |                                                                                                                                                              |
+| Date | 28/09/2026 |
+| Status | Revised — pending human approval |
+| Approved by (Client role) | Pending human approval |
 | DBIZ2 source              | Function List rows **F-EXPLORE-01 .. F-EXPLORE-17**; Use Case **UC-DIS-01 .. UC-DIS-04**; Screens **EXP017, EXP120, DSC122, DSC123, DSC033, DSC124, COM048** |
+
+Shared actor/state/field definitions: [Consistency Contract](../docs/consistency-contract.md). Exact current Function contracts are in §5/5.1. Technical choices and unresolved field-design questions are explicitly separated there.
 
 **1. Purpose and scope (mandatory)**
 
@@ -84,6 +86,8 @@
 | **Tour Agency**            | Main authenticated Explore user; browses full content and uses protected actions                                            | F-EXPLORE-01–04         |
 | **Guest**                  | Browses publicly permitted Explore and detail information without Quote/Chat actions                                        | F-EXPLORE-01–04         |
 | **System**                 | Records activity, analyzes behavior, updates preference weights, re-ranks content and evaluates algorithm performance       | F-EXPLORE-05–17         |
+| **Local Provider**         | Appears as the Provider whose profile/Experience is being viewed; final Use Case also lists LP as an actor for detail views | UC-DIS-03/04            |
+| **HDT Admin / UBND Admin** | May view Provider/Experience information according to Use Case scope                                                        | UC-DIS-03/04            |
 | **Chat module**            | Receives the conversation handoff from Chat/Request Quote actions                                                           | F-EXPLORE-11/12         |
 
 **3. User scenarios and acceptance criteria (mandatory)**
@@ -176,7 +180,7 @@ UC-DIS-04 maps to F-EXPLORE-03, F-EXPLORE-04 and F-EXPLORE-12.
 
 - Chat service is unavailable.
 
-- Request Quote has already been created for the same Agency–Experience pair; the existing Quote Request is reused rather than duplicated.
+- Request Quote has already been created for the same Experience.
 
 - Ranking algorithm receives insufficient behavior data.
 
@@ -184,229 +188,109 @@ UC-DIS-04 maps to F-EXPLORE-03, F-EXPLORE-04 and F-EXPLORE-12.
 
 - New ranking parameters reduce performance compared with the previous version.
 
+### Consistency acceptance examples
+
+| AC ID | Given / When | Expected result |
+|---|---|---|
+| AC-EXP-GUEST | Guest opens public Experience detail | Capacity/anonymous availability visible; price/contact hidden; AI nav absent. |
+| AC-EXP-QUOTE | Agency requests the same Experience on two different dates | Reuse the one Agency–Experience Quote Request; no second request identity. |
+| AC-EXP-CONSENT | Guest refuses analytics consent | No non-essential analytics/personalization; browsing still works. |
+| AC-EXP-VERSION | System proposes tuned algorithm parameters | Save a Draft version; the current Active version remains unchanged until human approval. |
+
 **4. Flows (mandatory)**
 
 **4.1 Usage flow**
 
-**MERMAID**
-
-> graph TD
->
-> classDef default fill:#FFFFFF,stroke:#000000,stroke-width:1.5px,color:#000000;
->
-> classDef startend fill:#FFFFFF,stroke:#000000,stroke-width:2.5px,color:#000000;
->
-> subgraph Guest_Explore \["Actor: Guest (Unauthenticated)"\]
->
-> G_Start(\["0. Start: Guest"\])
->
-> G1\["1. Access Public Explore Page"\]
->
-> G2\["2. View Basic Experience Cards"\]
->
-> G3\["3. Click Detail Page\n(Prices/Contacts Hidden)"\]
->
-> G4{"4. Attempt Quote/Chat?"}
->
-> G5\["5. Block & Redirect to Login"\]
->
-> G_End(\["6. End"\])
->
-> G_Start --\> G1 --\> G2 --\> G3 --\> G4
->
-> G4 -- "Yes" --\> G5 --\> G_End
->
-> G4 -- "No" --\> G_End
->
-> end
->
-> subgraph Agency_Explore \["Actor: Tour Agency (Authenticated)"\]
->
-> A_Start(\["0. Start: Tour Agency"\])
->
-> A1\["1. Access Personalized Explore Page\n(Re-ranked by AI)"\]
->
-> A2\["2. View Full Detail Page\n(Prices, Maps, Schedules visible)"\]
->
-> A3{"3. Switch/Case:\nAction?"}
->
-> A4\["4a. Request Quote"\]
->
-> A5\["4b. Start Chat"\]
->
-> A_End(\["5. End"\])
->
-> A_Start --\> A1 --\> A2 --\> A3
->
-> A3 -- "Quote" --\> A4 --\> A_End
->
-> A3 -- "Chat" --\> A5 --\> A_End
->
-> end
->
-> class G_Start,G_End,A_Start,A_End startend;
+```mermaid
+graph TD
+  G["Guest EXP120"] --> PD["DSC123/DSC124 public details"]
+  PD -->|Restricted action| L["AUT009"]
+  A["Agency EXP017"] --> D["DSC122/DSC033 permitted details"]
+  D --> Q["Request Quote once per Agency–Experience"]
+  Q --> C["COM048 with initial message; optional dates/group"]
+  D --> AI["AIT121"]
+  A --> W["Eligible preference signals → shared decay/profile"]
+  W --> K["Daily aggregation; weekly/monthly tuning proposal"]
+  K --> H["Draft version awaiting human approval; no auto-activation"]
+```
 
 **4.2 Sequence for the main flow**
 
-**MERMAID**
-
+```mermaid
 sequenceDiagram
-    title Module 4: Explore
-    actor Agency as Tour Agency
-    participant Frontend
-    participant Backend
-    participant Database
-    Note over Agency, Database: UC-DIS-01: Browse Explore
-    Frontend->>Backend: getExploreContent(agencyId)
-    Backend->>Database: getVerifiedLPsAndExperiences()
-    Database-->>Backend: verifiedLPs
-    Backend-->>Frontend: exploreLPs
-    Frontend-->>Agency: Display Explore Page with LP / Experience cards
-    Agency->>Frontend: Browse Explore LPs
-    Agency->>Frontend: Select LP / Experience
-    Frontend->>Backend: getLPExperienceDetails(lpId)
-    Backend->>Database: getVerifiedLPProfile(lpId)
-    Database-->>Backend: profileData
-    Backend-->>Frontend: profileData
-    Frontend-->>Agency: Display LP / Experience details
-    Note over Agency, Database: UC-DIS-03: View Provider
-    Agency->>Frontend: Select Provider
-    Frontend->>Backend: getProviderProfile(providerId)
-    Backend->>Database: getProviderProfile(providerId)
-    Database-->>Backend: providerProfile
-    Backend-->>Frontend: providerProfile
-    Frontend-->>Agency: Display Provider Profile
-    Note over Agency, Database: UC-DIS-04: View Experience
-    Agency->>Frontend: Select Experience
-    Frontend->>Backend: getExperienceDetails(experienceId)
-    Backend->>Database: getExperienceDetails(experienceId)
-    Database-->>Backend: experienceDetails
-    Backend-->>Frontend: experienceDetails
-    Frontend-->>Agency: Display Experience Details
-    Note over Agency, Database: UC-DIS-02: Explore Experiences
-    Frontend->>Backend: recordExperienceAction(agencyId, experienceId, actionType)
-    Backend->>Database: saveExperienceAction(agencyId, experienceId, actionType)
-    Backend->>Backend: analyzeExperiencePreferences(agencyId)
-    Backend->>Database: getAgencyExperiencePreference(agencyId)
-    Database-->>Backend: existingPreference
-    Backend->>Backend: updatePreferenceWeights(experienceSignals, existingPreference)
-    Backend->>Database: saveAgencyExperiencePreference(agencyId, updatedPreference)
-    Backend->>Backend: reRankExperiences(verifiedLPs, updatedPreference)
-    Backend-->>Frontend: updatedExploreLPs
-    Frontend-->>Agency: Display updated Explore Experiences
-    Note over Backend, Database: KPI Tuning (Background Job)
-    Backend->>Database: calculateRankingKPIs()
-    Database-->>Backend: kpiMetrics
-    Backend->>Backend: tuneRankingWeights(kpiMetrics)
-    Backend->>Database: saveRankingAlgorithmVersion(updatedWeights)
+    actor Visitor as Guest or Agency
+    participant UI as EXP120 or EXP017
+    participant API as Backend
+    participant DB as Database
+    participant Worker
+    Note over Visitor,UI: UC-DIS-01/02/03/04
+    Visitor->>UI: Browse/filter/open detail
+    UI->>API: getExplore or getExperienceDetail
+    API->>DB: Read eligible public catalog and permitted fields
+    alt Guest
+        API-->>UI: Public fields including capacity/availability summary; restricted prices/contact masked
+        Note over UI: DSC123/DSC124; AI interface hidden
+    else Approved Agency
+        API-->>UI: Permitted detail, prices/contact; DSC122/DSC033
+        opt Request Quote
+            UI->>API: requestQuote(experience_id, optional dates/group)
+            API->>DB: Check Agency–Experience one-request guard and resolve Active pair chat
+            API-->>UI: COM048 initial quote message or existing request result
+        end
+    end
+    opt Authorized preference tracking under F-EXPLORE-05..10
+        UI->>API: Record eligible views/clicks/dwell with defined identity/consent
+        API->>DB: Update shared preference using current thresholds and 30-day decay
+    end
+    Worker->>DB: Daily F-EXPLORE-13 aggregation, retention30d
+    Worker->>API: Weekly/monthly KPI evaluation and proposed tuning version
+    API->>DB: Save Draft ranking-parameter version
+    Note over API,DB: Human approval promotes Draft to Active and retires prior Active; no auto-activation
+```
 
 **5. Functional requirements (mandatory)**
 
-| **FR ID**  | **DBIZ2 Subfunction ID** | **Requirement (system MUST ...)**                                                                   | **Actor**           | **Priority** |
-|------------|--------------------------|-----------------------------------------------------------------------------------------------------|---------------------|--------------|
-| **FR-001** | F-EXPLORE-01             | Display verified Experience listings on Explore and enforce Guest versus Agency visibility/actions. | Tour Agency / Guest | Must         |
-| **FR-002** | F-EXPLORE-02             | Display Experience cards and quick previews containing the permitted summary information.           | Tour Agency / Guest | Must         |
-| **FR-003** | F-EXPLORE-03             | Display full Experience/Provider detail information according to actor visibility rules.            | Tour Agency / Guest | Must         |
-| **FR-004** | F-EXPLORE-04             | Display related Experiences and alternative Provider suggestions.                                   | Tour Agency / Guest | Should       |
-| **FR-005** | F-EXPLORE-05             | Record card clicks, previews, detail views, filter usage and scrolling behavior.                    | System              | Should       |
-| **FR-006** | F-EXPLORE-06             | Record engagement duration and defined sections viewed on Experience detail pages.                  | System              | Should       |
-| **FR-007** | F-EXPLORE-07             | Record strong Experience action signals such as Request Quote and Chat.                             | System              | Should       |
-| **FR-008** | F-EXPLORE-08             | Analyze current-session behavior and generate session preference patterns.                          | System              | Should       |
-| **FR-009** | F-EXPLORE-09             | Update the shared Agency Preference Profile in real time using current-session behavior only; historical time decay is handled exclusively by F-MATCH-15. | System              | Should       |
-| **FR-010** | F-EXPLORE-10             | Re-rank current-session Experience results based on updated Agency preferences.                     | System              | Should       |
-| **FR-011** | F-EXPLORE-11             | Verify permission, create or reuse the persistent Quote Request for the Agency–Experience pair, and open the related Agency–Local Provider Chat; repeated requests do not create duplicates. | System              | Should       |
-| **FR-012** | F-EXPLORE-12             | Verify permission and open Chat with the Local Provider for the selected Experience, auto-sending the defined initial context; known group size/dates are included only when already available from Agency Preference Profile or related AI Matching context. | System              | Should       |
-| **FR-013** | F-EXPLORE-13             | Aggregate Explore behavior and usage metrics for ranking analysis.                                  | System              | Should       |
-| **FR-014** | F-EXPLORE-14             | Evaluate ranking effectiveness by comparing ranking position against actual actions.                | System              | Should       |
-| **FR-015** | F-EXPLORE-15             | Define ranking-quality scenarios and KPI success criteria.                                          | System              | Should       |
-| **FR-016** | F-EXPLORE-16             | Calculate ranking performance KPIs and compare algorithm versions/periods.                          | System              | Should       |
-| **FR-017** | F-EXPLORE-17             | Tune ranking parameters based on KPI/scenario feedback, record the new algorithm version, and keep the generated version pending human approval rather than auto-deploying it. | System              | Should       |
+| FR ID | Function List ID | Requirement — system MUST | Actor | Priority |
+|---|---|---|---|---|
+| FR-001 | F-EXPLORE-01 | Load and display initial Explore page with experience/activity catalog in card format. <br>VISIBILITY BY ROLE:<br>- Tour Agency: Full access, all verified experiences, all action buttons enabled<br>- Guest: Public Explore browse ALLOWED. Guest can view Experience cards, quick previews and Public Experience Detail. Request Quote and Chat remain disabled and display "Login required". Attempting a protected action redirects to Login. | Tour Agency / Guest | Must |
+| FR-002 | F-EXPLORE-02 | Display an individual Experience card with activity photo, activity name, craft/activity type, Village name, short description, Local Provider name, duration, capacity and price when permitted. Capacity is derived from the stored max_participants field and displayed as 1 to max_participants. For Tour Agency, View Details, Request Quote and Chat are enabled. For Guest, View Details opens the Public Experience Detail; Request Quote and Chat require login. | Tour Agency / Guest | Must |
+| FR-003 | F-EXPLORE-03 | Display full experience detail page: activity name, Local Provider name/location, all images gallery, full activity description, duration, participant capacity, included items (materials, equipment, instruction), excluded items (meals not included, etc.), pricing breakdown, operational info (class hours, booking lead time, cancellation policy), Local Provider bio + contact info, availability calendar (booked/available slots only), related experiences from same or other providers, recommendation of other craft types.<br><br>Display full experience detail page:<br>- VISIBLE TO ALL (Tour Agency + Guest): Activity name, craft type, duration, participant capacity, image gallery, full public description, included/excluded items, Local Provider name and public bio, related Experiences, other craft suggestions and public availability information.<br><br>- VISIBLE TO TOUR AGENCY ONLY: Full pricing breakdown, detailed operational/booking information and Local Provider private contact information.<br><br>-ACTION BUTTONS: Tour Agency — Request Quote / Chat enabled. Guest — Request Quote / Chat disabled and redirects to Login. | Tour Agency / Guest | Must |
+| FR-004 | F-EXPLORE-04 | Display related experiences: other activities from same Local Provider, similar activities from other providers in same craft type, or activities in nearby villages. Shows: activity name, provider, duration, capacity, price (if available), photos. Linked from experience detail page or from experience card quick preview. Helps Tour Agency discover alternatives. | Tour Agency / Guest | Should |
+| FR-005 | F-EXPLORE-05 | Log every user interaction with experience/activity cards: when clicks experience card, when expands quick preview, when clicks "View Details", when filters applied, when scrolls through results. Captures: user_id, session_id, action_type (click_card / expand_preview / view_detail / apply_filter / scroll), experience_id, provider_id, timestamp, duration_on_previous_screen. Authenticated Agency interactions may be linked to the Agency for personalization.<br><br>Guest interactions must not be linked to a user identity. Non-essential Guest analytics are logged only when analytics_consent = true and use an anonymous session identifier. When consent is not given, only strictly necessary technical events are retained and are not used for personalization. | System | Should |
+| FR-006 | F-EXPLORE-06 | When Tour Agency visits experience detail page: start timer. Record: how long spent on page, which sections viewed (scroll depth %), did they view gallery fully, did they expand activity requirements/materials, did they view provider info/contact, time until next action (chat, request quote). On page exit: log total duration and sections viewed. | System | Should |
+| FR-007 | F-EXPLORE-07 | When Tour Agency takes a strong-interest action from an Explore Experience card/detail page, record the action. Supported MVP action types are Request Quote and Chat. Log action_type, experience_id, provider_id, timestamp and source context. | System | Should |
+| FR-008 | F-EXPLORE-08 | Analyze behavior logs from F-EXPLORE-05, F-EXPLORE-06 and F-EXPLORE-07 in the current Explore session: which experience types viewed most, which providers attractive, time spent per experience, patterns (e.g., "all pottery workshops", "all <500k price range", "all full-day activities", "all with English guide"). Detect explicit preferences (user filtered by activity_type=pottery_workshop) and implicit preferences (user clicked 5 pottery activities out of 10 views, spent long time on English-guide activities). Build session experience preference profile.<br><br>Preference detection rules:<br>- An explicit filter choice immediately creates an explicit preference signal.<br>- Request Quote or Chat immediately creates a strong positive signal for the related Experience attributes.<br>- An implicit positive preference is created when the same attribute appears in at least 3 interacted Experiences and represents at least 50% of Experience clicks/views in the current session.<br>- Detail-page dwell time of at least 60 seconds on at least 2 Experiences sharing the same attribute may also create an implicit positive signal.<br>- A single click or view alone does not create a persistent implicit preference. | System | Should |
+| FR-009 | F-EXPLORE-09 | Update the Agency Preference Profile in real time using the session behavior pattern generated by F-EXPLORE-08. Adjust relevant Experience/activity preference weights based on current-session browsing and strong-action signals. Store the updated Agency-specific preference weights for use by F-EXPLORE-10. F-EXPLORE-09 applies current-session behavior only. Historical time decay is handled exclusively by F-MATCH-15. | System | Should |
+| FR-010 | F-EXPLORE-10 | After F-EXPLORE-09 updates the Agency Preference Profile, immediately re-rank the current Experience list using the updated weights. Move highly-relevant experience cards (per new preferences) to top, demote low-interest experiences. Show updated list to Tour Agency with subtle indicator ("Results refreshed based on your activity"). This creates session-based learning loop: browse activity cards → observe → update experience preferences → show better-matched activities. | System | Should |
+| FR-011 | F-EXPLORE-11 | When a Tour Agency clicks "Request Quote" from an Experience card or detail page, the system calls F-AUTH-16 to verify permission. If granted, the system creates or reuses the Quote Request for the selected Experience and opens the related Chat with the Local Provider through F-CHAT-01. The chat thread is scoped per (Agency, Local Provider) pair and is reused across all Experiences of that provider. The "Request Quote" action is one-time per (Agency, Experience) pair: once used for a given Experience, the button is hidden for that Agency on that Experience only, while it remains available for other Experiences from the same Local Provider — each such request appends a new quote-request message to the existing chat thread rather than creating a new one. The Quote Request is not a Booking. The action is logged through F-EXPLORE-07. | System | Should |
+| FR-012 | F-EXPLORE-12 | When Tour Agency clicks "Chat" from experience card or detail page: calls F-AUTH-16 to verify permission. If granted → opens chat session with Local Provider of that experience. Auto-sends an initial message containing Agency information, the selected Experience and source context. Group size and interested dates are included only when these values are already available from an Agency Preference Profile or related AI Matching context; Explore does not require the Agency to enter them before opening Chat. The Chat action is recorded through F-EXPLORE-07 as a strong Explore preference signal. | System | Should |
+| FR-013 | F-EXPLORE-13 | System tracks aggregate metrics: experiences viewed, experiences clicked, activity types viewed <br>(by type distribution), actions taken (quote requests, chats), user retention, time spent per session, <br>top experiences. Data feeds into: Experience ranking optimization (F-EXPLORE-14/15/16/17), Agency Preference Profile updates, versioned ranking-parameter evaluation under F-EXPLORE-14..17; no standalone model-retraining pipeline in MVP. | System | Should |
+| FR-014 | F-EXPLORE-14 | Compare ranked experience positions vs actual user clicks/conversions. Did user click top-ranked experience card? Did top-5 ranked experiences get clicked? Did user take action (quote/chat) on highly-ranked experiences? If top-ranked activities got clicked/converted → ranking quality GOOD. If user ignored ranked activities, scrolled past, or searched instead → ranking quality POOR. Measure ranking quality score (0-100). Data used to close learning loop and determine if algorithm working.<br><br>ranking_quality_score =<br>0.50 × rank_relevance_score<br>+ 0.30 × click_engagement_score<br>+ 0.20 × strong_action_score.<br><br>rank_relevance_score:<br>- selected rank 1 = 100<br>- ranks 2–3 = 80<br>- ranks 4–5 = 60<br>- ranks 6–10 = 30<br>- no ranked Experience selected = 0<br><br>click_engagement_score = 100 when at least one ranked Experience is clicked; otherwise 0.<br><br>strong_action_score = 100 when Request Quote or Chat occurs for a ranked Experience; otherwise 0.<br><br>assessment = Good when ranking_quality_score >= 60; otherwise Poor. | System | Should |
+| FR-015 | F-EXPLORE-15 | Define explicit scenarios: Scenario A (user clicks top-ranked experience card within 10sec, takes action) = good ranking → improve this direction. Scenario B (user scrolls past ranked experiences + searches instead of clicking ranked results) = bad ranking → optimize away. Scenario C (user clicks experience ranked #5-10, skips #1-4) = ranking partially relevant → adjust weights. Define KPIs to measure: CTR (click-through rate on ranked experiences), conversion rate (explore→quote request on ranked experiences), avg rank position of selected experience, time-to-action, activity type distribution of selections. This function defines versioned optimization rules/KPIs and is executed when a ranking-algorithm version is created or revised, not as part of every Explore session. | System | Should |
+| FR-016 | F-EXPLORE-16 | Calculate weekly/monthly KPIs: CTR (% of ranked experience cards clicked), conversion rate (% of Explore sessions where ranked experience led to quote request / chat / booking), rank position of selected experience (avg rank of experience user actually selected/acted on), user engagement time on ranked experiences, bounce rate (users leave Explore without interacting). Compare before/after algorithm changes to measure improvement. Store metrics in time series with algorithm version tracking. KPIs are calculated weekly by default. Monthly values are roll-ups of the weekly metrics. No separate daily KPI cycle is used for MVP. | System | Should |
+| FR-017 | F-EXPLORE-17 | Analyze KPI results from F-EXPLORE-16 together with scenario outcomes from F-EXPLORE-15, tune ranking parameters when supported by those results, and save a new version with status Draft. F-EXPLORE-10 continues using the current Active version. Human approval through the authorized configuration process atomically promotes the selected Draft to Active and changes the previously Active version to Retired; F-EXPLORE-17 never activates a version automatically. | System | Should |
 
 **5.1 Input / Output contract**
 
-| **FR ID**  | **Input field(s)**                              | **Type**                                 | **Required** | **Output field(s)**             | **Type**               | **Notes / validation**                                                  |
-|------------|-------------------------------------------------|------------------------------------------|--------------|---------------------------------|------------------------|-------------------------------------------------------------------------|
-| **FR-001** | agency_id                                       | ID                                       | No           | experience_cards                | Array<ExperienceCard>  | Absent for Guest.                                                       |
-|            | agency_preference_profile                       | Object                                   | No           | pagination                      | Object{page, page_size, total_count} | Used if available.                                              |
-|            | page                                            | Integer                                  | No           |                                 |                        | Default 1.                                                              |
-|            | page_size                                       | Integer                                  | No           |                                 |                        | Default 12; maximum 50.                                                 |
-| **FR-002** | experience                                      | Object{id, name, type, location, provider_name, images, description, duration, capacity, price?} | Yes | card_view | UI Component | capacity uses recommended group_size range where available; otherwise 1 to max_participants. price is visible only to authenticated Tour Agency. |
-|            |                                                 |                                          |              | quick_preview                   | UI Component           | Optional on click.                                                      |
-| **FR-003** | experience_id                                   | ID                                       | Yes          | activity_name                   | String                 | Visible to all.                                                         |
-|            | agency_id                                       | ID                                       | No           | craft_type                      | Enum                   | agency_id absent for Guest.                                             |
-|            |                                                 |                                          |              | duration, participant_capacity  | Mixed                  | See F-EXPLORE-02.                                                       |
-|            |                                                 |                                          |              | images                          | Array<Image>           | Visible to all.                                                         |
-|            |                                                 |                                          |              | public_description              | Text                   | Visible to all.                                                         |
-|            |                                                 |                                          |              | included_items, excluded_items  | Array<String>          | Optional.                                                               |
-|            |                                                 |                                          |              | provider_name                   | String                 | Visible to all.                                                         |
-|            |                                                 |                                          |              | provider_public_bio             | Text                   | Optional.                                                               |
-|            |                                                 |                                          |              | related_experiences             | Array<Object>          | Optional.                                                               |
-|            |                                                 |                                          |              | other_craft_suggestions         | Array<Object>          | Optional.                                                               |
-|            |                                                 |                                          |              | public_availability             | Object{operating_hours, available_slots, blocked_slots:Array<Object{start_at,end_at,status}>} | Public schedule information only; blocked slots expose only time/status. |
-|            |                                                 |                                          |              | pricing_breakdown               | Object{price_per_person, group_discounts} | Tour Agency only.                                       |
-|            |                                                 |                                          |              | operational_booking_info        | Object{class_hours, booking_lead_time, cancellation_policy} | Tour Agency only.                       |
-|            |                                                 |                                          |              | provider_private_contact        | Object{phone,email}    | Tour Agency only.                                                       |
-|            |                                                 |                                          |              | action_buttons                  | Array<Enum[Request Quote, Chat]> with enabled flag | Guest actions disabled and redirect to Login.        |
-| **FR-004** | experience_id                                   | ID                                       | Yes          | related_experiences             | Array<Object{experience_id,name,provider_name,duration,capacity,price?,photos}> | May be empty. |
-|            | relation_types                                  | Array<Enum[Same Provider, Same Craft Type, Nearby]> | No | | | Default uses all three. |
-|            | nearby_radius_km                                | Decimal                                  | No           |                                 |                        | Default 20 km when Nearby is used.                                      |
-| **FR-005** | user_id                                         | ID                                       | No           | logged                          | Boolean                | Authenticated Agency only; null for Guest.                              |
-|            | session_id                                      | String                                   | Yes          | interaction_log_id              | ID                     | Optional; returned only when an interaction event is actually stored.   |
-|            | tracking_scope                                  | Enum[Personalized, Anonymous Analytics, No Non-essential Tracking] | Yes | | | Agency uses Personalized. Guest analytics may be anonymous only with consent. |
-|            | analytics_consent                               | Boolean                                  | Conditional  |                                 |                        | Required for Guest non-essential analytics.                             |
-|            | action_type                                     | Enum[click_card, expand_preview, view_detail, apply_filter, scroll] | Yes | | | — |
-|            | experience_id                                   | ID                                       | No           |                                 |                        | Not required for apply_filter/scroll.                                   |
-|            | provider_id                                     | ID                                       | No           |                                 |                        | —                                                                       |
-|            | timestamp                                       | DateTime                                 | Yes          |                                 |                        | —                                                                       |
-|            | duration_on_previous_screen                     | Integer seconds                          | No           |                                 |                        | —                                                                       |
-|            | filter_values                                   | Object                                   | No           |                                 |                        | Populated for apply_filter; exact schema not fixed by current Function List. |
-| **FR-006** | agency_id                                       | ID                                       | Yes          | detail_visit_log_id             | ID                     | Agency detail tracking.                                                 |
-|            | experience_id                                   | ID                                       | Yes          | duration_seconds                | Integer                | —                                                                       |
-|            | entered_at, exited_at                           | DateTime                                 | Yes          |                                 |                        | —                                                                       |
-|            | scroll_depth_pct                                | Integer 0–100                            | Yes          |                                 |                        | —                                                                       |
-|            | sections_viewed                                 | Array<Enum[Gallery, Description, Included/Excluded Items, Provider Bio, Availability, Pricing, Booking Conditions, Provider Contact, Related Experiences]> | Yes | | | Pricing, Booking Conditions and Provider Contact tracked only when visible to authenticated Agency. |
-|            | next_action                                     | Enum[Chat, Request Quote]                | No           |                                 |                        | —                                                                       |
-|            | time_to_next_action                             | Integer seconds                          | No           |                                 |                        | —                                                                       |
-| **FR-007** | agency_id                                       | ID                                       | Yes          | action_signal_log_id            | ID                     | —                                                                       |
-|            | action_type                                     | Enum[Request Quote, Chat]                | Yes          |                                 |                        | Supported MVP strong actions only.                                      |
-|            | experience_id                                   | ID                                       | Yes          |                                 |                        | —                                                                       |
-|            | provider_id                                     | ID                                       | Yes          |                                 |                        | —                                                                       |
-|            | timestamp                                       | DateTime                                 | Yes          |                                 |                        | —                                                                       |
-|            | source_context                                  | Enum[Card, Detail Page]                  | Yes          |                                 |                        | Search Result is not part of the canonical Explore context.             |
-| **FR-008** | session_id                                      | String                                   | Yes          | session_behavior_pattern        | Object{clicked_experience_types, provider_patterns?, time_patterns?, filter_choices?, implicit_preferences?} | Explicit filter creates an immediate explicit signal; Request Quote/Chat creates an immediate strong positive signal. |
-|            | session_logs                                    | Array<InteractionLog>                    | Yes          |                                 |                        | Implicit positive preference requires the same attribute across at least 3 interacted Experiences and at least 50% of clicks/views, or ≥60s dwell on at least 2 Experiences sharing the attribute. A single click/view alone is insufficient. |
-| **FR-009** | session_behavior_pattern                        | Object                                   | Yes          | updated_preference_weights      | Map<String, Decimal>   | Current-session behavior only.                                          |
-|            | agency_preference_profile                       | Object                                   | No           | updated_at                      | DateTime               | Absent for a new Agency. Historical time decay is handled exclusively by F-MATCH-15. |
-| **FR-010** | updated_preference_profile                      | Object                                   | Yes          | reranked_experience_list        | Array<Object{experience_id, rank, score}> | Immediately re-ranks the current list for that Agency only. |
-|            | current_experience_list                         | Array<ID>                                | Yes          | results_refreshed_indicator     | Boolean                | —                                                                       |
-| **FR-011** | experience_id                                   | ID                                       | Yes          | quote_request_id                | ID                     | Creates or reuses the persistent Quote Request for the Agency–Experience pair. |
-|            | agency_id                                       | ID                                       | Yes          | is_new_request                  | Boolean                | True only for the first Request Quote for the Agency–Experience pair.   |
-|            | activity_details                                | Object{duration: Integer Optional}       | No           | chat_session_id                 | ID                     | No separate Quote form is required; related Chat follows Agency–Local Provider pair scope. |
-| **FR-012** | experience_id                                   | ID                                       | Yes          | chat_session_id                 | ID                     | Requires F-AUTH-16 permission.                                          |
-|            | provider_id                                     | ID                                       | Yes          | initial_message_id              | ID                     | Initial message contains Agency info, selected Experience and source context. |
-|            | agency_id                                       | ID                                       | Yes          |                                 |                        | From session.                                                           |
-|            | action_context                                  | Object{source: Enum[Card, Detail Page], known_group_size: Integer Optional, known_dates: Object Optional} | No | | | Group size/dates included only when already available from Agency Preference Profile or related AI Matching context. |
-| **FR-013** | interaction_logs                                | Array<Object>                            | Yes          | aggregated_metrics              | Object{experience_views, unique_experiences_viewed, experience_clicks, click_rate, filter_usage, quote_request_count, chat_action_count, action_rate, avg_session_duration, bounce_rate, top_experiences, user_retention_30d?} | user_retention_30d = authenticated Agency cohort returning within 30 days of first Explore session. |
-|            | aggregation_period                              | Enum[Daily, Weekly, Monthly]             | Yes          |                                 |                        | —                                                                       |
-| **FR-014** | ranked_experience_list                          | Array<Object>                            | Yes          | ranking_quality_score           | Integer 0–100          | score = 0.50×rank_relevance_score + 0.30×click_engagement_score + 0.20×strong_action_score. |
-|            | user_action_logs                                | Array<Object>                            | Yes          | assessment                      | Enum[Good, Poor]       | Good when ranking_quality_score >= 60.                                  |
-|            | session_outcomes                                | Array<Object>                            | Yes          |                                 |                        | Rank relevance: #1=100; #2–3=80; #4–5=60; #6–10=30; none=0. Click engagement =100 if any ranked Experience clicked, else 0. Strong action=100 if Request Quote/Chat occurs, else 0. |
-| **FR-015** | behavior_patterns                               | Array<Object>                            | Yes          | scenario_rules                  | Array<Object{scenario: Enum[A,B,C], condition, action}> | Versioned configuration executed when a ranking-algorithm version is created/revised, not each Explore session. |
-|            | ranking_outcomes                                | Array<Object>                            | Yes          | kpi_definitions                 | Array<Object{kpi, formula, target}> | — |
-|            | success_criteria                                | Object                                   | Yes          |                                 |                        | —                                                                       |
-| **FR-016** | interaction_logs                                | Array<Object>                            | Yes          | ctr                             | Decimal %              | KPIs calculated Weekly by default; Monthly values are weekly roll-ups. No separate Daily KPI cycle in MVP. |
-|            | explore_session_data                            | Array<Object>                            | Yes          | conversion_rate                 | Decimal %              | —                                                                       |
-|            | algorithm_version                               | String                                   | Yes          | avg_rank_selected               | Decimal                | —                                                                       |
-|            |                                                 |                                          |              | engagement_time                 | Integer seconds        | —                                                                       |
-|            |                                                 |                                          |              | bounce_rate                     | Decimal %              | —                                                                       |
-|            |                                                 |                                          |              | improvement_vs_previous         | Decimal %              | Optional; none for first version.                                       |
-|            |                                                 |                                          |              | algorithm_version               | String                 | Required.                                                               |
-|            |                                                 |                                          |              | period_granularity              | Enum[Weekly, Monthly]  | Required — default Weekly.                                              |
-|            |                                                 |                                          |              | period                          | Date range             | Required.                                                               |
-| **FR-017** | kpi_results                                     | Object                                   | Yes          | optimized_parameters            | Map<String, Decimal>   | —                                                                       |
-|            | scenario_analysis                               | Object                                   | Yes          | tuning_decision_log             | Object                 | —                                                                       |
-|            | current_parameters                              | Map<String, Decimal>                     | Yes          | new_algorithm_version           | String                 | Newly generated version is not auto-deployed.                           |
-|            | tuning_rules                                    | Object                                   | Yes          | deployment_status               | Enum[Pending Human Approval, Approved, Deployed] | Required; new version remains Pending Human Approval until authorized. |
+| FR ID | Input fields and validation | Required | Output fields | Notes |
+|---|---|---|---|---|
+| FR-001 | agency_id (ID; Optional — absent for Guest)<br>agency_preference_profile (Object; Optional — if one exists)<br>page (Integer; Optional — default 1)<br><br>page_size (Integer; Optional — default 12, maximum 50) | As specified per field | experience_cards (Array<ExperienceCard>; Required — see F-EXPLORE-02)<br>pagination (Object{page, page_size, total_count}; Required) | Same contract as F-EXPLORE-01; optional fields are not required. |
+| FR-002 | experience (Object; Required), with:<br>- id (ID; Required)<br>- name (String; Required)<br>- type (Enum; Required)<br>- location (Object{village_name}; Required)<br>- provider_name (String; Required)<br>- images (Array<Image>; Required)<br>- description (String, 1–2 sentences; Required)<br>- duration (see F-PROFILE-06; Required)<br>- capacity (Object{min_pax: Integer = 1, max_pax: Integer = max_participants}; Required)<br>- price (Decimal, VND; Optional — visible to authenticated Tour Agency only; hidden from Guest) | As specified per field | card_view (UI Component; Required)<br>quick_preview (UI Component; Optional — on click) | Same contract as F-EXPLORE-02; optional fields are not required. |
+| FR-003 | experience_id (ID; Required for Experience detail; omitted for Provider-only detail)<br>provider_id (ID; Required for Provider-only detail; derived from Experience otherwise)<br>agency_id (ID; Optional — absent for Guest) | As specified per field | Visible to all:<br>- activity_name (String; Required)<br>- craft_type (Enum; Required)<br>- duration, participant_capacity (see F-EXPLORE-02; Required)<br>- images (Array<Image>; Required)<br>- public_description (Text; Required)<br>- included_items, excluded_items (Array<String>; Optional)<br>- provider_name (String; Required)<br>- provider_public_bio (Text; Optional)<br>- related_experiences (Array<Object>; Optional)<br>- other_craft_suggestions (Array<Object>; Optional)<br>- availability_summary (Object{<br>  operating_hours,<br>  available_slots,<br>  blocked_slots: Array<Object{start_at, end_at, status}><br>}; Required — contains public schedule information only; blocked slots expose only time and status, never Agency identity, agreed price or booking conditions)<br><br>Tour Agency only:<br>- pricing_breakdown (Object{price_per_person, group_discounts}; Required)<br>- operational_booking_info (Object{class_hours, booking_lead_time, cancellation_policy}; Required)<br>- provider_private_contact (Object{phone, email}; Required)<br>action_buttons (Array<Enum[Request Quote, Chat]> with enabled flag; Required) | Same contract as F-EXPLORE-03; optional fields are not required. |
+| FR-004 | experience_id (ID; Required)<br>relation_types (Array<Enum[Same Provider, Same Craft Type, Nearby]>; Optional — default uses all three)<br><br>nearby_radius_km (Decimal; Optional — default 20 km when Nearby is used) | As specified per field | related_experiences (Array<Object{experience_id, name, provider_name, duration, capacity, price (Optional), photos}>; Required — may be empty) | Same contract as F-EXPLORE-04; optional fields are not required. |
+| FR-005 | user_id (ID; Optional — authenticated Agency only; null for Guest)<br><br>session_id (String; Required)<br><br>tracking_scope (Enum[Personalized, Anonymous Analytics, No Non-essential Tracking]; Required)<br><br>analytics_consent (Boolean; Required for Guest non-essential analytics)<br><br>action_type (Enum[click_card, expand_preview, view_detail, apply_filter, scroll]; Required)<br><br>experience_id (ID; Optional — not required for apply_filter/scroll)<br><br>provider_id (ID; Optional)<br><br>timestamp (DateTime; Required)<br><br>duration_on_previous_screen (Integer, seconds; Optional)<br><br>filter_values (Object; Optional — populated for apply_filter events) | As specified per field | logged (Boolean; Required)<br><br>interaction_log_id (ID; Optional — returned only when an interaction event is actually stored) | Same contract as F-EXPLORE-05; optional fields are not required. |
+| FR-006 | agency_id (ID; Required)<br>experience_id (ID; Required)<br>entered_at (DateTime; Required)<br>exited_at (DateTime; Required)<br>scroll_depth_pct (Integer 0–100; Required)<br>sections_viewed (Array<Enum[<br>  Gallery,<br>  Description,<br>  Included/Excluded Items,<br>  Provider Bio,<br>  Availability,<br>  Pricing,<br>  Booking Conditions,<br>  Provider Contact,<br>  Related Experiences<br>]>; Required — Pricing, Booking Conditions and Provider Contact are tracked only when visible to the authenticated Agency)<br>next_action (Enum[Chat, Request Quote]; Optional)<br>time_to_next_action (Integer, seconds; Optional) | As specified per field | detail_visit_log_id (ID; Required)<br>duration_seconds (Integer; Required) | Same contract as F-EXPLORE-06; optional fields are not required. |
+| FR-007 | agency_id (ID; Required)<br><br>action_type (Enum[Request Quote, Chat]; Required)<br><br>experience_id (ID; Required)<br><br>provider_id (ID; Required)<br><br>timestamp (DateTime; Required)<br><br>source_context (Enum[Card, Detail Page]; Required) | As specified per field | action_signal_log_id (ID; Required) | Same contract as F-EXPLORE-07; optional fields are not required. |
+| FR-008 | session_id (String; Required)<br>session_logs (Array<InteractionLog>; Required) | As specified per field | session_behavior_pattern (Object; Required), with:<br>- clicked_experience_types (Map<Enum, Integer>; Required)<br>- provider_patterns (Array<Object>; Optional)<br>- time_patterns (Object; Optional)<br>- filter_choices (Array<Object>; Optional)<br>- implicit_preferences (Array<Object>; Optional) | Same contract as F-EXPLORE-08; optional fields are not required. |
+| FR-009 | session_behavior_pattern (Object; Required)<br><br>agency_preference_profile (Object; Optional — absent for a new Agency) | As specified per field | updated_preference_weights (Map<String, Decimal>; Required)<br>updated_at (DateTime; Required) | Same contract as F-EXPLORE-09; optional fields are not required. |
+| FR-010 | updated_preference_profile (Object; Required)<br>current_experience_list (Array<ID>; Required) | As specified per field | reranked_experience_list (Array<Object{experience_id, rank, score}>; Required)<br>results_refreshed_indicator (Boolean; Required) | Same contract as F-EXPLORE-10; optional fields are not required. |
+| FR-011 | experience_id (ID; Required)<br><br>agency_id (ID; Required — from session)<br><br>activity_details (Object{<br>  duration: Integer Optional<br>}; Optional — prefilled from the selected Experience; Request Quote does not require the Agency to complete a separate form) | As specified per field | quote_request_id (ID; Required)<br><br>is_new_request (Boolean; Required — true only for the first Quote Request for the Agency–Experience pair)<br><br>chat_session_id (ID; Required) | Same contract as F-EXPLORE-11; optional fields are not required. |
+| FR-012 | experience_id (ID; Required)<br><br>provider_id (ID; Required)<br><br>agency_id (ID; Required — from session)<br><br>action_context (Object{<br>  source: Enum[Card, Detail Page],<br>  known_group_size: Integer Optional,<br>  known_dates: Object Optional<br>}; Optional) | As specified per field | chat_session_id (ID; Required)<br>initial_message_id (ID; Required) | Same contract as F-EXPLORE-12; optional fields are not required. |
+| FR-013 | interaction_logs (Array<Object>; Required)<br>aggregation_period (Enum[Daily, Weekly, Monthly]; Required) | As specified per field | aggregated_metrics (Object; Required), with:<br>- experience_views (Integer; Required)<br>- unique_experiences_viewed (Integer; Required)<br>- experience_clicks (Integer; Required)<br>- click_rate (Decimal, %; Required)<br>- filter_usage (Map<String, Integer>; Required)<br>- quote_request_count (Integer; Required)<br>- chat_action_count (Integer; Required)<br>- action_rate (Decimal, %; Required)<br>- avg_session_duration (Integer, seconds; Required)<br>- bounce_rate (Decimal, %; Required)<br>- top_experiences (Array<ID>; Required)<br>- user_retention_30d (Decimal, %; Optional — percentage of authenticated Agencies in a cohort that return to Explore within 30 days of their first Explore session) | Same contract as F-EXPLORE-13; optional fields are not required. |
+| FR-014 | ranked_experience_list (Array<Object>; Required)<br>user_action_logs (Array<Object>; Required)<br>session_outcomes (Array<Object>; Required) | As specified per field | ranking_quality_score (Integer 0–100; Required)<br><br>assessment (Enum[Good, Poor]; Required — Good when ranking_quality_score >= 60) | Same contract as F-EXPLORE-14; optional fields are not required. |
+| FR-015 | behavior_patterns (Array<Object>; Required)<br>ranking_outcomes (Array<Object>; Required)<br>success_criteria (Object; Required — versioned configuration maintained by the project/system team; not recalculated separately for each user session) | As specified per field | scenario_rules (Array<Object{scenario: Enum[A, B, C], condition, action}>; Required)<br>kpi_definitions (Array<Object{kpi, formula, target}>; Required) | Same contract as F-EXPLORE-15; optional fields are not required. |
+| FR-016 | interaction_logs (Array<Object>; Required)<br>explore_session_data (Array<Object>; Required)<br>algorithm_version (String; Required) | As specified per field | ctr (Decimal, %; Required)<br>conversion_rate (Decimal, %; Required)<br>avg_rank_selected (Decimal; Required)<br>engagement_time (Integer, seconds; Required)<br>bounce_rate (Decimal, %; Required)<br>improvement_vs_previous (Decimal, %; Optional — none for the first version)<br>algorithm_version (String; Required)<br>period_granularity (Enum[Weekly, Monthly]; Required — default Weekly)<br>period (Date range; Required) | Same contract as F-EXPLORE-16; optional fields are not required. |
+| FR-017 | kpi_results (Object; Required)<br>scenario_analysis (Object; Required)<br>current_parameters (Map<String, Decimal>; Required)<br>tuning_rules (Object; Required) | As specified per field | optimized_parameters (Map<String, Decimal>; Required)<br><br>tuning_decision_log (Object; Required)<br><br>new_algorithm_version (String; Required)<br><br>version_status (Enum[Draft]; Required) | Same contract as F-EXPLORE-17; optional fields are not required. |
 
 **5.2 Business rules**
 
@@ -426,12 +310,6 @@ sequenceDiagram
 | **BR-012**  | F-EXPLORE-13–17 form the system-level ranking optimization loop.                                                                           | Separates global ranking improvement from session re-ranking.     |
 | **BR-013**  | Ranking-quality/KPI evaluation must compare actual user behavior against ranked positions.                                                 | Provides measurable algorithm feedback.                           |
 | **BR-014**  | Every ranking-parameter change must be recorded with a new algorithm version and tuning decision log.                                      | Supports auditability and comparison across versions.             |
-| **BR-015**  | Guest Explore behavior must never be used for personalization. Non-essential Guest analytics may be stored anonymously only when analytics_consent = true. | Preserves privacy while allowing consented anonymous analytics. |
-| **BR-016**  | F-EXPLORE-09 applies current-session behavior only. Historical time decay is handled exclusively by F-MATCH-15. | Prevents duplicate or conflicting decay logic. |
-| **BR-017**  | A Quote Request is unique per Agency–Experience pair. Repeated Request Quote actions reuse the existing Quote Request rather than creating duplicates. | Maintains one persistent commercial request per Agency–Experience pair. |
-| **BR-018**  | Explore Chat follows F-CHAT-01 scope: at most one Active Chat per Agency–Local Provider pair, reused across Experience contexts. | Prevents duplicate context-specific Chat threads. |
-| **BR-019**  | Ranking KPI calculation runs Weekly by default; Monthly metrics are roll-ups of the weekly metrics, and MVP has no separate Daily KPI cycle. | Keeps algorithm evaluation cadence deterministic. |
-| **BR-020**  | A newly optimized ranking version is never automatically deployed and remains Pending Human Approval until authorized. | Prevents unreviewed ranking changes from becoming active. |
 
 **6. Key entities (mandatory)**
 
@@ -444,7 +322,7 @@ sequenceDiagram
 | **Detail Visit Log**                     | experience_id, duration, scroll depth, sections viewed, next action              | belongs to Agency session                     |
 | **Action Signal**                        | action_type, experience_id, provider_id, context, timestamp                      | belongs to Agency preference learning         |
 | **Session Behavior Pattern**             | clicked activity types, Provider patterns, filters, implicit preferences         | derived from Interaction Logs                 |
-| **Agency Preference Profile**            | Agency ID, preference weights, updated_at                                        | shared Agency-specific preference entity used by Explore and AI Tour Matching |
+| **Agency Experience Preference Profile** | Agency ID, preference weights, updated_at                                        | belongs to one Agency                         |
 | **Ranked Experience**                    | experience_id, rank, score                                                       | generated from Experience + Agency preference |
 | **Related Experience Set**               | origin Experience, related Experience IDs, relation type                         | derived from catalog relationships            |
 | **Quote Request**                        | quote_request_id, Agency, Experience, context                                    | may open one Chat session                     |
@@ -452,20 +330,20 @@ sequenceDiagram
 | **Ranking Quality Assessment**           | score, assessment, ranking/session outcomes                                      | evaluates a ranking result/version            |
 | **Optimization Scenario**                | scenario rule, condition, action, KPI definition                                 | used for global optimization                  |
 | **Algorithm Performance Record**         | algorithm version, period, CTR, conversion, rank, engagement, bounce rate        | belongs to one ranking version                |
-| **Ranking Parameter Version**            | parameter map, version, tuning log, deployment_status                            | produces later Explore rankings after authorized approval |
+| **Ranking Parameter Version**            | parameter map, version, tuning log                                               | produces later Explore rankings               |
 
 **7. Screens involved**
 
-| **Screen ID** | **Screen name**          | **Priority** | **Screen Spec file**          |
-|---------------|--------------------------|--------------|-------------------------------|
-| **EXP017**    | Explore                  | Must         | screens/screen-spec-EXP017.md |
-| **EXP120**    | Public Explore           | Must         | screens/screen-spec-EXP120.md |
-| **DSC122**    | Provider Profile         | Must         | screens/screen-spec-DSC122.md |
-| **DSC123**    | Public Provider Profile  | Must         | screens/screen-spec-DSC123.md |
-| **DSC033**    | Experience Detail        | Must         | screens/screen-spec-DSC033.md |
-| **DSC124**    | Public Experience Detail | Must         | screens/screen-spec-DSC124.md |
-| **COM048**    | Chat                     | Should       | screens/screen-spec-COM048.md |
-| **—**         | Request Quote – Action   | —            | Not a separate screen         |
+| Screen ID | Screen name | Functions in this module |
+|---|---|---|
+| DSC033 | Experience Detail | F-EXPLORE-03, F-EXPLORE-11, F-EXPLORE-12 |
+| DSC122 | Provider Profile | F-EXPLORE-03 |
+| DSC123 | Public Provider Profile | F-EXPLORE-03 |
+| DSC124 | Public Experience Detail | F-EXPLORE-03 |
+| EXP017 | Explore | F-EXPLORE-01, F-EXPLORE-02, F-EXPLORE-03, F-EXPLORE-04, F-EXPLORE-05, F-EXPLORE-06, F-EXPLORE-07, F-EXPLORE-08, F-EXPLORE-09, F-EXPLORE-10, F-EXPLORE-11, F-EXPLORE-12, F-EXPLORE-13, F-EXPLORE-14, F-EXPLORE-15, F-EXPLORE-16, F-EXPLORE-17 |
+| EXP120 | Public Explore | F-EXPLORE-01, F-EXPLORE-02, F-EXPLORE-03, F-EXPLORE-04, F-EXPLORE-05 |
+| SCH140 | Provider Schedule – Agency View | F-EXPLORE-11 |
+| VIL030 | Village Profile | F-EXPLORE-02 |
 
 **8. Success criteria (mandatory)**
 
@@ -490,8 +368,9 @@ sequenceDiagram
 
 - Agency-specific preference updates and global ranking optimization are treated as two separate learning loops.
 
-- F-EXPLORE-09 updates the shared Agency Preference Profile used across Explore and AI Tour Matching; historical signal decay for that profile is handled by F-MATCH-15.
+- F-MATCH and F-EXPLORE use the same shared Agency Preference Profile; signals and decay are applied once to that shared entity.
 
+- Ratings/reviews listed in Explore outputs are treated as display data only; the current Function List contains no function that creates ratings or reviews.
 
 - Request Quote remains a supporting Explore action even though the final Use Case document no longer contains the earlier UC-DIS-06.
 
@@ -501,39 +380,39 @@ sequenceDiagram
 
 | **\#**                                                                            | **Question**                                                                                                                                                                          | **Blocking?** | **Owner**         | **Status**                                                                                                                                                                                                                           | **Anwers/ Decision**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1                                                                                 | What is the default Explore page size?                                                                                                                                                | No            | UI/UX / Tech      | Closed                                                                                                                                                                                                                               | Default **12 items/page**, maximum **50**. |
-| 2                                                                                 | Is price shown on Guest Experience cards?                                                                                                                                             | Yes           | Client / BA       | Open                                                                                                                                                                                                                                 | No — price hidden for Guest, only visible after login/verified Agency.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| 3                                                                                 | Where do Provider ratings and review counts come from, given no Review function exists?                                                                                               | Yes           | BA                | Closed                                                                                                                                                                                                                               | Ratings/review counts are **not part of the current canonical F-EXPLORE-02 contract**, so they are not treated as a required Explore field in this spec. |
-| <span class="comment-end" id="0"><span class="comment-end" id="1"></span></span>4 | Is card capacity a single maximum value or min–max range such as 1–8 pax?                                                                                                             | No            | BA                | Open                                                                                                                                                                                                                                 | **Min–max range** (e.g. 1–8 pax), per F-EXPLORE-02 example.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| 5                                                                                 | What relation types are officially supported by F-EXPLORE-04?                                                                                                                         | No            | BA                | Closed                                                                                                                                                                                                                               | **Same Provider, Same Craft Type, Nearby**. |
-| 6                                                                                 | What distance/radius qualifies as a “nearby village”?                                                                                                                                 | No            | BA / Tech         | Closed                                                                                                                                                                                                                               | Default **20 km** when the Nearby relation is used. |
-| 7                                                                                 | Are Guest browsing interactions recorded by F-EXPLORE-05?                                                                                                                             | Yes           | Product / Privacy | Closed                                                                                                                                                                                                                               | Guest interactions are never used for personalization. Non-essential Guest analytics may be stored **anonymously** only when `analytics_consent = true`; without consent, only strictly necessary technical events are retained. |
-| 8                                                                                 | What is the schema of filter_values?                                                                                                                                                  | Yes           | BA                | Open                                                                                                                                                                                                                                 | The current Function List defines `filter_values` as an optional Object for `apply_filter` events but does **not** fix an exact schema. Keep this unresolved unless the Function List is revised. |
-| 9                                                                                 | What sections are tracked by sections_viewed in F-EXPLORE-06?                                                                                                                         | No            | UI/UX             | Closed                                                                                                                                                                                                                               | **Gallery, Description, Included/Excluded Items, Provider Bio, Availability, Pricing, Booking Conditions, Provider Contact, Related Experiences**. |
-| 10                                                                                | Should references to Add to Tour, Bookmark/Save and direct Booking actions be removed completely from older Explore wording?                                                          | Yes           | BA                | Open                                                                                                                                                                                                                                 | Yes — remove, out of MVP scope.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| 11                                                                                | context = Search result exists in F-EXPLORE-07, but no Explore Search function exists. Should this context be removed?                                                                | No            | BA                | Closed                                                                                                                                                                                                                               | **Yes.** Canonical `source_context` is only **Card** or **Detail Page**. |
-| 12                                                                                | What behavior threshold converts clicks/time spent into an implicit preference?                                                                                                       | Yes           | AI / BA           | Closed                                                                                                                                                                                                                               | An implicit positive preference is created when the same attribute appears in **at least 3 interacted Experiences** and represents **at least 50%** of Experience clicks/views in the current session, or when the Agency spends **at least 60 seconds on at least 2 Experiences** sharing that attribute. A single click/view alone is insufficient. |
-| 13                                                                                | Is F-EXPLORE-09's Agency Experience Preference Profile the same entity as the Agency Preference Profile from F-MATCH-10?                                                              | Yes           | BA / AI           | Closed                                                                                                                                                                                                                               | **Yes — shared Agency Preference Profile.** |
-| 14                                                                                | How should F-EXPLORE-09 time decay interact with F-MATCH-15 time decay?                                                                                                               | Yes           | AI / BA           | Closed                                                                                                                                                                                                                               | F-EXPLORE-09 does **not** apply historical decay. It updates the shared Agency Preference Profile from current-session behavior only; historical time decay is handled exclusively by **F-MATCH-15**. |
-| 15                                                                                | Does F-EXPLORE-11 open a separate Quote Request form or directly open Chat?                                                                                                           | Yes           | BA / UI           | Closed                                                                                                                                                                                                                               | No separate Quote Request form is required. The action **creates or reuses the Quote Request for the Agency–Experience pair and opens the related Chat**. |
-| 16                                                                                | Which Quote Request fields are pre-filled, required and editable?                                                                                                                     | Yes           | BA                | Closed                                                                                                                                                                                                                               | F-EXPLORE-11 requires `experience_id` and `agency_id`. `activity_details` is optional and currently contains only optional `duration`; **group_size and preferred dates are not required Quote fields in the current contract**. |
-| 17                                                                                | Where do group_size and dates used by F-EXPLORE-12's initial Chat context come from?                                                                                                  | Yes           | BA                | Closed                                                                                                                                                                                                                               | Include them only when already available from the **Agency Preference Profile or related AI Matching context**. Explore does not require manual entry before opening Chat. |
-| 18                                                                                | What is the formal definition of user_retention in Explore metrics?                                                                                                                   | No            | BA                | Closed                                                                                                                                                                                                                               | `user_retention_30d` = percentage of authenticated Agencies in a cohort that return to Explore within **30 days** of their first Explore session. |
-| 19                                                                                | What is the complete metric list for F-EXPLORE-13?                                                                                                                                    | No            | BA                | Closed                                                                                                                                                                                                                               | `experience_views`, `unique_experiences_viewed`, `experience_clicks`, `click_rate`, `filter_usage`, `quote_request_count`, `chat_action_count`, `action_rate`, `avg_session_duration`, `bounce_rate`, `top_experiences`, and optional `user_retention_30d`. |
-| 20                                                                                | What formula maps ranking outcomes to the F-EXPLORE-14 ranking_quality_scorefrom 0–100?                                                                                               | Yes           | AI / BA           | Closed                                                                                                                                                                                                                               | `ranking_quality_score = 0.50 × rank_relevance_score + 0.30 × click_engagement_score + 0.20 × strong_action_score`. Rank relevance: #1=100, #2–3=80, #4–5=60, #6–10=30, none=0. `assessment = Good` when score ≥ 60; otherwise Poor. |
-| 21                                                                                | Is F-EXPLORE-15 a runtime system function or a configuration activity performed by the project team?                                                                                  | Yes           | Product / Tech    | Closed                                                                                                                                                                                                                               | It remains a **System function**, but it executes when a ranking-algorithm version is **created or revised**, not as part of every Explore session. The scenario/KPI configuration is versioned. |
-| 22                                                                                | Are F-EXPLORE-16 KPIs calculated daily, weekly, monthly, or a combination?                                                                                                            | Yes           | Product / Tech    | Closed                                                                                                                                                                                                                               | **Weekly by default**. Monthly values are roll-ups of weekly metrics. There is **no separate Daily KPI cycle** in MVP. |
-| 23                                                                                | Does F-EXPLORE-17 automatically deploy new ranking parameters or require human approval?                                                                                              | Yes           | Product / Tech    | Closed                                                                                                                                                                                                                               | **Human approval is required.** Newly generated versions remain `Pending Human Approval`; optimized parameters are never auto-deployed. |
-| 24                                                                                | Should F-EXPLORE-11 be mapped to an existing final Use Case, or should UC-DIS-06 Request Quote be restored?                                                                           | Yes           | BA                | Closed                                                                                                                                                                                                                               | Do **not** restore UC-DIS-06 solely to support F-EXPLORE-11. F-EXPLORE-11 remains a supporting Function List action even if the final Use Case artifact does not contain a standalone Request Quote use case. |
-| 25                                                                                | The final Use Case lists LP/HDT/UBND as actors for detail viewing, but F-EXPLORE-03 lists only Tour Agency/Guest. Which actor definition is authoritative for Explore detail screens? | Yes           | BA                | Open                                                                                                                                                                                                                                 | F-EXPLORE-03 (Tour Agency/Guest) is authoritative for Explore.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 26                                                                                | The Sequence Diagram still labels Request Quote as UC-DIS-06 and uses villageId, while current Function List uses experience_id. Should the sequence be updated?                      | Yes           | BA                | Open                                                                                                                                                                                                                                 | Yes — update to match current Function List.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| 27                                                                                | Is AI model retraining from Explore metrics part of MVP, or should Explore only tune ranking parameters?                                                                              | Yes           | Product / AI      | Closed                                                                                                                                                                                                                               | Foundational AI model retraining is not executed by the Explore MVP. Explore may tune ranking parameters through F-EXPLORE-17, but any newly generated ranking version still requires human approval before deployment. |
+| 1 | What is the default Explore page size? | No | UI/UX / Tech | Closed | page_size default12,max50, as F-EXPLORE-01. |
+| 2 | Is price shown on Guest Experience cards? | No | Client / BA | Closed | Guest price is hidden; authenticated Agency may see it. |
+| 3 | Where do Provider ratings and review counts come from, given no Review function exists? | No | BA | Closed | No defined Review function/source: omit missing rating/review fields; no fabricated rating. |
+| 4 | Is card capacity a single maximum value or min–max range such as 1–8 pax? | No | BA | Closed | Display 1..max_participants; no separate recommended group-size field is defined in MVP. |
+| 5 | What relation types are officially supported by F-EXPLORE-04? | No | BA | Closed | Same Provider, Same Craft Type and Nearby, as F-EXPLORE-04. |
+| 6 | What distance/radius qualifies as a “nearby village”? | No | BA / Tech | Closed | nearby_radius_km defaults20km. |
+| 7 | Are Guest browsing interactions recorded by F-EXPLORE-05? | No | Product / Privacy | Closed | Agency personalized events; Guest non-essential analytics only with consent and anonymous session ID. No Guest personalization. |
+| 8 | What is the schema of filter_values? | No | BA | Closed | Optional filter_values stores current applied filter data; no additional required filter schema or search function is introduced. |
+| 9 | What sections are tracked by sections_viewed in F-EXPLORE-06? | No | UI/UX | Closed | Use the sections_viewed enum in F-EXPLORE-06; Pricing/Booking Conditions/Provider Contact only when visible. |
+| 10 | Should references to Add to Tour, Bookmark/Save and direct Booking actions be removed completely from older Explore wording? | No | BA | Closed | Add to Tour, Bookmark/Save and direct Agency Booking are outside MVP. |
+| 11 | context = Search result exists in F-EXPLORE-07, but no Explore Search function exists. Should this context be removed? | No | BA | Closed | Use source_context Card or Detail Page; Search result is not an enum value. |
+| 12 | What behavior threshold converts clicks/time spent into an implicit preference? | No | AI / BA | Closed | Use F-EXPLORE-08: at least 3 Experiences with at least 50% viewed, or at least 2 Experiences with dwell >=60s. |
+| 13 | Is F-EXPLORE-09's Agency Experience Preference Profile the same entity as the Agency Preference Profile from F-MATCH-10? | No | BA / AI | Closed | AIT and Explore use the shared Agency Preference Profile. |
+| 14 | How should F-EXPLORE-09 time decay interact with F-MATCH-15 time decay? | No | AI / BA | Closed | Apply one shared30-day decay; do not decay the same signal twice. |
+| 15 | Does F-EXPLORE-11 open a separate Quote Request form or directly open Chat? | No | BA / UI | Closed | Request Quote opens Chat with a prefilled initial message, not a separate form. |
+| 16 | Which Quote Request fields are pre-filled, required and editable? | No | BA | Closed | Request Quote is an action opening Chat with an initial message; group_size and preferred dates are optional, not a separate mandatory form. |
+| 17 | Where do group_size and dates used by F-EXPLORE-12's initial Chat context come from? | No | BA | Closed | Use optional current context/filter values; absent values remain omitted. |
+| 18 | What is the formal definition of user_retention in Explore metrics? | No | BA | Closed | Retention uses user_retention_30d, not a 7-day return window. |
+| 19 | What is the complete metric list for F-EXPLORE-13? | No | BA | Closed | Use the metric list and retention30d in F-EXPLORE-13. |
+| 20 | What formula maps ranking outcomes to the F-EXPLORE-14 ranking_quality_scorefrom 0–100? | No | AI / BA | Closed | Use 50% rank relevance + 30% click + 20% strong action (F-EXPLORE-14). |
+| 21 | Is F-EXPLORE-15 a runtime system function or a configuration activity performed by the project team? | No | Product / Tech | Closed | F-EXPLORE-15 defines target KPI configuration as the current Function List describes. |
+| 22 | Are F-EXPLORE-16 KPIs calculated daily, weekly, monthly, or a combination? | No | Product / Tech | Closed | Tuning evaluation is weekly/monthly. Daily aggregation under F-EXPLORE-13 is separate. |
+| 23 | Does F-EXPLORE-17 automatically deploy new ranking parameters or require human approval? | No | Product / Tech | Closed | F-EXPLORE-17 saves Draft. Human approval promotes the selected Draft to Active and retires the prior Active version; no automatic activation. |
+| 24 | Should F-EXPLORE-11 be mapped to an existing final Use Case, or should UC-DIS-06 Request Quote be restored? | No | BA | Closed | Map F-EXPLORE-11 to UC-DIS-04 in the lecturer-required table; no UC-DIS-06 is introduced. |
+| 25 | The final Use Case lists LP/HDT/UBND as actors for detail viewing, but F-EXPLORE-03 lists only Tour Agency/Guest. Which actor definition is authoritative for Explore detail screens? | No | BA | Closed | Agency/Guest use Explore detail functions; Provider/Admin use PRF permitted views. |
+| 26 | The Sequence Diagram still labels Request Quote as UC-DIS-06 and uses villageId, while current Function List uses experience_id. Should the sequence be updated? | No | BA | Closed | Sequence uses experience_id and current UC-DIS-04 mapping. |
+| 27 | Is AI model retraining from Explore metrics part of MVP, or should Explore only tune ranking parameters? | No | Product / AI | Closed | MVP tunes versioned ranking parameters through F-EXPLORE-14..17. No standalone AI-model retraining pipeline is specified. |
 
 **11. Traceability to DBIZ2**
 
 | **Spec section**               | **DBIZ2 source**           | **Location**                                                                                                                                                                                                                                               |
 |--------------------------------|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic, sections 1.1 System Objectives and 1.2 System Main Functions – Explore**                                                                                                                                                                |
+| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic1, sections 1.1 System Objectives and 1.2 System Main Functions – Explore**                                                                                                                                                                |
 | **4.1 Usage flow**             | Usage Flow figure          | **sheet Schematic2, Guest flow: “View Explore Page” → “View Public Local Provider Detail Page” → “Request advanced features?”; Tour Agency flow: “Choose Discovery Method” → “Browse Explore Page” → “View Local Provider Detail” → interaction decision** |
 | **4.2 Sequence**               | Sequence Diagram figure    | **sheet Schematic2, Module 4: Explore – UC-DIS-01, UC-DIS-02, UC-DIS-03, UC-DIS-04; supporting Request Quote sequence currently labelled UC-DIS-06**                                                                                                       |
 | **5. Functional requirements** | Function List              | **sheet FL&Cost1, F-EXPLORE-01 .. F-EXPLORE-17**                                                                                                                                                                                                           |

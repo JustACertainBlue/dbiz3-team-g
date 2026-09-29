@@ -1,0 +1,42 @@
+[
+  {
+    "scenario_id": "ordinary-01",
+    "fixture": "eight linked agency-provider-experience chains",
+    "expected_result": "valid"
+  },
+  {
+    "scenario_id": "boundary-otp",
+    "fixture": "7985fd5b-02dc-5c37-bd96-6373cb98dd98",
+    "expected_result": "attempt=5; resend=3; terminal challenge"
+  },
+  {
+    "scenario_id": "empty-village",
+    "fixture": "6dfbb5e9-f92e-58a0-b090-d67cea160f62",
+    "expected_result": "inactive catalog entry has no active experience"
+  },
+  {
+    "scenario_id": "exception-cancelled",
+    "fixture": "f55711e1-d354-5c03-a8b3-466ace045472",
+    "expected_result": "terminal historical booking"
+  },
+  {
+    "scenario_id": "exception-closed-chat",
+    "fixture": "3d5ad88d-568c-5f45-80c0-0494cb23a311",
+    "expected_result": "terminal immutable chat"
+  },
+  {
+    "scenario_id": "exception-rejected-registration",
+    "fixture": "94d3571b-86d0-5723-ba11-b2c186409c88",
+    "expected_result": "rejected registration retained"
+  },
+  {
+    "scenario_id": "permission-ubnd-scope",
+    "fixture": "d8413a22-d2f8-57ac-b4a5-40f0e7c3677e",
+    "expected_result": "access limited to assigned village"
+  },
+  {
+    "scenario_id": "kpi-period",
+    "fixture": "bookings + booking_status_history",
+    "expected_result": "as-of status is reproducible"
+  }
+]

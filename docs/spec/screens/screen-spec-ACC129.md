@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` |
 | Mockup image | `img/ACC129.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** User opens "My Account" from the avatar/Account Dropdown, from any authenticated screen.
+Displays the current user's personal account information, role, and associated business/Village. The avatar menu provides My Account, My Business where applicable, and Logout.
 
-**The user leaves this screen when:** User clicks Edit My Account, Go to Business Profile, Log Out, or navigates away via top nav / breadcrumb.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,64 +24,54 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Top nav (Explore, AI Tour Matching, Bookings, Schedule, Messages) | Header / Button | static | No | |
-| 2 | Avatar + dropdown (open state) | Button | opens Account Dropdown, shown expanded in this mockup | No | |
-| 3 | Account Dropdown panel — Active Operator card | Text | current user's name, business email, role, from `spec-ACC.md` §5.1 | No | |
-| 4 | Account Dropdown menu items (My Account, My Business, Log Out) | List / Button | shared component; My Account highlighted as current | No | |
-| 5 | Breadcrumb (Home / My Account / Profile & Credentials) | Text | navigation trail | No | |
-| 6 | Page title "My Account" | Header | static | No | |
-| 7 | Description paragraph | Text | static | No | |
-| 8 | Section 01 — Personal Information & Identification | Header | static | No | |
-| 9 | Edit My Account button | Button | opens ACC130 | No | |
-| 10 | Avatar photo (or placeholder) + "Standard Profile" label | Image / Text | user's avatar, defaults to placeholder icon | No | |
-| 11 | Full Legal Name field | Text | `User.full_name`, with aliases in parentheses if set | No | |
-| 12 | Professional Title field | Text | `User.title` | No | |
-| 13 | Primary Business Email field | Text | `User.email` | No | |
-| 14 | Secure Telephony & WhatsApp field | Text | `User.phone` | No | |
-| 15 | Account & Clearance badge | Text | verification status, e.g. "ACTIVE & FULLY VERIFIED" | No | |
-| 16 | Assigned System Role field | Text | role name + scope note (e.g. "Root governance over 14 sub-agent credentials") | No | |
-| 17 | Section 02 — Linked Enterprise & Commercial Unit | Header + tag ("LEGAL ACCREDITATION") | static | No | |
-| 18 | Commercial profile reference tag (e.g. "TIER 1 PARTNER") | Text | Business/Agency contract tier | No | |
-| 19 | Business name | Header | `Business.legal_name` | No | |
-| 20 | Business description paragraph | Text | licensing/authority summary | No | |
-| 21 | International License / Artisan Registry / Capacity fields | Text | Business credential fields | No | |
-| 22 | Go to Business Profile button | Button | opens the linked Business Profile (My Business) | No | |
-| 23 | Footer | Footer / Text | static legal/compliance links | No | |
+| 1 | My Account | Heading | My Account | No | Static screen title |
+| 2 | Current password | Masked input | `current_password` — F-AUTH-14 | Yes | current_password (String, masked; Required) |
+| 3 | New password | Masked input | `new_password` — F-AUTH-14 | Yes | new_password (String, masked, 8–64 characters; Required — must contain at least 1 uppercase letter, 1 lowercase letter, 1 number and 1 special character; whitespace not allowed) |
+| 4 | Confirm new password | Masked input | `confirm_new_password` — F-AUTH-14 | Yes | confirm_new_password (String, masked; Required — must exactly match new_password) |
+| 5 | Personal information | Read-only panel | F-AUTH-24, F-AUTH-13, F-AUTH-14 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 6 | Assigned role and management scope | Read-only panel | F-AUTH-24, F-AUTH-13, F-AUTH-14 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 7 | Linked business — read-only | Read-only panel | F-AUTH-24, F-AUTH-13, F-AUTH-14 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 8 | Edit personal account | Button / navigation | Only own account | No | Enabled only when the linked permission/validation guard succeeds |
+| 9 | Change Password | Button / navigation | Open authenticated F-AUTH-13/14 panel; mandatory when must_change_password | No | Enabled only when the linked permission/validation guard succeeds |
+| 10 | My Business | Button / navigation | Agency/Provider only | No | Enabled only when the linked permission/validation guard succeeds |
+| 11 | Log out | Button / navigation | Open confirmation | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Full profile with Personal Information and Linked Enterprise sections populated | Normal load, user has a linked business |
-| Empty (no data) | Section 02 shows "No business linked to this account" with no Go to Business Profile button, if the user account has no associated Business/Village (e.g. some Admin roles) | User type without a linked commercial unit |
-| Loading | Skeleton blocks for both sections while account data loads | Screen mount |
-| Error | Inline banner "Account details unavailable — Retry" replacing the content area | Fetch failure |
-| Success / confirmation | Not applicable directly on this screen — confirmations occur on ACC130 after Save Changes | — |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Edit My Account | tap | Opens the editable version of this profile | `ACC130` |
-| 2 | Go to Business Profile | tap | Opens the linked Business/Agency profile | `PRF019` (Agency) / `PRF127` (Local Provider) |
-| 3 | Avatar / Account Dropdown items | tap | My Business → opens linked business profile; Log Out → opens logout confirmation | `PRF019` / `PRF127` / `AUT026` |
-| 4 | Breadcrumb items | tap | Returns to Home | `EXP017` / `DSH018` (per actor) |
-| 5 | Top nav item | tap | Navigates to selected module | actor-appropriate screen |
+| 1 | Edit personal account | Select | Only own account | ACC130 |
+| 2 | Change Password | Select | Open authenticated F-AUTH-13/14 panel; mandatory when must_change_password | stay |
+| 3 | My Business | Select | Agency/Provider only | PRF019 / PRF127 |
+| 4 | Log out | Select | Open confirmation | AUT026 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Business information (Section 02) is read-only here; editing it happens only via the linked Business Profile's own edit screen, not through ACC129/ACC130 | Screen List — ACC129 overview: "Business information is managed separately through My Business" |
-| SR-002 | Account & Clearance and Assigned System Role are system-issued and not user-editable | Mockup — no edit affordance on these fields |
-| SR-003 | Screen content is reference-only and varies by actor (Tour Agency, Local Provider, Admin) — which record backs Section 02 (Agency, Provider, or Village) and which values populate Section 01 differ per actor — but the field titles/labels shown are fixed and identical across all actors | Confirmed |
-| SR-004 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Change Password panel collects current_password/new_password/confirm_new_password. It is required before normal navigation when must_change_password=true. Role/admin_type and business content are read-only. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-00n | Displays the current user's personal account information, role, and associated business/Village |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-024 | F-AUTH-24 | View My Account |
+| AUT | FR-013 | F-AUTH-13 | Display change password form |
+| AUT | FR-014 | F-AUTH-14 | Validate new password & update |
 
 ## 8. Responsive and accessibility notes
 
@@ -89,22 +79,14 @@
 - What collapses or stacks on a narrow screen: Section 01's avatar column stacks above the field list instead of beside it
 - Text that must remain readable (contrast, minimum size): verification badge text, role/scope note, license and registry numbers
 
-## 9. Open questions
+## 9. Decisions and review
 
-None — resolved: content is reference-only and adapts per actor, but field titles stay fixed across all actors (SR-003).
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
-
----
-
-Template source: DBIZ3, VJCBI College - FTU, Session 4. Built on the DBIZ2 Screen Design
-structure (Screen List and Screen Layout), per DBIZ3 Syllabus v3.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

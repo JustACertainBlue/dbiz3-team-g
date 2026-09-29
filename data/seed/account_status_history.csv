@@ -1,0 +1,9 @@
+history_id,user_id,from_status,to_status,changed_by,changed_at,reason
+4ddfc266-759a-5542-b5fe-fe6ec173d454,fbf87ace-4c0c-5328-8a89-ef827480c778,Pending Approval,Approved,f1f62c57-bff1-572f-b921-7927c20dc9c3,2026-09-18T08:00:00+07:00,Đã duyệt hồ sơ
+500b7d5b-3dd3-5f63-a33b-8ced461322a7,f67a438f-195f-5374-886e-3f5313d21ad9,Pending Approval,Approved,f1f62c57-bff1-572f-b921-7927c20dc9c3,2026-09-13T08:00:00+07:00,Đã duyệt hồ sơ
+6158483c-7e98-5b6f-b34a-fcf3bf218388,1982c065-3ebc-5628-a4ae-413427aeba5a,Pending Approval,Approved,f1f62c57-bff1-572f-b921-7927c20dc9c3,2026-09-12T08:00:00+07:00,Đã duyệt hồ sơ
+6575e0be-49c2-59e9-8b96-287207e041d4,242e10ad-ff4d-5aa3-a3be-9e3f6d710235,Pending Approval,Approved,f1f62c57-bff1-572f-b921-7927c20dc9c3,2026-09-17T08:00:00+07:00,Đã duyệt hồ sơ
+b46d806a-295f-585d-b2e4-716e8e2d16fa,ac233721-7dd3-5466-941b-dc7d5d1b0bfa,Pending Approval,Approved,f1f62c57-bff1-572f-b921-7927c20dc9c3,2026-09-14T08:00:00+07:00,Đã duyệt hồ sơ
+c8f5ae4a-21d1-5136-bbe4-805dffca2191,89e2e3e3-010d-547e-9874-b43685a5effd,Approved,Disabled,f1f62c57-bff1-572f-b921-7927c20dc9c3,2026-09-19T08:00:00+07:00,Tạm khóa theo yêu cầu đơn vị
+d214e9e5-b6db-52b4-a5e6-4c80593fc426,29251258-a536-5808-a0b9-73d113cf81d9,Pending Approval,Approved,f1f62c57-bff1-572f-b921-7927c20dc9c3,2026-09-15T08:00:00+07:00,Đã duyệt hồ sơ
+d2538317-2a1d-53f0-9db7-7d335cc458fe,c98ef93a-456d-58e2-8848-da451cd8664f,Pending Approval,Approved,f1f62c57-bff1-572f-b921-7927c20dc9c3,2026-09-16T08:00:00+07:00,Đã duyệt hồ sơ

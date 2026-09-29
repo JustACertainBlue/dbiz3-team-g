@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-PRF.md` |
 | Mockup image | `img/EXP070.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** A Local Provider taps the edit (pencil) icon on EXP067, or "Edit Experience" on EXP068, to update its own Experience. Reuses the field structure of Add Experience (EXP069), pre-filled with saved data, plus inline AI Refine on the Description field.
+Allows the Local Provider to edit its own Experience. AI Refine is available inline within the Description field.
 
-**The user leaves this screen when:** The Provider discards changes or publishes/saves changes.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,68 +24,63 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | "Back to Experience Management / EXP-042 / Edit Mode" breadcrumb | Navigation | `experience_id` | Yes | — |
-| 2 | "Live Edit Mode" status text | Text | Static | No | — |
-| 3 | "Discard Changes" button | Button | — | Yes | Confirms if unsaved edits exist |
-| 4 | "Publish / Save Changes" button | Button | — | Yes | Enforces BR-009/BR-010 |
-| 5 | Experience Title field (pre-filled) | Input | `name` | Yes | Non-empty |
-| 6 | Short lead introduction textarea + char counter (pre-filled) | Input | `description` (lead) | Yes | Max 240 chars |
-| 7 | "AI Refine" button | Button | Triggers FR-007 draft | No | BR-012/BR-013 |
-| 8 | "Workshop Media Gallery (N Images Active)" — primary cover (tagged, editable) | Image upload | `Experience Image` | Yes | BR-008 |
-| 9 | Gallery tile with edit/delete icons | Image upload | `Experience Image` | Yes | Cannot drop below the 3 required categories (BR-009). If this tile is the last remaining image in its required category, its delete icon is disabled until a replacement in the same category is uploaded (BR-015) |
-| 10 | "+ Add Photo" slot | Image upload | `Experience Image` | No | BR-008 |
-| 11 | "Curatorial Overview & Cultural Significance" textarea (pre-filled) + B/I toolbar + AI Refine | Input | `description` (long form) | Yes | — |
-| 12 | Session Structure & Schedule — 3 pre-filled step cards | List | Run-of-show | Yes | — |
-| 13 | "Participant Guidelines & Accessibility [Editable Section]" — policy cards with edit/delete/drag handle | List/Input | `booking_conditions` entries | No | — |
-| 14 | "+ Add New Accessibility / Safety Policy" row + quick-add chips | Button | Adds a new policy card | No | — |
-| 15 | "Experience Rate Card" — price input (pre-filled) | Input | `price_per_person` | Yes | Decimal > 0. Read-only (locked) while the Experience has active bookings (BR-014) |
-| 16 | "Capacity & Logistics" — Max Capacity input (pre-filled) | Input | `max_participants` | Yes | Integer > 0. Read-only (locked) while the Experience has active bookings (BR-014) |
-| 17 | Duration input (pre-filled) | Input | `duration` | Yes | Number > 0. Stored in minutes; displayed in hours on the UI — the system converts the stored value to hours for display and converts the entered hours back to minutes when saving. Read-only (locked) while the Experience has active bookings, as a date/schedule-sensitive field (BR-014) |
-| 18 | Languages chips (pre-filled, editable) | Tag list | Languages | No | — |
-| 19 | "Location" — address textarea (pre-filled, editable) | Input | Location field | Yes | — |
-| 20 | Cancellation Policy selector (pre-filled, editable) | Input | `cancellation_policy`, captured as structured predefined rules, plus an optional free-text "Notes" field for additional context | Yes | Must select one of the predefined cancellation policy rules; the notes field is optional |
-| 20a | "Locked — active bookings" banner (conditional) | Text | Static | No | Shown above the Rate Card / Capacity & Logistics section only when the Experience has active bookings, explaining why price/capacity/duration are locked (BR-014) |
-
-Note: Group discounts / special rates are out of scope for MVP and are not entered or managed on this screen.
+| 1 | Edit Experience | Heading | Edit Experience | No | Static screen title |
+| 2 | Provider id | System context (not editable) | `provider_id` — F-PROFILE-06 | Yes | provider_id (ID; Required) |
+| 3 | Operation | System context (not editable) | `operation` — F-PROFILE-06 | Yes | operation (Enum[Create, Update, Delete]; Required) |
+| 4 | Experience id | System context (not editable) | `experience_id` — F-PROFILE-06 | Conditional | experience_id ( ID; Required for Update/Delete; omitted for Create ) |
+| 5 | Name | Input | `name` — F-PROFILE-06 | Conditional | name ( String; Required for Create; Optional for Update; omitted for Delete ) |
+| 6 | Description | Input | `description` — F-PROFILE-06 | Conditional | description ( Text; Required for Create; Optional for Update; omitted for Delete ) |
+| 7 | Category | Select | `category` — F-PROFILE-06 | Conditional | category ( Enum[Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo]; Required for Create; Optional for Update; omitted for Delete ) |
+| 8 | Duration | Input | `duration` — F-PROFILE-06 | Conditional | duration ( Integer > 0, minutes; Required for Create; Optional for Update; omitted for Delete ) |
+| 9 | Images | File input | `images` — F-PROFILE-06 | Conditional | images ( Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>; Required for Create; Optional for Update; omitted for Delete ) |
+| 10 | Price per person | Input | `price_per_person` — F-PROFILE-06 | Conditional | price_per_person ( Decimal > 0, VND; Required for Create; Optional for Update; omitted for Delete ) |
+| 11 | Max participants | Input | `max_participants` — F-PROFILE-06 | Conditional | max_participants ( Integer > 0; Required for Create; Optional for Update; omitted for Delete ) |
+| 12 | Notice period | Input | `notice_period` — F-PROFILE-06 | Conditional | notice_period ( Integer >= 0, hours; Required for Create; Optional for Update; omitted for Delete ) |
+| 13 | Cancellation policy | Structured input | `cancellation_policy` — F-PROFILE-06 | Conditional | cancellation_policy ( Object{rules: Array<Object{threshold_hours, fee_percentage}>, notes: Text Optional}; Required for Create; Optional for Update; omitted for Delete ) |
+| 14 | Experience location address | Input | `experience_location_address` — F-PROFILE-06 | Conditional | experience_location_address (String; Required for Create; Optional for Update; omitted for Delete) |
+| 15 | Group discounts | Structured input | `group_discounts` — F-PROFILE-06 | No | group_discounts (Array<Object{pax_threshold: Integer > 0, discount_percentage: Decimal 0–100}>; Optional — existing PRF Q23 rule schema) |
+| 16 | Special rates | Structured input | `special_rates` — F-PROFILE-06 | No | special_rates (Array<Object{pax_threshold: Integer > 0, discount_percentage: Decimal 0–100}>; Optional — existing PRF Q23 rule schema) |
+| 17 | Description draft preview | Read-only panel | F-PROFILE-06, F-PROFILE-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 18 | Active-booking locked-fields notice | Read-only panel | F-PROFILE-06, F-PROFILE-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 19 | Save Changes | Button / navigation | Apply Update contract and active-booking locks | No | Enabled only when the linked permission/validation guard succeeds |
+| 20 | Discard | Button / navigation | No mutation | No | Enabled only when the linked permission/validation guard succeeds |
+| 21 | AI Refine | Button / navigation | Explicit Accept/Edit required | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Fully pre-filled form matching the saved Experience, as in the mockup | Experience record loaded successfully |
-| Empty (no data) | N/A — this screen only opens against an existing saved record, which by definition already satisfies the required-field rules | — |
-| Loading | Skeleton form while the existing Experience data is fetched; "Publish/Save Changes" shows a spinner and disables while saving | Screen opens; user submits |
-| Error | Inline field-level errors on save (same rule set as EXP069); a full-page error if the Experience was deleted or reassigned since the list was loaded | Validation fails; fetch fails |
-| Locked (active bookings) | Price, Max Capacity and Duration render as read-only with a "Locked — active bookings" banner above them; all other fields remain editable | Experience has one or more active (non-completed) bookings (BR-014) |
-| Success / confirmation | Toast "Changes published" / "Changes saved" | Save succeeds → redirect to `EXP068` |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | "Discard Changes" | tap | Confirms, then reverts to the last saved version | `EXP068` |
-| 2 | "Publish / Save Changes" | tap | Validates and saves; edits go live immediately without a new verification cycle | `EXP068` |
-| 3 | "AI Refine" (either field) | tap | Same inline draft flow as EXP069 | stays (inline) |
-| 4 | Gallery tile edit/delete icons | tap | Replaces or removes that image, subject to the 3-category minimum (BR-009) and, for the last image in a category, blocked until a replacement is uploaded (BR-015) | stays |
-| 5 | "+ Add New Accessibility / Safety Policy" / quick-add chips | tap | Adds a policy card | stays |
+| 1 | Save Changes | Select | Apply Update contract and active-booking locks | EXP068 |
+| 2 | Discard | Select | No mutation | EXP068 |
+| 3 | AI Refine | Select | Explicit Accept/Edit required | stay |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Only the owning Local Provider can edit this Experience. | BR-002 |
-| SR-002 | Saved edits publish immediately; they do not trigger a full Provider-profile re-verification cycle. | Module spec Open Question 26 (Closed: "Goes live immediately") |
-| SR-003 | The 3-required-image-category and price/capacity/notice-period rules apply on every save, not only at creation. | BR-009, BR-010 |
-| SR-004 | AI-refined drafts never auto-replace saved text. | BR-011, BR-012, BR-013 |
-| SR-005 | While the Experience has active (non-completed) bookings, Price, Max Capacity and Duration are read-only; the Provider cannot change them until the active bookings are resolved. All other fields (description, images subject to BR-015, policies, languages, location, cancellation policy) remain editable. | BR-014 |
-| SR-006 | The last remaining image in a required category cannot be deleted until a replacement in the same category is uploaded, so the Experience never drops below BR-009's minimum. | BR-015 |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Update only own Experience. On hold/Booked references lock price_per_person, group_discounts, special_rates, group_size, max_participants, duration and experience_location_address. Description/images/notice_period/cancellation_policy remain editable. | Function List and shared consistency contract |
+| SR-004 | Delete the last image in a required category only after replacement. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-006 | Updates an existing Experience owned by this Provider (pricing, capacity, images, booking conditions). |
-| FR-007 | Provides inline AI-refined description drafting for the Description field. |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| PRF | FR-006 | F-PROFILE-06 | Manage Experiences, Pricing, Images & Booking Conditions |
+| PRF | FR-007 | F-PROFILE-07 | Generate Standardized Description |
 
 ## 8. Responsive and accessibility notes
 
@@ -93,20 +88,14 @@ Note: Group discounts / special rates are out of scope for MVP and are not enter
 - What collapses or stacks on a narrow screen: same as EXP069 — sidebar cards move below the main form; gallery grid drops to one column; policy cards stack full width.
 - Text that must remain readable (contrast, minimum size): the drag-handle and edit/delete icons on policy/gallery cards need a minimum touch target of 44×44px on narrow layouts; the "Locked — active bookings" banner and disabled field styling must not rely on color alone.
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Can the last remaining image in a required category be deleted before a replacement is uploaded? — **Answer:** No. Deletion is blocked until a replacement image in the same category has been uploaded. | Yes | Closed (BR-015) |
-| 2 | What happens if an Experience being edited is referenced by active bookings — are price/capacity/date-sensitive fields locked? — **Answer:** Yes. Price, Max Capacity and Duration become read-only while any active booking references the Experience; all other fields remain editable. | Yes | Closed (BR-014) |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none."
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

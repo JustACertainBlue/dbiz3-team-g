@@ -1,0 +1,11 @@
+role_code,permission_code
+ADMIN,manage_rankings
+ADMIN,manage_users
+ADMIN,review_agencies
+ADMIN,review_providers
+ADMIN,view_dashboard
+Local_Provider,manage_bookings
+Local_Provider,manage_experiences
+Local_Provider,manage_profile
+Tour_Agency,use_chat
+Tour_Agency,use_matching

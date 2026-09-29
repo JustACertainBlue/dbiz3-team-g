@@ -1,0 +1,9 @@
+notification_id,recipient_user_id,event_type,source_type,source_id,payload,created_at,read_at,email_delivery_status
+0e9ed5da-5893-59ed-921c-4bffbfd4a744,ac233721-7dd3-5466-941b-dc7d5d1b0bfa,Booking Status Changed,Booking,0971a1b6-32e2-5581-a02d-d9636e22e1b6,"{""status"":""Completed""}",2026-09-24T09:00:00+07:00,2026-09-24T10:00:00+07:00,Success
+11de1e7c-c17d-519f-8c0d-8445391f8f7c,f67a438f-195f-5374-886e-3f5313d21ad9,Booking Status Changed,Booking,0d7cb86c-36c2-5c6e-876d-2437c0e5b4e4,"{""status"":""Booked""}",2026-09-24T09:00:00+07:00,2026-09-24T10:00:00+07:00,Success
+6bcde639-2933-57f7-88f0-70b249f5df0d,89e2e3e3-010d-547e-9874-b43685a5effd,Booking Status Changed,Booking,f55711e1-d354-5c03-a8b3-466ace045472,"{""status"":""Cancelled""}",2026-09-24T09:00:00+07:00,,
+9a835505-2b49-564c-98c5-64b2db46ef57,1982c065-3ebc-5628-a4ae-413427aeba5a,Booking Status Changed,Booking,4bf17b30-9819-5c47-b745-06be7171087b,"{""status"":""Booked""}",2026-09-24T09:00:00+07:00,2026-09-24T10:00:00+07:00,Success
+9c81b2bc-564c-55ac-9c28-597be88bf889,c98ef93a-456d-58e2-8848-da451cd8664f,Booking Status Changed,Booking,eeb1ab28-7c02-51d8-b81a-921a6bde8b53,"{""status"":""Cancelled""}",2026-09-24T09:00:00+07:00,2026-09-24T10:00:00+07:00,Success
+d79be86f-f9c2-5631-91d0-90238d50df35,242e10ad-ff4d-5aa3-a3be-9e3f6d710235,Booking Status Changed,Booking,5782011c-b56d-5b61-bc01-80dd210c769c,"{""status"":""Booked""}",2026-09-24T09:00:00+07:00,,Fail
+ed4827b4-e9fc-52e3-9bcc-f20d941ed152,fbf87ace-4c0c-5328-8a89-ef827480c778,Booking Status Changed,Booking,54d7a276-90a2-5c70-be22-cb59ea95ea14,"{""status"":""On hold""}",2026-09-24T09:00:00+07:00,,Not Applicable
+f0970d7f-3490-5c53-ac88-5d4bcf3523bc,29251258-a536-5808-a0b9-73d113cf81d9,Booking Status Changed,Booking,c6b8aaea-1377-5017-9805-de0406b515e3,"{""status"":""Completed""}",2026-09-24T09:00:00+07:00,2026-09-24T10:00:00+07:00,Success

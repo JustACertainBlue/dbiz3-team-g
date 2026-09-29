@@ -1,15 +1,17 @@
-**Spec Document: Profile Management**
+# Spec Document: Profile Management
 
 | **Field**                 | **Value**                                                                                                                                                                                                            |
 |---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Module ID                 | PRF                                                                                                                                                                                                                  |
 | Module name               | Profile Management                                                                                                                                                                                                   |
-| Spec version              | v0.1                                                                                                                                                                                                                 |
+| Spec version | v0.2 — consistency revision |
 | Author (team member)      | Group G                                                                                                                                                                                                              |
-| Date                      | 22/09/2026                                                                                                                                                                                                           |
-| Status                    | Clarified                                                                                                                                                                                                            |
-| Approved by (Client role) |                                                                                                                                                                                                                      |
+| Date | 28/09/2026 |
+| Status | Revised — pending human approval |
+| Approved by (Client role) | Pending human approval |
 | DBIZ2 source              | Function List rows **F-PROFILE-01 .. F-PROFILE-07**; Use Case **UC-PRO-01 .. UC-PRO-06**; Screens **PRF019, PRF021, PRF127, PRF128, DSC122, DSC123, EXP067, EXP068, EXP069, EXP070, EXP132, VER146, VER119** |
+
+Shared actor/state/field definitions: [Consistency Contract](../docs/consistency-contract.md). Exact current Function contracts are in §5/5.1. Technical choices and unresolved field-design questions are explicitly separated there.
 
 **1. Purpose and scope (mandatory)**
 
@@ -214,350 +216,133 @@ UC-PRO-06 maps directly to F-PROFILE-05.
 
 - Provider tries to delete the last image in a required category before uploading a replacement: blocked per BR-015 until a replacement in the same category is uploaded.
 
+### Consistency acceptance examples
+
+| AC ID | Given / When | Expected result |
+|---|---|---|
+| AC-PRF-DRAFT | Provider saves incomplete initial profile | Draft remains; complete required data submits Pending Verification. |
+| AC-PRF-REVISION | Verified Provider submits a major revision | Previous Verified version remains public until UBND approves. |
+| AC-PRF-LOCK | Experience has On hold booking; Provider changes location | Reject locked-field change; description change remains permitted. |
+| AC-PRF-DELETE | Delete Experience with historical bookings only | Archive and preserve history; active references block deletion. |
+
 **4. Flows (mandatory)**
 
 **4.1 Usage flow**
 
-**MERMAID**
-
-> graph TD
->
-> classDef default fill:#FFFFFF,stroke:#000000,stroke-width:1.5px,color:#000000;
->
-> classDef startend fill:#FFFFFF,stroke:#000000,stroke-width:2.5px,color:#000000;
->
-> subgraph Agency_Flow \["Actor: Tour Agency"\]
->
-> TA_Start(\["0. Start: Tour Agency"\])
->
-> TA1\["1. Access Agency Profile"\]
->
-> TA2\[/"2. Update Contact & Preferences"/\]
->
-> TA3\["3. Save to Database"\]
->
-> TA_End(\["4. End"\])
->
-> TA_Start --\> TA1 --\> TA2 --\> TA3 --\> TA_End
->
-> end
->
-> subgraph Provider_Flow \["Actor: Local Provider"\]
->
-> LP_Start(\["0. Start: Local Provider"\])
->
-> LP1\["1. Access Experience Profile"\]
->
-> LP2\[/"2. Update Details & Pricing"/\]
->
-> LP3\[/"3. Upload Media (Min 3 images)\nAuto-crop 16:9/4:3"/\]
->
-> LP4\["4. Save to Database"\]
->
-> LP_End(\["5. End"\])
->
-> LP_Start --\> LP1 --\> LP2 --\> LP3 --\> LP4 --\> LP_End
->
-> end
->
-> subgraph ReadOnly_Flow \["Actor: Admin (Read-Only)"\]
->
-> RO_Start(\["0. Start: Admin"\])
->
-> RO1\["1. Access Target Profile"\]
->
-> RO2\["2. View Profile Details\n(No Edit Rights)"\]
->
-> RO_End(\["3. End"\])
->
-> RO_Start --\> RO1 --\> RO2 --\> RO_End
->
-> end
->
-> class TA_Start,TA_End,LP_Start,LP_End,RO_Start,RO_End startend;
+```mermaid
+graph TD
+  P["Provider: PRF127 → PRF128"] --> S{"Complete submission?"}
+  S -->|No| D["Save Draft"]
+  S -->|Yes| V["Pending Verification; retain last Verified version"]
+  V --> U["Admin subtype UBND: VER146/VER119"]
+  U -->|Approve| A["Publish Verified revision"]
+  U -->|Request Revision| R["Revision Required; comments"]
+  R --> P
+  P --> X["EXP067 Create/Update/Delete via EXP069/070/132"]
+  X --> Q{"Active/history references?"}
+  Q -->|Active locks| B["Block invalid change/deletion"]
+  Q -->|History only and Delete| AR["Archive"]
+  Q -->|None and Delete| HD["Hard delete"]
+```
 
 **4.2 Sequence for the main flow**
 
-**MERMAID**
-
+```mermaid
 sequenceDiagram
-
-title Module 2: Profile Management
-
-actor Agency as Tour Agency
-
-participant Frontend
-
-participant Backend
-
-participant Database
-
-Note over Agency, Database: UC-PRO-02: View Agency Profile
-
-Agency-\>\>Frontend: Open Profile
-
-Frontend-\>\>Backend: getAgencyProfile(agencyId)
-
-Backend-\>\>Database: getAgencyProfile(agencyId)
-
-Database--\>\>Backend: profileData
-
-Backend--\>\>Frontend: profileData
-
-Frontend--\>\>Agency: Display Agency Profile
-
-Note over Agency, Database: UC-PRO-01: Manage Agency Profile
-
-Agency-\>\>Frontend: Edit Profile Information
-
-Agency-\>\>Frontend: Save Profile
-
-Frontend-\>\>Backend: saveAgencyProfile(profileData)
-
-Backend-\>\>Database: saveAgencyProfile(profileData)
-
-Database--\>\>Backend: profileSaved
-
-Backend--\>\>Frontend: saveSuccess
-
-Frontend--\>\>Agency: Display updated profile
-
-sequenceDiagram
-
-title Module 2: Profile Management
-
-actor LP as Local Provider
-
-actor Admin
-
-participant Frontend
-
-participant Backend
-
-participant Database
-
-Note over LP, Database: UC-PRO-03 - View Local Provider Profile
-
-LP-\>\>Frontend: Open Profile
-
-Frontend-\>\>Backend: getProviderProfile(lpId)
-
-Backend-\>\>Database: getProviderProfile(lpId)
-
-Database--\>\>Backend: profileData
-
-Backend--\>\>Frontend: profileData
-
-Frontend--\>\>LP: Display Provider Profile
-
-Note over LP, Database: UC-PRO-04 - Manage Provider Profile
-
-LP-\>\>Frontend: Open Profile Management
-
-Frontend-\>\>Backend: getProviderProfile(lpId)
-
-Backend-\>\>Database: getProviderProfile(lpId)
-
-Database--\>\>Backend: profileData
-
-Backend--\>\>Frontend: profileData
-
-Frontend--\>\>LP: Display Provider Profile
-
-LP-\>\>Frontend: Fill / Update Information
-
-LP-\>\>Frontend: Enter / Edit Description
-
-opt AI Refinement
-
-LP-\>\>Frontend: Click "AI Refinement"
-
-Frontend-\>\>Backend: refineDescription(description)
-
-Backend-\>\>Backend: generateRefinedDescription(description)
-
-Backend--\>\>Frontend: refinedDescription
-
-Frontend--\>\>LP: Display refined description
-
-LP-\>\>Frontend: Accept / Edit refined description
-
-end
-
-LP-\>\>Frontend: Save Profile
-
-Frontend-\>\>Backend: saveProviderProfile(profileData, images)
-
-Backend-\>\>Database: saveProviderProfile(profileData, images)
-
-Database--\>\>Backend: profileSaved
-
-Backend--\>\>Frontend: saveSuccess
-
-Frontend--\>\>LP: Display updated profile
-
-Note over LP, Database: UC-PRO-05 - Manage Experiences
-
-LP-\>\>Frontend: Open Experience Management
-
-Frontend-\>\>Backend: getExperiences(lpId)
-
-Backend-\>\>Database: getExperiences(lpId)
-
-Database--\>\>Backend: experiences
-
-Backend--\>\>Frontend: experiences
-
-Frontend--\>\>LP: Display Experiences
-
-LP-\>\>Frontend: Create / Edit Experience
-
-LP-\>\>Frontend: Enter / Edit Experience Description
-
-opt AI Refinement
-
-LP-\>\>Frontend: Click "AI Refinement"
-
-Frontend-\>\>Backend: refineExperienceDescription(description)
-
-Backend-\>\>Backend: generateRefinedDescription(description)
-
-Backend--\>\>Frontend: refinedDescription
-
-Frontend--\>\>LP: Display refined description
-
-LP-\>\>Frontend: Accept / Edit refined description
-
-end
-
-LP-\>\>Frontend: Save Experience
-
-Frontend-\>\>Backend: saveExperience(experienceData, images)
-
-Backend-\>\>Database: saveExperience(experienceData, images)
-
-Database--\>\>Backend: experienceSaved
-
-Backend--\>\>Frontend: saveSuccess
-
-Frontend--\>\>LP: Display updated Experience
-
-Note over Admin, Database: UC-PRO-06 - Verify Provider Profile
-
-Admin-\>\>Frontend: Open Provider Profile for review
-
-Frontend-\>\>Backend: getProviderProfile(providerId)
-
-Backend-\>\>Database: getProviderProfile(providerId)
-
-Database--\>\>Backend: profileData
-
-Backend--\>\>Frontend: profileData
-
-Frontend--\>\>Admin: Display submitted Profile
-
-alt Approve
-
-Admin-\>\>Frontend: Select "Approve"
-
-Frontend-\>\>Backend: approveProviderProfile(providerId)
-
-Backend-\>\>Database: updateProfileVerificationStatus(providerId, "Verified")
-
-Database--\>\>Backend: statusUpdated
-
-Backend--\>\>Frontend: approveSuccess
-
-Frontend--\>\>Admin: Display profile status "Verified"
-
-else Request Revision
-
-Admin-\>\>Frontend: Select "Request Revision"
-
-Admin-\>\>Frontend: Enter revision comments
-
-Frontend-\>\>Backend: requestProfileRevision(providerId, comments)
-
-Backend-\>\>Database: updateProfileVerificationStatus(providerId, "Revision Required")
-
-Backend-\>\>Database: saveRevisionComments(providerId, comments)
-
-Database--\>\>Backend: statusUpdated
-
-Backend--\>\>Frontend: revisionRequested
-
-Frontend--\>\>Admin: Display profile status "Revision Required"
-
-Frontend--\>\>LP: Display revision comments
-
-end
+    actor Agency
+    actor Provider
+    actor Admin
+    participant UI as Frontend
+    participant API as Backend
+    participant DB as Database
+    participant AI as AI Service
+    Note over Agency,UI: UC-PRO-01 PRF019→PRF021
+    Agency->>UI: Edit own Agency profile
+    UI->>API: updateAgencyProfile (F-PROFILE-02)
+    API->>API: Check owner and validate fields
+    alt Major company_name/tax_id change
+        API->>DB: Store pending revision; keep Approved account/current legal version
+    else Non-major change
+        API->>DB: Apply immediately with change log
+    end
+    API-->>UI: Updated profile and major_change_review_status
+    Note over Provider,UI: UC-PRO-04 PRF127→PRF128
+    Provider->>UI: Save own profile including weekly operating hours
+    UI->>API: updateProviderProfile (F-PROFILE-04)
+    API->>API: Check ownership and validate supplied values
+    alt Incomplete initial profile
+        API->>DB: Save Draft
+    else Complete first submission or major revision
+        API->>DB: Save submitted revision Pending Verification; retain existing Verified publication
+    else Permitted non-major change
+        API->>DB: Apply change and audit
+    end
+    API-->>UI: Editable/review status and published version status
+    Note over Admin,UI: UC-PRO-06 VER146/VER119; ADMIN subtype UBND
+    Admin->>UI: Approve or Request Revision with required comments
+    UI->>API: reviewProvider (F-PROFILE-05)
+    API->>API: Check assigned village, submitted status and comments
+    API->>DB: Persist review; Approve publishes Verified version, Request Revision retains last publication
+    API-->>UI: verification_status, reviewer_id, reviewed_at; account remains Active
+    Note over Admin,UI: UC-ACC-06 VER146 Agency variant; ADMIN subtype HDT
+    Admin->>UI: Approve/Request More Information/Reject
+    UI->>API: reviewAgency (F-AUTH-18, review_type)
+    API->>DB: Persist decision; major-change review does not disable Approved account
+    API-->>UI: Target-specific account/revision result plus email/in-app notification status
+    opt Request More Information for initial registration
+        API->>DB: Store review decision and submission version
+        API->>Mail: Send single-use secure edit link
+        Guest->>UI: Open REG003 through secure edit link and revise request (F-AUTH-26)
+        UI->>API: resubmitRegistration(registration_request_id, token, updated_data)
+        API->>DB: Store new submission version; return request to HDT review
+    end
+    Note over Provider,UI: UC-PRO-05 EXP067/068/069/070/132
+    Provider->>UI: Create/Update/Delete Experience
+    UI->>API: manageExperience (F-PROFILE-06)
+    API->>DB: Check ownership and active/history references
+    alt Invalid fields, locked field or active booking deletion
+        API-->>UI: Validation error; no mutation
+    else Historical references and Delete
+        API->>DB: Archive, preserve booking history
+    else No references and Delete
+        API->>DB: Hard delete
+    else Valid Create/Update
+        API->>DB: Persist Experience; refresh Explore/matching source
+    end
+    API-->>UI: Permitted result
+    opt AI description refinement on PRF128/EXP069/070
+        Provider->>UI: AI Refine
+        UI->>API: generateDescription (F-PROFILE-07)
+        API->>AI: Request factual rewrite
+        AI-->>UI: Draft or service failure
+        Provider->>UI: Accept/Edit/Regenerate/Discard
+        Note over UI,DB: Only accepted/edited text may be saved through the owning profile action
+    end
+```
 
 **5. Functional requirements (mandatory)**
 
-| **FR ID**  | **DBIZ2 Subfunction ID** | **Requirement (system MUST ...)**                                                                                                        | **Actor**               | **Priority** |
-|------------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|--------------|
-| **FR-001** | F-PROFILE-01             | Display Agency profile information according to the requesting actor's permitted visibility scope.                                       | Member / Guest          | Must         |
-| **FR-002** | F-PROFILE-02             | Allow a Tour Agency to update only its own permitted Agency profile information.                                                         | Tour Agency             | Must         |
-| **FR-003** | F-PROFILE-03             | Display Local Provider information according to actor-specific visibility rules.                                                         | Member / Guest          | Must         |
-| **FR-004** | F-PROFILE-04             | Allow a Local Provider to update only its own business profile, description and profile media.                                           | Local Provider          | Must         |
-| **FR-005** | F-PROFILE-05             | Allow UBND to Approve or Request Revision for submitted Local Provider profiles within its assigned village.                             | UBND Admin              | Must         |
-| **FR-006** | F-PROFILE-06             | Allow Local Provider to create, update and delete its own Experiences and manage their pricing, images, capacity and booking conditions. | Local Provider          | Must         |
-| **FR-007** | F-PROFILE-07             | Generate an AI-refined Provider/Experience description draft without automatically replacing the original description.                   | Local Provider / System | Should       |
+| FR ID | Function List ID | Requirement — system MUST | Actor | Priority |
+|---|---|---|---|---|
+| FR-001 | F-PROFILE-01 | Displays Agency profile information according to actor-specific visibility rules. Guest and another Agency can view public information only: Agency name, company type, location and team size. The owning Agency can view its full profile. Local Provider and UBND may additionally view Agency contact information for collaboration. HDT has full-detail read access. tour_types are not public information. Agency profile does not use a separate verification_status; Agency approval is managed through account status. | Member / Guest | Must |
+| FR-002 | F-PROFILE-02 | Allows only the highest-level authorized Agency user (Agency Owner) to edit its own Agency profile. Company Name and Tax ID are major changes requiring HDT re-review. The Agency remains Approved and keeps normal platform access during review. Proposed major changes are stored separately and do not replace the currently approved legal information until HDT approves them. Non-major changes are applied immediately. | Tour Agency | Must |
+| FR-003 | F-PROFILE-03 | Displays Local Provider profile information according to actor-specific visibility. Guest accesses the dedicated Public Provider Profile and sees public/basic information only. Tour Agency sees permitted collaboration details. Local Provider sees its own profile in full and public information of other Providers. UBND may view full Provider information within its assigned village for review. HDT has full-detail monitoring access. A Village may contain multiple Local Providers; each Provider belongs to one Village. | Member / Guest | Must |
+| FR-004 | F-PROFILE-04 | Allows Local Provider to edit its own profile. Initial verification status is Draft. Save Changes stores incomplete information as Draft; once all required fields are complete, the first successful Save Changes automatically submits the profile and changes status to Pending Verification. Business Name, Craft Type and Business Registration are major fields. If a Verified Provider changes one of these, a new revision enters review while the last Verified version remains publicly visible and continues to be used by Explore and AI Matching until the revision is approved. Provider operating hours are maintained as recurring weekly profile information. They define the Provider's baseline operational window used by Schedule/Booking availability calculations. | Local Provider | Must |
+| FR-005 | F-PROFILE-05 | Allows UBND Admin to review a submitted Local Provider profile within its assigned village. Profile information is read-only for UBND. Approve changes the submitted revision to Verified. Request Revision changes it to Revision Required and requires revision comments. Every review decision records reviewer and timestamp. When a revision of an already Verified Provider is approved, it replaces the previously published Verified version. | Admin UBND | Must |
+| FR-006 | F-PROFILE-06 | Allows Local Provider to create, update and delete its own Experiences and manage information, location, pricing, capacity, images and booking conditions. Every Experience must maintain at least one image in each required category: Activity/Experience, Space/Location and Product/Result. When an Experience has an active Booking in On hold or Booked status, price, capacity and schedule-sensitive fields are locked; description, images and booking-condition/policy content remain editable. The final image in a required category cannot be deleted until a replacement exists. Experience edits go live immediately. Delete is blocked when an active Booking exists; Experiences referenced only by historical Completed/Cancelled Bookings are archived; Experiences with no Booking references may be permanently deleted.<br><br>For an Experience referenced by at least one On hold or Booked Booking, the following fields are locked:<br>price_per_person, group_discounts, special_rates, group_size, max_participants, duration and experience_location_address<br><br>Description, images, notice_period and cancellation_policy remain editable. | Local Provider | Must |
+| FR-007 | F-PROFILE-07 | Generates an AI-refined version of a Local Provider or Experience description while preserving factual meaning. The original description is retained. The generated draft is never published automatically. Provider may Accept, Edit, Regenerate or Discard it; only an explicitly accepted or edited draft may become the saved description. | Local Provider / System | Should |
 
 **5.1 Input / Output contract**
 
-| **FR ID**  | **Input field**       | **Type**                                                                                                                       | **Required**                                   | **Output field**                    | **Type**                                                                                     | **Notes / validation**                                                                                                                                                                                                 |
-|------------|-----------------------|--------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|-------------------------------------|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **FR-001** | agency_id             | ID                                                                                                                             | No, omitted for own profile                    | Agency profile fields               | Object                                                                                       | Public fields: agency_name, company_type, structured location and team_size. Contact is visible to authenticated Local Provider, UBND and HDT. Full-detail fields are available to own Agency / HDT. No Agency verification_status. |
-| **FR-002** | agency_id             | ID                                                                                                                             | Yes                                            | updated_profile                     | Object                                                                                       | Must belong to current Agency; only the highest-level authorized Agency user (Agency Owner) may edit.                                                                                                                  |
-|            | company_name          | String ≤255                                                                                                                    | No                                             | success_message                     | String                                                                                       | Company Name is a major change requiring HDT re-review.                                                                                                                                                                |
-|            | tax_id                | String, 10 or 13 numeric digits                                                                                                | No                                             | updated_at                          | DateTime                                                                                     | Tax ID is a major change requiring HDT re-review.                                                                                                                                                                       |
-|            | location              | Object{street, ward, district, city_province}                                                                                  | No                                             | change_log_entry                    | Object{editor_id, changed_fields, edited_at, ip_address}                                     | Structured Agency location.                                                                                                                                                                                            |
-|            | description           | Text ≤1000                                                                                                                     | No                                             | requires_hdt_rereview               | Boolean                                                                                      | Non-major changes are applied immediately.                                                                                                                                                                              |
-|            | contact_info          | Object{contact_person_name, phone_number, business_email}                                                                      | No                                             | major_change_review_status          | Enum[Not Required, Pending Review, Approved, Rejected]                                       | Proposed major legal-information changes remain pending until HDT review.                                                                                                                                               |
-|            | team_size             | Integer > 0                                                                                                                    | No                                             | account_status                      | Enum[Approved]                                                                               | An already Approved Agency remains Approved while a major-change review is pending.                                                                                                                                     |
-|            | tour_types            | Array<Enum>                                                                                                                    | No                                             |                                     |                                                                                              | Not public; visible to own Agency and HDT.                                                                                                                                                                              |
-|            | images                | Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>                                                                        | No                                             |                                     |                                                                                              | Auto-crop supported.                                                                                                                                                                                                    |
-| **FR-003** | provider_id           | ID                                                                                                                             | No, omitted for own profile                    | Provider profile fields             | Object                                                                                       | Role-specific field visibility. Public fields include provider_name, craft_type, general_description and public_images.                                                                                                 |
-|            |                       |                                                                                                                                |                                                | verification_status                 | Enum[Draft, Pending Verification, Verified, Revision Required]                               | Visible only to own Provider / UBND / HDT.                                                                                                                                                                              |
-|            |                       |                                                                                                                                |                                                | quality_metrics                     | Object{total_bookings, average_booking_value, cancellation_rate, profile_completeness_score} | HDT only.                                                                                                                                                                                                               |
-| **FR-004** | provider_id           | ID                                                                                                                             | Yes                                            | updated_profile                     | Object                                                                                       | Must be current Provider.                                                                                                                                                                                               |
-|            | business_name         | String ≤255                                                                                                                    | Yes for submission                             | success_message                     | String                                                                                       | Major field; changing it after verification requires UBND re-verification.                                                                                                                                              |
-|            | craft_type            | Enum[Ceramics, Silk/Textile, Woodcarving, Food/Culinary, Metalwork, Paper/Painting, Other]                                   | Yes for submission                             | updated_at                          | DateTime                                                                                     | Major field; changing it after verification requires UBND re-verification.                                                                                                                                              |
-|            | artisan_names         | Array<String>                                                                                                                  | No                                             | change_log_entry                    | Object                                                                                       | —                                                                                                                                                                                                                      |
-|            | business_registration_number | String                                                                                                                    | Yes for submission                             | profile_verification_status         | Enum[Draft, Pending Verification, Verified, Revision Required]                               | Current editable/review version. Business Registration is a major field.                                                                                                                                                |
-|            | business_registration_certificate | File[PDF/JPG/JPEG/PNG], max 10MB                                                                                      | Yes for submission                             | published_profile_version_status    | Enum[None, Verified]                                                                          | Last Verified version remains published while a major revision is under review.                                                                                                                                         |
-|            | location_address      | String                                                                                                                         | Yes for submission                             | rereview_required                   | Boolean                                                                                      | Canonical Provider location is address only.                                                                                                                                                                            |
-|            | description           | Text ≤1000                                                                                                                     | No                                             |                                     |                                                                                              | May use F-PROFILE-07.                                                                                                                                                                                                   |
-|            | operating_hours       | Object{Monday..Sunday: Array<TimeRange> Optional}                                                                              | No                                             |                                     |                                                                                              | Recurring weekly Provider operating hours; canonical baseline availability source for F-SCHED-09.                                                                                                                      |
-|            | booking_conditions    | Object                                                                                                                         | No                                             |                                     |                                                                                              | —                                                                                                                                                                                                                      |
-|            | profile_images        | Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>                                                                        | No                                             |                                     |                                                                                              | —                                                                                                                                                                                                                      |
-| **FR-005** | provider_id           | ID                                                                                                                             | Yes                                            | submitted_profile_view              | UI View, read-only                                                                           | Provider must belong to UBND assigned village.                                                                                                                                                                          |
-|            | decision              | Enum[Approve, Request Revision]                                                                                                | Yes                                            | verification_status                 | Enum[Verified, Revision Required]                                                            | —                                                                                                                                                                                                                      |
-|            | revision_comments     | Text                                                                                                                           | Yes when Request Revision; otherwise No        | reviewer_id                         | ID                                                                                           | Revision comments are mandatory for Request Revision.                                                                                                                                                                   |
-|            |                       |                                                                                                                                |                                                | reviewed_at                         | DateTime                                                                                     | Recorded for every decision.                                                                                                                                                                                            |
-|            |                       |                                                                                                                                |                                                | revision_comments                   | Text                                                                                         | Optional output.                                                                                                                                                                                                        |
-|            |                       |                                                                                                                                |                                                | published_version_updated           | Boolean                                                                                      | True when an approved revision replaces a previous Verified version.                                                                                                                                                    |
-| **FR-006** | provider_id           | ID                                                                                                                             | Yes                                            | experience                          | Object                                                                                       | Provider-owned Experience only; returned for Create/Update.                                                                                                                                                             |
-|            | operation             | Enum[Create, Update, Delete]                                                                                                   | Yes                                            | success_message                     | String                                                                                       | —                                                                                                                                                                                                                      |
-|            | experience_id         | ID                                                                                                                             | Required for Update/Delete; omitted for Create | explore_listing_updated             | Boolean                                                                                      | Experience edits for a Verified Provider go live immediately.                                                                                                                                                           |
-|            | name                  | String                                                                                                                         | Required for Create; Optional for Update; omitted for Delete | matching_data_refreshed             | Boolean                                                                                      | —                                                                                                                                                                                                                      |
-|            | description           | Text                                                                                                                           | Required for Create; Optional for Update; omitted for Delete | deletion_result                     | Enum[Hard Deleted, Archived, Blocked by Active Booking]                                     | Delete is blocked by On hold/Booked Bookings; historical-only references are archived; no Booking references may be hard-deleted.                                                                                       |
-|            | category              | Enum[Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo]                                                   | Required for Create; Optional for Update; omitted for Delete | archived_at                         | DateTime                                                                                     | Returned when archived because historical Booking references exist.                                                                                                                                                     |
-|            | group_size            | Object{min_pax: Integer > 0, max_pax: Integer > 0}                                                                             | No for Create/Update; omitted for Delete       | validation_errors                   | Array<Enum[Active Booking Field Locked, Active Booking Prevents Deletion, Required Image Category Missing, Last Required Category Image Cannot Be Deleted, Invalid Price, Invalid Capacity, Invalid Notice Period]> | Recommended/ideal participant range; max_pax must not exceed max_participants.                                                                                                   |
-|            | duration              | Integer > 0, minutes                                                                                                           | Required for Create; Optional for Update; omitted for Delete |                                     |                                                                                              | Locked while an On hold or Booked Booking exists.                                                                                                                                                                       |
-|            | experience_location_address | String                                                                                                                    | No for Create/Update; omitted for Delete       |                                     |                                                                                              | Defaults to Provider main location; coordinates required internally for route/matching may be system-derived. Locked while an On hold or Booked Booking exists.                                                         |
-|            | images                | Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>                                                                        | Required for Create; Optional for Update; omitted for Delete |                                     |                                                                                              | At least one image in each required category: Activity/Experience, Space/Location, Product/Result.                                                                                                                       |
-|            | price_per_person      | Decimal > 0, VND                                                                                                               | Required for Create; Optional for Update; omitted for Delete |                                     |                                                                                              | Locked while an On hold or Booked Booking exists.                                                                                                                                                                       |
-|            | group_discounts       | Array<Object{pax_threshold: Integer > 0, discount_percentage: Decimal 0–100}>                                                   | No for Create/Update; omitted for Delete       |                                     |                                                                                              | Locked while an On hold or Booked Booking exists.                                                                                                                                                                       |
-|            | special_rates         | Array<Object{pax_threshold: Integer > 0, discount_percentage: Decimal 0–100}>                                                   | No for Create/Update; omitted for Delete       |                                     |                                                                                              | Locked while an On hold or Booked Booking exists.                                                                                                                                                                       |
-|            | max_participants      | Integer > 0                                                                                                                    | Required for Create; Optional for Update; omitted for Delete |                                     |                                                                                              | Hard capacity; locked while an On hold or Booked Booking exists.                                                                                                                                                        |
-|            | notice_period         | Integer ≥ 0, hours                                                                                                             | Required for Create; Optional for Update; omitted for Delete |                                     |                                                                                              | Remains editable while active Bookings exist.                                                                                                                                                                           |
-|            | cancellation_policy   | Object{rules: Array<Object{threshold_hours: Integer ≥ 0, fee_percentage: Decimal 0–100}>, notes: Text Optional}                | Required for Create; Optional for Update; omitted for Delete |                                     |                                                                                              | Structured rules plus optional notes; remains editable while active Bookings exist.                                                                                                                                     |
-| **FR-007** | original_description  | Text                                                                                                                           | Yes                                            | refined_description_draft           | Text                                                                                         | Original factual meaning must be preserved.                                                                                                                                                                             |
-|            | source_type           | Enum[Provider, Experience]                                                                                                     | Yes                                            | original_description                | Text                                                                                         | Original retained.                                                                                                                                                                                                      |
-|            | experience_type       | Enum                                                                                                                           | No, Experience only                            |                                     |                                                                                              | —                                                                                                                                                                                                                      |
-|            | profile_context       | Object{business_name, craft_type, location, target_audience, raw_description}                                                  | No                                             |                                     |                                                                                              | Only these fields may be supplied as AI profile context.                                                                                                                                                                |
+| FR ID | Input fields and validation | Required | Output fields | Notes |
+|---|---|---|---|---|
+| FR-001 | agency_id (ID; Optional — omitted when viewing own profile) | As specified per field | Public fields:<br>agency_name (String; Required)<br>company_type (Enum[Travel Agency, Tour Operator, TMC]; Required)<br>location (Object{street, ward, district, city_province}; Required)<br>team_size (see F-AUTH-02; Required)<br>Authenticated collaboration field:<br>contact (Object; Optional — visible to Local Provider, UBND and HDT)<br>Full-detail fields — own Agency / HDT:<br>tax_id (String; Required)<br>contact (Object; Required)<br>tour_types (Array<Enum>; Required)<br>description (Text, max 1000; Optional)<br>images (Array<Image>; Optional)<br>account_status (Enum[Pending Approval, Approved, Rejected, Disabled]; Optional — own Agency / HDT only) | Same contract as F-PROFILE-01; optional fields are not required. |
+| FR-002 | agency_id (ID; Required — own organization)<br>company_name (String, max 255; Optional)<br>tax_id (String, 10 or 13 numeric digits; Optional)<br>location (Object{street, ward, district, city_province}; Optional)<br>description (Text, max 1000; Optional)<br>contact_info (Object{contact_person_name, phone_number, business_email}; Optional)<br>team_size (Integer > 0; Optional)<br>tour_types (Array<Enum>; Optional)<br>images (Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>; Optional) | As specified per field | updated_profile (Object; Required)<br>success_message (String; Required)<br>updated_at (DateTime; Required)<br>change_log_entry (Object{editor_id, changed_fields, edited_at, ip_address}; Required)<br>requires_hdt_rereview (Boolean; Required)<br>major_change_review_status (Enum[Not Required, Pending Review, Approved, Rejected]; Required)<br>account_status (Enum[Approved]; Required while major-change review is pending) | Same contract as F-PROFILE-02; optional fields are not required. |
+| FR-003 | provider_id (ID; Optional — omitted when viewing own profile) | As specified per field | Public: provider_name (String; Required)<br>craft_type (Enum[Ceramics, Silk/Textile, Woodcarving, Food/Culinary, Metalwork, Paper/Painting, Other]; Required)<br>general_description (Text; Required)<br>public_images (Array<Image>; Required)<br>participant_capacity (Object{min_pax,max_pax}; Optional — public Experience summary)<br>availability_summary (Object; Optional — anonymous public summary only)<br>Full: experiences (Array<Object>; Required)<br>pricing (Decimal, VND; Required)<br>capacity (Integer; Required)<br>contact (Object; Required)<br>availability (Object; Required)<br>booking_conditions (Object; Required)<br>verification_status (Enum[Draft, Pending Verification, Verified, Revision Required]; Optional — own Provider / UBND / HDT)<br>HDT only: quality_metrics (Object{total_bookings, average_booking_value, cancellation_rate, profile_completeness_score}; Optional) | Same contract as F-PROFILE-03; optional fields are not required. |
+| FR-004 | provider_id (ID; Required)<br>business_name (String, max 255; Required for submission)<br>craft_type (Enum[Ceramics, Silk/Textile, Woodcarving, Food/Culinary, Metalwork, Paper/Painting, Other]; Required for submission)<br>artisan_names (Array<String>; Optional)<br>business_registration_number (String; Required for submission)<br>business_registration_certificate (File[PDF/JPG/JPEG/PNG], max 10MB; Required for submission)<br>location_address (String; Required for submission)<br>description (Text, max 1000; Optional)<br>operating_hours (<br>  Object{<br>    Monday: Array<TimeRange> Optional,<br>    Tuesday: Array<TimeRange> Optional,<br>    Wednesday: Array<TimeRange> Optional,<br>    Thursday: Array<TimeRange> Optional,<br>    Friday: Array<TimeRange> Optional,<br>    Saturday: Array<TimeRange> Optional,<br>    Sunday: Array<TimeRange> Optional<br>  };<br>  Optional — recurring weekly Provider operating hours used as the baseline availability source for F-SCHED-09<br>)<br>booking_conditions (Object; Optional)<br>profile_images (Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>; Optional) | As specified per field | updated_profile (Object; Required)<br>success_message (String; Required)<br>updated_at (DateTime; Required)<br>change_log_entry (Object; Required)<br>profile_verification_status (Enum[Draft, Pending Verification, Verified, Revision Required]; Required — current editable/review version)<br>published_profile_version_status (Enum[None, Verified]; Required)<br>rereview_required (Boolean; Required) | Same contract as F-PROFILE-04; optional fields are not required. |
+| FR-005 | provider_id (ID; Required)<br>decision (Enum[Approve, Request Revision]; Required)<br>revision_comments (Text; Required when decision = Request Revision, otherwise Optional) | As specified per field | submitted_profile_view (UI View, read-only; Required)<br>verification_status (Enum[Verified, Revision Required]; Required)<br>reviewer_id (ID; Required)<br>reviewed_at (DateTime; Required for every decision)<br>revision_comments (Text; Optional)<br>published_version_updated (Boolean; Required — true when an approved revision replaces a previous Verified version) | Same contract as F-PROFILE-05; optional fields are not required. |
+| FR-006 | provider_id (ID; Required)<br><br>operation (Enum[Create, Update, Delete]; Required)<br><br>experience_id (<br>  ID;<br>  Required for Update/Delete;<br>  omitted for Create<br>)<br><br>name (<br>  String;<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br><br>description (<br>  Text;<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br><br>category (<br>  Enum[Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo];<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br><br>duration (<br>  Integer > 0, minutes;<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br><br>images (<br>  Array<Image: JPG/JPEG/PNG/WEBP, max 10MB, min 1280×720>;<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br><br>price_per_person (<br>  Decimal > 0, VND;<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br><br>max_participants (<br>  Integer > 0;<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br><br>notice_period (<br>  Integer >= 0, hours;<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br><br>cancellation_policy (<br>  Object{rules: Array<Object{threshold_hours, fee_percentage}>, notes: Text Optional};<br>  Required for Create;<br>  Optional for Update;<br>  omitted for Delete<br>)<br>experience_location_address (String; Required for Create; Optional for Update; omitted for Delete)<br>group_discounts (Array<Object{pax_threshold: Integer > 0, discount_percentage: Decimal 0–100}>; Optional — existing PRF Q23 rule schema)<br>special_rates (Array<Object{pax_threshold: Integer > 0, discount_percentage: Decimal 0–100}>; Optional — existing PRF Q23 rule schema) | As specified per field | experience (Object; Optional — Create/Update)<br>success_message (String; Required)<br>explore_listing_updated (Boolean; Required)<br>matching_data_refreshed (Boolean; Required)<br>deletion_result (Enum[Hard Deleted, Archived, Blocked by Active Booking]; Optional — Delete only)<br>archived_at (DateTime; Optional — historical Booking references)<br>validation_errors (Array<Enum[Active Booking Field Locked, Active Booking Prevents Deletion, Required Image Category Missing, Last Required Category Image Cannot Be Deleted, Invalid Price, Invalid Capacity, Invalid Notice Period]>; Optional) | Same contract as F-PROFILE-06; optional fields are not required. |
+| FR-007 | original_description (Text; Required)<br>source_type (Enum[Provider, Experience]; Required)<br>experience_type (Enum; Optional — Experience only)<br>profile_context (Object{business_name, craft_type, location, target_audience, raw_description}; Optional) | As specified per field | refined_description_draft (Text; Required)<br>original_description (Text; Required — retained) | Same contract as F-PROFILE-07; optional fields are not required. |
 
 **5.2 Business rules**
 
@@ -600,21 +385,21 @@ end
 
 **7. Screens involved**
 
-| **Screen ID** | **Screen name**                | **Priority** | **Screen Spec file**          |
-|---------------|--------------------------------|--------------|-------------------------------|
-| DSC122        | Provider Profile               | Must         | screens/screen-spec-DSC122.md |
-| DSC123        | Public Provider Profile        | Must         | screens/screen-spec-DSC123.md |
-| DSC033        | Experience Detail              | Must         | screens/screen-spec-DSC033.md |
-| DSH018        | Local Provider Dashboard       | Must         | screens/screen-spec-DSH018.md |
-| PRF127        | Provider Profile               | Must         | screens/screen-spec-PRF127.md |
-| PRF128        | Edit Provider Profile          | Must         | screens/screen-spec-PRF128.md |
-| PRF019        | Agency Profile                 | Must         | screens/screen-spec-PRF019.md |
-| PRF021        | Edit Agency Profile            | Must         | screens/screen-spec-PRF021.md |
-| EXP067        | Experience Management          | Must         | screens/screen-spec-EXP067.md |
-| EXP069        | Add Experience                 | Must         | screens/screen-spec-EXP069.md |
-| EXP068        | Experience Detail – Owner View | Must         | screens/screen-spec-EXP068.md |
-| EXP070        | Edit Experience                | Must         | screens/screen-spec-EXP070.md |
-| EXP132        | Delete Experience Confirmation | Must         | screens/screen-spec-EXP132.md |
+| Screen ID | Screen name | Functions in this module |
+|---|---|---|
+| DSH018 | Local Provider Dashboard | F-PROFILE-03 |
+| EXP067 | Experience Management | F-PROFILE-03, F-PROFILE-06 |
+| EXP068 | Experience Detail – Owner View | F-PROFILE-06 |
+| EXP069 | Add Experience | F-PROFILE-06, F-PROFILE-07 |
+| EXP070 | Edit Experience | F-PROFILE-06, F-PROFILE-07 |
+| EXP132 | Delete Experience Confirmation | F-PROFILE-06 |
+| PRF019 | Agency Profile | F-PROFILE-01 |
+| PRF021 | Edit Agency Profile | F-PROFILE-02 |
+| PRF127 | Provider Profile | F-PROFILE-03 |
+| PRF128 | Edit Provider Profile | F-PROFILE-04, F-PROFILE-07 |
+| VER119 | Account Information | F-PROFILE-05 |
+| VER146 | View Submitted Profile | F-PROFILE-05 |
+| VIL030 | Village Profile | F-PROFILE-03 |
 
 **8. Success criteria (mandatory)**
 
@@ -643,50 +428,50 @@ end
 
 - The MVP does not support Experience-specific operating hours, manually configured blackout dates or ad-hoc unavailable periods.
 
-- The current Sequence Diagram's UC-PRO-03 Manage Provider Profile and UC-PRO-04 Manage Experiences labels are treated as older IDs; final mappings are UC-PRO-04 and UC-PRO-05.
+- Current mappings are UC-PRO-04 Manage Provider Profile, UC-PRO-05 Manage Experiences and UC-PRO-06 Verify Provider Profile.
 
-- Current DBIZ2 Usage Flow/Sequence does not yet visually represent UC-PRO-06 Provider Verification.
+- Historical DBIZ2 diagrams are retained; current Markdown includes UC-PRO-06 Provider verification.
 
 **10. Open questions**
 
 | **\#** | **Question**                                                                                                                                                            | **Blocking?** | **Owner**     | **Status** | **Answer/Decision**                                                                                                                                                                                    |
 |--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|---------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1      | What are the allowed values for company_type, and where is it initially captured?                                                                                       | No            | BA            | Closed     | **Enum:** Travel Agency, Tour Operator, TMC. Captured during the initial Account Registration form (F-AUTH-02).                                                                                        |
-| 2      | Is Agency location required, and what format should it use?                                                                                                             | No            | BA            | Closed     | **Yes, required.** Format: Structured address (Street, Ward, District, City/Province).                                                                                                                 |
-| 3      | Are Agency tour_types public information?                                                                                                                               | No            | Client / BA   | Closed     | **No.** Only visible to the Agency itself and Admin (HDT).                                                                                                                                             |
-| 4      | Which actors may see Agency contact information?                                                                                                                        | Yes           | Client        | Closed     | **All authenticated actors** (Provider, HDT, UBND) can view it to facilitate collaboration.                                                                                                            |
-| 5      | What does Agency verification_status mean when Agency approval is already stored as account status?                                                                     | Yes           | BA            | Closed     | **Duplicate field.** Remove verification_status from Agency Profile. Account status (Pending/Approved/Rejected) handles this.                                                                          |
-| 6      | Which Agency fields constitute a **major change** requiring re-review?                                                                                                  | Yes           | Client        | Closed     | **Company Name** and **Tax ID**. Changing these triggers an HDT re-review.                                                                                                                             |
-| 7      | Can any Agency staff user edit the Agency profile, or only the highest-level authorized Agency user as stated in the Screen List?                                       | Yes           | Client / BA   | Closed     | **Only the highest-level authorized user** (Owner role within the Agency).                                                                                                                             |
-| 8      | What technical validation rules apply to Agency profile images?                                                                                                         | No            | UI/UX / Tech  | Closed     | Format: JPG/JPEG/PNG/WEBP. Max size: 10MB. Min resolution: 1280x720. Auto-crop supported.                                                                                                              |
-| 9      | What is the canonical craft_type enum?                                                                                                                                  | Yes           | BA            | Closed     | **Enum:** Ceramics, Silk/Textile, Woodcarving, Food/Culinary, Metalwork, Paper/Painting, Other.                                                                                                        |
-| 10     | For Guests, is Provider information shown only as Explore preview, or through dedicated screen DSC123 Public Provider Profile?                                          | Yes           | UI/UX / BA    | Closed     | **Dedicated screen (DSC123).** Information is shown directly through the DSC123 Public Provider Profile screen.                                                                                        |
-| 11     | What is the Provider verification state before first submission: Incomplete, Draft, or another value?                                                                   | Yes           | BA            | Closed     | **Draft.** Changes to "Pending Verification" upon submission.                                                                                                                                          |
-| 12     | What are the HDT-only quality_metrics referenced by F-PROFILE-03?                                                                                                       | No            | BA            | Closed     | **Aggregated metrics:** Total Bookings, Average Booking Value, Cancellation Rate, Profile Completeness Score.                                                                                          |
-| 13     | Is business_registration a registration number, uploaded document, or both?                                                                                             | Yes           | Client / BA   | Closed     | **Both.** Requires inputting the Registration Number and uploading a PDF/Image of the certificate.                                                                                                     |
-| 14     | What is the canonical structure of Provider location — address only or address + coordinates?                                                                           | Yes           | Tech / BA     | Closed     | Address only.                                                                                                                                                                                          |
-| 15     | How does profile operating_hours relate to F-SCHED-09 Manage Provider Availability?                                                                                     | Yes           | BA            | Closed     | operating_hours is recurring weekly Provider profile information configured through F-PROFILE-04 and is the canonical baseline operating window. F-SCHED-09 calculates available/occupied periods from these operating hours together with On hold / Booked Booking blocks. Manually configured blackout dates or ad-hoc unavailable periods are outside MVP scope. |
-| 16     | Which Provider profile changes count as major changes requiring re-verification?                                                                                        | Yes           | Client        | Closed     | Business Name, Craft Type, and Business Registration details.                                                                                                                                          |
-| 17     | Must revision_comments be required when UBND chooses Request Revision?                                                                                                  | Yes           | Client        | Closed     | **Yes.** Mandatory to explain what needs fixing.                                                                                                                                                       |
-| 18     | Is reviewed_at recorded for Request Revision as well as approval?                                                                                                       | No            | Tech          | Closed     | **Yes.** Every review decision logs a timestamp.                                                                                                                                                       |
-| 19     | What is the allowed Experience category enum?                                                                                                                           | Yes           | BA            | Closed     | **Enum:** Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo.                                                                                                                      |
-| 20     | What is the difference between group_size and max_participants?                                                                                                         | Yes           | BA            | Closed     | group_size is the recommended/ideal range (e.g., 5-10 pax). max_participants is the strict hard limit (e.g., 20 pax).                                                                                  |
-| 21     | What unit is used for Experience duration?                                                                                                                              | Yes           | BA            | Closed     | **Minutes** (can be converted to Hours/Days on UI).                                                                                                                                                    |
-| 22     | What currency is used for Experience pricing?                                                                                                                           | Yes           | Client        | Closed     | **VND (Vietnamese Dong)** as the system base currency.                                                                                                                                                 |
-| 23     | What is the structure of group_discounts and special_rates?                                                                                                             | No            | BA            | Closed     | **JSON Object:** \[{"pax_threshold": 10, "discount_percentage": 5}, ...\].                                                                                                                             |
-| 24     | Is notice_period stored in hours or days?                                                                                                                               | Yes           | BA            | Closed     | Hours.                                                                                                                                                                                                 |
-| 25     | Is cancellation_policy free text or structured rules?                                                                                                                   | No            | BA            | Closed     | **Structured rules** (e.g., Free before X hours, Y% fee if \< X hours) + an optional Free Text field for notes.                                                                                        |
-| 26     | After a Verified Provider edits an Experience, does the change go live immediately or require re-verification?                                                          | Yes           | Client        | Closed     | **Goes live immediately.** Experience edits do not trigger a full profile re-verification to reduce admin bottleneck.                                                                                  |
-| 27     | Which Provider/Profile fields may be sent to the AI as profile_context?                                                                                                 | No            | Tech / Client | Closed     | Business Name, Craft Type, Location, Target Audience, and existing raw Description.                                                                                                                    |
-| 28     | EXP131 Repin Location exists in Screen List but no explicit Experience location input exists in F-PROFILE-06. Should Experience location be added to the Function List? | Yes           | BA            | Closed     | **Yes.** F-PROFILE-06 includes experience_location_address as a plain address, defaulting to the Provider's main location when omitted. Coordinates required internally for route/matching may be derived by the system. **EXP131 Repin Location is removed from scope**; no separate map-repin screen is required. |
-| 29     | What exact UI/action submits a completed Provider profile for UBND verification?                                                                                        | Yes           | UI/UX / BA    | Closed     | **"Save Changes" button.** Incomplete saves remain Draft. The first successful Save Changes after all required fields are complete automatically submits the Provider profile for UBND verification and changes the editable revision to Pending Verification. |
-| 30     | UC-PRO-06 Provider Verification is absent from the current Sequence Diagram. Should Module 2 Sequence be updated to include the UBND verification flow?                 | No            | BA            | Closed     | **Yes.** Update the Sequence Diagram to show UBND retrieving profiles (Status: Pending) and executing Approve/Request Revision.                                                                        |
+| 1 | What are the allowed values for company_type, and where is it initially captured? | No | BA | Closed | **Enum:** Travel Agency, Tour Operator, TMC. Captured during the initial Account Registration form (F-AUTH-02). |
+| 2 | Is Agency location required, and what format should it use? | No | BA | Closed | **Yes, required.** Format: Structured address (Street, Ward, District, City/Province). |
+| 3 | Are Agency tour_types public information? | No | Client / BA | Closed | **No.** Only visible to the Agency itself and Admin (HDT). |
+| 4 | Which actors may see Agency contact information? | No | Client | Closed | **All authenticated actors** (Provider, HDT, UBND) can view it to facilitate collaboration. |
+| 5 | What does Agency verification_status mean when Agency approval is already stored as account status? | No | BA | Closed | **Duplicate field.** Remove verification_status from Agency Profile. Account status (Pending/Approved/Rejected) handles this. |
+| 6 | Which Agency fields constitute a **major change** requiring re-review? | No | Client | Closed | **Company Name** and **Tax ID**. Changing these triggers an HDT re-review. |
+| 7 | Can any Agency staff user edit the Agency profile, or only the highest-level authorized Agency user as stated in the Screen List? | No | Client / BA | Closed | **Only the highest-level authorized user** (Owner role within the Agency). |
+| 8 | What technical validation rules apply to Agency profile images? | No | UI/UX / Tech | Closed | Format: JPG/JPEG/PNG/WEBP. Max size: 10MB. Min resolution: 1280x720. Auto-crop supported. |
+| 9 | What is the canonical craft_type enum? | No | BA | Closed | **Enum:** Ceramics, Silk/Textile, Woodcarving, Food/Culinary, Metalwork, Paper/Painting, Other. |
+| 10 | For Guests, is Provider information shown only as Explore preview, or through dedicated screen DSC123 Public Provider Profile? | No | UI/UX / BA | Closed | **Dedicated screen (DSC123).** Information is shown directly through the DSC123 Public Provider Profile screen. |
+| 11 | What is the Provider verification state before first submission: Incomplete, Draft, or another value? | No | BA | Closed | **Draft.** Changes to "Pending Verification" upon submission. |
+| 12 | What are the HDT-only quality_metrics referenced by F-PROFILE-03? | No | BA | Closed | **Aggregated metrics:** Total Bookings, Average Booking Value, Cancellation Rate, Profile Completeness Score. |
+| 13 | Is business_registration a registration number, uploaded document, or both? | No | Client / BA | Closed | **Both.** Requires inputting the Registration Number and uploading a PDF/Image of the certificate. |
+| 14 | What is the canonical structure of Provider location — address only or address + coordinates? | No | Tech / BA | Closed | Address only. |
+| 15 | How does profile operating_hours relate to F-SCHED-09 Manage Provider Availability? | No | BA | Closed | operating_hours is recurring weekly Provider profile information configured through F-PROFILE-04 and is the canonical baseline operating window. F-SCHED-09 calculates available/occupied periods from these operating hours together with On hold / Booked Booking blocks. Manually configured blackout dates or ad-hoc unavailable periods are outside MVP scope. |
+| 16 | Which Provider profile changes count as major changes requiring re-verification? | No | Client | Closed | Business Name, Craft Type, and Business Registration details. |
+| 17 | Must revision_comments be required when UBND chooses Request Revision? | No | Client | Closed | **Yes.** Mandatory to explain what needs fixing. |
+| 18 | Is reviewed_at recorded for Request Revision as well as approval? | No | Tech | Closed | **Yes.** Every review decision logs a timestamp. |
+| 19 | What is the allowed Experience category enum? | No | BA | Closed | **Enum:** Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo. |
+| 20 | What is the difference between group_size and max_participants? | No | BA | Closed | group_size is the recommended/ideal range (e.g., 5-10 pax). max_participants is the strict hard limit (e.g., 20 pax). |
+| 21 | What unit is used for Experience duration? | No | BA | Closed | **Minutes** (can be converted to Hours/Days on UI). |
+| 22 | What currency is used for Experience pricing? | No | Client | Closed | **VND (Vietnamese Dong)** as the system base currency. |
+| 23 | What is the structure of group_discounts and special_rates? | No | BA | Closed | **JSON Object:** \[{"pax_threshold": 10, "discount_percentage": 5}, ...\]. |
+| 24 | Is notice_period stored in hours or days? | No | BA | Closed | Hours. |
+| 25 | Is cancellation_policy free text or structured rules? | No | BA | Closed | **Structured rules** (e.g., Free before X hours, Y% fee if \< X hours) + an optional Free Text field for notes. |
+| 26 | After a Verified Provider edits an Experience, does the change go live immediately or require re-verification? | No | Client | Closed | **Goes live immediately.** Experience edits do not trigger a full profile re-verification to reduce admin bottleneck. |
+| 27 | Which Provider/Profile fields may be sent to the AI as profile_context? | No | Tech / Client | Closed | Business Name, Craft Type, Location, Target Audience, and existing raw Description. |
+| 28 | EXP131 Repin Location exists in Screen List but no explicit Experience location input exists in F-PROFILE-06. Should Experience location be added to the Function List? | No | BA | Closed | experience_location_address is in F-PROFILE-06 input; defaults may be prefilled from the Provider, and active On hold/Booked references lock it. |
+| 29 | What exact UI/action submits a completed Provider profile for UBND verification? | No | UI/UX / BA | Closed | **"Save Changes" button.** Incomplete saves remain Draft. The first successful Save Changes after all required fields are complete automatically submits the Provider profile for UBND verification and changes the editable revision to Pending Verification. |
+| 30 | UC-PRO-06 Provider Verification is absent from the current Sequence Diagram. Should Module 2 Sequence be updated to include the UBND verification flow? | No | BA | Closed | **Yes.** Update the Sequence Diagram to show UBND retrieving profiles (Status: Pending) and executing Approve/Request Revision. |
 
 **11. Traceability to DBIZ2**
 
 | **Spec section**               | **DBIZ2 source**           | **Location**                                                                                                                                                 |
 |--------------------------------|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic, sections 1.1 System Objectives and 1.2 System Main Functions – Profile Management**                                                       |
+| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic1, sections 1.1 System Objectives and 1.2 System Main Functions – Profile Management**                                                       |
 | **4.1 Usage flow**             | Usage Flow figure          | **sheet Schematic2, Local Provider flow: “Upload Media & Edit Info” → “Update Tour & Experience Profile”; Admin flow: “View all Profiles (Read-only Mode)”** |
 | **4.2 Sequence**               | Sequence Diagram figure    | **sheet Schematic2, Module 2: Profile Management – Tour Agency profile sequence and Local Provider profile/Experience sequence**                             |
 | **5. Functional requirements** | Function List              | **sheet FL&Cost1, F-PROFILE-01 .. F-PROFILE-07**                                                                                                             |

@@ -3,18 +3,18 @@
 | Field | Value |
 |---|---|
 | Screen ID | `VER146` |
-| Screen name | View Pending Profile |
-| Actor | HDT Admin / UBND Admin |
+| Screen name | View Submitted Profile |
+| Actor | Admin (HDT / UBND) |
 | Priority | Must |
-| Belongs to module | `spec-AUT.md` and `spec-ADM.md` |
+| Belongs to module | `spec-AUT.md` / `spec-PRF.md` |
 | Mockup image | `img/VER146.png` |
-| Status | Approved |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** Admin clicks "Verify" on a pending row in User Management (ADM095); this is the default/landing tab of the verification modal ("Submitted Profile").
+Displays the submitted profile and supporting information required for the Admin to review Agency registration/legal change or Provider profile revision according to subtype, without conflating account activation and profile verification.
 
-**The user leaves this screen when:** They click "Reject", the (×) icon, switch to the "Account Info" tab, or click "Verify" to finalize verification.
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,61 +24,54 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Avatar initials | Image/Text | Initials from `user.full_name` | No | — |
-| 2 | User name | Text | `user.full_name` | No | — |
-| 3 | Role badge | Badge | `user.role` e.g. PROVIDER | No | — |
-| 4 | Email | Text | `user.email` | No | — |
-| 5 | Close (×) | Button | Dismisses modal | No | — |
-| 6 | Tab: Submitted Profile (active) | Tab | Currently selected view | No | — |
-| 7 | Tab: Account Info | Tab | Switches to system-level info | No | — |
-| 8 | Section 01 "Core Workshop Identity & Master Artisan" (+ visibility tag) | Card section | Workshop/enterprise legal name, master artisan name, generation/guild title, affiliated craft village guild, establishment year, private group capacity, craft specialty tags, guild status, dispatch coordination | No | — |
-| 9 | Section 02 "Workshop Facilities & Capacity" (+ metrics tag) | Card section | Station apparatus, station load metric, technical details, studio/gallery area, seated capacity, space configuration, kiln structure, firing cycle interval, thermal/material notes | No | — |
-| 10 | Section 03 "Logistics, Transit & On-Site Dispatch" (+ access tag) | Card section | Direct dispatch hotline, workshop lead coordinator, coach parking & pier logistics, verified accessibility & on-site amenities checklist | No | — |
-| 11 | Approval disclaimer text | Text | "Approving this account grants full platform access. Confirm all documents and profile fields have been reviewed." | No | — |
-| 12 | Reject | Button (secondary) | Rejects the account application | No | — |
-| 13 | Verify | Button (primary) | Approves and verifies the account | No | Should only be used after reviewing all submitted sections |
-
-### 3.1 Field set when the submitted profile belongs to a Tour Agency
-
-The rows above show the Local Provider variant of this screen. When the account under review is a Tour Agency, the Submitted Profile tab instead shows the same three-section layout populated with Agency fields (Corporate Legal Information, Authorized Delegate & Route Scope, Initial Tour Preferences & Focus) — see `screen-spec-ADM145.md` §3.1 for the full Agency field list, which applies identically here.
+| 1 | View Submitted Profile | Heading | View Submitted Profile | No | Static screen title |
+| 2 | Agency id | System context (not editable) | `agency_id` — F-AUTH-18 | Yes | agency_id (ID; Required) |
+| 3 | Review type | System context (not editable) | `review_type` — F-AUTH-18 | Yes | review_type (Enum[Initial Registration, Major Profile Change]; Required) |
+| 4 | Decision | Select | `decision` — F-AUTH-18 | Yes | decision (Enum[Approve, Request More Information, Reject]; Required) |
+| 5 | Review comment | Input | `review_comment` — F-AUTH-18 | Conditional | review_comment (Text; Required when decision = Request More Information or Reject; Optional when Approve) |
+| 6 | Provider id | System context (not editable) | `provider_id` — F-PROFILE-05 | Yes | provider_id (ID; Required) |
+| 7 | Revision comments | Input | `revision_comments` — F-PROFILE-05 | Conditional | revision_comments (Text; Required when decision = Request Revision, otherwise Optional) |
+| 8 | Submitted profile revision — read-only | Read-only panel | F-AUTH-18, F-PROFILE-05 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 9 | Supporting documents | Read-only panel | F-AUTH-18, F-PROFILE-05 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 10 | Review history | Read-only panel | F-AUTH-18, F-PROFILE-05 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 11 | Account info tab | Button / navigation | Read-only account data | No | Enabled only when the linked permission/validation guard succeeds |
+| 12 | Submit review | Button / navigation | Agency: Approve/Request More Information/Reject; Provider: Approve/Request Revision | No | Enabled only when the linked permission/validation guard succeeds |
+| 13 | Close | Button / navigation | No mutation | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | All three profile sections fully populated, Reject and Verify both enabled | Verification modal opens on the Submitted Profile tab for a pending account |
-| Empty (no data) | Fields not yet submitted show "Not provided"; a section with no data shows "No information submitted for this section"; Verify may be disabled until minimum required fields are present (Reject remains available) | Provider has submitted only part of the required profile |
-| Loading | Skeleton placeholders in place of section content; Reject and Verify disabled while loading | Modal just opened, before data returns |
-| Error | Banner inside modal "Could not load submitted profile. Retry."; Reject and Verify disabled until data loads | Profile data fetch fails |
-| Success / confirmation | On Verify: modal closes, toast "{name} verified and account activated", row moves from Pending Verification to All Accounts with status Active. On Reject: modal closes, toast "{name}'s application was rejected", account status becomes Rejected | Reject or Verify succeeds |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Tab: Account Info | tap | Switches modal content to system-level account info | `VER119` |
-| 2 | Close (×) | tap | Closes modal without any change | `ADM095` |
-| 3 | Reject | tap | Marks the account as Rejected; user is notified by email | `ADM095` (modal closes, table refreshes) |
-| 4 | Verify | tap | Confirms and activates the account | `ADM095` (modal closes, table refreshes) |
+| 1 | Account info tab | Select | Read-only account data | VER119 |
+| 2 | Submit review | Select | Agency: Approve/Request More Information/Reject; Provider: Approve/Request Revision | ADM095 |
+| 3 | Close | Select | No mutation | ADM095 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Displays the submitted profile and supporting information required for the Admin to review before verification | Screen List Screen Overview for VER146 |
-| SR-002 | Verify grants full platform access — the Admin is warned before confirming | Mockup — disclaimer text above the action buttons |
-| SR-003 | This is the same underlying modal as ADM145, but entered via the "Verify" action instead of "View", which replaces the plain Close action with Reject and Verify | Comparing ADM145 (Close only) with this mockup (Reject / Verify) |
-| SR-004 | Both Reject and Verify are available from either tab (Account Info or Submitted Profile) of the verification modal | Updated mockup shows Reject/Verify on both VER119 and VER146 |
-| SR-005 | The submitted profile layout is specific to the account's actor type: Local Provider shows workshop/business fields; Tour Agency shows corporate/registration fields (see §3.1) | Clarification, consistent with ADM145 |
-| SR-006 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Agency uses Approve/Request More Information/Reject; comment required for the latter two. Provider uses Approve/Request Revision; revision_comments required for Request Revision. A Provider account is already Active: profile review does not activate/reject the account. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| F-AUTH-18 | Displays the submitted Agency company/legal information and registration documents that HDT reviews before recording an Approve / Request More Information / Reject decision. This applies cleanly to the Tour Agency variant of this screen (§3.1); the default Local Provider content shown in §3 does not belong to F-AUTH-18 — see §9 |
-
-Note: reviewing Local Provider business content instead maps to F-PROFILE-05 (Profile Management module, UBND actor, Approve/Request Revision actions) rather than to F-AUTH-18 — see the branching issue newly flagged in §9.
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-018 | F-AUTH-18 | HDT verify and approve Agency registration |
+| PRF | FR-005 | F-PROFILE-05 | Review & Verify Local Provider Profile |
 
 ## 8. Responsive and accessibility notes
 
@@ -86,24 +79,14 @@ Note: reviewing Local Provider business content instead maps to F-PROFILE-05 (Pr
 - What collapses or stacks on a narrow screen: modal becomes full-screen sheet; two-column field rows within a section stack to single column
 - Text that must remain readable (contrast, minimum size): section labels ≥11px uppercase, body values ≥14px, disclaimer text ≥13px
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Is there an explicit "Reject" action anywhere in this verification modal? | Yes | Resolved — yes, "Reject" appears alongside "Verify" on both tabs |
-| 2 | Field set for a submitted Agency profile under verification | Yes | Resolved — see §3.1 (same as ADM145 §3.1) |
-| 3 | [NEEDS CLARIFICATION: Does Reject require a reason/comment to be entered, or does it apply immediately with no additional input?] | No | Open — module spec Open Q12 confirms no review-comment is required for Reject/Request More Information, but does not resolve whether Reject needs a UI confirmation step here. |
-| 4 | Module spec function F-AUTH-18 (formerly FR-018/US-6, UC-ACC-06) defines **three** HDT decisions on a pending Agency — Approve, Request More Information, and Reject — but this mockup and VER119 only offer two actions (Reject / Verify). | Yes | Still open — needs a UI mockup for the Request More Information action before F-AUTH-18 can be fully implemented; see matching flag in `screen-spec-VER119.md`. |
-| 5 | This screen's default content is the Local Provider workshop/business profile (§3, Sections 01–03), but module spec `spec-AUT.md` explicitly places "Local Provider profile verification" **out of scope** for this Authentication module, assigning it to Profile Management. Local Provider accounts are also created directly `Active` (FR-020) rather than entering a "Pending" review state, so it is unclear which account type actually lands in ADM095's Pending Verification table and reaches this screen. | Yes | Partially resolved — a new function, F-PROFILE-05 (Review & Verify Local Provider Profile), now formally owns Local Provider profile review under Profile Management, with actor UBND Admin and actions Approve / Request Revision. This confirms the Local Provider content in §3 does not belong under F-AUTH-18. **New open item (#6)** captures the resulting mismatch that still needs design/BA resolution. |
-| 6 | Given #5, this screen as currently mocked up cannot correctly serve both account types: an Agency under review needs F-AUTH-18's actor (HDT) and actions (Reject/Verify, standing in for Approve/Request More Information/Reject), while a Local Provider under review needs F-PROFILE-05's actor (UBND) and actions (Approve/Request Revision) — two different actor/action pairs on what the mockup shows as one modal with one button row. | Yes | Open — flagging for design/BA confirmation on how to resolve this: e.g. (a) split VER146/VER119 into an Agency-only screen (citing F-AUTH-18) and a separate Local-Provider-review screen owned by Profile Management (citing F-PROFILE-05), or (b) keep one modal shell but branch its action buttons and permitted actor by account type. Until resolved, this spec's action buttons (Reject/Verify) and actor (HDT Admin / UBND Admin) should be read as accurate for the Agency path only. |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

@@ -19,7 +19,7 @@ short, factual and current. Replace every `<...>` before the first commit.
 ## 3. Commands that are safe to run
 
 - `uv run tools/check_env.py --repo` : environment and repository check.
-- `<seed command>` : regenerates the seed data; must finish with every integrity assertion passing.
+- `python data/seed/generate_seed.py` : regenerates the seed data; must finish with every integrity assertion passing.
 - `git status`, `git diff` : always allowed.
 
 ## 4. Hard rules
@@ -56,6 +56,8 @@ short, factual and current. Replace every `<...>` before the first commit.
 
 | File or folder | Owner (member) |
 |---|---|
-| `AGENTS.md` | `<name>` |
-| `docs/spec/` | `<name>` |
-| `data/` | `<name>` |
+| `AGENTS.md` | `JustACertainBlue` |
+| `docs/spec/` | `linhkhanh-vu` |
+| `data/` | `nguyenthu-0505` |
+| `docs/env/` | `thuvutp-prog` |
+| `docs/prd.md` | `linh-daotruc` |

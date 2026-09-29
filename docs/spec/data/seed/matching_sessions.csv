@@ -1,0 +1,9 @@
+matching_session_id,agency_id,conversation_context,started_at,last_activity_at
+0ddd8bdf-b535-5004-87da-b767b35c5942,ab81de3b-a65e-5f0d-9407-894ac464a0e9,"{""language"":""vi"",""goal"":""tour làng nghề""}",2026-09-20T08:00:00+07:00,2026-09-20T16:00:00+07:00
+2f7589c1-6fd1-5e37-a84d-96f6271e972b,dafbb287-e065-5545-bea8-f773452924cb,"{""language"":""vi"",""goal"":""tour làng nghề""}",2026-09-20T08:00:00+07:00,2026-09-20T10:00:00+07:00
+3e64df1b-4002-5447-a8a2-c2188537cc14,14390b41-4e6c-5b8d-be3a-05e7c5e761bd,"{""language"":""vi"",""goal"":""tour làng nghề""}",2026-09-20T08:00:00+07:00,2026-09-20T15:00:00+07:00
+5cb18d1d-6f86-5b0f-8163-d3945054f75e,2a1f0cc1-d7df-587d-afd4-445d25a5c5b0,"{""language"":""vi"",""goal"":""tour làng nghề""}",2026-09-20T08:00:00+07:00,2026-09-20T14:00:00+07:00
+7afef7d2-2d15-56a3-b93f-72de637f0976,ebf4fcfa-1013-5ecd-b7c6-e0d8e9fa0277,"{""language"":""vi"",""goal"":""tour làng nghề""}",2026-09-20T08:00:00+07:00,2026-09-20T09:00:00+07:00
+7b47149d-df42-51bb-888f-5276705084d7,7012d7fe-a500-5872-a3cf-22b0d1b18a19,"{""language"":""vi"",""goal"":""tour làng nghề""}",2026-09-20T08:00:00+07:00,2026-09-20T12:00:00+07:00
+c0bd5380-1410-5b8d-87b4-096b3551535c,b766576c-698f-5dfd-a4cc-7ec26788a277,"{""language"":""vi"",""goal"":""tour làng nghề""}",2026-09-20T08:00:00+07:00,2026-09-20T13:00:00+07:00
+fb8dee73-96ba-56c1-b6d1-17041b6ed031,02e568d8-d65e-54b1-a554-b411150d1dcb,"{""language"":""vi"",""goal"":""tour làng nghề""}",2026-09-20T08:00:00+07:00,2026-09-20T11:00:00+07:00

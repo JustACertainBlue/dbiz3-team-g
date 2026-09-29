@@ -1,0 +1,9 @@
+challenge_id,registration_request_id,email,otp_verifier,issued_at,expires_at,used_at,invalidated_at,attempt_count,resend_sequence
+05b5df1b-a946-5822-872e-533068095731,bc2c9f87-6038-5655-a829-6a9dbc0ab84a,doanhnghiep2@example.invalid,otp-verifier-2,2026-09-03T08:00:00+07:00,2026-09-03T08:10:00+07:00,2026-09-03T08:05:00+07:00,,1,1
+469a4e93-5a64-51d1-bb87-6469506be2ec,d963df9d-c687-5a0c-951f-f5d21c8f5f0c,doanhnghiep3@example.invalid,otp-verifier-3,2026-09-04T08:00:00+07:00,2026-09-04T08:10:00+07:00,2026-09-04T08:05:00+07:00,,2,0
+5f81a587-99dc-5a00-b105-c03e7fcf5af7,5a7bc99a-7afb-5178-8f93-5afbe0bf4d45,doanhnghiep7@example.invalid,otp-verifier-7,2026-09-08T08:00:00+07:00,2026-09-08T08:10:00+07:00,,2026-09-08T08:10:00+07:00,0,0
+7985fd5b-02dc-5c37-bd96-6373cb98dd98,923278a2-34d2-56c3-b7be-4de621b58f9f,doanhnghiep8@example.invalid,otp-verifier-8,2026-09-09T08:00:00+07:00,2026-09-09T08:10:00+07:00,,2026-09-09T08:10:00+07:00,5,3
+a8a61ae3-4362-5a58-bdd0-ee960d7e1f6e,73486519-b01f-5ad7-b0e4-71af96acfc21,doanhnghiep1@example.invalid,otp-verifier-1,2026-09-02T08:00:00+07:00,2026-09-02T08:10:00+07:00,2026-09-02T08:05:00+07:00,,0,0
+abc308c0-4189-57bc-8924-976848b5baad,7848ba81-2436-58fb-95c6-eb49f9026fe6,doanhnghiep5@example.invalid,otp-verifier-5,2026-09-06T08:00:00+07:00,2026-09-06T08:10:00+07:00,2026-09-06T08:05:00+07:00,,1,0
+b02881f4-7d02-59bc-9c5f-f0e1c62d849a,71b447ee-90e3-517d-8002-e6cc70bbd445,doanhnghiep4@example.invalid,otp-verifier-4,2026-09-05T08:00:00+07:00,2026-09-05T08:10:00+07:00,2026-09-05T08:05:00+07:00,,0,1
+c684a86c-92a7-55f6-add4-dc89100978de,4bbf44e8-604d-5b3e-b1bd-324091eea2fb,doanhnghiep6@example.invalid,otp-verifier-6,2026-09-07T08:00:00+07:00,2026-09-07T08:10:00+07:00,2026-09-07T08:05:00+07:00,,2,1

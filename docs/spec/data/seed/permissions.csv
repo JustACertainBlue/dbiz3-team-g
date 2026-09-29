@@ -1,0 +1,11 @@
+permission_code,action,resource
+manage_bookings,manage,bookings
+manage_experiences,manage,experiences
+manage_profile,manage,own profile
+manage_rankings,manage,ranking parameters
+manage_users,manage,users
+review_agencies,review,agency registrations
+review_providers,review,provider profiles
+use_chat,use,chat
+use_matching,use,AI matching
+view_dashboard,view,dashboard

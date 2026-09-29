@@ -1,0 +1,9 @@
+result_id,matching_session_id,run_no,experience_id,rank,match_score,experience_fit_score,explanation,created_at
+07d020ab-2a49-5ab8-8931-fa32556bf192,2f7589c1-6fd1-5e37-a84d-96f6271e972b,1,c8281688-2dc1-5cb1-9ff6-139df04ba562,1,83,81,"Phù hợp ngân sách, chủ đề và quy mô đoàn.",2026-09-20T10:00:00+07:00
+1b1ab0b2-87ae-5282-aa1b-0d2956123084,7b47149d-df42-51bb-888f-5276705084d7,1,b70bd0fa-6a81-5aec-9ff6-5303210b2fad,1,85,83,"Phù hợp ngân sách, chủ đề và quy mô đoàn.",2026-09-20T10:00:00+07:00
+5f9f7462-41db-5964-9007-6acdfa1ebd60,0ddd8bdf-b535-5004-87da-b767b35c5942,1,800b5192-03c7-5953-849b-32a321e12a47,1,0,87,"Phù hợp ngân sách, chủ đề và quy mô đoàn.",2026-09-20T10:00:00+07:00
+83dcda9b-4049-58c8-83b1-58178f03a3f7,3e64df1b-4002-5447-a8a2-c2188537cc14,1,8e485337-5a2c-5703-9fbf-5e0c6492cd87,1,88,100,"Phù hợp ngân sách, chủ đề và quy mô đoàn.",2026-09-20T10:00:00+07:00
+cdbaf081-f0d6-5da6-8063-343b204bfaf2,7afef7d2-2d15-56a3-b93f-72de637f0976,1,c9f9faf7-2987-5ae4-b1ed-95c095fcce69,1,82,80,"Phù hợp ngân sách, chủ đề và quy mô đoàn.",2026-09-20T10:00:00+07:00
+f45d3125-57af-5773-a6ad-60954e59b0d8,5cb18d1d-6f86-5b0f-8163-d3945054f75e,1,67a2cbab-850c-5f69-b496-59f2e9a5f594,1,87,85,"Phù hợp ngân sách, chủ đề và quy mô đoàn.",2026-09-20T10:00:00+07:00
+f6494e6d-dddb-524e-ae1b-60451f779052,c0bd5380-1410-5b8d-87b4-096b3551535c,1,bad51dc8-1529-506a-8302-cb0b1d95954c,1,86,84,"Phù hợp ngân sách, chủ đề và quy mô đoàn.",2026-09-20T10:00:00+07:00
+f707be03-c71a-5f19-b733-2bf728c7428e,fb8dee73-96ba-56c1-b6d1-17041b6ed031,1,d95bc77b-5e7b-53a6-a8af-5ccaabb485d8,1,84,82,"Phù hợp ngân sách, chủ đề và quy mô đoàn.",2026-09-20T10:00:00+07:00

@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-BKG.md` |
 | Mockup image | `img/BKG136.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** The Local Provider clicks "Mark Group Arrival" from BKG133 (Booking Management row action) or BKG135 (Booking Detail header action). Renders as a modal overlaying the underlying screen.
+Allows the Local Provider to confirm group arrival and update the booking progress/status.
 
-**The user leaves this screen when:** They click "Mark as Arrived" (confirms and closes), "Cancel" (closes without change), or the "×" close icon (closes without change).
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,54 +24,45 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Dimmed background overlay | Overlay | The underlying Booking Management screen (BKG133), dimmed and inert | Yes | Background is non-interactive while modal is open |
-| 2 | Modal container | Panel | White card centered on screen | Yes | Traps focus while open |
-| 3 | Tag: CHECK-IN | Badge | Static label indicating modal purpose | No | — |
-| 4 | Ref label | Text | "REF // #BKG-8409" | Yes | Matches the booking this modal was opened from |
-| 5 | Close icon | Icon button | "×" top-right | Yes | Closes modal without saving, same as Cancel |
-| 6 | Modal title | Header | "Confirm Group Arrival" | Yes | — |
-| 7 | Confirmation question | Text | "Are you sure you want to mark this group as arrived?" | Yes | — |
-| 8 | Info card: Experience | Text (label + value) | "Experience: Traditional Jacquard Silk Loom Weaving" | Yes | Read-only, derived from the booking |
-| 9 | Info card: Group | Text (label + value) | "Group: Swiss Eco Collectors Club (08 Pax)" | Yes | Read-only, derived from the booking |
-| 10 | Cancel button | Button | Secondary style | Yes | Closes modal, no state change |
-| 11 | Mark as Arrived button | Button | Primary (dark) style, with checkmark icon | Yes | Enabled only when the current time is on/after the Booking's scheduled start time (BR-010); disabled with inline text (e.g. "Available from 08:30 AM") before that. Once enabled, tapping it immediately sets the Booking's Status to Completed (single-slot MVP — see BR-016); action cannot be undone once submitted |
+| 1 | Confirm Group Arrival | Heading | Confirm Group Arrival | No | Static screen title |
+| 2 | Booking id | System context (not editable) | `booking_id` — F-SCHED-06 | Yes | booking_id (ID; Required — status must be Booked and start date reached) |
+| 3 | Selected booking and scheduled start | Read-only panel | F-SCHED-06 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 4 | Confirm group arrival explanation | Read-only panel | F-SCHED-06 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
+| 5 | Confirm Group Arrival | Button / navigation | Single occurrence; Booked→Completed through F-SCHED-06 only | No | Enabled only when the linked permission/validation guard succeeds |
+| 6 | Cancel | Button / navigation | No mutation | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Modal open with Experience and Group pre-filled from the selected booking, "Mark as Arrived" enabled | Modal opened from BKG133 or BKG135, current time is on/after the Booking's scheduled start time |
-| Locked (before start time) | Modal open with Experience and Group pre-filled, but "Mark as Arrived" is disabled with inline text stating when it becomes available | Modal opened before the Booking's scheduled start time (BR-010) — should not normally be reachable since BKG133/BKG135 gate the trigger, but the modal enforces it independently as a safety net |
-| Empty (no data) | Not applicable — the modal only opens for a specific, already-loaded booking, so Experience/Group are always populated | N/A |
-| Loading | "Mark as Arrived" button shows a spinner/disabled state while the update request is in flight; Cancel remains disabled during submission | User has just clicked "Mark as Arrived" |
-| Error | Inline error text below the info card (e.g. "Couldn't update this booking, please try again") with "Mark as Arrived" re-enabled for retry | The confirm-arrival API call fails |
-| Success / confirmation | Modal closes automatically; the underlying screen shows the booking's status/action updated (row no longer shows "Mark Group Arrival"; a success toast appears) | Confirm-arrival API call succeeds |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Mark as Arrived | tap | Submits the arrival confirmation; sets the booking's Status directly to Completed (single-slot MVP) | closes modal, stays on `BKG133` or `BKG135` (whichever it was opened from) |
-| 2 | Cancel | tap | Closes the modal, discards nothing (no state was changed) | closes modal, stays on `BKG133` or `BKG135` |
-| 3 | Close icon (×) | tap | Same as Cancel | closes modal, stays on `BKG133` or `BKG135` |
-| 4 | Click outside modal / overlay | tap | Same as Cancel (standard modal dismiss pattern) | closes modal, stays on `BKG133` or `BKG135` |
+| 1 | Confirm Group Arrival | Select | Single occurrence; Booked→Completed through F-SCHED-06 only | BKG135 |
+| 2 | Cancel | Select | No mutation | BKG135 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | This modal is only reachable for bookings currently in Confirmed status; it is not offered for On Hold, Completed, or Cancelled bookings | Cross-reference with BKG133/BKG135 |
-| SR-002 | Confirming arrival is a one-way action — once marked, the "Mark Group Arrival" trigger is no longer available for that booking | Booking status forward-only rule |
-| SR-003 | The modal must always echo the correct booking's Experience and Group so the provider cannot mistakenly confirm the wrong group | Mockup: Ref label ties content to the specific booking |
-| SR-004 | Marking Group Arrival sets the Booking's Status directly to Completed. MVP supports only single-slot Bookings (BR-016) — there is no multi-slot/fractional arrival progress (e.g. "1/2, 2/2"). | spec-BKG.md BR-016 (MVP scope decision, replacing an earlier "partial progress" assumption) |
-| SR-005 | There is no undo window after marking a slot as arrived; the action is permanent, consistent with the forward-only status lifecycle | Clarification (Module 5) |
-| SR-006 | "Mark as Arrived" independently enforces the time gate (current time ≥ scheduled start time) even though BKG133/BKG135 already gate the trigger, per BR-010/BR-017/FR-007 | spec-BKG.md BR-010, BR-017 |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Preserve the current approved rule: arrival on/after start_at changes Booked→Completed for one occurrence. Separating arrival and service completion is deferred, not silently introduced. | Function List and shared consistency contract |
 
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-006 | Allows the Local Provider to Mark Group Arrival on/after tour start, changing a Booked (Confirmed) Booking to Completed |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| BKG | FR-006 | F-SCHED-06 | Mark Group Arrival |
 
 ## 8. Responsive and accessibility notes
 
@@ -79,20 +70,14 @@
 - What collapses or stacks on a narrow screen: modal becomes full-width/near-full-height with the same vertical stacking of elements; Cancel and Mark as Arrived buttons may stack full-width instead of side by side
 - Text that must remain readable (contrast, minimum size): the confirmation question and info card values must remain legible; the dimmed overlay must retain enough contrast against the modal so the modal edges are clear
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Does confirming arrival here also change the booking's overall Status badge, or only an internal "progress" field distinct from Status? — **Resolved (revised):** It sets the Status directly to Completed. The earlier answer describing fractional progress (e.g. 1/2, 2/2 slots) assumed multi-slot Bookings; the module spec has since closed this as MVP scope: one Booking = one operating slot (BR-016), so there is no partial progress to track. | Yes | Resolved |
-| 2 | [NEEDS CLARIFICATION: Is there an "undo" window after marking arrived in case of provider error, given status changes cannot revert?] **Resolved:** No, there is no undo. | No | Resolved |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

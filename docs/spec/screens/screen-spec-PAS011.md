@@ -8,13 +8,13 @@
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` |
 | Mockup image | `img/PAS011.png` |
-| Status | Draft |
+| Status | Revised — pending human approval |
 
 ## 1. Purpose
 
-**Shown when:** The user clicks "Forgot your password?" on the Login screen.
+User enters their registered email address to request a password reset link. Form includes: Email input field, "Send Reset Link" button, "Back to Login" link.
 
-**The user leaves this screen when:** They submit a valid email ("Send reset link") or click "Back to sign in".
+The controls and decisions below define the current screen specification.
 
 ## 2. Mockup
 
@@ -24,44 +24,42 @@
 
 | # | Element | Type | Content / data source | Required | Validation |
 |---|---|---|---|---|---|
-| 1 | Left panel branding | Text | "HANOI ARTISAN BRIDGE", "Administration Portal", tagline "Account recovery.", version stamp | No | — |
-| 2 | Step indicator (1–4) | Stepper | Step 1 "Enter email" active | No | — |
-| 3 | Heading | Text | "Forgot password" | No | — |
-| 4 | Subheading | Text | "Enter your registered email. We'll send you a reset link." | No | — |
-| 5 | Email Address | Input | Registered account email | Yes | Valid email format |
-| 6 | Send reset link | Button (primary) | Submits the request | No | Disabled until a valid email is entered |
-| 7 | Back to sign in | Link | Returns to login | No | — |
+| 1 | Enter Registered Email | Heading | Enter Registered Email | No | Static screen title |
+| 2 | Email | Input | `email` — F-AUTH-11 | Yes | email (Email; Required) |
+| 3 | Send reset link | Button / navigation | Always return generic result whether email exists or not | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
 | State | What the user sees | Trigger |
 |---|---|---|
-| Default | Empty email input with placeholder, Send reset link disabled | Screen load |
-| Empty (no data) | Same as default — no persisted data on this screen | N/A |
-| Loading | Send reset link button shows spinner and is disabled while the request is sent | User taps Send reset link |
-| Error | Inline error under the field for invalid email format. If the email is not associated with any registered account, the system shows a generic error and does not confirm or deny whether the email exists: "We couldn't process your request. Please check your email address and try again." | Client validation fails, or the email is not a registered account (handled generically to prevent account/email enumeration) |
-| Success / confirmation | Navigates to Check Your Email | Request submitted successfully |
+| Default | Permitted data or a prefilled form; role-specific actions only | Authorized screen load |
+| Empty | No records/optional values shown with explanatory text; never infer availability from absent bookings | Successful response with no data |
+| Loading | Skeleton/progress; mutation actions disabled while their request is pending | Fetch/upload/save in progress |
+| Error | Defined field errors or fetch failure with Retry; no successful transition or partial mutation is shown | Validation, permission or service failure |
+| Success / confirmation | Refreshed read-only data or saved result; navigate only after successful linked action | Successful read/mutation |
 
 ## 5. Interactions and navigation
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Email Address | type | Live format validation | stays |
-| 2 | Send reset link | tap | Validates and sends reset email | `PAS014` |
-| 3 | Back to sign in | tap | Returns to login | `AUT009` |
+| 1 | Send reset link | Select | Always return generic result whether email exists or not | PAS014 |
+
+Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 
 ## 6. Screen-level rules
 
 | Rule ID | Rule | Source |
 |---|---|---|
-| SR-001 | Send reset link stays disabled until the email field passes format validation | Mockup — placeholder-only field implies required input |
-| SR-002 | For account-enumeration security, an unregistered email shows the generic error "We couldn't process your request. Please check your email address and try again." rather than disclosing whether the email is registered | Clarification |
-| SR-003 | The screen layout and field structure shown here (captured from [Actor X]'s view) is a shared template used by multiple actor roles. Role-specific differences (visible fields, permissions, labels) are not exhaustively illustrated by this single mockup and must be validated per actor before implementation. |
+| SR-001 | Check action permission and resource scope on every protected request; hiding a button alone is insufficient. Read-only screens have no mutation controls. | AUT FR-016 |
+| SR-002 | Validate the inputs and render outputs exactly as the linked module contracts; server/context fields are not freely editable form controls. | Linked FR table |
+| SR-003 | Unknown and known emails produce the same visible result. Recovery token and delivery status are internal, not exposed in UI. | Function List and shared consistency contract |
+
 ## 7. Linked requirements
 
-| FR ID (from the module spec) | What this screen does for it |
-|---|---|
-| FR-PAS-01 | Starting point for self-service password recovery |
+| Module | FR ID | Function ID | Screen responsibility |
+|---|---|---|---|
+| AUT | FR-010 | F-AUTH-10 | Display password recovery form |
+| AUT | FR-011 | F-AUTH-11 | Validate email, generate token & send recovery email |
 
 ## 8. Responsive and accessibility notes
 
@@ -69,19 +67,14 @@
 - What collapses or stacks on a narrow screen: dark branding panel stacks above the form; step indicator remains horizontal but may shrink
 - Text that must remain readable (contrast, minimum size): step numbers ≥12px, form text ≥14px
 
-## 9. Open questions
+## 9. Decisions and review
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| 1 | Confirm the exact security messaging policy for unregistered emails | Yes | Resolved — see States §4 and SR-002 |
-
----
+Use the approved Function List and [shared consistency contract](../docs/consistency-contract.md). No new feature is implied by decorative legacy mockup copy. Human approval of this revision is pending; technical Plan choices remain separately identified.
 
 ## Completion checklist
 
-- [x] The mockup is a separate cropped image file, named with the Screen ID.
-- [x] Every visible element in the mockup appears in the element inventory.
-- [x] Every input element has a validation rule or an explicit "none".
-- [x] All five states are filled in, or marked "not applicable" with a reason.
-- [x] Every navigation target is a Screen ID that exists in the Screen List.
-- [x] Every element that displays data names the field it displays, matching the module spec.
+- [x] Linked functions have corresponding module FR and IO contracts.
+- [x] Inputs name their validation and required/optional condition.
+- [x] Default, empty, loading, error and success states are defined.
+- [x] Navigation targets use existing Screen IDs.
+- [ ] Human approval of the revised specification.

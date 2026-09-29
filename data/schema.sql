@@ -1,5 +1,5 @@
 -- Hanoi Artisan Bridge — PostgreSQL candidate schema
--- Derived from docs/spec and data/model. PostgreSQL choice remains subject to Plan.
+-- Derived from docs/spec and data/04-data-model.md. PostgreSQL choice remains subject to Plan.
 -- Review fixes applied 2026-09-29 (see CHANGELOG_SUMMARY.md §"Áp lỗi lần 2").
 BEGIN;
 
@@ -20,7 +20,9 @@ CREATE TABLE permissions (
 CREATE TABLE role_permissions (
     role_code varchar(32) NOT NULL REFERENCES roles(role_code) ON DELETE CASCADE,
     permission_code varchar(80) NOT NULL REFERENCES permissions(permission_code) ON DELETE CASCADE,
-    PRIMARY KEY (role_code, permission_code)
+    admin_type varchar(8),
+    PRIMARY KEY (role_code, permission_code),
+    CONSTRAINT role_permission_admin_type_chk CHECK (admin_type IS NULL OR (role_code = 'ADMIN' AND admin_type IN ('HDT', 'UBND')))
 );
 
 CREATE TABLE villages (
@@ -650,7 +652,17 @@ CREATE TABLE bookings (
     CONSTRAINT booking_hold_expiry_chk CHECK (hold_expires_at = created_at + interval '72 hours'),
     CONSTRAINT booking_updated_chk CHECK (updated_at >= created_at),
     CONSTRAINT booking_end_chk CHECK (end_at > start_at),
-    CONSTRAINT booking_arrival_chk CHECK ((status = 'Completed' AND arrival_at IS NOT NULL AND arrival_at >= start_at) OR (status <> 'Completed' AND arrival_at IS NULL)),
+    CONSTRAINT booking_duration_end_chk CHECK (EXTRACT(EPOCH FROM (end_at - start_at)) = duration_minutes * 60),
+    CONSTRAINT booking_conditions_chk CHECK (
+        jsonb_typeof(conditions_snapshot) = 'object'
+        AND conditions_snapshot ? 'notice_period_hours'
+        AND conditions_snapshot ? 'cancellation_policy'
+        AND jsonb_typeof(conditions_snapshot -> 'notice_period_hours') = 'number'
+        AND (conditions_snapshot ->> 'notice_period_hours') ~ '^[0-9]+$'
+        AND jsonb_typeof(conditions_snapshot -> 'cancellation_policy') = 'object'
+        AND (conditions_snapshot -> 'cancellation_policy') <> '{}'::jsonb
+    ),
+    CONSTRAINT booking_arrival_chk CHECK ((status = 'Completed' AND arrival_at IS NOT NULL AND arrival_at >= start_at AND updated_at >= arrival_at) OR (status <> 'Completed' AND arrival_at IS NULL)),
     EXCLUDE USING gist (
         provider_id WITH =,
         tstzrange(start_at, end_at, '[)') WITH &&
@@ -802,6 +814,17 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER chat_message_not_closed_trg
     BEFORE INSERT ON chat_messages
     FOR EACH ROW EXECUTE FUNCTION chat_message_not_closed();
+
+-- Messages are append-only, including after a conversation closes. Retention is a separate policy.
+CREATE OR REPLACE FUNCTION chat_message_immutable() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'Chat messages are immutable; create a new message instead.';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER chat_message_immutable_trg
+    BEFORE UPDATE OR DELETE ON chat_messages
+    FOR EACH ROW EXECUTE FUNCTION chat_message_immutable();
 
 -- B5: a Booking group size must not exceed its Experience max_participants.
 CREATE OR REPLACE FUNCTION booking_group_within_capacity() RETURNS trigger AS $$

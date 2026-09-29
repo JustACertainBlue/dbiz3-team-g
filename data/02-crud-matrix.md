@@ -10,7 +10,7 @@ sources: FUNCTIONS, FIELDS, ENTITIES, RULES (all present)
 One row per (function, entity) pair that actually interacts, decided from each function's description
 and its Input/Output contract — not from the entity name. `Ops` holds any of C, R, U, D. Entity codes
 are the `Canonical name`s of [`01-entity-dictionary.md`](01-entity-dictionary.md), abbreviated by the
-module code used there. A function that touches no persistent entity is kept with `—` so the 91-function
+module code used there. A function that touches no persistent entity is kept with `—` so the 92-function
 invariant stays visible. `D` means a delete/archive action is requested; the retention policy lives in
 [`04-data-model.md`](04-data-model.md).
 
@@ -233,6 +233,9 @@ CHP Chat Participant · CHM Chat Message · ATT Private Attachment · NOT Notifi
 | F-EXPLORE-16 | RPV | R | F-EXPLORE-16 |
 | F-EXPLORE-17 | RPV | CR | F-EXPLORE-17 |
 | F-EXPLORE-17 | RQA | R | F-EXPLORE-17 |
+| F-EXPLORE-18 | RPV | CRU | F-EXPLORE-18 |
+| F-EXPLORE-18 | RQA | R | F-EXPLORE-18 |
+| F-EXPLORE-18 | AUD | C | F-EXPLORE-18 |
 | F-SCHED-01 | OHR | R | F-SCHED-01 |
 | F-SCHED-01 | BKG | R | F-SCHED-01 |
 | F-SCHED-01 | EXP | R | F-SCHED-01 |
@@ -360,7 +363,7 @@ CHP Chat Participant · CHM Chat Message · ATT Private Attachment · NOT Notifi
 | AID | F-PROFILE-07 | — | — | — |
 | APP | F-EXPLORE-09, F-MATCH-10 | F-EXPLORE-01, F-EXPLORE-04, F-EXPLORE-09, F-EXPLORE-10, F-MATCH-16 | F-EXPLORE-09, F-MATCH-10, F-MATCH-16 | — |
 | ATT | F-AUTH-02, F-AUTH-26, F-CHAT-05 | F-CHAT-03 | — | — |
-| AUD | F-AUTH-18, F-AUTH-19, F-AUTH-20, F-AUTH-22, F-AUTH-25, F-CHAT-04, F-PROFILE-02, F-PROFILE-05, F-SCHED-04 | — | — | — |
+| AUD | F-AUTH-18, F-AUTH-19, F-AUTH-20, F-AUTH-22, F-AUTH-25, F-CHAT-04, F-PROFILE-02, F-PROFILE-05, F-SCHED-04, F-EXPLORE-18 | — | — | — |
 | BKG | F-SCHED-03 | F-ADMIN-02, F-ADMIN-03, F-ADMIN-04, F-ADMIN-05, F-ADMIN-06, F-ADMIN-07, F-ADMIN-08, F-ADMIN-09, F-ADMIN-10, F-CHAT-01, F-EXPLORE-03, F-MATCH-05, F-MATCH-06, F-PROFILE-06, F-SCHED-01, F-SCHED-02, F-SCHED-03, F-SCHED-04, F-SCHED-05, F-SCHED-06, F-SCHED-07, F-SCHED-08, F-SCHED-09, F-SCHED-10 | F-SCHED-04, F-SCHED-05, F-SCHED-06 | — |
 | BSH | F-SCHED-05, F-SCHED-06 | F-SCHED-08 | — | — |
 | CHM | F-CHAT-02, F-CHAT-05, F-EXPLORE-11, F-MATCH-11, F-SCHED-03, F-SCHED-04, F-SCHED-05, F-SCHED-06, F-SCHED-08 | F-ADMIN-02, F-ADMIN-07, F-ADMIN-08, F-CHAT-03, F-MATCH-13, F-MATCH-14 | — | — |
@@ -384,8 +387,8 @@ CHP Chat Participant · CHM Chat Message · ATT Private Attachment · NOT Notifi
 | REG | F-AUTH-02 | F-ADMIN-07, F-AUTH-04, F-AUTH-18, F-AUTH-21, F-AUTH-23, F-AUTH-26, F-PROFILE-02 | F-AUTH-04, F-AUTH-18, F-AUTH-26 | — |
 | RET | F-AUTH-18 | F-AUTH-26 | F-AUTH-26 | — |
 | ROL | — | F-AUTH-07, F-AUTH-15, F-AUTH-16, F-AUTH-24 | — | — |
-| RPV | F-EXPLORE-15, F-EXPLORE-17 | F-EXPLORE-14, F-EXPLORE-16, F-EXPLORE-17 | — | — |
-| RQA | F-EXPLORE-14, F-EXPLORE-16 | F-EXPLORE-15, F-EXPLORE-17 | — | — |
+| RPV | F-EXPLORE-15, F-EXPLORE-17, F-EXPLORE-18 | F-EXPLORE-14, F-EXPLORE-16, F-EXPLORE-17, F-EXPLORE-18 | F-EXPLORE-18 | — |
+| RQA | F-EXPLORE-14, F-EXPLORE-16 | F-EXPLORE-15, F-EXPLORE-17, F-EXPLORE-18 | — | — |
 | RRV | F-AUTH-18 | F-AUTH-26 | — | — |
 | RST | F-AUTH-11, F-AUTH-22 | F-AUTH-12 | F-AUTH-12 | — |
 | RSV | F-AUTH-02, F-AUTH-26 | F-AUTH-04, F-AUTH-18, F-AUTH-26 | — | — |

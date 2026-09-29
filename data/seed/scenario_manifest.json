@@ -1,7 +1,7 @@
 [
   {
     "scenario_id": "ordinary-01",
-    "fixture": "eight linked agency-provider-experience chains",
+    "fixture": "eight agencies booking five Verified provider/experience pairs; unverified providers have no booking",
     "expected_result": "valid"
   },
   {
@@ -38,6 +38,11 @@
     "scenario_id": "permission-ubnd-scope",
     "fixture": "d8413a22-d2f8-57ac-b4a5-40f0e7c3677e",
     "expected_result": "access limited to assigned village"
+  },
+  {
+    "scenario_id": "ranking-hdt-activation",
+    "fixture": "fbcd239e-38ea-5db5-9cfb-154fc59d4e30",
+    "expected_result": "HDT activated the sole Active ranking version with audit evidence"
   },
   {
     "scenario_id": "kpi-period",

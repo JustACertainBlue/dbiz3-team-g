@@ -9,7 +9,7 @@
 | Date | 28/09/2026 |
 | Status | Revised — pending human approval |
 | Approved by (Client role) | Pending human approval |
-| DBIZ2 source              | Function List rows **F-EXPLORE-01 .. F-EXPLORE-17**; Use Case **UC-DIS-01 .. UC-DIS-04**; Screens **EXP017, EXP120, DSC122, DSC123, DSC033, DSC124, COM048** |
+| DBIZ2 source              | Function List rows **F-EXPLORE-01 .. F-EXPLORE-18**; Use Case **UC-DIS-01 .. UC-DIS-04, UC-ADM-02**; Screens **EXP017, EXP120, DSC122, DSC123, DSC033, DSC124, COM048, ADM147** |
 
 Shared actor/state/field definitions: [Consistency Contract](../docs/consistency-contract.md). Exact current Function contracts are in §5/5.1. Technical choices and unresolved field-design questions are explicitly separated there.
 
@@ -245,7 +245,7 @@ sequenceDiagram
     Worker->>DB: Daily F-EXPLORE-13 aggregation, retention30d
     Worker->>API: Weekly/monthly KPI evaluation and proposed tuning version
     API->>DB: Save Draft ranking-parameter version
-    Note over API,DB: Human approval promotes Draft to Active and retires prior Active; no auto-activation
+    Note over API,DB: HDT_Admin uses F-EXPLORE-18 to activate Draft and retire prior Active; audit required
 ```
 
 **5. Functional requirements (mandatory)**
@@ -268,7 +268,8 @@ sequenceDiagram
 | FR-014 | F-EXPLORE-14 | Compare ranked experience positions vs actual user clicks/conversions. Did user click top-ranked experience card? Did top-5 ranked experiences get clicked? Did user take action (quote/chat) on highly-ranked experiences? If top-ranked activities got clicked/converted → ranking quality GOOD. If user ignored ranked activities, scrolled past, or searched instead → ranking quality POOR. Measure ranking quality score (0-100). Data used to close learning loop and determine if algorithm working.<br><br>ranking_quality_score =<br>0.50 × rank_relevance_score<br>+ 0.30 × click_engagement_score<br>+ 0.20 × strong_action_score.<br><br>rank_relevance_score:<br>- selected rank 1 = 100<br>- ranks 2–3 = 80<br>- ranks 4–5 = 60<br>- ranks 6–10 = 30<br>- no ranked Experience selected = 0<br><br>click_engagement_score = 100 when at least one ranked Experience is clicked; otherwise 0.<br><br>strong_action_score = 100 when Request Quote or Chat occurs for a ranked Experience; otherwise 0.<br><br>assessment = Good when ranking_quality_score >= 60; otherwise Poor. | System | Should |
 | FR-015 | F-EXPLORE-15 | Define explicit scenarios: Scenario A (user clicks top-ranked experience card within 10sec, takes action) = good ranking → improve this direction. Scenario B (user scrolls past ranked experiences + searches instead of clicking ranked results) = bad ranking → optimize away. Scenario C (user clicks experience ranked #5-10, skips #1-4) = ranking partially relevant → adjust weights. Define KPIs to measure: CTR (click-through rate on ranked experiences), conversion rate (explore→quote request on ranked experiences), avg rank position of selected experience, time-to-action, activity type distribution of selections. This function defines versioned optimization rules/KPIs and is executed when a ranking-algorithm version is created or revised, not as part of every Explore session. | System | Should |
 | FR-016 | F-EXPLORE-16 | Calculate weekly/monthly KPIs: CTR (% of ranked experience cards clicked), conversion rate (% of Explore sessions where ranked experience led to quote request / chat / booking), rank position of selected experience (avg rank of experience user actually selected/acted on), user engagement time on ranked experiences, bounce rate (users leave Explore without interacting). Compare before/after algorithm changes to measure improvement. Store metrics in time series with algorithm version tracking. KPIs are calculated weekly by default. Monthly values are roll-ups of the weekly metrics. No separate daily KPI cycle is used for MVP. | System | Should |
-| FR-017 | F-EXPLORE-17 | Analyze KPI results from F-EXPLORE-16 together with scenario outcomes from F-EXPLORE-15, tune ranking parameters when supported by those results, and save a new version with status Draft. F-EXPLORE-10 continues using the current Active version. Human approval through the authorized configuration process atomically promotes the selected Draft to Active and changes the previously Active version to Retired; F-EXPLORE-17 never activates a version automatically. | System | Should |
+| FR-017 | F-EXPLORE-17 | Analyze KPI results from F-EXPLORE-16 together with scenario outcomes from F-EXPLORE-15, tune ranking parameters when supported by those results, and save a new version with status Draft. F-EXPLORE-10 continues using the current Active version. HDT_Admin uses F-EXPLORE-18 to activate a selected Draft and retire the previous Active version; F-EXPLORE-17 never activates a version automatically. | System | Should |
+| FR-018 | F-EXPLORE-18 | HDT_Admin can create a Draft ranking version from reviewed KPI evidence or activate an existing Draft, including one proposed by F-EXPLORE-17. Activation atomically retires the current Active version and activates the selected Draft. F-AUTH-16 checks role=ADMIN, admin_type=HDT, manage_rankings; UBND_Admin is denied. Every action records actor, timestamp, reason and affected version IDs in audit_logs. A failed activation leaves the previous Active version unchanged. | Admin (HDT) | Should |
 
 **5.1 Input / Output contract**
 
@@ -291,6 +292,7 @@ sequenceDiagram
 | FR-015 | behavior_patterns (Array<Object>; Required)<br>ranking_outcomes (Array<Object>; Required)<br>success_criteria (Object; Required — versioned configuration maintained by the project/system team; not recalculated separately for each user session) | As specified per field | scenario_rules (Array<Object{scenario: Enum[A, B, C], condition, action}>; Required)<br>kpi_definitions (Array<Object{kpi, formula, target}>; Required) | Same contract as F-EXPLORE-15; optional fields are not required. |
 | FR-016 | interaction_logs (Array<Object>; Required)<br>explore_session_data (Array<Object>; Required)<br>algorithm_version (String; Required) | As specified per field | ctr (Decimal, %; Required)<br>conversion_rate (Decimal, %; Required)<br>avg_rank_selected (Decimal; Required)<br>engagement_time (Integer, seconds; Required)<br>bounce_rate (Decimal, %; Required)<br>improvement_vs_previous (Decimal, %; Optional — none for the first version)<br>algorithm_version (String; Required)<br>period_granularity (Enum[Weekly, Monthly]; Required — default Weekly)<br>period (Date range; Required) | Same contract as F-EXPLORE-16; optional fields are not required. |
 | FR-017 | kpi_results (Object; Required)<br>scenario_analysis (Object; Required)<br>current_parameters (Map<String, Decimal>; Required)<br>tuning_rules (Object; Required) | As specified per field | optimized_parameters (Map<String, Decimal>; Required)<br><br>tuning_decision_log (Object; Required)<br><br>new_algorithm_version (String; Required)<br><br>version_status (Enum[Draft]; Required) | Same contract as F-EXPLORE-17; optional fields are not required. |
+| FR-018 | action (Enum[Create Draft, Activate Draft]; Required)<br>parameter_map (Object; Required for Create Draft)<br>version_id (ID; Required for Activate Draft)<br>expected_active_version_id (ID; Required for Activate Draft)<br>reason (Text; Required)<br>session_context (role=ADMIN, admin_type=HDT; Required) | As specified per field | version_id (ID; Required)<br>version_status (Enum[Draft, Active]; Required)<br>previous_active_version_id (ID; Optional)<br>audit_log_id (ID; Required) | Deny UBND; activate only Draft; lock/check the expected Active version, rollback on mismatch or failure; F-EXPLORE-10 continues reading the prior Active version until commit. |
 
 **5.2 Business rules**
 
@@ -309,7 +311,8 @@ sequenceDiagram
 | **BR-011**  | Aggregate Explore metrics must not be treated as individual Agency-specific personalization results.                                       | Separates personal learning from system-wide optimization.        |
 | **BR-012**  | F-EXPLORE-13–17 form the system-level ranking optimization loop.                                                                           | Separates global ranking improvement from session re-ranking.     |
 | **BR-013**  | Ranking-quality/KPI evaluation must compare actual user behavior against ranked positions.                                                 | Provides measurable algorithm feedback.                           |
-| **BR-014**  | Every ranking-parameter change must be recorded with a new algorithm version and tuning decision log.                                      | Supports auditability and comparison across versions.             |
+| **BR-014**  | Every change to ranking parameter values creates a new Draft version and tuning decision log. Activating an existing Draft changes its status, not its parameter values, and is logged in audit_logs. | Supports auditability and comparison across versions. |
+| **BR-015** | Only HDT_Admin may create or activate ranking versions through F-EXPLORE-18. Activation changes Draft → Active and previous Active → Retired in one transaction and writes audit evidence; UBND_Admin is denied. | Keeps the learning loop supervised and traceable. |
 
 **6. Key entities (mandatory)**
 
@@ -342,6 +345,7 @@ sequenceDiagram
 | DSC124 | Public Experience Detail | F-EXPLORE-03 |
 | EXP017 | Explore | F-EXPLORE-01, F-EXPLORE-02, F-EXPLORE-03, F-EXPLORE-04, F-EXPLORE-05, F-EXPLORE-06, F-EXPLORE-07, F-EXPLORE-08, F-EXPLORE-09, F-EXPLORE-10, F-EXPLORE-11, F-EXPLORE-12, F-EXPLORE-13, F-EXPLORE-14, F-EXPLORE-15, F-EXPLORE-16, F-EXPLORE-17 |
 | EXP120 | Public Explore | F-EXPLORE-01, F-EXPLORE-02, F-EXPLORE-03, F-EXPLORE-04, F-EXPLORE-05 |
+| ADM147 | Ranking Configuration | F-EXPLORE-18 |
 | SCH140 | Provider Schedule – Agency View | F-EXPLORE-11 |
 | VIL030 | Village Profile | F-EXPLORE-02 |
 
@@ -359,6 +363,7 @@ sequenceDiagram
 | **SC-008** | Ranking-quality assessment reflects whether highly ranked Experiences receive clicks/actions.  | Use controlled ranking/action test data.                                       |
 | **SC-009** | Every optimization produces traceable parameter/version output.                                | Review optimized parameters, version and tuning log after an optimization run. |
 | **SC-010** | Guest-sensitive fields remain hidden across public Explore, Provider and Experience screens.   | Field-by-field visibility comparison.                                          |
+| **SC-011** | HDT_Admin can activate a Draft and only one version becomes Active; UBND_Admin is denied and a failed activation preserves the previous Active version. | Attempt HDT/UBND activation, concurrent activation and rollback; inspect audit_logs and active version. |
 
 **9. Assumptions**
 
@@ -402,7 +407,7 @@ sequenceDiagram
 | 20 | What formula maps ranking outcomes to the F-EXPLORE-14 ranking_quality_scorefrom 0–100? | No | AI / BA | Closed | Use 50% rank relevance + 30% click + 20% strong action (F-EXPLORE-14). |
 | 21 | Is F-EXPLORE-15 a runtime system function or a configuration activity performed by the project team? | No | Product / Tech | Closed | F-EXPLORE-15 defines target KPI configuration as the current Function List describes. |
 | 22 | Are F-EXPLORE-16 KPIs calculated daily, weekly, monthly, or a combination? | No | Product / Tech | Closed | Tuning evaluation is weekly/monthly. Daily aggregation under F-EXPLORE-13 is separate. |
-| 23 | Does F-EXPLORE-17 automatically deploy new ranking parameters or require human approval? | No | Product / Tech | Closed | F-EXPLORE-17 saves Draft. Human approval promotes the selected Draft to Active and retires the prior Active version; no automatic activation. |
+| 23 | Does F-EXPLORE-17 automatically deploy new ranking parameters or require human approval? | No | Product / Tech | Closed | F-EXPLORE-17 saves Draft. HDT_Admin creates/activates versions through F-EXPLORE-18; activation retires the prior Active version. No automatic activation. |
 | 24 | Should F-EXPLORE-11 be mapped to an existing final Use Case, or should UC-DIS-06 Request Quote be restored? | No | BA | Closed | Map F-EXPLORE-11 to UC-DIS-04 in the lecturer-required table; no UC-DIS-06 is introduced. |
 | 25 | The final Use Case lists LP/HDT/UBND as actors for detail viewing, but F-EXPLORE-03 lists only Tour Agency/Guest. Which actor definition is authoritative for Explore detail screens? | No | BA | Closed | Agency/Guest use Explore detail functions; Provider/Admin use PRF permitted views. |
 | 26 | The Sequence Diagram still labels Request Quote as UC-DIS-06 and uses villageId, while current Function List uses experience_id. Should the sequence be updated? | No | BA | Closed | Sequence uses experience_id and current UC-DIS-04 mapping. |
@@ -415,5 +420,5 @@ sequenceDiagram
 | **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic1, sections 1.1 System Objectives and 1.2 System Main Functions – Explore**                                                                                                                                                                |
 | **4.1 Usage flow**             | Usage Flow figure          | **sheet Schematic2, Guest flow: “View Explore Page” → “View Public Local Provider Detail Page” → “Request advanced features?”; Tour Agency flow: “Choose Discovery Method” → “Browse Explore Page” → “View Local Provider Detail” → interaction decision** |
 | **4.2 Sequence**               | Sequence Diagram figure    | **sheet Schematic2, Module 4: Explore – UC-DIS-01, UC-DIS-02, UC-DIS-03, UC-DIS-04; supporting Request Quote sequence currently labelled UC-DIS-06**                                                                                                       |
-| **5. Functional requirements** | Function List              | **sheet FL&Cost1, F-EXPLORE-01 .. F-EXPLORE-17**                                                                                                                                                                                                           |
+| **5. Functional requirements** | Function List              | **F-EXPLORE-01 .. F-EXPLORE-18**                                                                                                                                                                                                           |
 | **7. Screens**                 | Screen List                | **sheet ST, EXP017, EXP120, DSC122, DSC123, DSC033, DSC124, COM048; Request Quote – Action**                                                                                                                                                               |

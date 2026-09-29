@@ -49,8 +49,13 @@ write("roles", ["role_code","display_name"], [
 perms=[("manage_users","manage","users"),("review_agencies","review","agency registrations"),("review_providers","review","provider profiles"),("manage_rankings","manage","ranking parameters"),("view_dashboard","view","dashboard"),("manage_profile","manage","own profile"),("manage_experiences","manage","experiences"),("manage_bookings","manage","bookings"),("use_matching","use","AI matching"),("use_chat","use","chat")]
 write("permissions",["permission_code","action","resource"],[{"permission_code":a,"action":b,"resource":c} for a,b,c in perms])
 rp=[]
-for i,(p,_,_) in enumerate(perms): rp.append({"role_code":"ADMIN" if i<5 else ("Local_Provider" if i<8 else "Tour_Agency"),"permission_code":p})
-write("role_permissions",["role_code","permission_code"],rp)
+for i,(p,_,_) in enumerate(perms): rp.append({"role_code":"ADMIN" if i<5 else ("Local_Provider" if i<8 else "Tour_Agency"),"permission_code":p,"admin_type":"HDT" if p=="manage_rankings" else ""})
+# NULL admin_type means all users with the role; manage_rankings is HDT-only.
+rp.extend([
+    {"role_code":"Local_Provider","permission_code":"use_chat","admin_type":""},
+    {"role_code":"Tour_Agency","permission_code":"manage_profile","admin_type":""},
+])
+write("role_permissions",["role_code","permission_code","admin_type"],rp)
 vrows=[{"village_id":uid("village",i),"source_code":c,"name":n,"district":d,"city_province":"Hà Nội","is_active":"false" if i==7 else "true"} for i,(c,n,d) in enumerate(villages)]
 write("villages",list(vrows[0]),vrows)
 
@@ -152,21 +157,23 @@ write("ai_description_drafts",list(drafts[0]),drafts)
 ms=[]; mm=[]; tp=[]; rr=[]; app=[]; signals=[]
 SIG=["Positive Experience Interest","Negative Experience Interest"]
 for i in range(8):
+    eligible=i if i<5 else i-5
     ms.append({"matching_session_id":uid("matching",i),"agency_id":uid("agency",i),"conversation_context":j({"language":"vi","goal":"tour làng nghề"}),"started_at":ts(20,8),"last_activity_at":ts(20,9+i)})
     mm.append({"message_id":uid("matching-message",i),"matching_session_id":uid("matching",i),"sender":"Agency" if i%2==0 else "Assistant","text":"Tìm trải nghiệm phù hợp cho đoàn khách quan tâm văn hóa Hà Nội.","sent_at":ts(20,9)})
     tp.append({"matching_session_id":uid("matching",i),"hard_constraints":j({"max_price":500000}),"matching_attributes":j({"category":"Workshop/Hands-on"}),"inferred_preferences":"" if i==7 else j({"pace":"chậm"}),"preference_weights":j({"price":0.4,"location":0.6}),"is_complete":"false" if i==7 else "true","updated_at":ts(20,10)})
-    rr.append({"result_id":uid("recommendation",i),"matching_session_id":uid("matching",i),"run_no":"1","experience_id":uid("experience",i),"rank":"1","match_score":str(0 if i==7 else 82+i)+".00","experience_fit_score":str(100 if i==6 else 80+i)+".00","explanation":"Phù hợp ngân sách, chủ đề và quy mô đoàn.","created_at":ts(20,10)})
+    rr.append({"result_id":uid("recommendation",i),"matching_session_id":uid("matching",i),"run_no":"1","experience_id":uid("experience",eligible),"rank":"1","match_score":str(0 if i==7 else 82+i)+".00","experience_fit_score":str(100 if i==6 else 80+i)+".00","explanation":"Phù hợp ngân sách, chủ đề và quy mô đoàn.","created_at":ts(20,10)})
     app.append({"agency_id":uid("agency",i),"preference_weights":j({"culture":0.7,"price":0.3}),"updated_at":ts(21)})
-    signals.append({"signal_id":uid("signal",i),"agency_id":uid("agency",i),"matching_session_id":uid("matching",i) if i<7 else "","experience_id":uid("experience",i),"signal_type":SIG[0] if i<7 else SIG[1],"signal_value":j({"selected":i<7}),"confidence_score":"1.000" if i==7 else "0.850","base_weight":"0.00000" if i==7 else "1.00000","captured_at":ts(21,9)})
+    signals.append({"signal_id":uid("signal",i),"agency_id":uid("agency",i),"matching_session_id":uid("matching",i) if i<7 else "","experience_id":uid("experience",eligible),"signal_type":SIG[0] if i<7 else SIG[1],"signal_value":j({"selected":i<7}),"confidence_score":"1.000" if i==7 else "0.850","base_weight":"0.00000" if i==7 else "1.00000","captured_at":ts(21,9)})
 write("matching_sessions",list(ms[0]),ms); write("matching_messages",list(mm[0]),mm); write("tour_preference_profiles",list(tp[0]),tp)
 write("recommendation_results",list(rr[0]),rr); write("agency_preference_profiles",list(app[0]),app); write("preference_signals",list(signals[0]),signals)
 quotes=[]; es=[]; ei=[]
 for i in range(8):
     src="Matching" if i%2==0 else "Explore"
-    quotes.append({"quote_request_id":uid("quote",i),"agency_id":uid("agency",i),"experience_id":uid("experience",i),"source":src,"matching_session_id":uid("matching",i) if src=="Matching" else "","created_at":ts(22)})
+    eligible=i if i<5 else i-5
+    quotes.append({"quote_request_id":uid("quote",i),"agency_id":uid("agency",i),"experience_id":uid("experience",eligible),"source":src,"matching_session_id":uid("matching",i) if src=="Matching" else "","created_at":ts(22)})
     scope="Personalized" if i<5 else ("Anonymous Analytics" if i<7 else "No Non-essential Tracking")
     es.append({"session_id":uid("explore",i),"agency_id":uid("agency",i) if scope=="Personalized" else "","anonymous_session_ref":"" if scope=="Personalized" else f"anon-{uid('explore',i)}","analytics_consent":"true" if scope!="No Non-essential Tracking" else "false","tracking_scope":scope,"started_at":ts(22,8),"ended_at":ts(22,9) if i!=7 else ""})
-    ei.append({"interaction_id":uid("interaction",i),"session_id":uid("explore",i),"experience_id":uid("experience",i) if i!=7 else "","provider_id":uid("provider",i) if i!=7 else "","action_type":["click_card","expand_preview","view_detail","apply_filter","scroll","request_quote","open_chat","scroll"][i],"occurred_at":ts(22,8),"duration_on_previous_screen":str(0 if i==7 else 20+i),"filter_values":j({"village":villages[i][1]}) if i==3 else ""})
+    ei.append({"interaction_id":uid("interaction",i),"session_id":uid("explore",i),"experience_id":uid("experience",eligible) if i!=7 else "","provider_id":uid("provider",eligible) if i!=7 else "","action_type":["click_card","expand_preview","view_detail","apply_filter","scroll","request_quote","open_chat","scroll"][i],"occurred_at":ts(22,8),"duration_on_previous_screen":str(0 if i==7 else 20+i),"filter_values":j({"village":villages[i][1]}) if i==3 else ""})
 write("quote_requests",["quote_request_id","agency_id","experience_id","source","matching_session_id","created_at"],quotes)
 write("explore_sessions",list(es[0]),es); write("explore_interactions",list(ei[0]),ei)
 rv=[]; ra=[]
@@ -182,24 +189,37 @@ book=[]; bh=[]; chats=[]; cm=[]; cp=[]; ca=[]; notices=[]; audits=[]
 bst=["Booked","Booked","Completed","Completed","Cancelled","Booked","On hold","Cancelled"]
 CHATSRC=["AI Matching","Explore","Provider Profile","Booking"]
 for i in range(8):
-    start=f"2026-10-{5+i:02d}T09:00:00+07:00"; created=f"2026-09-{20+i%5:02d}T08:00:00+07:00"
-    dur=60+i*15
+    eligible=i if i<5 else i-5
+    start=(f"2026-09-{24+i:02d}T09:00:00+07:00" if bst[i]=="Completed" else f"2026-10-{5+i:02d}T09:00:00+07:00")
+    created=ts(28 if bst[i]=="On hold" else 23)
+    dur=int(experiences[eligible]["duration_minutes"])
     cd=datetime.fromisoformat(created); hold=(cd+timedelta(hours=72)).isoformat()
     end_at=(datetime.fromisoformat(start)+timedelta(minutes=dur)).isoformat()
     gs=1 if i==7 else min(6+i, (1 if i==7 else 12+i))
-    book.append({"booking_id":uid("booking",i),"agency_id":uid("agency",i),"provider_id":uid("provider",i),"experience_id":uid("experience",i),"source_chat_session_id":uid("chat",i),"start_at":start,"duration_minutes":str(dur),"group_size":str(gs),"agreed_price_total":f"{900000+i*250000}.00","conditions_snapshot":j({"cancellation":"Hoàn 80% trước 24 giờ"}),"status":bst[i],"created_at":created,"updated_at":f"2026-09-{24+i%5:02d}T08:00:00+07:00","hold_expires_at":hold,"end_at":end_at,"arrival_at":f"2026-10-{5+i:02d}T10:30:00+07:00" if bst[i]=="Completed" else ""})
-    bh.append({"history_id":uid("booking-history",i),"booking_id":uid("booking",i),"from_status":"On hold" if bst[i]!="On hold" else "","to_status":bst[i] if bst[i]!="On hold" else "On hold","changed_by":uid("user",18+i),"changed_at":f"2026-09-{24+i%5:02d}T08:00:00+07:00","reason":"Khách hủy lịch" if bst[i]=="Cancelled" else ("Cập nhật theo vòng đời đặt chỗ" if bst[i]!="On hold" else "Khởi tạo giữ chỗ")})
+    arrival=(datetime.fromisoformat(start)+timedelta(minutes=30)).isoformat() if bst[i]=="Completed" else ""
+    final_at=arrival if arrival else (ts(24,8) if bst[i]!="On hold" else created)
+    snapshot={"notice_period_hours":int(experiences[eligible]["notice_period_hours"]),"cancellation_policy":json.loads(experiences[eligible]["cancellation_policy"])}
+    book.append({"booking_id":uid("booking",i),"agency_id":uid("agency",i),"provider_id":uid("provider",eligible),"experience_id":uid("experience",eligible),"source_chat_session_id":uid("chat",i),"start_at":start,"duration_minutes":str(dur),"group_size":str(gs),"agreed_price_total":f"{900000+i*250000}.00","conditions_snapshot":j(snapshot),"status":bst[i],"created_at":created,"updated_at":final_at,"hold_expires_at":hold,"end_at":end_at,"arrival_at":arrival})
+    bh.append({"history_id":uid("booking-history-initial",i),"booking_id":uid("booking",i),"from_status":"","to_status":"On hold","changed_by":uid("user",18+eligible),"changed_at":created,"reason":"Khởi tạo giữ chỗ"})
+    if bst[i]!="On hold":
+        if bst[i]=="Completed":
+            bh.append({"history_id":uid("booking-history-booked",i),"booking_id":uid("booking",i),"from_status":"On hold","to_status":"Booked","changed_by":uid("user",18+eligible),"changed_at":ts(24,8),"reason":"Xác nhận đặt chỗ"})
+            prior="Booked"
+        else: prior="On hold"
+        bh.append({"history_id":uid("booking-history",i),"booking_id":uid("booking",i),"from_status":prior,"to_status":bst[i],"changed_by":uid("user",18+eligible),"changed_at":final_at,"reason":"Khách hủy lịch" if bst[i]=="Cancelled" else ("Xác nhận đoàn đã đến" if bst[i]=="Completed" else "Xác nhận đặt chỗ")})
     closed=i in (4,7)
     src=CHATSRC[i%4]
-    chats.append({"chat_session_id":uid("chat",i),"agency_id":uid("agency",i),"provider_id":uid("provider",i),"source":src,"matching_session_id":uid("matching",i) if src=="AI Matching" else "","experience_id":uid("experience",i),"quote_request_id":uid("quote",i),"booking_id":uid("booking",i),"status":"Closed" if closed else "Active","started_at":ts(22,10),"last_message_at":ts(23,10),"closed_at":ts(24,10) if closed else "","closed_by":uid("user",10+i) if closed else ""})
+    chats.append({"chat_session_id":uid("chat",i),"agency_id":uid("agency",i),"provider_id":uid("provider",eligible),"source":src,"matching_session_id":uid("matching",i) if src=="AI Matching" else "","experience_id":uid("experience",eligible),"quote_request_id":uid("quote",i),"booking_id":uid("booking",i),"status":"Closed" if closed else "Active","started_at":ts(22,10),"last_message_at":ts(23,10),"closed_at":ts(24,10) if closed else "","closed_by":uid("user",10+i) if closed else ""})
     kind="Attachment" if i<7 else "Booking Update"
-    cm.append({"message_id":uid("chat-message",i),"chat_session_id":uid("chat",i),"sender_user_id":uid("user",10+i) if kind!="Booking Update" else "","text":"Tệp thông tin đoàn khách." if kind=="Attachment" else "Đặt chỗ đã được cập nhật.","message_kind":kind,"experience_id":uid("experience",i),"quote_request_id":uid("quote",i),"booking_id":uid("booking",i),"sent_at":ts(23,10)})
+    cm.append({"message_id":uid("chat-message",i),"chat_session_id":uid("chat",i),"sender_user_id":uid("user",10+i) if kind!="Booking Update" else "","text":"Tệp thông tin đoàn khách." if kind=="Attachment" else "Đặt chỗ đã được cập nhật.","message_kind":kind,"experience_id":uid("experience",eligible),"quote_request_id":uid("quote",i),"booking_id":"" if i==6 else uid("booking",i),"sent_at":ts(23,10)})
     cp.append({"chat_session_id":uid("chat",i),"user_id":uid("user",10+i),"last_read_message_id":uid("chat-message",i) if i<7 else "","unread_count":str(0 if i<7 else 12)})
-    cp.append({"chat_session_id":uid("chat",i),"user_id":uid("user",18+i),"last_read_message_id":"","unread_count":str(i)})
+    cp.append({"chat_session_id":uid("chat",i),"user_id":uid("user",18+eligible),"last_read_message_id":"","unread_count":str(i)})
     fidc=add_file(f"chatfile-{i}", f"chatfile-{i}", uid("user",10+i), 23, image=(i%2==0))
     ca.append({"attachment_id":uid("attachment",i),"message_id":uid("chat-message",i),"file_id":fidc,"uploaded_by":uid("user",10+i),"created_at":ts(23,10)})
-    notices.append({"notification_id":uid("notification",i),"recipient_user_id":uid("user",10+i),"event_type":"Booking Status Changed","source_type":"Booking","source_id":uid("booking",i),"payload":j({"status":bst[i]}),"created_at":ts(24,9),"read_at":ts(24,10) if i<5 else "","email_delivery_status":["Success","Success","Success","Success","Success","Fail","Not Applicable",""][i]})
-    audits.append({"audit_id":uid("audit",i),"actor_user_id":uid("user",8+i%2) if i<7 else "","action":"UPDATE_BOOKING_STATUS" if i<7 else "SYSTEM_RETENTION_CHECK","target_type":"Booking","target_id":uid("booking",i),"occurred_at":ts(24,9),"change_or_result":j({"to":bst[i]})})
+    notified=(datetime.fromisoformat(final_at)+timedelta(minutes=5)).isoformat()
+    notices.append({"notification_id":uid("notification",i),"recipient_user_id":uid("user",10+i),"event_type":"Booking Status Changed","source_type":"Booking","source_id":uid("booking",i),"payload":j({"status":bst[i]}),"created_at":notified,"read_at":(datetime.fromisoformat(notified)+timedelta(minutes=5)).isoformat() if i<5 else "","email_delivery_status":["Success","Success","Success","Success","Success","Fail","Not Applicable",""][i]})
+    audits.append({"audit_id":uid("audit",i),"actor_user_id":uid("user",18+eligible) if i<7 else "","action":"UPDATE_BOOKING_STATUS" if i<7 else "SYSTEM_RETENTION_CHECK","target_type":"Booking","target_id":uid("booking",i),"occurred_at":notified,"change_or_result":j({"to":bst[i]})})
+audits.append({"audit_id":uid("ranking-activation-audit",0),"actor_user_id":uid("user",8),"action":"ACTIVATE_RANKING_VERSION","target_type":"RankingParameterVersion","target_id":uid("ranking",0),"occurred_at":ts(6),"change_or_result":j({"previous_active_version_id":None,"new_active_version_id":uid("ranking",0),"reason":"Khởi tạo cấu hình xếp hạng MVP"})})
 write("bookings",list(book[0]),book); write("booking_status_history",list(bh[0]),bh)
 write("chat_sessions",["chat_session_id","agency_id","provider_id","source","matching_session_id","experience_id","quote_request_id","booking_id","status","started_at","last_message_at","closed_at","closed_by"],chats)
 write("chat_messages",["message_id","chat_session_id","sender_user_id","text","message_kind","experience_id","quote_request_id","booking_id","sent_at"],cm)
@@ -249,18 +269,18 @@ load_order=[name for name in table_names if name not in ("chat_participants","ch
 chat_insert_at=load_order.index("notifications")
 load_order[chat_insert_at:chat_insert_at]=["chat_messages","chat_participants","chat_attachments"]
 with (OUT/"load_seed.sql").open("w",encoding="utf-8",newline="\n") as f:
-    f.write("-- Run with psql from the repository root after docs/spec/data/schema.sql\nBEGIN;\nSET CONSTRAINTS ALL DEFERRED;\n")
+    f.write("-- Run with psql from the repository root after data/schema.sql\nBEGIN;\nSET CONSTRAINTS ALL DEFERRED;\n")
     for name in load_order:
         with (OUT/f"{name}.csv").open(encoding="utf-8",newline="") as cf: fields=next(csv.reader(cf))
-        f.write(f"\\copy {name} ({', '.join(fields)}) FROM 'docs/spec/data/seed/{name}.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8', NULL '');\n")
+        f.write(f"\\copy {name} ({', '.join(fields)}) FROM 'data/seed/{name}.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8', NULL '');\n")
     f.write("COMMIT;\n")
 
-manifest={"generated_at":"2026-09-29T00:00:00+07:00","synthetic_only":True,"logical_entities":47,"entity_csv_files":47,"coverage_file":"seed_coverage.json","scenario_file":"scenario_manifest.json","table_files":{}}
+manifest={"generated_at":"2026-09-30T00:00:00+07:00","synthetic_only":True,"logical_entities":47,"entity_csv_files":47,"coverage_file":"seed_coverage.json","scenario_file":"scenario_manifest.json","table_files":{}}
 for name in table_names:
     with (OUT/f"{name}.csv").open(encoding="utf-8",newline="") as f: manifest["table_files"][f"{name}.csv"]=sum(1 for _ in csv.DictReader(f))
 (OUT/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8",newline="\n")
 scenario_rows=[
- {"scenario_id":"ordinary-01","fixture":"eight linked agency-provider-experience chains","expected_result":"valid"},
+ {"scenario_id":"ordinary-01","fixture":"eight agencies booking five Verified provider/experience pairs; unverified providers have no booking","expected_result":"valid"},
  {"scenario_id":"boundary-otp","fixture":uid("otp",7),"expected_result":"attempt=5; resend=3; terminal challenge"},
  {"scenario_id":"empty-village","fixture":uid("village",7),"expected_result":"inactive catalog entry has no active experience"},
  {"scenario_id":"draft-provider","fixture":uid("provider",5),"expected_result":"Draft version with null required fields; no published version/document"},
@@ -268,6 +288,7 @@ scenario_rows=[
  {"scenario_id":"exception-closed-chat","fixture":uid("chat",7),"expected_result":"terminal immutable chat"},
  {"scenario_id":"exception-rejected-registration","fixture":uid("registration",8),"expected_result":"rejected registration retained"},
  {"scenario_id":"permission-ubnd-scope","fixture":uid("user",0),"expected_result":"access limited to assigned village"},
+ {"scenario_id":"ranking-hdt-activation","fixture":uid("ranking-activation-audit",0),"expected_result":"HDT activated the sole Active ranking version with audit evidence"},
  {"scenario_id":"kpi-period","fixture":"bookings + booking_status_history","expected_result":"as-of status is reproducible"}]
 (OUT/"scenario_manifest.json").write_text(json.dumps(scenario_rows,ensure_ascii=False,indent=2)+"\n",encoding="utf-8",newline="\n")
 print(f"Generated {len(table_names)} entity CSV files")

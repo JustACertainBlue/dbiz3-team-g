@@ -19,7 +19,8 @@ short, factual and current. Replace every `<...>` before the first commit.
 ## 3. Commands that are safe to run
 
 - `uv run tools/check_env.py --repo` : environment and repository check.
-- `<seed command>` : regenerates the seed data; must finish with every integrity assertion passing.
+- `python data/scripts/generate_seed.py` : regenerates deterministic synthetic seed data.
+- `python data/scripts/validate_seed.py` : validates seed coverage, references and business-rule fixtures.
 - `git status`, `git diff` : always allowed.
 
 ## 4. Hard rules

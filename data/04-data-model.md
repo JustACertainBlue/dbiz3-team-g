@@ -12,8 +12,8 @@ Input/Output + business-rule contracts. Relation and `*_id` names are modelling 
 **copied** from the FIELDS/ENTITIES sources, never invented. Generic type words are used
 (`string int decimal date datetime time boolean uuid enum object`). The candidate physical realisation is
 in [`06-physical-data-model.md`](06-physical-data-model.md), [`07-data-dictionary.md`](07-data-dictionary.md)
-and [`schema.sql`](schema.sql); `schema.sql` and the full seed were loaded and validated on PostgreSQL 16
-(all FK / CHECK / UNIQUE / EXCLUDE / trigger constraints pass — see [`05-review.md`](05-review.md)).
+and [`schema.sql`](schema.sql). A prior version was reportedly loaded on PostgreSQL 16; the current
+revision still needs a fresh engine run (see [`05-review.md`](05-review.md)).
 
 This revision applies the review punch-list (see `CHANGELOG_SUMMARY.md`): 47 relations (added
 `provider_version_documents`), `business_registration_number` moved onto the Provider **version**, enum
@@ -50,6 +50,7 @@ Natural key: permission_code
 |---|---|---|---|---|
 | role_code | string | Yes | PK FK→roles | AUT §6 |
 | permission_code | string | Yes | PK FK→permissions | AUT §6 |
+| admin_type | enum[HDT, UBND] | No | subtype scope; NULL means all users of role | F-AUTH-16; F-EXPLORE-18 |
 
 Natural key: role_code, permission_code
 
@@ -252,6 +253,8 @@ Natural key: registration_request_id, version_no, file_id
 | updated_at | datetime | Yes | — | F-AUTH-04; F-PROFILE-01/02 |
 
 Natural key: user_id
+
+For the MVP, `agency_profiles.user_id` is the sole Agency Owner account authorized to edit that Agency's profile through F-PROFILE-02. Staff delegation is outside scope; no second owner relation is implied.
 
 ### `agency_major_change_requests`
 
@@ -555,11 +558,11 @@ Natural key: surrogate interaction_id
 
 | Column | Type (as declared) | Required | Key | Citation |
 |---|---|---|---|---|
-| version_id | uuid | Yes | PK | F-EXPLORE-15/17; Q-12 |
-| parameter_map | object (json) | Yes | — | F-EXPLORE-15/17; Q-12 |
-| tuning_log | string | No | — | F-EXPLORE-15/17; Q-12 |
-| version_status | enum[Draft, Active, Retired] | Yes | — | F-EXPLORE-15/17; Q-12 |
-| created_at | datetime | Yes | — | F-EXPLORE-15/17; Q-12 |
+| version_id | uuid | Yes | PK | F-EXPLORE-15/17/18 |
+| parameter_map | object (json) | Yes | — | F-EXPLORE-15/17/18 |
+| tuning_log | string | No | — | F-EXPLORE-15/17/18 |
+| version_status | enum[Draft, Active, Retired] | Yes | — | F-EXPLORE-15/17/18 |
+| created_at | datetime | Yes | — | F-EXPLORE-15/17/18 |
 
 Natural key: surrogate version_id
 
@@ -590,7 +593,7 @@ Natural key: surrogate assessment_id
 | duration_minutes | int | Yes | — | F-SCHED-03..07 |
 | group_size | int | Yes | — | F-SCHED-03..07 |
 | agreed_price_total | decimal | Yes | — | F-SCHED-03..07 |
-| conditions_snapshot | object (json) | Yes | — | F-SCHED-03..07 |
+| conditions_snapshot | object (json: required `notice_period_hours` integer ≥ 0 and nonempty `cancellation_policy` object) | Yes | — | F-SCHED-03..07; BKG BR-020 |
 | status | enum[On hold, Booked, Completed, Cancelled] | Yes | — | F-SCHED-03..07 |
 | created_at | datetime | Yes | — | F-SCHED-03..07 |
 | updated_at | datetime | Yes | — | F-SCHED-03..07 |
@@ -1041,6 +1044,7 @@ erDiagram
     ROLE_PERMISSION {
         string role_code PK
         string permission_code PK
+        string admin_type "optional HDT/UBND scope"
     }
     SESSION {
         uuid session_id PK

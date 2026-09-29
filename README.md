@@ -1,12 +1,40 @@
-# DBIZ3 Session 6 starter kit
+# Hanoi Artisan Bridge
 
-Copy these files into the root of your team repository (Setup Guide, Part C2).
+Hanoi Artisan Bridge is a responsive web platform that connects Tour Agencies with verified Local Providers offering craft-village experiences. It supports discovery, AI-assisted matching, contextual communication, Booking management and scoped public-sector monitoring for Hanoi Department of Tourism and UBND administrators.
 
-- `AGENTS.md`: the agent contract. Fill in every `<...>` before the first commit.
-- `.gitignore`: keeps secrets (`.env`) and machine files out of Git.
-- `.gitattributes`: stores text files with LF line endings, so macOS and Windows teammates do not create false conflicts.
-- `tools/check_env.py`: environment check. Run `uv run tools/check_env.py` (add `--repo` inside the repository, `--path A` if you use Claude Code).
-- `docs/spec/`: put the Session 4 Spec Document here as `spec-document.md`.
-- `data/`: put the Session 5 data package here.
+The current MVP scope, priorities and business decisions are defined in [docs/prd.md](docs/prd.md). The Function List and module specifications are the authoritative detail for individual functions.
 
-The always-on Antigravity rule is not included on purpose: create it in the IDE (Setup Guide, Part C6) so its activation mode is stored correctly.
+## Repository map
+
+| Path | Content |
+| --- | --- |
+| [docs/prd.md](docs/prd.md) | Product requirements and MVP MoSCoW scope |
+| [docs/spec/](docs/spec/) | Function List, architecture, module specifications, traceability and screen specifications |
+| [data/](data/) | Canonical data model, ERDs, PostgreSQL schema, seed data and validation scripts |
+| [AGENTS.md](AGENTS.md) | Instructions and safe commands for AI coding agents |
+| [tools/](tools/) | Repository environment checks |
+| [GITHUB_GUIDE_VI.md](GITHUB_GUIDE_VI.md) | Vietnamese Git and GitHub guide for team members |
+
+## Quick checks
+
+Run these commands from the repository root:
+
+```powershell
+python tools/check_env.py --repo
+python data/scripts/generate_seed.py
+python data/scripts/validate_seed.py
+git status
+```
+
+The seed package contains synthetic data only. Do not commit real personal data, passwords, API keys, tokens or `.env` files.
+
+## Database package
+
+The database source of truth is [data/README.md](data/README.md). It documents the logical model, physical PostgreSQL candidate, ERDs, seed-generation command and validation command. A live PostgreSQL load is optional for local development but required before claiming database-engine validation.
+
+## Current project conventions
+
+- Canonical Booking statuses: `On hold`, `Booked`, `Completed`, `Cancelled`.
+- `ADMIN` is the role; `HDT` and `UBND` are its authorized subtypes.
+- Village is seeded reference data in the MVP. Provider profile verification, not Village verification, determines public eligibility.
+- Do not change requirements, data or shared specs without human approval and a documented consistency review.

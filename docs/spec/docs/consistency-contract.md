@@ -28,7 +28,7 @@ Admin is ONE actor. Its stored role is ADMIN and admin_type is HDT or UBND. HDT_
 | Chat | No | No | With Provider; direct initiation allowed | With Agency; existing Quote/Booking context required |
 | My Account/Change Password | Own account | Own account | Own account | Own account |
 
-F-AUTH-16 checks both action and resource scope on every protected request. No free-form role checkboxes grant unspecified permissions. Screens do not introduce a Director-only or creator-only hierarchy. Agency Owner is an authorization flag already required by F-PROFILE-02; staff onboarding and delegation are outside this revision.
+F-AUTH-16 checks both action and resource scope on every protected request. No free-form role checkboxes grant unspecified permissions. Screens do not introduce a Director-only or creator-only hierarchy. In MVP, `agency_profiles.user_id` identifies the single Agency Owner; F-PROFILE-02 requires both `manage_profile` and this exact ownership match. Staff onboarding and delegation are outside this revision. `role_permissions.admin_type=HDT` scopes `manage_rankings` on the shared ADMIN role; a NULL subtype applies to all users of that role. Effective permission requires matching role and, when present, matching admin subtype. UBND cannot create or activate ranking versions.
 
 ## Authentication and navigation
 
@@ -101,7 +101,7 @@ Build the current Tour Preference Profile before retrieving/ranking candidates. 
 
 Implicit preference thresholds follow F-EXPLORE-08. Retention30d and quality formula50% relevance/30% click/20% strong action are shared definitions. Daily aggregation differs from weekly/monthly tuning evaluation. Proposed algorithm version requires human approval before deployment. Book/Schedule are not preference signals. AIT/EXP share preference and decay rather than double-counting separate copies.
 
-Ranking parameter versions use Draft / Active / Retired. F-EXPLORE-17 creates a Draft version. Human approval atomically promotes that Draft to Active and retires the previously Active version; an unapproved Draft is never used by F-EXPLORE-10. Exact tie-break/missing-factor scoring and the approver UI remain documented design questions; no undocumented admin capability is created.
+Ranking parameter versions use Draft / Active / Retired. F-EXPLORE-17 proposes a Draft from the learning loop; HDT_Admin may also create a Draft manually. F-EXPLORE-18 is the only activation path: HDT_Admin selects a Draft and atomically promotes it to Active while retiring the previously Active version. Every create/activate action records actor, time, reason and affected version IDs in audit_logs. UBND_Admin has read-only monitoring access and cannot change ranking. F-EXPLORE-10 uses only the Active version. The MVP tunes ranking parameters; it does not retrain an AI model. The exact tie-break and missing-factor scoring rules remain a separate design question.
 
 ## Dashboard
 

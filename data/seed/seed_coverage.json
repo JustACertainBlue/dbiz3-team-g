@@ -22,7 +22,7 @@
   {
     "entity": "role_permissions",
     "csv_file": "role_permissions.csv",
-    "row_count": 10,
+    "row_count": 12,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
@@ -402,7 +402,7 @@
   {
     "entity": "booking_status_history",
     "csv_file": "booking_status_history.csv",
-    "row_count": 8,
+    "row_count": 17,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
@@ -462,7 +462,7 @@
   {
     "entity": "audit_logs",
     "csv_file": "audit_logs.csv",
-    "row_count": 8,
+    "row_count": 9,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "system event has empty actor_user_id",

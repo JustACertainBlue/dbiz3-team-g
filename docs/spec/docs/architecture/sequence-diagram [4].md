@@ -241,7 +241,7 @@ sequenceDiagram
     Worker->>DB: Daily F-EXPLORE-13 aggregation, retention30d
     Worker->>API: Weekly/monthly KPI evaluation and proposed tuning version
     API->>DB: Save Draft ranking-parameter version
-    Note over API,DB: Human approval promotes Draft to Active and retires prior Active; no auto-activation
+    Note over API,DB: HDT_Admin uses F-EXPLORE-18 to activate Draft and retire prior Active; audit required
 ```
 
 ## BKG

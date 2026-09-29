@@ -1,6 +1,6 @@
 # Traceability Matrix
 
-Generated from current course Use Case table, Function List and explicit Screen Linked Requirements. Module §3 contains user scenarios plus named consistency acceptance examples; §5/5.1 is the exact FR/IO contract. Supporting functions need not have their own screen or new UC. Human approval is pending.
+Generated from current course Use Case table, Function List and explicit Screen Linked Requirements. Module §3 contains user scenarios plus named consistency acceptance examples; §5/5.1 is the exact FR/IO contract. Supporting functions need not have their own screen or new UC. Human approval of the overall specification is pending; HDT ranking activation is specified in F-EXPLORE-18.
 
 | Function | Actor | Use Case | Module FR | Screen / supporting context | Acceptance evidence |
 |---|---|---|---|---|---|
@@ -67,6 +67,7 @@ Generated from current course Use Case table, Function List and explicit Screen 
 | F-EXPLORE-15 | System | UC-DIS-02 | [EXP FR-015](../specs/spec-EXP.md) | EXP017 | EXP §3; related examples: AC-EXP-GUEST, AC-EXP-QUOTE, AC-EXP-CONSENT, AC-EXP-VERSION |
 | F-EXPLORE-16 | System | UC-DIS-02 | [EXP FR-016](../specs/spec-EXP.md) | EXP017 | EXP §3; related examples: AC-EXP-GUEST, AC-EXP-QUOTE, AC-EXP-CONSENT, AC-EXP-VERSION |
 | F-EXPLORE-17 | System | UC-DIS-02 | [EXP FR-017](../specs/spec-EXP.md) | EXP017 | EXP §3; related examples: AC-EXP-GUEST, AC-EXP-QUOTE, AC-EXP-CONSENT, AC-EXP-VERSION |
+| F-EXPLORE-18 | Admin HDT | UC-ADM-02 | [EXP FR-018](../specs/spec-EXP.md) | ADM147 | EXP §3; activation must be atomic and audited; UBND denied |
 | F-SCHED-01 | Tour Agency / Local Provider | UC-BOOK-01 | [BKG FR-001](../specs/spec-BKG.md) | DSH018, SCH139, SCH140 | BKG §3; related examples: AC-BKG-HOLD, AC-BKG-RACE, AC-BKG-EXPIRY, AC-BKG-HOURS, AC-BKG-COMPLETE |
 | F-SCHED-02 | Tour Agency | UC-BOOK-01 | [BKG FR-002](../specs/spec-BKG.md) | BKG137, SCH141 | BKG §3; related examples: AC-BKG-HOLD, AC-BKG-RACE, AC-BKG-EXPIRY, AC-BKG-HOURS, AC-BKG-COMPLETE |
 | F-SCHED-03 | Local Provider | UC-BOOK-04 | [BKG FR-003](../specs/spec-BKG.md) | BKG134 | BKG §3; related examples: AC-BKG-HOLD, AC-BKG-RACE, AC-BKG-EXPIRY, AC-BKG-HOURS, AC-BKG-COMPLETE |

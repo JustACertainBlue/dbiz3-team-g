@@ -1,0 +1,13 @@
+role_code,permission_code,admin_type
+ADMIN,manage_rankings,HDT
+ADMIN,manage_users,
+ADMIN,review_agencies,
+ADMIN,review_providers,
+ADMIN,view_dashboard,
+Local_Provider,manage_bookings,
+Local_Provider,manage_experiences,
+Local_Provider,manage_profile,
+Local_Provider,use_chat,
+Tour_Agency,manage_profile,
+Tour_Agency,use_chat,
+Tour_Agency,use_matching,

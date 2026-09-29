@@ -1,6 +1,6 @@
 # 07 — Physical data dictionary
 
-PostgreSQL 16 candidate, generated from [`schema.sql`](schema.sql) (which loads and validates with the full seed).
+PostgreSQL 16 candidate, generated from [`schema.sql`](schema.sql). The current revision needs a fresh live-engine load.
 `PK`/`FK`/`UQ`/`NN` = primary key / foreign key / unique / not null; `?` = nullable. Full CHECK/EXCLUDE/trigger
 definitions are authoritative in `schema.sql`.
 
@@ -25,6 +25,7 @@ definitions are authoritative in `schema.sql`.
 |---|---|---|---|
 | `role_code` | varchar(32) | NN | PK, FK→roles |
 | `permission_code` | varchar(80) | NN | PK, FK→permissions |
+| `admin_type` | varchar(8) | ? | HDT/UBND scope; NULL means all users of role |
 
 ## `villages`
 
@@ -587,4 +588,3 @@ definitions are authoritative in `schema.sql`.
 | `target_id` | uuid | ? |  |
 | `occurred_at` | timestamptz | NN |  |
 | `change_or_result` | jsonb | ? |  |
-

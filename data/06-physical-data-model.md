@@ -1,6 +1,6 @@
 # 06 — PostgreSQL candidate physical model
 
-The current [System Configuration](../docs/architecture/system%20configuration.md) proposes PostgreSQL, so this package uses PostgreSQL 16 syntax as a reviewable physical candidate. The later Plan step may change the DBMS. Business identity, cardinality and lifecycle remain governed by the approved conceptual/logical model.
+The current [System Configuration](../docs/spec/docs/architecture/system%20configuration.md) proposes PostgreSQL, so this package uses PostgreSQL 16 syntax as a reviewable physical candidate. The later Plan step may change the DBMS. Business identity, cardinality and lifecycle remain governed by the approved conceptual/logical model.
 
 ## Table groups
 
@@ -22,7 +22,8 @@ The current [System Configuration](../docs/architecture/system%20configuration.m
 - `btree_gist` supports an exclusion constraint preventing overlapping On hold/Booked Bookings for one Provider. Atomic write logic must still surface a friendly Slot Unavailable result.
 - File bytes stay in private object storage. `stored_files.storage_key` is unique; registration/chat/profile link tables enforce context-specific access.
 - Partial unique indexes enforce one active Chat per Agency–Provider, one pending Agency major change, one editable/submitted Provider version and one published Provider version.
-- Transaction records freeze `agreed_price_total`, `conditions_snapshot`, start, duration and group size. Experience edits never rewrite Booking history.
+- Transaction records preserve `agreed_price_total`, `conditions_snapshot`, start, duration and group size. Booking details may change only through F-SCHED-04; Experience edits never rewrite Booking history. `end_at` is constrained to equal `start_at + duration_minutes`, and the snapshot requires `notice_period_hours` plus `cancellation_policy`.
+- F-SCHED-03/05/06 and the expiry worker must write Booking status, `updated_at` and one history row in the same transaction. Provider eligibility is checked at creation; historical Bookings remain after later Provider status changes.
 - Status history supports dashboard as-of calculations. `account_status_history` is the provisional implementation of approved recommendation Q-08.
 
 ## Migration order

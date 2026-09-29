@@ -77,7 +77,7 @@ Shared avatar navigation for authenticated actors: My Account → ACC129; My Bus
 
 - Smallest supported width: 360px
 - What collapses or stacks on a narrow screen: the 3 stat cards stack to a single column; the "Today's Schedule" / "Platform Capacity & SLA" two-column layout stacks; the quote table becomes horizontally scrollable within its own container.
-- Text that must remain readable (contrast, minimum size): status badges ("Completed," "Waiting for Arrival," "Needs Quote," "Booked") must be distinguishable by more than color alone (icon + label, as shown).
+- Text that must remain readable (contrast, minimum size): Booking status badges use only the canonical statuses ("On hold," "Booked," "Completed," "Cancelled") and must be distinguishable by more than color alone (icon + label). Action cues that prompt the Provider (e.g. an "arrival due" or "new quote" chip) are shown as separate "action-required" chips derived from F-SCHED-10 `requires_action`, not as Booking statuses.
 
 ## 9. Decisions and review
 

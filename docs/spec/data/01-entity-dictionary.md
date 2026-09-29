@@ -51,6 +51,7 @@ with a design guess.
 | Provider Profile | Local Provider business data, verification state and published version pointer. | THING | PRF | provider, artisan business | F-PROFILE-03–05 |
 | Provider Profile Version | Editable/submitted/last-published content snapshot for Provider verification. | EVENT | PRF | profile revision | F-PROFILE-04/05 |
 | Provider Verification Review | One UBND decision on a Provider profile version. | EVENT | PRF | verification decision | F-PROFILE-05 |
+| Provider Version Document | Supporting document (e.g. business registration certificate) attached to a Provider version. | THING | PRF | provider legal doc | F-PROFILE-04/05 |
 | Provider Operating Hours | Recurring weekly local windows that feed availability calculation. | THING | PRF | working hours, opening hours | F-PROFILE-04; F-SCHED-09 |
 | Experience | Provider-owned experience with pricing, capacity, location and booking policy. | THING | PRF | activity, offering | F-PROFILE-06 |
 | Profile/Experience Media | Media reference plus category and its single owner (Agency / Provider / Experience). | THING | PRF | image, photo, gallery item | F-PROFILE-02/04/06 |

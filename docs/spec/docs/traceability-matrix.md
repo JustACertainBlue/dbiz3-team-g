@@ -21,17 +21,17 @@ Generated from current course Use Case table, Function List and explicit Screen 
 | F-AUTH-15 | System | UC-ACC-02 | [AUT FR-015](../specs/spec-AUT.md) | AUT009 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
 | F-AUTH-16 | System | UC-ACC-09 | [AUT FR-016](../specs/spec-AUT.md) | Supporting authorization/automation for linked UC; no dedicated screen | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
 | F-AUTH-17 | System | UC-ACC-02 | [AUT FR-017](../specs/spec-AUT.md) | AUT009 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
-| F-AUTH-18 | Admin HDT | UC-ACC-06 | [AUT FR-018](../specs/spec-AUT.md) | VER119, VER146 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
+| F-AUTH-18 | Admin HDT | UC-ACC-06 | [AUT FR-018](../specs/spec-AUT.md) | VER146 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
 | F-AUTH-19 | Admin HDT | UC-ACC-07 | [AUT FR-019](../specs/spec-AUT.md) | ADM117 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
 | F-AUTH-20 | Admin UBND | UC-ACC-08 | [AUT FR-020](../specs/spec-AUT.md) | ADM117 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
-| F-AUTH-21 | Admin HDT/UBND | UC-ACC-09 | [AUT FR-021](../specs/spec-AUT.md) | ADM095, ADM145 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
+| F-AUTH-21 | Admin HDT/UBND | UC-ACC-09 | [AUT FR-021](../specs/spec-AUT.md) | ADM095, ADM145, VER119 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
 | F-AUTH-22 | Admin HDT/UBND | UC-ACC-09 | [AUT FR-022](../specs/spec-AUT.md) | ADM095, ADM118 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
 | F-AUTH-23 | Guest | UC-ACC-01 | [AUT FR-023](../specs/spec-AUT.md) | REG115 | AUT §3; related examples: AC-AUT-OTP, AC-AUT-SESSION, AC-AUT-PERSONAL, AC-AUT-ROUTING |
 | F-PROFILE-01 | Member / Guest | UC-PRO-01, UC-PRO-02 | [PRF FR-001](../specs/spec-PRF.md) | PRF019 | PRF §3; related examples: AC-PRF-DRAFT, AC-PRF-REVISION, AC-PRF-LOCK, AC-PRF-DELETE |
 | F-PROFILE-02 | Tour Agency | UC-PRO-01 | [PRF FR-002](../specs/spec-PRF.md) | PRF021 | PRF §3; related examples: AC-PRF-DRAFT, AC-PRF-REVISION, AC-PRF-LOCK, AC-PRF-DELETE |
 | F-PROFILE-03 | Member / Guest | UC-PRO-03, UC-PRO-04 | [PRF FR-003](../specs/spec-PRF.md) | DSH018, EXP067, PRF127, VIL030 | PRF §3; related examples: AC-PRF-DRAFT, AC-PRF-REVISION, AC-PRF-LOCK, AC-PRF-DELETE |
 | F-PROFILE-04 | Local Provider | UC-PRO-04 | [PRF FR-004](../specs/spec-PRF.md) | PRF128 | PRF §3; related examples: AC-PRF-DRAFT, AC-PRF-REVISION, AC-PRF-LOCK, AC-PRF-DELETE |
-| F-PROFILE-05 | Admin UBND | UC-PRO-06 | [PRF FR-005](../specs/spec-PRF.md) | VER119, VER146 | PRF §3; related examples: AC-PRF-DRAFT, AC-PRF-REVISION, AC-PRF-LOCK, AC-PRF-DELETE |
+| F-PROFILE-05 | Admin UBND | UC-PRO-06 | [PRF FR-005](../specs/spec-PRF.md) | VER146 | PRF §3; related examples: AC-PRF-DRAFT, AC-PRF-REVISION, AC-PRF-LOCK, AC-PRF-DELETE |
 | F-PROFILE-06 | Local Provider | UC-PRO-05 | [PRF FR-006](../specs/spec-PRF.md) | EXP067, EXP068, EXP069, EXP070, EXP132 | PRF §3; related examples: AC-PRF-DRAFT, AC-PRF-REVISION, AC-PRF-LOCK, AC-PRF-DELETE |
 | F-PROFILE-07 | Local Provider / System | UC-PRO-04, UC-PRO-05 | [PRF FR-007](../specs/spec-PRF.md) | EXP069, EXP070, PRF128 | PRF §3; related examples: AC-PRF-DRAFT, AC-PRF-REVISION, AC-PRF-LOCK, AC-PRF-DELETE |
 | F-MATCH-01 | Tour Agency / Guest | UC-DIS-05 | [AIT FR-001](../specs/spec-AIT.md) | AIT121 | AIT §3; related examples: AC-AIT-ORDER, AC-AIT-FAIL, AC-AIT-CLARIFY |

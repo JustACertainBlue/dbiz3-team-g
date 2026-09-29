@@ -77,10 +77,25 @@ question visible.
 | `01-entity-dictionary.md` | S1 | Reshaped to prompt.md contract (Entities / Implied / Conflicts / Open questions). |
 | `02-crud-matrix.md` | S2 | Converted to long form (321 interaction rows) + coverage + anomalies. |
 | `03-erd.mmd` | S3 | Conceptual ERD; 60 relationships each with forward/reverse sentence + citation. |
-| `04-data-model.md` | S4 | 46 relations with columns/type/required/key/citation; embedded diagram matches 03 byte-for-byte (verified). |
+| `04-data-model.md` | S4 | 47 relations with columns/type/required/key/citation; embedded diagram matches 03 byte-for-byte (67 relationships, verified). |
 | `05-review.md` | S6 | This file. |
-| `seed/*.csv` | S5 | Exactly 46/46 entity CSVs; per-entity evidence in `seed_coverage.json`; 666 non-null FK references verified, 0 violations; one documented Role-domain row-count exception. |
-| `06-physical-data-model.md`, `07-data-dictionary.md`, `08-physical-erd.mmd`, `schema.sql` | (supplementary) | PostgreSQL candidate retained outside the required 01–05 + seed submission set. |
+| `seed/*.csv` | S5 | 47/47 entity CSVs; per-entity evidence in `seed_coverage.json`; loaded into PostgreSQL 16 with every FK / CHECK / UNIQUE / EXCLUDE / trigger enforced — 0 violations. |
+| `06-physical-data-model.md`, `07-data-dictionary.md`, `08-physical-erd.mmd`, `schema.sql` | (supplementary) | PostgreSQL candidate; `schema.sql` verified to create cleanly and load the seed on PostgreSQL 16. |
+
+## Executable validation (2026-09-29)
+
+`schema.sql` and all 47 seed CSVs were loaded into a live PostgreSQL 16 instance. Results: the schema
+creates cleanly (47 tables) and the full seed loads under one transaction with every referential,
+CHECK, partial-unique, GiST **EXCLUDE** (no overlapping On hold/Booked bookings) and **trigger**
+(Closed-chat immutability, `group_size <= max_participants`) constraint enforced by the engine — 0
+violations. Negative tests confirmed the new guards actively reject an overlapping booking, an
+over-capacity group size, and a message posted after a chat was closed.
+
+Two pre-existing `schema.sql` defects were found and fixed during this validation (they had never been
+run on a real engine before): the `bookings` overlap EXCLUDE used `start_at + interval` — only STABLE,
+not IMMUTABLE, so PostgreSQL rejected it; it now excludes on a plain `end_at` column. The booking↔chat
+foreign keys form a cycle and are now `DEFERRABLE INITIALLY DEFERRED` so the seed loads in one
+transaction.
 
 ## Human gate
 

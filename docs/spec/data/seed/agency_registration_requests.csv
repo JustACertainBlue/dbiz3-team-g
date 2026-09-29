@@ -1,11 +1,11 @@
 registration_request_id,email,pending_password_hash,current_status,agency_user_id,current_version_no,created_at,updated_at
-4bbf44e8-604d-5b3e-b1bd-324091eea2fb,doanhnghiep6@example.invalid,$2b$12$pending05giuChoDuDoDai,Approved,242e10ad-ff4d-5aa3-a3be-9e3f6d710235,1,2026-09-02T08:00:00+07:00,2026-09-14T08:00:00+07:00
-5a7bc99a-7afb-5178-8f93-5afbe0bf4d45,doanhnghiep7@example.invalid,$2b$12$pending06giuChoDuDoDai,Approved,fbf87ace-4c0c-5328-8a89-ef827480c778,1,2026-09-03T08:00:00+07:00,2026-09-15T08:00:00+07:00
-71b447ee-90e3-517d-8002-e6cc70bbd445,doanhnghiep4@example.invalid,$2b$12$pending03giuChoDuDoDai,Approved,29251258-a536-5808-a0b9-73d113cf81d9,1,2026-09-05T08:00:00+07:00,2026-09-17T08:00:00+07:00
-73486519-b01f-5ad7-b0e4-71af96acfc21,doanhnghiep1@example.invalid,$2b$12$pending00giuChoDuDoDai,Approved,1982c065-3ebc-5628-a4ae-413427aeba5a,1,2026-09-02T08:00:00+07:00,2026-09-14T08:00:00+07:00
-7848ba81-2436-58fb-95c6-eb49f9026fe6,doanhnghiep5@example.invalid,$2b$12$pending04giuChoDuDoDai,Approved,c98ef93a-456d-58e2-8848-da451cd8664f,1,2026-09-06T08:00:00+07:00,2026-09-18T08:00:00+07:00
-923278a2-34d2-56c3-b7be-4de621b58f9f,doanhnghiep8@example.invalid,$2b$12$pending07giuChoDuDoDai,Approved,89e2e3e3-010d-547e-9874-b43685a5effd,1,2026-09-04T08:00:00+07:00,2026-09-16T08:00:00+07:00
+4bbf44e8-604d-5b3e-b1bd-324091eea2fb,doanhnghiep6@example.invalid,,Approved,242e10ad-ff4d-5aa3-a3be-9e3f6d710235,1,2026-09-02T08:00:00+07:00,2026-09-14T08:00:00+07:00
+5a7bc99a-7afb-5178-8f93-5afbe0bf4d45,doanhnghiep7@example.invalid,,Approved,fbf87ace-4c0c-5328-8a89-ef827480c778,1,2026-09-03T08:00:00+07:00,2026-09-15T08:00:00+07:00
+71b447ee-90e3-517d-8002-e6cc70bbd445,doanhnghiep4@example.invalid,,Approved,29251258-a536-5808-a0b9-73d113cf81d9,1,2026-09-05T08:00:00+07:00,2026-09-17T08:00:00+07:00
+73486519-b01f-5ad7-b0e4-71af96acfc21,doanhnghiep1@example.invalid,,Approved,1982c065-3ebc-5628-a4ae-413427aeba5a,1,2026-09-02T08:00:00+07:00,2026-09-14T08:00:00+07:00
+7848ba81-2436-58fb-95c6-eb49f9026fe6,doanhnghiep5@example.invalid,,Approved,c98ef93a-456d-58e2-8848-da451cd8664f,1,2026-09-06T08:00:00+07:00,2026-09-18T08:00:00+07:00
+923278a2-34d2-56c3-b7be-4de621b58f9f,doanhnghiep8@example.invalid,,Approved,89e2e3e3-010d-547e-9874-b43685a5effd,1,2026-09-04T08:00:00+07:00,2026-09-16T08:00:00+07:00
 94d3571b-86d0-5723-ba11-b2c186409c88,doanhnghiep9@example.invalid,$2b$12$pending08giuChoDuDoDai,Rejected,,1,2026-09-05T08:00:00+07:00,2026-09-17T08:00:00+07:00
-bc2c9f87-6038-5655-a829-6a9dbc0ab84a,doanhnghiep2@example.invalid,$2b$12$pending01giuChoDuDoDai,Approved,f67a438f-195f-5374-886e-3f5313d21ad9,1,2026-09-03T08:00:00+07:00,2026-09-15T08:00:00+07:00
-d963df9d-c687-5a0c-951f-f5d21c8f5f0c,doanhnghiep3@example.invalid,$2b$12$pending02giuChoDuDoDai,Approved,ac233721-7dd3-5466-941b-dc7d5d1b0bfa,1,2026-09-04T08:00:00+07:00,2026-09-16T08:00:00+07:00
+bc2c9f87-6038-5655-a829-6a9dbc0ab84a,doanhnghiep2@example.invalid,,Approved,f67a438f-195f-5374-886e-3f5313d21ad9,1,2026-09-03T08:00:00+07:00,2026-09-15T08:00:00+07:00
+d963df9d-c687-5a0c-951f-f5d21c8f5f0c,doanhnghiep3@example.invalid,,Approved,ac233721-7dd3-5466-941b-dc7d5d1b0bfa,1,2026-09-04T08:00:00+07:00,2026-09-16T08:00:00+07:00
 de27ec9e-bc10-5bc7-aff4-c30f4aa0c9a6,doanhnghiep10@example.invalid,$2b$12$pending09giuChoDuDoDai,Request More Information,,1,2026-09-06T08:00:00+07:00,2026-09-18T08:00:00+07:00

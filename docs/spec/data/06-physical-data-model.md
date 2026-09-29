@@ -1,4 +1,4 @@
-# 07 — PostgreSQL candidate physical model
+# 06 — PostgreSQL candidate physical model
 
 The current [System Configuration](../docs/architecture/system%20configuration.md) proposes PostgreSQL, so this package uses PostgreSQL 16 syntax as a reviewable physical candidate. The later Plan step may change the DBMS. Business identity, cardinality and lifecycle remain governed by the approved conceptual/logical model.
 

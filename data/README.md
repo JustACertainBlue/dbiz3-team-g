@@ -1,15 +1,11 @@
 # Hanoi Artisan Bridge — data package
 
-<<<<<<< HEAD
-The current Session 5 data package is temporarily located at [`docs/spec/data/`](../docs/spec/data/),as per teaching materials' requirements
-=======
 This is the repository's canonical database package. It contains the Session 5 data-model and
 synthetic-seed package, arranged to the `From Spec to Data Model` prompt-pack output contract
 (files `01`–`05` + `seed/`), with the PostgreSQL physical candidate kept alongside.
 Baseline requirements: the revised `docs/spec/` (Function List, consistency contract, seven module
 specs). Booking status enum is **On hold / Booked / Completed / Cancelled** ("Booked" is canonical).
 No real person's or business's records belong in seed data.
->>>>>>> 2c879b0 (Update project files)
 
 This revision applies the review punch-list (see `CHANGELOG_SUMMARY.md`): **47 tables/entities**.
 The previous schema/seed revision was reported as loaded on PostgreSQL 16. The current revision passes

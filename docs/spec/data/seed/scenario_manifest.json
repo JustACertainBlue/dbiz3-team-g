@@ -15,6 +15,11 @@
     "expected_result": "inactive catalog entry has no active experience"
   },
   {
+    "scenario_id": "draft-provider",
+    "fixture": "c8e989d4-88be-5b00-8382-a41177c4c16d",
+    "expected_result": "Draft version with null required fields; no published version/document"
+  },
+  {
     "scenario_id": "exception-cancelled",
     "fixture": "f55711e1-d354-5c03-a8b3-466ace045472",
     "expected_result": "terminal historical booking"

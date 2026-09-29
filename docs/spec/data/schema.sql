@@ -1,5 +1,6 @@
 -- Hanoi Artisan Bridge — PostgreSQL candidate schema
 -- Derived from docs/spec and data/model. PostgreSQL choice remains subject to Plan.
+-- Review fixes applied 2026-09-29 (see CHANGELOG_SUMMARY.md §"Áp lỗi lần 2").
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -41,8 +42,9 @@ CREATE TABLE user_accounts (
     full_name varchar(100) NOT NULL,
     title varchar(120),
     phone varchar(16),
-    avatar_storage_key text,
+    avatar_file_id uuid,
     must_change_password boolean NOT NULL DEFAULT false,
+    password_changed_at timestamptz,
     last_login timestamptz,
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL,
@@ -85,6 +87,7 @@ CREATE TABLE sessions (
     session_id uuid PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES user_accounts(user_id) ON DELETE RESTRICT,
     role_context varchar(32) NOT NULL,
+    token_hash text,
     expires_at timestamptz NOT NULL,
     revoked_at timestamptz,
     created_at timestamptz NOT NULL,
@@ -108,7 +111,7 @@ CREATE TABLE password_reset_tokens (
 CREATE TABLE agency_registration_requests (
     registration_request_id uuid PRIMARY KEY,
     email varchar(254) NOT NULL,
-    pending_password_hash text NOT NULL,
+    pending_password_hash text,
     current_status varchar(32) NOT NULL,
     agency_user_id uuid UNIQUE REFERENCES user_accounts(user_id) ON DELETE RESTRICT,
     current_version_no integer NOT NULL DEFAULT 0,
@@ -187,9 +190,18 @@ CREATE TABLE stored_files (
     file_name varchar(255) NOT NULL,
     media_type varchar(100) NOT NULL,
     file_size_bytes bigint NOT NULL,
+    width_px integer,
+    height_px integer,
     uploaded_by uuid REFERENCES user_accounts(user_id) ON DELETE RESTRICT,
     created_at timestamptz NOT NULL,
-    CONSTRAINT stored_file_size_chk CHECK (file_size_bytes > 0 AND file_size_bytes <= 10485760)
+    CONSTRAINT stored_file_size_chk CHECK (file_size_bytes > 0 AND file_size_bytes <= 10485760),
+    CONSTRAINT stored_file_dim_chk CHECK (
+        (width_px IS NULL AND height_px IS NULL) OR (width_px > 0 AND height_px > 0)
+    ),
+    -- BR-008: an image must be at least 1280x720 (consistency contract §Shared field)
+    CONSTRAINT stored_file_image_minsize_chk CHECK (
+        media_type NOT LIKE 'image/%' OR (width_px >= 1280 AND height_px >= 720)
+    )
 );
 
 CREATE TABLE registration_documents (
@@ -199,7 +211,10 @@ CREATE TABLE registration_documents (
     document_type varchar(80) NOT NULL,
     PRIMARY KEY (registration_request_id, version_no, file_id),
     FOREIGN KEY (registration_request_id, version_no)
-        REFERENCES registration_submission_versions(registration_request_id, version_no) ON DELETE RESTRICT
+        REFERENCES registration_submission_versions(registration_request_id, version_no) ON DELETE RESTRICT,
+    CONSTRAINT registration_document_type_chk CHECK (
+        document_type IN ('Business Registration Certificate', 'Travel Service Business License', 'Other')
+    )
 );
 
 CREATE TABLE agency_profiles (
@@ -216,6 +231,7 @@ CREATE TABLE agency_profiles (
     tour_types jsonb NOT NULL,
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL,
+    CONSTRAINT agency_company_type_chk CHECK (company_type IN ('Travel Agency', 'Tour Operator', 'TMC')),
     CONSTRAINT agency_tax_chk CHECK (tax_id ~ '^([0-9]{10}|[0-9]{13})$'),
     CONSTRAINT agency_team_size_chk CHECK (team_size > 0),
     CONSTRAINT agency_updated_chk CHECK (updated_at >= created_at)
@@ -260,14 +276,15 @@ CREATE TABLE agency_review_records (
     CONSTRAINT agency_review_decision_chk CHECK (decision IN ('Approve', 'Request More Information', 'Reject')),
     CONSTRAINT agency_review_comment_chk CHECK (decision = 'Approve' OR comments IS NOT NULL),
     FOREIGN KEY (registration_request_id, registration_version_no)
-        REFERENCES registration_submission_versions(registration_request_id, version_no) ON DELETE RESTRICT
+        REFERENCES registration_submission_versions(registration_request_id, version_no) ON DELETE RESTRICT,
+    -- B12: at most one review per submitted subject
+    CONSTRAINT agency_review_reg_subject_uq UNIQUE (registration_request_id, registration_version_no)
 );
 
 CREATE TABLE provider_profiles (
     provider_id uuid PRIMARY KEY,
     user_id uuid NOT NULL UNIQUE REFERENCES user_accounts(user_id) ON DELETE RESTRICT,
     village_id uuid NOT NULL REFERENCES villages(village_id) ON DELETE RESTRICT,
-    business_registration_number varchar(80) NOT NULL,
     current_version_no integer,
     published_version_no integer,
     verification_status varchar(32) NOT NULL,
@@ -281,26 +298,38 @@ CREATE TABLE provider_profiles (
     CONSTRAINT provider_updated_chk CHECK (updated_at >= created_at)
 );
 
-CREATE UNIQUE INDEX provider_registration_number_uq ON provider_profiles (business_registration_number);
 CREATE INDEX provider_profiles_village_idx ON provider_profiles (village_id);
 
 CREATE TABLE provider_profile_versions (
     provider_id uuid NOT NULL REFERENCES provider_profiles(provider_id) ON DELETE RESTRICT,
     version_no integer NOT NULL,
     version_status varchar(32) NOT NULL,
-    business_name varchar(255) NOT NULL,
-    craft_type varchar(120) NOT NULL,
-    artisan_names jsonb NOT NULL,
-    location_address text NOT NULL,
+    -- A4: business_registration_number is a versioned major field (moved here from provider_profiles)
+    business_registration_number varchar(80),
+    business_name varchar(255),
+    craft_type varchar(120),
+    artisan_names jsonb,
+    location_address text,
     description text,
-    contact_information jsonb NOT NULL,
+    contact_information jsonb,
     booking_conditions jsonb,
     submitted_at timestamptz,
     published_at timestamptz,
     PRIMARY KEY (provider_id, version_no),
     CONSTRAINT provider_version_no_chk CHECK (version_no > 0),
     CONSTRAINT provider_version_status_chk CHECK (version_status IN ('Draft', 'Pending Verification', 'Verified', 'Revision Required', 'Superseded')),
-    CONSTRAINT provider_artisan_names_chk CHECK (jsonb_typeof(artisan_names) = 'array'),
+    CONSTRAINT provider_craft_type_chk CHECK (craft_type IS NULL OR craft_type IN (
+        'Ceramics', 'Silk/Textile', 'Woodcarving', 'Food/Culinary', 'Metalwork', 'Paper/Painting', 'Other'
+    )),
+    CONSTRAINT provider_artisan_names_chk CHECK (artisan_names IS NULL OR jsonb_typeof(artisan_names) = 'array'),
+    -- A1: required-for-submission fields may be NULL only while Draft
+    CONSTRAINT provider_version_required_chk CHECK (
+        version_status = 'Draft' OR (
+            business_registration_number IS NOT NULL AND business_name IS NOT NULL AND
+            craft_type IS NOT NULL AND artisan_names IS NOT NULL AND
+            location_address IS NOT NULL AND contact_information IS NOT NULL
+        )
+    ),
     CONSTRAINT provider_publish_chk CHECK (
         (version_status IN ('Verified', 'Superseded') AND published_at IS NOT NULL) OR
         (version_status IN ('Draft', 'Pending Verification', 'Revision Required') AND published_at IS NULL)
@@ -314,6 +343,11 @@ CREATE UNIQUE INDEX provider_one_working_version_uq
 CREATE UNIQUE INDEX provider_one_published_version_uq
     ON provider_profile_versions (provider_id)
     WHERE version_status = 'Verified';
+
+-- A4: registration number unique across currently published/verified versions
+CREATE UNIQUE INDEX provider_registration_number_uq
+    ON provider_profile_versions (business_registration_number)
+    WHERE version_status IN ('Verified', 'Superseded');
 
 ALTER TABLE provider_profiles
     ADD CONSTRAINT provider_current_version_fk FOREIGN KEY (provider_id, current_version_no)
@@ -331,7 +365,22 @@ CREATE TABLE provider_verification_reviews (
     reviewed_at timestamptz NOT NULL,
     FOREIGN KEY (provider_id, version_no) REFERENCES provider_profile_versions(provider_id, version_no) ON DELETE RESTRICT,
     CONSTRAINT provider_review_decision_chk CHECK (decision IN ('Approve', 'Request Revision')),
-    CONSTRAINT provider_review_comment_chk CHECK (decision = 'Approve' OR revision_comments IS NOT NULL)
+    CONSTRAINT provider_review_comment_chk CHECK (decision = 'Approve' OR revision_comments IS NOT NULL),
+    -- B12: at most one review per (provider, version)
+    CONSTRAINT provider_review_subject_uq UNIQUE (provider_id, version_no)
+);
+
+-- A3: supporting documents (e.g. business registration certificate) for a Provider version
+CREATE TABLE provider_version_documents (
+    provider_id uuid NOT NULL,
+    version_no integer NOT NULL,
+    file_id uuid NOT NULL REFERENCES stored_files(file_id) ON DELETE RESTRICT,
+    document_type varchar(80) NOT NULL,
+    PRIMARY KEY (provider_id, version_no, file_id),
+    FOREIGN KEY (provider_id, version_no) REFERENCES provider_profile_versions(provider_id, version_no) ON DELETE RESTRICT,
+    CONSTRAINT provider_version_document_type_chk CHECK (
+        document_type IN ('Business Registration Certificate', 'Other')
+    )
 );
 
 CREATE TABLE provider_operating_hours (
@@ -369,6 +418,9 @@ CREATE TABLE experiences (
     archived_at timestamptz,
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL,
+    CONSTRAINT experience_category_chk CHECK (category IN (
+        'Workshop/Hands-on', 'Sightseeing', 'Culinary/Tasting', 'Cultural Show', 'Combo'
+    )),
     CONSTRAINT experience_duration_chk CHECK (duration_minutes > 0),
     CONSTRAINT experience_price_chk CHECK (price_per_person > 0),
     CONSTRAINT experience_capacity_chk CHECK (max_participants > 0),
@@ -379,9 +431,10 @@ CREATE TABLE experiences (
 
 CREATE INDEX experiences_provider_active_idx ON experiences (provider_id) WHERE archived_at IS NULL;
 
+-- D1: owned child rows cascade with a hard-deleted Experience.
 CREATE TABLE experience_discount_rules (
     rule_id uuid PRIMARY KEY,
-    experience_id uuid NOT NULL REFERENCES experiences(experience_id) ON DELETE RESTRICT,
+    experience_id uuid NOT NULL REFERENCES experiences(experience_id) ON DELETE CASCADE,
     rule_kind varchar(24) NOT NULL,
     pax_threshold integer NOT NULL,
     discount_percentage numeric(5,2) NOT NULL,
@@ -396,11 +449,15 @@ CREATE TABLE profile_media (
     file_id uuid NOT NULL REFERENCES stored_files(file_id) ON DELETE RESTRICT,
     agency_id uuid REFERENCES agency_profiles(agency_id) ON DELETE RESTRICT,
     provider_id uuid REFERENCES provider_profiles(provider_id) ON DELETE RESTRICT,
-    experience_id uuid REFERENCES experiences(experience_id) ON DELETE RESTRICT,
+    experience_id uuid REFERENCES experiences(experience_id) ON DELETE CASCADE,
     category varchar(80),
     display_order integer NOT NULL DEFAULT 0,
     CONSTRAINT profile_media_one_owner_chk CHECK (num_nonnulls(agency_id, provider_id, experience_id) = 1),
-    CONSTRAINT profile_media_order_chk CHECK (display_order >= 0)
+    CONSTRAINT profile_media_order_chk CHECK (display_order >= 0),
+    -- BR-009: each Experience image belongs to one of three required categories (NOT NULL for Experience media)
+    CONSTRAINT profile_media_exp_category_chk CHECK (
+        experience_id IS NULL OR category IN ('Activity', 'Space', 'Product')
+    )
 );
 
 CREATE TABLE provider_version_media (
@@ -411,13 +468,14 @@ CREATE TABLE provider_version_media (
     display_order integer NOT NULL DEFAULT 0,
     PRIMARY KEY (provider_id, version_no, file_id),
     FOREIGN KEY (provider_id, version_no) REFERENCES provider_profile_versions(provider_id, version_no) ON DELETE RESTRICT,
+    CONSTRAINT provider_version_media_category_chk CHECK (category IN ('Activity', 'Space', 'Product')),
     CONSTRAINT provider_version_media_order_chk CHECK (display_order >= 0)
 );
 
 CREATE TABLE ai_description_drafts (
     draft_id uuid PRIMARY KEY,
     provider_id uuid REFERENCES provider_profiles(provider_id) ON DELETE RESTRICT,
-    experience_id uuid REFERENCES experiences(experience_id) ON DELETE RESTRICT,
+    experience_id uuid REFERENCES experiences(experience_id) ON DELETE CASCADE,
     original_description text NOT NULL,
     refined_description_draft text NOT NULL,
     profile_context jsonb,
@@ -488,6 +546,11 @@ CREATE TABLE preference_signals (
     confidence_score numeric(4,3),
     base_weight numeric(8,5),
     captured_at timestamptz NOT NULL,
+    CONSTRAINT signal_type_chk CHECK (signal_type IN (
+        'Positive Experience Interest', 'Negative Experience Interest', 'Price Concern',
+        'Availability Concern', 'Capacity Concern', 'Route/Distance Concern',
+        'Experience Preference', 'Follow-up Intent'
+    )),
     CONSTRAINT signal_confidence_chk CHECK (confidence_score IS NULL OR confidence_score BETWEEN 0 AND 1),
     CONSTRAINT signal_weight_chk CHECK (base_weight IS NULL OR base_weight >= 0)
 );
@@ -497,8 +560,11 @@ CREATE TABLE quote_requests (
     agency_id uuid NOT NULL REFERENCES agency_profiles(agency_id) ON DELETE RESTRICT,
     experience_id uuid NOT NULL REFERENCES experiences(experience_id) ON DELETE RESTRICT,
     source varchar(24) NOT NULL,
+    matching_session_id uuid REFERENCES matching_sessions(matching_session_id) ON DELETE RESTRICT,
     created_at timestamptz NOT NULL,
     CONSTRAINT quote_source_chk CHECK (source IN ('Matching', 'Explore')),
+    -- A8: a Matching-sourced quote is linked to the originating matching session
+    CONSTRAINT quote_matching_link_chk CHECK (source <> 'Matching' OR matching_session_id IS NOT NULL),
     UNIQUE (agency_id, experience_id)
 );
 
@@ -549,10 +615,12 @@ CREATE TABLE ranking_quality_assessments (
     period_start date NOT NULL,
     period_end date NOT NULL,
     score numeric(5,2) NOT NULL,
-    assessment text NOT NULL,
+    assessment varchar(8) NOT NULL,
     kpi_values jsonb NOT NULL,
     CONSTRAINT ranking_period_chk CHECK (period_end >= period_start),
-    CONSTRAINT ranking_score_chk CHECK (score BETWEEN 0 AND 100)
+    CONSTRAINT ranking_score_chk CHECK (score BETWEEN 0 AND 100),
+    -- A10: assessment is the defined Good/Poor label, not free text
+    CONSTRAINT ranking_assessment_chk CHECK (assessment IN ('Good', 'Poor'))
 );
 
 CREATE TABLE bookings (
@@ -570,6 +638,9 @@ CREATE TABLE bookings (
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL,
     hold_expires_at timestamptz NOT NULL,
+    -- end_at is a plain (immutable) column set to start_at + duration by the application/seed.
+    -- timestamptz + interval is only STABLE, so it cannot appear inside a GiST exclusion/generated expression.
+    end_at timestamptz NOT NULL,
     arrival_at timestamptz,
     FOREIGN KEY (experience_id, provider_id) REFERENCES experiences(experience_id, provider_id) ON DELETE RESTRICT,
     CONSTRAINT booking_duration_chk CHECK (duration_minutes > 0),
@@ -578,16 +649,18 @@ CREATE TABLE bookings (
     CONSTRAINT booking_status_chk CHECK (status IN ('On hold', 'Booked', 'Completed', 'Cancelled')),
     CONSTRAINT booking_hold_expiry_chk CHECK (hold_expires_at = created_at + interval '72 hours'),
     CONSTRAINT booking_updated_chk CHECK (updated_at >= created_at),
+    CONSTRAINT booking_end_chk CHECK (end_at > start_at),
     CONSTRAINT booking_arrival_chk CHECK ((status = 'Completed' AND arrival_at IS NOT NULL AND arrival_at >= start_at) OR (status <> 'Completed' AND arrival_at IS NULL)),
     EXCLUDE USING gist (
         provider_id WITH =,
-        (tstzrange(start_at, start_at + duration_minutes * interval '1 minute', '[)')) WITH &&
+        tstzrange(start_at, end_at, '[)') WITH &&
     ) WHERE (status IN ('On hold', 'Booked'))
 );
 
 CREATE INDEX bookings_agency_start_idx ON bookings (agency_id, start_at);
 CREATE INDEX bookings_provider_start_idx ON bookings (provider_id, start_at);
 CREATE INDEX bookings_created_status_idx ON bookings (created_at, status);
+CREATE INDEX bookings_experience_idx ON bookings (experience_id);
 
 CREATE TABLE booking_status_history (
     history_id uuid PRIMARY KEY,
@@ -599,7 +672,9 @@ CREATE TABLE booking_status_history (
     reason text,
     CONSTRAINT booking_history_from_chk CHECK (from_status IS NULL OR from_status IN ('On hold', 'Booked', 'Completed', 'Cancelled')),
     CONSTRAINT booking_history_to_chk CHECK (to_status IN ('On hold', 'Booked', 'Completed', 'Cancelled')),
-    CONSTRAINT booking_history_change_chk CHECK (from_status IS NULL OR from_status <> to_status)
+    CONSTRAINT booking_history_change_chk CHECK (from_status IS NULL OR from_status <> to_status),
+    -- B5: a cancellation must record a reason
+    CONSTRAINT booking_history_reason_chk CHECK (to_status <> 'Cancelled' OR reason IS NOT NULL)
 );
 
 CREATE INDEX booking_status_history_asof_idx ON booking_status_history (booking_id, changed_at DESC);
@@ -609,15 +684,17 @@ CREATE TABLE chat_sessions (
     agency_id uuid NOT NULL REFERENCES agency_profiles(agency_id) ON DELETE RESTRICT,
     provider_id uuid NOT NULL REFERENCES provider_profiles(provider_id) ON DELETE RESTRICT,
     source varchar(24) NOT NULL,
+    matching_session_id uuid REFERENCES matching_sessions(matching_session_id) ON DELETE RESTRICT,
     experience_id uuid REFERENCES experiences(experience_id) ON DELETE RESTRICT,
     quote_request_id uuid REFERENCES quote_requests(quote_request_id) ON DELETE RESTRICT,
-    booking_id uuid REFERENCES bookings(booking_id) ON DELETE RESTRICT,
+    booking_id uuid REFERENCES bookings(booking_id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED,
     status varchar(8) NOT NULL,
     started_at timestamptz NOT NULL,
     last_message_at timestamptz,
     closed_at timestamptz,
     closed_by uuid REFERENCES user_accounts(user_id) ON DELETE RESTRICT,
-    CONSTRAINT chat_source_chk CHECK (source IN ('Matching', 'Explore', 'Booking', 'Direct')),
+    CONSTRAINT chat_source_chk CHECK (source IN ('AI Matching', 'Explore', 'Provider Profile', 'Quote Request', 'Booking')),
+    CONSTRAINT chat_matching_link_chk CHECK (source <> 'AI Matching' OR matching_session_id IS NOT NULL),
     CONSTRAINT chat_status_chk CHECK (status IN ('Active', 'Closed')),
     CONSTRAINT chat_closed_chk CHECK (
         (status = 'Active' AND closed_at IS NULL AND closed_by IS NULL) OR
@@ -629,7 +706,8 @@ CREATE TABLE chat_sessions (
 CREATE UNIQUE INDEX chat_one_active_pair_uq ON chat_sessions (agency_id, provider_id) WHERE status = 'Active';
 
 ALTER TABLE bookings ADD CONSTRAINT booking_source_chat_fk
-    FOREIGN KEY (source_chat_session_id) REFERENCES chat_sessions(chat_session_id) ON DELETE RESTRICT;
+    FOREIGN KEY (source_chat_session_id) REFERENCES chat_sessions(chat_session_id) ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED;
 
 CREATE TABLE chat_participants (
     chat_session_id uuid NOT NULL REFERENCES chat_sessions(chat_session_id) ON DELETE RESTRICT,
@@ -646,6 +724,9 @@ CREATE TABLE chat_messages (
     sender_user_id uuid REFERENCES user_accounts(user_id) ON DELETE RESTRICT,
     text varchar(4000),
     message_kind varchar(24) NOT NULL,
+    -- C1: per-message business context (a conversation may reference several experiences/quotes/bookings)
+    experience_id uuid REFERENCES experiences(experience_id) ON DELETE RESTRICT,
+    quote_request_id uuid REFERENCES quote_requests(quote_request_id) ON DELETE RESTRICT,
     booking_id uuid REFERENCES bookings(booking_id) ON DELETE RESTRICT,
     sent_at timestamptz NOT NULL,
     CONSTRAINT chat_message_kind_chk CHECK (message_kind IN ('User Text', 'Quote Request', 'Booking Update', 'Attachment')),
@@ -675,6 +756,9 @@ CREATE TABLE notifications (
     created_at timestamptz NOT NULL,
     read_at timestamptz,
     email_delivery_status varchar(16),
+    CONSTRAINT notification_event_type_chk CHECK (event_type IN (
+        'Booking Status Changed', 'Registration Reviewed', 'Profile Reviewed', 'Account Status Changed'
+    )),
     CONSTRAINT notification_read_chk CHECK (read_at IS NULL OR read_at >= created_at),
     CONSTRAINT notification_email_chk CHECK (email_delivery_status IS NULL OR email_delivery_status IN ('Success', 'Fail', 'Not Applicable'))
 );
@@ -693,5 +777,47 @@ CREATE TABLE audit_logs (
 
 CREATE INDEX audit_logs_target_idx ON audit_logs (target_type, target_id, occurred_at DESC);
 CREATE INDEX audit_logs_actor_idx ON audit_logs (actor_user_id, occurred_at DESC);
+
+-- ACC130: avatar file lives in stored_files (single file path), added after stored_files exists.
+ALTER TABLE user_accounts ADD CONSTRAINT user_avatar_file_fk
+    FOREIGN KEY (avatar_file_id) REFERENCES stored_files(file_id) ON DELETE SET NULL;
+
+-- ---------------------------------------------------------------------------
+-- Cross-row guards that a single-row CHECK cannot express (B5/B6).
+-- ---------------------------------------------------------------------------
+
+-- B6: a Closed chat is immutable — reject any message sent AFTER the chat was closed.
+-- Historical messages (sent_at <= closed_at) remain loadable/readable.
+CREATE OR REPLACE FUNCTION chat_message_not_closed() RETURNS trigger AS $$
+DECLARE cs record;
+BEGIN
+    SELECT status, closed_at INTO cs FROM chat_sessions WHERE chat_session_id = NEW.chat_session_id;
+    IF cs.status = 'Closed' AND (cs.closed_at IS NULL OR NEW.sent_at > cs.closed_at) THEN
+        RAISE EXCEPTION 'Cannot post a message after a chat session was closed (%).', NEW.chat_session_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER chat_message_not_closed_trg
+    BEFORE INSERT ON chat_messages
+    FOR EACH ROW EXECUTE FUNCTION chat_message_not_closed();
+
+-- B5: a Booking group size must not exceed its Experience max_participants.
+CREATE OR REPLACE FUNCTION booking_group_within_capacity() RETURNS trigger AS $$
+DECLARE cap integer;
+BEGIN
+    SELECT max_participants INTO cap FROM experiences WHERE experience_id = NEW.experience_id;
+    IF cap IS NOT NULL AND NEW.group_size > cap THEN
+        RAISE EXCEPTION 'group_size % exceeds Experience max_participants % for booking %.',
+            NEW.group_size, cap, NEW.booking_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER booking_group_within_capacity_trg
+    BEFORE INSERT OR UPDATE ON bookings
+    FOR EACH ROW EXECUTE FUNCTION booking_group_within_capacity();
 
 COMMIT;

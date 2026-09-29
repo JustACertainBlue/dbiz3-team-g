@@ -54,3 +54,11 @@ erDiagram
     stored_files ||--o{ chat_attachments : backs
     user_accounts ||--o{ notifications : receives
     user_accounts ||--o{ audit_logs : acts
+    provider_profile_versions ||--o{ provider_version_documents : documented_by
+    stored_files ||--o{ provider_version_documents : backs
+    matching_sessions ||--o{ chat_sessions : originates
+    matching_sessions ||--o{ quote_requests : originates
+    experiences ||--o{ chat_sessions : primary_context
+    quote_requests ||--o{ chat_sessions : primary_context
+    bookings ||--o{ chat_sessions : primary_context
+    stored_files ||--o| user_accounts : avatar_of

@@ -1,11 +1,11 @@
 %% ---
 %% artifact: 03-erd.mmd (conceptual ERD)
 %% step: S3
-%% generated: 2026-09-28
+%% generated: 2026-09-29
 %% sources: FUNCTIONS, FIELDS, ENTITIES, RULES, SCENARIOS, FLOWS (all present)
 %% ---
 %% Conceptual model only: business entities and relationships, no attributes/keys/technical columns.
-%% Cardinality + optionality in crow's foot. Line type: -- identifying (child cannot exist without parent), .. non-identifying.
+%% Cardinality + optionality in crow's foot. Line type: -- identifying, .. non-identifying.
 %% Per-relationship reading (LEFT RIGHT | forward | reverse | which side may be zero | citation):
 %% ROLE USER_ACCOUNT | A role classifies zero or more user accounts. | Each user account has exactly one role. | many (a new role may have no accounts) | F-AUTH-15/16
 %% ROLE ROLE_PERMISSION | A role is granted zero or more permissions through role-permission links. | Each role-permission link belongs to exactly one role. | many | AUT §6; F-AUTH-15/16
@@ -67,6 +67,13 @@
 %% CHAT_MESSAGE CHAT_ATTACHMENT | A chat message carries zero or more attachments. | Each attachment belongs to one chat message. | many | F-CHAT-05; Q-03
 %% STORED_FILE CHAT_ATTACHMENT | A stored file backs zero or more chat attachments. | Each chat attachment points to one stored file. | many | Q-03
 %% USER_ACCOUNT NOTIFICATION | A user account receives zero or more notifications. | Each notification targets one recipient account. | many | contract §Dashboard
+%% MATCHING_SESSION CHAT_SESSION | A matching session may originate a chat. | Each chat names at most one originating matching session. | many | F-CHAT-01; A8
+%% MATCHING_SESSION QUOTE_REQUEST | A matching session may originate quote requests. | Each Matching-sourced quote names its matching session. | many | F-MATCH-11; A8
+%% EXPERIENCE CHAT_SESSION | An Experience may be the primary context of chats. | Each chat has at most one primary Experience context. | many | F-CHAT-01; C1
+%% QUOTE_REQUEST CHAT_SESSION | A quote request may be a chat's primary context. | Each chat has at most one primary quote context. | many | F-CHAT-01; C1
+%% BOOKING CHAT_SESSION | A booking may be a chat's primary context. | Each chat has at most one primary booking context. | many | F-CHAT-01; C1
+%% PROVIDER_PROFILE_VERSION PROVIDER_VERSION_DOCUMENT | A Provider version has supporting documents (e.g. registration certificate). | Each document belongs to one Provider version. | many | F-PROFILE-04/05; A3
+%% STORED_FILE PROVIDER_VERSION_DOCUMENT | A stored file backs Provider version documents. | Each document points to one stored file. | many | Q-03
 erDiagram
     ROLE ||--o{ USER_ACCOUNT : classifies
     ROLE ||--o{ ROLE_PERMISSION : granted_through
@@ -128,3 +135,10 @@ erDiagram
     CHAT_MESSAGE ||--o{ CHAT_ATTACHMENT : carries
     STORED_FILE ||--o{ CHAT_ATTACHMENT : backs
     USER_ACCOUNT ||--o{ NOTIFICATION : receives
+    MATCHING_SESSION ||--o{ CHAT_SESSION : originates
+    MATCHING_SESSION ||--o{ QUOTE_REQUEST : originates
+    EXPERIENCE ||--o{ CHAT_SESSION : primary_context
+    QUOTE_REQUEST ||--o{ CHAT_SESSION : primary_context
+    BOOKING ||--o{ CHAT_SESSION : primary_context
+    PROVIDER_PROFILE_VERSION ||--o{ PROVIDER_VERSION_DOCUMENT : supported_by
+    STORED_FILE ||--o{ PROVIDER_VERSION_DOCUMENT : backs

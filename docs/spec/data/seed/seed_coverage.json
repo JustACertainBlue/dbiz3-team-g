@@ -132,9 +132,9 @@
   {
     "entity": "stored_files",
     "csv_file": "stored_files.csv",
-    "row_count": 40,
+    "row_count": 57,
     "ordinary_rows": "5+",
-    "boundary_row": "10 MiB maximum file-size row",
+    "boundary_row": "minimum-dimension image row",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
     "exceptional_state_row": "N/A: no lifecycle/exception state declared",
     "result": "Covered with applicability stated"
@@ -185,8 +185,8 @@
     "row_count": 8,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
-    "empty_case": "provider with archived/no active experience case",
-    "exceptional_state_row": "Revision Required profile",
+    "empty_case": "Draft provider with no published version",
+    "exceptional_state_row": "Revision Required and Draft profile",
     "result": "Covered with applicability stated"
   },
   {
@@ -196,7 +196,7 @@
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
-    "exceptional_state_row": "Revision Required version",
+    "exceptional_state_row": "Draft version with null required fields",
     "result": "Covered with applicability stated"
   },
   {
@@ -207,6 +207,16 @@
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
     "exceptional_state_row": "Request Revision review",
+    "result": "Covered with applicability stated"
+  },
+  {
+    "entity": "provider_version_documents",
+    "csv_file": "provider_version_documents.csv",
+    "row_count": 7,
+    "ordinary_rows": "7 (available fixtures)",
+    "boundary_row": "N/A: no declared scalar boundary for this entity",
+    "empty_case": "Draft provider has no supporting document",
+    "exceptional_state_row": "N/A: no lifecycle/exception state declared",
     "result": "Covered with applicability stated"
   },
   {
@@ -242,7 +252,7 @@
   {
     "entity": "profile_media",
     "csv_file": "profile_media.csv",
-    "row_count": 8,
+    "row_count": 24,
     "ordinary_rows": "5+",
     "boundary_row": "display_order=0",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",

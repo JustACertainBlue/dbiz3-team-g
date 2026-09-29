@@ -6,6 +6,10 @@ Baseline requirements: the revised `docs/spec/` (Function List, consistency cont
 specs). Booking status enum is **On hold / Booked / Completed / Cancelled** ("Booked" is canonical).
 No real person's or business's records belong in seed data.
 
+This revision applies the review punch-list (see `CHANGELOG_SUMMARY.md`): **47 tables/entities**, and
+`schema.sql` + the full seed have been **loaded and validated on PostgreSQL 16** — every FK, CHECK,
+UNIQUE, GiST EXCLUDE and trigger passes.
+
 ## Read in order
 
 1. [`01-entity-dictionary.md`](01-entity-dictionary.md) — S1: input map, canonical entities (THING/EVENT), implied entities, conflicts, open questions.

@@ -58,6 +58,6 @@ short, factual and current.
 
 | File or folder | Owner (member) |
 |---|---|
-| `AGENTS.md` | Group G (individual owner to be assigned) |
-| `docs/spec/` | Group G (individual owner to be assigned) |
-| `data/` | Group G (individual owner to be assigned) |
+| `AGENTS.md` | Group G (khanhlinhvu) |
+| `docs/spec/` | Group G (nguyenthu) |
+| `data/` | Group G (viethoang) |

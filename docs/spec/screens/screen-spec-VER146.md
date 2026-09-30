@@ -1,9 +1,9 @@
-# Screen Spec: VER146 View Submitted Profile
+# Screen Spec: VER146 View Pending Profile
 
 | Field | Value |
 |---|---|
 | Screen ID | `VER146` |
-| Screen name | View Submitted Profile |
+| Screen name | View Pending Profile |
 | Actor | Admin (HDT / UBND) |
 | Priority | Must |
 | Belongs to module | `spec-AUT.md` / `spec-PRF.md` |
@@ -12,7 +12,7 @@
 
 ## 1. Purpose
 
-Displays the submitted profile and supporting information required for the Admin to review Agency registration/legal change or Provider profile revision according to subtype, without conflating account activation and profile verification.
+Displays the pending submitted profile and supporting information required for the Admin to review Agency registration/legal change or Provider profile revision according to subtype, without conflating account activation and profile verification.
 
 The controls and decisions below define the current screen specification.
 

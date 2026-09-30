@@ -46,7 +46,8 @@ foreign-key/constraint check awaits the next PostgreSQL run.
 | exception-closed-chat | terminal immutable Closed Chat row | Yes |
 | exception-rejected-registration | rejected Registration Request retained | Yes |
 | permission-ubnd-scope | UBND Admin row linked to exactly one Village assignment | Yes |
-| ranking-hdt-activation | one Active ranking version and a matching HDT activation audit | Yes |
+| ranking-system-activation | one Active ranking version and a matching System activation audit | Yes |
+| ranking-insufficient-cohort | fewer than 30 eligible tracked sessions, so no candidate promotion should occur | Fixture present; worker test pending |
 | kpi-period | booking + status history reproducing created-at period and as-of status | Yes |
 
 Row-kind check is recorded per entity in `seed_coverage.json`, rather than inferred from one global
@@ -72,7 +73,7 @@ question visible.
 | Q-10a | PRF/AIT | [NEEDS CLARIFICATION: Must unaccepted AI description drafts persist, and what is their retention period?] | No | Persist with nullable `accepted_at`; archive/delete only after a retention policy is approved. | Abandoned drafts either grow indefinitely or disappear before an expected resume/audit. |
 | Q-14 | AUT | [NEEDS CLARIFICATION: May several UBND Admin accounts be assigned to the same Village?] | No | Allow many UBND Admin accounts per Village; each account has exactly one Village. | Authorization scope or staffing assignments may be implemented incorrectly. |
 | Q-10b | AIT | [NEEDS CLARIFICATION: Are Recommendation Results persisted per matching run for traceability, or transient?] | No | Persist each run and its ranked results. | Storage may be unnecessary, or the explanation/audit trail may be lost. |
-| Q-12 | EXP | Resolved: HDT_Admin creates Drafts and activates selected Drafts through F-EXPLORE-18; F-EXPLORE-17 may propose a Draft. | No | The activation transaction retires the previous Active version and writes audit evidence. | UBND_Admin is denied. |
+| Q-12 | EXP | Resolved: F-EXPLORE-17 proposes, validates and automatically activates qualifying Drafts; it can also roll back after monitored degradation. | No | Sample/weight/replay gates apply; promotion retires the prior Active in one transaction and writes a System audit. | Neither Admin subtype can manually edit ranking. |
 | Q-06 | data owner | [NEEDS CLARIFICATION: What retention periods apply to rejected registrations, closed chats and files, audit logs, expired tokens and unaccepted AI drafts?] | Before production | Use RESTRICT/archive and retain evidence until a policy is approved. | Evidence may be deleted prematurely or retained indefinitely. |
 
 ## Files produced
@@ -80,9 +81,9 @@ question visible.
 | File | Step | Status |
 |---|---|---|
 | `01-entity-dictionary.md` | S1 | Reshaped to prompt.md contract (Entities / Implied / Conflicts / Open questions). |
-| `02-crud-matrix.md` | S2 | Long-form function/entity interactions, including F-EXPLORE-18; coverage + anomalies. |
-| `03-erd.mmd` | S3 | Conceptual ERD; 67 relationships each with forward/reverse sentence + citation. |
-| `04-data-model.md` | S4 | 47 relations with columns/type/required/key/citation; embedded diagram matches 03 byte-for-byte (67 relationships, verified). |
+| `02-crud-matrix.md` | S2 | Long-form function/entity interactions, including System F-EXPLORE-17 promotion; coverage + anomalies. |
+| `03-erd.mmd` | S3 | Conceptual ERD; 68 relationships each with forward/reverse sentence + citation. |
+| `04-data-model.md` | S4 | 47 relations with columns/type/required/key/citation; embedded relationship set matches 03 (68 relationships, verified). |
 | `05-review.md` | S6 | This file. |
 | `seed/*.csv` | S5 | 47/47 entity CSVs; per-entity evidence in `seed_coverage.json`; current seed passes `scripts/validate_seed.py`. |
 | `06-physical-data-model.md`, `07-data-dictionary.md`, `08-physical-erd.mmd`, `schema.sql` | (supplementary) | PostgreSQL candidate; the revised schema/seed need a fresh live-engine run. |
@@ -115,9 +116,11 @@ before claiming the current revision is fully database-validated.
 | Insert a Booking whose `end_at` differs from `start_at + duration_minutes`, or whose snapshot lacks either required condition | Reject; no Booking committed | Schema CHECK specified; PostgreSQL negative run pending |
 | Two Agencies try to reserve the same Provider time slot concurrently | One succeeds, one receives Slot Unavailable; no overlap remains | GiST EXCLUDE specified; PostgreSQL concurrent run pending |
 | Expiry worker processes a 72-hour On hold Booking | Booking becomes Cancelled with reason and matching history in one transaction; retry does not duplicate the transition | BKG BR-019 specified; backend worker test pending |
-| UBND attempts ranking activation or another Agency's profile edit | Access Denied; no version/profile/audit change | Seed permission/scope checks pass; API negative test pending |
+| Either Admin subtype attempts ranking activation or another Agency's profile edit | Access Denied; no version/profile/audit change | Seed permission/scope checks pass; API negative test pending |
 | UPDATE/DELETE an existing Chat message or INSERT after Chat Closed | Reject and preserve historical messages | Triggers specified; PostgreSQL negative run pending |
-| HDT activates two Draft ranking versions concurrently | At most one wins; one Active version and matching audit remain | F-EXPLORE-18 conflict contract specified; API/DB transaction test pending |
+| Two System tuning jobs attempt to activate Draft versions concurrently | At most one wins; one Active version and matching System audit remain | F-EXPLORE-17 conflict contract specified; API/DB transaction test pending |
+| System tuning worker receives fewer than 30 eligible sessions, an invalid weight shift or replay gain below 5 points | Active remains unchanged; decision logged | Seed contains an insufficient cohort; worker test pending |
+| After automatic promotion, a new eligible weekly cohort loses at least 5 live quality points | System creates and promotes a rollback copy of the prior parameter map, with audit evidence | F-EXPLORE-17 contract specified; worker test pending |
 
 ## Human gate
 

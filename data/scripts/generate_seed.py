@@ -46,11 +46,12 @@ write("roles", ["role_code","display_name"], [
  {"role_code":"ADMIN","display_name":"Quản trị viên"},
  {"role_code":"Local_Provider","display_name":"Hộ cung cấp trải nghiệm"},
  {"role_code":"Tour_Agency","display_name":"Công ty du lịch"}])
-perms=[("manage_users","manage","users"),("review_agencies","review","agency registrations"),("review_providers","review","provider profiles"),("manage_rankings","manage","ranking parameters"),("view_dashboard","view","dashboard"),("manage_profile","manage","own profile"),("manage_experiences","manage","experiences"),("manage_bookings","manage","bookings"),("use_matching","use","AI matching"),("use_chat","use","chat")]
+perms=[("manage_users","manage","users"),("review_agencies","review","agency registrations"),("review_providers","review","provider profiles"),("view_dashboard","view","dashboard"),("manage_profile","manage","own profile"),("manage_experiences","manage","experiences"),("manage_bookings","manage","bookings"),("use_matching","use","AI matching"),("use_chat","use","chat")]
 write("permissions",["permission_code","action","resource"],[{"permission_code":a,"action":b,"resource":c} for a,b,c in perms])
 rp=[]
-for i,(p,_,_) in enumerate(perms): rp.append({"role_code":"ADMIN" if i<5 else ("Local_Provider" if i<8 else "Tour_Agency"),"permission_code":p,"admin_type":"HDT" if p=="manage_rankings" else ""})
-# NULL admin_type means all users with the role; manage_rankings is HDT-only.
+for p,_,_ in perms:
+    rp.append({"role_code":"ADMIN" if p in ("manage_users","review_agencies","review_providers","view_dashboard") else ("Local_Provider" if p in ("manage_profile","manage_experiences","manage_bookings") else "Tour_Agency"),"permission_code":p,"admin_type":""})
+# NULL admin_type means all users with the role; ranking has no Admin permission.
 rp.extend([
     {"role_code":"Local_Provider","permission_code":"use_chat","admin_type":""},
     {"role_code":"Tour_Agency","permission_code":"manage_profile","admin_type":""},
@@ -172,7 +173,7 @@ for i in range(8):
     eligible=i if i<5 else i-5
     quotes.append({"quote_request_id":uid("quote",i),"agency_id":uid("agency",i),"experience_id":uid("experience",eligible),"source":src,"matching_session_id":uid("matching",i) if src=="Matching" else "","created_at":ts(22)})
     scope="Personalized" if i<5 else ("Anonymous Analytics" if i<7 else "No Non-essential Tracking")
-    es.append({"session_id":uid("explore",i),"agency_id":uid("agency",i) if scope=="Personalized" else "","anonymous_session_ref":"" if scope=="Personalized" else f"anon-{uid('explore',i)}","analytics_consent":"true" if scope!="No Non-essential Tracking" else "false","tracking_scope":scope,"started_at":ts(22,8),"ended_at":ts(22,9) if i!=7 else ""})
+    es.append({"session_id":uid("explore",i),"agency_id":uid("agency",i) if scope=="Personalized" else "","anonymous_session_ref":"" if scope=="Personalized" else f"anon-{uid('explore',i)}","ranking_version_id":uid("ranking",0) if scope!="No Non-essential Tracking" else "","ranked_results":j([{"shown_at":ts(22,8),"results":[{"experience_id":uid("experience",j),"rank":j+1} for j in range(5)]}]) if scope!="No Non-essential Tracking" else "","analytics_consent":"true" if scope!="No Non-essential Tracking" else "false","tracking_scope":scope,"started_at":ts(22,8),"ended_at":ts(22,9) if i!=7 else ""})
     ei.append({"interaction_id":uid("interaction",i),"session_id":uid("explore",i),"experience_id":uid("experience",eligible) if i!=7 else "","provider_id":uid("provider",eligible) if i!=7 else "","action_type":["click_card","expand_preview","view_detail","apply_filter","scroll","request_quote","open_chat","scroll"][i],"occurred_at":ts(22,8),"duration_on_previous_screen":str(0 if i==7 else 20+i),"filter_values":j({"village":villages[i][1]}) if i==3 else ""})
 write("quote_requests",["quote_request_id","agency_id","experience_id","source","matching_session_id","created_at"],quotes)
 write("explore_sessions",list(es[0]),es); write("explore_interactions",list(ei[0]),ei)
@@ -219,7 +220,7 @@ for i in range(8):
     notified=(datetime.fromisoformat(final_at)+timedelta(minutes=5)).isoformat()
     notices.append({"notification_id":uid("notification",i),"recipient_user_id":uid("user",10+i),"event_type":"Booking Status Changed","source_type":"Booking","source_id":uid("booking",i),"payload":j({"status":bst[i]}),"created_at":notified,"read_at":(datetime.fromisoformat(notified)+timedelta(minutes=5)).isoformat() if i<5 else "","email_delivery_status":["Success","Success","Success","Success","Success","Fail","Not Applicable",""][i]})
     audits.append({"audit_id":uid("audit",i),"actor_user_id":uid("user",18+eligible) if i<7 else "","action":"UPDATE_BOOKING_STATUS" if i<7 else "SYSTEM_RETENTION_CHECK","target_type":"Booking","target_id":uid("booking",i),"occurred_at":notified,"change_or_result":j({"to":bst[i]})})
-audits.append({"audit_id":uid("ranking-activation-audit",0),"actor_user_id":uid("user",8),"action":"ACTIVATE_RANKING_VERSION","target_type":"RankingParameterVersion","target_id":uid("ranking",0),"occurred_at":ts(6),"change_or_result":j({"previous_active_version_id":None,"new_active_version_id":uid("ranking",0),"reason":"Khởi tạo cấu hình xếp hạng MVP"})})
+audits.append({"audit_id":uid("ranking-activation-audit",0),"actor_user_id":"","action":"SYSTEM_ACTIVATE_RANKING_VERSION","target_type":"RankingParameterVersion","target_id":uid("ranking",0),"occurred_at":ts(6),"change_or_result":j({"previous_active_version_id":None,"new_active_version_id":uid("ranking",0),"reason":"Khởi tạo cấu hình xếp hạng MVP","decision":"bootstrap Active; later candidates require F-EXPLORE-17 gates"})})
 write("bookings",list(book[0]),book); write("booking_status_history",list(bh[0]),bh)
 write("chat_sessions",["chat_session_id","agency_id","provider_id","source","matching_session_id","experience_id","quote_request_id","booking_id","status","started_at","last_message_at","closed_at","closed_by"],chats)
 write("chat_messages",["message_id","chat_session_id","sender_user_id","text","message_kind","experience_id","quote_request_id","booking_id","sent_at"],cm)
@@ -288,7 +289,8 @@ scenario_rows=[
  {"scenario_id":"exception-closed-chat","fixture":uid("chat",7),"expected_result":"terminal immutable chat"},
  {"scenario_id":"exception-rejected-registration","fixture":uid("registration",8),"expected_result":"rejected registration retained"},
  {"scenario_id":"permission-ubnd-scope","fixture":uid("user",0),"expected_result":"access limited to assigned village"},
- {"scenario_id":"ranking-hdt-activation","fixture":uid("ranking-activation-audit",0),"expected_result":"HDT activated the sole Active ranking version with audit evidence"},
+ {"scenario_id":"ranking-system-activation","fixture":uid("ranking-activation-audit",0),"expected_result":"System bootstrapped the sole Active ranking version with non-human audit evidence"},
+ {"scenario_id":"ranking-insufficient-cohort","fixture":"eight tracked-or-untracked Explore sessions in seed","expected_result":"F-EXPLORE-17 must retain Active: fewer than 30 eligible tracked sessions; no candidate promotion"},
  {"scenario_id":"kpi-period","fixture":"bookings + booking_status_history","expected_result":"as-of status is reproducible"}]
 (OUT/"scenario_manifest.json").write_text(json.dumps(scenario_rows,ensure_ascii=False,indent=2)+"\n",encoding="utf-8",newline="\n")
 print(f"Generated {len(table_names)} entity CSV files")

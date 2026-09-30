@@ -19,7 +19,7 @@ The product addresses this by maintaining a verified Provider and Experience cat
 | Tour Agency | Find suitable, trustworthy experience suppliers and coordinate a group visit | Register, browse, use AI matching, view schedules, chat and view its own bookings |
 | Local Provider | Publish local craft-village experiences and manage agreed bookings | Maintain own profile and Experiences, manage Booking lifecycle, participate in Chat |
 | UBND Admin | Verify and monitor Providers in one assigned village | Create Local Provider accounts, verify Provider profiles within assigned village, view scoped dashboard data |
-| HDT Admin | Govern the platform and oversee cross-village operation | Approve Agencies, create UBND accounts, manage account status, view platform-wide dashboard data and activate ranking versions |
+| HDT Admin | Govern the platform and oversee cross-village operation | Approve Agencies, create UBND accounts, manage account status and view platform-wide dashboard data |
 | Guest | Explore public verified information | Browse public Explore, Provider and Experience views; no Booking or private data access |
 
 ## 4. Product objectives
@@ -61,7 +61,7 @@ The product addresses this by maintaining a verified Provider and Experience cat
 - E-contract management.
 - Native mobile application; MVP is responsive web.
 - Village catalogue CRUD or Village verification lifecycle. Village is a seeded, read-only reference catalogue; Provider verification determines eligibility.
-- Automatic AI model retraining. Ranking versions are governed by HDT and informed by recorded learning/quality data.
+- Automatic AI model retraining. The System adjusts ranking parameters from recorded learning/quality data, promotes a qualified version automatically and rolls back on measured degradation; it does not retrain an AI model.
 - CMS, featured content, bulk notification, accounting, staff management or advanced moderation.
 
 ## 6. Key business rules

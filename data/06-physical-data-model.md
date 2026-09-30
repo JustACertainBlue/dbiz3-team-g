@@ -25,6 +25,7 @@ The current [System Configuration](../docs/spec/docs/architecture/system%20confi
 - Transaction records preserve `agreed_price_total`, `conditions_snapshot`, start, duration and group size. Booking details may change only through F-SCHED-04; Experience edits never rewrite Booking history. `end_at` is constrained to equal `start_at + duration_minutes`, and the snapshot requires `notice_period_hours` plus `cancellation_policy`.
 - F-SCHED-03/05/06 and the expiry worker must write Booking status, `updated_at` and one history row in the same transaction. Provider eligibility is checked at creation; historical Bookings remain after later Provider status changes.
 - Status history supports dashboard as-of calculations. `account_status_history` is the provisional implementation of approved recommendation Q-08.
+- A tracked `explore_sessions` row pins `ranking_version_id` and stores timestamped `ranked_results` snapshots. This connects clicks/actions to the ranking actually shown and supports offline replay. Sessions without non-essential tracking store neither value. The FK is deferred because the seed loads sessions before ranking versions. F-EXPLORE-17 owns automatic Draft validation, atomic promotion and audited rollback; no Admin ranking permission is present.
 
 ## Migration order
 

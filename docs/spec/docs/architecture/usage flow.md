@@ -143,3 +143,68 @@ graph TD
   class LP_Start,LP_End startend;
   class LP7,LP10,LP12 decision;
 ```
+
+## 5. Explore ranking and handoff
+
+```mermaid
+graph TD
+  G["Guest EXP120"] --> PD["DSC123/DSC124 public details"]
+  PD -->|Restricted action| L["AUT009"]
+  A["Agency EXP017"] --> D["DSC122/DSC033 permitted details"]
+  D --> Q["Request Quote once per Agency–Experience"]
+  Q --> C["COM048 with initial message; optional dates/group"]
+  D --> AI["AIT121"]
+  A --> W["Eligible preference signals → shared decay/profile"]
+  W --> K["Daily aggregation; weekly/monthly tuning proposal"]
+  K --> H["System validates candidate; auto-promotes or retains Active"]
+```
+
+## BKG
+
+```mermaid
+graph TD
+  P["Provider BKG134: valid agreed details"] --> V{"Atomic availability check"}
+  V -->|Fail| E["Error; no booking created"]
+  V -->|Pass| H["Create On hold; original72h expiry"]
+  H --> S["Sync Agency SCH141/BKG137 + Chat"]
+  S --> D{"Confirm / Cancel / Expiry"}
+  D -->|Confirm before expiry| B["Booked"]
+  D -->|Cancel or72h reached| C["Cancelled"]
+  B --> A{"Mark Arrival on/after start or Cancel"}
+  A -->|Mark Arrival| F["Completed; current approved rule"]
+  A -->|Cancel| C
+  C --> U["Sync status/occupancy/history"]
+  F --> U
+  U --> AG["Agency read-only BKG138/SCH141"]
+```
+
+## ADM
+
+```mermaid
+graph TD
+  A["Admin ADM079"] --> R{"admin_type"}
+  R -->|HDT| H["Platform-wide permitted filters"]
+  R -->|UBND| U["Fixed assigned village"]
+  H --> D["Load cards/charts/trend/booking list/top10 pairs"]
+  U --> D
+  D --> F["Change filters → refresh permitted metrics"]
+  F --> D
+  A --> M["ADM095 account management"]
+```
+
+## IAC
+
+```mermaid
+graph TD
+  P["Authorized Agency/Provider"] --> C["Resolve existing Active pair chat or create new"]
+  C --> H["COM048/COM065 history; last50 with pagination"]
+  H --> T["Send text<=4000 or files1–5<=10MB each"]
+  T --> V{"Valid Active participant and content?"}
+  V -->|No| E["Error; no message"]
+  V -->|Yes| S["Persist and deliver message"]
+  S --> H
+  H --> N["Navigate away: keep Active"]
+  H --> X["Explicit Close Chat"]
+  X --> R["Closed read-only; retain history"]
+  R -->|New interaction| C
+```

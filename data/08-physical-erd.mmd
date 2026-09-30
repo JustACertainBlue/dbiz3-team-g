@@ -5,6 +5,7 @@ erDiagram
     villages ||--o{ ubnd_village_assignments : scopes
     user_accounts ||--o| ubnd_village_assignments : receives
     user_accounts ||--o{ sessions : opens
+    user_accounts ||--o{ password_reset_tokens : resets_password
     user_accounts ||--o{ account_status_history : changes
     agency_registration_requests ||--o{ registration_otp_challenges : verifies
     agency_registration_requests ||--o{ registration_resubmission_tokens : authorizes
@@ -24,6 +25,8 @@ erDiagram
     stored_files ||--o{ provider_version_media : backs
     provider_profiles ||--o{ provider_operating_hours : configures
     provider_profiles ||--o{ experiences : offers
+    provider_profiles ||--o{ ai_description_drafts : drafts_profile_text
+    experiences ||--o{ ai_description_drafts : drafts_experience_text
     experiences ||--o{ experience_discount_rules : prices
     stored_files ||--o{ profile_media : backs
     experiences ||--o{ profile_media : illustrates
@@ -40,6 +43,7 @@ erDiagram
     experiences ||--o{ quote_requests : receives
     agency_profiles ||--o{ explore_sessions : browses
     explore_sessions ||--o{ explore_interactions : records
+    ranking_parameter_versions |o--o{ explore_sessions : served_in
     ranking_parameter_versions ||--o{ ranking_quality_assessments : evaluated_by
     agency_profiles ||--o{ bookings : attends
     provider_profiles ||--o{ bookings : hosts

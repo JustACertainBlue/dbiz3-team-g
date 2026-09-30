@@ -31,6 +31,5 @@ The table format is the required course deliverable. Admin is one actor: HDT and
 | UC-BOOK-04 | Create Booking | Local Provider | Tour Agency | F-SCHED-03, F-SCHED-08 |
 | UC-BOOK-05 | Manage Booking | Local Provider | Tour Agency | F-SCHED-04, F-SCHED-05, F-SCHED-06, F-SCHED-07, F-SCHED-08 |
 | UC-ADM-01 | View Dashboard | Admin (HDT / UBND) |  | F-ADMIN-01, F-ADMIN-02, F-ADMIN-03, F-ADMIN-04, F-ADMIN-05, F-ADMIN-06, F-ADMIN-07, F-ADMIN-08, F-ADMIN-09, F-ADMIN-10 |
-| UC-ADM-02 | Manage Ranking Versions | Admin (HDT) | System | F-EXPLORE-18, F-AUTH-16 |
 | UC-BOOK-06 | List Provider Bookings | Local Provider | System | F-SCHED-10 |
 | UC-ACC-10 | Manage Personal Account | Member | | F-AUTH-24, F-AUTH-25 |

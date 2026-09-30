@@ -5,7 +5,9 @@ generated: 2026-09-29
 sources: FUNCTIONS, FIELDS, ENTITIES, RULES (all present)
 ---
 
-# 04 — Logical data model
+# Data Model and Mockup Data: Hanoi Artisan Bridge
+
+This file contains the logical data model (S4); the companion conceptual ERD and synthetic seed files are indexed in [README.md](README.md).
 
 Candidate relational model raised from the conceptual ERD ([`03-erd.mmd`](03-erd.mmd)) and the module
 Input/Output + business-rule contracts. Relation and `*_id` names are modelling notation. Attributes are
@@ -50,7 +52,7 @@ Natural key: permission_code
 |---|---|---|---|---|
 | role_code | string | Yes | PK FK→roles | AUT §6 |
 | permission_code | string | Yes | PK FK→permissions | AUT §6 |
-| admin_type | enum[HDT, UBND] | No | subtype scope; NULL means all users of role | F-AUTH-16; F-EXPLORE-18 |
+| admin_type | enum[HDT, UBND] | No | subtype scope; NULL means all users of role | F-AUTH-16 |
 
 Natural key: role_code, permission_code
 
@@ -532,6 +534,8 @@ Natural key: agency_id, experience_id
 | session_id | uuid | Yes | PK | F-EXPLORE-05/06 |
 | agency_id | uuid | No | FK→agency_profiles | F-EXPLORE-05/06 |
 | anonymous_session_ref | string | No | — | F-EXPLORE-05/06 |
+| ranking_version_id | uuid | No | FK→ranking_parameter_versions | F-EXPLORE-10/14/16/17; NULL when no ranking/personalization is tracked |
+| ranked_results | array of object (json) | No | — | F-EXPLORE-10/14/16/17; timestamped displayed ranking snapshots for replay; NULL when not tracked |
 | analytics_consent | boolean | Yes | — | F-EXPLORE-05/06 |
 | tracking_scope | enum[Personalized, Anonymous Analytics, No Non-essential Tracking] | Yes | — | F-EXPLORE-05/06 |
 | started_at | datetime | Yes | — | F-EXPLORE-05/06 |
@@ -558,11 +562,11 @@ Natural key: surrogate interaction_id
 
 | Column | Type (as declared) | Required | Key | Citation |
 |---|---|---|---|---|
-| version_id | uuid | Yes | PK | F-EXPLORE-15/17/18 |
-| parameter_map | object (json) | Yes | — | F-EXPLORE-15/17/18 |
-| tuning_log | string | No | — | F-EXPLORE-15/17/18 |
-| version_status | enum[Draft, Active, Retired] | Yes | — | F-EXPLORE-15/17/18 |
-| created_at | datetime | Yes | — | F-EXPLORE-15/17/18 |
+| version_id | uuid | Yes | PK | F-EXPLORE-15/17 |
+| parameter_map | object (json) | Yes | — | F-EXPLORE-15/17 |
+| tuning_log | string | No | — | F-EXPLORE-15/17 |
+| version_status | enum[Draft, Active, Retired] | Yes | — | F-EXPLORE-15/17 |
+| created_at | datetime | Yes | — | F-EXPLORE-15/17 |
 
 Natural key: surrogate version_id
 
@@ -727,7 +731,7 @@ Natural key: surrogate audit_id
 
 ## Diagram
 
-The SAME relationship set as [`03-erd.mmd`](03-erd.mmd), byte for byte (67 relationships, 47 entities),
+The SAME relationship set as [`03-erd.mmd`](03-erd.mmd), byte for byte (68 relationships, 47 entities),
 with one attribute block per entity (key + representative columns). Per-message chat context
 (`chat_messages.experience_id/quote_request_id/booking_id`) is carried in the schema but drawn at the
 session level to keep the diagram legible.
@@ -873,6 +877,8 @@ erDiagram
     EXPLORE_SESSION {
         uuid session_id PK
         uuid agency_id FK
+        uuid ranking_version_id FK
+        string ranked_results
         string anonymous_session_ref
         boolean analytics_consent
         string tracking_scope "enum: Personalized, Anonymous Analytics, No Non-essential Tracking"
@@ -1135,6 +1141,7 @@ erDiagram
     EXPERIENCE ||--o{ QUOTE_REQUEST : receives
     AGENCY_PROFILE ||--o{ EXPLORE_SESSION : browses
     EXPLORE_SESSION ||--o{ EXPLORE_INTERACTION : records
+    RANKING_PARAMETER_VERSION |o--o{ EXPLORE_SESSION : served_in
     RANKING_PARAMETER_VERSION ||--o{ RANKING_QUALITY_ASSESSMENT : measured_by
     AGENCY_PROFILE ||--o{ BOOKING : attends
     PROVIDER_PROFILE ||--o{ BOOKING : hosts

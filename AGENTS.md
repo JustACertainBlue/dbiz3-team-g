@@ -2,13 +2,13 @@
 
 Instructions for every AI coding agent working in this repository
 (Antigravity agent, Claude Code, or any other tool). Humans: keep this file
-short, factual and current. Replace every `<...>` before the first commit.
+short, factual and current.
 
 ## 1. Project
 
 - Product: `Hanoi Artisan Bridge`, team `G`, course DBIZ3, VJCBI College, Foreign Trade University.
-- Current step of the course process: Environment setup (Session 6). Next step: `Plan step (/speckit-plan)`.
-- Source of truth for requirements: `docs/spec/` (Spec Document from Session 4).
+- Current step of the course process: Session 7 midterm readiness review. After a Go decision, continue with `Plan step (/speckit-plan)`.
+- Source of truth for MVP scope: `docs/prd.md`; source of truth for detailed function contracts: `docs/spec/`.
 - Source of truth for data: `data/` (data model and seed package from Session 5).
 
 ## 2. Tech stack
@@ -38,6 +38,7 @@ short, factual and current. Replace every `<...>` before the first commit.
 | Path | Owner | Content |
 |---|---|---|
 | `docs/spec/` | humans | Spec Document (read-only for agents) |
+| `docs/prd.md` | humans | Approved MVP scope and priorities |
 | `data/` | humans | Data model, seed generator, seed files (read-only for agents) |
 | `docs/env/` | humans | Environment Readiness Report |
 | `.specify/` | Spec Kit | Templates, scripts, constitution |
@@ -57,6 +58,6 @@ short, factual and current. Replace every `<...>` before the first commit.
 
 | File or folder | Owner (member) |
 |---|---|
-| `AGENTS.md` | `<name>` |
-| `docs/spec/` | `<name>` |
-| `data/` | `<name>` |
+| `AGENTS.md` | Group G (individual owner to be assigned) |
+| `docs/spec/` | Group G (individual owner to be assigned) |
+| `data/` | Group G (individual owner to be assigned) |

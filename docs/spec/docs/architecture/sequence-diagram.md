@@ -240,8 +240,13 @@ sequenceDiagram
     end
     Worker->>DB: Daily F-EXPLORE-13 aggregation, retention30d
     Worker->>API: Weekly/monthly KPI evaluation and proposed tuning version
-    API->>DB: Save Draft ranking-parameter version
-    Note over API,DB: HDT_Admin uses F-EXPLORE-18 to activate Draft and retire prior Active#59; audit required
+    API->>DB: Save Draft ranking-parameter version and replay eligible sessions
+    alt Candidate passes sample, weight and quality gates
+        API->>DB: Atomically retire prior Active, activate Draft and write System audit
+    else Gate fails or data insufficient
+        API->>DB: Keep current Active unchanged and log decision
+    end
+    Note over Worker,DB: Next eligible weekly cohort is monitored; material decline triggers audited automatic rollback
 ```
 
 ## BKG

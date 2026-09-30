@@ -40,9 +40,14 @@
     "expected_result": "access limited to assigned village"
   },
   {
-    "scenario_id": "ranking-hdt-activation",
+    "scenario_id": "ranking-system-activation",
     "fixture": "fbcd239e-38ea-5db5-9cfb-154fc59d4e30",
-    "expected_result": "HDT activated the sole Active ranking version with audit evidence"
+    "expected_result": "System bootstrapped the sole Active ranking version with non-human audit evidence"
+  },
+  {
+    "scenario_id": "ranking-insufficient-cohort",
+    "fixture": "eight tracked-or-untracked Explore sessions in seed",
+    "expected_result": "F-EXPLORE-17 must retain Active: fewer than 30 eligible tracked sessions; no candidate promotion"
   },
   {
     "scenario_id": "kpi-period",

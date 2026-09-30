@@ -54,6 +54,7 @@
 %% EXPERIENCE QUOTE_REQUEST | An Experience receives zero or more quote requests. | Each quote request targets one Experience. | many | F-MATCH-11; F-EXPLORE-11
 %% AGENCY_PROFILE EXPLORE_SESSION | An Agency profile browses zero or more Explore sessions. | Each Explore session is linked to at most one Agency (Guest sessions have none). | many | F-EXPLORE-05/06
 %% EXPLORE_SESSION EXPLORE_INTERACTION | An Explore session records zero or more interactions. | Each interaction belongs to one Explore session. | many | F-EXPLORE-05..07/13
+%% RANKING_PARAMETER_VERSION EXPLORE_SESSION | A ranking version serves zero or more tracked Explore sessions. | Each Explore session records at most one ranking version; no-tracking sessions may have none. | optional many | F-EXPLORE-10/14/16/17
 %% RANKING_PARAMETER_VERSION RANKING_QUALITY_ASSESSMENT | A ranking parameter version is measured by zero or more quality assessments. | Each quality assessment evaluates one ranking version. | many | F-EXPLORE-14..17
 %% AGENCY_PROFILE BOOKING | An Agency profile attends zero or more Bookings. | Each Booking is for one Agency profile. | many | F-SCHED-03..07
 %% PROVIDER_PROFILE BOOKING | A Provider profile hosts zero or more Bookings. | Each Booking is hosted by one Provider profile. | many | F-SCHED-03..07
@@ -122,6 +123,7 @@ erDiagram
     EXPERIENCE ||--o{ QUOTE_REQUEST : receives
     AGENCY_PROFILE ||--o{ EXPLORE_SESSION : browses
     EXPLORE_SESSION ||--o{ EXPLORE_INTERACTION : records
+    RANKING_PARAMETER_VERSION |o--o{ EXPLORE_SESSION : served_in
     RANKING_PARAMETER_VERSION ||--o{ RANKING_QUALITY_ASSESSMENT : measured_by
     AGENCY_PROFILE ||--o{ BOOKING : attends
     PROVIDER_PROFILE ||--o{ BOOKING : hosts

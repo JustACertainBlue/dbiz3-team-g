@@ -66,7 +66,7 @@ with a design guess.
 | Explore Session | Anonymous or Agency browse session with consent context. | EVENT | EXP | browse session | F-EXPLORE-05/06 |
 | Explore Interaction | Eligible click/view/filter/detail/action observation. | EVENT | EXP | interaction log, behavior event | F-EXPLORE-05–07/13 |
 | Ranking Parameter Version | Controlled Explore ranking configuration version. | THING (reference) | EXP | algorithm version | F-EXPLORE-15–17 |
-| Ranking Quality Assessment | Periodic KPI/quality evaluation of a ranking version. | EVENT | EXP | KPI evaluation | F-EXPLORE-14/16/17/18 |
+| Ranking Quality Assessment | Periodic KPI/quality evaluation of a ranking version. | EVENT | EXP | KPI evaluation | F-EXPLORE-14/16/17 |
 | Booking | Provider-created single-slot reservation for an Agency and Experience. | THING | BKG | reservation, allotment | F-SCHED-03–07 |
 | Booking Status History | One accepted Booking state transition (including worker expiry). | EVENT | BKG | status transition, booking event | F-SCHED-05/06/08 |
 | Chat Session | Agency–Provider conversation, Active or Closed. | THING | IAC | conversation, thread | F-CHAT-01/04 |

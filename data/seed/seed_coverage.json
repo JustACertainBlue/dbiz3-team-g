@@ -12,7 +12,7 @@
   {
     "entity": "permissions",
     "csv_file": "permissions.csv",
-    "row_count": 10,
+    "row_count": 9,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
@@ -22,7 +22,7 @@
   {
     "entity": "role_permissions",
     "csv_file": "role_permissions.csv",
-    "row_count": 12,
+    "row_count": 11,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",

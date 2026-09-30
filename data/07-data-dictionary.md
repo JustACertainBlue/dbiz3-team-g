@@ -439,6 +439,8 @@ definitions are authoritative in `schema.sql`.
 | `session_id` | uuid | NN | PK |
 | `agency_id` | uuid | ? | FK→agency_profiles |
 | `anonymous_session_ref` | varchar(120) | ? |  |
+| `ranking_version_id` | uuid | ? | FK→ranking_parameter_versions; NULL when ranking is not tracked |
+| `ranked_results` | jsonb | ? | Timestamped displayed ranking snapshots for offline replay; NULL when tracking is disabled |
 | `analytics_consent` | boolean | NN |  |
 | `tracking_scope` | varchar(32) | NN |  |
 | `started_at` | timestamptz | NN |  |

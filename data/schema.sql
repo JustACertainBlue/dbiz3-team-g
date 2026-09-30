@@ -611,6 +611,19 @@ CREATE TABLE ranking_parameter_versions (
 
 CREATE UNIQUE INDEX ranking_one_active_version_uq ON ranking_parameter_versions ((1)) WHERE version_status = 'Active';
 
+-- Capture the version actually shown to each tracked session for before/after KPI attribution.
+-- NULL covers no-consent/no-personalization sessions. Seed loading defers the FK because
+-- explore_sessions precedes ranking_parameter_versions in the load order.
+ALTER TABLE explore_sessions ADD COLUMN ranking_version_id uuid;
+ALTER TABLE explore_sessions ADD COLUMN ranked_results jsonb;
+ALTER TABLE explore_sessions ADD CONSTRAINT explore_ranking_version_fk
+    FOREIGN KEY (ranking_version_id) REFERENCES ranking_parameter_versions(version_id)
+    ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE explore_sessions ADD CONSTRAINT explore_ranking_tracking_chk CHECK (
+    tracking_scope <> 'No Non-essential Tracking' OR
+    (ranking_version_id IS NULL AND ranked_results IS NULL)
+);
+
 CREATE TABLE ranking_quality_assessments (
     assessment_id uuid PRIMARY KEY,
     version_id uuid NOT NULL REFERENCES ranking_parameter_versions(version_id) ON DELETE RESTRICT,

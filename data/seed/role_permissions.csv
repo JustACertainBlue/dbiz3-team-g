@@ -1,5 +1,4 @@
 role_code,permission_code,admin_type
-ADMIN,manage_rankings,HDT
 ADMIN,manage_users,
 ADMIN,review_agencies,
 ADMIN,review_providers,

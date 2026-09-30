@@ -85,9 +85,10 @@ for index, first in enumerate(active_blocks):
 permission_rows = rows("role_permissions")
 permissions = {(row["role_code"], row["permission_code"]) for row in permission_rows}
 for required in (("Local_Provider", "use_chat"), ("Tour_Agency", "use_chat"),
-                 ("Tour_Agency", "manage_profile"), ("ADMIN", "manage_rankings")):
+                 ("Tour_Agency", "manage_profile")):
     assert required in permissions, required
-assert next(row for row in permission_rows if row["permission_code"] == "manage_rankings")["admin_type"] == "HDT"
+assert all(row["permission_code"] != "manage_rankings" for row in permission_rows)
+assert all(row["permission_code"] != "manage_rankings" for row in rows("permissions"))
 
 ranking = rows("ranking_parameter_versions")
 active = [row for row in ranking if row["version_status"] == "Active"]
@@ -103,14 +104,19 @@ def permitted(user_id, permission_code):
                for row in permission_rows)
 
 
-assert permitted(next(user_id for user_id, user in users.items() if user["admin_type"] == "HDT"), "manage_rankings")
-assert not permitted(next(user_id for user_id, user in users.items() if user["admin_type"] == "UBND"), "manage_rankings")
+assert not any(permitted(user_id, "manage_rankings") for user_id in users)
 for agency in rows("agency_profiles"):
     assert users[agency["user_id"]]["role_code"] == "Tour_Agency"
     assert permitted(agency["user_id"], "manage_profile")
-activations = [row for row in rows("audit_logs") if row["action"] == "ACTIVATE_RANKING_VERSION"]
+activations = [row for row in rows("audit_logs") if row["action"] == "SYSTEM_ACTIVATE_RANKING_VERSION"]
 assert len(activations) == 1 and activations[0]["target_id"] == active[0]["version_id"]
-assert users[activations[0]["actor_user_id"]]["role_code"] == "ADMIN"
-assert users[activations[0]["actor_user_id"]]["admin_type"] == "HDT"
+assert not activations[0]["actor_user_id"]
+for session in rows("explore_sessions"):
+    if session["tracking_scope"] == "No Non-essential Tracking":
+        assert not session["ranking_version_id"]
+        assert not session["ranked_results"]
+    else:
+        assert session["ranking_version_id"] == active[0]["version_id"]
+        assert all(item["rank"] >= 1 for snapshot in json.loads(session["ranked_results"]) for item in snapshot["results"])
 
 print("PASS: 47 CSVs/load headers; Booking lifecycle, eligibility, chronology, snapshots, scopes and ranking audit")

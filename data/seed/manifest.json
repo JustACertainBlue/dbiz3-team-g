@@ -7,8 +7,8 @@
   "scenario_file": "scenario_manifest.json",
   "table_files": {
     "roles.csv": 3,
-    "permissions.csv": 10,
-    "role_permissions.csv": 12,
+    "permissions.csv": 9,
+    "role_permissions.csv": 11,
     "villages.csv": 8,
     "user_accounts.csv": 26,
     "account_status_history.csv": 8,

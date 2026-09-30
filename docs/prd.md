@@ -53,6 +53,8 @@ The product addresses this by maintaining a verified Provider and Experience cat
 
 ### Could have
 
+| Capability | Included outcome | Authoritative function IDs | Specification |
+| --- | --- | --- | --- |
 | Quote request and richer Chat | Request Quote from Explore, close chats and exchange permitted attachments | `F-EXPLORE-11`, `F-EXPLORE-12`, `F-CHAT-04`, `F-CHAT-05` | [EXP](spec/specs/spec-EXP.md), [IAC](spec/specs/spec-IAC.md) |
 
 

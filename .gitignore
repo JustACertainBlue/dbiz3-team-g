@@ -13,8 +13,10 @@ __pycache__/
 *.pyc
 .venv/
 
-# Node
+# Node & Next.js
 node_modules/
+.next/
+*.tsbuildinfo
 
 # Personal agent settings (shared settings stay committed)
 CLAUDE.local.md

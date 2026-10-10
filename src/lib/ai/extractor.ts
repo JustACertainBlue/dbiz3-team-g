@@ -40,7 +40,7 @@ export async function extractTourContext(
 
   // 1. Group size extraction
   const groupMatch = fullText.match(
-    /(?:group of|for)\s*(\d+)|\b(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists|người)/i
+    /(?:group of|for)\s*(\d+)|\b(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists?|passengers?|kh\u00e1ch|ng\u01b0\u1eddi)/i
   )
   if (groupMatch) {
     tourContext.group_size = parseInt(groupMatch[1] || groupMatch[2], 10)
@@ -48,14 +48,22 @@ export async function extractTourContext(
     followUps.push('Could you please specify your expected group size or number of guests/pax?')
   }
 
-  // 2. Date extraction
+  // 2. Date extraction (ISO YYYY-MM-DD, named months, or DD/MM/YYYY)
   const dateMatch = fullText.match(
-    /(\d{4}-\d{2}-\d{2})|((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{1,2}(?:st|nd|rd|th)?)|(\d{1,2}(?:st|nd|rd|th)?\s*(?:of\s*)?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)/i
+    /(\d{4}-\d{2}-\d{2})|(\d{1,2}\/\d{1,2}\/\d{4})|((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{1,2}(?:st|nd|rd|th)?)|(\d{1,2}(?:st|nd|rd|th)?\s*(?:of\s*)?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)/i
   )
   if (dateMatch) {
     const rawDate = dateMatch[0]
-    tourContext.target_date_or_range = {
-      start_date: rawDate.includes('-') ? rawDate : '2026-11-10',
+    // Normalise DD/MM/YYYY to YYYY-MM-DD for storage; keep others as-is
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(rawDate)) {
+      const [d, m, y] = rawDate.split('/')
+      tourContext.target_date_or_range = {
+        start_date: `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`,
+      }
+    } else {
+      tourContext.target_date_or_range = {
+        start_date: rawDate.includes('-') ? rawDate : '2026-11-10',
+      }
     }
   } else {
     followUps.push('What is your desired date or date range for the tour?')

@@ -78,10 +78,11 @@ function parseCsv(content: string): Array<Record<string, string>> {
   return results
 }
 
+/** Fallback used only when data/seed/villages.csv is absent (e.g. CI without data package). */
 const CANONICAL_VILLAGES: Village[] = [
   {
     village_id: '20896522-6235-5699-aeaf-f48b8150d895',
-    village_name: 'Bat Trang Ceramic Village',
+    village_name: 'Bát Tràng',
     name: 'Bát Tràng',
     district: 'Gia Lâm',
     city_province: 'Hà Nội',
@@ -89,25 +90,25 @@ const CANONICAL_VILLAGES: Village[] = [
   },
   {
     village_id: 'c0d0d95f-d59c-5c35-946a-f397e380dd14',
-    village_name: 'Van Phuc Silk Village',
+    village_name: 'Vạn Phúc',
     name: 'Vạn Phúc',
     district: 'Hà Đông',
     city_province: 'Hà Nội',
     is_active: true,
   },
   {
-    village_id: 'd95bc77b-5e7b-53a6-a8af-5ccaabb485d8',
-    village_name: 'Duong Lam Ancient Village',
-    name: 'Đường Lâm',
-    district: 'Sơn Tây',
+    village_id: '688d408b-9d98-5b66-bfa7-659a67462108',
+    village_name: 'Chuông',
+    name: 'Chuông',
+    district: 'Thanh Oai',
     city_province: 'Hà Nội',
     is_active: true,
   },
   {
-    village_id: '688d408b-9d98-5b66-bfa7-659a67462108',
-    village_name: 'Chuong Conical Hat Village',
-    name: 'Chuông',
-    district: 'Thanh Oai',
+    village_id: 'b1017646-ec89-58d1-aaa9-df783b1c2506',
+    village_name: 'Quất Động',
+    name: 'Quất Động',
+    district: 'Thường Tín',
     city_province: 'Hà Nội',
     is_active: true,
   },
@@ -118,7 +119,18 @@ export async function loadVillages(): Promise<Village[]> {
   if (!fs.existsSync(seedPath)) {
     return CANONICAL_VILLAGES
   }
-  return CANONICAL_VILLAGES
+
+  const csv = fs.readFileSync(seedPath, 'utf-8')
+  const rows = parseCsv(csv)
+
+  return rows.map(row => ({
+    village_id: row.village_id,
+    village_name: row.name,
+    name: row.name,
+    district: row.district,
+    city_province: row.city_province,
+    is_active: row.is_active === 'true',
+  }))
 }
 
 export async function loadExperiences(): Promise<Experience[]> {

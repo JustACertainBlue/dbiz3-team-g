@@ -87,7 +87,7 @@ export async function buildRelaxationSuggestions(
   })
 
   const conversation_prompt =
-    'No experiences currently meet all criteria above the 60% threshold. You can relax your budget or travel distance, or adjust group size to see more artisan options.'
+    'No experiences currently meet all criteria above 60/100. You can relax your budget or travel distance, or adjust group size to see more artisan options.'
 
   return {
     relaxation_suggestions: suggestions,

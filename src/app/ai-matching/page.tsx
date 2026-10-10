@@ -185,108 +185,122 @@ export default function AiMatchingScreen() {
   }
 
   const simulateMatchingFlow = (prompt: string) => {
-    // If prompt lacks group size
-    if (!/(\d+)\s*(?:pax|guests|people|tourists|guests|French|foreign)/i.test(prompt)) {
+    // Offline fallback — check for group size before showing any results
+    if (!/(\d+)\s*(?:pax|guests?|people|tourists?|passengers?|người)/i.test(prompt)) {
       setMessages(prev => [
         ...prev,
         {
           id: `assistant-${Date.now()}`,
           sender: 'Assistant',
           text: 'To tailor the artisan workshop, please clarify your group size and date range.',
-          clarificationQuestions: ['Could you please specify your expected group size or number of guests?'],
+          clarificationQuestions: [
+            'Could you please specify your expected group size or number of guests/pax?',
+            'What is your desired date or date range for the tour?',
+          ],
           sent_at: new Date().toLocaleTimeString(),
         },
       ])
       return
     }
 
-    // Complete match response
+    // Offline fallback with seed-correct values (no matching logic possible without server)
     setMessages(prev => [
       ...prev,
       {
         id: `assistant-${Date.now()}`,
         sender: 'Assistant',
-        text: 'Found 3 verified craft experiences matching your specifications in Hanoi villages:',
+        text: '(Offline mode) Showing seed catalog — live matching unavailable. Results are not filtered by your group size.',
         sent_at: new Date().toLocaleTimeString(),
         recommendations: [
           {
-            experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69',
-            provider_id: '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374',
-            experience_name: 'Nặn gốm thủ công (Bat Trang Pottery)',
-            provider_name: 'Bat Trang Ceramic Guild',
-            village_name: 'Bat Trang',
+            experience_id: 'b70bd0fa-6a81-5aec-9ff6-5303210b2fad',
+            provider_id: '867719ea-c962-56a1-a88c-3f96e8d0af65',
+            experience_name: 'Làm nón lá',
+            provider_name: 'Xưởng thủ công Chuông',
+            village_name: 'Chuông',
             rank: 1,
-            match_score: 96,
-            price_per_person: 150000,
-            max_participants: 25,
-            explanation: 'Direct match for hands-on ceramic crafts. Accommodates up to 25 guests within your budget, 12km from central Hanoi.',
-          },
-          {
-            experience_id: 'c8281688-2dc1-5cb1-9ff6-139df04ba562',
-            provider_id: '70efa801-a908-5e16-8510-fd094fbdc020',
-            experience_name: 'Dệt lụa truyền thống (Van Phuc Silk)',
-            provider_name: 'Van Phuc Silk Artisans',
-            village_name: 'Van Phuc',
-            rank: 2,
-            match_score: 88,
-            price_per_person: 175000,
-            max_participants: 20,
-            explanation: 'Authentic silk weaving workshop with verified master weavers.',
+            match_score: 0,
+            price_per_person: 225000,
+            max_participants: 15,
+            explanation: 'Offline fallback — run the dev server for real AI matching.',
           },
         ],
       },
     ])
   }
 
+  /**
+   * Calls the real matching pipeline via the server API.
+   * The server runs: loadExperiences → applyHardConstraints → rankCandidates → buildRecommendations
+   * and returns top_matches + optional relaxation_suggestions based on the profile built from
+   * the session conversation history.
+   */
   const fetchMatchingResults = async (profileOrContext: any) => {
-    // Top recommendations simulation based on seed catalog
-    const recommendations = [
-      {
-        experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69',
-        provider_id: '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374',
-        experience_name: 'Nặn gốm thủ công (Bat Trang Hand Pottery)',
-        provider_name: 'Bat Trang Ceramic Guild',
-        village_name: 'Bat Trang Ceramic Village',
-        rank: 1,
-        match_score: 96.5,
-        price_per_person: 150000,
-        max_participants: 25,
-        explanation: 'Top match: Verified master artisan workshop. Well within budget, capacity for your group size, and 30-min transit from Hanoi center.',
-      },
-      {
-        experience_id: 'c8281688-2dc1-5cb1-9ff6-139df04ba562',
-        provider_id: '70efa801-a908-5e16-8510-fd094fbdc020',
-        experience_name: 'Dệt lụa truyền thống (Van Phuc Silk Weaving)',
-        provider_name: 'Van Phuc Silk Artisans',
-        village_name: 'Van Phuc Silk Village',
-        rank: 2,
-        match_score: 89.2,
-        price_per_person: 175000,
-        max_participants: 20,
-        explanation: 'Excellent cultural immersion with hands-on loom weaving and natural dye demonstration.',
-      },
-      {
-        experience_id: 'b70bd0fa-6a81-5aec-9ff6-5303210b2fad',
-        provider_id: '867719ea-c962-56a1-a88c-3f96e8d0af65',
-        experience_name: 'Làm nón lá (Chuong Conical Hat Making)',
-        provider_name: 'Chuong Village Heritage Coop',
-        village_name: 'Chuong Conical Hat Village',
-        rank: 3,
-        match_score: 84.0,
-        price_per_person: 225000,
-        max_participants: 20,
-        explanation: 'Unique conical hat crafting with personalized souvenir for every visitor.',
-      },
-    ]
+    try {
+      const res = await fetch('/api/ait/matching', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          tour_preference_profile: profileOrContext,
+        }),
+      })
 
+      if (res.ok) {
+        const data = await res.json()
+        const topMatches: any[] = data.top_matches || []
+        const relaxation = data.relaxation_suggestions
+
+        if (topMatches.length > 0) {
+          setMessages(prev => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}`,
+              sender: 'Assistant',
+              text: 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
+              sent_at: new Date().toLocaleTimeString(),
+              recommendations: topMatches.map(m => ({
+                experience_id: m.experience_id,
+                provider_id: m.provider_id,
+                experience_name: m.experience_name || m.name,
+                provider_name: m.provider_name,
+                village_name: m.village_name,
+                rank: m.rank,
+                match_score: m.match_score,
+                price_per_person: m.price_per_person,
+                max_participants: m.max_participants,
+                explanation: m.explanation,
+              })),
+            },
+          ])
+        } else {
+          // No candidates passed constraints → show relaxation suggestions (BR-011, BR-020)
+          setMessages(prev => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}`,
+              sender: 'Assistant',
+              text: relaxation?.conversation_prompt ||
+                'No experiences currently meet all criteria above 60/100. You can relax your budget, travel distance, or adjust group size to see more artisan options.',
+              sent_at: new Date().toLocaleTimeString(),
+              relaxationSuggestions: relaxation?.relaxation_suggestions || [],
+            },
+          ])
+        }
+        return
+      }
+    } catch {
+      // Server unavailable — fall through to offline fallback below
+    }
+
+    // API not reachable: show offline notice
     setMessages(prev => [
       ...prev,
       {
         id: `assistant-${Date.now()}`,
         sender: 'Assistant',
-        text: 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
+        text: 'Could not reach the matching server. Please ensure the dev server is running (`npm run dev`) and refresh.',
         sent_at: new Date().toLocaleTimeString(),
-        recommendations,
       },
     ])
   }

@@ -6,10 +6,10 @@ The current [System Configuration](../docs/architecture/system%20configuration.m
 
 | Group | Tables | Main responsibility |
 |---|---|---|
-| Reference and identity | `roles`, `permissions`, `role_permissions`, `villages`, `user_accounts`, `account_status_history`, `ubnd_village_assignments`, `sessions` | Authentication, role/subtype and village scope |
+| Reference and identity | `roles`, `permissions`, `role_permissions`, `villages`, `user_accounts`, `account_status_history`, `ubnd_village_assignments`, `sessions`, `password_reset_tokens` | Authentication, role/subtype and village scope |
 | Registration | `agency_registration_requests`, `registration_otp_challenges`, `registration_resubmission_tokens`, `registration_submission_versions`, `agency_review_records` | Versioned registration, OTP and HDT decisions |
-| Files | `stored_files`, `registration_documents`, `chat_attachments`, `profile_media` | Shared private/object-storage metadata with owner-specific links |
-| Profiles/catalog | `agency_profiles`, `agency_major_change_requests`, `provider_profiles`, `provider_profile_versions`, `provider_version_media`, `provider_verification_reviews`, `provider_operating_hours`, `experiences`, `experience_discount_rules` | Approved business data, submitted Provider versions and Experience catalog |
+| Files | `stored_files`, `registration_documents`, `chat_attachments`, `profile_media`, `provider_version_documents` | Shared private/object-storage metadata with owner-specific links |
+| Profiles/catalog | `agency_profiles`, `agency_major_change_requests`, `provider_profiles`, `provider_profile_versions`, `provider_version_media`, `provider_verification_reviews`, `provider_operating_hours`, `experiences`, `experience_discount_rules`, `ai_description_drafts` | Approved business data, submitted Provider versions and Experience catalog |
 | Matching/Explore | `matching_sessions`, `matching_messages`, `tour_preference_profiles`, `recommendation_results`, `agency_preference_profiles`, `preference_signals`, `quote_requests`, `explore_sessions`, `explore_interactions`, `ranking_parameter_versions`, `ranking_quality_assessments` | Agency intent, ranking results, signals and quality evaluation |
 | Booking/communication | `bookings`, `booking_status_history`, `chat_sessions`, `chat_participants`, `chat_messages`, `notifications` | Booking lifecycle, one active Agency–Provider chat and recipient notifications |
 | Accountability | `audit_logs` | Security and administrative evidence |

@@ -8,7 +8,7 @@ erDiagram
     user_accounts ||--o{ account_status_history : changes
     agency_registration_requests ||--o{ registration_otp_challenges : verifies
     agency_registration_requests ||--o{ registration_resubmission_tokens : authorizes
-    agency_registration_requests ||--o{ registration_submission_versions : versions
+    agency_registration_requests ||--|{ registration_submission_versions : versions
     registration_submission_versions ||--o{ registration_documents : contains
     stored_files ||--o{ registration_documents : backs
     agency_registration_requests ||--o| agency_profiles : creates
@@ -16,10 +16,12 @@ erDiagram
     agency_profiles ||--o{ agency_major_change_requests : proposes
     registration_submission_versions ||--o{ agency_review_records : reviewed_by
     agency_major_change_requests ||--o{ agency_review_records : reviewed_by
+    user_accounts ||--o{ agency_review_records : decides
     user_accounts ||--o| provider_profiles : represents
     villages ||--o{ provider_profiles : contains
-    provider_profiles ||--o{ provider_profile_versions : versions
+    provider_profiles ||--|{ provider_profile_versions : versions
     provider_profile_versions ||--o{ provider_verification_reviews : reviewed_by
+    user_accounts ||--o{ provider_verification_reviews : decides
     provider_profile_versions ||--o{ provider_version_media : contains
     stored_files ||--o{ provider_version_media : backs
     provider_profiles ||--o{ provider_operating_hours : configures
@@ -44,10 +46,10 @@ erDiagram
     agency_profiles ||--o{ bookings : attends
     provider_profiles ||--o{ bookings : hosts
     experiences ||--o{ bookings : reserves
-    bookings ||--o{ booking_status_history : transitions
+    bookings ||--|{ booking_status_history : transitions
     agency_profiles ||--o{ chat_sessions : participates
     provider_profiles ||--o{ chat_sessions : participates
-    chat_sessions ||--o{ chat_participants : authorizes
+    chat_sessions ||--|{ chat_participants : authorizes
     user_accounts ||--o{ chat_participants : joins
     chat_sessions ||--o{ chat_messages : contains
     chat_messages ||--o{ chat_attachments : carries

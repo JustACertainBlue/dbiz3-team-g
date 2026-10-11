@@ -69,13 +69,13 @@ Natural key: source_code
 | user_id | uuid | Yes | PK | F-AUTH-04/07/19/20/22/24/25 |
 | email | string | Yes | — | F-AUTH-04/07/19/20/22/24/25 |
 | password_hash | string | Yes | — | F-AUTH-04/07/19/20/22/24/25 |
-| role_code | string | Yes | FK→roles | F-AUTH-04/07/19/20/22/24/25 |
-| admin_type | string | No | — | F-AUTH-04/07/19/20/22/24/25 |
-| account_status | string | Yes | — | F-AUTH-04/07/19/20/22/24/25 |
+| role_code | enum[ADMIN, Tour_Agency, Local_Provider] | Yes | FK→roles | F-AUTH-04/07/19/20/22/24/25 |
+| admin_type | enum[HDT, UBND] | No | — | F-AUTH-04/07/19/20/22/24/25 |
+| account_status | enum[Active, Pending Approval, Approved, Rejected, Disabled] | Yes | — | F-AUTH-04/07/19/20/22/24/25 |
 | full_name | string | Yes | — | F-AUTH-04/07/19/20/22/24/25 |
 | title | string | No | — | F-AUTH-04/07/19/20/22/24/25 |
 | phone | string | No | — | F-AUTH-04/07/19/20/22/24/25 |
-| avatar_storage_key | string | No | — | F-AUTH-04/07/19/20/22/24/25 |
+| avatar_file_id | uuid | No | FK→stored_files | F-AUTH-04/07/19/20/22/24/25 |
 | must_change_password | boolean | Yes | — | F-AUTH-04/07/19/20/22/24/25 |
 | last_login | datetime | No | — | F-AUTH-04/07/19/20/22/24/25 |
 | created_at | datetime | Yes | — | F-AUTH-04/07/19/20/22/24/25 |
@@ -217,11 +217,10 @@ Natural key: storage_key
 
 | Column | Type (as declared) | Required | Key | Citation |
 |---|---|---|---|---|
-| registration_request_id | uuid | Yes | PK | F-AUTH-02/26; Q-03 |
-| version_no | int | Yes | PK | F-AUTH-02/26; Q-03 |
+| registration_request_id | uuid | Yes | PK FK→registration_submission_versions | F-AUTH-02/26; Q-03 |
+| version_no | int | Yes | PK FK→registration_submission_versions | F-AUTH-02/26; Q-03 |
 | file_id | uuid | Yes | PK FK→stored_files | F-AUTH-02/26; Q-03 |
-| document_type | string | Yes | — | F-AUTH-02/26; Q-03 |
-| REFERENCES | registration | No | — | F-AUTH-02/26; Q-03 |
+| document_type | enum[Business Registration Certificate, Travel Service Business License, Other] | Yes | — | F-AUTH-02/26; Q-03 |
 
 Natural key: registration_request_id, version_no, file_id
 
@@ -264,14 +263,13 @@ Natural key: surrogate major_change_id (no declared natural key — see Q-05/Q-1
 | Column | Type (as declared) | Required | Key | Citation |
 |---|---|---|---|---|
 | review_id | uuid | Yes | PK | F-AUTH-18/26 |
-| registration_request_id | uuid | No | — | F-AUTH-18/26 |
-| registration_version_no | int | No | — | F-AUTH-18/26 |
+| registration_request_id | uuid | No | FK→registration_submission_versions | F-AUTH-18/26 |
+| registration_version_no | int | No | FK→registration_submission_versions | F-AUTH-18/26 |
 | major_change_id | uuid | No | FK→agency_major_change_requests | F-AUTH-18/26 |
 | hdt_user_id | uuid | Yes | FK→user_accounts | F-AUTH-18/26 |
 | decision | enum[Approve, Request More Information, Reject] | Yes | — | F-AUTH-18/26 |
 | comments | string | No | — | F-AUTH-18/26 |
 | decided_at | datetime | Yes | — | F-AUTH-18/26 |
-| REFERENCES | registration | No | — | F-AUTH-18/26 |
 
 Natural key: surrogate review_id (no declared natural key — see Q-05/Q-11)
 
@@ -282,9 +280,8 @@ Natural key: surrogate review_id (no declared natural key — see Q-05/Q-11)
 | provider_id | uuid | Yes | PK | F-AUTH-20; F-PROFILE-03/04/05 |
 | user_id | uuid | Yes | FK→user_accounts UK | F-AUTH-20; F-PROFILE-03/04/05 |
 | village_id | uuid | Yes | FK→villages | F-AUTH-20; F-PROFILE-03/04/05 |
-| business_registration_number | string | Yes | — | F-AUTH-20; F-PROFILE-03/04/05 |
-| current_version_no | int | No | — | F-AUTH-20; F-PROFILE-03/04/05 |
-| published_version_no | int | No | — | F-AUTH-20; F-PROFILE-03/04/05 |
+| current_version_no | int | No | FK→provider_profile_versions | F-AUTH-20; F-PROFILE-03/04/05 |
+| published_version_no | int | No | FK→provider_profile_versions | F-AUTH-20; F-PROFILE-03/04/05 |
 | verification_status | enum[Draft, Pending Verification, Verified, Revision Required] | Yes | — | F-AUTH-20; F-PROFILE-03/04/05 |
 | created_at | datetime | Yes | — | F-AUTH-20; F-PROFILE-03/04/05 |
 | updated_at | datetime | Yes | — | F-AUTH-20; F-PROFILE-03/04/05 |
@@ -322,7 +319,18 @@ Natural key: provider_id, version_no
 | revision_comments | string | No | — | F-PROFILE-05 |
 | reviewed_at | datetime | Yes | — | F-PROFILE-05 |
 
-Natural key: surrogate review_id (no declared natural key — see Q-05/Q-11)
+Natural key: surrogate review_id
+
+### `provider_version_documents`
+
+| Column | Type (as declared) | Required | Key | Citation |
+|---|---|---|---|---|
+| provider_id | uuid | Yes | PK FK→provider_profile_versions | F-PROFILE-04/05; A3 |
+| version_no | int | Yes | PK FK→provider_profile_versions | F-PROFILE-04/05; A3 |
+| file_id | uuid | Yes | PK FK→stored_files | F-PROFILE-04/05; A3 |
+| document_type | enum[Business Registration Certificate, Other] | Yes | — | F-PROFILE-04/05; A3 |
+
+Natural key: provider_id, version_no, file_id
 
 ### `provider_operating_hours`
 
@@ -565,7 +573,7 @@ Natural key: surrogate assessment_id (no declared natural key — see Q-05/Q-11)
 | agency_id | uuid | Yes | FK→agency_profiles | F-SCHED-03..07 |
 | provider_id | uuid | Yes | FK→experiences | F-SCHED-03..07 |
 | experience_id | uuid | Yes | FK→experiences | F-SCHED-03..07 |
-| source_chat_session_id | uuid | No | — | F-SCHED-03..07 |
+| source_chat_session_id | uuid | No | FK→chat_sessions | F-SCHED-03..07 |
 | start_at | datetime | Yes | — | F-SCHED-03..07 |
 | duration_minutes | int | Yes | — | F-SCHED-03..07 |
 | group_size | int | Yes | — | F-SCHED-03..07 |
@@ -618,7 +626,7 @@ Natural key: surrogate chat_session_id (no declared natural key — see Q-05/Q-1
 |---|---|---|---|---|
 | chat_session_id | uuid | Yes | PK FK→chat_sessions | F-CHAT-01/03 |
 | user_id | uuid | Yes | PK FK→user_accounts | F-CHAT-01/03 |
-| last_read_message_id | uuid | No | — | F-CHAT-01/03 |
+| last_read_message_id | uuid | No | FK→chat_messages | F-CHAT-01/03 |
 | unread_count | int | Yes | — | F-CHAT-01/03 |
 
 Natural key: chat_session_id, user_id
@@ -1112,6 +1120,14 @@ erDiagram
     CHAT_MESSAGE ||--o{ CHAT_ATTACHMENT : carries
     STORED_FILE ||--o{ CHAT_ATTACHMENT : backs
     USER_ACCOUNT ||--o{ NOTIFICATION : receives
+    MATCHING_SESSION ||--o{ CHAT_SESSION : originates
+    MATCHING_SESSION ||--o{ QUOTE_REQUEST : originates
+    EXPERIENCE ||--o{ CHAT_SESSION : primary_context
+    QUOTE_REQUEST ||--o{ CHAT_SESSION : primary_context
+    BOOKING ||--o{ CHAT_SESSION : primary_context
+    PROVIDER_PROFILE_VERSION ||--o{ PROVIDER_VERSION_DOCUMENT : supported_by
+    STORED_FILE ||--o{ PROVIDER_VERSION_DOCUMENT : backs
+    STORED_FILE ||--o| USER_ACCOUNT : avatar_of
 ```
 
 ## Open questions

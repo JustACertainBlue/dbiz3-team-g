@@ -190,12 +190,12 @@ sequenceDiagram
     participant AI as AI Engine
     participant DB as Database
     participant Maps as Maps Service
-    Note over Agency,UI: UC-DIS-05; authenticated Agency only
+    Note over Agency,UI: UC-DIS-05#59; authenticated Agency only
     Agency->>UI: Natural-language requirements
     UI->>API: analyzeRequirements (F-MATCH-02/03)
     API->>AI: Extract tour context and constraints
     alt AI unavailable
-        API-->>UI: Temporary AI Failure with Retry; no fallback matching result
+        API-->>UI: Temporary AI Failure with Retry#59; no fallback matching result
     else Extraction succeeds
         loop Missing critical fields until sufficient input or user cancels
             API-->>UI: Clarification question
@@ -207,7 +207,7 @@ sequenceDiagram
         API->>DB: Retrieve eligible Verified candidates (F-MATCH-05)
         API->>Maps: Distance/route inputs where required
         alt Required external calculation fails
-            API-->>UI: Unable to complete matching; retry, no fabricated distance
+            API-->>UI: Unable to complete matching#59; retry, no fabricated distance
         else Candidate data available
             API->>AI: Filter hard constraints, normalize factors, rank (F-MATCH-06/07)
             AI-->>API: Scored candidates and explanations
@@ -216,13 +216,13 @@ sequenceDiagram
             else Eligible ranked candidates
                 API-->>UI: Ranked Experience/Village cards
                 Agency->>UI: View, Chat or Request Quote
-                UI->>API: Record permitted preference signal; Quote once per Agency–Experience
+                UI->>API: Record permitted preference signal#59; Quote once per Agency–Experience
                 API->>DB: Update shared preference profile and chat context
                 API-->>UI: DSC033 or COM048
             end
         end
     end
-    Note over API,DB: Shared preference profile/time decay; Book/Schedule are not learning signals
+    Note over API,DB: Shared preference profile/time decay#59; Book/Schedule are not learning signals
 ```
 
 **5. Functional requirements (mandatory)**

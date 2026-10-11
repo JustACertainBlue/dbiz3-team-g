@@ -154,7 +154,7 @@ graph TD
 ```
 
 **4.2 Sequence for the main flow**
-
+```mermaid
 sequenceDiagram
     actor Admin
     participant UI as ADM079
@@ -172,7 +172,7 @@ sequenceDiagram
         API-->>UI: Four cards, charts, result tables and filters
         Note over UI: No invented drill-down#59; metric tables read-only
     end
-
+```
 **5. Functional requirements (mandatory)**
 
 | FR ID | Function List ID | Requirement — system MUST | Actor | Priority |

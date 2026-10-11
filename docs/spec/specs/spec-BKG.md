@@ -269,43 +269,43 @@ sequenceDiagram
     participant API as Backend
     participant DB as Database
     participant Worker
-    Note over Provider,UI: UC-BOOK-02 SCH139; operating hours edited only on PRF128
+    Note over Provider,UI: UC-BOOK-02 SCH139#59; operating hours edited only on PRF128
     UI->>API: Calculate availability (F-SCHED-09)
     API->>DB: Read operating hours and On hold/Booked occupancy
-    API-->>UI: Calculated slots; no operating hours means no available periods
+    API-->>UI: Calculated slots#59; no operating hours means no available periods
     Note over Provider,UI: UC-BOOK-04 BKG134
     Provider->>UI: Select Agency ID, Experience, time, group and agreed total price
     UI->>API: createBooking (F-SCHED-03)
     API->>API: Validate ownership, Agency identity and input
     API->>DB: Atomically recheck availability and create On hold, expires_at=created_at+72h
     alt Conflict/validation/permission failure
-        API-->>UI: Defined error; no Booking or schedule block committed
+        API-->>UI: Defined error#59; no Booking or schedule block committed
     else Commit succeeds
         API->>DB: Persist booking event and Agency schedule projection
         API->>API: Resolve Active pair Chat and send booking auto-message (F-SCHED-08)
         API-->>UI: BKG135 On hold
         API-->>Agency: BKG137/SCH141 includes own On hold
     end
-    Note over Provider,Worker: UC-BOOK-05 BKG144; confirm vs72h expiry race
+    Note over Provider,Worker: UC-BOOK-05 BKG144#59; confirm vs72h expiry race
     par Provider action
         Provider->>API: Update fields or target_status Booked/Cancelled
         API->>DB: Lock/check current state and original deadline, then permitted atomic transition
     and Expiry worker
         Worker->>API: Expire due On hold booking
-        API->>DB: Conditional On hold→Cancelled if deadline reached; record automatic expiry once
+        API->>DB: Conditional On hold→Cancelled if deadline reached#59; record automatic expiry once
     end
-    Note over API,DB: At expiry boundary confirmation fails; only one transition wins. Repeated worker does not duplicate events/messages.
+    Note over API,DB: At expiry boundary confirmation fails#59; only one transition wins. Repeated worker does not duplicate events/messages.
     API->>DB: Synchronize resulting schedule and occupancy
-    API->>API: Deliver linked chat update; retry without duplicating the committed booking event
-    Note over Provider,UI: F-SCHED-06 BKG136; retain current arrival/completion requirement
+    API->>API: Deliver linked chat update#59; retry without duplicating the committed booking event
+    Note over Provider,UI: F-SCHED-06 BKG136#59; retain current arrival/completion requirement
     Provider->>UI: Mark Group Arrival
     UI->>API: markArrival(booking_id)
-    API->>DB: Check owner, Booked status and now>=start_at; set Completed and arrived_at once
+    API->>DB: Check owner, Booked status and now>=start_at#59; set Completed and arrived_at once
     API-->>UI: BKG135 result or defined invalid-state/time error
-    Note over Agency,UI: UC-BOOK-01/03 SCH141/BKG137/BKG138; Agency read-only
+    Note over Agency,UI: UC-BOOK-01/03 SCH141/BKG137/BKG138#59; Agency read-only
     Agency->>API: Read own schedule/booking details
     API->>DB: Scope by own organization
-    API-->>Agency: Canonical status and latest update; no other Agency details
+    API-->>Agency: Canonical status and latest update#59; no other Agency details
     Note over Provider,UI: UC-BOOK-06 BKG133 uses F-SCHED-10, own bookings only
 ```
 

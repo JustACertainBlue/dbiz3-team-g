@@ -155,25 +155,23 @@ graph TD
 
 **4.2 Sequence for the main flow**
 
-```mermaid
 sequenceDiagram
     actor Admin
     participant UI as ADM079
     participant API as Backend
     participant DB as Database
-    Note over Admin,UI: UC-ADM-01; one actor ADMIN, subtype HDT/UBND
+    Note over Admin,UI: UC-ADM-01#59; one actor ADMIN, subtype HDT/UBND
     Admin->>UI: Select time/village/Agency/Provider filters
     UI->>API: loadDashboardMetrics (F-ADMIN-01..10)
-    API->>API: Check ADMIN and admin_type; force assigned village for UBND
+    API->>API: Check ADMIN and admin_type#59; force assigned village for UBND
     alt Unauthorized scope or invalid date range
-        API-->>UI: Permission/validation error; no unauthorized data
+        API-->>UI: Permission/validation error#59; no unauthorized data
     else Permitted scope
         API->>DB: Aggregate account status, profile status, activity, bookings and distinct pairs
         DB-->>API: Scoped metrics, booking trend/list, top10 collaboration pairs
         API-->>UI: Four cards, charts, result tables and filters
-        Note over UI: No invented drill-down; metric tables read-only
+        Note over UI: No invented drill-down#59; metric tables read-only
     end
-```
 
 **5. Functional requirements (mandatory)**
 

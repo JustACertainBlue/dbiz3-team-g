@@ -61,10 +61,13 @@ export function guestSession(): MockSession {
   }
 }
 
-export function agencyOwnerSession(agencyId = SEED_IDS.agency1): MockSession {
+export function agencyOwnerSession(
+  agencyId: string = SEED_IDS.agency1,
+  userId: string = SEED_IDS.agencyUser1,
+): MockSession {
   return {
     role: 'TourAgency',
-    userId: SEED_IDS.agencyUser1,
+    userId,
     agencyId,
     providerId: null,
     adminType: null,
@@ -74,8 +77,8 @@ export function agencyOwnerSession(agencyId = SEED_IDS.agency1): MockSession {
 }
 
 export function providerSession(
-  providerId = SEED_IDS.provider1Verified,
-  userId = SEED_IDS.provider1VerifiedUserId,
+  providerId: string = SEED_IDS.provider1Verified,
+  userId: string = SEED_IDS.provider1VerifiedUserId,
 ): MockSession {
   return {
     role: 'LocalProvider',
@@ -89,11 +92,12 @@ export function providerSession(
 }
 
 export function ubndSession(
-  assignedVillageId = SEED_IDS.village1,
+  assignedVillageId: string = SEED_IDS.village1,
+  userId: string = SEED_IDS.ubndUserId,
 ): MockSession {
   return {
     role: 'UBND',
-    userId: SEED_IDS.ubndUserId,
+    userId,
     agencyId: null,
     providerId: null,
     adminType: 'UBND',
@@ -102,10 +106,12 @@ export function ubndSession(
   }
 }
 
-export function hdtSession(): MockSession {
+export function hdtSession(
+  userId: string = SEED_IDS.hdtUserId,
+): MockSession {
   return {
     role: 'HDT',
-    userId: SEED_IDS.hdtUserId,
+    userId,
     agencyId: null,
     providerId: null,
     adminType: 'HDT',

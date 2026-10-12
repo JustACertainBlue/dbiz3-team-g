@@ -11,6 +11,7 @@
  * publicly; a pending revision does not replace the public version.
  */
 import { describe, it, expect } from 'vitest'
+import assert from 'node:assert'
 import {
   getProviderProfile,
   updateProviderProfile,
@@ -37,23 +38,31 @@ describe('T014 | getProviderProfile – US-3 (View Local Provider Profile)', () 
   describe('AC1: Tour Agency sees full permitted collaboration fields', () => {
     it('returns provider_name and craft_type for a Tour Agency', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, agencyOwnerSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect(result.provider_name).toBeDefined()
       expect(result.craft_type).toBeDefined()
     })
 
     it('returns pricing for a Tour Agency (collaboration detail)', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, agencyOwnerSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect(result.pricing).toBeDefined()
       expect(typeof result.pricing).toBe('number')
     })
 
     it('returns contact for a Tour Agency (collaboration detail)', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, agencyOwnerSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect(result.contact).toBeDefined()
     })
 
     it('does NOT return quality_metrics to Tour Agency (HDT-only field)', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, agencyOwnerSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect((result as Record<string, unknown>).quality_metrics).toBeUndefined()
     })
   })
@@ -64,12 +73,16 @@ describe('T014 | getProviderProfile – US-3 (View Local Provider Profile)', () 
     it('returns verification_status to own Provider', async () => {
       const session = providerSession(VERIFIED_PROVIDER_ID, SEED_IDS.provider1VerifiedUserId)
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, session)
+      expect(result).not.toBeNull()
+      assert(result)
       expect(result.verification_status).toBe('Verified')
     })
 
     it('returns full editable info to own Provider', async () => {
       const session = providerSession(VERIFIED_PROVIDER_ID, SEED_IDS.provider1VerifiedUserId)
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, session)
+      expect(result).not.toBeNull()
+      assert(result)
       expect(result.booking_conditions).toBeDefined()
     })
   })
@@ -81,6 +94,8 @@ describe('T014 | getProviderProfile – US-3 (View Local Provider Profile)', () 
       // providerDraft viewing providerVerified
       const session = providerSession(SEED_IDS.providerDraft, SEED_IDS.providerDraftUserId)
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, session)
+      expect(result).not.toBeNull()
+      assert(result)
       // Another provider should see public info only — no pricing
       expect((result as Record<string, unknown>).pricing).toBeUndefined()
     })
@@ -91,6 +106,8 @@ describe('T014 | getProviderProfile – US-3 (View Local Provider Profile)', () 
   describe('AC4: Guest sees only public/basic information', () => {
     it('returns provider_name, craft_type, general_description for Guest', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, guestSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect(result.provider_name).toBeDefined()
       expect(result.craft_type).toBeDefined()
       expect(result.general_description).toBeDefined()
@@ -98,16 +115,22 @@ describe('T014 | getProviderProfile – US-3 (View Local Provider Profile)', () 
 
     it('does NOT return pricing to Guest', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, guestSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect((result as Record<string, unknown>).pricing).toBeUndefined()
     })
 
     it('does NOT return contact to Guest', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, guestSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect((result as Record<string, unknown>).contact).toBeUndefined()
     })
 
     it('does NOT return verification_status to Guest', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, guestSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect((result as Record<string, unknown>).verification_status).toBeUndefined()
     })
   })
@@ -117,12 +140,17 @@ describe('T014 | getProviderProfile – US-3 (View Local Provider Profile)', () 
   describe('HDT actor: full-detail monitoring access', () => {
     it('returns quality_metrics to HDT', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, hdtSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect(result.quality_metrics).toBeDefined()
-      expect(typeof result.quality_metrics!.total_bookings).toBe('number')
+      assert(result.quality_metrics)
+      expect(typeof result.quality_metrics.total_bookings).toBe('number')
     })
 
     it('returns verification_status to HDT', async () => {
       const result = await getProviderProfile(VERIFIED_PROVIDER_ID, hdtSession())
+      expect(result).not.toBeNull()
+      assert(result)
       expect(result.verification_status).toBe('Verified')
     })
   })

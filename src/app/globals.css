@@ -1,0 +1,31 @@
+:root { font-family: system-ui, sans-serif; color: #19332c; background: #f7f7f3; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: inherit; }
+main { max-width: 1100px; padding: 2rem 1.2rem 4rem; margin: auto; }
+button, a.button { border: 1px solid #246754; border-radius: .5rem; background: #246754; color: white; padding: .65rem 1rem; text-decoration: none; cursor: pointer; }
+button[disabled], .button.disabled { background: #d8dfdb; border-color: #d8dfdb; color: #43534d; cursor: not-allowed; }
+.muted { color: #53645e; }
+.masthead { display: flex; justify-content: space-between; gap: 2rem; align-items: flex-start; margin-bottom: 2rem; }
+.masthead h1 { font-size: clamp(2rem, 4vw, 3rem); margin: .3rem 0; }
+.eyebrow { color: #31715c; font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.viewer-panel { min-width: 220px; background: #e8f1eb; padding: 1rem; border-radius: .8rem; }
+.viewer-panel p { margin: .6rem 0; }
+.viewer-panel small { color: #4b665b; }
+.count { font-weight: 700; margin-bottom: 1rem; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 1.2rem; }
+.experience-card { overflow: hidden; border-radius: 1rem; background: white; border: 1px solid #d8e1db; box-shadow: 0 4px 16px #1d403011; }
+.media-placeholder { background: linear-gradient(135deg, #bbd7c5, #e6d8b2); min-height: 165px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6rem; text-align: center; color: #234e3f; }
+.media-placeholder span { font-weight: 700; }
+.card-body { padding: 1.2rem; }
+.card-body h2 { margin: .1rem 0 .5rem; font-size: 1.4rem; }
+.price { font-weight: 700; }
+.card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .8rem; margin-top: 1rem; }
+.card-actions .button { font-size: .92rem; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 2rem; }
+.empty { border: 1px dashed #98b3a1; border-radius: .8rem; padding: 2rem; background: white; }
+.detail-entry { max-width: 760px; }
+.detail-entry dl { display: grid; grid-template-columns: 150px 1fr; gap: .7rem; margin-top: 2rem; }
+.detail-entry dt { font-weight: 700; }
+.detail-entry dd { margin: 0; }
+@media (max-width: 650px) { .masthead { display: block; } .viewer-panel { margin-top: 1rem; } }

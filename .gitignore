@@ -15,6 +15,8 @@ __pycache__/
 
 # Node
 node_modules/
+.next/
+*.tsbuildinfo
 
 # Personal agent settings (shared settings stay committed)
 CLAUDE.local.md

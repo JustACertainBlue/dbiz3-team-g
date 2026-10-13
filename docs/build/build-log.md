@@ -79,3 +79,4 @@ does not happen again.
 | Entry | What went wrong | How it was caught | Prevention |
 |---|---|---|---|
 | | | | |
+| 2 | EXP / local preview | Running `npm run build` while `npm run dev` used the same `.next` directory invalidated a development server chunk and made `/explore` return HTTP 500. | `next.config.mjs` now separates development output (`.next-dev`) from production output (`.next`); verified a production build while dev served `/explore` successfully. |

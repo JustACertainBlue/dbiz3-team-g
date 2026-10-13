@@ -277,14 +277,14 @@ sequenceDiagram
     Guest->>UI: Submit registration
     UI->>API: validateRegistration (F-AUTH-02/03)
     alt Invalid fields or duplicate email
-        API-->>UI: validation_errors; no account created
+        API-->>UI: validation_errors#59; no account created
     else Valid unique registration
         API->>DB: Create registration request and return registration_request_id (F-AUTH-02)
         API->>Mail: Issue OTP for existing request (F-AUTH-23)
         Guest->>UI: Enter OTP on REG115
         UI->>API: verifyOTP(registration_request_id, otp)
         alt Wrong, expired or attempts exhausted
-            API-->>UI: Defined OTP error; no account created
+            API-->>UI: Defined OTP error#59; no account created
         else Verified
             API->>DB: Create Agency Pending Approval from verified registration_request (F-AUTH-04)
             API-->>UI: REG116 pending-review confirmation
@@ -295,25 +295,25 @@ sequenceDiagram
     UI->>API: authenticate (F-AUTH-06/07)
     API->>DB: Read password hash and current status
     alt Invalid credentials or ineligible/Disabled account
-        API-->>UI: Error; no authenticated session
+        API-->>UI: Error#59; no authenticated session
     else Eligible credentials
         API->>DB: Create opaque session and permission context
         API-->>UI: role, admin_type when ADMIN, permissions, must_change_password
-        UI-->>Member: ACC129 password panel if required; else ADM079/EXP017/DSH018
+        UI-->>Member: ACC129 password panel if required#59; else ADM079/EXP017/DSH018
     end
-    Note over Member,UI: UC-ACC-04 PAS011→PAS014; email link→PAS142→PAS143
+    Note over Member,UI: UC-ACC-04 PAS011→PAS014#59; email link→PAS142→PAS143
     Member->>UI: Request recovery by email
     UI->>API: requestReset (F-AUTH-11)
     API->>API: Rate limit 3/email and 5/IP per15min
     opt Eligible known email
         API->>DB: Store one-use token with15min expiry
-        API->>Mail: Send token link; token never returned to requesting client
+        API->>Mail: Send token link#59; token never returned to requesting client
     end
     API-->>UI: Same generic result for known/unknown email
     Member->>UI: Open emailed token link on PAS142 and submit new password
     UI->>API: resetPassword(token,new_password,confirm_password)
     alt Invalid/expired/consumed token or invalid password
-        API-->>UI: Defined error; no password update
+        API-->>UI: Defined error#59; no password update
     else Valid
         API->>DB: Atomically update hash and consume token
         API-->>UI: PAS143 success
@@ -322,13 +322,13 @@ sequenceDiagram
     Member->>UI: Current/new/confirm password
     UI->>API: changePassword (F-AUTH-14)
     API->>DB: Verify current hash and persist valid replacement with audit
-    API-->>UI: Defined failure or password_updated_at; clear required-change guard on success
-    Note over Admin,UI: UC-ACC-07/08 ADM117; Admin actor with HDT/UBND subtype
+    API-->>UI: Defined failure or password_updated_at#59; clear required-change guard on success
+    Note over Admin,UI: UC-ACC-07/08 ADM117#59; Admin actor with HDT/UBND subtype
     Admin->>UI: Create account
     UI->>API: createUBND(HDT) or createProvider(UBND)
     API->>API: Check subtype and village scope (F-AUTH-16)
     alt Forbidden subtype/scope or invalid input
-        API-->>UI: Error; no account created
+        API-->>UI: Error#59; no account created
     else Allowed
         API->>DB: Create Active account, must_change_password=true
         opt Provider target
@@ -341,9 +341,9 @@ sequenceDiagram
     Admin->>UI: Disable/enable/reset password
     UI->>API: accountAction (F-AUTH-22)
     API->>API: Check subtype/resource scope
-    API->>DB: Apply permitted action; disable invalidates all sessions immediately
+    API->>DB: Apply permitted action#59; disable invalidates all sessions immediately
     API-->>UI: Result or permission error
-    Note over Member,UI: UC-ACC-10 ACC129/ACC130; UC-ACC-03 AUT026
+    Note over Member,UI: UC-ACC-10 ACC129/ACC130#59; UC-ACC-03 AUT026
     Member->>UI: Edit permitted personal fields or logout
     UI->>API: updateOwnAccount (F-AUTH-25) or logout (F-AUTH-09)
     API->>DB: Owner validation then persist personal fields, or invalidate session

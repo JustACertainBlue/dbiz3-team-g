@@ -228,10 +228,10 @@ sequenceDiagram
     UI->>API: getExplore or getExperienceDetail
     API->>DB: Read eligible public catalog and permitted fields
     alt Guest
-        API-->>UI: Public fields including capacity/availability summary; restricted prices/contact masked
-        Note over UI: DSC123/DSC124; AI interface hidden
+        API-->>UI: Public fields including capacity/availability summary#59; restricted prices/contact masked
+        Note over UI: DSC123/DSC124#59; AI interface hidden
     else Approved Agency
-        API-->>UI: Permitted detail, prices/contact; DSC122/DSC033
+        API-->>UI: Permitted detail, prices/contact#59; DSC122/DSC033
         opt Request Quote
             UI->>API: requestQuote(experience_id, optional dates/group)
             API->>DB: Check Agency–Experience one-request guard and resolve Active pair chat
@@ -250,7 +250,7 @@ sequenceDiagram
     else Gate fails or data insufficient
         API->>DB: Keep current Active unchanged and log decision
     end
-    Note over Worker,DB: Next eligible weekly cohort is monitored; material decline triggers audited automatic rollback
+    Note over Worker,DB: Next eligible weekly cohort is monitored#59; material decline triggers audited automatic rollback
 ```
 
 **5. Functional requirements (mandatory)**

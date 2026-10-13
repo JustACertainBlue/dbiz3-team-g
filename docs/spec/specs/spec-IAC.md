@@ -206,24 +206,24 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    actor Participant as Agency or Local Provider
+    actor User as Agency or Local Provider
     participant UI as COM048 or COM065
     participant API as Backend
     participant DB as Database
     participant Store as Private Document Storage
-    Note over Participant,UI: UC-COM-01; Agency direct initiation, Provider needs Quote/Booking context
-    Participant->>UI: Open Chat
+    Note over User,UI: UC-COM-01#59; Agency direct initiation, Provider needs Quote/Booking context
+    User->>UI: Open Chat
     UI->>API: openChat (F-CHAT-01)
     API->>API: Check participants, source context and permission
     API->>DB: Atomically reuse/create at most one Active Chat per Agency–Provider pair
-    API-->>UI: Active session plus contextual IDs; Closed histories remain separate
+    API-->>UI: Active session plus contextual IDs#59; Closed histories remain separate
     UI->>API: Read last50 messages and chat list (F-CHAT-03)
     API->>DB: Participant-only history, cursor pagination and unread counter
     API-->>UI: Authorized history
-    Participant->>UI: Send text or attach on COM125/COM126
+    User->>UI: Send text or attach on COM125/COM126
     UI->>API: F-CHAT-02 text<=4000 or F-CHAT-05 files1–5,<=10MB each
     alt Invalid content/file, Closed session or denied participant
-        API-->>UI: Error; no message created
+        API-->>UI: Error#59; no message created
     else Valid
         opt Attachments
             API->>Store: Store validated private files
@@ -231,13 +231,13 @@ sequenceDiagram
         API->>DB: Persist message with sender/time/context and update chat preview
         API-->>UI: message_id and sent_at
     end
-    Participant->>UI: Switch page/thread
+    User->>UI: Switch page/thread
     Note over UI,DB: Navigation does not close Active Chat
-    Participant->>UI: Explicit Close Chat
+    User->>UI: Explicit Close Chat
     UI->>API: closeChat (F-CHAT-04)
-    API->>DB: Check participant; Active→Closed with closed_by/closed_at; retain history
+    API->>DB: Check participant#59; Active→Closed with closed_by/closed_at#59; retain history
     API-->>UI: Closed read-only history
-    Note over UI,DB: New interaction creates a new Active session; no reopening Closed session
+    Note over UI,DB: New interaction creates a new Active session#59; no reopening Closed session
 ```
 
 **5. Functional requirements (mandatory)**

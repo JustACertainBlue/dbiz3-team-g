@@ -261,7 +261,7 @@ sequenceDiagram
     UI->>API: updateAgencyProfile (F-PROFILE-02)
     API->>API: Check owner and validate fields
     alt Major company_name/tax_id change
-        API->>DB: Store pending revision; keep Approved account/current legal version
+        API->>DB: Store pending revision#59; keep Approved account/current legal version
     else Non-major change
         API->>DB: Apply immediately with change log
     end
@@ -273,41 +273,41 @@ sequenceDiagram
     alt Incomplete initial profile
         API->>DB: Save Draft
     else Complete first submission or major revision
-        API->>DB: Save submitted revision Pending Verification; retain existing Verified publication
+        API->>DB: Save submitted revision Pending Verification#59; retain existing Verified publication
     else Permitted non-major change
         API->>DB: Apply change and audit
     end
     API-->>UI: Editable/review status and published version status
-    Note over Admin,UI: UC-PRO-06 VER146/VER119; ADMIN subtype UBND
+    Note over Admin,UI: UC-PRO-06 VER146/VER119#59; ADMIN subtype UBND
     Admin->>UI: Approve or Request Revision with required comments
     UI->>API: reviewProvider (F-PROFILE-05)
     API->>API: Check assigned village, submitted status and comments
-    API->>DB: Persist review; Approve publishes Verified version, Request Revision retains last publication
-    API-->>UI: verification_status, reviewer_id, reviewed_at; account remains Active
-    Note over Admin,UI: UC-ACC-06 VER146 Agency variant; ADMIN subtype HDT
+    API->>DB: Persist review#59; Approve publishes Verified version, Request Revision retains last publication
+    API-->>UI: verification_status, reviewer_id, reviewed_at#59; account remains Active
+    Note over Admin,UI: UC-ACC-06 VER146 Agency variant#59; ADMIN subtype HDT
     Admin->>UI: Approve/Request More Information/Reject
     UI->>API: reviewAgency (F-AUTH-18, review_type)
-    API->>DB: Persist decision; major-change review does not disable Approved account
+    API->>DB: Persist decision#59; major-change review does not disable Approved account
     API-->>UI: Target-specific account/revision result plus email/in-app notification status
     opt Request More Information for initial registration
         API->>DB: Store review decision and submission version
         API->>Mail: Send single-use secure edit link
         Guest->>UI: Open REG003 through secure edit link and revise request (F-AUTH-26)
         UI->>API: resubmitRegistration(registration_request_id, token, updated_data)
-        API->>DB: Store new submission version; return request to HDT review
+        API->>DB: Store new submission version#59; return request to HDT review
     end
     Note over Provider,UI: UC-PRO-05 EXP067/068/069/070/132
     Provider->>UI: Create/Update/Delete Experience
     UI->>API: manageExperience (F-PROFILE-06)
     API->>DB: Check ownership and active/history references
     alt Invalid fields, locked field or active booking deletion
-        API-->>UI: Validation error; no mutation
+        API-->>UI: Validation error#59; no mutation
     else Historical references and Delete
         API->>DB: Archive, preserve booking history
     else No references and Delete
         API->>DB: Hard delete
     else Valid Create/Update
-        API->>DB: Persist Experience; refresh Explore/matching source
+        API->>DB: Persist Experience#59; refresh Explore/matching source
     end
     API-->>UI: Permitted result
     opt AI description refinement on PRF128/EXP069/070

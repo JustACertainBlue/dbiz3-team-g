@@ -19,3 +19,7 @@ node_modules/
 # Personal agent settings (shared settings stay committed)
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Next.js build output
+.next/
+.next-backup/

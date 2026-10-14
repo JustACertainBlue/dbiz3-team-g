@@ -13,14 +13,23 @@ short, factual and current.
 
 ## 2. Tech stack
 
-- Not decided yet. The stack is chosen at the Plan step (`/speckit-plan`).
-- Until then: do not create application code, do not add dependencies, do not scaffold frameworks.
+- Language/Runtime: TypeScript 5.x / Node.js >= 22.0.0
+- Web Framework: Next.js (App Router)
+- Database: PostgreSQL (with local SQLite option for zero-config testing)
+- Test Runner: Vitest
+- Commands:
+  - Install: `npm install`
+  - Seed check: `python data/scripts/validate_seed.py`
+  - Test: `npm test` or `npx vitest run`
+  - Dev/Run: `npm run dev`
 
 ## 3. Commands that are safe to run
 
 - `uv run tools/check_env.py --repo` : environment and repository check.
 - `python data/scripts/generate_seed.py` : regenerates deterministic synthetic seed data.
 - `python data/scripts/validate_seed.py` : validates seed coverage, references and business-rule fixtures.
+- `npm test`, `npx vitest run` : automated test runs.
+- `npm install`, `npm run dev` : install and local development server.
 - `git status`, `git diff` : always allowed.
 
 ## 4. Hard rules

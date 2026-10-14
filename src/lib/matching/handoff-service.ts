@@ -26,9 +26,21 @@ export interface ChatHandoffResult {
   messages: string[]
 }
 
-const quoteRequestsByPair = new Map<string, QuoteRequestResult>()
-const chatSessionsByPair = new Map<string, ChatHandoffResult>()
-const agencyBookings = new Map<string, number>()
+const globalForHandoff = globalThis as unknown as {
+  quoteRequestsByPair?: Map<string, QuoteRequestResult>
+  chatSessionsByPair?: Map<string, ChatHandoffResult>
+  agencyBookings?: Map<string, number>
+}
+
+export const quoteRequestsByPair = globalForHandoff.quoteRequestsByPair ?? new Map<string, QuoteRequestResult>()
+export const chatSessionsByPair = globalForHandoff.chatSessionsByPair ?? new Map<string, ChatHandoffResult>()
+export const agencyBookings = globalForHandoff.agencyBookings ?? new Map<string, number>()
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForHandoff.quoteRequestsByPair = quoteRequestsByPair
+  globalForHandoff.chatSessionsByPair = chatSessionsByPair
+  globalForHandoff.agencyBookings = agencyBookings
+}
 
 export async function createOrReuseQuoteRequest(
   params: QuoteRequestParams

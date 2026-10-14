@@ -85,8 +85,8 @@ npx vitest run tests/unit/
 
 ### Seed Data Assertion Check
 Included automated test fixture loads canonical seed data from `data/seed/` and validates:
-- Exactly 4 verified villages exist in Hanoi (`Bat Trang`, `Van Phuc`, `Duong Lam`, `Chuong`).
-- Seeded verified experiences belong to verified providers.
+- Exactly 8 craft villages in `data/seed/villages.csv` (including Bát Tràng, Vạn Phúc, Chuông, Quất Động, Phú Vinh).
+- Seeded verified experiences belong to Verified local providers with published profile versions.
 
 ---
 

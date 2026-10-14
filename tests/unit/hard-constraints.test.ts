@@ -34,7 +34,7 @@ const makeCandidates = () => [
     village_id: 'vill-003',
     max_participants: 30,
     price_per_person: 900000, // over budget
-    location: { lat: 21.1667, lng: 105.5000 }, // Duong Lam
+    location: { lat: 21.1667, lng: 105.5000 }, // Outlying craft location
     provider_verification_status: 'Approved',
     has_published_profile_version: true,
   },

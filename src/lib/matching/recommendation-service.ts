@@ -34,9 +34,18 @@ export async function buildRecommendations(
     const rank = item.rank || offset + index + 1
     const score = item.match_score ?? 85
 
-    const explanation = `Matches requirements with a score of ${score}/100. Excellent fit for ${
-      item.experience_type || item.category || 'craft workshops'
-    } with verified local artisans.`
+    const expLower = expName.toLowerCase()
+    let craftMention = 'authentic artisan craft'
+    if (expLower.includes('lụa')) craftMention = 'silk weaving'
+    else if (expLower.includes('gốm')) craftMention = 'pottery ceramics'
+    else if (expLower.includes('nón')) craftMention = 'conical hat making'
+    else if (expLower.includes('thêu')) craftMention = 'traditional embroidery'
+    else if (expLower.includes('mây')) craftMention = 'bamboo & rattan weaving'
+
+    const village = item.village_name ? ` in ${item.village_name}` : ''
+    const cap = item.max_participants || item.max_capacity ? ` (capacity up to ${item.max_participants || item.max_capacity} pax)` : ''
+
+    const explanation = `Matches requirements with a score of ${score}/100. Strong fit for ${craftMention}${village}${cap} with verified local artisans.`
 
     return {
       experience_id: item.experience_id,

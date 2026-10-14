@@ -29,6 +29,32 @@ did and what the humans decided.
 | Spec issues found | none |
 | Commit | `3f63c9e` |
 
+### Entry 2: 12/10 Group G
+
+| Field | Value |
+|---|---|
+| Path and agent | Path B (Antigravity agent) |
+| Command and argument | `/speckit-implement` (real matching pipeline integration) |
+| Feature and tasks | `specs/001-ait-core`, `POST /api/ait/matching`, real seed loader for `villages.csv` and `experiences.csv` |
+| What the agent produced | • Created `src/app/api/ait/matching/route.ts`: API endpoint executing real constraint filtering and ranking<br>• Updated `src/lib/db/seed-loader.ts` to parse canonical `data/seed/villages.csv` (8 villages) and verified provider experiences<br>• Updated `src/app/ai-matching/page.tsx` to call live matching endpoint instead of mock fallback<br>• Updated `tests/unit/seed-data.test.ts` to validate real seed values |
+| Human review | Accepted by author; submitted to PR #6. |
+| Tests | `Test Files 14 passed (14), Tests 83 passed (83)` |
+| Spec issues found | none |
+| Commit | `bc6e2a2` |
+
+### Entry 3: 14/10 Group G
+
+| Field | Value |
+|---|---|
+| Path and agent | Path B (Antigravity agent, Gemini 3.8 Flash) |
+| Command and argument | `MVP Alpha Gate remediation & Reviewer Round 2 fixes` |
+| Feature and tasks | `specs/001-ait-core`: spec refresh, multi-turn requirement extraction, craft-specific scoring, global singleton persistence, multi-turn integration tests |
+| What the agent produced | • Refreshed `specs/001-ait-core/spec.md` with `tools/start_feature.py --refresh` (`--check` prints OK)<br>• Updated `src/lib/ai/extractor.ts` to process multi-turn messages chronologically and extract craft preferences<br>• Updated `src/lib/matching/scoring-engine.ts` with craft-specific weighting (Silk -> Vạn Phúc #1, Pottery -> Bát Tràng #1) and differentiated distances<br>• Updated `src/lib/matching/recommendation-service.ts` to generate craft-tailored match explanations<br>• Attached `sessionsStore`, `messagesStore`, `quoteRequestsByPair`, and `chatSessionsByPair` to `globalThis` to preserve singleton state across Next.js dev requests<br>• Created `tests/integration/multi-turn-api.test.ts` testing multi-turn capacity filtering, fallback relaxation suggestions, quote idempotency (BR-018), and singleton active chat (BR-019)<br>• Cleaned up remaining obsolete Đường Lâm mentions in `quickstart.md`, `research.md`, and test comments |
+| Human review | In review for PR #6 round 3. |
+| Tests | `Test Files 15 passed (15), Tests 87 passed (87)` |
+| Spec issues found | none |
+| Commit | In progress |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

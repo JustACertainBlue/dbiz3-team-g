@@ -17,8 +17,18 @@ export interface ConversationMessage {
   sent_at: string
 }
 
-const sessionsStore = new Map<string, MatchingSession>()
-const messagesStore = new Map<string, ConversationMessage[]>()
+const globalForSessions = globalThis as unknown as {
+  sessionsStore?: Map<string, MatchingSession>
+  messagesStore?: Map<string, ConversationMessage[]>
+}
+
+export const sessionsStore = globalForSessions.sessionsStore ?? new Map<string, MatchingSession>()
+export const messagesStore = globalForSessions.messagesStore ?? new Map<string, ConversationMessage[]>()
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForSessions.sessionsStore = sessionsStore
+  globalForSessions.messagesStore = messagesStore
+}
 
 export async function createMatchingSession(
   input: string | { agencyId: string }

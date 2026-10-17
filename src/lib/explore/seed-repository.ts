@@ -6,7 +6,8 @@ import type { CsvRow, ExploreSeed } from './catalog';
 const tables = [
   'experiences', 'provider_profiles', 'provider_profile_versions', 'villages',
   'user_accounts', 'agency_profiles', 'agency_preference_profiles',
-  'profile_media', 'stored_files'
+  'profile_media', 'stored_files', 'provider_operating_hours', 'bookings',
+  'experience_discount_rules', 'provider_version_media', 'ranking_parameter_versions', 'explore_interactions', 'explore_sessions'
 ] as const;
 
 export function loadExploreSeed(root = process.cwd()): ExploreSeed {

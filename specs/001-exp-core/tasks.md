@@ -1,6 +1,6 @@
-# Tasks: EXP US-1 Browse Explore
+# Tasks: EXP prototype, US-1–4
 
-**Input**: `spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/explore-api.md`. **Scope**: US-1 (P1) only.
+**Input**: `spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/explore-api.md`. **Scope**: T001–T018 are the committed US-1 slice; T019 onward records the later user-requested US-1–4 / FR-001–017 prototype extension. A checked task means the described prototype artifact exists, not that its full FR is production-complete; see [implementation-status.md](implementation-status.md).
 
 ## Phase 1: Setup
 
@@ -43,8 +43,28 @@
 
 ## Dependencies & execution order
 
-T001–T002 precede T003–T004. T005–T010 were written and observed failing before T011–T016. T011/T012 precede API/UI integration. T017/T018 are final gates. US-3/US-4 P1 and US-2 P2 get separate slices after this one.
+T001–T002 precede T003–T004. T005–T010 were written and observed failing before T011–T016; build-log Entry 2 records the red and green runs for **US-1 only**. T011/T012 precede API/UI integration. T017/T018 close the committed US-1 slice. The subsequent user request expanded this same feature folder; the extension did not follow the original one-story plan.
 
 ## Parallel opportunities
 
 T005–T009 and T010 touch separate test files. UI work (T014) and route work (T013) can proceed in parallel once the shared catalog contract (T011) is settled. This task was executed serially in one checkout.
+
+## Phase 5: Later EXP prototype extension (user-requested)
+
+These tasks describe the actual changed files so a reviewer can compare this branch with its plan. Unit tests pass, but **no pre-implementation failing run was captured for T019–T025**. The author must not tick the full-slice test-first checklist item based on the US-1 record alone.
+
+- [X] T019 [US1/US2] Add category filtering and order by the active demo Agency ranking. Files: `src/app/api/explore/route.ts`, `src/app/explore/page.tsx`, `src/lib/explore/catalog.ts`, `tests/unit/explore-catalog.test.ts`.
+- [X] T020 [US3/US4] Project role-specific Provider/Experience details, related Experiences, group discounts and public availability. Files: `src/app/explore/providers/[id]/page.tsx`, `src/app/explore/experiences/[id]/page.tsx`, `src/lib/explore/details.ts`, `src/lib/explore/availability.ts`, `src/lib/explore/seed-repository.ts`, `tests/unit/explore-details.test.ts`, `tests/unit/explore-availability.test.ts`.
+- [X] T021 [US2] Add development-only Guest-consent and Agency session/event capture with in-memory state and deduplication. Files: `src/app/explore/ExploreTracker.tsx`, `src/app/api/explore/session/route.ts`, `src/app/api/explore/events/route.ts`, `src/lib/explore/runtime.ts`, `src/lib/explore/demo-runtime.ts`, `tests/unit/explore-runtime.test.ts`.
+- [X] T022 [US2] Test session signals, Agency-only re-ranking, metrics, replay and promotion/rollback gates as pure rules. Files: `src/lib/explore/learning.ts`, `tests/unit/explore-learning.test.ts`.
+- [X] T023 [US4] Define and test the Auth/Quote/Chat handoff boundary, permission-first order, Quote reuse and no Booking creation. Files: `src/lib/explore/handoff.ts`, `tests/unit/explore-handoff.test.ts`. Live adapters are not implemented.
+- [X] T024 [US1–4] Update scope, decisions, mapping, local endpoints, quickstart and FR-by-FR limits. Files: `specs/001-exp-core/plan.md`, `research.md`, `data-model.md`, `contracts/explore-api.md`, `quickstart.md`, `implementation-status.md`, `tasks.md`.
+- [X] T025 [US1–4] Record validation, historical test-first evidence and unresolved gaps without claiming full completion. File: `docs/build/build-log.md`.
+- [X] T026 [US2/US4] Correct the already-decided automatic promotion scenario and record unresolved persistence/content/coordinates as open questions. Refresh the Spec Kit snapshot afterward. Files: `docs/spec/specs/spec-EXP.md`, `specs/001-exp-core/spec.md`.
+- [ ] T027 [US1–4] Connect real Auth, Quote and Chat adapters, durable PostgreSQL writes, media and Nearby data, and scheduled ranking promotion/rollback; add acceptance tests and record a genuine test-first red run before each new implementation. This work is outside the current prototype and requires the relevant module/data owners.
+- [X] T028 [FR-010/BR-015] Reject a ranking baseline with zero or multiple Active versions before starting an EXP session. A failing test was recorded before changing `src/lib/explore/runtime.ts`; the result is covered by `tests/unit/explore-runtime.test.ts`.
+- [X] T029 [FR-006/FR-008] Report local detail-page dwell time once on navigation, page hide or tab hide so the 60-second signal can receive real UI timing. A missing-module test was recorded before adding `src/lib/explore/detail-visit.ts` and wiring `src/app/explore/ExploreTracker.tsx`; `tests/unit/explore-detail-visit.test.ts` covers elapsed seconds and duplicate exit signals. Durable FR-006 storage and section-level detail remain open under T027.
+
+## Extension test evidence
+
+Build-log Entry 3 records 32 passing tests, lint, build and seed validation after implementation. It does **not** record tests written and seen failing before T019–T023. Reconstructing a red run now would not prove historical test-first execution. Reviewer should treat that checklist item as not yet demonstrated for the full expanded slice.

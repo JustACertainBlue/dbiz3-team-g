@@ -89,4 +89,12 @@ describe('EXP US-1 catalog rules', () => {
     seed.agency_preference_profiles.push({ agency_id: agencyId, preference_weights: '{"culture":0.7,"price":0.3}' });
     expect(buildExplorePage(seed, { viewer: { kind: 'agency', agencyId } }).pagination.total_count).toBe(2);
   });
+
+  it('filters before pagination while retaining the selected category total', () => {
+    const seed = fixture();
+    seed.experiences[1].category = 'Visit';
+    const page = buildExplorePage(seed, { viewer: { kind: 'guest' }, category: 'Visit' });
+    expect(page.experience_cards.map(card => card.id)).toEqual(['exp-2']);
+    expect(page.pagination.total_count).toBe(1);
+  });
 });

@@ -17,5 +17,5 @@ export async function GET(request: NextRequest) {
   }
   const seed = loadExploreSeed();
   const viewer = resolveViewer(seed, request.headers.get('x-demo-agency-id'), process.env.NODE_ENV !== 'production');
-  return NextResponse.json(buildExplorePage(seed, { page, pageSize, viewer }));
+  return NextResponse.json(buildExplorePage(seed, { page, pageSize, viewer, category: request.nextUrl.searchParams.get('category') ?? undefined }));
 }

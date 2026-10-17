@@ -10,12 +10,20 @@ export interface ExploreSeed {
   agency_preference_profiles: CsvRow[];
   profile_media: CsvRow[];
   stored_files: CsvRow[];
+  provider_operating_hours?: CsvRow[];
+  bookings?: CsvRow[];
+  experience_discount_rules?: CsvRow[];
+  provider_version_media?: CsvRow[];
+  ranking_parameter_versions?: CsvRow[];
+  explore_interactions?: CsvRow[];
+  explore_sessions?: CsvRow[];
 }
 
 export type Viewer = { kind: 'guest' } | { kind: 'agency'; agencyId: string };
 
 export interface ExperienceCard {
   id: string;
+  provider_id: string;
   name: string;
   type: string;
   location: { village_name: string };
@@ -42,7 +50,7 @@ export function resolveViewer(seed: ExploreSeed, agencyId: string | null | undef
     : { kind: 'guest' };
 }
 
-function eligibleRows(seed: ExploreSeed): Array<{ experience: CsvRow; provider: CsvRow; version: CsvRow; village: CsvRow }> {
+export function eligibleRows(seed: ExploreSeed): Array<{ experience: CsvRow; provider: CsvRow; version: CsvRow; village: CsvRow }> {
   const providers = new Map(seed.provider_profiles.map(row => [row.provider_id, row]));
   const villages = new Map(seed.villages.map(row => [row.village_id, row]));
   const accounts = new Map(seed.user_accounts.map(row => [row.user_id, row]));
@@ -69,6 +77,7 @@ function toCard(seed: ExploreSeed, row: ReturnType<typeof eligibleRows>[number],
   const isAgency = viewer.kind === 'agency';
   return {
     id: experience.experience_id,
+    provider_id: row.provider.provider_id,
     name: experience.name,
     type: experience.category,
     location: { village_name: village.name },
@@ -88,14 +97,19 @@ function safeViewer(seed: ExploreSeed, viewer: Viewer): Viewer {
 
 export function buildExplorePage(
   seed: ExploreSeed,
-  options: { page?: number; pageSize?: number; viewer: Viewer }
+  options: { page?: number; pageSize?: number; viewer: Viewer; category?: string; rankOrder?: string[] }
 ): ExplorePage {
   const page = options.page ?? 1;
   const pageSize = options.pageSize ?? 12;
   if (!Number.isInteger(page) || page < 1 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 50) {
     throw new RangeError('page and page_size must be positive integers; page_size max is 50');
   }
-  const eligible = eligibleRows(seed);
+  const eligible = eligibleRows(seed).filter(row => !options.category || row.experience.category === options.category);
+  if (options.rankOrder) {
+    const positions = new Map(options.rankOrder.map((id, index) => [id, index]));
+    eligible.sort((a, b) => (positions.get(a.experience.experience_id) ?? Number.MAX_SAFE_INTEGER) -
+      (positions.get(b.experience.experience_id) ?? Number.MAX_SAFE_INTEGER));
+  }
   const selected = eligible.slice((page - 1) * pageSize, page * pageSize);
   const viewer = safeViewer(seed, options.viewer);
   return {

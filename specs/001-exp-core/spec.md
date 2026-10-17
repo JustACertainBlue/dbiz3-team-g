@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-EXP.md sha256=7cc2aca4f1f176f8e224fb8e7bb758ed2ec3fcde2b91318e2836b8b3c762c265 taken=2026-10-13T04:28Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-EXP.md sha256=e830a4e691490c8226a4398808361efdb81b2e8d4a15407ec189f4da9ee4a7c1 taken=2026-10-14T02:53Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-EXP.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -369,7 +369,7 @@ sequenceDiagram
 | **SC-008** | Ranking-quality assessment reflects whether highly ranked Experiences receive clicks/actions.  | Use controlled ranking/action test data.                                       |
 | **SC-009** | Every optimization produces traceable parameter/version output.                                | Review optimized parameters, version and tuning log after an optimization run. |
 | **SC-010** | Guest-sensitive fields remain hidden across public Explore, Provider and Experience screens.   | Field-by-field visibility comparison.                                          |
-| **SC-011** | HDT_Admin can activate a Draft and only one version becomes Active; UBND_Admin is denied and a failed activation preserves the previous Active version. | Attempt HDT/UBND activation, concurrent activation and rollback; inspect audit_logs and active version. |
+| **SC-011** | System alone promotes a Draft after the BR-015 sample, bounded-change and replay gates pass; promotion atomically retires the prior Active version and writes an audit record. A failed gate or transaction preserves the prior Active version. A later eligible cohort with the specified quality decline triggers an audited automatic rollback. Neither HDT_Admin nor UBND_Admin can activate a version manually. | Test failed gates, concurrent promotion, atomicity, audit and automatic rollback; verify Admin activation is unavailable. |
 
 **9. Assumptions**
 
@@ -418,6 +418,10 @@ sequenceDiagram
 | 25 | The final Use Case lists LP/HDT/UBND as actors for detail viewing, but F-EXPLORE-03 lists only Tour Agency/Guest. Which actor definition is authoritative for Explore detail screens? | No | BA | Closed | Agency/Guest use Explore detail functions; Provider/Admin use PRF permitted views. |
 | 26 | The Sequence Diagram still labels Request Quote as UC-DIS-06 and uses villageId, while current Function List uses experience_id. Should the sequence be updated? | No | BA | Closed | Sequence uses experience_id and current UC-DIS-04 mapping. |
 | 27 | Is AI model retraining from Explore metrics part of MVP, or should Explore only tune ranking parameters? | No | Product / AI | Closed | MVP tunes versioned ranking parameters through F-EXPLORE-14..17. No standalone AI-model retraining pipeline is specified. |
+| 28 | Which persisted entity and attributes store FR-006 detail visits (`entered_at`, `exited_at`, `scroll_depth_pct`, `sections_viewed`, `next_action`, `time_to_next_action`), and how are they linked to an Agency and Experience? | Yes | BA / Data | Open | Blocks full US-2/FR-006. No storage mapping is defined in the current data model. The local prototype does not claim durable FR-006 completion; the team chose not to change `data/` in this slice. |
+| 29 | Where is FR-007 `source_context` (Card or Detail Page) stored alongside a strong Quote/Chat action so the source can be traced after handoff? | Yes | BA / Data / Chat | Open | Blocks full FR-007. No explicit physical column is defined. The prototype passes source context through a handoff interface only. |
+| 30 | What authoritative location data and coordinate source supports F-EXPLORE-04's closed 20 km Nearby rule, and which entity owns it? | Yes | BA / Data | Open | Blocks Nearby. The radius is defined, but the current Village data lacks coordinates. Same-Provider and same-craft suggestions can run without Nearby. |
+| 31 | What source supplies F-EXPLORE-03 optional `included_items` and `excluded_items` for each Experience? | No | BA / PRF | Open | The current Experience model has no explicit fields for these lists. Omit unavailable optional values rather than fabricate them. |
 
 **11. Traceability to DBIZ2**
 

@@ -32,8 +32,8 @@ This document records technical decisions and architectural resolutions for modu
 ### Decision 3: Route & Distance Calculation (FR-006)
 - **Decision**: Google Maps Distance Matrix API with cached pairwise village/district distances.
 - **Rationale**:
-  - `F-MATCH-06` requires calculating travel distance and time from tour origin to candidate craft villages in Hanoi (e.g. Bat Trang, Van Phuc, Duong Lam).
-  - Seed catalog contains deterministic lat/long coordinates for all 4 Hanoi craft villages. Caching distances between Hanoi center and villages eliminates external API latency and quota consumption during automated test runs.
+  - `F-MATCH-06` requires calculating travel distance and time from tour origin to candidate craft villages in Hanoi (e.g. Bat Trang, Van Phuc, Chuong, Quat Dong, Phu Vinh).
+  - Seed catalog contains deterministic lat/long coordinates for craft villages in Hanoi. Caching distances between Hanoi center and villages eliminates external API latency and quota consumption during automated test runs.
 - **Alternatives considered**:
   - *Haversine straight-line distance*: Fails business requirements because river crossings and road networks in suburban Hanoi deviate significantly from straight lines.
 

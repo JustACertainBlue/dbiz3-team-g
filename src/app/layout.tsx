@@ -1,10 +1,13 @@
-import type { Metadata } from 'next'
+import './globals.css'
+import './screen-specs.css'
 import React from 'react'
 
-export const metadata: Metadata = {
-  title: 'Hanoi Artisan Bridge — AI Tour Matching',
-  description: 'Connect Tour Agencies with verified Hanoi craft village artisans and unique cultural experiences.',
+export const metadata = {
+  title: 'Hanoi Artisan Bridge — Nền tảng Kết nối Làng nghề Hà Nội',
+  description: 'Hệ sinh thái kết nối các nghệ nhân làng nghề truyền thống Hà Nội với các công ty du lịch quốc tế và địa phương.',
 }
+
+import RoleSwitcher from './components/RoleSwitcher'
 
 export default function RootLayout({
   children,
@@ -12,26 +15,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body
-        style={{
-          margin: 0,
-          padding: 0,
-          fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-          backgroundColor: '#0F172A',
-          color: '#F8FAFC',
-          minHeight: '100vh',
-        }}
-      >
-        {children}
+      <body>
+        <RoleSwitcher />
+        <main>{children}</main>
       </body>
     </html>
   )

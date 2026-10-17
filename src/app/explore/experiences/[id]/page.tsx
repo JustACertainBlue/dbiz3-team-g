@@ -15,7 +15,7 @@ export default function ExperienceEntry({ params, searchParams }: {
   const { card } = detail;
   const back = viewer.kind === 'agency' ? `/explore?demo_agency_id=${encodeURIComponent(viewer.agencyId)}` : '/explore';
   const agencyQuery = viewer.kind === 'agency' ? `?demo_agency_id=${encodeURIComponent(viewer.agencyId)}` : '';
-  return <main className="detail-entry">
+  return <div className="explore-surface detail-entry">
     <ExploreTracker demoAgencyId={viewer.kind === 'agency' ? viewer.agencyId : undefined} detailExperienceId={card.id} />
     <Link href={back}>← Quay lại Explore</Link>
     <p className="eyebrow">{card.location.village_name} · {card.type}</p>
@@ -44,5 +44,5 @@ export default function ExperienceEntry({ params, searchParams }: {
     <section><h2>Khám phá nghề khác</h2>{detail.other_craft_suggestions.length ? <ul>{detail.other_craft_suggestions.map(suggestion => <li key={suggestion.id}><Link href={`/explore/experiences/${suggestion.id}${agencyQuery}`}>{suggestion.name}</Link> — {suggestion.type}</li>)}</ul> : <p>Chưa có gợi ý khác.</p>}</section>
     {viewer.kind === 'guest' && <p><Link href="/login">Đăng nhập để yêu cầu báo giá hoặc Chat</Link></p>}
     {viewer.kind === 'agency' && <p className="muted">Yêu cầu báo giá và Chat sẽ khả dụng sau khi tích hợp xác thực và hội thoại.</p>}
-  </main>;
+  </div>;
 }

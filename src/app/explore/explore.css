@@ -1,0 +1,27 @@
+.explore-surface { max-width: 1100px; padding: 2rem 1.2rem 4rem; margin: auto; }
+.explore-surface .button { border: 1px solid #246754; border-radius: .5rem; background: #246754; color: white; padding: .65rem 1rem; text-decoration: none; cursor: pointer; }
+.explore-surface .muted { color: #53645e; }
+.explore-surface .masthead { display: flex; justify-content: space-between; gap: 2rem; align-items: flex-start; margin-bottom: 2rem; }
+.explore-surface .masthead h1 { font-size: clamp(2rem, 4vw, 3rem); margin: .3rem 0; }
+.explore-surface .eyebrow { color: #31715c; font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.explore-surface .viewer-panel { min-width: 220px; background: #e8f1eb; padding: 1rem; border-radius: .8rem; }
+.explore-surface .viewer-panel p { margin: .6rem 0; }
+.explore-surface .viewer-panel small { color: #4b665b; }
+.explore-surface .count { font-weight: 700; margin-bottom: 1rem; }
+.explore-surface .category-filters { display: flex; flex-wrap: wrap; gap: .8rem; margin-bottom: 1.5rem; }
+.explore-surface .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 1.2rem; }
+.explore-surface .experience-card { overflow: hidden; border-radius: 1rem; background: white; border: 1px solid #d8e1db; box-shadow: 0 4px 16px #1d403011; }
+.explore-surface .media-placeholder { background: linear-gradient(135deg, #bbd7c5, #e6d8b2); min-height: 165px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6rem; text-align: center; color: #234e3f; }
+.explore-surface .media-placeholder span { font-weight: 700; }
+.explore-surface .card-body { padding: 1.2rem; }
+.explore-surface .card-body h2 { margin: .1rem 0 .5rem; font-size: 1.4rem; }
+.explore-surface .price { font-weight: 700; }
+.explore-surface .card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .8rem; margin-top: 1rem; }
+.explore-surface .card-actions .button { font-size: .92rem; }
+.explore-surface .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 2rem; }
+.explore-surface .empty { border: 1px dashed #98b3a1; border-radius: .8rem; padding: 2rem; background: white; }
+.explore-surface.detail-entry { max-width: 760px; }
+.explore-surface.detail-entry dl { display: grid; grid-template-columns: 150px 1fr; gap: .7rem; margin-top: 2rem; }
+.explore-surface.detail-entry dt { font-weight: 700; }
+.explore-surface.detail-entry dd { margin: 0; }
+@media (max-width: 650px) { .explore-surface .masthead { display: block; } .explore-surface .viewer-panel { margin-top: 1rem; } }

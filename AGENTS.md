@@ -7,22 +7,26 @@ short, factual and current.
 ## 1. Project
 
 - Product: `Hanoi Artisan Bridge`, team `G`, course DBIZ3, VJCBI College, Foreign Trade University.
-- Current step of the course process: Session 8 EXP implementation and review. The runnable EXP prototype is on `001-exp-core`; its uncommitted extension still needs verification and a reviewed pull request.
+- Current step of the course process: Session 8 module implementation and integration. EXP, AIT and PRF have prototype branches; integration and review remain in progress.
 - Source of truth for MVP scope: `docs/prd.md`; source of truth for detailed function contracts: `docs/spec/`.
 - Source of truth for data: `data/` (data model and seed package from Session 5).
 
 ## 2. Tech stack
 
-- EXP plan: Node.js 22+, TypeScript 5, Next.js 14/React 18 and Vitest 2. See `specs/001-exp-core/plan.md` for decisions and limits.
-- Canonical schema and synthetic seed are in `data/`. The current EXP prototype reads seed CSVs and keeps new interactions in development-server memory; it does not yet write to PostgreSQL.
-- From the repository root: `npm install`, `python data/scripts/validate_seed.py` (or `uv run data/scripts/validate_seed.py`), `npm test`, `npm run lint`, then `npm run dev`.
-- When adding a module, reuse the agreed stack and document any new integration or dependency in that feature's plan before implementation.
+- Language/Runtime: TypeScript 5.x / Node.js >= 22.0.0
+- Web framework: Next.js 14 (App Router) and React 18.
+- Target database: PostgreSQL. The current EXP prototype reads synthetic CSV seed data and keeps interactions in development-server memory; it does not yet persist to PostgreSQL.
+- Test runner: Vitest 2.
+- From the repository root: `npm install`, `python data/scripts/validate_seed.py`, `npm test`, `npm run lint`, then `npm run dev`.
+- When adding a module, reuse the agreed stack and document integrations and dependencies in that feature's plan.
 
 ## 3. Commands that are safe to run
 
 - `uv run tools/check_env.py --repo` : environment and repository check.
 - `python data/scripts/generate_seed.py` : regenerates deterministic synthetic seed data.
 - `python data/scripts/validate_seed.py` : validates seed coverage, references and business-rule fixtures.
+- `npm test`, `npx vitest run` : automated test runs.
+- `npm install`, `npm run dev` : install and local development server.
 - `git status`, `git diff` : always allowed.
 - `uv run tools/start_feature.py --check` : checks the active feature snapshot against `docs/spec/`.
 - `npm test`, `npm run lint` : run the current application tests and TypeScript check.

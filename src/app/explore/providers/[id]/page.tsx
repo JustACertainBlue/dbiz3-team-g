@@ -13,7 +13,7 @@ export default function ProviderPage({ params, searchParams }: {
   const detail = getProviderDetail(seed, params.id, viewer);
   if (!detail) notFound();
   const agencyQuery = viewer.kind === 'agency' ? `?demo_agency_id=${encodeURIComponent(viewer.agencyId)}` : '';
-  return <main className="detail-entry">
+  return <div className="explore-surface detail-entry">
     <ExploreTracker demoAgencyId={viewer.kind === 'agency' ? viewer.agencyId : undefined} />
     <Link href={`/explore${agencyQuery}`}>← Quay lại Explore</Link>
     <p className="eyebrow">{detail.village_name} · {detail.craft_type}</p>
@@ -25,5 +25,5 @@ export default function ProviderPage({ params, searchParams }: {
     <section><h2>Trải nghiệm</h2><ul>{detail.experiences.map(card => <li key={card.id}>
       <Link href={`/explore/experiences/${card.id}${agencyQuery}`}>{card.name}</Link> · {card.duration_minutes} phút · {card.price === null ? 'Giá chỉ hiển thị cho doanh nghiệp du lịch' : `${card.price.toLocaleString('vi-VN')} ₫ / khách`}
     </li>)}</ul></section>
-  </main>;
+  </div>;
 }

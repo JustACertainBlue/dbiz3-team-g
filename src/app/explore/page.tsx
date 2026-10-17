@@ -23,7 +23,7 @@ export default function ExplorePage({ searchParams }: { searchParams: Params }) 
   const totalPages = Math.ceil(catalog.pagination.total_count / catalog.pagination.page_size);
   const categories = [...new Set(eligibleRows(seed).map(row => row.experience.category))].sort();
 
-  return <main>
+  return <div className="explore-surface">
     <ExploreTracker demoAgencyId={viewer.kind === 'agency' ? viewer.agencyId : undefined} />
     <header className="masthead">
       <div><p className="eyebrow">Hanoi Artisan Bridge</p><h1>Khám phá trải nghiệm làng nghề</h1>
@@ -69,5 +69,5 @@ export default function ExplorePage({ searchParams }: { searchParams: Params }) 
       <span>Trang {page} / {totalPages}</span>
       {page < totalPages && <Link href={`/explore?page=${page + 1}${carry}`}>Trang sau</Link>}
     </nav>}
-  </main>;
+  </div>;
 }

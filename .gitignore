@@ -19,3 +19,12 @@ node_modules/
 # Personal agent settings (shared settings stay committed)
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Next.js build output
+.next/
+
+# Test coverage
+coverage/
+
+# Local runtime (uploads and dev email outbox — never commit)
+var/

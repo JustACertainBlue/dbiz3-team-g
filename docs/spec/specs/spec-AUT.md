@@ -520,6 +520,8 @@ sequenceDiagram
 | 19 | Are ADM145 View Submitted Profile and VER146 View Submitted Profile two separate screens or duplicates that should be consolidated? | No | UI/UX | **Closed** | **Keep them as two separate screens** because they belong to different actor/context flows, although they may reuse the same UI component/template. |
 | 20 | What is the official Tour Agency post-login landing screen? Function List says Agency Dashboard, while Screen List identifies EXP017 Explore as the main screen after login. | No | UI/UX / BA | Closed | Agency landing is EXP017. Bookings and schedule are separate navigation entries. |
 | 21 | Should ACC130 Edit My Account be removed from the Screen List or supported by a new Function List requirement? | No | BA | Closed | ACC129/130 are in scope under F-AUTH-24/25 and UC-ACC-10. |
+| 22 | OTP resend limit: how is "3 resends within 15 minutes" counted against the resend_sequence cap of 3, and what must the Guest do after the limit is reached? | No | BA / Tech Lead | Open | Interim (pending confirmation): the 15-minute window is counted from issued_at per email and is independent of the 10-minute OTP validity; after 3 resends the Guest restarts registration. |
+| 23 | Duplicate tax_id: what happens when two registrations use the same tax_id (pending, approved or rejected)? | No | BA / Client | Open | Interim (pending confirmation): a unique violation on agency_profiles_tax_uq is rolled back and returned to the Guest as a validation error. |
 
 **11. Traceability to DBIZ2**
 

@@ -281,31 +281,45 @@
 /* Facility cards */
 .spec-facility-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
   margin-bottom: 2.5rem;
+}
+
+@media (max-width: 1024px) {
+  .spec-facility-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .spec-facility-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .spec-facility-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  padding: 1.5rem;
+  border-radius: 4px;
+  padding: 1.25rem 1.25rem;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
 
 .spec-facility-title {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #111827;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.4rem;
 }
 
 .spec-facility-desc {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: #6b7280;
   line-height: 1.5;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.25rem;
   flex: 1;
 }
 
@@ -431,9 +445,9 @@
 }
 
 .spec-exp-pub-rate {
-  font-size: 0.75rem;
-  color: #6b7280;
-  text-decoration: line-through;
+  font-size: 0.85rem;
+  color: #111827;
+  font-weight: 700;
   display: block;
 }
 

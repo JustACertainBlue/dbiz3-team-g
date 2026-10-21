@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentRole, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { IconShield, IconVase, IconSparkles } from '@/app/components/Icons'
 
 export default function AddExperiencePage({
   params,
@@ -18,15 +19,15 @@ export default function AddExperiencePage({
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
-    name: 'Khóa học Nặn gốm Vuốt tay Truyền thống Bát Tràng',
+    name: 'Bat Trang Traditional Hand-Wheel Pottery Workshop',
     category: 'Workshop/Hands-on',
     duration_minutes: 90,
     price_per_person: 150000,
     max_participants: 25,
     notice_period_hours: 24,
-    experience_location_address: 'Số 12 xóm 3 làng cổ Bát Tràng, Gia Lâm, Hà Nội',
-    cancellation_rules_text: 'Hủy trước 24 giờ: Miễn phí 100%. Hủy trong vòng 24 giờ: Phí 50%.',
-    description: 'Du khách được nghệ nhân hướng dẫn trực tiếp từ khâu nhào đất, đặt đất lên bàn xoay, vuốt tạo hình chén, đĩa, bình hoa và tự tay khắc họa tiết hoa văn theo phong cách truyền thống.',
+    experience_location_address: '12 Alley 3, Bat Trang Ancient Craft Village, Gia Lam, Hanoi',
+    cancellation_rules_text: 'Cancellation > 24 hours prior: 100% refund. Within 24 hours: 50% cancellation fee.',
+    description: 'Guests receive hands-on instruction directly from guild masters from clay kneading to wheel centering, trimming tea bowls, and freehand cobalt brush painting.',
   })
 
   const [images, setImages] = useState({
@@ -53,7 +54,7 @@ export default function AddExperiencePage({
     setAiRefining(true)
     setTimeout(() => {
       setAiDraft(
-        `[Bản gợi ý AI Refine F-PROFILE-07]: Hòa mình vào không gian xưởng gốm Bát Tràng 700 năm tuổi, du khách sẽ được các nghệ nhân thế hệ thứ 5 chỉ dạy kỹ pháp "vuốt tay - nắn gốm" tinh tế trên bàn xoay đồng trục. Bạn sẽ tự tay nhào nặn đất sét trắng Trúc Thôn, định hình tác phẩm độc bản và chạm khắc hoa văn hoa sen cổ điển. Trải nghiệm bao gồm tráng men rạn độc quyền và dịch vụ nung lò hoàn thiện gửi về tận nơi.`
+        `[AI Refine Recommendation]: Immerse in the 700-year pottery legacy of Bat Trang at Hung Thinh Atelier. Learn authentic hand-wheel pulling techniques from 4th-generation guild artisans, craft bespoke Truc Thon clay vessels, and adorn your piece with heirloom lotus motifs. Includes proprietary ash glazing and secure delivery.`
       )
       setAiRefining(false)
     }, 700)
@@ -72,7 +73,7 @@ export default function AddExperiencePage({
     setError(null)
 
     if (role !== 'LocalProvider') {
-      setError('Lỗi phân quyền: Chỉ tài khoản Local Provider mới có quyền tạo mới trải nghiệm (BR-001). Vui lòng chuyển vai trò.')
+      setError('Permission Error: Only Local Provider accounts are authorized to create experiences (BR-001). Please switch role.')
       setSaving(false)
       return
     }
@@ -110,12 +111,12 @@ export default function AddExperiencePage({
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Lỗi khi tạo trải nghiệm')
+        throw new Error(data.error || 'Failed to create experience')
       }
 
       router.push(`/provider/${params.providerId}/experiences`)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra')
+      setError(err instanceof Error ? err.message : 'An error occurred while saving')
     } finally {
       setSaving(false)
     }
@@ -128,10 +129,10 @@ export default function AddExperiencePage({
       {/* Header */}
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">MÃ MÀN HÌNH: EXP069 · ADD EXPERIENCE</span>
-          <h1 className="prf-spec-title">Tạo mới Hoạt động Trải nghiệm Làng nghề</h1>
+          <span className="prf-spec-code">SCREEN ID: EXP069 · ADD EXPERIENCE</span>
+          <h1 className="prf-spec-title">Create New Craft Village Experience</h1>
           <p className="prf-spec-subtitle">
-            Thiết lập biểu phí B2B, quy mô đoàn khách, thời lượng thực hành và 3 danh mục hình ảnh quy chuẩn (BR-009)
+            Configure B2B wholesale tariffs, cohort limits, workshop duration, and the 3 mandatory image categories (BR-009)
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -140,7 +141,7 @@ export default function AddExperiencePage({
             className="prf-btn prf-btn-outline"
             style={{ fontSize: '0.8rem' }}
           >
-            ← Danh sách Trải nghiệm (EXP067)
+            ← Experience Catalog (EXP067)
           </Link>
         </div>
       </div>
@@ -162,20 +163,22 @@ export default function AddExperiencePage({
           }}
         >
           <div>
-            <strong style={{ color: '#92400e', fontSize: '0.95rem' }}>
-              ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER (BR-001)
+            <strong style={{ color: '#92400e', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <IconShield size={14} color="#92400e" />
+              <span>LOCAL PROVIDER PERMISSION REQUIRED (BR-001)</span>
             </strong>
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#78350f' }}>
-              Bạn đang ở vai trò <strong>{role}</strong>. Chỉ tài khoản Local Provider mới có quyền thêm mới trải nghiệm cho xưởng.
+              You are currently viewing with the role <strong>{role}</strong>. Only Local Provider accounts are authorized to add new experiences.
             </p>
           </div>
           <button
             type="button"
             onClick={handleRoleSwitchToProvider}
             className="prf-btn prf-btn-primary"
-            style={{ fontSize: '0.8rem' }}
+            style={{ fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
           >
-            🏺 Chuyển sang tài khoản Local Provider
+            <IconVase size={14} color="#ffffff" />
+            <span>Switch to Local Provider</span>
           </button>
         </div>
       )}
@@ -207,43 +210,43 @@ export default function AddExperiencePage({
                 <span className="prf-step-badge">01</span>
                 <div>
                   <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Thông tin Trải nghiệm Cơ bản
+                    Core Experience Details
                   </h2>
                   <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                    Tên gọi, phân loại văn hóa và thời lượng hoạt động
+                    Title, cultural taxonomy, and session duration
                   </span>
                 </div>
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Tên hoạt động trải nghiệm *</label>
+                <label className="prf-label">Experience Program Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   className="prf-input"
-                  placeholder="VD: Nặn gốm vuốt tay trên bàn xoay truyền thống"
+                  placeholder="e.g. Traditional Hand-Wheel Pottery Throwing & Glazing"
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="prf-field-group">
-                  <label className="prf-label">Phân loại hoạt động *</label>
+                  <label className="prf-label">Activity Category *</label>
                   <select
                     value={formData.category}
                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                     className="prf-select"
                   >
-                    <option value="Workshop/Hands-on">Workshop / Thực hành nặn gốm</option>
-                    <option value="Sightseeing">Tham quan làng nghề / Lò nung cổ</option>
-                    <option value="Culinary/Tasting">Ẩm thực làng nghề & Trà đạo</option>
-                    <option value="Combo">Combo Trọn gói Trải nghiệm</option>
+                    <option value="Workshop/Hands-on">Workshop / Hands-on Pottery</option>
+                    <option value="Sightseeing">Heritage Tour / Ancient Kiln</option>
+                    <option value="Culinary/Tasting">Village Culinary &amp; Tea Tasting</option>
+                    <option value="Combo">Comprehensive All-in-One Experience</option>
                   </select>
                 </div>
 
                 <div className="prf-field-group">
-                  <label className="prf-label">Thời lượng (phút) *</label>
+                  <label className="prf-label">Duration (Minutes) *</label>
                   <input
                     type="number"
                     required
@@ -256,14 +259,14 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Địa điểm diễn ra trải nghiệm *</label>
+                <label className="prf-label">Experience On-Site Location *</label>
                 <input
                   type="text"
                   required
                   value={formData.experience_location_address}
                   onChange={e => setFormData({ ...formData, experience_location_address: e.target.value })}
                   className="prf-input"
-                  placeholder="Địa chỉ cụ thể tại làng nghề..."
+                  placeholder="Specific studio address within craft village..."
                 />
               </div>
             </div>
@@ -275,20 +278,21 @@ export default function AddExperiencePage({
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      Mô tả Nội dung Chi tiết
+                      Detailed Narrative &amp; Description
                     </h2>
                     <button
                       type="button"
                       onClick={handleAiRefine}
                       disabled={aiRefining}
                       className="prf-btn prf-btn-outline"
-                      style={{ fontSize: '0.75rem', borderColor: '#b84c24', color: '#b84c24' }}
+                      style={{ fontSize: '0.75rem', borderColor: '#b84c24', color: '#b84c24', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
-                      {aiRefining ? 'Đang tinh chỉnh AI...' : '✨ AI Refine Chuẩn Hóa'}
+                      <IconSparkles size={12} color="#b84c24" />
+                      <span>{aiRefining ? 'AI Refining...' : 'AI Refine Description'}</span>
                     </button>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                    Mô tả quy trình thực hành nghệ nhân, vật phẩm du khách nhận được
+                    Describe artisan mentoring steps, hands-on activities, and guest takeaways
                   </span>
                 </div>
               </div>
@@ -315,7 +319,7 @@ export default function AddExperiencePage({
                     marginTop: '0.75rem',
                   }}
                 >
-                  <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Gợi ý mô tả chuẩn hóa từ AI:</div>
+                  <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>AI Draft Recommendation:</div>
                   <div style={{ lineHeight: 1.5, marginBottom: '0.75rem' }}>{aiDraft}</div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
@@ -324,7 +328,7 @@ export default function AddExperiencePage({
                       className="prf-btn prf-btn-primary"
                       style={{ fontSize: '0.72rem', padding: '0.25rem 0.75rem' }}
                     >
-                      Áp dụng bản thảo này
+                      Apply This Draft
                     </button>
                     <button
                       type="button"
@@ -332,7 +336,7 @@ export default function AddExperiencePage({
                       className="prf-btn prf-btn-outline"
                       style={{ fontSize: '0.72rem', padding: '0.25rem 0.75rem' }}
                     >
-                      Bỏ qua
+                      Dismiss
                     </button>
                   </div>
                 </div>
@@ -345,10 +349,10 @@ export default function AddExperiencePage({
                 <span className="prf-step-badge">03</span>
                 <div>
                   <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    3 Danh mục Hình ảnh Bắt buộc (BR-009)
+                    3 Mandatory Photo Categories (BR-009)
                   </h2>
                   <span style={{ fontSize: '0.75rem', color: '#b84c24', fontWeight: 700 }}>
-                    Quy chuẩn bắt buộc: Phải cung cấp đủ cả 3 loại ảnh mới có thể xuất bản trải nghiệm
+                    Mandatory Standard: All 3 photo categories must be provided to publish
                   </span>
                 </div>
               </div>
@@ -356,7 +360,7 @@ export default function AddExperiencePage({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="prf-field-group">
                   <label className="prf-label">
-                    1. Ảnh nghệ nhân đang thao tác chế tác (artisan_working) *
+                    1. Master Artisan at Work (artisan_working) *
                   </label>
                   <input
                     type="url"
@@ -369,7 +373,7 @@ export default function AddExperiencePage({
 
                 <div className="prf-field-group">
                   <label className="prf-label">
-                    2. Ảnh không gian xưởng & khu vực trải nghiệm (workshop_space) *
+                    2. Workshop Space &amp; Experience Studio (workshop_space) *
                   </label>
                   <input
                     type="url"
@@ -382,7 +386,7 @@ export default function AddExperiencePage({
 
                 <div className="prf-field-group">
                   <label className="prf-label">
-                    3. Ảnh sản phẩm thủ công hoàn thiện (finished_product) *
+                    3. Finished Artifact &amp; Ceramic Piece (finished_product) *
                   </label>
                   <input
                     type="url"
@@ -403,16 +407,16 @@ export default function AddExperiencePage({
                 <span className="prf-step-badge">04</span>
                 <div>
                   <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Biểu phí & Quy mô Đoàn
+                    Tariffs &amp; Cohort Capacity
                   </h2>
                   <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                    Định giá B2B và giới hạn tiếp đón
+                    B2B wholesale pricing and group limits
                   </span>
                 </div>
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Giá niêm yết / khách (VND) *</label>
+                <label className="prf-label">Listed Price / Guest (VND) *</label>
                 <input
                   type="number"
                   required
@@ -425,7 +429,7 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Số khách tối đa / lượt (max_participants) *</label>
+                <label className="prf-label">Maximum Guests / Cohort (max_participants) *</label>
                 <input
                   type="number"
                   required
@@ -437,7 +441,7 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Thời gian báo trước (giờ) *</label>
+                <label className="prf-label">Advance Notice Required (Hours) *</label>
                 <input
                   type="number"
                   required
@@ -446,11 +450,11 @@ export default function AddExperiencePage({
                   onChange={e => setFormData({ ...formData, notice_period_hours: Number(e.target.value) })}
                   className="prf-input"
                 />
-                <span className="prf-field-helper">Thời gian tối thiểu agency phải chốt đoàn để xưởng chuẩn bị đất sét & bàn xoay.</span>
+                <span className="prf-field-helper">Minimum cutoff time for tour agencies to confirm attendee numbers.</span>
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Chính sách hủy dịch vụ</label>
+                <label className="prf-label">Cancellation Policy Notes</label>
                 <textarea
                   rows={3}
                   value={formData.cancellation_rules_text}
@@ -466,7 +470,7 @@ export default function AddExperiencePage({
         <div className="prf-sticky-footer">
           <div className="prf-sticky-footer-content">
             <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-              Trải nghiệm sẽ có hiệu lực tức thì sau khi được tạo thành công
+              Experience program will take effect immediately upon creation
             </span>
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -474,7 +478,7 @@ export default function AddExperiencePage({
                 href={`/provider/${params.providerId}/experiences`}
                 className="prf-btn prf-btn-outline"
               >
-                Hủy (Discard)
+                Discard
               </Link>
               <button
                 type="submit"
@@ -482,7 +486,7 @@ export default function AddExperiencePage({
                 className="prf-btn prf-btn-primary"
                 style={{ padding: '0.55rem 1.75rem' }}
               >
-                {saving ? 'Đang tạo...' : 'Tạo Trải Nghiệm Mới (EXP069)'}
+                {saving ? 'Creating...' : 'Create New Experience (EXP069)'}
               </button>
             </div>
           </div>

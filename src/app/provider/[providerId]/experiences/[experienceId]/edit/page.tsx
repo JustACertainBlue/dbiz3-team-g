@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentRole, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { IconShield, IconVase, IconLock, IconSparkles } from '@/app/components/Icons'
 
 export default function EditExperiencePage({
   params,
@@ -21,15 +22,15 @@ export default function EditExperiencePage({
   const [hasActiveBookings] = useState(true)
 
   const [formData, setFormData] = useState({
-    name: 'Nặn gốm vuốt tay trên bàn xoay truyền thống',
+    name: 'Traditional Hand-Wheel Pottery Throwing & Glazing',
     category: 'Workshop/Hands-on',
     duration_minutes: 90,
     price_per_person: 150000,
     max_participants: 25,
     notice_period_hours: 24,
-    experience_location_address: 'Số 12 xóm 3 làng cổ Bát Tràng, Gia Lâm, Hà Nội',
-    cancellation_rules_text: 'Hủy trước 24 giờ miễn phí 100%. Hủy trong ngày thu phí 50%.',
-    description: 'Du khách được trực tiếp nghệ nhân hướng dẫn từ khâu nhào đất, tạo dáng sản phẩm trên bàn xoay và tự vẽ họa tiết gốm men lam độc bản.',
+    experience_location_address: '12 Alley 3, Bat Trang Ancient Craft Village, Gia Lam, Hanoi',
+    cancellation_rules_text: 'Cancellation > 24 hours prior: 100% refund. Same-day cancellation: 50% fee.',
+    description: 'Guests receive direct hands-on guidance from guild master artisans from clay wedging and wheel centering to bespoke blue-and-white men lam glaze painting.',
   })
 
   const [images, setImages] = useState({
@@ -56,7 +57,7 @@ export default function EditExperiencePage({
     setAiRefining(true)
     setTimeout(() => {
       setAiDraft(
-        `[Bản gợi ý AI Refine]: Trải nghiệm nặn gốm chuẩn di sản Bát Tràng tại xưởng Hưng Thịnh. Dưới bàn tay dẫn dắt tận tâm của nghệ nhân Nguyễn Văn Thịnh, mỗi du khách sẽ khám phá nhịp điệu bàn xoay thủ công và tự tạo nên tác phẩm lưu niệm mang đậm dấu ấn cá nhân.`
+        `[AI Refine Recommendation]: Immerse in authentic Bat Trang heritage pottery at Hung Thinh Atelier. Guided closely by master artisan Nguyen Van Hung, each guest experiences the kick-wheel rhythm, shapes bespoke red-river clay vessels, and takes home a collector keepsake.`
       )
       setAiRefining(false)
     }, 700)
@@ -77,7 +78,7 @@ export default function EditExperiencePage({
     if (role !== 'LocalProvider') {
       setFeedback({
         type: 'error',
-        message: 'Lỗi phân quyền (403): Chỉ tài khoản Local Provider mới có quyền cập nhật trải nghiệm (BR-001).',
+        message: 'Permission Error (403): Only Local Provider accounts are authorized to update experiences (BR-001).',
       })
       setSaving(false)
       return
@@ -110,17 +111,17 @@ export default function EditExperiencePage({
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Lỗi cập nhật trải nghiệm')
+        throw new Error(data.error || 'Failed to update experience')
       }
 
       setFeedback({
         type: 'success',
-        message: 'Trải nghiệm đã được cập nhật thành công!',
+        message: 'Experience updated successfully!',
       })
     } catch (err: unknown) {
       setFeedback({
         type: 'error',
-        message: err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu.',
+        message: err instanceof Error ? err.message : 'Error occurred while saving.',
       })
     } finally {
       setSaving(false)
@@ -134,10 +135,10 @@ export default function EditExperiencePage({
       {/* Header */}
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">MÃ MÀN HÌNH: EXP070 · EDIT EXPERIENCE</span>
-          <h1 className="prf-spec-title">Chỉnh sửa Hoạt động Trải nghiệm</h1>
+          <span className="prf-spec-code">SCREEN ID: EXP070 · EDIT EXPERIENCE</span>
+          <h1 className="prf-spec-title">Edit Workshop Cultural Experience</h1>
           <p className="prf-spec-subtitle">
-            Cập nhật nội dung mô tả, bộ sưu tập hình ảnh và điều kiện đón tiếp
+            Update narrative descriptions, photographic portfolio, and guest hosting conditions
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -146,7 +147,7 @@ export default function EditExperiencePage({
             className="prf-btn prf-btn-outline"
             style={{ fontSize: '0.8rem' }}
           >
-            ← Danh sách Trải nghiệm (EXP067)
+            ← Experience Catalog (EXP067)
           </Link>
         </div>
       </div>
@@ -168,20 +169,22 @@ export default function EditExperiencePage({
           }}
         >
           <div>
-            <strong style={{ color: '#92400e', fontSize: '0.95rem' }}>
-              ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER (BR-001)
+            <strong style={{ color: '#92400e', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <IconShield size={14} color="#92400e" />
+              <span>LOCAL PROVIDER PERMISSION REQUIRED (BR-001)</span>
             </strong>
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#78350f' }}>
-              Bạn đang ở vai trò <strong>{role}</strong>. Chỉ tài khoản Local Provider mới có quyền chỉnh sửa trải nghiệm của xưởng.
+              You are currently viewing with the role <strong>{role}</strong>. Only Local Provider accounts are authorized to edit workshop experiences.
             </p>
           </div>
           <button
             type="button"
             onClick={handleRoleSwitchToProvider}
             className="prf-btn prf-btn-primary"
-            style={{ fontSize: '0.8rem' }}
+            style={{ fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
           >
-            🏺 Chuyển sang tài khoản Local Provider
+            <IconVase size={14} color="#ffffff" />
+            <span>Switch to Local Provider</span>
           </button>
         </div>
       )}
@@ -202,11 +205,11 @@ export default function EditExperiencePage({
             gap: '0.75rem',
           }}
         >
-          <span style={{ fontSize: '1.2rem' }}>🔒</span>
+          <IconLock size={20} color="#92400e" />
           <div>
-            <strong>KHÓA TRƯỜNG DỮ LIỆU ĐANG CÓ BOOKING HOẠT ĐỘNG (SR-003):</strong>
+            <strong>LOCKED FIELDS: ACTIVE TOUR BOOKINGS IN EFFECT (SR-003):</strong>
             <p style={{ margin: '0.2rem 0 0 0' }}>
-              Trải nghiệm này đang có hợp đồng tour hoặc booking giữ chỗ còn hiệu lực. Để đảm bảo quyền lợi của công ty lữ hành, các trường: <em>Giá niêm yết, Sức chứa tối đa, Thời lượng và Địa điểm</em> bị khóa không cho sửa đổi trực tiếp.
+              This experience has active tour contracts or pending reservations. To safeguard tour agency arrangements, <em>Listed Tariff, Maximum Capacity, Duration, and Location</em> are locked from direct modification.
             </p>
           </div>
         </div>
@@ -238,13 +241,13 @@ export default function EditExperiencePage({
                 <span className="prf-step-badge">01</span>
                 <div>
                   <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Tên & Phân loại Hoạt động
+                    Activity Name &amp; Classification
                   </h2>
                 </div>
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Tên hoạt động trải nghiệm</label>
+                <label className="prf-label">Experience Program Name</label>
                 <input
                   type="text"
                   required
@@ -256,22 +259,22 @@ export default function EditExperiencePage({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="prf-field-group">
-                  <label className="prf-label">Phân loại hoạt động</label>
+                  <label className="prf-label">Activity Category</label>
                   <select
                     value={formData.category}
                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                     className="prf-select"
                   >
-                    <option value="Workshop/Hands-on">Workshop / Thực hành nặn gốm</option>
-                    <option value="Sightseeing">Tham quan làng nghề / Lò nung cổ</option>
-                    <option value="Culinary/Tasting">Ẩm thực làng nghề & Trà đạo</option>
-                    <option value="Combo">Combo Trọn gói Trải nghiệm</option>
+                    <option value="Workshop/Hands-on">Workshop / Hands-on Pottery</option>
+                    <option value="Sightseeing">Heritage Tour / Ancient Kiln</option>
+                    <option value="Culinary/Tasting">Village Culinary &amp; Tea Tasting</option>
+                    <option value="Combo">Comprehensive All-in-One Experience</option>
                   </select>
                 </div>
 
                 <div className="prf-field-group">
                   <label className="prf-label">
-                    Thời lượng (phút)
+                    Duration (Minutes)
                     {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>LOCKED</span>}
                   </label>
                   <input
@@ -291,16 +294,17 @@ export default function EditExperiencePage({
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      Nội dung Mô tả Trải nghiệm
+                      Experience Description &amp; Narrative
                     </h2>
                     <button
                       type="button"
                       onClick={handleAiRefine}
                       disabled={aiRefining}
                       className="prf-btn prf-btn-outline"
-                      style={{ fontSize: '0.75rem', borderColor: '#b84c24', color: '#b84c24' }}
+                      style={{ fontSize: '0.75rem', borderColor: '#b84c24', color: '#b84c24', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
-                      {aiRefining ? 'Đang phân tích...' : '✨ AI Refine Mô Tả'}
+                      <IconSparkles size={12} color="#b84c24" />
+                      <span>{aiRefining ? 'Analyzing...' : 'AI Refine Description'}</span>
                     </button>
                   </div>
                 </div>
@@ -328,7 +332,7 @@ export default function EditExperiencePage({
                     marginTop: '0.75rem',
                   }}
                 >
-                  <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Gợi ý mô tả chuẩn hóa từ AI:</div>
+                  <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Standardized AI Recommendation:</div>
                   <div style={{ lineHeight: 1.5, marginBottom: '0.75rem' }}>{aiDraft}</div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
@@ -337,7 +341,7 @@ export default function EditExperiencePage({
                       className="prf-btn prf-btn-primary"
                       style={{ fontSize: '0.72rem', padding: '0.25rem 0.75rem' }}
                     >
-                      Áp dụng bản thảo
+                      Apply Recommendation
                     </button>
                     <button
                       type="button"
@@ -345,7 +349,7 @@ export default function EditExperiencePage({
                       className="prf-btn prf-btn-outline"
                       style={{ fontSize: '0.72rem', padding: '0.25rem 0.75rem' }}
                     >
-                      Bỏ qua
+                      Dismiss
                     </button>
                   </div>
                 </div>
@@ -358,14 +362,14 @@ export default function EditExperiencePage({
                 <span className="prf-step-badge">03</span>
                 <div>
                   <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Bộ Sưu Tập Hình Ảnh Bắt Buộc (BR-009)
+                    Required Photo Collection (BR-009)
                   </h2>
                 </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="prf-field-group">
-                  <label className="prf-label">1. Nghệ nhân đang thao tác (artisan_working)</label>
+                  <label className="prf-label">1. Artisan at Work (artisan_working)</label>
                   <input
                     type="url"
                     required
@@ -375,7 +379,7 @@ export default function EditExperiencePage({
                   />
                 </div>
                 <div className="prf-field-group">
-                  <label className="prf-label">2. Không gian xưởng (workshop_space)</label>
+                  <label className="prf-label">2. Workshop Space (workshop_space)</label>
                   <input
                     type="url"
                     required
@@ -385,7 +389,7 @@ export default function EditExperiencePage({
                   />
                 </div>
                 <div className="prf-field-group">
-                  <label className="prf-label">3. Sản phẩm hoàn thiện (finished_product)</label>
+                  <label className="prf-label">3. Finished Product (finished_product)</label>
                   <input
                     type="url"
                     required
@@ -405,14 +409,14 @@ export default function EditExperiencePage({
                 <span className="prf-step-badge">04</span>
                 <div>
                   <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Biểu phí & Điều kiện
+                    Pricing &amp; Booking Conditions
                   </h2>
                 </div>
               </div>
 
               <div className="prf-field-group">
                 <label className="prf-label">
-                  Giá niêm yết (VND)
+                  Public Listed Price (VND)
                   {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>LOCKED</span>}
                 </label>
                 <input
@@ -425,7 +429,7 @@ export default function EditExperiencePage({
 
               <div className="prf-field-group">
                 <label className="prf-label">
-                  Sức chứa tối đa (người)
+                  Maximum Capacity (persons)
                   {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>LOCKED</span>}
                 </label>
                 <input
@@ -437,7 +441,7 @@ export default function EditExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Thời gian báo trước (giờ)</label>
+                <label className="prf-label">Notice Period (Hours)</label>
                 <input
                   type="number"
                   required
@@ -449,7 +453,7 @@ export default function EditExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Chính sách hủy dịch vụ</label>
+                <label className="prf-label">Cancellation &amp; Refund Policy</label>
                 <textarea
                   rows={3}
                   value={formData.cancellation_rules_text}
@@ -465,7 +469,7 @@ export default function EditExperiencePage({
         <div className="prf-sticky-footer">
           <div className="prf-sticky-footer-content">
             <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-              {hasActiveBookings ? 'Đang bảo vệ giá theo hợp đồng tour đang chạy' : 'Mọi thay đổi có hiệu lực ngay'}
+              {hasActiveBookings ? 'Pricing is preserved under current active tour contract' : 'All changes take effect immediately'}
             </span>
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -473,7 +477,7 @@ export default function EditExperiencePage({
                 href={`/provider/${params.providerId}/experiences`}
                 className="prf-btn prf-btn-outline"
               >
-                Hủy thay đổi (Discard)
+                Discard Changes
               </Link>
               <button
                 type="submit"
@@ -481,7 +485,7 @@ export default function EditExperiencePage({
                 className="prf-btn prf-btn-primary"
                 style={{ padding: '0.55rem 1.75rem' }}
               >
-                {saving ? 'Đang lưu...' : 'Lưu Thay Đổi (Save)'}
+                {saving ? 'Saving...' : 'Save Changes (EXP070)'}
               </button>
             </div>
           </div>

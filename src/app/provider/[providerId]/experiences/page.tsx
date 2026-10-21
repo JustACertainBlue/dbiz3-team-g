@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getCurrentRole, type CurrentUserRole } from '@/lib/prf/client-session'
+import { IconLock, IconClock, IconEdit } from '@/app/components/Icons'
 
 interface ExperienceItem {
   experience_id: string
@@ -35,7 +36,7 @@ export default function ExperienceManagementPage({
     setExperiences([
       {
         experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69',
-        name: 'Nặn gốm vuốt tay trên bàn xoay truyền thống',
+        name: 'Traditional Hand-Wheel Pottery Throwing & Glazing',
         category: 'Workshop/Hands-on',
         duration_minutes: 90,
         price_per_person: 150000,
@@ -45,7 +46,7 @@ export default function ExperienceManagementPage({
       },
       {
         experience_id: 'e1a2b3c4-5555-6666-7777-888899990000',
-        name: 'Khám phá lò bầu cổ & Tráng men tro trấu độc bản',
+        name: 'Ancient Dragon Kiln Tour & Proprietary Ash Glazing',
         category: 'Sightseeing/Masterclass',
         duration_minutes: 120,
         price_per_person: 220000,
@@ -61,15 +62,39 @@ export default function ExperienceManagementPage({
 
   const isLocalProvider = role === 'LocalProvider'
 
+  if (!isLocalProvider) {
+    return (
+      <div className="prf-container" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '560px', margin: '0 auto', background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <IconLock size={40} color="#b84c24" />
+          </div>
+          <span className="prf-badge prf-badge-warning" style={{ marginBottom: '1rem', display: 'inline-block' }}>
+            PERMISSION RESTRICTION · BR-001
+          </span>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#111827', margin: '0.5rem 0' }}>
+            Local Provider Authorization Required
+          </h2>
+          <p style={{ color: '#4b5563', fontSize: '0.85rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            You are currently viewing with the role <strong>{role}</strong>. Only the authenticated <strong>Local Provider</strong> (Workshop Owner) has authorization to manage, price, or configure experiences.
+          </p>
+          <Link href={`/provider/${params.providerId}`} className="prf-btn prf-btn-primary">
+            ← Return to Workshop Profile (PRF127)
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="prf-container" style={{ paddingBottom: '5rem' }}>
       {/* Header */}
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">MÃ MÀN HÌNH: EXP067 · EXPERIENCE MANAGEMENT</span>
-          <h1 className="prf-spec-title">Quản lý Hoạt động Trải nghiệm Làng nghề</h1>
+          <span className="prf-spec-code">SCREEN ID: EXP067 · EXPERIENCE MANAGEMENT</span>
+          <h1 className="prf-spec-title">Manage Workshop Experiences &amp; Cultural Programs</h1>
           <p className="prf-spec-subtitle">
-            Danh mục các hoạt động văn hóa, nặn gốm và tham quan do xưởng trực tiếp cung cấp cho du khách và tour B2B
+            Catalogue of cultural activities, pottery workshops, and tours directly offered by the atelier to guests and B2B tour groups
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -78,34 +103,17 @@ export default function ExperienceManagementPage({
             className="prf-btn prf-btn-outline"
             style={{ fontSize: '0.8rem' }}
           >
-            ← Hồ sơ Xưởng (PRF127)
+            ← Workshop Profile (PRF127)
           </Link>
           <Link
             href={`/provider/${params.providerId}/experiences/new`}
             className="prf-btn prf-btn-primary"
             style={{ fontSize: '0.8rem' }}
           >
-            + Thêm Trải Nghiệm Mới (EXP069)
+            + Add New Experience (EXP069)
           </Link>
         </div>
       </div>
-
-      {/* Warning if not Local Provider */}
-      {!isLocalProvider && (
-        <div
-          style={{
-            background: '#fffbeb',
-            border: '1px solid #f59e0b',
-            borderRadius: '4px',
-            padding: '1rem',
-            marginBottom: '1.5rem',
-            fontSize: '0.82rem',
-            color: '#92400e',
-          }}
-        >
-          ℹ️ Bạn đang xem màn hình này với vai trò <strong>{role}</strong>. Chỉ tài khoản <strong>Local Provider</strong> (Chủ xưởng) mới có quyền tạo mới, chỉnh sửa giá và điều kiện đặt trải nghiệm.
-        </div>
-      )}
 
       {/* Stat Bar */}
       <div
@@ -118,29 +126,29 @@ export default function ExperienceManagementPage({
       >
         <div className="prf-section-card" style={{ padding: '1rem 1.25rem' }}>
           <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-            Tổng trải nghiệm hoạt động
+            Total Active Experiences
           </div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginTop: '0.25rem' }}>
-            {experiences.length} chương trình
+            {experiences.length} programs
           </div>
         </div>
 
         <div className="prf-section-card" style={{ padding: '1rem 1.25rem' }}>
           <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-            Tiêu chuẩn hình ảnh (BR-009)
+            Visual Standard (BR-009)
           </div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#059669', marginTop: '0.25rem' }}>
-            100% ĐẠT CHUẨN
+            100% COMPLIANT
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>Đủ 3 ảnh theo 3 danh mục bắt buộc</div>
+          <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>All 3 mandatory image categories fulfilled</div>
         </div>
 
         <div className="prf-section-card" style={{ padding: '1rem 1.25rem' }}>
           <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-            Đặt tour đang hoạt động
+            Active Tour Reservations
           </div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#b84c24', marginTop: '0.25rem' }}>
-            1 đơn B2B giữ chỗ
+            1 Active B2B Booking
           </div>
         </div>
       </div>
@@ -163,8 +171,9 @@ export default function ExperienceManagementPage({
             <div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
                 <span className="prf-badge prf-badge-verified">{exp.category}</span>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  ⏱️ {exp.duration_minutes} phút
+                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <IconClock size={11} color="#374151" />
+                  <span>{exp.duration_minutes} mins</span>
                 </span>
                 {exp.has_active_bookings && (
                   <span className="prf-badge prf-badge-warning">
@@ -179,16 +188,16 @@ export default function ExperienceManagementPage({
 
               <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.82rem', color: '#4b5563', flexWrap: 'wrap' }}>
                 <div>
-                  <strong>Giá niêm yết:</strong>{' '}
+                  <strong>Listed Tariff:</strong>{' '}
                   <span style={{ color: '#b84c24', fontWeight: 700 }}>
-                    {exp.price_per_person.toLocaleString('vi-VN')} VND / khách
+                    {exp.price_per_person.toLocaleString('en-US')} VND / guest
                   </span>
                 </div>
                 <div>
-                  <strong>Sức chứa tối đa:</strong> {exp.max_participants} người / lượt
+                  <strong>Max Capacity:</strong> {exp.max_participants} guests / slot
                 </div>
                 <div>
-                  <strong>Thời gian báo trước:</strong> {exp.notice_period_hours} giờ
+                  <strong>Notice Period:</strong> {exp.notice_period_hours} hours
                 </div>
               </div>
             </div>
@@ -197,9 +206,10 @@ export default function ExperienceManagementPage({
               <Link
                 href={`/provider/${params.providerId}/experiences/${exp.experience_id}/edit`}
                 className="prf-btn prf-btn-primary"
-                style={{ fontSize: '0.78rem' }}
+                style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
               >
-                ✏️ Chỉnh Sửa Trải Nghiệm (EXP070)
+                <IconEdit size={12} color="#ffffff" />
+                <span>Edit Experience (EXP070)</span>
               </Link>
             </div>
           </div>

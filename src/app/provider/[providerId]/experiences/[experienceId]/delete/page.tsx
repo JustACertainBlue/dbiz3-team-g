@@ -22,11 +22,11 @@ export default function DeleteExperiencePage({
       })
       const data = await res.json()
       if (!res.ok) {
-        throw new Error(data.error || 'Lỗi khi xóa trải nghiệm')
+        throw new Error(data.error || 'Failed to delete experience')
       }
       router.push(`/provider/${params.providerId}/experiences`)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra')
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setDeleting(false)
     }
@@ -35,15 +35,15 @@ export default function DeleteExperiencePage({
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-stone-200 p-6 space-y-4">
-        <h1 className="text-lg font-bold text-red-600">Xác nhận xóa trải nghiệm</h1>
+        <h1 className="text-lg font-bold text-red-600">Confirm Experience Deletion</h1>
         <p className="text-stone-600 text-sm">
-          Bạn có chắc chắn muốn xóa trải nghiệm này?
+          Are you sure you want to remove this cultural experience listing?
         </p>
         <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-xs text-amber-900 space-y-1">
-          <p className="font-semibold">Quy tắc quản lý lịch sử (BR-019):</p>
-          <p>• Nếu đang có lượt đặt tour: Thao tác sẽ bị chặn để bảo vệ quyền lợi du khách.</p>
-          <p>• Nếu có lượt đặt trong quá khứ: Trải nghiệm sẽ được lưu trữ (archive), không xóa hoàn toàn.</p>
-          <p>• Nếu chưa từng có lượt đặt: Trải nghiệm sẽ được xóa vĩnh viễn.</p>
+          <p className="font-semibold">Historical Integrity Rule (BR-019):</p>
+          <p>• If active bookings exist: Action is blocked to protect confirmed tour itineraries.</p>
+          <p>• If past bookings exist: Experience is archived to preserve historical transaction records.</p>
+          <p>• If no prior bookings exist: Experience is permanently removed.</p>
         </div>
 
         {error && (
@@ -57,14 +57,14 @@ export default function DeleteExperiencePage({
             href={`/provider/${params.providerId}/experiences`}
             className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-lg text-sm font-medium"
           >
-            Hủy bỏ
+            Cancel
           </Link>
           <button
             onClick={handleDelete}
             disabled={deleting}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
           >
-            {deleting ? 'Đang xử lý...' : 'Xác nhận xóa'}
+            {deleting ? 'Processing...' : 'Confirm Deletion'}
           </button>
         </div>
       </div>

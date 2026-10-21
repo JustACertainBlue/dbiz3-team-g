@@ -2,18 +2,31 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import RoleNavbar from '@/app/components/RoleNavbar'
 import { getCurrentRole, type CurrentUserRole } from '@/lib/prf/client-session'
+import {
+  IconCheck,
+  IconPin,
+  IconPhoto,
+  IconBus,
+  IconShield,
+  IconLock,
+  IconClock,
+  IconUsers,
+} from '@/app/components/Icons'
 
 interface VillageInfo {
   village_id: string
   name: string
+  vietnamese_name: string
   district: string
   city_province: string
   source_code: string
-  established_year?: string
-  total_ateliers?: number
-  distance_from_center?: string
-  description?: string
+  lineage: string
+  ateliers: string
+  proximity: string
+  coach_capacity: string
+  description: string
 }
 
 export default function VillageProfilePage({
@@ -22,356 +35,513 @@ export default function VillageProfilePage({
   params: { villageId: string }
 }) {
   const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
+  const [mounted, setMounted] = useState(false)
 
-  // Bát Tràng verified provider ID
-  const provider1Id = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
+  const ownProviderId = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
+  const competitor1Id = '61a3d9eb-4a05-5d7f-c4f4-b2c0c24d6485'
+  const competitor2Id = '72b4e0fc-5b16-6e80-d5a5-c3d1d35e7596'
 
   const village: VillageInfo = {
     village_id: params.villageId,
-    name: 'Làng gốm sứ Bát Tràng',
-    district: 'Gia Lâm',
-    city_province: 'Hà Nội',
+    name: 'Bat Trang Ceramic Village',
+    vietnamese_name: 'Làng gốm sứ Bát Tràng',
+    district: 'Gia Lam',
+    city_province: 'Hanoi',
     source_code: 'DEMO-HN-BATTRANG',
-    established_year: 'Thế kỷ XIV (~700+ năm di sản)',
-    total_ateliers: 45,
-    distance_from_center: '14 km về phía Đông Nam trung tâm Hà Nội',
+    lineage: '1,000+',
+    ateliers: '45',
+    proximity: '14 KM',
+    coach_capacity: '45-SEAT',
     description:
-      'Làng gốm Bát Tràng nằm ven tả ngạn sông Hồng, là trung tâm sản xuất gốm sứ thủ công cổ truyền trứ danh bậc nhất của kinh thành Thăng Long xưa và Hà Nội ngày nay. Nơi đây lưu giữ tinh hoa kỹ thuật tạo hình vuốt tay, nghệ thuật tráng men tro trấu độc bản và các dòng gốm men lam, men ngọc, men rạn danh tiếng.',
+      'Over 1,000 years of ceramic heritage situated along the eastern bank of the Red River. Internationally acknowledged for hand-thrown stoneware, proprietary rice-husk ash glazing, and celebrated celadon, blue-and-white, and crackle glaze lineages operated by multigenerational master kilns.',
   }
 
   useEffect(() => {
+    setMounted(true)
     setRole(getCurrentRole())
-    const onRoleChanged = () => {
-      setRole(getCurrentRole())
-    }
+    const onRoleChanged = () => setRole(getCurrentRole())
     window.addEventListener('hab_role_changed', onRoleChanged)
     return () => window.removeEventListener('hab_role_changed', onRoleChanged)
   }, [])
 
+  if (!mounted) {
+    return (
+      <div className="spec-portal" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <p style={{ fontWeight: 700, color: '#4b5563' }}>LOADING VILLAGE PROFILE (VIL030)...</p>
+      </div>
+    )
+  }
+
+  const isLocalProvider = role === 'LocalProvider'
   const isAgency = role === 'TourAgency'
+  const isUBND = role === 'UBND'
+  const isGuest = role === 'Guest'
+
+  const registeredProviders = [
+    {
+      id: ownProviderId,
+      code: '#BT-PRV-01',
+      category: 'GUILD MASTER / OWNER',
+      name: 'Hung Thinh Artisan Pottery Workshop',
+      vietnameseSubtitle: 'Xưởng gốm nghệ nhân Hưng Thịnh',
+      master: 'Master Nguyen Van Hung (4th Generation Guild Master)',
+      focus: 'Hand-wheel Throwing, Wood Dragon Kiln & Ash Glaze',
+      inventory: '3 Experiences Available',
+      isOwn: isLocalProvider,
+    },
+    {
+      id: competitor1Id,
+      code: '#BT-PRV-02',
+      category: 'FAMILY GUILD (3RD GEN)',
+      name: 'Trieu Van Mau Ceramics Studio',
+      vietnameseSubtitle: 'Xưởng gốm Triệu Văn Mão',
+      master: 'Master Trieu Van Mau Guild',
+      focus: 'Celadon Reproduction & Bisque Painting',
+      inventory: '2 Experiences Available',
+      isOwn: false,
+    },
+    {
+      id: competitor2Id,
+      code: '#BT-PRV-03',
+      category: 'ARTISAN COLLECTIVE',
+      name: 'Dong Huong Heritage Kiln Cooperative',
+      vietnameseSubtitle: 'Hợp tác xã gốm cổ Đông Hương',
+      master: 'Master Nguyen Thi Dong',
+      focus: 'Architectural Terracotta & Ceremonial Vessels',
+      inventory: '2 Experiences Available',
+      isOwn: false,
+    },
+  ]
+
+  const featuredExperiences = [
+    {
+      id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69',
+      providerId: ownProviderId,
+      tag: 'HANDS-ON WORKSHOP',
+      host: 'Hung Thinh Artisan Pottery Workshop',
+      title: 'Hand-Wheel Throwing & Glazing Masterclass — Main Studio',
+      desc: '2.5-hour hands-on instruction with a guild master. Learn historical centering, kick-wheel pulling, trimming, and traditional ash glaze dipping.',
+      duration: '2.5 Hours',
+      capacity: 'Max 15 Pax',
+      rateVND: 320000,
+    },
+    {
+      id: 'c8281688-2dc1-5cb1-9ff6-139df04ba562',
+      providerId: ownProviderId,
+      tag: 'MASTERCLASS',
+      host: 'Hung Thinh Artisan Pottery Workshop',
+      title: 'Historical Blue-and-White (Men Lam) Painting Workshop',
+      desc: 'Discover proprietary rice-husk ash recipes and fine calligraphy brushwork on bisqueware inspired by Le & Nguyen imperial dynasty styles.',
+      duration: '3.0 Hours',
+      capacity: 'Max 12 Pax',
+      rateVND: 270000,
+    },
+    {
+      id: '800b5192-03c7-5953-849b-32a321e12a47',
+      providerId: ownProviderId,
+      tag: 'DEMONSTRATION & CEREMONY',
+      host: 'Hung Thinh Artisan Pottery Workshop',
+      title: 'Dragon Kiln Firing & Private Atelier Tea Ceremony',
+      desc: 'Curated evening presentation of continuous wood-firing kiln reduction, accompanied by master dialogue and lotus tea service.',
+      duration: '4.0 Hours',
+      capacity: 'Max 20 Pax',
+      rateVND: 420000,
+    },
+  ]
 
   return (
-    <div className="prf-container" style={{ paddingBottom: '5rem' }}>
-      {/* Spec Breadcrumb & Navigation */}
-      <div className="prf-spec-header">
-        <div>
-          <span className="prf-spec-code">MÃ MÀN HÌNH: VIL030 · VILLAGE PROFILE</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
-            <Link href="/explore" style={{ color: '#b84c24', fontWeight: 700, textDecoration: 'none', fontSize: '0.75rem' }}>
-              KHÁM PHÁ (EXPLORE)
-            </Link>
-            <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>/</span>
-            <span style={{ color: '#6b7280', fontSize: '0.75rem', fontWeight: 600 }}>LÀNG NGHỀ THỦ CÔNG HÀ NỘI</span>
-            <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>/</span>
-            <span style={{ color: '#111827', fontSize: '0.75rem', fontWeight: 800 }}>{village.name.toUpperCase()}</span>
+    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', background: '#ffffff', minHeight: '100vh' }}>
+      <RoleNavbar
+        breadcrumbs={
+          isLocalProvider ? (
+            <>HOME / CRAFT VILLAGES / <span style={{ color: '#111827', fontWeight: 700 }}>{village.name.toUpperCase()}</span></>
+          ) : isAgency ? (
+            <>HOME / CRAFT VILLAGES / <span style={{ color: '#111827', fontWeight: 700 }}>{village.name.toUpperCase()}</span></>
+          ) : isUBND ? (
+            <>UBND AUDIT / CRAFT VILLAGES / <span style={{ color: '#ffffff', fontWeight: 700 }}>{village.name.toUpperCase()}</span></>
+          ) : (
+            <>PUBLIC CATALOG / <span style={{ color: '#111827', fontWeight: 700 }}>{village.name.toUpperCase()} (VIL030)</span></>
+          )
+        }
+      />
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem 2rem 4rem' }}>
+
+        {/* HERO SECTION matching VIL030.png (Split 60/40 layout) */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '2rem',
+          marginBottom: '2.5rem', alignItems: 'start',
+        }}>
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#f3f4f6', color: '#111827', padding: '3px 8px', borderRadius: '2px', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
+              <IconCheck size={12} color="#111827" />
+              <span>National Intangible Cultural Heritage • Est. 14th Century</span>
+            </div>
+
+            <h1 style={{ fontSize: '2.3rem', fontWeight: 800, color: '#111827', margin: '0 0 0.25rem 0', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+              {village.name}
+            </h1>
+            <div style={{ fontSize: '1rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+              ({village.vietnamese_name})
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6b7280', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+              <IconPin size={14} color="#6b7280" />
+              <span>Red River Basin, {village.district} District, {village.city_province} (14km southeast of Old Quarter)</span>
+            </div>
+
+            <p style={{ fontSize: '0.86rem', color: '#4b5563', lineHeight: 1.6, margin: 0 }}>
+              {village.description}
+            </p>
+          </div>
+
+          {/* Village hero image */}
+          <div style={{ position: 'relative', aspectRatio: '4/3', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+            <img
+              src="/craft/bat-trang-pottery.jpg"
+              alt="Craft Village"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.12) 0%, transparent 60%, rgba(0,0,0,0.4) 100%)' }} />
+            <div style={{ position: 'absolute', top: '1rem', left: '1rem' }}>
+              <span style={{ fontSize: '0.62rem', fontWeight: 800, background: 'rgba(17,24,39,0.8)', backdropFilter: 'blur(4px)', color: '#ffffff', padding: '4px 10px', borderRadius: '4px', letterSpacing: '0.06em' }}>
+                DOCUMENTARY
+              </span>
+            </div>
+            <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', right: '1rem' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+                Authentic craft village · Bat Trang, Gia Lam, Hanoi
+              </div>
+            </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <Link href="/explore" className="prf-btn prf-btn-outline" style={{ fontSize: '0.8rem' }}>
-            ← Danh mục Khám phá
-          </Link>
-          {isAgency && (
-            <Link href="/messages" className="prf-btn prf-btn-primary" style={{ background: '#1e3a5f', fontSize: '0.8rem' }}>
-              💬 Liên hệ Xưởng tại Làng
-            </Link>
-          )}
-        </div>
-      </div>
 
-      {/* Hero Section & Village Presentation */}
-      <div
-        style={{
-          background: '#ffffff',
-          border: '1px solid #e5e7eb',
-          borderRadius: '4px',
-          overflow: 'hidden',
-          marginBottom: '2rem',
-        }}
-      >
-        <div
-          style={{
-            height: '240px',
-            background: 'linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.65)), url("https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1600&q=80")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end',
-            padding: '2rem',
-            color: '#ffffff',
-          }}
-        >
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <span className="prf-badge prf-badge-verified">DI SẢN VĂN HÓA QUỐC GIA</span>
-            <span className="prf-badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#ffffff' }}>
-              MÃ ĐỊA BÀN: {village.source_code}
+        {/* 4 STAT CARDS matching VIL030.png (SPEC 01 // SPEC 02 // SPEC 03 // SPEC 04) */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '3.5rem',
+        }}>
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: '3px', padding: '1.25rem', background: '#ffffff' }}>
+            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              SPEC 01 // HERITAGE
+            </div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#111827', margin: '0.35rem 0 0.15rem 0' }}>
+              {village.lineage}
+            </div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.35rem' }}>Years Lineage</div>
+            <div style={{ fontSize: '0.68rem', color: '#6b7280', lineHeight: 1.4 }}>
+              Continuous ceramic manufacturing documentation tracked to Ly dynasty records.
+            </div>
+          </div>
+
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: '3px', padding: '1.25rem', background: '#ffffff' }}>
+            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              SPEC 02 // GUILDS
+            </div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#111827', margin: '0.35rem 0 0.15rem 0' }}>
+              {village.ateliers}
+            </div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.35rem' }}>Active Ateliers</div>
+            <div style={{ fontSize: '0.68rem', color: '#6b7280', lineHeight: 1.4 }}>
+              Verified master studios and registered craft collectives open to delegations.
+            </div>
+          </div>
+
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: '3px', padding: '1.25rem', background: '#ffffff' }}>
+            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              SPEC 03 // PROXIMITY
+            </div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#111827', margin: '0.35rem 0 0.15rem 0' }}>
+              {village.proximity}
+            </div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.35rem' }}>From Hanoi Center</div>
+            <div style={{ fontSize: '0.68rem', color: '#6b7280', lineHeight: 1.4 }}>
+              Direct south-east highway transit corridors; estimated 25-35 minutes vehicle travel.
+            </div>
+          </div>
+
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: '3px', padding: '1.25rem', background: '#ffffff' }}>
+            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              SPEC 04 // LOGISTICS
+            </div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#111827', margin: '0.35rem 0 0.15rem 0' }}>
+              {village.coach_capacity}
+            </div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.35rem' }}>Coach Staging</div>
+            <div style={{ fontSize: '0.68rem', color: '#6b7280', lineHeight: 1.4 }}>
+              Designated terminal at Bat Trang Cultural Center with turnaround bay and charging docks.
+            </div>
+          </div>
+        </div>
+
+        {/* [02] GUILD DIRECTORY: hidden from LocalProvider — they cannot see competitor cards */}
+        {!isLocalProvider && (
+        <section style={{ marginBottom: '3.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                [02] GUILD DIRECTORY
+              </div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', margin: '0.2rem 0 0 0' }}>
+                Registered Village Providers
+              </h2>
+            </div>
+            <span style={{ fontSize: '0.75rem', color: '#6b7280', maxWidth: '440px', textAlign: 'right' }}>
+              Vetted community partners meeting municipal safety protocols, authentic raw material standards, and group capacity thresholds.
             </span>
           </div>
-          <h1 style={{ fontSize: '2.25rem', fontFamily: 'serif', fontWeight: 800, margin: '0 0 0.5rem 0' }}>
-            {village.name}
-          </h1>
-          <p style={{ margin: 0, fontSize: '0.95rem', opacity: 0.9, maxWidth: '850px' }}>
-            Địa bàn: {village.district}, {village.city_province} · {village.established_year}
-          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+            {registeredProviders.map(p => (
+              <div
+                key={p.id}
+                style={{
+                  border: '1px solid #e5e7eb', borderRadius: '3px', padding: '1.5rem', background: '#ffffff',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#4b5563', background: '#f3f4f6', padding: '2px 6px', borderRadius: '2px' }}>
+                      {p.category}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#9ca3af' }}>{p.code}</span>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#111827', margin: '0 0 0.2rem 0' }}>
+                    {p.name}
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem' }}>
+                    {p.vietnameseSubtitle}
+                  </div>
+
+                  <div style={{ fontSize: '0.76rem', color: '#4b5563', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                    <div><strong>MASTER:</strong> {p.master}</div>
+                    <div><strong>FOCUS:</strong> {p.focus}</div>
+                    <div><strong>INVENTORY:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{p.inventory}</span></div>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <Link
+                    href={`/provider/${p.id}`}
+                    style={{
+                      background: '#111827', color: '#ffffff', textAlign: 'center', padding: '0.55rem',
+                      borderRadius: '2px', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none',
+                    }}
+                  >
+                    View Provider Profile →
+                  </Link>
+
+                  {/* Secondary action: Chat with Provider (only for authenticated Agency) */}
+                  {isAgency && (
+                    <button
+                      onClick={() => alert(`Starting direct chat with ${p.name}`)}
+                      style={{
+                        background: '#ffffff', color: '#111827', border: '1px solid #d1d5db',
+                        padding: '0.45rem', borderRadius: '2px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer',
+                      }}
+                    >
+                      Chat with Provider
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        )}
+
+        {/* [03] BOOKABLE MODULES: Featured Experiences in Village matching VIL030.png */}
+        <section style={{ marginBottom: '3.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.25rem' }}>
+            <div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                [03] BOOKABLE MODULES
+              </div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', margin: '0.2rem 0 0 0' }}>
+                Featured Experiences in Village
+              </h2>
+            </div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280' }}>
+              TOTAL: 07 MODULES
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {featuredExperiences.map(exp => (
+              <div
+                key={exp.id}
+                style={{
+                  border: '1px solid #e5e7eb', borderRadius: '3px', padding: '1.25rem 1.5rem', background: '#ffffff',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: '320px' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.35rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.62rem', fontWeight: 800, background: '#f3f4f6', color: '#111827', padding: '1px 6px', borderRadius: '2px' }}>
+                      {exp.tag}
+                    </span>
+                    <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>Host: {exp.host}</span>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#111827', margin: '0 0 0.35rem 0' }}>
+                    {exp.title}
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: '#6b7280', margin: 0, lineHeight: 1.5, maxWidth: '640px' }}>
+                    {exp.desc}
+                  </p>
+                </div>
+
+                {/* Right stats row */}
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', textAlign: 'center', flexShrink: 0 }}>
+                  <div>
+                    <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase' }}>DURATION</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#111827', marginTop: '0.15rem' }}>{exp.duration}</div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase' }}>CAPACITY</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#111827', marginTop: '0.15rem' }}>
+                      {isGuest ? (
+                        <span style={{ color: '#9ca3af', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <IconLock size={10} color="#9ca3af" /> Locked
+                        </span>
+                      ) : (
+                        exp.capacity
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase' }}>TARIFF</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#111827', marginTop: '0.15rem' }}>
+                      {isGuest ? (
+                        <span style={{ color: '#9ca3af', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <IconLock size={10} color="#9ca3af" /> Locked
+                        </span>
+                      ) : (
+                        `₫${exp.rateVND.toLocaleString()} / pax`
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Link
+                      href={`/provider/${exp.providerId}/experiences/${exp.id}`}
+                      style={{
+                        background: '#111827', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '2px',
+                        fontSize: '0.75rem', fontWeight: 700, textDecoration: 'none', display: 'inline-block',
+                      }}
+                    >
+                      View Details ›
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* [04] GOVERNANCE & [05] FIELD LOGISTICS matching VIL030.png */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
+          {/* [04] Governance */}
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              [04] GOVERNANCE &amp; ADMINISTRATION
+            </div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#111827', margin: '0.25rem 0 0.5rem 0' }}>
+              Village Governance &amp; Heritage Codex
+            </h3>
+            <p style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5, margin: '0 0 1rem 0' }}>
+              Bat Trang Ceramic Village operates under joint operational oversight by the Gia Lam District People&apos;s Committee (UBND Xã Bát Tràng) and the Hanoi Department of Tourism. All registered B2B activities comply with Hanoi Municipal Traditional Trade Village Preservation Decree 42/2019.
+            </p>
+
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: '3px', padding: '1rem', background: '#fafafa' }}>
+              <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                HERITAGE INTEGRITY METRICS
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#4b5563', padding: '0.3rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span>Raw Ceramic Clay Stewardship:</span>
+                <strong>100% Certified</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#4b5563', padding: '0.3rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span>Kiln Emission Standards:</span>
+                <strong>Hanoi Grade A</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#4b5563', padding: '0.3rem 0' }}>
+                <span>Artisan Labor Welfare Certification:</span>
+                <strong>Annual Audit Jan 2025</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* [05] Field Logistics */}
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              [05] FIELD LOGISTICS
+            </div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#111827', margin: '0.25rem 0 0.5rem 0' }}>
+              Visitor Access &amp; Ground Transport
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: '3px', padding: '0.85rem 1rem', background: '#fafafa', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <IconBus size={18} color="#111827" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#111827' }}>
+                    Coach Parking &amp; Passenger Staging
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '2px' }}>
+                    Paved bus parking at Bat Trang Cultural Pier accommodates up to four 45-seat touring coaches concurrently. Free idling up to 30 mins.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: '3px', padding: '0.85rem 1rem', background: '#fafafa', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <IconBus size={18} color="#111827" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#111827' }}>
+                    Electric Shuttle Cart Routing
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '2px' }}>
+                    Transfer from bus bay to communal pavilion and narrow atelier alleys via 8-seater low-emissions electric carts running continuously every 10 minutes.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: '3px', padding: '0.85rem 1rem', background: '#fafafa', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <IconShield size={18} color="#111827" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#111827' }}>
+                    Agency Field Protocol
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '2px' }}>
+                    Tour managers must display registered digital badges at the Village Administrative Gate for prioritized atelier access.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 4-Stat Heritage Metric Strip */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            background: '#fafaf9',
-            borderTop: '1px solid #e5e7eb',
-            borderBottom: '1px solid #e5e7eb',
-          }}
-        >
-          <div style={{ padding: '1rem 1.5rem', borderRight: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-              Niên đại di sản
-            </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#b84c24', marginTop: '0.2rem' }}>
-              700+ Năm
-            </div>
-            <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>Khởi lập từ thời Lý - Trần</div>
-          </div>
-
-          <div style={{ padding: '1rem 1.5rem', borderRight: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-              Xưởng thủ công hoạt động
-            </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', marginTop: '0.2rem' }}>
-              45+ Xưởng
-            </div>
-            <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>Trong đó 12 xưởng chuẩn B2B</div>
-          </div>
-
-          <div style={{ padding: '1rem 1.5rem', borderRight: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-              Khoảng cách từ trung tâm
-            </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', marginTop: '0.2rem' }}>
-              14 KM
-            </div>
-            <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>Đường đê Bát Tràng xe 45 chỗ</div>
-          </div>
-
-          <div style={{ padding: '1rem 1.5rem' }}>
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-              Chỉ số bảo tồn di sản
-            </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#059669', marginTop: '0.2rem' }}>
-              98.4%
-            </div>
-            <div style={{ fontSize: '0.72rem', color: '#9ca3af' }}>Thẩm định bởi UBND & HDT</div>
-          </div>
-        </div>
-
-        {/* Narrative & Craft Lineage */}
-        <div style={{ padding: '1.75rem 2rem' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-            [01] Tinh hoa Gốm sứ & Dòng chảy lịch sử
-          </h2>
-          <p style={{ color: '#374151', fontSize: '0.9rem', lineHeight: 1.7, margin: 0 }}>
-            {village.description}
-          </p>
-        </div>
       </div>
 
-      {/* [02] Registered Village Providers / Ateliers */}
-      <div style={{ marginBottom: '2.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      {/* Footer matching VIL030.png */}
+      <footer style={{
+        borderTop: '1px solid #e5e7eb', padding: '1.5rem 2rem', background: '#fafafa', fontSize: '0.75rem', color: '#6b7280',
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
-              [02] Danh mục Xưởng thủ công & Nghệ nhân thuộc Làng (Ateliers)
-            </h2>
-            <p style={{ fontSize: '0.78rem', color: '#6b7280', margin: '0.2rem 0 0 0' }}>
-              Các cơ sở thủ công đã được kiểm tra thực địa, cấp chứng chỉ định danh và đủ năng lực phục vụ đối tác B2B
-            </p>
+            HANOI ARTISAN BRIDGE © 2025 • B2B Cultural Heritage Operations
           </div>
-          <span className="prf-badge prf-badge-verified">3 XƯỞNG ĐÃ THẨM ĐỊNH MẪU</span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.25rem' }}>
-          {/* Provider Card 1: Xưởng Gốm Hưng Thịnh (Provider 1 Verified) */}
-          <div
-            className="prf-section-card"
-            style={{
-              padding: '1.25rem',
-              border: '2px solid #b84c24',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                <span className="prf-badge prf-badge-verified">UBND VERIFIED · HẠNG A</span>
-                <span style={{ fontSize: '0.72rem', color: '#6b7280', fontWeight: 600 }}>Thế hệ thứ 5</span>
-              </div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.35rem 0', color: '#111827' }}>
-                Xưởng Gốm Thủ Công Hưng Thịnh
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: '#4b5563', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
-                Nghệ nhân chủ nhiệm: <strong>Nguyễn Văn Thịnh</strong>. Chuyên chế tác gốm vuốt tay mỹ nghệ, men rạn truyền thống và phục chế gốm thời Lê - Nguyễn.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  👥 Sức chứa: 80 khách/lượt
-                </span>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  🏺 35 Bàn xoay thực hành
-                </span>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  🚌 Bãi đỗ xe 45 chỗ
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem' }}>
-              <Link
-                href={`/provider/${provider1Id}`}
-                className="prf-btn prf-btn-primary"
-                style={{ flex: 1, textAlign: 'center', fontSize: '0.78rem' }}
-              >
-                Xem Hồ sơ Xưởng (PRF127)
-              </Link>
-              <Link
-                href="/messages"
-                className="prf-btn prf-btn-outline"
-                style={{ fontSize: '0.78rem' }}
-              >
-                💬 Chat B2B
-              </Link>
-            </div>
-          </div>
-
-          {/* Provider Card 2: Xưởng Men Lam Cổ */}
-          <div
-            className="prf-section-card"
-            style={{
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                <span className="prf-badge prf-badge-verified">UBND VERIFIED</span>
-                <span style={{ fontSize: '0.72rem', color: '#6b7280', fontWeight: 600 }}>Thế hệ thứ 4</span>
-              </div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.35rem 0', color: '#111827' }}>
-                Xưởng Gốm Men Lam Cổ Bát Tràng
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: '#4b5563', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
-                Nghệ nhân ưu tú: <strong>Phạm Văn Nam</strong>. Giữ gìn kỹ thuật vẽ lam dưới men theo lối cung đình và kỹ nghệ nung củi truyền thống.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  👥 Sức chứa: 45 khách/lượt
-                </span>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  🎨 Lớp vẽ lam chuyên sâu
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem' }}>
-              <Link
-                href={`/provider/${provider1Id}`}
-                className="prf-btn prf-btn-outline"
-                style={{ flex: 1, textAlign: 'center', fontSize: '0.78rem' }}
-              >
-                Xem Hồ sơ Xưởng
-              </Link>
-              <Link
-                href="/messages"
-                className="prf-btn prf-btn-outline"
-                style={{ fontSize: '0.78rem' }}
-              >
-                💬 Chat B2B
-              </Link>
-            </div>
-          </div>
-
-          {/* Provider Card 3: HTX Gốm Sứ Bát Tràng */}
-          <div
-            className="prf-section-card"
-            style={{
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                <span className="prf-badge prf-badge-verified">UBND VERIFIED</span>
-                <span style={{ fontSize: '0.72rem', color: '#6b7280', fontWeight: 600 }}>Tổ chức tập thể</span>
-              </div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.35rem 0', color: '#111827' }}>
-                Hợp Tác Xã Gốm Bát Tràng Cổ Truyền
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: '#4b5563', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
-                Liên kết 15 hộ gia đình sản xuất gốm gia dụng cao cấp, gốm quà tặng ngoại giao và vật phẩm xuất khẩu đạt chuẩn OCOP 5 sao.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  👥 Sức chứa: 120 khách
-                </span>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  🏆 OCOP 5 SAO
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem' }}>
-              <Link
-                href={`/provider/${provider1Id}`}
-                className="prf-btn prf-btn-outline"
-                style={{ flex: 1, textAlign: 'center', fontSize: '0.78rem' }}
-              >
-                Xem Hồ sơ Xưởng
-              </Link>
-              <Link
-                href="/messages"
-                className="prf-btn prf-btn-outline"
-                style={{ fontSize: '0.78rem' }}
-              >
-                💬 Chat B2B
-              </Link>
-            </div>
+          <div style={{ display: 'flex', gap: '1.5rem' }}>
+            <span style={{ cursor: 'pointer' }}>Operator Terms</span>
+            <span style={{ cursor: 'pointer' }}>Artisan Privacy Protocol</span>
+            <span style={{ cursor: 'pointer' }}>Compliance &amp; Heritage Standards</span>
+            <span style={{ cursor: 'pointer' }}>Support Desk</span>
           </div>
         </div>
-      </div>
-
-      {/* [03] Village Governance & Heritage Codex */}
-      <div
-        style={{
-          background: '#f8fafc',
-          border: '1px solid #cbd5e1',
-          borderRadius: '4px',
-          padding: '1.5rem 2rem',
-        }}
-      >
-        <h2 style={{ fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 0.5rem 0', color: '#1e293b' }}>
-          [03] Quy ước Bảo tồn Di sản & Hạ tầng Làng nghề Địa phương
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem', fontSize: '0.82rem', color: '#334155', lineHeight: 1.6 }}>
-          <div>
-            <h4 style={{ margin: '0 0 0.35rem 0', color: '#0f172a', fontWeight: 700 }}>⚖️ Quy chuẩn Thẩm định Nguyên liệu</h4>
-            <p style={{ margin: 0 }}>
-              100% các xưởng đạt chứng nhận cam kết sử dụng nguồn đất sét trắng chịu lửa Trúc Thôn đã qua tuyển lọc tạp chất. Nghiêm cấm sử dụng phụ gia hóa chất độc hại trong men gốm gia dụng.
-            </p>
-          </div>
-          <div>
-            <h4 style={{ margin: '0 0 0.35rem 0', color: '#0f172a', fontWeight: 700 }}>🚌 Hạ tầng Đón tiếp Đoàn B2B</h4>
-            <p style={{ margin: 0 }}>
-              Làng nghề quy hoạch bãi đỗ xe trung tâm tại Chợ gốm và bến xe buýt Bát Tràng (sức chứa 15 xe 45 chỗ đồng thời). Hệ thống xe điện chuyên dụng kết nối khách từ bãi đỗ vào tận từng ngõ xưởng nghệ nhân.
-            </p>
-          </div>
-        </div>
-      </div>
+      </footer>
     </div>
   )
 }

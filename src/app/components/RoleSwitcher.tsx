@@ -1,16 +1,16 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { getCurrentRole, setCurrentRole, type CurrentUserRole } from '@/lib/prf/client-session'
+import { IconVase, IconBriefcase, IconLandmark, IconUser } from '@/app/components/Icons'
 
 export default function RoleSwitcher() {
+  const router = useRouter()
   const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
   const [mounted, setMounted] = useState(false)
 
-  const providerId = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374' // Bát Tràng verified provider
-  const agencyId = '5fecc699-71e4-5bf0-ac1b-2090e05c2cd9'   // Indochina Heritage Voyages
-  const villageId = '20896522-6235-5699-aeaf-f48b8150d895'  // Bát Tràng Village
+  const villageId = '20896522-6235-5699-aeaf-f48b8150d895'
 
   useEffect(() => {
     setMounted(true)
@@ -28,6 +28,16 @@ export default function RoleSwitcher() {
   const handleSelectRole = (newRole: CurrentUserRole) => {
     setCurrentRole(newRole)
     setRole(newRole)
+
+    if (newRole === 'LocalProvider') {
+      router.push(`/village/${villageId}`)
+    } else if (newRole === 'TourAgency') {
+      router.push('/explore')
+    } else if (newRole === 'UBND') {
+      router.push(`/village/${villageId}`)
+    } else if (newRole === 'Guest') {
+      router.push('/explore')
+    }
   }
 
   return (
@@ -52,7 +62,7 @@ export default function RoleSwitcher() {
       {/* Active Account Pill */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
         <span style={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
-          TÀI KHOẢN ĐANG ĐĂNG NHẬP:
+          CURRENT ACTIVE ROLE:
         </span>
         <span
           style={{
@@ -72,19 +82,39 @@ export default function RoleSwitcher() {
             letterSpacing: '0.03em',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.35rem',
+            gap: '0.45rem',
           }}
         >
-          {role === 'LocalProvider' && '🏺 Local Provider · Xưởng Hưng Thịnh Bát Tràng'}
-          {role === 'TourAgency' && '🏢 Tour Agency · Indochina Heritage Voyages'}
-          {role === 'UBND' && '🏛️ UBND Admin · Xã Bát Tràng (Hội đồng Thẩm định)'}
-          {role === 'Guest' && '👤 Guest · Khách xem công khai'}
+          {role === 'LocalProvider' && (
+            <>
+              <IconVase size={14} color="#ffffff" />
+              <span>LOCAL PROVIDER · HUNG THINH ARTISAN WORKSHOP</span>
+            </>
+          )}
+          {role === 'TourAgency' && (
+            <>
+              <IconBriefcase size={14} color="#ffffff" />
+              <span>TOUR AGENCY · INDOCHINA HERITAGE VOYAGES</span>
+            </>
+          )}
+          {role === 'UBND' && (
+            <>
+              <IconLandmark size={14} color="#ffffff" />
+              <span>COMMUNE AUDIT ADMIN · BAT TRANG HERITAGE COUNCIL</span>
+            </>
+          )}
+          {role === 'Guest' && (
+            <>
+              <IconUser size={14} color="#ffffff" />
+              <span>GUEST · PUBLIC CATALOG VIEWER</span>
+            </>
+          )}
         </span>
       </div>
 
       {/* Role Switcher Action Buttons */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-        <span style={{ color: '#64748b', marginRight: '0.2rem', fontSize: '0.7rem', fontWeight: 600 }}>Switch Role:</span>
+        <span style={{ color: '#94a3b8', marginRight: '0.2rem', fontSize: '0.7rem', fontWeight: 600 }}>Switch Role:</span>
 
         <button
           type="button"
@@ -93,14 +123,19 @@ export default function RoleSwitcher() {
             background: role === 'LocalProvider' ? '#b84c24' : '#1e293b',
             color: role === 'LocalProvider' ? '#ffffff' : '#cbd5e1',
             border: role === 'LocalProvider' ? '1px solid #f97316' : '1px solid #334155',
-            padding: '3px 9px',
+            padding: '4px 10px',
             borderRadius: '2px',
             fontSize: '0.72rem',
             cursor: 'pointer',
             fontWeight: role === 'LocalProvider' ? 800 : 500,
+            transition: 'all 0.15s ease',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
           }}
         >
-          🏺 Local Provider
+          <IconVase size={13} color={role === 'LocalProvider' ? '#ffffff' : '#cbd5e1'} />
+          <span>Local Provider</span>
         </button>
 
         <button
@@ -110,14 +145,19 @@ export default function RoleSwitcher() {
             background: role === 'TourAgency' ? '#1e3a5f' : '#1e293b',
             color: role === 'TourAgency' ? '#ffffff' : '#cbd5e1',
             border: role === 'TourAgency' ? '1px solid #38bdf8' : '1px solid #334155',
-            padding: '3px 9px',
+            padding: '4px 10px',
             borderRadius: '2px',
             fontSize: '0.72rem',
             cursor: 'pointer',
             fontWeight: role === 'TourAgency' ? 800 : 500,
+            transition: 'all 0.15s ease',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
           }}
         >
-          🏢 Tour Agency
+          <IconBriefcase size={13} color={role === 'TourAgency' ? '#ffffff' : '#cbd5e1'} />
+          <span>Tour Agency</span>
         </button>
 
         <button
@@ -127,14 +167,19 @@ export default function RoleSwitcher() {
             background: role === 'UBND' ? '#991b1b' : '#1e293b',
             color: role === 'UBND' ? '#ffffff' : '#cbd5e1',
             border: role === 'UBND' ? '1px solid #f87171' : '1px solid #334155',
-            padding: '3px 9px',
+            padding: '4px 10px',
             borderRadius: '2px',
             fontSize: '0.72rem',
             cursor: 'pointer',
             fontWeight: role === 'UBND' ? 800 : 500,
+            transition: 'all 0.15s ease',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
           }}
         >
-          🏛️ UBND Admin
+          <IconLandmark size={13} color={role === 'UBND' ? '#ffffff' : '#cbd5e1'} />
+          <span>UBND Admin</span>
         </button>
 
         <button
@@ -144,94 +189,20 @@ export default function RoleSwitcher() {
             background: role === 'Guest' ? '#475569' : '#1e293b',
             color: role === 'Guest' ? '#ffffff' : '#cbd5e1',
             border: role === 'Guest' ? '1px solid #94a3b8' : '1px solid #334155',
-            padding: '3px 9px',
+            padding: '4px 10px',
             borderRadius: '2px',
             fontSize: '0.72rem',
             cursor: 'pointer',
             fontWeight: role === 'Guest' ? 800 : 500,
+            transition: 'all 0.15s ease',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
           }}
         >
-          👤 Guest
+          <IconUser size={13} color={role === 'Guest' ? '#ffffff' : '#cbd5e1'} />
+          <span>Guest</span>
         </button>
-      </div>
-
-      {/* Role-Specific Quick Navigation Links */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', borderLeft: '1px solid #334155', paddingLeft: '0.75rem', flexWrap: 'wrap' }}>
-        {/* LUỒNG 1: LOCAL PROVIDER */}
-        {role === 'LocalProvider' && (
-          <>
-            <span style={{ color: '#f97316', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG XƯỞNG:</span>
-            <Link href={`/provider/${providerId}`} style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 700 }}>
-              Hồ sơ Xưởng (PRF127)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href={`/provider/${providerId}/edit`} style={{ color: '#fdba74', textDecoration: 'none', fontWeight: 700 }}>
-              ✏️ Sửa Xưởng (PRF128)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href={`/village/${villageId}`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 600 }}>
-              Làng nghề Bát Tràng (VIL030)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href="/messages" style={{ color: '#fca5a5', textDecoration: 'none', fontWeight: 700 }}>
-              💬 Chat B2B với Agency
-            </Link>
-          </>
-        )}
-
-        {/* LUỒNG 2: TOUR AGENCY */}
-        {role === 'TourAgency' && (
-          <>
-            <span style={{ color: '#38bdf8', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG AGENCY:</span>
-            <Link href="/explore" style={{ color: '#34d399', textDecoration: 'none', fontWeight: 800, background: '#064e3b', padding: '2px 7px', borderRadius: '3px' }}>
-              🔍 KHÁM PHÁ (EXPLORE)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href={`/agency/${agencyId}`} style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 700 }}>
-              Hồ sơ Agency (PRF019)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href={`/agency/${agencyId}/edit`} style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 700 }}>
-              ✏️ Sửa Agency (PRF021)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href={`/village/${villageId}`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 600 }}>
-              Làng nghề (VIL030)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href="/messages" style={{ color: '#fca5a5', textDecoration: 'none', fontWeight: 700 }}>
-              💬 Chat B2B với Xưởng
-            </Link>
-          </>
-        )}
-
-        {/* LUỒNG 3: UBND ADMIN */}
-        {role === 'UBND' && (
-          <>
-            <span style={{ color: '#f87171', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG ADMIN:</span>
-            <Link href={`/village/${villageId}`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 800 }}>
-              🏛️ Xem Hồ sơ Làng nghề Bát Tràng (VIL030)
-            </Link>
-          </>
-        )}
-
-        {/* LUỒNG 4: GUEST */}
-        {role === 'Guest' && (
-          <>
-            <span style={{ color: '#94a3b8', fontWeight: 800, fontSize: '0.7rem' }}>KHÁCH VÃNG LAI:</span>
-            <Link href="/explore" style={{ color: '#34d399', textDecoration: 'none', fontWeight: 700 }}>
-              🔍 Khám phá (Explore)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href={`/village/${villageId}`} style={{ color: '#fde68a', textDecoration: 'none' }}>
-              Làng gốm Bát Tràng (VIL030)
-            </Link>
-            <span style={{ color: '#475569' }}>·</span>
-            <Link href={`/provider/${providerId}`} style={{ color: '#ffffff', textDecoration: 'none' }}>
-              Xưởng Gốm Hưng Thịnh
-            </Link>
-          </>
-        )}
       </div>
     </div>
   )

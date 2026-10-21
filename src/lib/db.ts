@@ -5,15 +5,21 @@ const { Pool } = pg;
 let pool: pg.Pool | null = null;
 
 export function getPool(): pg.Pool {
-  if (!pool) {
-    const connectionString =
-      process.env.NODE_ENV === "test" && process.env.TEST_DATABASE_URL
-        ? process.env.TEST_DATABASE_URL
-        : process.env.DATABASE_URL;
+  const connectionString =
+    process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
 
+  if (
+    !pool ||
+    (process.env.TEST_DATABASE_URL &&
+      (pool as any)._connString !== connectionString)
+  ) {
+    if (pool) {
+      pool.end().catch(() => {});
+    }
     pool = new Pool({
       connectionString,
     });
+    (pool as any)._connString = connectionString;
   }
   return pool;
 }

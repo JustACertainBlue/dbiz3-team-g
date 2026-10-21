@@ -1,12 +1,13 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { createTestDb, dropTestDb } from "./helpers/db";
 import { query, closePool } from "@/lib/db";
 import { POST } from "@/app/api/register/verify-otp/route";
+import { setConfirmationOutboxWriter, resetConfirmationOutboxWriter } from "@/lib/otp";
 
 const TEST_DB_NAME = "test_fr023_outbox_fail";
 
 describe("T036: FR-023 Outbox Failure & confirmation_email_status (C1)", () => {
-  const requestId = "66666666-6666-6666-6666-666666666666";
+  const requestId = "66666666-6666-4666-8666-666666666666";
   const email = "outbox.fail@example.com";
 
   beforeAll(async () => {
@@ -47,9 +48,15 @@ describe("T036: FR-023 Outbox Failure & confirmation_email_status (C1)", () => {
     dropTestDb(TEST_DB_NAME);
   });
 
+  afterEach(() => {
+    resetConfirmationOutboxWriter();
+  });
+
   it("returns 200 with confirmation_email_status 'Fail' and keeps account when outbox write fails", async () => {
-    // Configure test flag to simulate outbox write failure
-    process.env.SIMULATE_OUTBOX_FAIL = "true";
+    // Inject failing outbox writer via module seam
+    setConfirmationOutboxWriter(() => {
+      throw new Error("Simulated disk write failure");
+    });
 
     const req = new Request("http://localhost/api/register/verify-otp", {
       method: "POST",
@@ -74,7 +81,6 @@ describe("T036: FR-023 Outbox Failure & confirmation_email_status (C1)", () => {
     );
     expect(userRes.rows.length).toBe(1);
     expect(userRes.rows[0].account_status).toBe("Pending Approval");
-
-    delete process.env.SIMULATE_OUTBOX_FAIL;
   });
 });
+

@@ -18,21 +18,21 @@ US-2 through US-10 are **out of scope** for this branch.
 interactive scaffolder. None of these tasks touches `README.md`, `.gitignore`
 (already updated), `.gitattributes`, or `AGENTS.md`.
 
-- [ ] T001 Create `package.json` at repo root with exact pinned versions from plan.md (next 16.4.0, react 19.3.0, typescript 5.9.3, pg 8.23.1, bcryptjs 3.0.3, zod 4.6.7, vitest 5.0.4 and all @types listed in plan.md); set `"scripts": { "dev": "next dev", "build": "next build", "test": "vitest run" }`
+- [X] T001 Create `package.json` at repo root with exact pinned versions from plan.md (next 16.4.0, react 19.3.0, typescript 5.9.3, pg 8.23.1, bcryptjs 3.0.3, zod 4.6.7, vitest 5.0.4 and all @types listed in plan.md); set `"scripts": { "dev": "next dev", "build": "next build", "test": "vitest run" }`
 
-- [ ] T002 Create `tsconfig.json` at repo root with `"strict": true`, `"target": "ES2022"`, `"module": "NodeNext"`, `"moduleResolution": "NodeNext"`, `"paths": { "@/*": ["./src/*"] }`, `"include": ["src", "tests"]`
+- [X] T002 Create `tsconfig.json` at repo root with `"strict": true`, `"target": "ES2022"`, `"module": "NodeNext"`, `"moduleResolution": "NodeNext"`, `"paths": { "@/*": ["./src/*"] }`, `"include": ["src", "tests"]`
 
-- [ ] T003 Create `next.config.ts` at repo root (TypeScript config, App Router, no experimental flags needed for this slice)
+- [X] T003 Create `next.config.ts` at repo root (TypeScript config, App Router, no experimental flags needed for this slice)
 
-- [ ] T004 Create `vitest.config.ts` at repo root; configure `testEnvironment: "node"`, `include: ["tests/**/*.test.ts"]`; import `dotenv/config` so tests read `.env`
+- [X] T004 Create `vitest.config.ts` at repo root; configure `testEnvironment: "node"`, `include: ["tests/**/*.test.ts"]`; import `dotenv/config` so tests read `.env`
 
-- [ ] T005 [P] Create `src/app/layout.tsx` — root App Router layout with HTML skeleton and a placeholder `<a href="#">Sign in</a>` navigation link (login is out of scope until Session 11)
+- [X] T005 [P] Create `src/app/layout.tsx` — root App Router layout with HTML skeleton and a placeholder `<a href="#">Sign in</a>` navigation link (login is out of scope until Session 11)
 
-- [ ] T006 [P] Create `src/app/page.tsx` — minimal landing page that links to `/register`
+- [X] T006 [P] Create `src/app/page.tsx` — minimal landing page that links to `/register`
 
-- [ ] T007 Create directory skeleton without implementation: `src/lib/`, `src/types/`, `src/app/register/`, `src/app/register/otp/`, `src/app/register/status/`, `src/app/api/register/`, `tests/business/helpers/`, keeping all files as empty stubs with `// TODO` comments so TypeScript compilation succeeds
+- [X] T007 Create directory skeleton without implementation: `src/lib/`, `src/types/`, `src/app/register/`, `src/app/register/otp/`, `src/app/register/status/`, `src/app/api/register/`, `tests/business/helpers/`, keeping all files as empty stubs with `// TODO` comments so TypeScript compilation succeeds
 
-- [ ] T008 Run `npm install` and confirm `npm run build` compiles without errors on the stub tree (no tests yet)
+- [X] T008 Run `npm install` and confirm `npm run build` compiles without errors on the stub tree (no tests yet)
 
 ---
 
@@ -41,13 +41,13 @@ interactive scaffolder. None of these tasks touches `README.md`, `.gitignore`
 **Purpose**: Shared infrastructure used by every US-1 task. Must be complete
 before any business logic or test is written.
 
-- [ ] T009 Create `tests/business/helpers/db.ts` — exports `createTestDb(name: string)` and `dropTestDb(name: string)` that shell out to `psql` using `ADMIN_DATABASE_URL` from `.env`; `createTestDb` also runs `data/schema.sql` and `data/seed/load_seed.sql` via `psql` from the repository root; neither function modifies any file under `data/`
+- [X] T009 Create `tests/business/helpers/db.ts` — exports `createTestDb(name: string)` and `dropTestDb(name: string)` that shell out to `psql` using `ADMIN_DATABASE_URL` from `.env`; `createTestDb` also runs `data/schema.sql` and `data/seed/load_seed.sql` via `psql` from the repository root; neither function modifies any file under `data/`
 
-- [ ] T010 Create `src/lib/db.ts` — exports a `pg.Pool` singleton initialized from `process.env.DATABASE_URL`; exports a typed `query<T>(sql, params)` helper; on `NODE_ENV === 'test'` the pool connects to the test DB name injected via `process.env.TEST_DATABASE_URL`
+- [X] T010 Create `src/lib/db.ts` — exports a `pg.Pool` singleton initialized from `process.env.DATABASE_URL`; exports a typed `query<T>(sql, params)` helper; on `NODE_ENV === 'test'` the pool connects to the test DB name injected via `process.env.TEST_DATABASE_URL`
 
-- [ ] T011 Create `src/lib/password.ts` — exports `hashPassword(plain: string): Promise<string>` (bcryptjs cost 12) and `verifyPassword(plain: string, hash: string): Promise<boolean>`
+- [X] T011 Create `src/lib/password.ts` — exports `hashPassword(plain: string): Promise<string>` (bcryptjs cost 12) and `verifyPassword(plain: string, hash: string): Promise<boolean>`
 
-- [ ] T012 [P] Create `src/types/registration.ts` — TypeScript interfaces for `RegistrationRequest`, `SubmissionVersion`, `OtpChallenge`, and `StoredFileRecord`; types must match column names in `data/07-data-dictionary.md`; no runtime code
+- [X] T012 [P] Create `src/types/registration.ts` — TypeScript interfaces for `RegistrationRequest`, `SubmissionVersion`, `OtpChallenge`, and `StoredFileRecord`; types must match column names in `data/07-data-dictionary.md`; no runtime code
 
 ---
 
@@ -65,7 +65,7 @@ flow via dev server completes REG003 → REG115 → REG116 as described in
 
 ### 3-A — Seed-integrity test (written and failing first)
 
-- [ ] T013 [US1] **TEST FIRST** — Create `tests/business/seed-integrity.test.ts`:
+- [X] T013 [US1] **TEST FIRST** — Create `tests/business/seed-integrity.test.ts`:
   Load the seed into a fresh disposable DB using the helper from T009; assert:
   (a) `SELECT COUNT(*) FROM user_accounts` = **26** (from `data/seed/manifest.json`);
   (b) the OTP challenge with `challenge_id = '7985fd5b-02dc-5c37-bd96-6373cb98dd98'` has `attempt_count = 5` and `resend_sequence = 3` (boundary-otp fixture from `data/seed/scenario_manifest.json`).
@@ -78,7 +78,7 @@ flow via dev server completes REG003 → REG115 → REG116 as described in
 Each test file must be written and confirmed **failing** before the
 implementation task it precedes is started.
 
-- [ ] T014 [US1] **TEST FIRST** — Create `tests/business/fr002-validation.test.ts`:
+- [X] T014 [US1] **TEST FIRST** — Create `tests/business/fr002-validation.test.ts`:
   Import the Zod schema from `src/lib/validation.ts` (stub file; test will fail to import).
   Write failing assertions for every FR-002 field rule:
   • `full_name` max 100 chars;
@@ -94,10 +94,10 @@ implementation task it precedes is started.
   • `tour_types` array, ≥ 1 value, valid enum;
   • `registration_documents` ≥ 1 file.
 
-- [ ] T015 [US1] **TEST FIRST** — Create `tests/business/fr003-duplicate-email.test.ts`:
+- [X] T015 [US1] **TEST FIRST** — Create `tests/business/fr003-duplicate-email.test.ts`:
   Using the test DB helper, insert a `user_accounts` row with a known email, then call the duplicate-check function (stub in `src/lib/registration.ts`; test will fail on import); assert that submitting the same email returns `is_duplicate: true` and that no second account is created.
 
-- [ ] T016 [US1] **TEST FIRST** — Create `tests/business/fr004-create-account.test.ts`:
+- [X] T016 [US1] **TEST FIRST** — Create `tests/business/fr004-create-account.test.ts`:
   Using the test DB helper, call the account-creation function (stub); assert all of:
   • **BR-001**: only `role_code = 'Tour_Agency'` is set;
   • **BR-002**: `account_status = 'Pending Approval'` immediately after creation;
@@ -105,7 +105,7 @@ implementation task it precedes is started.
   • **AC-US1-2**: duplicate email → no account row is inserted;
   • **AC-US1-3**: no `Local_Provider` option appears in the registration form (tested here as: trying to create an account with `role_code = 'Local_Provider'` via this function throws / is rejected).
 
-- [ ] T017 [US1] **TEST FIRST** — Create `tests/business/fr023-otp.test.ts`:
+- [X] T017 [US1] **TEST FIRST** — Create `tests/business/fr023-otp.test.ts`:
   Using the test DB helper and OTP functions (stubs in `src/lib/otp.ts`); write failing assertions for every FR-023 + **AC-AUT-OTP** rule:
   • Issuing an OTP creates one row in `registration_otp_challenges` with `expires_at = issued_at + interval '10 minutes'` and `attempt_count = 0`;
   • **AC-AUT-OTP**: a wrong OTP increments `attempt_count`; no account is created; a correct OTP within expiry sets `used_at` and allows account creation exactly once;
@@ -125,7 +125,7 @@ implementation task it precedes is started.
 
 ### 3-D — Data-access layer (makes T015, T016, T017 pass)
 
-- [ ] T033 [US1] **TEST FIRST** — Create `tests/business/fr023-otp-resend-boundary.test.ts`:
+- [X] T033 [US1] **TEST FIRST** — Create `tests/business/fr023-otp-resend-boundary.test.ts`:
   Using the test DB helper and OTP stubs from `src/lib/otp.ts`; write failing assertions for the FR-023 15-minute resend window (interpretation recorded in research.md §9.1):
   • 1st resend (resend_sequence 0→1): **allowed**;
   • 2nd resend (resend_sequence 1→2): **allowed**;
@@ -142,14 +142,14 @@ implementation task it precedes is started.
 
 - [ ] T020 [US1] Create `src/lib/files.ts` — exports `saveUploadedFiles(registrationRequestId, files: File[]): Promise<StoredFileRecord[]>` — validates each file (PDF/JPG/JPEG/PNG, ≤ 10 MB, ≤ 5 total); writes to `var/uploads/{registrationRequestId}/`; returns metadata for insertion into `stored_files`
 
-- [ ] T034 [US1] **TEST FIRST** — Create `tests/business/fr004-tax-id-unique.test.ts`:
+- [X] T034 [US1] **TEST FIRST** — Create `tests/business/fr004-tax-id-unique.test.ts`:
   Using the test DB helper, simulate two registration requests reaching OTP verification with the same `tax_id` but different emails; assert that:
   • The second `createAgencyAccount()` call rolls back the entire transaction — no `user_accounts`, `agency_profiles`, `audit_logs`, or `agency_registration_requests` status-update rows are committed for the second request;
   • The function returns a handled validation error (not an unhandled exception / HTTP 500) with `field: "tax_id"` and `message: "Tax ID already registered"` (caught from PostgreSQL error code `23505`);
   • The first registration's rows remain intact in the DB.
   Run `npm test` and confirm this test **fails** before T021 is complete.
 
-- [ ] T035 [US1] **TEST FIRST** — Create `tests/business/fr004-audit-log.test.ts`:
+- [X] T035 [US1] **TEST FIRST** — Create `tests/business/fr004-audit-log.test.ts`:
   Using the test DB helper, call `createAgencyAccount()` after a successful OTP verification; assert that:
   • Exactly one `audit_logs` row is inserted within the same transaction, with: `action = 'AGENCY_REGISTRATION_COMPLETED'`, `target_type = 'UserAccount'`, `target_id = <new user_id>`, `actor_user_id = <new user_id>`, `change_or_result = '{"status":"Pending Approval"}'`;
   • If the `audit_logs` INSERT is forced to fail (e.g., by passing an invalid UUID as `target_id` in a test-only override), the entire transaction rolls back and no `user_accounts` or `agency_profiles` row is committed.
@@ -167,7 +167,7 @@ implementation task it precedes is started.
 
 - [ ] T022 [US1] Create `src/app/api/register/route.ts` — Next.js Route Handler `POST /api/register`; parse `multipart/form-data`; run `registrationSchema` validation; call `isDuplicateEmail`; call `saveUploadedFiles`; call `createRegistrationRequest`; call `issueOtp`; return `201 { registration_request_id, is_valid: true }` on success or `422 { is_valid: false, validation_errors }` on failure; match the contract in `contracts/api.md` exactly
 
-- [ ] T036 [US1] **TEST FIRST** — Create `tests/business/fr023-outbox-fail.test.ts`:
+- [X] T036 [US1] **TEST FIRST** — Create `tests/business/fr023-outbox-fail.test.ts`:
   Simulate an outbox write failure that occurs **after** the DB transaction commits; assert that:
   • The `user_accounts` row with `account_status = 'Pending Approval'` remains in the database (the transaction is already committed);
   • `POST /api/register/verify-otp` returns HTTP `200` with `otp_verified: true` and `confirmation_email_status: "Fail"` (not a 500 or 4xx);

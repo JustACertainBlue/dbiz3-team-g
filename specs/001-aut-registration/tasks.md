@@ -119,7 +119,7 @@ implementation task it precedes is started.
 
 ### 3-C — Validation layer (makes T014 pass)
 
-- [ ] T018 [US1] Create `src/lib/validation.ts` — export a `registrationSchema` Zod v4 object with all FR-002 field rules; export `otpVerifySchema` for FR-023 OTP input; export TypeScript types inferred from each schema; run `npm test` and confirm **T014 now passes**
+- [X] T018 [US1] Create `src/lib/validation.ts` — export a `registrationSchema` Zod v4 object with all FR-002 field rules; export `otpVerifySchema` for FR-023 OTP input; export TypeScript types inferred from each schema; run `npm test` and confirm **T014 now passes**
 
 ---
 
@@ -134,13 +134,13 @@ implementation task it precedes is started.
   • Resend for a request whose first OTP was issued more than 15 minutes ago (insert a seed challenge with `issued_at = now() - interval '16 minutes'` and resend_sequence = 0): **rejected** with `"Resend Limit Exceeded"` even though resend_sequence < 3.
   Run `npm test` and confirm this test **fails** before T019 is complete.
 
-- [ ] T019 [US1] Create `src/lib/otp.ts` — exports:
+- [X] T019 [US1] Create `src/lib/otp.ts` — exports:
   `issueOtp(registrationRequestId, email, db): Promise<{ otpPlaintext: string }>` — generates a 6-digit random OTP, hashes it with bcryptjs, inserts a `registration_otp_challenges` row; in dev/test writes a JSON stub to `var/outbox/` per the format in `contracts/otp.md`; returns plaintext only in `NODE_ENV === 'test'` for test assertions;
   `verifyOtp(registrationRequestId, otpCode, db): Promise<OtpVerifyResult>` — enforces attempt limit, expiry, and consumption logic;
   `resendOtp(registrationRequestId, email, db): Promise<{ otpPlaintext: string }>` — invalidates current OTP, issues new one; enforces both the count limit (resend_sequence ≤ 3 via DB constraint) and the 15-minute window (query earliest `issued_at` for this request; reject if > 15 min ago — see research.md §9.1).
   Run `npm test` and confirm **T017 and T033 now pass**.
 
-- [ ] T020 [US1] Create `src/lib/files.ts` — exports `saveUploadedFiles(registrationRequestId, files: File[]): Promise<StoredFileRecord[]>` — validates each file (PDF/JPG/JPEG/PNG, ≤ 10 MB, ≤ 5 total); writes to `var/uploads/{registrationRequestId}/`; returns metadata for insertion into `stored_files`
+- [X] T020 [US1] Create `src/lib/files.ts` — exports `saveUploadedFiles(registrationRequestId, files: File[]): Promise<StoredFileRecord[]>` — validates each file (PDF/JPG/JPEG/PNG, ≤ 10 MB, ≤ 5 total); writes to `var/uploads/{registrationRequestId}/`; returns metadata for insertion into `stored_files`
 
 - [X] T034 [US1] **TEST FIRST** — Create `tests/business/fr004-tax-id-unique.test.ts`:
   Using the test DB helper, simulate two registration requests reaching OTP verification with the same `tax_id` but different emails; assert that:
@@ -155,7 +155,7 @@ implementation task it precedes is started.
   • If the `audit_logs` INSERT is forced to fail (e.g., by passing an invalid UUID as `target_id` in a test-only override), the entire transaction rolls back and no `user_accounts` or `agency_profiles` row is committed.
   Run `npm test` and confirm this test **fails** before T021 is complete.
 
-- [ ] T021 [US1] Create `src/lib/registration.ts` — exports:
+- [X] T021 [US1] Create `src/lib/registration.ts` — exports:
   `isDuplicateEmail(email: string, db): Promise<boolean>` — queries `user_accounts` unique index;
   `createRegistrationRequest(data: ValidatedRegistration, passwordHash: string, db): Promise<string>` — inserts `agency_registration_requests` (status `Awaiting OTP`) + `registration_submission_versions` (version_no 1) + `stored_files` + `registration_documents` rows in a single transaction; returns `registration_request_id`;
   `createAgencyAccount(registrationRequestId: string, db): Promise<{ userId: string; agencyAccountId: string }>` — called only after OTP verified; within a single transaction: inserts `user_accounts` (role `Tour_Agency`, status `Pending Approval`), inserts `agency_profiles` (filled from `registration_submission_versions.version_no = 1` — see research.md §9.2), inserts one `audit_logs` row (see research.md §9.3), updates `agency_registration_requests.current_status` to `Pending Approval` and sets `agency_user_id`; catches PostgreSQL `23505` on `agency_profiles_tax_uq` and returns a validation error instead of throwing (see research.md §9.2).
@@ -165,7 +165,7 @@ implementation task it precedes is started.
 
 ### 3-E — API layer
 
-- [ ] T022 [US1] Create `src/app/api/register/route.ts` — Next.js Route Handler `POST /api/register`; parse `multipart/form-data`; run `registrationSchema` validation; call `isDuplicateEmail`; call `saveUploadedFiles`; call `createRegistrationRequest`; call `issueOtp`; return `201 { registration_request_id, is_valid: true }` on success or `422 { is_valid: false, validation_errors }` on failure; match the contract in `contracts/api.md` exactly
+- [X] T022 [US1] Create `src/app/api/register/route.ts` — Next.js Route Handler `POST /api/register`; parse `multipart/form-data`; run `registrationSchema` validation; call `isDuplicateEmail`; call `saveUploadedFiles`; call `createRegistrationRequest`; call `issueOtp`; return `201 { registration_request_id, is_valid: true }` on success or `422 { is_valid: false, validation_errors }` on failure; match the contract in `contracts/api.md` exactly
 
 - [X] T036 [US1] **TEST FIRST** — Create `tests/business/fr023-outbox-fail.test.ts`:
   Simulate an outbox write failure that occurs **after** the DB transaction commits; assert that:
@@ -175,19 +175,19 @@ implementation task it precedes is started.
   Implementation hint: inject a mock outbox writer into `src/lib/otp.ts` via `NODE_ENV === 'test'` that throws after the DB commit but before the file write completes.
   Run `npm test` and confirm this test **fails** before T023 is complete.
 
-- [ ] T023 [US1] Create `src/app/api/register/verify-otp/route.ts` — `POST /api/register/verify-otp`; parse JSON body; run `otpVerifySchema`; call `verifyOtp`; on success call `createAgencyAccount` (which commits the DB transaction atomically); then attempt the confirmation outbox write in a `try/catch` outside the transaction; return `200 { otp_verified: true, user_id, agency_account_id, account_status, confirmation_email_status }` where `confirmation_email_status` is `"Success"` on outbox-write success or `"Fail"` on failure (a Fail does NOT roll back the account — see research.md §9.3 and contracts/api.md); or return the appropriate error response per `contracts/api.md` when `verifyOtp` itself fails
+- [X] T023 [US1] Create `src/app/api/register/verify-otp/route.ts` — `POST /api/register/verify-otp`; parse JSON body; run `otpVerifySchema`; call `verifyOtp`; on success call `createAgencyAccount` (which commits the DB transaction atomically); then attempt the confirmation outbox write in a `try/catch` outside the transaction; return `200 { otp_verified: true, user_id, agency_account_id, account_status, confirmation_email_status }` where `confirmation_email_status` is `"Success"` on outbox-write success or `"Fail"` on failure (a Fail does NOT roll back the account — see research.md §9.3 and contracts/api.md); or return the appropriate error response per `contracts/api.md` when `verifyOtp` itself fails
 
-- [ ] T024 [US1] Create `src/app/api/register/resend-otp/route.ts` — `POST /api/register/resend-otp`; parse JSON body; call `resendOtp`; return `200 { resent: true }` or `429` on limit exceeded
+- [X] T024 [US1] Create `src/app/api/register/resend-otp/route.ts` — `POST /api/register/resend-otp`; parse JSON body; call `resendOtp`; return `200 { resent: true }` or `429` on limit exceeded
 
 ---
 
 ### 3-F — UI screens
 
-- [ ] T025 [US1] Create `src/app/register/page.tsx` — REG003 Agency Registration form; React Client Component; all FR-002 fields with client-side preview validation using `registrationSchema`; file upload input (PDF/JPG/JPEG/PNG, ≤ 10 MB, ≤ 5 files); submit POSTs `multipart/form-data` to `/api/register`; on success stores `registration_request_id` in `sessionStorage` and navigates to `/register/otp`; on error displays `validation_errors`; no Local Provider option is offered (BR-001 / AC-US1-3)
+- [X] T025 [US1] Create `src/app/register/page.tsx` — REG003 Agency Registration form; React Client Component; all FR-002 fields with client-side preview validation using `registrationSchema`; file upload input (PDF/JPG/JPEG/PNG, ≤ 10 MB, ≤ 5 files); submit POSTs `multipart/form-data` to `/api/register`; on success stores `registration_request_id` in `sessionStorage` and navigates to `/register/otp`; on error displays `validation_errors`; no Local Provider option is offered (BR-001 / AC-US1-3)
 
-- [ ] T026 [US1] Create `src/app/register/otp/page.tsx` — REG115 OTP Verification Input; 6-digit numeric input; reads `registration_request_id` from `sessionStorage`; POSTs to `/api/register/verify-otp`; shows remaining attempts on error; "Resend code" button POSTs to `/api/register/resend-otp` and resets the form; on success navigates to `/register/status`
+- [X] T026 [US1] Create `src/app/register/otp/page.tsx` — REG115 OTP Verification Input; 6-digit numeric input; reads `registration_request_id` from `sessionStorage`; POSTs to `/api/register/verify-otp`; shows remaining attempts on error; "Resend code" button POSTs to `/api/register/resend-otp` and resets the form; on success navigates to `/register/status`
 
-- [ ] T027 [US1] Create `src/app/register/status/page.tsx` — REG116 Registration Status; reads `account_status` and `agency_account_id` from `sessionStorage` set by the OTP page; displays "Your application is pending HDT review" confirmation; clears `registration_request_id` from `sessionStorage`
+- [X] T027 [US1] Create `src/app/register/status/page.tsx` — REG116 Registration Status; reads `account_status` and `agency_account_id` from `sessionStorage` set by the OTP page; displays "Your application is pending HDT review" confirmation; clears `registration_request_id` from `sessionStorage`
 
 ---
 

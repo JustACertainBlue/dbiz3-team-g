@@ -53,8 +53,8 @@ export async function saveUploadedFiles(
     if (typeof file.arrayBuffer === "function") {
       const ab = await file.arrayBuffer();
       fileBuffer = Buffer.from(ab);
-    } else if (file.buffer) {
-      fileBuffer = file.buffer;
+    } else if ("buffer" in file && file.buffer) {
+      fileBuffer = file.buffer as Buffer;
     } else {
       fileBuffer = Buffer.alloc(0);
     }

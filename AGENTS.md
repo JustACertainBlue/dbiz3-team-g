@@ -7,17 +7,21 @@ short, factual and current.
 ## 1. Project
 
 - Product: `Hanoi Artisan Bridge`, team `G`, course DBIZ3, VJCBI College, Foreign Trade University.
-- Current step of the course process: Session 7 midterm readiness review. After a Go decision, continue with `Plan step (/speckit-plan)`.
+- Current step of the course process: build phase (Sessions 8 to 11), module AUT, working on branch 001-aut-registration, US-1 done.
 - Source of truth for MVP scope: `docs/prd.md`; source of truth for detailed function contracts: `docs/spec/`.
 - Source of truth for data: `data/` (data model and seed package from Session 5).
 
 ## 2. Tech stack
 
-- Not decided yet. The stack is chosen at the Plan step (`/speckit-plan`).
-- Until then: do not create application code, do not add dependencies, do not scaffold frameworks.
+- TypeScript 5.x, Node.js >= 22.0.0, Next.js (App Router, src/ layout), PostgreSQL, Vitest.
+- Add a dependency only if specs/<feature>/plan.md lists it.
 
 ## 3. Commands that are safe to run
 
+- `npm install` : install dependencies.
+- `npm test` (or `vitest run`) : run tests with "vitest run".
+- `npm run build` : build the Next.js application.
+- `npm run dev` : run by the human only; the agent never starts it.
 - `uv run tools/check_env.py --repo` : environment and repository check.
 - `python data/scripts/generate_seed.py` : regenerates deterministic synthetic seed data.
 - `python data/scripts/validate_seed.py` : validates seed coverage, references and business-rule fixtures.

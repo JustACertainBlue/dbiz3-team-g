@@ -21,7 +21,7 @@ did and what the humans decided.
 | `specs/007-aut-resubmit-registration` | AUT | US-10 (P1): Revise and Resubmit Agency Registration (UC-ACC-06; F-AUTH-26; screen REG003 in secure edit mode, REG116) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/008-aut-create-ubnd-account` | AUT | US-7 (P1): Create UBND Account (UC-ACC-07; F-AUTH-19; screen ADM117) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/009-aut-create-provider-account` | AUT | US-8 (P1): Create Local Provider Account (UC-ACC-08; F-AUTH-20; screen ADM117) | linh-daotruc | `001-aut-registration` | Done |
-| `specs/010-aut-manage-accounts` | AUT | US-9 (P1): Manage Accounts (UC-ACC-09; F-AUTH-21, F-AUTH-22, F-AUTH-16; screens ADM095, ADM118) | linh-daotruc | `001-aut-registration` | In progress |
+| `specs/010-aut-manage-accounts` | AUT | US-9 (P1): Manage Accounts (UC-ACC-09; F-AUTH-21, F-AUTH-22, F-AUTH-16; screens ADM095, ADM118) | linh-daotruc | `001-aut-registration` | Done |
 
 ## 2. Run entries
 
@@ -582,7 +582,44 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Human review | Pending human review |
 | Tests | `Test Files  25 passed (25); Tests  80 passed (80)` |
 | Spec issues found | none |
-| Commit | 9381315 |
+### Entry 44: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini Flash) |
+| Command and argument | Plan & Tasks: generate plan, research, contracts, data-model, quickstart, tasks |
+| Feature and tasks | `specs/010-aut-manage-accounts`, all tasks |
+| What the agent produced | `specs/010-aut-manage-accounts/plan.md`, `research.md`, `contracts/api.md`, `data-model.md`, `quickstart.md`, `tasks.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 655fcc5 |
+
+### Entry 45: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini Flash) |
+| Command and argument | Tests first: implement T001, run `npx vitest run tests/business/fr021-fr022-manage-accounts.test.ts` |
+| Feature and tasks | `specs/010-aut-manage-accounts`, task `T001` |
+| What the agent produced | `tests/business/fr021-fr022-manage-accounts.test.ts` |
+| Human review | Pending human review |
+| Tests | `Failed Suites 1` (Cannot find package `@/lib/account-management`) |
+| Spec issues found | none |
+| Commit | 655fcc5 |
+
+### Entry 46: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini Flash) |
+| Command and argument | Implementation (core & backend + UI): implement T002–T004, run `npm test`, run `npx next build` |
+| Feature and tasks | `specs/010-aut-manage-accounts`, tasks `T002` to `T004` |
+| What the agent produced | `src/lib/account-management.ts`, `src/app/api/admin/accounts/route.ts`, `src/app/api/admin/accounts/[userId]/route.ts`, `src/app/api/admin/accounts/[userId]/action/route.ts`, `src/app/admin/users/page.tsx`, `src/app/admin/users/[userId]/actions/page.tsx`, `src/app/admin/view-account/page.tsx` |
+| Human review | Pending human review |
+| Tests | `Test Files  26 passed (26); Tests  86 passed (86)` |
+| Spec issues found | none |
+| Commit | 655fcc5 |
 
 
 

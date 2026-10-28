@@ -15,6 +15,7 @@ did and what the humans decided.
 | `specs/001-aut-registration` | AUT | US-1 (P1): Register Tour Agency Account (UC-ACC-01; F-AUTH-01 to F-AUTH-04, F-AUTH-23; screens REG003, REG115, REG116) | Đào Trúc Linh | `001-aut-registration` | Done |
 | `specs/002-aut-login` | AUT | US-2 (P2): Log In (UC-ACC-02; F-AUTH-05 to F-AUTH-08, F-AUTH-15, F-AUTH-17; screen AUT009) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/003-aut-forgot-password` | AUT | US-4 (P2): Forgot Password (UC-ACC-04; F-AUTH-10 to F-AUTH-12; screens PAS011, PAS014, PAS142, PAS143) | linh-daotruc | `001-aut-registration` | Done |
+| `specs/004-aut-logout` | AUT | US-3 (P3): Log Out (UC-ACC-03; F-AUTH-09; screen AUT026) | linh-daotruc | `001-aut-registration` | Done |
 
 ## 2. Run entries
 
@@ -214,6 +215,84 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Tests | `Test Files  19 passed (19); Tests 54 passed (54)` |
 | Spec issues found | none |
 | Commit | 16ee145 |
+
+### Entry 16: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run tools/start_feature.py --spec docs/spec/specs/spec-AUT.md AUT --name logout` + `uv run python .specify/scripts/python/setup_plan.py --json` |
+| Feature and tasks | `specs/004-aut-logout`, no tasks yet |
+| What the agent produced | `specs/004-aut-logout/plan.md`, `research.md`, `data-model.md`, `contracts/api.md`, `quickstart.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | a7c0bf5 |
+
+### Entry 17: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run python .specify/scripts/python/setup_tasks.py --json` |
+| Feature and tasks | `specs/004-aut-logout`, tasks `T001` to `T007` |
+| What the agent produced | `specs/004-aut-logout/tasks.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | a7c0bf5 |
+
+### Entry 18: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run python .specify/scripts/python/check_prerequisites.py --json --require-tasks --include-tasks` |
+| Feature and tasks | `specs/004-aut-logout`, all tasks |
+| What the agent produced | Read-only check passed with 0 findings |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | a7c0bf5 |
+
+### Entry 19: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Tests first: implement T001, run `npm test` (`npx vitest run tests/business/fr009-logout.test.ts`) |
+| Feature and tasks | `specs/004-aut-logout`, task `T001` |
+| What the agent produced | `tests/business/fr009-logout.test.ts` |
+| Human review | Pending human review |
+| Tests | `Tests  3 failed (3)` (missing implementation) |
+| Spec issues found | none |
+| Commit | a7c0bf5 |
+
+### Entry 20: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (core & backend): implement T002–T003, run `npx vitest run tests/business/fr009-logout.test.ts` |
+| Feature and tasks | `specs/004-aut-logout`, tasks `T002` and `T003` |
+| What the agent produced | `src/lib/auth.ts` (`logoutSession`), `src/app/api/auth/logout/route.ts` |
+| Human review | Pending human review |
+| Tests | `Test Files  1 passed (1); Tests  3 passed (3)` |
+| Spec issues found | none |
+| Commit | a7c0bf5 |
+
+### Entry 21: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (UI): implement T004, run `npx vitest run` and `npm run build` |
+| Feature and tasks | `specs/004-aut-logout`, tasks `T004` to `T007` |
+| What the agent produced | `src/app/logout/page.tsx` (AUT026 Logout Confirmation dialog) |
+| Human review | Pending human review |
+| Tests | `Test Files  20 passed (20); Tests  57 passed (57)` |
+| Spec issues found | none |
+| Commit | a7c0bf5 |
 
 ## 3. Spec issues found while building
 

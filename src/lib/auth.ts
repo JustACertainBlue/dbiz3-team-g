@@ -248,3 +248,48 @@ export async function verifySession(
     permissionSet,
   };
 }
+
+export interface LogoutResult {
+  sessionTerminated: boolean;
+  confirmationMessage: string;
+  redirectUrl: string;
+}
+
+export async function logoutSession(
+  sessionToken: string,
+  pool?: pg.Pool
+): Promise<LogoutResult> {
+  if (!sessionToken) {
+    return {
+      sessionTerminated: false,
+      confirmationMessage: "No session token provided",
+      redirectUrl: "/login",
+    };
+  }
+
+  const queryFn = pool ? pool.query.bind(pool) : defaultQuery;
+
+  // Update session record setting revoked_at to now()
+  const res = await queryFn(
+    `UPDATE sessions
+     SET revoked_at = CURRENT_TIMESTAMP
+     WHERE token_hash = $1
+     RETURNING session_id`,
+    [sessionToken]
+  );
+
+  if (res.rowCount === 0) {
+    // If token wasn't found in sessions, it cannot be terminated, but redirect is still /login
+    return {
+      sessionTerminated: false,
+      confirmationMessage: "Session not found",
+      redirectUrl: "/login",
+    };
+  }
+
+  return {
+    sessionTerminated: true,
+    confirmationMessage: "Logged out successfully",
+    redirectUrl: "/login",
+  };
+}

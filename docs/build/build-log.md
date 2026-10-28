@@ -17,6 +17,7 @@ did and what the humans decided.
 | `specs/003-aut-forgot-password` | AUT | US-4 (P2): Forgot Password (UC-ACC-04; F-AUTH-10 to F-AUTH-12; screens PAS011, PAS014, PAS142, PAS143) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/004-aut-logout` | AUT | US-3 (P3): Log Out (UC-ACC-03; F-AUTH-09; screen AUT026) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/005-aut-change-password` | AUT | US-5 (P2): Change Password (UC-ACC-05; F-AUTH-13, F-AUTH-14, FR-008; screen ACC129 Change Password panel) | linh-daotruc | `001-aut-registration` | Done |
+| `specs/006-aut-verify-agency` | AUT | US-6 (P1): Verify Agency (UC-ACC-06; F-AUTH-18; screens VER119, VER146) | linh-daotruc | `001-aut-registration` | Done |
 
 ## 2. Run entries
 
@@ -372,6 +373,85 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Tests | `Test Files  21 passed (21); Tests  61 passed (61)` |
 | Spec issues found | none |
 | Commit | 73b3f22 |
+
+### Entry 28: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run tools/start_feature.py --spec docs/spec/specs/spec-AUT.md AUT --name verify-agency` + `uv run python .specify/scripts/python/setup_plan.py --json` |
+| Feature and tasks | `specs/006-aut-verify-agency`, no tasks yet |
+| What the agent produced | `specs/006-aut-verify-agency/plan.md`, `research.md`, `data-model.md`, `contracts/api.md`, `quickstart.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 2b3b0ac |
+
+### Entry 29: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run python .specify/scripts/python/setup_tasks.py --json` |
+| Feature and tasks | `specs/006-aut-verify-agency`, tasks `T001` to `T009` |
+| What the agent produced | `specs/006-aut-verify-agency/tasks.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 2b3b0ac |
+
+### Entry 30: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run python .specify/scripts/python/check_prerequisites.py --json --require-tasks --include-tasks` |
+| Feature and tasks | `specs/006-aut-verify-agency`, all tasks |
+| What the agent produced | Read-only check passed with 0 findings |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 2b3b0ac |
+
+### Entry 31: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Tests first: implement T001, run `npm test` (`npx vitest run tests/business/fr018-verify-agency.test.ts`) |
+| Feature and tasks | `specs/006-aut-verify-agency`, task `T001` |
+| What the agent produced | `tests/business/fr018-verify-agency.test.ts` |
+| Human review | Pending human review |
+| Tests | `Failed Suites 1` (missing module `@/lib/agency-review`) |
+| Spec issues found | none |
+| Commit | 2b3b0ac |
+
+### Entry 32: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (core & backend): implement T002–T003, run `npx vitest run tests/business/fr018-verify-agency.test.ts` |
+| Feature and tasks | `specs/006-aut-verify-agency`, tasks `T002` and `T003` |
+| What the agent produced | `src/lib/agency-review.ts`, `src/app/api/admin/agency-reviews/route.ts` |
+| Human review | Pending human review |
+| Tests | `Test Files  1 passed (1); Tests  3 passed (3)` |
+| Spec issues found | none |
+| Commit | 2b3b0ac |
+
+### Entry 33: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (UI): implement T004–T006, run `npx vitest run` and `npm run build` |
+| Feature and tasks | `specs/006-aut-verify-agency`, tasks `T004` to `T009` |
+| What the agent produced | `src/app/admin/verify/account/page.tsx` (VER119), `src/app/admin/verify/review/page.tsx` (VER146), `src/app/admin/users/page.tsx` (ADM095) |
+| Human review | Pending human review |
+| Tests | `Test Files  22 passed (22); Tests  64 passed (64)` |
+| Spec issues found | none |
+| Commit | 2b3b0ac |
+
 
 
 ## 3. Spec issues found while building

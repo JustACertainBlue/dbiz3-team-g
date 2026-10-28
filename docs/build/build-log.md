@@ -20,7 +20,7 @@ did and what the humans decided.
 | `specs/006-aut-verify-agency` | AUT | US-6 (P1): Verify Agency (UC-ACC-06; F-AUTH-18; screens VER119, VER146) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/007-aut-resubmit-registration` | AUT | US-10 (P1): Revise and Resubmit Agency Registration (UC-ACC-06; F-AUTH-26; screen REG003 in secure edit mode, REG116) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/008-aut-create-ubnd-account` | AUT | US-7 (P1): Create UBND Account (UC-ACC-07; F-AUTH-19; screen ADM117) | linh-daotruc | `001-aut-registration` | Done |
-| `specs/009-aut-create-provider-account` | AUT | US-8 (P1): Create Local Provider Account (UC-ACC-08; F-AUTH-20; screen ADM117) | linh-daotruc | `001-aut-registration` | In progress |
+| `specs/009-aut-create-provider-account` | AUT | US-8 (P1): Create Local Provider Account (UC-ACC-08; F-AUTH-20; screen ADM117) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/010-aut-manage-accounts` | AUT | US-9 (P1): Manage Accounts (UC-ACC-09; F-AUTH-21, F-AUTH-22, F-AUTH-16; screens ADM095, ADM118) | linh-daotruc | `001-aut-registration` | In progress |
 
 ## 2. Run entries
@@ -545,7 +545,44 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Human review | Pending human review |
 | Tests | `Test Files  24 passed (24); Tests  74 passed (74)` |
 | Spec issues found | none |
-| Commit | 0da3f5f |
+### Entry 41: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini Flash) |
+| Command and argument | Plan & Tasks: generate plan, research, contracts, data-model, quickstart, tasks |
+| Feature and tasks | `specs/009-aut-create-provider-account`, all tasks |
+| What the agent produced | `specs/009-aut-create-provider-account/plan.md`, `research.md`, `contracts/api.md`, `data-model.md`, `quickstart.md`, `tasks.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 9381315 |
+
+### Entry 42: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini Flash) |
+| Command and argument | Tests first: implement T001, run `npx vitest run tests/business/fr020-create-provider-account.test.ts` |
+| Feature and tasks | `specs/009-aut-create-provider-account`, task `T001` |
+| What the agent produced | `tests/business/fr020-create-provider-account.test.ts` |
+| Human review | Pending human review |
+| Tests | `Failed Tests 6` (`createLocalProviderAccount is not a function`) |
+| Spec issues found | none |
+| Commit | 9381315 |
+
+### Entry 43: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini Flash) |
+| Command and argument | Implementation (core & backend + UI): implement T002–T004, run `npm test`, run `npm run build` |
+| Feature and tasks | `specs/009-aut-create-provider-account`, tasks `T002` to `T004` |
+| What the agent produced | `src/lib/account-creation.ts`, `src/app/api/admin/accounts/provider/route.ts`, `src/app/admin/create-account/page.tsx` |
+| Human review | Pending human review |
+| Tests | `Test Files  25 passed (25); Tests  80 passed (80)` |
+| Spec issues found | none |
+| Commit | 9381315 |
 
 
 

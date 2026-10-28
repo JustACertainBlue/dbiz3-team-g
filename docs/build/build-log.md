@@ -18,6 +18,7 @@ did and what the humans decided.
 | `specs/004-aut-logout` | AUT | US-3 (P3): Log Out (UC-ACC-03; F-AUTH-09; screen AUT026) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/005-aut-change-password` | AUT | US-5 (P2): Change Password (UC-ACC-05; F-AUTH-13, F-AUTH-14, FR-008; screen ACC129 Change Password panel) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/006-aut-verify-agency` | AUT | US-6 (P1): Verify Agency (UC-ACC-06; F-AUTH-18; screens VER119, VER146) | linh-daotruc | `001-aut-registration` | Done |
+| `specs/007-aut-resubmit-registration` | AUT | US-10 (P1): Revise and Resubmit Agency Registration (UC-ACC-06; F-AUTH-26; screen REG003 in secure edit mode, REG116) | linh-daotruc | `001-aut-registration` | Done |
 
 ## 2. Run entries
 
@@ -451,6 +452,58 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Tests | `Test Files  22 passed (22); Tests  64 passed (64)` |
 | Spec issues found | none |
 | Commit | 2b3b0ac |
+
+### Entry 34: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Plan + tasks: `speckit-plan` + `speckit-tasks` for US-10 |
+| Feature and tasks | `specs/007-aut-resubmit-registration`, tasks `T001` to `T008` |
+| What the agent produced | `specs/007-aut-resubmit-registration/plan.md`, `specs/007-aut-resubmit-registration/tasks.md`, `specs/007-aut-resubmit-registration/research.md`, `specs/007-aut-resubmit-registration/data-model.md`, `specs/007-aut-resubmit-registration/quickstart.md`, `specs/007-aut-resubmit-registration/contracts/` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | uncommitted |
+
+### Entry 35: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Tests first: implement T001, run `npx vitest run tests/business/fr026-resubmit-registration.test.ts` |
+| Feature and tasks | `specs/007-aut-resubmit-registration`, task `T001` |
+| What the agent produced | `tests/business/fr026-resubmit-registration.test.ts` |
+| Human review | Pending human review |
+| Tests | `Failed Suites 1` (missing module `@/lib/resubmission`) |
+| Spec issues found | none |
+| Commit | uncommitted |
+
+### Entry 36: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (core & backend): implement T002–T004, run `npx vitest run tests/business/fr026-resubmit-registration.test.ts` |
+| Feature and tasks | `specs/007-aut-resubmit-registration`, tasks `T002` to `T004` |
+| What the agent produced | `src/lib/resubmission.ts`, `src/app/api/register/resubmit/route.ts` |
+| Human review | Pending human review |
+| Tests | `Test Files  1 passed (1); Tests  3 passed (3)` |
+| Spec issues found | none |
+| Commit | uncommitted |
+
+### Entry 37: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (UI + verify): implement T005–T008, run `npx vitest run` and `npm run build` |
+| Feature and tasks | `specs/007-aut-resubmit-registration`, tasks `T005` to `T008` |
+| What the agent produced | `src/app/register/page.tsx` (integrated secure edit mode for REG003) |
+| Human review | Pending human review |
+| Tests | `Test Files  23 passed (23); Tests  67 passed (67)` |
+| Spec issues found | none |
+| Commit | uncommitted |
 
 
 

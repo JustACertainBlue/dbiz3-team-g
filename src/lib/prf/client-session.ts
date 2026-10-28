@@ -4,27 +4,39 @@ import {
   providerSession,
   agencyOwnerSession,
   ubndSession,
+  hdtSession,
   guestSession,
   SEED_IDS,
   type MockSession,
 } from '../../../tests/prf/helpers/mockSession'
 
-export type CurrentUserRole = 'LocalProvider' | 'TourAgency' | 'UBND' | 'Guest'
+export type CurrentUserRole = 'LocalProvider' | 'TourAgency' | 'UBND' | 'HDT' | 'Guest'
 
 const STORAGE_KEY = 'hab_current_role'
 
 export function getCurrentRole(): CurrentUserRole {
   if (typeof window === 'undefined') return 'LocalProvider'
   const saved = localStorage.getItem(STORAGE_KEY) as CurrentUserRole | null
-  if (saved && ['LocalProvider', 'TourAgency', 'UBND', 'Guest'].includes(saved)) {
+  if (saved && ['LocalProvider', 'TourAgency', 'UBND', 'HDT', 'Guest'].includes(saved)) {
     return saved
   }
   return 'LocalProvider'
 }
 
+function syncSessionCookie(session: MockSession) {
+  if (typeof document === 'undefined') return
+  try {
+    document.cookie = `hab_mock_session=${encodeURIComponent(JSON.stringify(session))}; path=/; SameSite=Lax`
+  } catch {
+    // ignore
+  }
+}
+
 export function setCurrentRole(role: CurrentUserRole): void {
   if (typeof window === 'undefined') return
   localStorage.setItem(STORAGE_KEY, role)
+  const session = getClientMockSession()
+  syncSessionCookie(session)
   window.dispatchEvent(new Event('hab_role_changed'))
 }
 
@@ -37,6 +49,8 @@ export function getClientMockSession(customId?: string): MockSession {
       return providerSession(customId || SEED_IDS.provider1Verified, SEED_IDS.provider1VerifiedUserId)
     case 'UBND':
       return ubndSession(customId || SEED_IDS.village1, SEED_IDS.ubndUserId)
+    case 'HDT':
+      return hdtSession(SEED_IDS.hdtUserId)
     case 'Guest':
     default:
       return guestSession()

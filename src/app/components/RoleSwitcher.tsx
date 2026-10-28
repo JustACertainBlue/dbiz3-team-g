@@ -63,6 +63,8 @@ export default function RoleSwitcher() {
                 ? '#1e3a5f'
                 : role === 'UBND'
                 ? '#991b1b'
+                : role === 'HDT'
+                ? '#047857'
                 : '#475569',
             color: '#ffffff',
             padding: '3px 10px',
@@ -78,6 +80,7 @@ export default function RoleSwitcher() {
           {role === 'LocalProvider' && '🏺 Local Provider · Xưởng Hưng Thịnh Bát Tràng'}
           {role === 'TourAgency' && '🏢 Tour Agency · Indochina Heritage Voyages'}
           {role === 'UBND' && '🏛️ UBND Admin · Xã Bát Tràng (Hội đồng Thẩm định)'}
+          {role === 'HDT' && '🏛️ HDT Admin · Sở Du lịch Hà Nội'}
           {role === 'Guest' && '👤 Guest · Khách xem công khai'}
         </span>
       </div>
@@ -135,6 +138,23 @@ export default function RoleSwitcher() {
           }}
         >
           🏛️ UBND Admin
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSelectRole('HDT')}
+          style={{
+            background: role === 'HDT' ? '#047857' : '#1e293b',
+            color: role === 'HDT' ? '#ffffff' : '#cbd5e1',
+            border: role === 'HDT' ? '1px solid #34d399' : '1px solid #334155',
+            padding: '3px 9px',
+            borderRadius: '2px',
+            fontSize: '0.72rem',
+            cursor: 'pointer',
+            fontWeight: role === 'HDT' ? 800 : 500,
+          }}
+        >
+          🏛️ HDT Admin
         </button>
 
         <button
@@ -209,8 +229,26 @@ export default function RoleSwitcher() {
         {role === 'UBND' && (
           <>
             <span style={{ color: '#f87171', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG ADMIN:</span>
-            <Link href={`/village/${villageId}`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 800 }}>
-              🏛️ Xem Hồ sơ Làng nghề Bát Tràng (VIL030)
+            <Link href="/admin" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 800, background: '#991b1b', padding: '2px 7px', borderRadius: '3px' }}>
+              📊 Dashboard Quản trị (ADM079)
+            </Link>
+            <span style={{ color: '#475569' }}>·</span>
+            <Link href={`/village/${villageId}`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 700 }}>
+              🏛️ Hồ sơ Làng nghề (VIL030)
+            </Link>
+          </>
+        )}
+
+        {/* LUỒNG 5: HDT ADMIN */}
+        {role === 'HDT' && (
+          <>
+            <span style={{ color: '#34d399', fontWeight: 800, fontSize: '0.7rem' }}>SỞ DU LỊCH:</span>
+            <Link href="/admin" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 800, background: '#047857', padding: '2px 7px', borderRadius: '3px' }}>
+              📊 Dashboard Toàn thành phố (ADM079)
+            </Link>
+            <span style={{ color: '#475569' }}>·</span>
+            <Link href="/explore" style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 600 }}>
+              🔍 Giám sát Khám phá
             </Link>
           </>
         )}

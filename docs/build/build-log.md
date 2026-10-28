@@ -16,6 +16,7 @@ did and what the humans decided.
 | `specs/002-aut-login` | AUT | US-2 (P2): Log In (UC-ACC-02; F-AUTH-05 to F-AUTH-08, F-AUTH-15, F-AUTH-17; screen AUT009) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/003-aut-forgot-password` | AUT | US-4 (P2): Forgot Password (UC-ACC-04; F-AUTH-10 to F-AUTH-12; screens PAS011, PAS014, PAS142, PAS143) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/004-aut-logout` | AUT | US-3 (P3): Log Out (UC-ACC-03; F-AUTH-09; screen AUT026) | linh-daotruc | `001-aut-registration` | Done |
+| `specs/005-aut-change-password` | AUT | US-5 (P2): Change Password (UC-ACC-05; F-AUTH-13, F-AUTH-14, FR-008; screen ACC129 Change Password panel) | linh-daotruc | `001-aut-registration` | Done |
 
 ## 2. Run entries
 
@@ -293,6 +294,85 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Tests | `Test Files  20 passed (20); Tests  57 passed (57)` |
 | Spec issues found | none |
 | Commit | a7c0bf5 |
+
+### Entry 22: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run tools/start_feature.py --spec docs/spec/specs/spec-AUT.md AUT --name change-password` + `uv run python .specify/scripts/python/setup_plan.py --json` |
+| Feature and tasks | `specs/005-aut-change-password`, no tasks yet |
+| What the agent produced | `specs/005-aut-change-password/plan.md`, `research.md`, `data-model.md`, `contracts/api.md`, `quickstart.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 73b3f22 |
+
+### Entry 23: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run python .specify/scripts/python/setup_tasks.py --json` |
+| Feature and tasks | `specs/005-aut-change-password`, tasks `T001` to `T007` |
+| What the agent produced | `specs/005-aut-change-password/tasks.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 73b3f22 |
+
+### Entry 24: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `uv run python .specify/scripts/python/check_prerequisites.py --json --require-tasks --include-tasks` |
+| Feature and tasks | `specs/005-aut-change-password`, all tasks |
+| What the agent produced | Read-only check passed with 0 findings |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 73b3f22 |
+
+### Entry 25: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Tests first: implement T001, run `npm test` (`npx vitest run tests/business/fr014-change-password.test.ts`) |
+| Feature and tasks | `specs/005-aut-change-password`, task `T001` |
+| What the agent produced | `tests/business/fr014-change-password.test.ts` |
+| Human review | Pending human review |
+| Tests | `Failed Suites 1` (missing module `@/lib/password-change`) |
+| Spec issues found | none |
+| Commit | 73b3f22 |
+
+### Entry 26: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (core & backend): implement T002–T003, run `npx vitest run tests/business/fr014-change-password.test.ts` |
+| Feature and tasks | `specs/005-aut-change-password`, tasks `T002` and `T003` |
+| What the agent produced | `src/lib/password-change.ts`, `src/app/api/auth/change-password/route.ts` |
+| Human review | Pending human review |
+| Tests | `Test Files  1 passed (1); Tests  4 passed (4)` |
+| Spec issues found | none |
+| Commit | 73b3f22 |
+
+### Entry 27: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (UI): implement T004, run `npx vitest run` and `npm run build` |
+| Feature and tasks | `specs/005-aut-change-password`, tasks `T004` to `T007` |
+| What the agent produced | `src/app/account/page.tsx` (ACC129 Change Password panel) |
+| Human review | Pending human review |
+| Tests | `Test Files  21 passed (21); Tests  61 passed (61)` |
+| Spec issues found | none |
+| Commit | 73b3f22 |
+
 
 ## 3. Spec issues found while building
 

@@ -14,6 +14,7 @@ did and what the humans decided.
 |---|---|---|---|---|---|
 | `specs/001-aut-registration` | AUT | US-1 (P1): Register Tour Agency Account (UC-ACC-01; F-AUTH-01 to F-AUTH-04, F-AUTH-23; screens REG003, REG115, REG116) | Đào Trúc Linh | `001-aut-registration` | Done |
 | `specs/002-aut-login` | AUT | US-2 (P2): Log In (UC-ACC-02; F-AUTH-05 to F-AUTH-08, F-AUTH-15, F-AUTH-17; screen AUT009) | linh-daotruc | `001-aut-registration` | Done |
+| `specs/003-aut-forgot-password` | AUT | US-4 (P2): Forgot Password (UC-ACC-04; F-AUTH-10 to F-AUTH-12; screens PAS011, PAS014, PAS142, PAS143) | linh-daotruc | `001-aut-registration` | Done |
 
 ## 2. Run entries
 
@@ -136,6 +137,84 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Spec issues found | none |
 | Commit | b7ec7a5 |
 
+### Entry 10: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `/speckit-plan` + `Scope: US-4 only; US-1 and US-2 already built; US-3, US-5 to US-10 out of scope.` |
+| Feature and tasks | `specs/003-aut-forgot-password`, no tasks yet |
+| What the agent produced | `specs/003-aut-forgot-password/plan.md`, `research.md`, `data-model.md`, `contracts/api.md`, `quickstart.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 16ee145 |
+
+### Entry 11: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `/speckit-tasks` (no argument) |
+| Feature and tasks | `specs/003-aut-forgot-password`, tasks `T001` to `T012` |
+| What the agent produced | `specs/003-aut-forgot-password/tasks.md` with tests-first tasks T001–T005, backend tasks T006–T008, UI tasks T009–T012 |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 16ee145 |
+
+### Entry 12: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | `/speckit-analyze` (no argument) |
+| Feature and tasks | `specs/003-aut-forgot-password`, all tasks |
+| What the agent produced | Read-only analysis: 0 CRITICAL, 0 HIGH. Requirements FR-010 to FR-012, BR-005, BR-006, screens PAS011, PAS014, PAS142, PAS143 are fully covered by T001–T012. |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | none |
+| Commit | 16ee145 |
+
+### Entry 13: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Tests-first: write test files for T001–T005, run `npm test` |
+| Feature and tasks | `specs/003-aut-forgot-password`, tasks `T001` to `T005` |
+| What the agent produced | `tests/business/fr011-request-reset.test.ts`, `tests/business/fr011-enumeration-protection.test.ts`, `tests/business/fr012-reset-password.test.ts`, `tests/business/fr012-token-rejection.test.ts`, `tests/business/fr012-password-complexity.test.ts` |
+| Human review | Pending human review |
+| Tests | `Test Files  5 failed | 14 passed (19); Tests 42 passed (42)` (all 5 new suites failed due to missing `@/lib/recovery`) |
+| Spec issues found | none |
+| Commit | 16ee145 |
+
+### Entry 14: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (core & backend): implement T006–T008, run `npm test` |
+| Feature and tasks | `specs/003-aut-forgot-password`, tasks `T006` to `T008` |
+| What the agent produced | `src/lib/recovery.ts`, `src/app/api/auth/forgot-password/route.ts`, `src/app/api/auth/reset-password/route.ts` |
+| Human review | Pending human review |
+| Tests | `Test Files  19 passed (19); Tests 54 passed (54)` |
+| Spec issues found | none |
+| Commit | 16ee145 |
+
+### Entry 15: 28/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Gemini 3.8 Flash) |
+| Command and argument | Implementation (UI): implement T009–T012, run `npm test` and `npm run build` |
+| Feature and tasks | `specs/003-aut-forgot-password`, tasks `T009` to `T012` |
+| What the agent produced | `src/app/forgot-password/page.tsx`, `src/app/forgot-password/sent/page.tsx`, `src/app/reset-password/page.tsx`, `src/app/reset-password/success/page.tsx`, traceability check in `specs/003-aut-forgot-password/research.md` |
+| Human review | Pending human review |
+| Tests | `Test Files  19 passed (19); Tests 54 passed (54)` |
+| Spec issues found | none |
+| Commit | 16ee145 |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -157,3 +236,4 @@ does not happen again.
 | Entry | What went wrong | How it was caught | Prevention |
 |---|---|---|---|
 | 1 and 2 | The plan and the tasks left out `confirmation_email_status`, a Required output of FR-004, and did not include an audit row for registration completion or any handling of the global unique tax_id. | `/speckit-analyze` (entry 2), then confirmed against spec section 5.1, `data/schema.sql` and `data/04-data-model.md`. | Add to the plan prompt: "Every Required output field in section 5.1 of the FRs in scope must appear in contracts/api.md, and every unique index touched by the slice needs a failure-handling task." Always run `/speckit-analyze` before writing tests. |
+| 13 and 14 | In `tests/business/fr011-enumeration-protection.test.ts`, the test asserted total count of `password_reset_tokens` is 0, overlooking that `data/seed/password_reset_tokens.csv` seeds 8 rows on test DB setup. | Caught during test run (classified as TEST_BUG). | Fixed by comparing token count before and after the operation instead of asserting table is completely empty. When testing tables with pre-seeded rows, always measure relative delta or filter by target user. |

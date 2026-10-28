@@ -19,6 +19,9 @@ did and what the humans decided.
 | `specs/005-aut-change-password` | AUT | US-5 (P2): Change Password (UC-ACC-05; F-AUTH-13, F-AUTH-14, FR-008; screen ACC129 Change Password panel) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/006-aut-verify-agency` | AUT | US-6 (P1): Verify Agency (UC-ACC-06; F-AUTH-18; screens VER119, VER146) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/007-aut-resubmit-registration` | AUT | US-10 (P1): Revise and Resubmit Agency Registration (UC-ACC-06; F-AUTH-26; screen REG003 in secure edit mode, REG116) | linh-daotruc | `001-aut-registration` | Done |
+| `specs/008-aut-create-ubnd-account` | AUT | US-7 (P1): Create UBND Account (UC-ACC-07; F-AUTH-19; screen ADM117) | linh-daotruc | `001-aut-registration` | In progress |
+| `specs/009-aut-create-provider-account` | AUT | US-8 (P1): Create Local Provider Account (UC-ACC-08; F-AUTH-20; screen ADM117) | linh-daotruc | `001-aut-registration` | In progress |
+| `specs/010-aut-manage-accounts` | AUT | US-9 (P1): Manage Accounts (UC-ACC-09; F-AUTH-21, F-AUTH-22, F-AUTH-16; screens ADM095, ADM118) | linh-daotruc | `001-aut-registration` | In progress |
 
 ## 2. Run entries
 
@@ -503,6 +506,45 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Human review | Pending human review |
 | Tests | `Test Files  23 passed (23); Tests  67 passed (67)` |
 | Spec issues found | none |
+| Commit | 1f7c34b |
+
+### Entry 38: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Claude Sonnet) |
+| Command and argument | Plan + tasks: speckit-plan + speckit-tasks for US-7 |
+| Feature and tasks | `specs/008-aut-create-ubnd-account`, tasks `T001` to `T004` |
+| What the agent produced | `specs/008-aut-create-ubnd-account/plan.md`, `research.md`, `data-model.md`, `contracts/api.md`, `quickstart.md`, `tasks.md` |
+| Human review | Pending human review |
+| Tests | n/a (no code yet) |
+| Spec issues found | Interpretation: village uniqueness enforced at app layer (see research.md) |
+| Commit | uncommitted |
+
+### Entry 39: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Claude Sonnet) |
+| Command and argument | Tests first: implement T001, run `npx vitest run tests/business/fr019-create-ubnd-account.test.ts` |
+| Feature and tasks | `specs/008-aut-create-ubnd-account`, task `T001` |
+| What the agent produced | `tests/business/fr019-create-ubnd-account.test.ts` |
+| Human review | Pending human review |
+| Tests | `Failed Suites 1` (missing module `@/lib/account-creation`) |
+| Spec issues found | none |
+| Commit | uncommitted |
+
+### Entry 40: 29/10/2026 linh-daotruc
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, model Claude Sonnet) |
+| Command and argument | Implementation (core & backend + UI): implement T002–T004, run `npm test`, run `npm run build` |
+| Feature and tasks | `specs/008-aut-create-ubnd-account`, tasks `T002` to `T004` |
+| What the agent produced | `src/lib/account-creation.ts`, `src/app/api/admin/accounts/ubnd/route.ts`, `src/app/admin/create-account/page.tsx` |
+| Human review | Pending human review |
+| Tests | `Test Files  24 passed (24); Tests  74 passed (74)` |
+| Spec issues found | none |
 | Commit | uncommitted |
 
 
@@ -518,6 +560,7 @@ is never fixed silently in code.
 | 2 | Step 4 Analyze, entry 2 | Duplicate tax_id: `agency_profiles_tax_uq` is a global unique index, FR-003 only checks duplicate email, and the agency profile is created at Pending Approval. A second registration with the same tax_id would fail at the database after OTP verification. Related to the data review Q1 (uniqueness scope of tax_id) and open question 17 (re-registration after Rejected). | Open question 23 in `docs/spec/specs/spec-AUT.md` (Blocking = No). Interim: unique violation is rolled back and returned as a validation error. | Open |
 | 3 | Step 4 Analyze, entry 2 | SC-008 (traceability) names approval decisions and Admin account actions, not Guest registration completion. | Not escalated. Decision recorded in `research.md`: write one `audit_logs` row for registration completion, because the spec's Audit Log entity records security and account actions. No spec change needed. | Decided |
 | 4 | Step 3 Plan, entry 4 | Session duration: The spec states sessions are invalidated on logout or disable, and revalidated periodically, but specifies no default session expiry. Default session expiry is set to 24 hours. | `docs/spec/specs/spec-AUT.md` | Proposed, not yet in spec |
+| 5 | Step 3 Plan, entry 38 (US-7) | Village uniqueness: the schema index `ubnd_village_assignments_village_idx` is a plain index, not UNIQUE. FR-019/BR-008 require one village per UBND. Enforced at app layer with a pre-check query. Whether the index should be upgraded to UNIQUE in the schema is an open question. | Proposed in `specs/008-aut-create-ubnd-account/research.md` (Blocking = No). Interim: app-layer pre-check rejects duplicate village. | Proposed, not yet in spec |
 
 ## 4. Agent mistakes worth remembering
 

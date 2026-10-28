@@ -19,7 +19,7 @@ did and what the humans decided.
 | `specs/005-aut-change-password` | AUT | US-5 (P2): Change Password (UC-ACC-05; F-AUTH-13, F-AUTH-14, FR-008; screen ACC129 Change Password panel) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/006-aut-verify-agency` | AUT | US-6 (P1): Verify Agency (UC-ACC-06; F-AUTH-18; screens VER119, VER146) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/007-aut-resubmit-registration` | AUT | US-10 (P1): Revise and Resubmit Agency Registration (UC-ACC-06; F-AUTH-26; screen REG003 in secure edit mode, REG116) | linh-daotruc | `001-aut-registration` | Done |
-| `specs/008-aut-create-ubnd-account` | AUT | US-7 (P1): Create UBND Account (UC-ACC-07; F-AUTH-19; screen ADM117) | linh-daotruc | `001-aut-registration` | In progress |
+| `specs/008-aut-create-ubnd-account` | AUT | US-7 (P1): Create UBND Account (UC-ACC-07; F-AUTH-19; screen ADM117) | linh-daotruc | `001-aut-registration` | Done |
 | `specs/009-aut-create-provider-account` | AUT | US-8 (P1): Create Local Provider Account (UC-ACC-08; F-AUTH-20; screen ADM117) | linh-daotruc | `001-aut-registration` | In progress |
 | `specs/010-aut-manage-accounts` | AUT | US-9 (P1): Manage Accounts (UC-ACC-09; F-AUTH-21, F-AUTH-22, F-AUTH-16; screens ADM095, ADM118) | linh-daotruc | `001-aut-registration` | In progress |
 
@@ -519,7 +519,7 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Human review | Pending human review |
 | Tests | n/a (no code yet) |
 | Spec issues found | Interpretation: village uniqueness enforced at app layer (see research.md) |
-| Commit | uncommitted |
+| Commit | 0da3f5f |
 
 ### Entry 39: 29/10/2026 linh-daotruc
 
@@ -532,7 +532,7 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Human review | Pending human review |
 | Tests | `Failed Suites 1` (missing module `@/lib/account-creation`) |
 | Spec issues found | none |
-| Commit | uncommitted |
+| Commit | 0da3f5f |
 
 ### Entry 40: 29/10/2026 linh-daotruc
 
@@ -545,7 +545,7 @@ Copy this block for each run. Keep the newest entry at the bottom.
 | Human review | Pending human review |
 | Tests | `Test Files  24 passed (24); Tests  74 passed (74)` |
 | Spec issues found | none |
-| Commit | uncommitted |
+| Commit | 0da3f5f |
 
 
 

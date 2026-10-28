@@ -1,5 +1,4 @@
-import fs from 'node:fs'
-import path from 'node:path'
+import { demoRepository } from '../demo/json-repository'
 
 export interface SeedProviderProfile {
   provider_id: string
@@ -39,54 +38,8 @@ export interface SeedOperatingHours {
   [key: string]: unknown
 }
 
-function parseCsv(content: string): Array<Record<string, string>> {
-  const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0)
-  if (lines.length === 0) return []
-
-  const parseRow = (row: string): string[] => {
-    const entries: string[] = []
-    let current = ''
-    let insideQuote = false
-
-    for (let i = 0; i < row.length; i++) {
-      const char = row[i]
-      if (char === '"') {
-        if (insideQuote && row[i + 1] === '"') {
-          current += '"'
-          i++
-        } else {
-          insideQuote = !insideQuote
-        }
-      } else if (char === ',' && !insideQuote) {
-        entries.push(current)
-        current = ''
-      } else {
-        current += char
-      }
-    }
-    entries.push(current)
-    return entries.map(v => v.trim())
-  }
-
-  const headers = parseRow(lines[0])
-  return lines.slice(1).map(line => {
-    const values = parseRow(line)
-    const row: Record<string, string> = {}
-    headers.forEach((header, idx) => {
-      row[header] = values[idx] ?? ''
-    })
-    return row
-  })
-}
-
-function getSeedPath(fileName: string): string {
-  return path.join(process.cwd(), 'data', 'seed', fileName)
-}
-
 export async function loadProviderProfiles(): Promise<SeedProviderProfile[]> {
-  const filePath = getSeedPath('provider_profiles.csv')
-  const content = fs.readFileSync(filePath, 'utf-8')
-  const records = parseCsv(content)
+  const records = demoRepository().all('provider_profiles')
 
   return records.map(r => ({
     ...r,
@@ -102,9 +55,7 @@ export async function loadProviderProfiles(): Promise<SeedProviderProfile[]> {
 }
 
 export async function loadExperiences(): Promise<SeedExperience[]> {
-  const filePath = getSeedPath('experiences.csv')
-  const content = fs.readFileSync(filePath, 'utf-8')
-  const records = parseCsv(content)
+  const records = demoRepository().all('experiences')
 
   return records.map(r => ({
     ...r,
@@ -122,9 +73,7 @@ export async function loadExperiences(): Promise<SeedExperience[]> {
 }
 
 export async function loadOperatingHours(): Promise<SeedOperatingHours[]> {
-  const filePath = getSeedPath('provider_operating_hours.csv')
-  const content = fs.readFileSync(filePath, 'utf-8')
-  const records = parseCsv(content)
+  const records = demoRepository().all('provider_operating_hours')
 
   return records.map(r => ({
     ...r,
@@ -155,9 +104,7 @@ export interface SeedProviderProfileVersion {
 }
 
 export async function loadProviderProfileVersions(): Promise<SeedProviderProfileVersion[]> {
-  const filePath = getSeedPath('provider_profile_versions.csv')
-  const content = fs.readFileSync(filePath, 'utf-8')
-  const records = parseCsv(content)
+  const records = demoRepository().all('provider_profile_versions')
 
   return records.map(r => ({
     ...r,
@@ -187,9 +134,7 @@ export interface SeedVillage {
 }
 
 export async function loadVillages(): Promise<SeedVillage[]> {
-  const filePath = getSeedPath('villages.csv')
-  const content = fs.readFileSync(filePath, 'utf-8')
-  const records = parseCsv(content)
+  const records = demoRepository().all('villages')
 
   return records.map(r => ({
     village_id: r.village_id,

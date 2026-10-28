@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
-import { openOrReuseChat } from '@/lib/matching/handoff-service'
+import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { createChatHandoff, HandoffError } from '@/lib/demo/commercial-handoff-service'
+import { getMatchingSession } from '@/lib/matching/session-service'
 
 export async function POST(
   request: Request,
@@ -7,22 +9,18 @@ export async function POST(
 ) {
   try {
     const body = await request.json()
-    const agencyId = body.agency_id || request.headers.get('x-account-id') || 'agency-default'
-    const providerId = body.provider_id
-    const contextMessage = body.context_message || 'Inquiring about tour experience'
+    const experienceId = body.experience_id
 
-    if (!providerId) {
-      return NextResponse.json({ error: 'provider_id is required' }, { status: 400 })
+    if (!experienceId) {
+      return NextResponse.json({ error: 'experience_id is required' }, { status: 400 })
     }
-
-    const chatResult = await openOrReuseChat({
-      agencyId,
-      providerId,
-      contextMessage,
-    })
-
-    return NextResponse.json(chatResult, { status: 200 })
+    const actor = demoSessionFromRequest(request)
+    const matchingSession = await getMatchingSession(params.id)
+    if (!matchingSession || matchingSession.agency_id !== actor.agencyId) {
+      return NextResponse.json({ error: 'Matching session access denied' }, { status: 403 })
+    }
+    return NextResponse.json(createChatHandoff(actor, experienceId), { status: 200 })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 })
+    return NextResponse.json({ error: err.message || 'Internal error' }, { status: err instanceof HandoffError ? err.statusCode : 500 })
   }
 }

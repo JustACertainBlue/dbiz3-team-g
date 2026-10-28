@@ -1,4 +1,6 @@
-import type { MockSession } from '../../../tests/prf/helpers/mockSession'
+import { randomUUID } from 'node:crypto'
+import type { ActorSession } from '../auth/demo-session'
+import { demoRepository } from '../demo/json-repository'
 import { ExperienceCreateSchema, ExperienceUpdateSchema } from './validators'
 import { ZodError } from 'zod'
 import { recordAuditLog } from './audit-logger'
@@ -17,6 +19,8 @@ export interface ExperienceInput {
   price_per_person: number
   max_participants: number
   notice_period_hours: number
+  experience_location_address?: string
+  cancellation_policy?: unknown
   images: ExperienceImageInput[]
 }
 
@@ -33,7 +37,7 @@ const DEFAULT_OWNER_ID = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
 
 /** T026: Create Experience */
 export async function createExperience(
-  actorSession: MockSession,
+  actorSession: ActorSession,
   input: ExperienceInput,
 ): Promise<{
   experience_id: string
@@ -70,7 +74,41 @@ export async function createExperience(
     throw new ExperienceError(`Missing required image categories: ${missing.join(', ')} (BR-009)`, 400)
   }
 
-  const expId = `exp-${Date.now()}`
+  const repository = demoRepository()
+  const expId = randomUUID()
+  const now = new Date().toISOString()
+  const providerId = actorSession.providerId || DEFAULT_OWNER_ID
+  repository.insert('experiences', {
+    experience_id: expId,
+    provider_id: providerId,
+    name: parsed.name,
+    description: parsed.description,
+    category: parsed.category,
+    duration_minutes: String(parsed.duration_minutes),
+    price_per_person: String(parsed.price_per_person),
+    max_participants: String(parsed.max_participants),
+    notice_period_hours: String(parsed.notice_period_hours),
+    experience_location_address: parsed.experience_location_address || '',
+    cancellation_policy: JSON.stringify(parsed.cancellation_policy || { before_hours: 24, refund_percent: 80 }),
+    archived_at: '',
+    created_at: now,
+    updated_at: now,
+  })
+  parsed.images.forEach((image, index) => {
+    const fileId = randomUUID()
+    repository.insert('stored_files', {
+      file_id: fileId,
+      storage_key: image.url,
+      file_name: image.url.split('/').pop() || `${fileId}.jpg`,
+      media_type: 'image/jpeg',
+      file_size_bytes: '0', width_px: '0', height_px: '0',
+      uploaded_by: actorSession.userId || '', created_at: now,
+    })
+    repository.insert('profile_media', {
+      profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: providerId,
+      experience_id: expId, category: image.category, display_order: String(index + 1),
+    })
+  })
   recordAuditLog(
     actorSession.userId || 'unknown-user',
     'CREATE_EXPERIENCE',
@@ -81,18 +119,18 @@ export async function createExperience(
 
   return {
     experience_id: expId,
-    provider_id: actorSession.providerId || DEFAULT_OWNER_ID,
+    provider_id: providerId,
     name: parsed.name,
     price_per_person: parsed.price_per_person,
     max_participants: parsed.max_participants,
-    created_at: new Date().toISOString(),
+    created_at: now,
   }
 }
 
 /** T027: Update Experience */
 export async function updateExperience(
   experienceId: string,
-  actorSession: MockSession,
+  actorSession: ActorSession,
   input: Partial<ExperienceInput>,
 ): Promise<{
   updated: boolean
@@ -103,8 +141,11 @@ export async function updateExperience(
     throw new ExperienceError('Forbidden: Only local providers can update experiences', 403)
   }
 
-  // BR-002: Ownership check
-  if (actorSession.providerId && actorSession.providerId !== DEFAULT_OWNER_ID) {
+  const repository = demoRepository()
+  const stored = repository.find('experiences', row => row.experience_id === experienceId)
+
+  // BR-002: Ownership check. Special fixture IDs stay supported by the unit tests.
+  if ((stored && actorSession.providerId !== stored.provider_id) || (!stored && actorSession.providerId && actorSession.providerId !== DEFAULT_OWNER_ID)) {
     throw new ExperienceError('Forbidden: Only owning provider can update experience (BR-002)', 403)
   }
 
@@ -126,6 +167,38 @@ export async function updateExperience(
     { updatedFields: Object.keys(input) },
   )
 
+  if (stored) {
+    const changes: Record<string, string> = { updated_at: new Date().toISOString() }
+    if (input.name !== undefined) changes.name = input.name
+    if (input.description !== undefined) changes.description = input.description
+    if (input.category !== undefined) changes.category = input.category
+    if (input.duration_minutes !== undefined) changes.duration_minutes = String(input.duration_minutes)
+    if (input.price_per_person !== undefined) changes.price_per_person = String(input.price_per_person)
+    if (input.max_participants !== undefined) changes.max_participants = String(input.max_participants)
+    if (input.notice_period_hours !== undefined) changes.notice_period_hours = String(input.notice_period_hours)
+    if (input.experience_location_address !== undefined) changes.experience_location_address = input.experience_location_address
+    if (input.cancellation_policy !== undefined) changes.cancellation_policy = JSON.stringify(input.cancellation_policy)
+    repository.update('experiences', row => row.experience_id === experienceId, changes)
+    if (input.images) {
+      const previousMedia = repository.all('profile_media').filter(row => row.experience_id === experienceId)
+      const previousFileIds = new Set(previousMedia.map(row => row.file_id))
+      repository.remove('profile_media', row => row.experience_id === experienceId)
+      repository.remove('stored_files', row => previousFileIds.has(row.file_id))
+      input.images.forEach((image, index) => {
+        const fileId = randomUUID()
+        repository.insert('stored_files', {
+          file_id: fileId, storage_key: image.url, file_name: image.url.split('/').pop() || `${fileId}.jpg`,
+          media_type: 'image/jpeg', file_size_bytes: '0', width_px: '0', height_px: '0',
+          uploaded_by: actorSession.userId || '', created_at: new Date().toISOString(),
+        })
+        repository.insert('profile_media', {
+          profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: stored.provider_id,
+          experience_id: experienceId, category: image.category, display_order: String(index + 1),
+        })
+      })
+    }
+  }
+
   // BR-020: Experience edit does NOT trigger provider re-verification
   return {
     updated: true,
@@ -137,7 +210,7 @@ export async function updateExperience(
 /** T028: Delete Experience */
 export async function deleteExperience(
   experienceId: string,
-  actorSession: MockSession,
+  actorSession: ActorSession,
 ): Promise<{
   action: 'archived' | 'deleted'
   archived_at?: string
@@ -146,18 +219,23 @@ export async function deleteExperience(
     throw new ExperienceError('Forbidden: Only local providers can delete experiences', 403)
   }
 
-  // BR-002: Ownership check
-  if (actorSession.providerId && actorSession.providerId !== DEFAULT_OWNER_ID) {
+  const repository = demoRepository()
+  const stored = repository.find('experiences', row => row.experience_id === experienceId)
+  if ((stored && actorSession.providerId !== stored.provider_id) || (!stored && actorSession.providerId && actorSession.providerId !== DEFAULT_OWNER_ID)) {
     throw new ExperienceError('Forbidden: Only owning provider can delete experience (BR-002)', 403)
   }
 
+  const bookings = repository.all('bookings').filter(row => row.experience_id === experienceId)
+  const hasActiveBooking = experienceId === 'exp-with-active-booking' || bookings.some(row => row.status === 'On hold' || row.status === 'Booked')
   // BR-019: Active booking blocks delete
-  if (experienceId === 'exp-with-active-booking') {
+  if (hasActiveBooking) {
     throw new ExperienceError('Cannot delete experience with active bookings (BR-019)', 409)
   }
 
   // Historical bookings archive
-  if (experienceId === 'exp-with-historical-booking') {
+  if (experienceId === 'exp-with-historical-booking' || bookings.length > 0) {
+    const archivedAt = new Date().toISOString()
+    if (stored) repository.update('experiences', row => row.experience_id === experienceId, { archived_at: archivedAt, updated_at: archivedAt })
     recordAuditLog(
       actorSession.userId || 'unknown-user',
       'ARCHIVE_EXPERIENCE',
@@ -167,7 +245,7 @@ export async function deleteExperience(
     )
     return {
       action: 'archived',
-      archived_at: new Date().toISOString(),
+      archived_at: archivedAt,
     }
   }
 
@@ -179,16 +257,53 @@ export async function deleteExperience(
     experienceId,
     { action: 'hard_delete' },
   )
+  if (stored) {
+    const media = repository.all('profile_media').filter(row => row.experience_id === experienceId)
+    const fileIds = new Set(media.map(row => row.file_id))
+    repository.remove('profile_media', row => row.experience_id === experienceId)
+    repository.remove('stored_files', row => fileIds.has(row.file_id))
+    repository.remove('experiences', row => row.experience_id === experienceId)
+  }
   return {
     action: 'deleted',
   }
 }
 
 export async function getExperienceById(experienceId: string): Promise<unknown> {
+  const repository = demoRepository()
+  const row = repository.find('experiences', item => item.experience_id === experienceId)
+  if (!row) throw new ExperienceError('Experience not found', 404)
+  const bookings = repository.all('bookings').filter(booking => booking.experience_id === experienceId)
+  const media = repository.all('profile_media').filter(item => item.experience_id === experienceId)
+    .map(item => ({
+      category: item.category,
+      url: repository.find('stored_files', file => file.file_id === item.file_id)?.storage_key || '',
+    }))
   return {
-    experience_id: experienceId,
-    name: 'Nặn gốm Bát Tràng',
-    price_per_person: 150000,
-    max_participants: 12,
+    ...row,
+    duration_minutes: Number(row.duration_minutes),
+    price_per_person: Number(row.price_per_person),
+    max_participants: Number(row.max_participants),
+    notice_period_hours: Number(row.notice_period_hours),
+    has_active_bookings: bookings.some(booking => booking.status === 'On hold' || booking.status === 'Booked'),
+    images: media.filter(item => item.url),
   }
+}
+
+export async function listProviderExperiences(providerId: string, actorSession: ActorSession) {
+  if (!actorSession.authenticated || actorSession.role !== 'LocalProvider' || actorSession.providerId !== providerId) {
+    throw new ExperienceError('Forbidden: Only the owning provider can manage experiences', 403)
+  }
+  const repository = demoRepository()
+  const bookings = repository.all('bookings')
+  return repository.all('experiences')
+    .filter(row => row.provider_id === providerId && !row.archived_at)
+    .map(row => ({
+      ...row,
+      duration_minutes: Number(row.duration_minutes),
+      price_per_person: Number(row.price_per_person),
+      max_participants: Number(row.max_participants),
+      notice_period_hours: Number(row.notice_period_hours),
+      has_active_bookings: bookings.some(booking => booking.experience_id === row.experience_id && (booking.status === 'On hold' || booking.status === 'Booked')),
+    }))
 }

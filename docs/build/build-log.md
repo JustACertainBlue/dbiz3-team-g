@@ -191,6 +191,19 @@ did and what the humans decided.
 | Spec issues found | None newly identified by conflict resolution. Existing EXP integration limits remain in `specs/001-exp-core/implementation-status.md`. |
 | Commit | Local merge commit on `001-exp-core`; see PR #9 for the pushed revision. |
 
+### Entry 8: 28/10 Codex — unify the functional prototype on one JSON runtime
+
+| Field | Value |
+|---|---|
+| Path and agent | Local Codex agent |
+| Command and argument | Continue the approved JSON-demo foundation; use one cookie session, API/service layer and repository so modules can later switch to PostgreSQL. |
+| Feature and tasks | Cross-module prototype integration for EXP, AIT and PRF; no `docs/spec/` or `data/` edits. |
+| What the agent produced | CSV-to-JSON seed/reset commands; shared demo identities and role permissions; persistent Matching sessions; unified Explore → Quote/Chat → Messages; Provider Experience CRUD; Agency/Provider profile persistence and versioning; Admin Provider review; dynamic Village pages; repository-backed audit logs. |
+| Human review | Pending independent PR review. Browser verification covered Agency Explore, AIT recommendation, Quote handoff, shared Messages and Agency refresh persistence. |
+| Tests | `npm run lint`: passed; `npm test`: 35 files and 280 tests passed; `npm run build`: passed; `uv run tools/start_feature.py --check`: OK; `git diff --check`: clean. |
+| Spec issues found | Existing durable FR-006/007 tracking and real external Auth/Chat/PostgreSQL integrations remain future work; no new source-spec change was made silently. |
+| Commit | Uncommitted local work on `001-exp-core`; not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

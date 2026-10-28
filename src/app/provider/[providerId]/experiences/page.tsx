@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCurrentRole, type CurrentUserRole } from '@/lib/prf/client-session'
+import { getCurrentRole, refreshDemoSession, type CurrentUserRole } from '@/lib/prf/client-session'
 
 interface ExperienceItem {
   experience_id: string
@@ -20,43 +20,30 @@ export default function ExperienceManagementPage({
 }: {
   params: { providerId: string }
 }) {
-  const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
+  const [role, setRole] = useState<CurrentUserRole>('Guest')
   const [experiences, setExperiences] = useState<ExperienceItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setRole(getCurrentRole())
+    let alive = true
+    refreshDemoSession().then(session => {
+      if (!alive) return
+      setRole(session.role)
+      if (session.role !== 'LocalProvider' || session.providerId !== params.providerId) {
+        setLoading(false)
+        return
+      }
+      fetch(`/api/prf/experience?provider_id=${encodeURIComponent(params.providerId)}`)
+        .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load experiences')))
+        .then(data => { if (alive) setExperiences(data.experiences || []) })
+        .finally(() => { if (alive) setLoading(false) })
+    }).catch(() => { if (alive) setLoading(false) })
     const onRoleChanged = () => {
       setRole(getCurrentRole())
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
 
-    // Demo data for experiences belonging to this provider
-    setExperiences([
-      {
-        experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69',
-        name: 'Nặn gốm vuốt tay trên bàn xoay truyền thống',
-        category: 'Workshop/Hands-on',
-        duration_minutes: 90,
-        price_per_person: 150000,
-        max_participants: 25,
-        notice_period_hours: 24,
-        has_active_bookings: true,
-      },
-      {
-        experience_id: 'e1a2b3c4-5555-6666-7777-888899990000',
-        name: 'Khám phá lò bầu cổ & Tráng men tro trấu độc bản',
-        category: 'Sightseeing/Masterclass',
-        duration_minutes: 120,
-        price_per_person: 220000,
-        max_participants: 15,
-        notice_period_hours: 48,
-        has_active_bookings: false,
-      },
-    ])
-    setLoading(false)
-
-    return () => window.removeEventListener('hab_role_changed', onRoleChanged)
+    return () => { alive = false; window.removeEventListener('hab_role_changed', onRoleChanged) }
   }, [params.providerId])
 
   const isLocalProvider = role === 'LocalProvider'

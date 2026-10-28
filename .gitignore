@@ -26,3 +26,6 @@ CLAUDE.local.md
 # Next.js build output
 .next/
 .next-backup/
+
+# Local demo database (generated from committed synthetic seed data)
+.demo-data/

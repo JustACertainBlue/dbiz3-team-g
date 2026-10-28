@@ -1,18 +1,22 @@
-import { guestSession, type MockSession } from '../../../../../tests/prf/helpers/mockSession'
-import { createExperience, ExperienceError } from '@/lib/prf/experience-service'
+import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { createExperience, ExperienceError, listProviderExperiences } from '@/lib/prf/experience-service'
 import { ZodError } from 'zod'
+
+export async function GET(req: Request): Promise<Response> {
+  try {
+    const providerId = new URL(req.url).searchParams.get('provider_id')
+    if (!providerId) return new Response(JSON.stringify({ error: 'provider_id is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    const result = await listProviderExperiences(providerId, demoSessionFromRequest(req))
+    return new Response(JSON.stringify({ experiences: result }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  } catch (error: unknown) {
+    const status = error instanceof ExperienceError ? error.statusCode : 500
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Internal Server Error' }), { status, headers: { 'Content-Type': 'application/json' } })
+  }
+}
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    let session: MockSession = guestSession()
-    const sessionHeader = req.headers.get('x-mock-session')
-    if (sessionHeader) {
-      try {
-        session = JSON.parse(sessionHeader)
-      } catch {
-        session = guestSession()
-      }
-    }
+    const session = demoSessionFromRequest(req)
 
     const body = await req.json()
     const result = await createExperience(session, body)

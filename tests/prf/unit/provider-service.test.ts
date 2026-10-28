@@ -10,7 +10,8 @@
  * Also covers BR-007: only the published version of a Verified provider is shown
  * publicly; a pending revision does not replace the public version.
  */
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
+import { demoRepository } from '@/lib/demo/json-repository'
 import assert from 'node:assert'
 import {
   getProviderProfile,
@@ -199,6 +200,7 @@ describe('T014 | getProviderProfile – US-3 (View Local Provider Profile)', () 
 // ─── updateProviderProfile section (T019) ───────────────────────────────────
 
 describe('T019 | updateProviderProfile – US-4 (Manage Provider Profile)', () => {
+  beforeEach(() => demoRepository().reset())
   const verifiedSession = providerSession(VERIFIED_PROVIDER_ID, SEED_IDS.provider1VerifiedUserId)
   const draftSession = providerSession(DRAFT_PROVIDER_ID, SEED_IDS.providerDraftUserId)
   const anotherProviderSession = providerSession(DRAFT_PROVIDER_ID, SEED_IDS.providerDraftUserId)
@@ -268,6 +270,10 @@ describe('T019 | updateProviderProfile – US-4 (Manage Provider Profile)', () =
     }
     expect(res.new_version_pending).toBe(true)
     expect(res.published_version_intact).toBe(true)
+    const publicProfile = await getProviderProfile(VERIFIED_PROVIDER_ID, guestSession())
+    const ownerProfile = await getProviderProfile(VERIFIED_PROVIDER_ID, verifiedSession)
+    expect(publicProfile?.provider_name).not.toBe(majorChangePayload.business_name)
+    expect(ownerProfile?.provider_name).toBe(majorChangePayload.business_name)
   })
 
   it('updates immediately without pending status when editing non-major fields (BR-018)', async () => {
@@ -281,6 +287,8 @@ describe('T019 | updateProviderProfile – US-4 (Manage Provider Profile)', () =
     }
     expect(res.new_version_pending).toBe(false)
     expect(res.verification_status).toBe('Verified')
+    const saved = await getProviderProfile(VERIFIED_PROVIDER_ID, verifiedSession)
+    expect(saved?.general_description).toBe(nonMajorPayload.general_description)
   })
 
   // ── BR-021: Operating hours saved to provider_operating_hours ───────────────

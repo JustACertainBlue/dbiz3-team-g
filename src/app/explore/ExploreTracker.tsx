@@ -17,7 +17,7 @@ export default function ExploreTracker({ demoAgencyId, detailExperienceId }: { d
     if (process.env.NODE_ENV === 'production') return;
     let alive = true;
     fetch('/api/explore/session', { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ demo_agency_id: demoAgencyId, analytics_consent: consent }) })
+      body: JSON.stringify({ analytics_consent: consent }) })
       .then(response => { if (!response.ok) throw new Error('Session unavailable'); return response.json(); })
       .then(() => { if (alive) { setReady(true); router.refresh(); } })
       .catch(() => { if (alive) setReady(false); });

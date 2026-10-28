@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { refreshDemoSession, setCurrentRole } from '@/lib/prf/client-session'
 
 interface Message {
   id: string
@@ -14,19 +15,35 @@ interface Message {
 }
 
 export default function AiMatchingScreen() {
-  const [role, setRole] = useState<'Agency' | 'Guest'>('Agency')
+  const [role, setRole] = useState<'Agency' | 'Guest'>('Guest')
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [agencyId, setAgencyId] = useState<string>('agency-hanoi-tours-001')
+  const [agencyId, setAgencyId] = useState<string>('')
   const [inputText, setInputText] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [quoteStatus, setQuoteStatus] = useState<Record<string, string>>({})
   const [chatStatus, setChatStatus] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const sessionInitializationRef = useRef(false)
 
-  // 1. Session initialization on mount
   useEffect(() => {
-    if (role === 'Agency') {
+    refreshDemoSession()
+      .then(session => {
+        if (session.role === 'TourAgency' && session.agencyId) {
+          setAgencyId(session.agencyId)
+          setRole('Agency')
+        } else {
+          setRole('Guest')
+        }
+      })
+      .catch(() => setRole('Guest'))
+  }, [])
+
+  // Create a matching session only after the shared cookie session identifies an Agency.
+  useEffect(() => {
+    if (role === 'Agency' && agencyId) {
+      if (sessionInitializationRef.current) return
+      sessionInitializationRef.current = true
       initializeSession()
     }
   }, [role, agencyId])
@@ -39,12 +56,8 @@ export default function AiMatchingScreen() {
     try {
       const res = await fetch('/api/ait/sessions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-role': 'Agency',
-          'x-account-id': agencyId,
-        },
-        body: JSON.stringify({ role: 'Agency', agency_id: agencyId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
       })
       if (res.ok) {
         const data = await res.json()
@@ -101,7 +114,12 @@ export default function AiMatchingScreen() {
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button
               id="switch-to-agency-btn"
-              onClick={() => setRole('Agency')}
+              onClick={async () => {
+                await setCurrentRole('TourAgency')
+                const session = await refreshDemoSession()
+                setAgencyId(session.agencyId || '')
+                setRole('Agency')
+              }}
               style={{
                 backgroundColor: '#D97706',
                 color: '#FFF',
@@ -305,7 +323,7 @@ export default function AiMatchingScreen() {
     ])
   }
 
-  const handleRequestQuote = async (experienceId: string, providerId: string) => {
+  const handleRequestQuote = async (experienceId: string) => {
     if (!sessionId) return
     setQuoteStatus(prev => ({ ...prev, [experienceId]: 'sending' }))
 
@@ -314,9 +332,7 @@ export default function AiMatchingScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          agency_id: agencyId,
           experience_id: experienceId,
-          provider_id: providerId,
         }),
       })
       if (res.ok) {
@@ -334,7 +350,7 @@ export default function AiMatchingScreen() {
     }
   }
 
-  const handleChat = async (providerId: string, expName: string) => {
+  const handleChat = async (experienceId: string, providerId: string) => {
     if (!sessionId) return
     setChatStatus(prev => ({ ...prev, [providerId]: 'connecting' }))
 
@@ -343,9 +359,7 @@ export default function AiMatchingScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          agency_id: agencyId,
-          provider_id: providerId,
-          context_message: `Inquiring about ${expName}`,
+          experience_id: experienceId,
         }),
       })
       if (res.ok) {
@@ -425,7 +439,12 @@ export default function AiMatchingScreen() {
           >
             <button
               id="role-agency-btn"
-              onClick={() => setRole('Agency')}
+              onClick={async () => {
+                await setCurrentRole('TourAgency')
+                const session = await refreshDemoSession()
+                setAgencyId(session.agencyId || '')
+                setRole('Agency')
+              }}
               style={{
                 background: role === 'Agency' ? '#D97706' : 'transparent',
                 color: role === 'Agency' ? '#FFFFFF' : '#94A3B8',
@@ -441,7 +460,11 @@ export default function AiMatchingScreen() {
             </button>
             <button
               id="role-guest-btn"
-              onClick={() => setRole('Guest')}
+              onClick={async () => {
+                await setCurrentRole('Guest')
+                setAgencyId('')
+                setRole('Guest')
+              }}
               style={{
                 background: (role as string) === 'Guest' ? '#EF4444' : 'transparent',
                 color: (role as string) === 'Guest' ? '#FFFFFF' : '#94A3B8',
@@ -623,7 +646,7 @@ export default function AiMatchingScreen() {
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             id={`quote-btn-${rec.experience_id}`}
-                            onClick={() => handleRequestQuote(rec.experience_id, rec.provider_id)}
+                            onClick={() => handleRequestQuote(rec.experience_id)}
                             style={{
                               background: '#D97706',
                               color: '#FFF',
@@ -639,7 +662,7 @@ export default function AiMatchingScreen() {
                           </button>
                           <button
                             id={`chat-btn-${rec.provider_id}`}
-                            onClick={() => handleChat(rec.provider_id, rec.experience_name)}
+                            onClick={() => handleChat(rec.experience_id, rec.provider_id)}
                             style={{
                               background: '#334155',
                               color: '#F8FAFC',

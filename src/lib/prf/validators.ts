@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 export const AgencyProfilePatchSchema = z.object({
   company_name: z.string().min(1).max(255).optional(),
-  company_type: z.enum(['Tour Operator', 'Travel Agency', 'DMC']).optional(),
+  company_type: z.enum(['Tour Operator', 'Travel Agency', 'TMC', 'DMC']).optional(),
   contact_person_name: z.string().min(1).max(100).optional(),
   phone_number: z.string().regex(/^[0-9+() -]{8,20}$/).optional(),
   business_email: z.string().email().optional(),
@@ -53,6 +53,8 @@ export const ExperienceCreateSchema = z.object({
   price_per_person: z.number().positive(),
   max_participants: z.number().int().positive(),
   notice_period_hours: z.number().int().nonnegative(),
+  experience_location_address: z.string().max(500).optional(),
+  cancellation_policy: z.unknown().optional(),
   images: z
     .array(
       z.object({

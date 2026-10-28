@@ -57,8 +57,11 @@ export default function AgencyProfilePage({
     )
   }
 
-  const agencyName = agency?.agency_name || 'Indochina Heritage Voyages Co., Ltd.'
-  const taxId = agency?.tax_id || '0108923456'
+  const agencyName = agency?.agency_name || 'Tour Agency'
+  const taxId = agency?.tax_id || '—'
+  const contactName = agency?.contact?.contact_person_name || 'Đại diện Agency'
+  const contactInitials = contactName.split(/\s+/).filter(Boolean).slice(-2).map(part => part[0]).join('').toUpperCase() || 'TA'
+  const address = [agency?.location?.street, agency?.location?.district, agency?.location?.city_province].filter(Boolean).join(', ') || 'Hà Nội'
 
   return (
     <div className="spec-portal">
@@ -78,10 +81,10 @@ export default function AgencyProfilePage({
         </nav>
 
         <div className="spec-user-profile">
-          <div className="spec-avatar" style={{ background: '#1e3a5f' }}>EV</div>
+          <div className="spec-avatar" style={{ background: '#1e3a5f' }}>{contactInitials}</div>
           <div style={{ textAlign: 'left', fontSize: '0.75rem', lineHeight: 1.2 }}>
-            <div style={{ fontWeight: 700 }}>Dr. Eleanor Vance</div>
-            <div style={{ color: '#6b7280' }}>Lead Tour Director</div>
+            <div style={{ fontWeight: 700 }}>{contactName}</div>
+            <div style={{ color: '#6b7280' }}>{agency?.company_type || 'Tour Agency'}</div>
           </div>
         </div>
       </header>
@@ -109,12 +112,12 @@ export default function AgencyProfilePage({
               {agencyName}
             </h1>
             <div style={{ color: '#4b5563', fontSize: '0.9rem', fontStyle: 'italic', marginBottom: '1rem' }}>
-              Công ty TNHH Du lịch Di sản Đông Dương
+              {agency?.company_type || 'Tour Agency'} · {agency?.account_status || 'Public profile'}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.82rem', color: '#6b7280', flexWrap: 'wrap' }}>
-              <div>📍 42B Ly Thuong Kiet, Hoan Kiem District, Hanoi</div>
-              <div>🕒 Est. 2012 · Active Operations</div>
+              <div>📍 {address}</div>
+              <div>👥 {agency?.team_size || '—'} thành viên</div>
               <div>
                 MST: <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#111827' }}>{taxId}</span>{' '}
                 <span style={{ fontSize: '0.65rem', background: '#e5e7eb', padding: '2px 5px', fontWeight: 800 }}>VERIFIED</span>
@@ -186,12 +189,12 @@ export default function AgencyProfilePage({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span>📄</span>
                   <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>GPKD_Indochina_Heritage_Voyages_Certified.pdf</div>
-                    <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>PDF · 2.4 MB · Verified & Locked by Hanoi Dept. of Tourism</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>Legal document repository</div>
+                    <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Không có tệp pháp lý công khai trong dữ liệu demo hiện tại.</div>
                   </div>
                 </div>
                 <button type="button" className="spec-btn-white" style={{ fontSize: '0.72rem', padding: '0.35rem 0.65rem' }}>
-                  👁 View Document
+                  Chưa có tài liệu
                 </button>
               </div>
             </div>
@@ -202,8 +205,7 @@ export default function AgencyProfilePage({
                 ■ Company Profile & Curatorial Statement
               </h3>
               <p style={{ fontSize: '0.88rem', color: '#374151', lineHeight: 1.6, marginBottom: '1.25rem' }}>
-                {agency?.description ||
-                  'Specializing in high-end academic, architectural, and craft masterclass delegations across traditional Red River artisan villages since 2012. We operate as an academic bridge linking scholarly inquiries, cultural preservationists, and discerning collectors directly with traditional guilds.'}
+                {agency?.description || 'Agency chưa cập nhật phần giới thiệu.'}
               </p>
 
               <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', padding: '1rem', marginBottom: '1rem' }}>
@@ -290,23 +292,13 @@ export default function AgencyProfilePage({
                 <div style={{ fontSize: '0.68rem', fontWeight: 800, background: '#000000', color: '#ffffff', display: 'inline-block', padding: '2px 5px', marginBottom: '0.35rem' }}>
                   LEAD TOUR DIRECTOR
                 </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 800 }}>Dr. Eleanor Vance</div>
-                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem' }}>Ph.D. Southeast Asian Material Culture</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 800 }}>{contactName}</div>
+                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem' }}>{agency?.company_type || 'Tour Agency'}</div>
 
                 <div style={{ fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <div>📞 <span style={{ fontWeight: 700 }}>+84 91 245 8890</span> (Direct Hanoi Hotline)</div>
-                  <div>📞 <span style={{ fontWeight: 700 }}>+33 6 42 19 04 22</span> (Paris Office Direct)</div>
-                  <div>✉️ dispatch@indochina-heritage.vn</div>
+                  <div>📞 <span style={{ fontWeight: 700 }}>{agency?.contact?.phone_number || 'Chưa công khai'}</span></div>
+                  <div>✉️ {agency?.contact?.business_email || 'Chưa công khai'}</div>
                 </div>
-              </div>
-
-              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', padding: '1rem', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.68rem', fontWeight: 800, background: '#6b7280', color: '#ffffff', display: 'inline-block', padding: '2px 5px', marginBottom: '0.35rem' }}>
-                  SECONDARY FIELD LIAISON
-                </div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 800 }}>Marcus Sterling</div>
-                <div style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: '0.5rem' }}>Ground Transit & Route Safety Coordinator</div>
-                <div style={{ fontSize: '0.78rem' }}>✉️ transit@indochina-heritage.vn</div>
               </div>
 
               <div style={{ background: '#f3f4f6', padding: '0.75rem', fontSize: '0.75rem', textAlign: 'center' }}>

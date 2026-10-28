@@ -1,18 +1,10 @@
-import { guestSession, type MockSession } from '../../../../../../tests/prf/helpers/mockSession'
+import { demoSessionFromRequest } from '@/lib/auth/demo-session'
 import { generateDescriptionDraft, AIError } from '@/lib/prf/ai-service'
 import { ZodError } from 'zod'
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    let session: MockSession = guestSession()
-    const sessionHeader = req.headers.get('x-mock-session')
-    if (sessionHeader) {
-      try {
-        session = JSON.parse(sessionHeader)
-      } catch {
-        session = guestSession()
-      }
-    }
+    const session = demoSessionFromRequest(req)
 
     let body: any
     try {

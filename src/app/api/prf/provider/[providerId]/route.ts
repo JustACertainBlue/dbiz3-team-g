@@ -1,4 +1,4 @@
-import { guestSession, type MockSession } from '../../../../../../tests/prf/helpers/mockSession'
+import { demoSessionFromRequest } from '@/lib/auth/demo-session'
 import {
   getProviderProfile,
   updateProviderProfile,
@@ -22,15 +22,7 @@ export async function GET(
     const resolvedParams = await Promise.resolve(params)
     const providerId = resolvedParams.providerId
 
-    let session: MockSession = guestSession()
-    const sessionHeader = req.headers.get('x-mock-session')
-    if (sessionHeader) {
-      try {
-        session = JSON.parse(sessionHeader)
-      } catch {
-        session = guestSession()
-      }
-    }
+    const session = demoSessionFromRequest(req)
 
     const profile = await getProviderProfile(providerId, session)
     if (!profile) {
@@ -67,15 +59,7 @@ export async function PATCH(
     const resolvedParams = await Promise.resolve(params)
     const providerId = resolvedParams.providerId
 
-    let session: MockSession = guestSession()
-    const sessionHeader = req.headers.get('x-mock-session')
-    if (sessionHeader) {
-      try {
-        session = JSON.parse(sessionHeader)
-      } catch {
-        session = guestSession()
-      }
-    }
+    const session = demoSessionFromRequest(req)
 
     let body: unknown = {}
     try {

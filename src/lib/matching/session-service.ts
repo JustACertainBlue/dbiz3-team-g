@@ -1,4 +1,6 @@
 import { MessageTextSchema } from '@/lib/matching/types'
+import { randomUUID } from 'node:crypto'
+import { demoRepository } from '@/lib/demo/json-repository'
 
 export interface MatchingSession {
   matching_session_id: string
@@ -17,24 +19,11 @@ export interface ConversationMessage {
   sent_at: string
 }
 
-const globalForSessions = globalThis as unknown as {
-  sessionsStore?: Map<string, MatchingSession>
-  messagesStore?: Map<string, ConversationMessage[]>
-}
-
-export const sessionsStore = globalForSessions.sessionsStore ?? new Map<string, MatchingSession>()
-export const messagesStore = globalForSessions.messagesStore ?? new Map<string, ConversationMessage[]>()
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForSessions.sessionsStore = sessionsStore
-  globalForSessions.messagesStore = messagesStore
-}
-
 export async function createMatchingSession(
   input: string | { agencyId: string }
 ): Promise<MatchingSession> {
   const agencyId = typeof input === 'string' ? input : input.agencyId
-  const id = `session-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+  const id = randomUUID()
   const now = new Date()
 
   const session: MatchingSession = {
@@ -46,14 +35,29 @@ export async function createMatchingSession(
     status: 'active',
   }
 
-  sessionsStore.set(id, session)
-  messagesStore.set(id, [])
+  demoRepository().insert('matching_sessions', {
+    matching_session_id: id,
+    agency_id: agencyId,
+    conversation_context: '{}',
+    started_at: now.toISOString(),
+    last_activity_at: now.toISOString(),
+    status: 'active',
+  })
 
   return session
 }
 
 export async function getMatchingSession(sessionId: string): Promise<MatchingSession | null> {
-  return sessionsStore.get(sessionId) || null
+  const row = demoRepository().find('matching_sessions', item => item.matching_session_id === sessionId)
+  if (!row) return null
+  return {
+    matching_session_id: row.matching_session_id,
+    session_id: row.matching_session_id,
+    agency_id: row.agency_id,
+    started_at: new Date(row.started_at),
+    last_activity_at: new Date(row.last_activity_at),
+    status: row.status === 'closed' ? 'closed' : 'active',
+  }
 }
 
 export async function addMessage(
@@ -66,26 +70,39 @@ export async function addMessage(
     throw new Error('Message text invalid: must be between 1 and 2000 characters.')
   }
 
-  const session = sessionsStore.get(sessionId)
-  if (session) {
-    session.last_activity_at = new Date()
-  }
+  const repository = demoRepository()
+  const session = repository.find('matching_sessions', row => row.matching_session_id === sessionId)
+  if (!session) throw new Error('Matching session not found')
+  const now = new Date().toISOString()
+  repository.update('matching_sessions', row => row.matching_session_id === sessionId, { last_activity_at: now })
 
   const message: ConversationMessage = {
-    message_id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    message_id: randomUUID(),
     session_id: sessionId,
     sender,
     text,
-    sent_at: new Date().toISOString(),
+    sent_at: now,
   }
-
-  const list = messagesStore.get(sessionId) || []
-  list.push(message)
-  messagesStore.set(sessionId, list)
+  repository.insert('matching_messages', {
+    message_id: message.message_id,
+    matching_session_id: sessionId,
+    sender,
+    text,
+    sent_at: now,
+  })
 
   return message
 }
 
 export async function getMessages(sessionId: string): Promise<ConversationMessage[]> {
-  return messagesStore.get(sessionId) || []
+  return demoRepository().all('matching_messages')
+    .filter(row => row.matching_session_id === sessionId)
+    .sort((a, b) => a.sent_at.localeCompare(b.sent_at))
+    .map(row => ({
+      message_id: row.message_id,
+      session_id: row.matching_session_id,
+      sender: row.sender,
+      text: row.text,
+      sent_at: row.sent_at,
+    }))
 }

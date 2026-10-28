@@ -51,7 +51,7 @@ describe('EXP Provider and Experience details', () => {
   });
 
   it('US-4 public detail excludes sensitive pricing, contacts and Booking identity', () => {
-    const detail = getExperienceDetail(fixture(), 'exp-1', guest);
+    const detail = getExperienceDetail(fixture(), 'exp-1', guest, { from: '2026-10-01', to: '2026-10-30' });
     expect(detail?.pricing_breakdown).toBeNull();
     expect(detail?.provider_private_contact).toBeNull();
     expect(detail?.availability_summary.blocked_slots).toEqual([{ start_at: '2026-10-19T09:00:00+07:00', end_at: '2026-10-19T10:00:00+07:00', status: 'Booked' }]);

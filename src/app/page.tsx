@@ -2,14 +2,15 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
 import { getCurrentRole, setCurrentRole, type CurrentUserRole } from '@/lib/prf/client-session'
 
 export default function HomePage() {
   const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
 
-  const providerId = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
-  const agencyId = '5fecc699-71e4-5bf0-ac1b-2090e05c2cd9'
-  const villageId = '20896522-6235-5699-aeaf-f48b8150d895'
+  const providerId = DEMO_IDENTITIES.provider.providerId!
+  const agencyId = DEMO_IDENTITIES.agency.agencyId!
+  const villageId = DEMO_IDENTITIES.provider.villageId!
 
   useEffect(() => {
     setRole(getCurrentRole())
@@ -116,7 +117,7 @@ export default function HomePage() {
           </div>
 
           <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>Tài khoản đại diện: Xưởng Gốm Hưng Thịnh</span>
+            <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>Tài khoản đại diện: {DEMO_IDENTITIES.provider.displayName}</span>
             <button
               onClick={() => {
                 setCurrentRole('LocalProvider')
@@ -205,7 +206,7 @@ export default function HomePage() {
           </div>
 
           <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>Tài khoản đại diện: Indochina Heritage Voyages</span>
+            <span style={{ fontSize: '0.72rem', color: '#6b7280' }}>Tài khoản đại diện: {DEMO_IDENTITIES.agency.displayName}</span>
             <button
               onClick={() => {
                 setCurrentRole('TourAgency')

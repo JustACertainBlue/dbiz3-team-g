@@ -28,9 +28,9 @@ export interface MockSession {
 /** Seed UUIDs from data/seed/ — real values, not invented */
 const SEED_IDS = {
   // agency_profiles.csv – first agency
-  agency1: '5fecc699-71e4-5bf0-ac1b-2090e05c2cd9',
+  agency1: '02e568d8-d65e-54b1-a554-b411150d1dcb',
   // user_accounts.csv – agency owner for agency1
-  agencyUser1: 'a1b2c3d4-0001-0001-0001-000000000001',
+  agencyUser1: 'ac233721-7dd3-5466-941b-dc7d5d1b0bfa',
   // provider_profiles.csv – Verified provider
   provider1Verified: '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374',
   provider1VerifiedUserId: 'c2c7fe0d-e2cb-5402-ac90-3cd427c2e669',

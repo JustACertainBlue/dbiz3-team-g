@@ -1,4 +1,4 @@
-import type { MockSession } from '../../../tests/prf/helpers/mockSession'
+import type { ActorSession } from '@/lib/auth/demo-session'
 import { AIDescriptionSchema } from './validators'
 
 /**
@@ -31,7 +31,7 @@ export class AIError extends Error {
 
 export async function generateDescriptionDraft(
   input: AIDescriptionInput,
-  actorSession: MockSession,
+  actorSession: ActorSession,
 ): Promise<AIDescriptionDraftResult> {
   if (!actorSession || !actorSession.authenticated || actorSession.role !== 'LocalProvider') {
     throw new AIError('Forbidden: only authenticated local providers can refine descriptions', 403)
@@ -40,7 +40,7 @@ export async function generateDescriptionDraft(
   const parsed = AIDescriptionSchema.parse(input)
 
   // BR-011: Refined draft preserves factual meaning while polishing narrative
-  const refinedText = `Không gian văn hóa truyền thống ${parsed.craft_type} (Bát Tràng): ${parsed.original_description} Mỗi tác phẩm và hoạt động trải nghiệm đều được các nghệ nhân gửi gắm tâm huyết, gìn giữ trọn vẹn nét tinh hoa qua nhiều thế hệ.`
+  const refinedText = `Không gian văn hóa truyền thống ${parsed.craft_type}: ${parsed.original_description} Mỗi tác phẩm và hoạt động trải nghiệm đều được các nghệ nhân gửi gắm tâm huyết, gìn giữ trọn vẹn nét tinh hoa qua nhiều thế hệ.`
 
   // BR-012 & BR-013: Returns draft alongside unchanged original_description; NO DB write
   return {

@@ -1,4 +1,4 @@
-import { guestSession, type MockSession } from '../../../../../../tests/prf/helpers/mockSession'
+import { demoSessionFromRequest } from '@/lib/auth/demo-session'
 import {
   getAgencyProfile,
   updateAgencyProfile,
@@ -10,22 +10,21 @@ export async function GET(
   req: Request,
   { params }: { params: { agencyId: string } | Promise<{ agencyId: string }> },
 ): Promise<Response> {
-  const resolved = await Promise.resolve(params)
-  let session: MockSession = guestSession()
-  const sessionHeader = req.headers.get('x-mock-session')
-  if (sessionHeader) {
-    try {
-      session = JSON.parse(sessionHeader)
-    } catch {
-      session = guestSession()
-    }
+  try {
+    const resolved = await Promise.resolve(params)
+    const session = demoSessionFromRequest(req)
+    const profile = await getAgencyProfile(resolved.agencyId, session)
+    return new Response(JSON.stringify(profile), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  } catch (error: unknown) {
+    const status = error instanceof AgencyError ? error.statusCode : 500
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Internal Server Error' }), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
-
-  const profile = await getAgencyProfile(resolved.agencyId, session)
-  return new Response(JSON.stringify(profile), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
 }
 
 export async function PATCH(
@@ -34,15 +33,7 @@ export async function PATCH(
 ): Promise<Response> {
   try {
     const resolved = await Promise.resolve(params)
-    let session: MockSession = guestSession()
-    const sessionHeader = req.headers.get('x-mock-session')
-    if (sessionHeader) {
-      try {
-        session = JSON.parse(sessionHeader)
-      } catch {
-        session = guestSession()
-      }
-    }
+    const session = demoSessionFromRequest(req)
 
     const body = await req.json()
     const result = await updateAgencyProfile(resolved.agencyId, session, body)

@@ -1,51 +1,59 @@
 'use client'
 
-import {
-  providerSession,
-  agencyOwnerSession,
-  ubndSession,
-  guestSession,
-  SEED_IDS,
-  type MockSession,
-} from '../../../tests/prf/helpers/mockSession'
+import type { DemoAccountKey, DemoRole, DemoSession } from '../auth/demo-session'
 
-export type CurrentUserRole = 'LocalProvider' | 'TourAgency' | 'UBND' | 'Guest'
+export type CurrentUserRole = DemoRole
 
-const STORAGE_KEY = 'hab_current_role'
-
-export function getCurrentRole(): CurrentUserRole {
-  if (typeof window === 'undefined') return 'LocalProvider'
-  const saved = localStorage.getItem(STORAGE_KEY) as CurrentUserRole | null
-  if (saved && ['LocalProvider', 'TourAgency', 'UBND', 'Guest'].includes(saved)) {
-    return saved
-  }
-  return 'LocalProvider'
+let currentSession: DemoSession = {
+  authenticated: false,
+  accountKey: 'guest',
+  role: 'Guest',
+  userId: null,
+  agencyId: null,
+  providerId: null,
+  villageId: null,
+  adminType: null,
+  displayName: 'Khách xem công khai',
 }
 
-export function setCurrentRole(role: CurrentUserRole): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, role)
+const roleAccounts: Record<CurrentUserRole, DemoAccountKey> = {
+  Guest: 'guest',
+  TourAgency: 'agency',
+  LocalProvider: 'provider',
+  UBND: 'ubnd',
+  HDT: 'hdt',
+}
+
+export function getCurrentRole(): CurrentUserRole {
+  return currentSession.role
+}
+
+export function getCurrentSession(): DemoSession {
+  return currentSession
+}
+
+export async function refreshDemoSession(): Promise<DemoSession> {
+  const response = await fetch('/api/demo/session', { cache: 'no-store' })
+  if (!response.ok) throw new Error('Unable to read demo session')
+  const body = await response.json() as { session: DemoSession }
+  currentSession = body.session
+  window.dispatchEvent(new Event('hab_role_changed'))
+  return currentSession
+}
+
+export async function setCurrentRole(role: CurrentUserRole): Promise<void> {
+  const response = await fetch('/api/demo/session', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ account: roleAccounts[role] }),
+  })
+  if (!response.ok) throw new Error('Unable to change demo account')
+  const body = await response.json() as { session: DemoSession }
+  currentSession = body.session
   window.dispatchEvent(new Event('hab_role_changed'))
 }
 
-export function getClientMockSession(customId?: string): MockSession {
-  const role = getCurrentRole()
-  switch (role) {
-    case 'TourAgency':
-      return agencyOwnerSession(customId || SEED_IDS.agency1)
-    case 'LocalProvider':
-      return providerSession(customId || SEED_IDS.provider1Verified, SEED_IDS.provider1VerifiedUserId)
-    case 'UBND':
-      return ubndSession(customId || SEED_IDS.village1, SEED_IDS.ubndUserId)
-    case 'Guest':
-    default:
-      return guestSession()
-  }
-}
-
-export function getAuthHeaders(customId?: string): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    'x-mock-session': JSON.stringify(getClientMockSession(customId)),
-  }
+export function getAuthHeaders(legacyProfileId?: string): Record<string, string> {
+  void legacyProfileId
+  return { 'Content-Type': 'application/json' }
 }

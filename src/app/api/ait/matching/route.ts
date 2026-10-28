@@ -10,6 +10,8 @@
  * Body: { session_id?: string, tour_preference_profile: TourPreferenceProfile }
  */
 import { NextResponse } from 'next/server'
+import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { getMatchingSession } from '@/lib/matching/session-service'
 import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
 import { applyHardConstraints } from '@/lib/matching/constraint-engine'
 import { rankCandidates } from '@/lib/matching/scoring-engine'
@@ -22,6 +24,15 @@ import { loadExperiences } from '@/lib/db/seed-loader'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    const actor = demoSessionFromRequest(request)
+    if (!actor.authenticated) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (actor.role !== 'TourAgency' || !actor.agencyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (body.session_id) {
+      const matchingSession = await getMatchingSession(body.session_id)
+      if (!matchingSession || matchingSession.agency_id !== actor.agencyId) {
+        return NextResponse.json({ error: 'Matching session access denied' }, { status: 403 })
+      }
+    }
     const profile = body.tour_preference_profile
 
     if (!profile) {

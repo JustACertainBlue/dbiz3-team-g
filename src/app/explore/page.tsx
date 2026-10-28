@@ -2,72 +2,101 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { buildExplorePage, eligibleRows, resolveViewer } from '../../lib/explore/catalog';
 import { demoRuntime } from '../../lib/explore/demo-runtime';
-import { loadExploreSeed } from '../../lib/explore/seed-repository';
+import { loadExploreRuntime } from '../../lib/explore/seed-repository';
 import ExploreTracker from './ExploreTracker';
+import ExploreHeader from './ExploreHeader';
+import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../lib/auth/demo-session';
 
-type Params = { page?: string; demo_agency_id?: string; category?: string };
+type Params = { page?: string; category?: string };
 
 export default function ExplorePage({ searchParams }: { searchParams: Params }) {
-  const seed = loadExploreSeed();
+  const seed = loadExploreRuntime();
   const requestedPage = Number(searchParams.page ?? 1);
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const viewer = resolveViewer(seed, searchParams.demo_agency_id, process.env.NODE_ENV !== 'production');
+  const session = demoSessionFor(cookies().get(DEMO_SESSION_COOKIE)?.value);
+  const viewer = resolveViewer(seed, session.role === 'TourAgency' ? session.agencyId : null, true);
   const tracked = process.env.NODE_ENV !== 'production' ? demoRuntime().sessionFor(cookies().get('explore_session')?.value ?? '') : undefined;
   const rankOrder = tracked && tracked.agency_id === (viewer.kind === 'agency' ? viewer.agencyId : null)
     ? demoRuntime().resultsFor(tracked.session_id).map(row => row.experience_id) : undefined;
   const catalog = buildExplorePage(seed, { page, viewer, category: searchParams.category, rankOrder });
-  const demoAgency = process.env.NODE_ENV !== 'production'
-    ? seed.agency_profiles.find(row => resolveViewer(seed, row.agency_id, true).kind === 'agency')
-    : undefined;
-  const carry = `${viewer.kind === 'agency' ? `&demo_agency_id=${encodeURIComponent(viewer.agencyId)}` : ''}${searchParams.category ? `&category=${encodeURIComponent(searchParams.category)}` : ''}`;
+  const carry = searchParams.category ? `&category=${encodeURIComponent(searchParams.category)}` : '';
   const totalPages = Math.ceil(catalog.pagination.total_count / catalog.pagination.page_size);
   const categories = [...new Set(eligibleRows(seed).map(row => row.experience.category))].sort();
 
-  return <div className="explore-surface">
-    <ExploreTracker demoAgencyId={viewer.kind === 'agency' ? viewer.agencyId : undefined} />
-    <header className="masthead">
-      <div><p className="eyebrow">Hanoi Artisan Bridge</p><h1>Khám phá trải nghiệm làng nghề</h1>
-        <p className="muted">Những hoạt động từ các hộ kinh doanh đã được xác minh.</p></div>
-      <div className="viewer-panel">
-        <strong>{viewer.kind === 'agency' ? 'Chế độ doanh nghiệp du lịch' : 'Chế độ khách'}</strong>
-        {demoAgency && <p><Link href={viewer.kind === 'agency' ? '/explore' : `/explore?demo_agency_id=${encodeURIComponent(demoAgency.agency_id)}`}>
-          {viewer.kind === 'agency' ? 'Xem như khách' : 'Dùng doanh nghiệp mẫu'}
-        </Link></p>}
-        {demoAgency && <small>Dữ liệu giả phục vụ bản chạy thử; chưa phải đăng nhập.</small>}
+  const isAgency = viewer.kind === 'agency';
+
+  return <div className="explore-module">
+    <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
+    <ExploreHeader viewer={viewer.kind} agencyId={isAgency ? viewer.agencyId : undefined} />
+
+    <main className="explore-surface">
+      <section className="explore-hero">
+        <div className="explore-hero__copy">
+          <p className="eyebrow">Di sản sống · Trải nghiệm được xác minh</p>
+          <h1>Khám phá tinh hoa<br /><em>làng nghề Hà Nội</em></h1>
+          <p className="hero-lead">Kết nối hành trình của bạn với nghệ nhân, xưởng thủ công và những câu chuyện văn hóa được gìn giữ qua nhiều thế hệ.</p>
+          <div className="hero-stats" aria-label="Tổng quan danh mục">
+            <span><strong>{catalog.pagination.total_count}</strong> trải nghiệm</span>
+            <span><strong>{new Set(catalog.experience_cards.map(card => card.location.village_name)).size}</strong> làng nghề</span>
+            <span><strong>100%</strong> đã xác minh</span>
+          </div>
+        </div>
+        <div className="hero-art" aria-hidden="true">
+          <div className="hero-art__sun" />
+          <div className="hero-art__arch"><span>Hanoi</span><strong>Craft</strong></div>
+          <div className="hero-art__caption">Curated heritage experiences</div>
+        </div>
+      </section>
+
+      <section className="discovery-bar" aria-label="Tìm và lọc trải nghiệm">
+        <div className="search-prompt"><span aria-hidden="true">⌕</span><div><strong>Tìm theo nghề, làng hoặc trải nghiệm</strong><small>Chọn một nhóm bên dưới để bắt đầu khám phá</small></div></div>
+        {isAgency && <Link className="matching-cta" href="/ai-matching"><span>✦</span> AI Tour Matching</Link>}
+      </section>
+
+      <div className="viewer-strip">
+        <div><span className={`mode-badge ${isAgency ? 'mode-badge--agency' : ''}`}>{isAgency ? 'Agency access' : 'Public access'}</span>
+          <strong>{isAgency ? 'Giá B2B và thông tin hợp tác đang được hiển thị' : 'Bạn đang xem danh mục công khai'}</strong></div>
+        <Link className="mode-switch" href="/login">{isAgency ? 'Đổi tài khoản demo' : 'Đăng nhập Agency'} →</Link>
       </div>
-    </header>
-    <nav className="category-filters" aria-label="Lọc theo loại hoạt động">
-      <Link href={`/explore${viewer.kind === 'agency' ? `?demo_agency_id=${encodeURIComponent(viewer.agencyId)}` : ''}`}>Tất cả</Link>
-      {categories.map(category => <Link key={category} data-exp-action="apply_filter" data-category={category}
-        href={`/explore?category=${encodeURIComponent(category)}${carry.replace(/&category=[^&]*/, '')}`}>{category}</Link>)}
-    </nav>
-    <p className="count">{catalog.pagination.total_count} trải nghiệm phù hợp</p>
+
+      <section className="catalog-section">
+        <div className="section-heading"><div><p className="eyebrow">Bộ sưu tập được tuyển chọn</p><h2>Trải nghiệm nổi bật</h2></div><p>{catalog.pagination.total_count} kết quả phù hợp</p></div>
+        <nav className="category-filters" aria-label="Lọc theo loại hoạt động">
+          <Link className={!searchParams.category ? 'is-selected' : ''} href="/explore">Tất cả</Link>
+          {categories.map(category => <Link className={searchParams.category === category ? 'is-selected' : ''} key={category} data-exp-action="apply_filter" data-category={category}
+            href={`/explore?category=${encodeURIComponent(category)}${carry.replace(/&category=[^&]*/, '')}`}>{category}</Link>)}
+        </nav>
+
     {catalog.experience_cards.length === 0 ? <section className="empty"><h2>Chưa có trải nghiệm để hiển thị</h2><p>Hãy quay lại sau khi danh mục được cập nhật.</p></section> :
       <section className="card-grid" aria-label="Danh sách trải nghiệm">
-        {catalog.experience_cards.map(card => <article className="experience-card" key={card.id}>
-          <div className="media-placeholder" role="img" aria-label={`Ảnh minh họa chưa có cho ${card.name}`}>
-            <span>{card.type}</span><small>Chưa có ảnh hiển thị</small>
+        {catalog.experience_cards.map((card, index) => <article className="experience-card" key={card.id}>
+          <div className={`media-placeholder media-placeholder--${index % 4}`} role="img" aria-label={`Minh họa cho ${card.name}`}>
+            <span className="verified-tag">✓ Verified experience</span>
+            <div className="craft-symbol">{String(index + 1).padStart(2, '0')}</div>
+            <small>{card.type}</small>
           </div>
           <div className="card-body">
-            <p className="eyebrow">{card.location.village_name}</p>
+            <p className="card-kicker"><span>{card.location.village_name}</span><span>{card.duration_minutes} phút</span></p>
             <h2>{card.name}</h2>
-            <p className="muted"><Link href={`/explore/providers/${card.provider_id}${viewer.kind === 'agency' ? `?demo_agency_id=${encodeURIComponent(viewer.agencyId)}` : ''}`}>{card.provider_name}</Link> · {card.duration_minutes} phút · 1–{card.capacity.max_pax} khách</p>
-            <p>{card.description}</p>
-            <p className="price">{card.price === null ? 'Đăng nhập để xem giá' : `${card.price.toLocaleString('vi-VN')} ₫ / khách`}</p>
-            <details data-exp-action="expand_preview" data-exp-id={card.id} data-provider-id={card.provider_id}><summary>Xem nhanh</summary><p>{card.description}</p><p>Sức chứa: 1–{card.capacity.max_pax} khách</p></details>
+            <p className="provider-line">bởi <Link href={`/explore/providers/${card.provider_id}`}>{card.provider_name}</Link></p>
+            <p className="card-description">{card.description}</p>
+            <div className="card-meta"><span>Nhóm 1–{card.capacity.max_pax}</span><span>{card.type}</span></div>
+            <div className="price-row"><div><small>{card.price === null ? 'Quyền truy cập' : 'Giá B2B từ'}</small><p className="price">{card.price === null ? 'Dành cho Agency' : `${card.price.toLocaleString('vi-VN')} ₫`} {card.price !== null && <span>/ khách</span>}</p></div></div>
             <div className="card-actions">
               <Link className="button" data-exp-action="click_card" data-exp-id={card.id} data-provider-id={card.provider_id}
-                href={`/explore/experiences/${card.id}${viewer.kind === 'agency' ? `?demo_agency_id=${encodeURIComponent(viewer.agencyId)}` : ''}`}>Xem chi tiết</Link>
-              {viewer.kind === 'guest' && <><Link href="/login">Yêu cầu báo giá</Link><Link href="/login">Chat</Link></>}
-              {viewer.kind === 'agency' && <span className="muted">Báo giá và Chat hiện chưa khả dụng</span>}
+                href={`/explore/experiences/${card.id}`}>Xem chi tiết <span>→</span></Link>
+              {!isAgency && <Link className="text-action" href="/login">Đăng nhập để liên hệ</Link>}
             </div>
           </div>
         </article>)}
       </section>}
+      </section>
     {totalPages > 1 && <nav className="pagination" aria-label="Phân trang">
       {page > 1 && <Link href={`/explore?page=${page - 1}${carry}`}>Trang trước</Link>}
       <span>Trang {page} / {totalPages}</span>
       {page < totalPages && <Link href={`/explore?page=${page + 1}${carry}`}>Trang sau</Link>}
     </nav>}
+    </main>
+    <footer className="explore-footer"><div><strong>Hanoi Artisan Bridge</strong><p>Nơi di sản trở thành hành trình đáng nhớ.</p></div><span>Curated B2B heritage platform · Hà Nội</span></footer>
   </div>;
 }

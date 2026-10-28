@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentRole, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
 
 export default function AddExperiencePage({
   params,
@@ -11,22 +11,23 @@ export default function AddExperiencePage({
   params: { providerId: string }
 }) {
   const router = useRouter()
-  const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
+  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [sessionReady, setSessionReady] = useState(false)
   const [saving, setSaving] = useState(false)
   const [aiRefining, setAiRefining] = useState(false)
   const [aiDraft, setAiDraft] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
-    name: 'Khóa học Nặn gốm Vuốt tay Truyền thống Bát Tràng',
+    name: '',
     category: 'Workshop/Hands-on',
     duration_minutes: 90,
     price_per_person: 150000,
     max_participants: 25,
     notice_period_hours: 24,
-    experience_location_address: 'Số 12 xóm 3 làng cổ Bát Tràng, Gia Lâm, Hà Nội',
-    cancellation_rules_text: 'Hủy trước 24 giờ: Miễn phí 100%. Hủy trong vòng 24 giờ: Phí 50%.',
-    description: 'Du khách được nghệ nhân hướng dẫn trực tiếp từ khâu nhào đất, đặt đất lên bàn xoay, vuốt tạo hình chén, đĩa, bình hoa và tự tay khắc họa tiết hoa văn theo phong cách truyền thống.',
+    experience_location_address: '',
+    cancellation_rules_text: '',
+    description: '',
   })
 
   const [images, setImages] = useState({
@@ -36,7 +37,7 @@ export default function AddExperiencePage({
   })
 
   useEffect(() => {
-    setRole(getCurrentRole())
+    refreshDemoSession().then(session => setRole(session.role)).finally(() => setSessionReady(true))
     const onRoleChanged = () => {
       setRole(getCurrentRole())
     }
@@ -44,19 +45,26 @@ export default function AddExperiencePage({
     return () => window.removeEventListener('hab_role_changed', onRoleChanged)
   }, [])
 
-  const handleRoleSwitchToProvider = () => {
-    setCurrentRole('LocalProvider')
+  const handleRoleSwitchToProvider = async () => {
+    await setCurrentRole('LocalProvider')
     setRole('LocalProvider')
   }
 
-  const handleAiRefine = () => {
+  const handleAiRefine = async () => {
     setAiRefining(true)
-    setTimeout(() => {
-      setAiDraft(
-        `[Bản gợi ý AI Refine F-PROFILE-07]: Hòa mình vào không gian xưởng gốm Bát Tràng 700 năm tuổi, du khách sẽ được các nghệ nhân thế hệ thứ 5 chỉ dạy kỹ pháp "vuốt tay - nắn gốm" tinh tế trên bàn xoay đồng trục. Bạn sẽ tự tay nhào nặn đất sét trắng Trúc Thôn, định hình tác phẩm độc bản và chạm khắc hoa văn hoa sen cổ điển. Trải nghiệm bao gồm tráng men rạn độc quyền và dịch vụ nung lò hoàn thiện gửi về tận nơi.`
-      )
+    try {
+      const response = await fetch('/api/prf/ai/description', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ original_description: formData.description, craft_type: formData.category, target_audience: 'general', language: 'vi' }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'AI refine unavailable')
+      setAiDraft(data.refined_description_draft)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'AI refine unavailable')
+    } finally {
       setAiRefining(false)
-    }, 700)
+    }
   }
 
   const handleApplyAiDraft = () => {
@@ -121,6 +129,7 @@ export default function AddExperiencePage({
     }
   }
 
+  if (!sessionReady) return <div className="prf-container" style={{ padding: '3rem' }}>Đang tải phiên demo…</div>
   const isLocalProvider = role === 'LocalProvider'
 
   return (

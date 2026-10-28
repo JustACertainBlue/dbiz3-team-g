@@ -2,19 +2,21 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCurrentRole, setCurrentRole, type CurrentUserRole } from '@/lib/prf/client-session'
+import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { getCurrentRole, refreshDemoSession, setCurrentRole, type CurrentUserRole } from '@/lib/prf/client-session'
 
 export default function RoleSwitcher() {
   const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
   const [mounted, setMounted] = useState(false)
 
-  const providerId = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374' // Bát Tràng verified provider
-  const agencyId = '5fecc699-71e4-5bf0-ac1b-2090e05c2cd9'   // Indochina Heritage Voyages
-  const villageId = '20896522-6235-5699-aeaf-f48b8150d895'  // Bát Tràng Village
+  const providerId = DEMO_IDENTITIES.provider.providerId!
+  const agencyId = DEMO_IDENTITIES.agency.agencyId!
+  const villageId = DEMO_IDENTITIES.provider.villageId!
+  const ubndVillageId = DEMO_IDENTITIES.ubnd.villageId!
 
   useEffect(() => {
     setMounted(true)
-    setRole(getCurrentRole())
+    refreshDemoSession().then(session => setRole(session.role)).catch(() => setRole('Guest'))
 
     const handleRoleChange = () => {
       setRole(getCurrentRole())
@@ -25,9 +27,9 @@ export default function RoleSwitcher() {
 
   if (!mounted) return null
 
-  const handleSelectRole = (newRole: CurrentUserRole) => {
-    setCurrentRole(newRole)
-    setRole(newRole)
+  const handleSelectRole = async (newRole: CurrentUserRole) => {
+    await setCurrentRole(newRole)
+    window.location.assign(newRole === 'TourAgency' ? '/explore' : newRole === 'LocalProvider' ? `/provider/${providerId}` : newRole === 'UBND' ? '/admin/providers' : newRole === 'HDT' ? '/admin/providers' : '/explore')
   }
 
   return (
@@ -75,9 +77,10 @@ export default function RoleSwitcher() {
             gap: '0.35rem',
           }}
         >
-          {role === 'LocalProvider' && '🏺 Local Provider · Xưởng Hưng Thịnh Bát Tràng'}
-          {role === 'TourAgency' && '🏢 Tour Agency · Indochina Heritage Voyages'}
-          {role === 'UBND' && '🏛️ UBND Admin · Xã Bát Tràng (Hội đồng Thẩm định)'}
+          {role === 'LocalProvider' && `🏺 Local Provider · ${DEMO_IDENTITIES.provider.displayName}`}
+          {role === 'TourAgency' && `🏢 Tour Agency · ${DEMO_IDENTITIES.agency.displayName}`}
+          {role === 'UBND' && '🏛️ UBND Admin · Hạ Thái (Hội đồng Thẩm định)'}
+          {role === 'HDT' && '🏛️ HDT Admin · Sở Du lịch Hà Nội'}
           {role === 'Guest' && '👤 Guest · Khách xem công khai'}
         </span>
       </div>
@@ -135,6 +138,14 @@ export default function RoleSwitcher() {
           }}
         >
           🏛️ UBND Admin
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSelectRole('HDT')}
+          style={{ background: role === 'HDT' ? '#6d28d9' : '#1e293b', color: '#ffffff', border: '1px solid #7c3aed', padding: '3px 9px', borderRadius: '2px', fontSize: '0.72rem', cursor: 'pointer' }}
+        >
+          🏛️ HDT Admin
         </button>
 
         <button
@@ -209,10 +220,16 @@ export default function RoleSwitcher() {
         {role === 'UBND' && (
           <>
             <span style={{ color: '#f87171', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG ADMIN:</span>
-            <Link href={`/village/${villageId}`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 800 }}>
-              🏛️ Xem Hồ sơ Làng nghề Bát Tràng (VIL030)
+            <Link href="/admin/providers" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 800 }}>Provider review</Link>
+            <span style={{ color: '#475569' }}>·</span>
+            <Link href={`/village/${ubndVillageId}`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 800 }}>
+              🏛️ Hồ sơ Làng nghề Hạ Thái
             </Link>
           </>
+        )}
+
+        {role === 'HDT' && (
+          <><span style={{ color: '#c4b5fd', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG HDT:</span><Link href="/admin/providers" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 700 }}>Provider review</Link></>
         )}
 
         {/* LUỒNG 4: GUEST */}
@@ -228,7 +245,7 @@ export default function RoleSwitcher() {
             </Link>
             <span style={{ color: '#475569' }}>·</span>
             <Link href={`/provider/${providerId}`} style={{ color: '#ffffff', textDecoration: 'none' }}>
-              Xưởng Gốm Hưng Thịnh
+              {DEMO_IDENTITIES.provider.displayName}
             </Link>
           </>
         )}

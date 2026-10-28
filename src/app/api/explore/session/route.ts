@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveViewer } from '../../../../lib/explore/catalog';
 import { demoRuntime } from '../../../../lib/explore/demo-runtime';
-import { loadExploreSeed } from '../../../../lib/explore/seed-repository';
+import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
+import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../../../lib/auth/demo-session';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') return NextResponse.json({ error: 'Persistent EXP tracking integration is not configured' }, { status: 503 });
-  let input: { demo_agency_id?: string; analytics_consent?: boolean };
+  let input: { analytics_consent?: boolean };
   try { input = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   if (!input || typeof input !== 'object') return NextResponse.json({ error: 'Invalid session request' }, { status: 400 });
-  const seed = loadExploreSeed();
-  const viewer = resolveViewer(seed, input.demo_agency_id, true);
+  const seed = loadExploreRuntime();
+  const account = demoSessionFor(request.cookies.get(DEMO_SESSION_COOKIE)?.value);
+  const viewer = resolveViewer(seed, account.role === 'TourAgency' ? account.agencyId : null, true);
   const consent = input.analytics_consent === true;
   const engine = demoRuntime();
   const previous = engine.sessionFor(request.cookies.get('explore_session')?.value ?? '');

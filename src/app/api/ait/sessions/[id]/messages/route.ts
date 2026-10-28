@@ -1,12 +1,25 @@
 import { NextResponse } from 'next/server'
-import { addMessage, getMessages } from '@/lib/matching/session-service'
+import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
+
+async function authorize(request: Request, sessionId: string) {
+  const actor = demoSessionFromRequest(request)
+  const matchingSession = await getMatchingSession(sessionId)
+  if (!actor.authenticated) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  if (actor.role !== 'TourAgency' || !actor.agencyId || matchingSession?.agency_id !== actor.agencyId) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+  }
+  return { actor, matchingSession }
+}
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const access = await authorize(request, params.id)
+    if (access.error) return access.error
     const messages = await getMessages(params.id)
     return NextResponse.json(messages)
   } catch (err: any) {
@@ -19,6 +32,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const access = await authorize(request, params.id)
+    if (access.error) return access.error
     const body = await request.json()
     const sender = body.sender || 'Agency'
     const text = body.text || ''

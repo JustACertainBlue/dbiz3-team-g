@@ -1,4 +1,4 @@
-import type { MockSession } from '../../../tests/prf/helpers/mockSession'
+import type { ActorSession } from '@/lib/auth/demo-session'
 
 export interface AgencyLocation {
   street?: string
@@ -61,7 +61,7 @@ export interface ProviderProfileInput {
  * Filter agency fields based on actor role and ownership per BR-004.
  */
 export function filterAgencyFields(
-  actor: MockSession,
+  actor: ActorSession,
   profile: AgencyProfileInput,
 ): Partial<AgencyProfileInput> {
   const isHDT = actor.role === 'HDT' || actor.adminType === 'HDT'
@@ -99,7 +99,7 @@ export function filterAgencyFields(
  * Filter provider fields based on actor role and ownership per BR-004.
  */
 export function filterProviderFields(
-  actor: MockSession,
+  actor: ActorSession,
   profile: ProviderProfileInput,
 ): Partial<ProviderProfileInput> {
   const isHDT = actor.role === 'HDT' || actor.adminType === 'HDT'

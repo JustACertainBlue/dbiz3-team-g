@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getCurrentRole, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
 
 interface AgencyFormData {
   company_name: string
@@ -19,8 +19,6 @@ interface AgencyFormData {
   phone_number: string
   business_email: string
   tour_types: string[]
-  traveler_demographics: string
-  group_size_preference: string
 }
 
 export default function EditAgencyProfilePage({
@@ -31,31 +29,30 @@ export default function EditAgencyProfilePage({
   const router = useRouter()
   const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
   const [mounted, setMounted] = useState(false)
+  const [sessionReady, setSessionReady] = useState(false)
+  const [profileReady, setProfileReady] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
 
   const [formData, setFormData] = useState<AgencyFormData>({
-    company_name: 'Indochina Heritage Voyages Co., Ltd.',
-    tax_id: '0101234567',
+    company_name: '',
+    tax_id: '',
     company_type: 'Tour Operator',
-    street: '22 Phố Huế',
-    ward: 'Phạm Đình Hổ',
-    district: 'Hai Bà Trưng',
-    city_province: 'Hà Nội',
-    description: 'Chuyên thiết kế các tuyến hành trình văn hóa di sản cao cấp và kết nối trực tiếp với các nghệ nhân bậc thầy tại các làng nghề truyền thống Thăng Long - Hà Nội.',
-    team_size: 18,
-    contact_person_name: 'Lê Hoàng Nam',
-    phone_number: '+84 91 234 5678',
-    business_email: 'b2b-liaison@indochina-heritage.vn',
-    tour_types: ['Cultural/Heritage', 'Craft Village/Experiential', 'Educational/Study Tour'],
-    traveler_demographics: 'International Inbound (EU/US), Cultural FITs & Curated Groups',
-    group_size_preference: 'Small & Mid Cohorts (8 - 20 pax)',
+    street: '',
+    ward: '',
+    district: '',
+    city_province: '',
+    description: '',
+    team_size: 1,
+    contact_person_name: '',
+    phone_number: '',
+    business_email: '',
+    tour_types: [],
   })
 
   useEffect(() => {
     setMounted(true)
-    const current = getCurrentRole()
-    setRole(current)
+    refreshDemoSession().then(session => setRole(session.role)).finally(() => setSessionReady(true))
 
     const onRoleChanged = () => {
       setRole(getCurrentRole())
@@ -88,9 +85,14 @@ export default function EditAgencyProfilePage({
         }
       })
       .catch(() => {})
+      .finally(() => setProfileReady(true))
 
     return () => window.removeEventListener('hab_role_changed', onRoleChanged)
   }, [params.agencyId])
+
+  if (!mounted || !sessionReady || !profileReady) {
+    return <div className="spec-portal" style={{ minHeight: '70vh', display: 'grid', placeItems: 'center' }}>Đang tải hồ sơ Agency…</div>
+  }
 
   // HARD PERMISSION GUARD: Local Provider (or any non-Agency role) is strictly FORBIDDEN
   if (mounted && role !== 'TourAgency') {
@@ -158,6 +160,7 @@ export default function EditAgencyProfilePage({
       const payload = {
         company_name: formData.company_name,
         tax_id: formData.tax_id,
+        company_type: formData.company_type,
         description: formData.description,
         team_size: Number(formData.team_size),
         location: {
@@ -238,13 +241,13 @@ export default function EditAgencyProfilePage({
 
         <div className="spec-user-profile">
           <div>
-            <div style={{ fontWeight: 800 }}>INDOCHINA HERITAGE VOYAGES ✓</div>
+            <div style={{ fontWeight: 800 }}>{formData.company_name || 'TOUR AGENCY'} ✓</div>
             <div style={{ color: '#6b7280', fontSize: '0.72rem' }}>Tour Operator · B2B Lead</div>
           </div>
           <div className="spec-avatar" style={{ background: '#1e3a5f', color: '#ffffff' }}>IH</div>
           <div style={{ textAlign: 'left', fontSize: '0.75rem', lineHeight: 1.2 }}>
-            <div style={{ fontWeight: 700 }}>Dr. Eleanor Vance</div>
-            <div style={{ color: '#6b7280' }}>Lead Tour Director</div>
+            <div style={{ fontWeight: 700 }}>{formData.contact_person_name || 'Đại diện Agency'}</div>
+            <div style={{ color: '#6b7280' }}>{formData.company_type}</div>
           </div>
         </div>
       </header>
@@ -530,41 +533,6 @@ export default function EditAgencyProfilePage({
                   className="spec-form-input"
                   value={formData.business_email}
                   onChange={e => setFormData({ ...formData, business_email: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION 04: Tour Preferences & Matchmaking Criteria */}
-          <div className="spec-form-section">
-            <div className="spec-form-section-header">
-              <div className="spec-section-num">04 Tour Preferences & Matchmaking Criteria</div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#6b7280', textTransform: 'uppercase' }}>
-                MATCHMAKING PROFILE & COHORT SIZES
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-              <div>
-                <label className="spec-form-label">PREFERRED GROUP COHORT SIZE</label>
-                <select
-                  className="spec-form-input"
-                  value={formData.group_size_preference}
-                  onChange={e => setFormData({ ...formData, group_size_preference: e.target.value })}
-                >
-                  <option value="Boutique & FITs (2 - 6 pax)">Boutique & FITs (2 - 6 pax)</option>
-                  <option value="Small & Mid Cohorts (8 - 20 pax)">Small & Mid Cohorts (8 - 20 pax)</option>
-                  <option value="Large Cohorts & MICE (25 - 60+ pax)">Large Cohorts & MICE (25 - 60+ pax)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="spec-form-label">PRIMARY TRAVELER DEMOGRAPHICS</label>
-                <input
-                  type="text"
-                  className="spec-form-input"
-                  value={formData.traveler_demographics}
-                  onChange={e => setFormData({ ...formData, traveler_demographics: e.target.value })}
                 />
               </div>
             </div>

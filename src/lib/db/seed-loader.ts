@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { demoRepository } from '@/lib/demo/json-repository'
 
 export interface Village {
   village_id: string
@@ -134,27 +135,11 @@ export async function loadVillages(): Promise<Village[]> {
 }
 
 export async function loadExperiences(): Promise<Experience[]> {
-  const expPath = path.join(process.cwd(), 'data', 'seed', 'experiences.csv')
-  const provPath = path.join(process.cwd(), 'data', 'seed', 'provider_profiles.csv')
-
-  if (!fs.existsSync(expPath)) {
-    return []
-  }
-
-  const expCsv = fs.readFileSync(expPath, 'utf-8')
-  const expRows = parseCsv(expCsv)
-
-  const providersMap = new Map<string, { status: string; publishedVersion: string }>()
-  if (fs.existsSync(provPath)) {
-    const provCsv = fs.readFileSync(provPath, 'utf-8')
-    const provRows = parseCsv(provCsv)
-    for (const p of provRows) {
-      providersMap.set(p.provider_id, {
-        status: p.verification_status,
-        publishedVersion: p.published_version_no,
-      })
-    }
-  }
+  const repository = demoRepository()
+  const expRows = repository.all('experiences')
+  const providerRows = repository.all('provider_profiles')
+  const providerVersions = repository.all('provider_profile_versions')
+  const providersMap = new Map(providerRows.map(row => [row.provider_id, row]))
 
   const experiences: Experience[] = []
 
@@ -162,7 +147,7 @@ export async function loadExperiences(): Promise<Experience[]> {
     if (row.archived_at) continue
 
     const prov = providersMap.get(row.provider_id)
-    const isVerified = prov?.status === 'Verified' && !!prov?.publishedVersion
+    const isVerified = prov?.verification_status === 'Verified' && Boolean(prov?.published_version_no)
 
     // For general AI matching seed catalog, return verified active experiences
     if (isVerified) {
@@ -171,6 +156,8 @@ export async function loadExperiences(): Promise<Experience[]> {
         provider_id: row.provider_id,
         name: row.name,
         experience_name: row.name,
+        provider_name: providerVersions.find(version => version.provider_id === row.provider_id && version.version_no === prov?.published_version_no)?.business_name,
+        village_id: prov?.village_id,
         description: row.description,
         category: row.category,
         experience_type: row.category,

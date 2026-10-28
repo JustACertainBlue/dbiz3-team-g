@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentRole, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
 
 export default function EditExperiencePage({
   params,
@@ -11,25 +11,25 @@ export default function EditExperiencePage({
   params: { providerId: string; experienceId: string }
 }) {
   const router = useRouter()
-  const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
+  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [sessionReady, setSessionReady] = useState(false)
   const [saving, setSaving] = useState(false)
   const [aiRefining, setAiRefining] = useState(false)
   const [aiDraft, setAiDraft] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-  // Simulation: has active bookings locks price, max_participants, duration (SR-003)
-  const [hasActiveBookings] = useState(true)
+  const [hasActiveBookings, setHasActiveBookings] = useState(false)
 
   const [formData, setFormData] = useState({
-    name: 'Nặn gốm vuốt tay trên bàn xoay truyền thống',
+    name: '',
     category: 'Workshop/Hands-on',
     duration_minutes: 90,
     price_per_person: 150000,
     max_participants: 25,
     notice_period_hours: 24,
-    experience_location_address: 'Số 12 xóm 3 làng cổ Bát Tràng, Gia Lâm, Hà Nội',
-    cancellation_rules_text: 'Hủy trước 24 giờ miễn phí 100%. Hủy trong ngày thu phí 50%.',
-    description: 'Du khách được trực tiếp nghệ nhân hướng dẫn từ khâu nhào đất, tạo dáng sản phẩm trên bàn xoay và tự vẽ họa tiết gốm men lam độc bản.',
+    experience_location_address: '',
+    cancellation_rules_text: '',
+    description: '',
   })
 
   const [images, setImages] = useState({
@@ -39,27 +39,57 @@ export default function EditExperiencePage({
   })
 
   useEffect(() => {
-    setRole(getCurrentRole())
+    let alive = true
+    refreshDemoSession().then(session => {
+      if (alive) setRole(session.role)
+      return fetch(`/api/prf/experience/${params.experienceId}`)
+    }).then(response => response.ok ? response.json() : Promise.reject(new Error('Experience not found')))
+      .then(data => {
+        if (!alive) return
+        setFormData({
+          name: data.name || '', category: data.category || 'Workshop/Hands-on',
+          duration_minutes: Number(data.duration_minutes || 60), price_per_person: Number(data.price_per_person || 0),
+          max_participants: Number(data.max_participants || 1), notice_period_hours: Number(data.notice_period_hours || 24),
+          experience_location_address: data.experience_location_address || '',
+          cancellation_rules_text: (() => {
+            try { return JSON.parse(data.cancellation_policy || '{}').notes || '' } catch { return data.cancellation_policy || '' }
+          })(),
+          description: data.description || '',
+        })
+        setHasActiveBookings(Boolean(data.has_active_bookings))
+        const nextImages = { ...images }
+        for (const image of data.images || []) {
+          if (image.category in nextImages) nextImages[image.category as keyof typeof nextImages] = image.url
+        }
+        setImages(nextImages)
+      }).finally(() => { if (alive) setSessionReady(true) })
     const onRoleChanged = () => {
       setRole(getCurrentRole())
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
-    return () => window.removeEventListener('hab_role_changed', onRoleChanged)
+    return () => { alive = false; window.removeEventListener('hab_role_changed', onRoleChanged) }
   }, [])
 
-  const handleRoleSwitchToProvider = () => {
-    setCurrentRole('LocalProvider')
+  const handleRoleSwitchToProvider = async () => {
+    await setCurrentRole('LocalProvider')
     setRole('LocalProvider')
   }
 
-  const handleAiRefine = () => {
+  const handleAiRefine = async () => {
     setAiRefining(true)
-    setTimeout(() => {
-      setAiDraft(
-        `[Bản gợi ý AI Refine]: Trải nghiệm nặn gốm chuẩn di sản Bát Tràng tại xưởng Hưng Thịnh. Dưới bàn tay dẫn dắt tận tâm của nghệ nhân Nguyễn Văn Thịnh, mỗi du khách sẽ khám phá nhịp điệu bàn xoay thủ công và tự tạo nên tác phẩm lưu niệm mang đậm dấu ấn cá nhân.`
-      )
+    try {
+      const response = await fetch('/api/prf/ai/description', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ original_description: formData.description, craft_type: formData.category, target_audience: 'general', language: 'vi' }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'AI refine unavailable')
+      setAiDraft(data.refined_description_draft)
+    } catch (reason) {
+      setFeedback({ type: 'error', message: reason instanceof Error ? reason.message : 'AI refine unavailable' })
+    } finally {
       setAiRefining(false)
-    }, 700)
+    }
   }
 
   const handleApplyAiDraft = () => {
@@ -89,6 +119,12 @@ export default function EditExperiencePage({
         category: formData.category,
         description: formData.description,
         notice_period_hours: Number(formData.notice_period_hours),
+        experience_location_address: formData.experience_location_address,
+        ...(!hasActiveBookings ? {
+          duration_minutes: Number(formData.duration_minutes),
+          price_per_person: Number(formData.price_per_person),
+          max_participants: Number(formData.max_participants),
+        } : {}),
         cancellation_policy: {
           rules: [{ threshold_hours: 24, fee_percentage: 50 }],
           notes: formData.cancellation_rules_text,
@@ -127,6 +163,7 @@ export default function EditExperiencePage({
     }
   }
 
+  if (!sessionReady) return <div className="prf-container" style={{ padding: '3rem' }}>Đang tải Experience…</div>
   const isLocalProvider = role === 'LocalProvider'
 
   return (

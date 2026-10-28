@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { refreshDemoSession } from '@/lib/prf/client-session'
 
 interface FormData {
   business_name: string
@@ -19,14 +20,15 @@ export default function EditProviderProfilePage({
   params: { providerId: string }
 }) {
   const [formData, setFormData] = useState<FormData>({
-    business_name: 'Hung Thinh Artisan Pottery Workshop',
-    craft_type: 'Ceramics',
-    business_registration: 'VN-HN-BTR-1989-04',
-    location_address: 'Bat Trang Ceramic Village, Gia Lam District, Hanoi',
-    general_description: 'Xưởng gốm nghệ nhân Hưng Thịnh gìn giữ ngọn lửa nghề truyền thống Bát Tràng qua 4 thế hệ. Chuyên các dòng men lam, men rạn cổ và kỹ thuật chuốt gốm thủ công trên bàn xoay truyền thống.',
-    phone_number: '+84 90 311 8842',
-    business_email: 'dispatch@hungthinhpottery.vn',
+    business_name: '',
+    craft_type: 'Other',
+    business_registration: '',
+    location_address: '',
+    general_description: '',
+    phone_number: '',
+    business_email: '',
   })
+  const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [status, setStatus] = useState<string>('Verified')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -36,17 +38,21 @@ export default function EditProviderProfilePage({
   useEffect(() => {
     async function load() {
       try {
+        const session = await refreshDemoSession()
+        const canEdit = session.role === 'LocalProvider' && session.providerId === params.providerId
+        setAuthorized(canEdit)
+        if (!canEdit) return
         const res = await fetch(`/api/prf/provider/${params.providerId}`)
         if (res.ok) {
           const data = await res.json()
           setFormData({
-            business_name: data.provider_name || 'Hung Thinh Artisan Pottery Workshop',
-            craft_type: data.craft_type || 'Ceramics',
-            business_registration: data.business_registration_number || 'VN-HN-BTR-1989-04',
-            location_address: data.location_address || 'Bat Trang Village, Gia Lam District, Hanoi',
+            business_name: data.provider_name || '',
+            craft_type: data.craft_type || 'Other',
+            business_registration: data.business_registration_number || '',
+            location_address: data.location_address || '',
             general_description: data.general_description || '',
-            phone_number: data.contact?.phone_number || '+84 90 311 8842',
-            business_email: data.contact?.business_email || 'dispatch@hungthinhpottery.vn',
+            phone_number: data.contact?.phone_number || '',
+            business_email: data.contact?.business_email || '',
           })
           if (data.verification_status) {
             setStatus(data.verification_status)
@@ -60,6 +66,10 @@ export default function EditProviderProfilePage({
     }
     load()
   }, [params.providerId])
+
+  if (!loading && authorized === false) {
+    return <main className="prf-container" style={{ padding: '3rem' }}><h1>403 · Không có quyền chỉnh sửa</h1><p>Chỉ chủ sở hữu Local Provider mới được sửa hồ sơ này.</p><Link href={`/provider/${params.providerId}`}>← Xem hồ sơ</Link></main>
+  }
 
   const handleAIRefine = async () => {
     if (!formData.general_description) return

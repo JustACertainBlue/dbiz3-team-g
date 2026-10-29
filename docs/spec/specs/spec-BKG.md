@@ -432,6 +432,7 @@ sequenceDiagram
 - 2026-10-29 #29: The whole [start_at, end_at) must fit inside one operating-hours window of that weekday.
 - 2026-10-29 #30: No notice-period check at creation in MVP (FR-003 states none); notice_period_hours is kept only in conditions_snapshot.
 - 2026-10-29 #31: Weekday and local time are derived in Asia/Ho_Chi_Minh; timestamps are stored as timestamptz.
+- 2026-10-29 #36: The Agency schedule is derived from `bookings` (filtered by `agency_id`); there is no separate copy.
 
 **10. Open questions**
 
@@ -472,6 +473,14 @@ sequenceDiagram
 | 33 | Seed `role_permissions` gives Tour_Agency no booking-read permission, yet F-SCHED-02 and F-SCHED-07 grant the Agency read access to its own Bookings (BR-002, BR-008). Add a permission (e.g. `view_own_bookings`) to the seed? | No for US-4; Yes for F-SCHED-02/07 | Data | Open | |
 | 34 | §5.2 numbers jump from BR-012 to BR-014. Confirm BR-013 is intentionally unused (no rule removed). | No | BA | Open | |
 | 35 | Note: `bookings.source_chat_session_id` has no FK to `chat_sessions`, while `chat_sessions.booking_id` references `bookings` (DEFERRABLE INITIALLY DEFERRED). Intended? | No | Data | Open | |
+| 36 | US-4 AS-4 says the Booking "is synchronized to the Agency Private Schedule", but `data/` has no private-schedule table. Is the Agency schedule a separate copy, or derived from `bookings`? | Yes (US-4 AS-4) | BA | **Closed** | The Agency schedule is derived from `bookings` (filtered by `agency_id`); there is no separate copy. A Booking is visible to its Agency as soon as it is created. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-29. |
+| 37 | BR-018 requires an "active" Local Provider. Does "active" mean `user_accounts.account_status = 'Active'` for the Provider's user? | Yes (US-4) | BA / Data | Open | |
+| 38 | Must the Booking `duration` equal the Experience's `duration_minutes`, or may the Provider enter any duration > 0 (FR-003 says only "see F-PROFILE-06")? | Yes (US-4) | BA | Open | |
+| 39 | Must the selected Agency account be Approved, or is an existing `agency_id` enough (FR-003 states no status rule)? | No | BA | Open | |
+| 40 | Does an On hold Booking past `hold_expires_at`, not yet cancelled by the expiry worker, still block its slot? (Schema EXCLUDE filters on `status` only.) | No for US-4; Yes for US-5 | BA / Tech | Open | |
+| 41 | Do intervals that only touch (one ends when the next starts) conflict? The schema EXCLUDE uses half-open `[start_at, end_at)`, so they do not. | No | BA / Data | Open | |
+| 42 | When the Provider adjusts `booking_conditions`, are they validated with the schema shape (`notice_period_hours` integer ≥ 0, non-empty `cancellation_policy` object)? | No | BA / Data | Open | |
+| 43 | BKG134 "Create On hold" navigates to BKG135 (US-3, out of this slice). May the US-4 slice show the created Booking on BKG134 until BKG135 exists? | No | UI/UX / BA | Open | |
 
 **11. Traceability to DBIZ2**
 

@@ -14,6 +14,7 @@ did and what the humans decided.
 |---|---|---|---|---|---|
 | `specs/001-exp-core` | EXP | US-1–4; FR-001–017 attempted, with explicit remaining integrations | Group G, human reviewer pending | `001-exp-core` | Local prototype and tested domain logic; not fully complete |
 | `specs/001-prf-core` | PRF | US-3 (P1), US-4 (P1), US-5 (P1), US-6 (P1), US-1 (P2), US-2 (P2) | Group G | `002-prf-core` | Complete (Ready for Review) |
+| `specs/003-iac-core` | IAC | US-1 (P1) | Group G | `003-iac-core` | Step 1–4 complete (Prepare, Plan, Tasks, Analyze); ready for Step 5 (Tests First) |
 
 ## 2. Run entries
 
@@ -203,6 +204,19 @@ did and what the humans decided.
 | Tests | `npm run lint`: passed; `npm test`: 35 files and 280 tests passed; `npm run build`: passed; `uv run tools/start_feature.py --check`: OK; `git diff --check`: clean. |
 | Spec issues found | Existing durable FR-006/007 tracking and real external Auth/Chat/PostgreSQL integrations remain future work; no new source-spec change was made silently. |
 | Commit | Uncommitted local work on `001-exp-core`; not pushed. |
+
+### Entry 9: 30/10 Group G — IAC Core Prepare, Plan, Tasks, and Analyze (WIP)
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, Gemini 3.8 Flash) |
+| Command and argument | `uv run tools/start_feature.py --spec docs/spec/specs/spec-IAC.md IAC --name core`; `/speckit-plan`; `/speckit-tasks`; `/speckit-analyze` |
+| Feature and tasks | `specs/003-iac-core`, tasks T001–T024 planned (US-1 P1) |
+| What the agent produced | Created feature snapshot `specs/003-iac-core/spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/chat-api.md`, `quickstart.md`, `tasks.md`. Completed T3 consistency check against `data/schema.sql`. |
+| Human review | Accepted. Ready for Step 5 (Tests First). Pushed WIP branch `003-iac-core` to remote GitHub with resume instructions. |
+| Tests | `start_feature.py --check`: OK (0 drift); 0 critical/high issues in analyze report. |
+| Spec issues found | `close_reason` in FR-004 is NOT stored in `data/schema.sql` (logged for future slice; FR-004 out of scope for US-1). |
+| Commit | Pushed to GitHub on branch `003-iac-core` (WIP) |
 
 ## 3. Spec issues found while building
 

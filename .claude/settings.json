@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(git merge:*)",
+      "Read(./.env)",
+      "Read(./.env.local)"
+    ],
+    "ask": [
+      "Edit(docs/spec/**)",
+      "Edit(data/**)",
+      "Edit(.specify/memory/constitution.md)",
+      "Edit(AGENTS.md)",
+      "Bash(rm:*)",
+      "Bash(git commit:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

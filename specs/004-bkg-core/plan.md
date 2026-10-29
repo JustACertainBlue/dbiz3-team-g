@@ -48,11 +48,14 @@ F-SCHED-09 calendar), US-3 View Bookings (F-SCHED-07, BKG135), US-5 Manage Booki
 | Story / rule | What this slice does | Verified by |
 |---|---|---|
 | US-4 AS-1, BR-003 | New Booking has status On hold | unit test on create service |
+| FR-003 output, BR-009 | Output has exactly the FR-003 fields; `public_schedule_block` exposes only `start_at`, `end_at`, `status` | unit + API test |
 | US-4 AS-2, BR-004, AC-BKG-HOLD | `hold_expires_at = created_at + 72h` from the injected clock | unit test |
 | US-4 AS-3, BR-005 | The new interval is occupied immediately: a second overlapping create fails | unit test |
 | US-4 AS-4, BR-012 (create only); spec #36 | Agency view derived from `bookings` by `agency_id`; no separate copy (research R2) | unit test: row readable by `agency_id` right after create |
 | US-4 AS-5, FR-003, AC-BKG-RACE; spec #40, #41 | Conflict with operating hours or an On hold/Booked Booking (an expired On hold still blocks) → Slot Unavailable, nothing written; touching intervals allowed; two concurrent creates on one interval → one commit | unit + concurrency test |
 | US-4 AS-6, BR-001 | Only Local Provider creates; Tour Agency, ADMIN (HDT/UBND), Guest → denied, nothing written | unit + API test |
+| US-4 AS-6, BR-001 (screen BKG134) | `canOpenCreateBooking(session, providerId)` gates the page: only the Local Provider whose `providerId` matches the URL | unit test (analyze M1) |
+| FR-003 input `source_chat_session_id` | Stored as given when present, empty when absent; Chat pre-fill itself is deferred (Complexity Tracking) | unit test (analyze H2) |
 | BR-018; spec #37 | Provider `Verified` and its user `account_status = Active`; Experience owned by that Provider and not archived | unit test per failing condition |
 | spec #39 | Selected Agency's user `account_status = Approved`; any other status (seed has `Approved` and `Disabled`; `Pending Approval`/`Rejected` built in the test fixture) → rejected, nothing written | unit test + API test: non-Approved Agency → `AGENCY_NOT_ELIGIBLE`, `bookings` and `booking_status_history` unchanged |
 | spec #38 | `duration_minutes` any value > 0, independent of the Experience's duration | unit test: a duration different from the Experience's is accepted |
@@ -121,9 +124,10 @@ repository method (single-persist batch), needed for BR-019.
 |---|---|---|
 | Login and deployment | Out of scope until Session 11; AUT is not on `main` | Demo session (`hab_demo_account`, `src/lib/auth/demo-session.ts`). Role checks still tested for every role. |
 | JSON runtime instead of PostgreSQL | Team decision B1: keep the one runtime shared by AIT/PRF/EXP | EXCLUDE, hold/end CHECKs, capacity trigger, conditions CHECK and the transaction become app code + tests. |
-| Single persist instead of a database transaction (BR-019) | Repository has no transactions | New batch method writes `bookings` + `booking_status_history` and persists once; in-memory state changes only after the write succeeds. |
+| Single persist instead of a database transaction (BR-019; analyze H1) | Repository has no transactions; team decision 2026-10-30 to keep the one-persist design | New batch method writes `bookings` + `booking_status_history` and persists once; in-memory state changes only after the write succeeds, so the result is both-or-neither but not a database transaction. Known limitation in `mvp-alpha-checklist.md` §3; spec Clarification #44 to be added in the next spec change. |
 | In-process mutex (AC-BKG-RACE) | No database lock | Safe for one Node process only; two processes on one `runtime.json` can still race. Recorded as a Known limitation. |
 | Chat auto-message and F-SCHED-08 sync | Belong to US-5 | FR-003 output `private_schedule_synced` reflects the derived Agency view only; no `chat_messages` row is written in this slice. |
+| Chat pre-fill of BKG134 (FR-003 "may pre-fill"; analyze H2) | Needs Chat context from IAC/US-5 | `source_chat_session_id` is accepted and stored as given; nothing is pre-filled from Chat in this slice. Deferred to US-5 / IAC. |
 | Open Questions #26/#27 (Booking Event persistence, `audit_log_id`) | Needed by F-SCHED-04/08 | Deferred to US-5. |
 | Open Question #33 (Agency booking-read permission) | Only needed for F-SCHED-02/07 | Not needed for US-4. |
 | BKG134 navigation | Success goes to BKG135 (US-3), Cancel to BKG133 (US-6), both out of scope | Per spec #43 the page shows the created Booking (id, status, hold expiry) in place; Cancel returns to the Provider page. |

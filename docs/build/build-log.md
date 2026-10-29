@@ -216,7 +216,20 @@ did and what the humans decided.
 | Human review | Pending. Test reviewer to check that each test can fail for the right reason. T013 archives Experience `c9f9faf7…` in the fixture instead of using archived `800b5192…`, because that Experience's Provider is not Verified and would be rejected first. |
 | Tests | Baseline (T001): `Tests 280 passed (280)`, `--check` OK. T006 red run: 3 files failed — `Cannot find module '@/lib/booking/clock'`, `Cannot find module '@/lib/booking/write-lock'`, `repository.applyBatch is not a function` (2 tests). T017 red run: 7 files failed, all `Cannot find module` (`@/lib/booking/operating-hours`, `conflicts`, `clock`, `@/app/api/bkg/bookings/route`). Full `npm test`: `Test Files 10 failed \| 35 passed (45)`, `Tests 2 failed \| 280 passed (282)`; the 280 existing tests still pass. |
 | Spec issues found | none new. `/speckit-analyze` findings (0 CRITICAL; H1 single persist vs "database transaction" in BR-019, H2 Chat pre-fill of FR-003 not covered; M1–M4, L1–L4) are open for the human decision. |
-| Commit | Uncommitted local work on `004-bkg-core`; not pushed. |
+| Commit | `b7d5015` on `004-bkg-core`; not pushed. |
+
+### Entry 10: 30/10 Claude Code — BKG analyze decisions and added tests
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Human decisions on `/speckit-analyze` findings H1, H2, M1–M4; tests only, no `src/lib/booking` code |
+| Feature and tasks | `specs/004-bkg-core`, tasks T014, T016 (extended), T029, T030 (new); T031 added as the code task for T029 |
+| What the agent produced | H1: keep one-persist design, recorded in `plan.md` Complexity Tracking (Clarification #44 to be added at the next spec change). H2: test case for `source_chat_session_id` in `tests/unit/bkg-create-validation.test.ts`; Chat pre-fill deferred to US-5/IAC in `plan.md`. M1: new `tests/unit/bkg-page-access.test.ts` for `canOpenCreateBooking`. M2: two cases in `tests/integration/bkg-create-api.test.ts` (Provider Disabled → 409, unknown Agency → 404). M3: BR-009 named in `plan.md` trace and T012. M4: T008 and T024 require the 280 existing tests to stay green. `tasks.md` updated (T029–T031, dependencies). |
+| Human review | Decisions taken by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. Existing assertions unchanged; only new cases and one new file. |
+| Tests | T030 red run (`npm test`): `Test Files 11 failed \| 35 passed (46)`, `Tests 2 failed \| 280 passed (282)`. New failures: `Cannot find module '@/lib/booking/create-booking'` (bkg-page-access), and the extended files still fail on `Cannot find module` (`@/lib/booking/clock`, `@/app/api/bkg/bookings/route`); `applyBatch is not a function` unchanged. The 280 existing tests pass. |
+| Spec issues found | H1 → Clarification #44 "BR-019 is met by a single atomic persist on the JSON runtime until PostgreSQL" to be added to `docs/spec/specs/spec-BKG.md` at the next spec change. MEDIUM/LOW L1–L4 recorded here: L1 empty folder from T002; L2 BR-006/015/016 trivially met; L3 SC-003 checked indirectly until US-1; L4 `notice_period` vs `notice_period_hours` naming. |
+| Commit | See `git log` (message "test(BKG): add tests from analyze findings (H2, M1, M2); record H1, M3, M4"); not pushed. |
 
 ## 3. Spec issues found while building
 

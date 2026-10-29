@@ -74,6 +74,14 @@ describe('T014 | createBooking input validation', () => {
     await expect(createBooking(provider, input({ start_at: '2026-10-12T09:00:00+07:00' }), soon)).resolves.toMatchObject({ status: 'On hold' })
   })
 
+  it('FR-003: source_chat_session_id is stored as given, and empty when absent (analyze H2)', async () => {
+    const chatId = 'c0000000-0000-4000-8000-000000000001'
+    const withChat = await createBooking(provider, input({ source_chat_session_id: chatId }), options)
+    expect(bookingRow(withChat.booking_id).source_chat_session_id).toBe(chatId)
+    const withoutChat = await createBooking(provider, input({ start_at: '2026-10-12T11:00:00+07:00' }), options)
+    expect(bookingRow(withoutChat.booking_id).source_chat_session_id).toBe('')
+  })
+
   it.each(['experience_id', 'agency_id', 'start_at', 'duration', 'group_size', 'agreed_price', 'booking_conditions'])(
     'a missing required field (%s) is rejected',
     async field => {

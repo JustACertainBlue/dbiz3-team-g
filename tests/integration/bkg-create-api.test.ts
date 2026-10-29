@@ -76,4 +76,21 @@ describe('T016 | POST /api/bkg/bookings', () => {
     expect(status).toBe(404)
     expect(json.error?.code).toBe('NOT_FOUND')
   })
+
+  it('rejects a Provider whose account is Disabled with PROVIDER_NOT_ELIGIBLE (#37, analyze M2)', async () => {
+    demoRepository().update('user_accounts', row => row.user_id === 'c2c7fe0d-e2cb-5402-ac90-3cd427c2e669', { account_status: 'Disabled' })
+    const before = bookingCount()
+    const { status, json } = await call('provider', body)
+    expect(status).toBe(409)
+    expect(json.error?.code).toBe('PROVIDER_NOT_ELIGIBLE')
+    expect(bookingCount()).toBe(before)
+  })
+
+  it('returns NOT_FOUND for an unknown Agency (analyze M2)', async () => {
+    const before = bookingCount()
+    const { status, json } = await call('provider', { ...body, agency_id: '00000000-0000-4000-8000-000000000000' })
+    expect(status).toBe(404)
+    expect(json.error?.code).toBe('NOT_FOUND')
+    expect(bookingCount()).toBe(before)
+  })
 })

@@ -133,7 +133,7 @@ Project slash commands: `/team-status`, `/bkg-start`, `/verify-module <MOD>`.
   `npm run demo:reset` (overwrite it from the seed again).
 - Demo login: cookie `hab_demo_account` (guest | agency | provider | ubnd | hdt, see
   `src/lib/auth/demo-session.ts`), switched with the `RoleSwitcher` component.
-- `npm run lint` rewrites the tracked `tsconfig.tsbuildinfo`; do not commit that change.
+- `tsconfig.tsbuildinfo` is git-ignored since PR #30; `npm run lint` no longer dirties the tree.
 - Use `git --no-pager ...` for log/grep/diff so output is not trapped in a pager.
 - `.claude/skills/speckit-*` is a verbatim copy of `.agents/skills/speckit-*` (Spec Kit 1.0.1,
   integration agy). If Spec Kit is upgraded, re-copy; do not edit either copy by hand.

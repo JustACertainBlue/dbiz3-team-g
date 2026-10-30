@@ -1,0 +1,20 @@
+import type { ActorSession } from '../auth/demo-session'
+import { demoRepository } from '../demo/json-repository'
+import type { DemoRow } from '../demo/types'
+import { BookingError } from './create-booking'
+
+export type BookingView = 'provider' | 'agency'
+
+// Loads a Booking for its owning Local Provider (full view) or owning Tour Agency (read-only view).
+// Everyone else is denied: BR-001, BR-002, BR-008, BR-014. Seed role_permissions are not consulted (OQ #33).
+export function loadBookingForActor(session: ActorSession, bookingId: string): { booking: DemoRow; view: BookingView } {
+  const booking = demoRepository().find('bookings', row => row.booking_id === bookingId)
+  if (!booking) throw new BookingError('NOT_FOUND', 'Booking not found')
+  if (session.authenticated && session.role === 'LocalProvider' && session.providerId === booking.provider_id) {
+    return { booking, view: 'provider' }
+  }
+  if (session.authenticated && session.role === 'TourAgency' && session.agencyId === booking.agency_id) {
+    return { booking, view: 'agency' }
+  }
+  throw new BookingError('FORBIDDEN', 'Only the Local Provider or Tour Agency of this Booking can open it')
+}

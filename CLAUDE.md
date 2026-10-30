@@ -77,15 +77,19 @@ Details, arguments to paste, and the MVP Alpha gates G1–G8: `docs/build/claude
 ## 5. Where we are now (update this section when it changes)
 
 - Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in.
-State checked on 29 Oct 2026 at `main` = `ada9e44` (details: `03-module-status.md`).
+State checked on 30 Oct 2026 at `main` = `5eed238` (details: `03-module-status.md`).
 
 - **On `main`**: AIT (`specs/001-ait-core`, PR #6 merged as `3e0e047`), PRF
   (`specs/002-prf-core`, PR #8 squash-merged as `222216d`), EXP (`specs/001-exp-core`, merged
-  with `ada9e44` "unify functional prototype on JSON runtime"). `npm test`: 35 files, 280 tests pass.
+  with `ada9e44` "unify functional prototype on JSON runtime"), BKG US-4 (`specs/004-bkg-core`,
+  PR #17 merged as `343e4ce`). `npm test` on `main`: 46 files, 350 tests pass.
 - **Not merged**: AUT (`001-aut-registration`, feature folders `001`–`010-aut-*`), ADM
-  (`003-adm-core`), `member/spec-consistency`, `ngthu/update-specs`.
-- **BKG**: next module, owned by the human running this session. No code yet.
-  Read `docs/build/claude-context/04-bkg-brief.md` before doing anything on BKG.
+  (`003-adm-core`), `member/spec-consistency`, `ngthu/update-specs`, BKG round 2 (`011-bkg-manage`).
+- **BKG**: owned by the human running this session. US-4 Create Booking is on `main`. Round 2
+  is on branch `011-bkg-manage` (`specs/011-bkg-manage`, US-5 Manage Booking + US-3 View Bookings):
+  US-5 code done at `61f2ce4` (406 tests pass), API demo not run yet; US-3 not started.
+  Spec decisions #26–#56 are on `main`. Read `docs/build/claude-context/04-bkg-brief.md` and
+  `specs/011-bkg-manage/tasks.md` before doing anything on BKG.
 - **IAC**: no module of its own; only `src/lib/demo/commercial-handoff-service.ts` and the
   shared `/messages` page (Quote/Chat handoff from Explore and AIT).
 - **Runtime**: all modules on `main` share one JSON runtime

@@ -2,8 +2,10 @@ import { randomUUID } from 'node:crypto'
 import type { ActorSession } from '../auth/demo-session'
 import { demoRepository } from '../demo/json-repository'
 import type { DemoRow } from '../demo/types'
-import { systemClock, type Clock } from './clock'
+import { bookingUpdateOperations } from './agency-sync'
+import { hanoiTimestamp, systemClock, type Clock } from './clock'
 import { findConflict } from './conflicts'
+import { expireDueHoldsLocked } from './expire-holds'
 import { fitsOperatingHours } from './operating-hours'
 import { withBookingWriteLock } from './write-lock'
 
@@ -11,7 +13,6 @@ import { withBookingWriteLock } from './write-lock'
 
 const HOUR = 3_600_000
 const HOLD_HOURS = 72
-const HANOI_OFFSET = 7 * HOUR
 
 export type BookingErrorCode =
   | 'VALIDATION_ERROR'
@@ -20,6 +21,8 @@ export type BookingErrorCode =
   | 'PROVIDER_NOT_ELIGIBLE'
   | 'AGENCY_NOT_ELIGIBLE'
   | 'SLOT_UNAVAILABLE'
+  | 'BOOKING_TERMINAL'
+  | 'INVALID_TRANSITION'
 
 const STATUS_BY_CODE: Record<BookingErrorCode, number> = {
   VALIDATION_ERROR: 400,
@@ -28,6 +31,8 @@ const STATUS_BY_CODE: Record<BookingErrorCode, number> = {
   PROVIDER_NOT_ELIGIBLE: 409,
   AGENCY_NOT_ELIGIBLE: 409,
   SLOT_UNAVAILABLE: 409,
+  BOOKING_TERMINAL: 409,
+  INVALID_TRANSITION: 409,
 }
 
 export class BookingError extends Error {
@@ -65,16 +70,12 @@ interface ValidInput {
   source_chat_session_id: string
 }
 
-function hanoiTimestamp(timestamp: number): string {
-  return new Date(timestamp + HANOI_OFFSET).toISOString().slice(0, 19) + '+07:00'
-}
-
-const isPositiveInteger = (value: unknown): value is number => Number.isInteger(value) && (value as number) > 0
+export const isPositiveInteger = (value: unknown): value is number => Number.isInteger(value) && (value as number) > 0
 const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-function invalid(message: string): never {
+export function invalid(message: string): never {
   throw new BookingError('VALIDATION_ERROR', message)
 }
 
@@ -91,7 +92,7 @@ export function bookingConditionsFromExperience(experience: DemoRow): BookingCon
   }
 }
 
-function validateConditions(value: unknown): BookingConditions {
+export function validateConditions(value: unknown): BookingConditions {
   // Same shape as the schema's booking_conditions_chk (#42).
   if (!isPlainObject(value)) invalid('booking_conditions is required')
   const notice = value.notice_period
@@ -128,7 +129,9 @@ function validateInput(input: Record<string, unknown>): ValidInput {
 export async function createBooking(
   session: ActorSession,
   input: Record<string, unknown>,
-  options: { now?: Clock } = {},
+  // afterConflictCheck is a test-only seam: an async pause between the check and the write
+  // (tests/unit/bkg-race-pause.test.ts).
+  options: { now?: Clock; afterConflictCheck?: () => Promise<void> } = {},
 ): Promise<CreateBookingResult> {
   // BR-001: only a Local Provider controls the Booking lifecycle.
   if (!session.authenticated || session.role !== 'LocalProvider' || !session.providerId || !session.userId) {
@@ -163,9 +166,11 @@ export async function createBooking(
   const startAt = hanoiTimestamp(request.start)
   const endAt = hanoiTimestamp(request.start + request.duration * 60_000) // BR-020
 
-  // Check + write must stay synchronous inside this lock. If any await is added between
-  // findConflict and applyBatch, add a race test with an async pause (see build-log §4).
-  return withBookingWriteLock(() => {
+  // Check + write run inside this lock; tests/unit/bkg-race-pause.test.ts proves it with an
+  // async pause between findConflict and applyBatch (AC-BKG-RACE, build-log §4).
+  return withBookingWriteLock(async () => {
+    // #50, analyze M2: expire due holds first, so an expired hold no longer blocks this slot.
+    expireDueHoldsLocked(new Date(now))
     // FR-003: atomic re-check against operating hours and On hold/Booked Bookings (BR-005, AC-BKG-RACE).
     const hours = repository.all('provider_operating_hours')
       .filter(row => row.provider_id === providerId)
@@ -176,6 +181,7 @@ export async function createBooking(
     if (findConflict(repository.all('bookings'), providerId, startAt, endAt)) {
       throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time overlaps another Booking')
     }
+    if (options.afterConflictCheck) await options.afterConflictCheck()
 
     const bookingId = randomUUID()
     const createdAt = hanoiTimestamp(now)
@@ -210,10 +216,11 @@ export async function createBooking(
       changed_at: createdAt,
       reason: '',
     }
-    // BR-019: Booking and its initial history in one persist.
+    // BR-019: Booking, its initial history and the F-SCHED-08 Booking Update message in one persist.
     repository.applyBatch([
       { table: 'bookings', row: booking },
       { table: 'booking_status_history', row: history },
+      ...bookingUpdateOperations(booking, createdAt).operations,
     ])
 
     return {

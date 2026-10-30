@@ -402,6 +402,19 @@ did and what the humans decided.
 | Spec issues found | none |
 | Commit | see `git log` ("test(BKG): failing tests for US-6"); not pushed. |
 
+### Entry 24: 30/10 Claude Code — BKG 012 Step 6 (code, US-6)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Step 6 only: T018–T025. Do not change any test. If a test seems wrong, stop and tell me.` plus one mutation check |
+| Feature and tasks | `specs/012-bkg-list`, T018–T025 |
+| What the agent produced | `src/lib/booking/list-bookings.ts` (`listProviderBookings`: authorize → validate → `expireDueHolds` → read; filters on `hanoiDate(start_at)`, sort #60, counts #61, paging #63, `requires_action` via `bookingActions` #59, `Number()` for `group_size`; `providerBookingSummary` and `countActionsOutsideFilter` walk pages of 100); `src/lib/booking/list-row-view.ts` (`bookingListRowView`); `GET` in `src/app/api/bkg/bookings/route.ts` (POST unchanged); BKG133 `src/app/provider/[providerId]/bookings/page.tsx` (filters as page query, default `date_from` = today, "Xoá bộ lọc", always "N Booking cần xử lý nằm ngoài bộ lọc" + "Xem tất cả", "⚑ Cần xử lý" text label, Detail, Create, Messages, empty state, paging); DSH018 `src/app/provider/[providerId]/dashboard/page.tsx` (summary only); Provider pages' Bookings links → BKG133 (Agency link unchanged). |
+| Human review | Pending. |
+| Tests | First run 22/23: `RangeError: Invalid time value` for `date_from = '2026-13-01'` — a code bug in date validation (now checks `NaN` first); test unchanged. Then `npm test`: `Test Files 67 passed (67)`, `Tests 459 passed (459)`; `npm run lint` passed; `git diff --stat c427c8d -- tests/` empty. **Mutation**: `expireDueHolds` moved before `authorizeProviderList` → "a denied list request writes nothing" and "an invalid query from the owner writes nothing" FAIL (`expected [ Array(5) ] to deeply equal [ Array(5) ]`); restored from a copy → both pass. |
+| Spec issues found | none. Observation: the Provider nav "Dashboard" link still points to `/provider/{id}` (PRF127), not DSH018; #65/#66 did not ask to change it, so it is left as is. |
+| Commit | see `git log` ("feat(BKG): US-6 List Bookings"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

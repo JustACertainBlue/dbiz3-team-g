@@ -123,7 +123,7 @@ export default function ProviderProfilePage({
         <nav className="spec-nav">
           <Link href={`/provider/${params.providerId}`}>Dashboard</Link>
           <Link href={`/provider/${params.providerId}/experiences`}>Experience Management</Link>
-          <Link href="/bookings">Bookings</Link>
+          <Link href={`/provider/${params.providerId}/bookings`}>Bookings</Link>
           <Link href="/schedule">Schedule</Link>
           <Link href="/messages" style={{ color: '#be123c' }}>Messages ●</Link>
         </nav>

@@ -257,6 +257,19 @@ did and what the humans decided.
 | Spec issues found | none. Non-blocking UI finding: at step 7 the red error from step 6 stays on screen while the browser shows its own `max=12` tooltip, so the visible message is stale; the server-side 400 for group size is covered by T016 only. Two dev servers ran at once (3000 and 3001) on one `runtime.json` — the multi-process limitation; demo used 3001 only. |
 | Commit | Not committed. Windows run of the same path still pending (G1). Follow-up fixes in `src/app/provider/[providerId]/bookings/new/CreateBookingForm.tsx`, verified in the built-in browser: (1) any field change clears the previous error; (2) agreed-price input used `step={1000}` with `min={1}`, so the browser accepted only 1, 1001, …, 2000001 and rejected round prices such as 2,000,000 VND — now `step="any"`. After the fixes: 2,000,000 at 16:30 → `SLOT_UNAVAILABLE`, then changing group size removes the message. `npm test` 350/350, `npm run lint` passed. |
 
+### Entry 13: 30/10 Claude Code — BKG 011 plan, tasks and analyze
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-plan` (US-5 + US-3 argument approved by the human), `/speckit-tasks` (two independent phases, race test first), `/speckit-analyze` |
+| Feature and tasks | `specs/011-bkg-manage`, T001–T046 |
+| What the agent produced | `spec.md` snapshot, `plan.md`, `research.md`, `data-model.md`, `contracts/manage-booking-api.md`, `quickstart.md`, `demo/*.json`, `tasks.md`; spec decisions #26, #27, #44–#56 merged via PR #18 and #19 |
+| Human review | 8-point plan review 8/8 Yes after `--refresh`; Step 3 check 4/4 Yes. Analyze: 0 CRITICAL; H1 (non-re-entrant lock: expiry inside the lock must use `expireDueHoldsLocked`) and M1–M6 applied to tasks/research/contract/quickstart on 2026-10-30 (M2 adds a create-over-expired-hold test). Recorded only: **M7** screens T037–T041 have no automated test, SC-007 "button itself disabled" checked in the demo (T044), gate and button logic tested by T028/T030; **L1** "sync succeeds for Provider but fails for Agency" cannot happen with one persist per event; **L2** a Booking that expires while BKG135 is open is caught by expiry-first, the screen only shows the error; **L3** FR-007 says "LP/Agency contact" for both, §5.1 splits it into `agency_contact` (LP) and `provider_profile_link` (Agency) — plan follows §5.1; **L4** BR-016 (arrival completes the whole Booking) covered implicitly by T012; **L5** T008 is code inside Step 5 because it is the race-test seam. |
+| Tests | n/a (planning) |
+| Spec issues found | `src/lib/demo/commercial-handoff-service.ts` writes `message_kind` values not allowed by `data/schema.sql` — recorded in research R8, owner AIT/IAC |
+| Commit | `4f02e70` (plan), `6a60d5b` (tasks), analyze fixes in the next commit |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

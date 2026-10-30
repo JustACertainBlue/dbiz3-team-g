@@ -239,7 +239,29 @@ Windows PowerShell:
 curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=agency" --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
 ```
 
-15. Read the Booking as its Agency (F-SCHED-07). Expect `HTTP 200`, all `actions` = `false`, `provider_profile_link` present.
+15. Open `/messages` as the Agency (Tràng An): one Booking Update message for each successful step 1, 3, 6, 9 and 12, all in one Chat with Bát Tràng. Rejected or unchanged steps (4, 5, 7, 11, 13, 14) send none. Step 8 goes to the Chat of Agency `ebf4fcfa…`; the first request after `demo:reset` also expires seed `54d7a276…` in the Chat of Agency `14390b41…`.
+
+## 5. US-3 demo path through the screens
+
+Start §5 from fresh demo data, because §4 already completed or cancelled some Bookings (analyze M4).
+Stop the dev server, then:
+
+```bash
+npm run demo:reset
+```
+```bash
+npm run dev
+```
+
+1. `/login` → Local Provider → create a Booking on BKG134 → it opens BKG135 (`/provider/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374/bookings/{id}`).
+2. BKG135 On hold: Confirm/Book, Update, Cancel enabled; Mark Group Arrival hidden or disabled.
+3. Update → BKG144: change group size, Save → back to BKG135 with the new value.
+4. Confirm → status Booked; Mark Group Arrival disabled (start in the future).
+5. Open seed Booked `4bf17b30…` on BKG135 → Mark Group Arrival enabled → BKG136 → Confirm → Completed; all buttons disabled.
+6. `/login` → Tour Agency (Tràng An) → `/agency/02e568d8-d65e-54b1-a554-b411150d1dcb/bookings/{id}` (BKG138): details read-only, no action buttons.
+7. Same Agency on a Booking of another Agency (e.g. `4bf17b30…`) → access denied. UBND/HDT/Guest on BKG135 → access denied.
+
+8. API check of F-SCHED-07 (moved from §4 because `GET` belongs to US-3, analyze M3): create a Booking for Tràng An as in §4 steps 1–2, then read it as its Agency. Expect `HTTP 200`, all `actions` = `false`, `provider_profile_link` present.
 
 macOS / Linux:
 
@@ -252,17 +274,5 @@ Windows PowerShell:
 ```powershell
 curl.exe -s -X GET "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=agency" -w "\nHTTP %{http_code}\n"
 ```
-
-16. Open `/messages` as the Agency (Tràng An): one Booking Update message for each successful step 1, 3, 6, 9 and 12, all in one Chat with Bát Tràng. Rejected or unchanged steps (4, 5, 7, 11, 13, 14) send none. Step 8 goes to the Chat of Agency `ebf4fcfa…`; the first request after `demo:reset` also expires seed `54d7a276…` in the Chat of Agency `14390b41…`.
-
-## 5. US-3 demo path through the screens
-
-1. `/login` → Local Provider → create a Booking on BKG134 → it opens BKG135 (`/provider/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374/bookings/{id}`).
-2. BKG135 On hold: Confirm/Book, Update, Cancel enabled; Mark Group Arrival hidden or disabled.
-3. Update → BKG144: change group size, Save → back to BKG135 with the new value.
-4. Confirm → status Booked; Mark Group Arrival disabled (start in the future).
-5. Open seed Booked `4bf17b30…` on BKG135 → Mark Group Arrival enabled → BKG136 → Confirm → Completed; all buttons disabled.
-6. `/login` → Tour Agency (Tràng An) → `/agency/02e568d8-d65e-54b1-a554-b411150d1dcb/bookings/{id}` (BKG138): details read-only, no action buttons.
-7. Same Agency on a Booking of another Agency (e.g. `4bf17b30…`) → access denied. UBND/HDT/Guest on BKG135 → access denied.
 
 Expected values: [contracts/manage-booking-api.md](contracts/manage-booking-api.md), [data-model.md](data-model.md).

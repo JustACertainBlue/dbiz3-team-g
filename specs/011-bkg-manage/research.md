@@ -20,17 +20,22 @@ Stack, storage and structure are those of `specs/004-bkg-core` (see its research
   the write succeeds. F-SCHED-04 writes `bookings` + `audit_logs` + `chat_messages` (+ Chat rows);
   F-SCHED-05/06 and expiry write `bookings` + `booking_status_history` + `chat_messages` (+ Chat rows).
 - **Rationale**: BR-019 and F-SCHED-08 must not leave a status without its history or message.
+  For the same reason the spec edge case "a schedule sync succeeds for Provider but fails for
+  Agency view" cannot happen: Booking, history and message are written together (analyze L1).
 - **Alternatives**: separate `update()` calls (each persists on its own — breaks #44); reusing
   `src/lib/prf/audit-logger.ts` (it persists separately and uses the wall clock) — not used here.
 - **Shared file**: `src/lib/demo/json-repository.ts` change is additive; AIT/PRF/EXP owners review.
 
 ## R3. Expiry worker on the JSON runtime (BR-004, #40, #45, #46, AC-BKG-EXPIRY)
 
-- **Decision**: `expireDueHolds(now)` cancels every On hold with `now >= hold_expires_at`
+- **Decision**: `expireDueHoldsLocked(now)` cancels every On hold with `now >= hold_expires_at`
   (history `changed_by` empty, reason "Automatic expiry: 72-hour On hold elapsed", one
-  Booking Update message each). It runs (a) at the start of every BKG service call, inside the
-  write lock, before the requested action, and (b) on a 60 s `setInterval` started once per dev
-  server process. Tests call it directly with an injected clock.
+  Booking Update message each); it takes no lock, because `withBookingWriteLock` is not re-entrant
+  and calling a locking variant from inside the lock would deadlock (analyze H1).
+  `expireDueHolds(now)` takes the lock and calls it; it is used by the timer, read paths and tests.
+  Expiry runs (a) at the start of every BKG service call, create included, inside the write lock,
+  before the requested action (analyze M2), and (b) on a 60 s `setInterval` (`.unref()`) started once
+  per dev server process and never under `NODE_ENV=test` (analyze M1).
 - **Why it is race-safe**: expiry and confirm both run inside the lock and both re-read
   `status`; the first one wins, the second sees a non-On hold status and does nothing / is
   rejected. Running it twice changes nothing and sends no second message (#26).

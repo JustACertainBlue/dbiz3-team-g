@@ -35,7 +35,9 @@ max → `400` (#7). No change (#52) → `200` with the current Booking as `updat
 
 Body: `target_status` (`Booked` | `Cancelled`), `cancellation_reason` (required, non-empty, for
 `Cancelled`). Allowed: On hold → Booked (only `now < hold_expires_at`, #45), On hold → Cancelled,
-Booked → Cancelled. Anything else → `409 INVALID_TRANSITION`; `Completed` → `400` (AC-BKG-COMPLETE).
+Booked → Cancelled. A Cancelled or Completed Booking → `409 BOOKING_TERMINAL`; any other transition
+on a non-terminal Booking (e.g. Booked → Booked) → `409 INVALID_TRANSITION`; `Completed` → `400`
+(AC-BKG-COMPLETE).
 
 `200`: `booking_status`, `status_history_entry` {from_status, to_status, changed_by, changed_at,
 reason}, `schedules_synced`, `agency_notification_message_id`.

@@ -283,6 +283,19 @@ did and what the humans decided.
 | Spec issues found | none |
 | Commit | see `git log` ("test(BKG): failing tests for US-5 (+ race seam T008)"); not pushed. |
 
+### Entry 15: 30/10 Claude Code — BKG 011 Step 6 (code, US-5)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Only T005, T006, T018–T026, then T027. Do not change any test. If a test seems wrong, stop and tell me.` plus two mutation checks |
+| Feature and tasks | `specs/011-bkg-manage`, T005, T006, T018–T027 |
+| What the agent produced | `applyBatch` now takes inserts and single-row updates with one persist (`src/lib/demo/json-repository.ts`, `src/lib/demo/types.ts`; shared file, existing methods unchanged); `src/lib/booking/{booking-access,agency-sync,expire-holds,update-booking,change-status,mark-arrival}.ts`; `createBooking` runs `expireDueHoldsLocked` first and sends the create message (closes 004 limitation #7); `findConflict` gains `excludeBookingId`; `hanoiTimestamp` moved to `clock.ts`; routes `PATCH /api/bkg/bookings/[bookingId]`, `POST …/status`, `POST …/arrival` with `startExpiryTimer()` (no-op under tests). |
+| Human review | Pending PR review; AIT/PRF/EXP owners to review `json-repository.ts`. |
+| Tests | `npm test`: `Test Files 56 passed (56)`, `Tests 406 passed (406)`; `npm run lint` passed; no test file changed since `ca456ae`. **Mutation 1 (after T005)**: `applyBatch` changed to update memory before persist → T002 "keeps neither the insert nor the update when the persist fails" FAILS (`expected 'Cancelled' to be 'Booked'`); restored → passes. **Mutation 2 (T022)**: lock removed in `update-booking.ts` → race (b) FAILS ("length of 1 but got 2"); restored → passes. |
+| Spec issues found | none |
+| Commit | `61f2ce4`; not pushed. US-5 API demo (quickstart §4) not yet run. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -311,3 +324,4 @@ does not happen again.
 | 2 | Relative import in unit tests used `../../helpers` instead of `../helpers` | Vitest reported module resolution error on run | Always check relative folder depth when importing local test helpers |
 | 2 | Direct read of `provider.business_name` from `provider_profiles.csv` instead of versioned `provider_profile_versions.csv` | Provider name assertion failed in `provider-service.test.ts` | Always join `provider_profile_versions` per Session 5 data model |
 | 10 (BKG) | The AC-BKG-RACE test (T015, `tests/unit/bkg-create-race.test.ts`) passes even with `withBookingWriteLock` removed: check (`findConflict`) and write (`applyBatch` → synchronous `persist`) run in one synchronous block, so no request can interleave in one Node process. AC-BKG-RACE currently holds because of that synchronous critical section; the lock itself is tested on its own by T005 (`tests/unit/bkg-write-lock.test.ts`). | Mutation check on 2026-10-30: lock removed temporarily, T015 still passed, file restored. | Comment above the lock in `src/lib/booking/create-booking.ts`. Before adding any `await` between check and write, add a test-only `afterConflictCheck` async pause option to `createBooking` and a new T015 case that fires two creates with the pause: it must fail without the lock and pass with it (plan.md Complexity Tracking, US-5). |
+| 15 (BKG 011) | First version of `update-booking`, `change-status` and `mark-arrival` ran `expireDueHoldsLocked` before the ownership check, so a denied request (Agency/UBND/HDT/Guest) on 2026-10-05 still cancelled expired seed hold `54d7a276…` and wrote history + a message. | T015 `nothing is written` snapshot assertion failed. | Code fixed, test unchanged: authorize with `loadBookingForActor` first, then run expiry, then re-read the Booking. Any service that writes as a side effect must check permission before the first write. |

@@ -376,6 +376,19 @@ did and what the humans decided.
 | Spec issues found | none new. |
 | Commit | checklist `dd0e093`; this entry with T043–T046 marks in the next commit; not pushed. |
 
+### Entry 22: 30/10 Claude Code — BKG 012 plan, tasks and analyze (US-6)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `start_feature.py --spec docs/spec/specs/spec-BKG.md BKG --name list` (gave `012-bkg-list`, no rename), `--use`, `--check` OK; `/speckit-plan` (US-6 + minimal DSH018 argument approved by the human), `/speckit-tasks` (test before code for every trace row), `/speckit-analyze` |
+| Feature and tasks | `specs/012-bkg-list`, T001–T029 |
+| What the agent produced | `spec.md` snapshot (with #58–#67, PR #24), `plan.md`, `research.md`, `data-model.md`, `contracts/list-bookings-api.md`, `quickstart.md`, `tasks.md` |
+| Human review | Plan review 8/8 Yes (one fix before commit: order authorize → validate → expire → read, so a non-owner always gets 403). Step 3 check 4/4. Analyze: **C1** AS-4 had only a demo check → pure helper `bookingListRowView` + test (also **M1**, SC-011 label); **H1** fixtures created at `SEED_NOW` would expire before a later `now` → every hold fixture uses the checking `now`, T013 uses 21 holds on 3 Mondays; **H2** the UI default `date_from` = today hides past Booked Bookings needing arrival → human chose (a): BKG133 always shows "N Booking cần xử lý nằm ngoài bộ lọc" + "Xem tất cả" from the tested `countActionsOutsideFilter`; **M3** Completed/Cancelled fixtures through `markArrival` / `changeStatus`; **L1** API create on Monday 2027-01-04. Recorded only: **M2** #66 links and the denied BKG133/DSH018 pages have no automated test, checked in the demo (T027); **M4** `providerBookingSummary` runs `expireDueHolds` once per page — idempotent (#46), accepted at seed size; **L2** BKG133/DSH018 reuse the gate named `canOpenCreateBooking` (owning Provider on its own URL), not renamed because 004 uses it; **L3** BKG133 imports `bookingDetailStyles` from the BKG135 folder, accepted until a third screen needs it. |
+| Tests | n/a (planning) |
+| Spec issues found | none (all gaps were closed as #58–#67 before planning) |
+| Commit | `f63502f` (plan), `6769dd7` (tasks), analyze fixes in the next commit |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

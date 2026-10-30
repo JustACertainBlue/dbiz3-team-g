@@ -93,8 +93,10 @@ curl -s "http://localhost:3000/api/bkg/bookings" -H "Cookie: hab_demo_account=ag
    (`/provider/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374/bookings/new`, Tràng An, a future Monday 09:00,
    60 min, 10 pax, 2,000,000).
 2. Open BKG133 `/provider/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374/bookings`: `date_from` is today, so only the
-   new On hold Booking shows, labelled "Cần xử lý", with its hold expiry.
-3. "Xoá bộ lọc": the two past Booked Bookings appear first (ascending), both "Cần xử lý".
+   new On hold Booking shows, labelled "Cần xử lý", with its hold expiry. Above the table:
+   "2 Booking cần xử lý nằm ngoài bộ lọc" (the two past Booked Bookings) with "Xem tất cả".
+3. "Xem tất cả" (or "Xoá bộ lọc"): the two past Booked Bookings appear first (ascending), both
+   "Cần xử lý"; the out-of-filter line now says 0.
 4. Status filter Cancelled → explicit empty state (AS-6).
 5. Detail on a row → BKG135 of that Booking (AS-4).
 6. Back on the Provider page, "Bookings" opens BKG133 (#66).

@@ -15,6 +15,16 @@ before planning. Each decision below cites its source.
 - **Alternatives**: a separate counting function (duplicates the rules); a `page_size` above 100 for
   DSH018 (violates #63).
 
+## R1b. Out-of-filter action count and row view (analyze H2, C1)
+
+- **Decision**: `countActionsOutsideFilter(session, query, { now })` = number of the Provider's
+  Bookings with `requires_action` minus those that also match `query`, both counted by walking the
+  list service pages (`page_size` 100). `bookingListRowView(row, providerId)` is a pure helper that
+  gives BKG133 its `detail_href`, `needs_action_label` and display strings, so AS-4 and SC-011 have
+  unit tests instead of demo only.
+- **Rationale**: the UI default `date_from` = today must not hide work the Provider has to do (AS-3);
+  constitution II needs an automated test for AS-4.
+
 ## R2. `requires_action` reuses `bookingActions` (#59)
 
 - **Decision**: `requires_action = a.confirm || a.mark_arrival` where

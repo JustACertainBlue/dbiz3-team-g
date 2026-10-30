@@ -42,7 +42,7 @@ data:
 
 | Screen | Route | Gate | Content |
 |---|---|---|---|
-| BKG133 Booking Management | `/provider/{providerId}/bookings` (#66) | owning Local Provider on its own URL; others see an access-denied message, no data | list from the service; filters status, date_from (default today, UI choice), date_to; "Xoá bộ lọc"; "Cần xử lý" label; Detail → BKG135; Create → BKG134; Messages → `/messages`; empty state (AS-6); previous/next page |
+| BKG133 Booking Management | `/provider/{providerId}/bookings` (#66) | owning Local Provider on its own URL; others see an access-denied message, no data | list from the service; filters status, date_from (default today, UI choice), date_to; "Xoá bộ lọc"; always "N Booking cần xử lý nằm ngoài bộ lọc" + "Xem tất cả" (`countActionsOutsideFilter`); rows via `bookingListRowView`; "Cần xử lý" label; Detail → BKG135; Create → BKG134; Messages → `/messages`; empty state (AS-6); previous/next page |
 | DSH018 (booking action summary only) | `/provider/{providerId}/dashboard` (#65) | same | `status_counts`, number of Bookings with `requires_action` (all of the Provider's Bookings), Bookings → BKG133 |
 
 Provider pages' "Bookings" links (`/provider/{id}` and `/provider/{id}/edit`) point to BKG133; the

@@ -59,11 +59,12 @@ and are reused, not changed.
 | #64 expiry before listing; just-expired hold listed Cancelled, `requires_action` false | `expireDueHolds(now)` after authorization | unit |
 | #64/#67 order: authorize → expire → read; denied request writes nothing | service order | unit (snapshot of bookings, history, chat rows) |
 | AS-5, #67, BR-001/BR-002/BR-014 Agency, UBND, HDT, Guest, other `provider_id` → 403 | `authorizeProviderList` | unit + API |
-| AS-4 select → F-SCHED-07 | BKG133 row link → BKG135 (on `main`) | demo |
+| AS-4 select → F-SCHED-07 | `bookingListRowView(...).detail_href` → BKG135 (on `main`) | unit + demo |
 | AS-6 explicit empty state | BKG133 empty panel | demo |
 | #65 DSH018 summary over all of the Provider's Bookings | `providerBookingSummary` reusing the list service | unit + demo |
 | #66 BKG133 route; Provider pages' Bookings links → BKG133; Agency link unchanged | page + link edits | demo |
-| SC-011 highlight not by colour alone | "Cần xử lý" label + marker | demo |
+| SC-011 highlight not by colour alone | `needs_action_label` "Cần xử lý" | unit + demo |
+| UI default `date_from` = today hides past actions (analyze H2) | `countActionsOutsideFilter` line on BKG133 | unit + demo |
 
 ## Constitution Check
 
@@ -101,7 +102,8 @@ Extends `specs/011-bkg-manage`; no new scaffold.
 
 ```text
 src/lib/booking/
-├── list-bookings.ts       # F-SCHED-10: validate query, authorize, expire, filter, sort, count, page
+├── list-bookings.ts       # F-SCHED-10: authorize, validate, expire, filter, sort, count, page; summary; out-of-filter count
+├── list-row-view.ts       # BKG133 row view: detail_href, needs_action_label, hold expiry (AS-4, SC-011)
 ├── booking-actions.ts     # (011) reused for requires_action (#59)
 ├── booking-access.ts      # (011) + authorizeProviderList(session, providerId?) (#67)
 ├── clock.ts               # (004) + hanoiDate(timestamp) for #62
@@ -122,8 +124,12 @@ URL, so no client state is needed.
 
 - BKG133 opens with `date_from` = today in Asia/Ho_Chi_Minh; a "Xoá bộ lọc" link removes all filters to
   show past Bookings. The API has no default date.
-- Each row: date and time, Agency, Experience, pax, status, hold expiry for On hold, a "Cần xử lý"
-  label for `requires_action` (text, not colour alone, SC-011), and Detail → BKG135.
+- Because that default hides past Booked Bookings that need Mark Group Arrival (analyze H2), BKG133
+  always shows "N Booking cần xử lý nằm ngoài bộ lọc" with a "Xem tất cả" link; N comes from
+  `countActionsOutsideFilter` (tested), which reuses the list service.
+- Each row comes from the tested helper `bookingListRowView` (analyze C1): date and time, Agency,
+  Experience, pax, status, hold expiry for On hold, a "Cần xử lý" label for `requires_action` (text,
+  not colour alone, SC-011), and Detail → BKG135 (`detail_href`, AS-4).
 - Buttons: Create → BKG134, Messages → `/messages`. Previous/next page links; page size = API default 20.
 - Empty state text for zero Bookings and for a filter that matches none (AS-6).
 - DSH018 is reached by URL (no other DSH018 panel exists yet); its Bookings button opens BKG133.

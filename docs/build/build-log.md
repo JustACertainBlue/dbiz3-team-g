@@ -428,6 +428,19 @@ did and what the humans decided.
 | Spec issues found | none. Windows run (G1) still pending. |
 | Commit | see `git log` ("docs(BKG): US-6 demo and polish (T026-T029)"); not pushed. |
 
+### Entry 26: 30/10 Claude Code — BKG 013 plan, tasks and analyze (US-1, US-2)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `start_feature.py --spec docs/spec/specs/spec-BKG.md BKG --name schedule` (gave `013-bkg-schedule`), `--use`, `--check`; `/speckit-plan` (US-1 + US-2, Phase A = F-SCHED-09 + F-SCHED-01 + SCH139/SCH140, Phase B = F-SCHED-02 + SCH141/BKG137 + nav); `/speckit-tasks`; `/speckit-analyze` |
+| Feature and tasks | `specs/013-bkg-schedule`, T001–T039 |
+| What the agent produced | `spec.md` snapshot (with #32, #33, #68–#82), `plan.md`, `research.md`, `data-model.md`, `contracts/schedule-api.md`, `quickstart.md`, `tasks.md` |
+| Human review | First plan review 6/8: the SCH140 route and entry point were not in the spec → human decided **#82** (PR #27); after `--refresh` the review was 8/8. Quickstart corrected before the tasks commit: Tràng An has a seed Booking (`0971a1b6…`, Completed, Phú Vinh). Analyze (0 CRITICAL): **H1** `CalendarGrid` moved to Foundational so Phase A and B share no task; **M1** SCH141 status filter added; **M2** calendar `status` is any string; **M3** helper `scheduleEntryFor` + `showScheduleLink` with test T039 for the SCH140 redirect and the Agency-only Explore link; **M4** T009 takes its slots from `calculateAvailability`. Recorded only: **L1** BKG137 village filter options come from the villages of the Agency's own Bookings; **L2** SCH139/SCH140 pages reuse the `canOpenCreateBooking` gate for the owner check (comment in code); **M3 (nav part)** the #68/#69 navigation links have no automated test, checked in the demo (T035); **L3** the human approved writing checklist §3 directly in T037. |
+| Tests | n/a (planning) |
+| Spec issues found | #82 (SCH140 route) — raised by the plan review, closed in the spec before tasks. |
+| Commit | `4c863c6` (plan), `6083bdf` (tasks), analyze fixes in the next commit |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

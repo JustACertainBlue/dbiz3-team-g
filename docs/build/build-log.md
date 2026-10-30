@@ -441,6 +441,19 @@ did and what the humans decided.
 | Spec issues found | #82 (SCH140 route) — raised by the plan review, closed in the spec before tasks. |
 | Commit | `4c863c6` (plan), `6083bdf` (tasks), analyze fixes in the next commit |
 
+### Entry 27: 30/10 Claude Code — BKG 013 Step 5 (tests first, US-1/US-2)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Step 5 only: T001–T004, T007–T014, T039, T023–T027 (tests and red runs). Code only T005/T006/T018 after T004.` |
+| Feature and tasks | `specs/013-bkg-schedule`, T001–T014, T018, T023–T027, T039 |
+| What the agent produced | Tests: `tests/unit/bkg-schedule-dates.test.ts` (T002), `bkg-schedule-access.test.ts` (T003), `bkg-availability.test.ts` (T007–T008), `bkg-availability-consistency.test.ts` (T009, slots taken from `calculateAvailability`), `bkg-provider-schedule.test.ts` (T010–T012, incl. the #73 allow-list and "denied requests write nothing"), `bkg-schedule-entry.test.ts` (T039), `tests/integration/bkg-schedule-api.test.ts` (T013), `bkg-agency-bookings.test.ts` (T023–T025), `tests/integration/bkg-agency-bookings-api.test.ts` (T026). Code after the T004 red run: `addDays`, `isQueryDate` (`clock.ts`), `authorizeProviderSchedule`, `authorizeAgencyList` (`booking-access.ts`), shared `src/app/schedule-calendar/CalendarGrid.tsx` (T018, UI only). |
+| Human review | Pending. |
+| Tests | T001 baseline 459 passed. T004: 6 failed — `addDays/isQueryDate/authorizeProviderSchedule/authorizeAgencyList is not a function`; after T005/T006 → 6 passed. T014 (Phase A): `Test Files 5 failed (5)` — `Cannot find module '@/lib/booking/availability'` (T007–T009), `'@/lib/booking/provider-schedule'` (T010–T012, T039), `'@/app/api/bkg/providers/[providerId]/schedule/route'` (T013). T027 (Phase B): `Test Files 2 failed (2)` — `Cannot find module '@/lib/booking/agency-bookings'`, `'@/app/api/bkg/agency/bookings/route'`. Full `npm test`: `Test Files 7 failed \| 69 passed (76)`, `Tests 465 passed (465)` (459 existing + 6 Foundational). `npm run lint` fails only in the 7 new test files (TS2307 missing modules; TS7006 implicit any that follows from them). |
+| Spec issues found | none |
+| Commit | see `git log` ("test(BKG): failing tests for US-1/US-2"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

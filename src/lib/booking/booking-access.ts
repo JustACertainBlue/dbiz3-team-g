@@ -39,3 +39,23 @@ export function authorizeProviderList(session: ActorSession, requestedProviderId
   }
   return session.providerId
 }
+
+// F-SCHED-01 (#74, #24): the owning Local Provider gets the owner view; an authenticated Tour Agency
+// gets the public view of a Verified Provider. An unknown or non-Verified Provider is not found.
+export function authorizeProviderSchedule(session: ActorSession, providerId: string): 'owner' | 'public' {
+  if (session.authenticated && session.role === 'LocalProvider' && session.providerId === providerId) return 'owner'
+  if (session.authenticated && session.role === 'TourAgency') {
+    const provider = demoRepository().find('provider_profiles', row => row.provider_id === providerId)
+    if (!provider || provider.verification_status !== 'Verified') throw new BookingError('NOT_FOUND', 'Provider not found')
+    return 'public'
+  }
+  throw new BookingError('FORBIDDEN', 'Only the Local Provider or a Tour Agency can open this schedule')
+}
+
+// F-SCHED-02 (#33, BR-002, BR-008): a Tour Agency reads only its own Bookings.
+export function authorizeAgencyList(session: ActorSession): string {
+  if (!session.authenticated || session.role !== 'TourAgency' || !session.agencyId) {
+    throw new BookingError('FORBIDDEN', 'Only a Tour Agency can list its Bookings')
+  }
+  return session.agencyId
+}

@@ -363,6 +363,19 @@ did and what the humans decided.
 | Spec issues found | none. Observation: denied pages answer HTTP 200 with a denial message (like BKG134 in 004), not 403; the data is not rendered. Windows run (G1) still pending. |
 | Commit | Not committed yet. |
 
+### Entry 21: 30/10 Claude Code — BKG 011 polish (T043–T046)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Human prompt: T043–T046, commit each step |
+| Feature and tasks | `specs/011-bkg-manage`, T043–T046 |
+| What the agent produced | T043: `npm run lint` passed (`tsconfig.tsbuildinfo` reverted), `python data/scripts/validate_seed.py` → `PASS: 47 CSVs/load headers; …`, `start_feature.py --check` → OK. T044: quickstart §4 (Entry 16, 15/15) and §5 (Entry 20, 9/9) on macOS; Windows still open. T045: this entry, §3 rows 8–9, §4 lesson for Entries 16–17; mutation results stay in Entries 14–15 (T009 create race, T022 update race, `applyBatch` persist-first). T046: `docs/build/mvp-alpha-checklist.md` §3 — #6 updated (race test now proves the lock), #7 F-SCHED-08 part closed (pre-fill still open), #8 updated (lazy + 60 s timer, #50), new #10 (denied pages answer 200 + message), #11 (BKG138 Back → `/explore`), #12 (no Provider-page link to BKG135). |
+| Human review | Checklist rows requested by the human in the prompt. |
+| Tests | No code change; last full run 427/427 at `2ed1c1c`. |
+| Spec issues found | none new. |
+| Commit | checklist `dd0e093`; this entry with T043–T046 marks in the next commit; not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -378,6 +391,8 @@ is never fixed silently in code.
 | 5 | Entry 3 | SC-011 described HDT_Admin activation, contradicting BR-015 and closed question 23, which specify automatic System promotion. | Source EXP spec SC-011 corrected in Entry 4 and snapshot refreshed. | Closed document inconsistency; runtime worker still open |
 | 6 | Entry 3 | Nearby relation requires 20 km but `data/` has no village coordinates. | Source EXP spec §10 question 30; same-Provider and same-type relations run locally. | Open data decision |
 | 7 | Entry 3 | A complete EXP delivery needs durable PostgreSQL storage, Auth/Chat adapters and a weekly worker, absent from this branch. | Tracked in `specs/001-exp-core/implementation-status.md`. | Open integration work |
+| 8 | Verify / Entry 16–17 (BKG 011) | §5.1 FR-004 defined `updated_booking` only as "Object; Required"; the API returned the raw row with string numbers and DB names. | spec-BKG #57 (PR #21): same shape as F-SCHED-07, one serializer. | Closed; code in Entry 19 |
+| 9 | Step 6 / Entry 19 (BKG 011) | screen-spec-BKG144 marks `target_status` Required, but details must be editable without a status change (Booked → Booked is an invalid transition). | spec-BKG #58 to be added at the next spec edit (decided 2026-10-30). | Decided; not yet in `docs/spec/` |
 
 ## 4. Agent mistakes worth remembering
 
@@ -392,3 +407,4 @@ does not happen again.
 | 2 | Direct read of `provider.business_name` from `provider_profiles.csv` instead of versioned `provider_profile_versions.csv` | Provider name assertion failed in `provider-service.test.ts` | Always join `provider_profile_versions` per Session 5 data model |
 | 10 (BKG) | The AC-BKG-RACE test (T015, `tests/unit/bkg-create-race.test.ts`) passes even with `withBookingWriteLock` removed: check (`findConflict`) and write (`applyBatch` → synchronous `persist`) run in one synchronous block, so no request can interleave in one Node process. AC-BKG-RACE currently holds because of that synchronous critical section; the lock itself is tested on its own by T005 (`tests/unit/bkg-write-lock.test.ts`). | Mutation check on 2026-10-30: lock removed temporarily, T015 still passed, file restored. | Comment above the lock in `src/lib/booking/create-booking.ts`. Before adding any `await` between check and write, add a test-only `afterConflictCheck` async pause option to `createBooking` and a new T015 case that fires two creates with the pause: it must fail without the lock and pass with it (plan.md Complexity Tracking, US-5). |
 | 15 (BKG 011) | First version of `update-booking`, `change-status` and `mark-arrival` ran `expireDueHoldsLocked` before the ownership check, so a denied request (Agency/UBND/HDT/Guest) on 2026-10-05 still cancelled expired seed hold `54d7a276…` and wrote history + a message. | T015 `nothing is written` snapshot assertion failed. | Code fixed, test unchanged: authorize with `loadBookingForActor` first, then run expiry, then re-read the Booking. Any service that writes as a side effect must check permission before the first write. |
+| 16–17 (BKG 011) | Unit and API tests for F-SCHED-04 checked only the top-level keys of the response, so `updated_booking` shipped with string numbers and DB field names; found only when reading the curl output of the US-5 demo. | Human read the demo JSON (Entry 16). | Spec #57 + tests that assert `typeof … === 'number'` and that PATCH equals the next GET (T029, T031). Read the demo response bodies, not only the status codes. |

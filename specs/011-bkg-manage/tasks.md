@@ -128,10 +128,10 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 
 ## Phase 5: Polish and verification
 
-- [ ] T043 Run `npm run lint`, `python data/scripts/validate_seed.py`, `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
-- [ ] T044 Walk quickstart §4 (API) and §5 (screens) of `specs/011-bkg-manage/quickstart.md` after `npm run demo:reset` with **one** dev server; record each step in `docs/build/build-log.md` (Windows run still needed for G1)
-- [ ] T045 Draft the build-log entries for this feature in `docs/build/build-log.md` (§2 entries, §3 spec issues, §4 lessons, including the T009/T022 mutation results)
-- [ ] T046 Draft updates for `docs/build/mvp-alpha-checklist.md` §3: close #7 (Chat message now sent), update #6 (race test now proves the lock) and #8 (expiry worker exists, lazy + timer per #50); add new BKG limitations if any — show to the human before writing
+- [X] T043 Run `npm run lint`, `python data/scripts/validate_seed.py`, `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
+- [X] T044 Walk quickstart §4 (API) and §5 (screens) of `specs/011-bkg-manage/quickstart.md` after `npm run demo:reset` with **one** dev server; record each step in `docs/build/build-log.md` (Windows run still needed for G1)
+- [X] T045 Draft the build-log entries for this feature in `docs/build/build-log.md` (§2 entries, §3 spec issues, §4 lessons, including the T009/T022 mutation results)
+- [X] T046 Draft updates for `docs/build/mvp-alpha-checklist.md` §3: close #7 (Chat message now sent), update #6 (race test now proves the lock) and #8 (expiry worker exists, lazy + timer per #50); add new BKG limitations if any — show to the human before writing
 
 ---
 

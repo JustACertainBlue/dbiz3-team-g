@@ -128,7 +128,9 @@ function validateInput(input: Record<string, unknown>): ValidInput {
 export async function createBooking(
   session: ActorSession,
   input: Record<string, unknown>,
-  options: { now?: Clock } = {},
+  // afterConflictCheck is a test-only seam: an async pause between the check and the write
+  // (tests/unit/bkg-race-pause.test.ts).
+  options: { now?: Clock; afterConflictCheck?: () => Promise<void> } = {},
 ): Promise<CreateBookingResult> {
   // BR-001: only a Local Provider controls the Booking lifecycle.
   if (!session.authenticated || session.role !== 'LocalProvider' || !session.providerId || !session.userId) {
@@ -163,9 +165,9 @@ export async function createBooking(
   const startAt = hanoiTimestamp(request.start)
   const endAt = hanoiTimestamp(request.start + request.duration * 60_000) // BR-020
 
-  // Check + write must stay synchronous inside this lock. If any await is added between
-  // findConflict and applyBatch, add a race test with an async pause (see build-log §4).
-  return withBookingWriteLock(() => {
+  // Check + write run inside this lock; tests/unit/bkg-race-pause.test.ts proves it with an
+  // async pause between findConflict and applyBatch (AC-BKG-RACE, build-log §4).
+  return withBookingWriteLock(async () => {
     // FR-003: atomic re-check against operating hours and On hold/Booked Bookings (BR-005, AC-BKG-RACE).
     const hours = repository.all('provider_operating_hours')
       .filter(row => row.provider_id === providerId)
@@ -176,6 +178,7 @@ export async function createBooking(
     if (findConflict(repository.all('bookings'), providerId, startAt, endAt)) {
       throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time overlaps another Booking')
     }
+    if (options.afterConflictCheck) await options.afterConflictCheck()
 
     const bookingId = randomUUID()
     const createdAt = hanoiTimestamp(now)

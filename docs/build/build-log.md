@@ -270,6 +270,19 @@ did and what the humans decided.
 | Spec issues found | `src/lib/demo/commercial-handoff-service.ts` writes `message_kind` values not allowed by `data/schema.sql` — recorded in research R8, owner AIT/IAC |
 | Commit | `4f02e70` (plan), `6a60d5b` (tasks), analyze fixes in the next commit |
 
+### Entry 14: 30/10 Claude Code — BKG 011 Step 5 (tests first, US-5)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Only T001–T004, T007–T009, T010–T017. Code allowed only for T008 (afterConflictCheck hook). Do not write code that makes T010–T016 pass.` |
+| Feature and tasks | `specs/011-bkg-manage`, T001–T004, T007–T017 (T005/T006 Foundational code not run) |
+| What the agent produced | Tests: `tests/unit/bkg-repository-batch-update.test.ts` (T002), `bkg-booking-access.test.ts` (T003), `bkg-race-pause.test.ts` (T007), `bkg-update-booking.test.ts` (T010), `bkg-change-status.test.ts` (T011), `bkg-mark-arrival.test.ts` (T012), `bkg-expire-holds.test.ts` (T013, incl. H1 no-deadlock and M2 create-over-expired-hold), `bkg-agency-sync.test.ts` (T014, incl. M6), `bkg-manage-access.test.ts` (T015), `tests/integration/bkg-manage-api.test.ts` (T016). Code (T008 only): test-only `afterConflictCheck` option in `src/lib/booking/create-booking.ts`; the lock callback is now `async` and awaits it between `findConflict` and `applyBatch`. |
+| Human review | Pending. |
+| Tests | Baseline (T001): `Tests 350 passed (350)`, lint passed, `--check` OK. T004: `booking-access` module missing; `applyBatch` ignores updates (2 of 3 T002 cases fail). **T009 mutation**: lock removed → `createBooking: two creates on one interval commit exactly one` FAILS ("expected … to have a length of 1 but got 2"); lock restored → passes. T017: all 8 US-5 files fail on `Cannot find module` (`update-booking`, `change-status`, `mark-arrival`, `[bookingId]/route`); race case (b) fails on missing `update-booking`. Full `npm test`: `Test Files 10 failed \| 46 passed (56)`, `Tests 3 failed \| 352 passed (355)` in 11.3 s, no hang — 350 existing + the race (a) case + the T002 "persist fails" case (passes trivially because updates are not applied yet). `npm run lint` fails only in the new test files (missing modules, `applyBatch` update shape); `src/` compiles. |
+| Spec issues found | none |
+| Commit | see `git log` ("test(BKG): failing tests for US-5 (+ race seam T008)"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

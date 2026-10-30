@@ -296,6 +296,19 @@ did and what the humans decided.
 | Spec issues found | none |
 | Commit | `61f2ce4`; not pushed. US-5 API demo (quickstart §4) not yet run. |
 
+### Entry 16: 30/10 Claude Code + human — BKG 011 US-5 API demo (quickstart §4, macOS)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); the human ran `demo:reset` and one `npm run dev`, the agent ran the curl steps and read `/messages` in the built-in browser |
+| Command and argument | `npm run demo:reset` (47 tables), `npm run dev` (one server, `localhost:3000`, started after the reset), then `specs/011-bkg-manage/quickstart.md` §4 steps 1–15 |
+| Feature and tasks | `specs/011-bkg-manage`, US-5 demo path (part of T043/T044 evidence) |
+| What the agent produced | No code change. Results: (1) create → `201`, `40da0dca…`, On hold, hold until 2026-11-02T12:46:43+07:00 (72 h); (3) group size 11 → `200`, `audit_log_id` and `agency_notification_message_id` set; (4) same update → `200`, both `null`, `updated_at` unchanged; (5) 16:30 → `409 SLOT_UNAVAILABLE` "outside the Provider operating hours"; (6) confirm → `200` On hold → Booked; (7) arrival before start → `200`, `transition_applied` `false`, `Tour Start Time Not Reached`; (8) arrival on seed `4bf17b30…` → `200`, `true`, Completed, `availability_released` `true`; (9) second create → `201`, `ea1d553c…`; (11) cancel without reason → `400 VALIDATION_ERROR`; (12) cancel with reason → `200` Cancelled, reason "Group postponed"; (13) update the cancelled Booking → `409 BOOKING_TERMINAL`; (14) cancel as Agency → `403 FORBIDDEN`; (15) `/messages` as Tràng An: exactly 5 Booking Update messages in the Chat with Bát Tràng (steps 1, 3, 6, 9, 12). `chat_messages` in `runtime.json` since the demo start: 7 Booking Update messages — 5 for Agency `02e568d8`, step 8 Completed in the Chat of Agency `ebf4fcfa`, seed expiry `54d7a276…` Cancelled in the Chat of Agency `14390b41`; steps 4, 5, 7, 11, 13, 14 wrote none. 15/15 match the quickstart. |
+| Human review | The human started the server; results read back by the agent. |
+| Tests | Not rerun (no code change since Entry 15; 406/406 before the demo). |
+| Spec issues found | none. Finding: `updated_booking` in steps 3–4 returns numeric fields as strings (`"group_size":"11"`, `"duration_minutes":"60"`, `"agreed_price_total":"2000000.00"`), because the JSON runtime is loaded from CSV — checked against §5.1 in the next entry. |
+| Commit | see `git log` ("docs(BKG): US-5 API demo on macOS"); not pushed. Windows run (G1) still pending. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

@@ -8,6 +8,7 @@ import ExploreTracker from '../../ExploreTracker';
 import { cookies } from 'next/headers';
 import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../../../lib/auth/demo-session';
 import ProviderChatAction from '../../ProviderChatAction';
+import { showScheduleLink } from '../../../../lib/booking/provider-schedule';
 
 export default function ProviderPage({ params }: { params: { id: string } }) {
   const seed = loadExploreRuntime();
@@ -26,7 +27,7 @@ export default function ProviderPage({ params }: { params: { id: string } }) {
 
       <section className="provider-hero">
         <div className="provider-hero__copy"><span className="verified-provider">✓ Verified heritage provider</span><p className="eyebrow">{detail.village_name} · {detail.craft_type}</p><h1>{detail.provider_name}</h1><p className="hero-lead">{detail.public_bio}</p>
-          <div className="provider-hero__actions">{isAgency ? <ProviderChatAction experienceId={detail.experiences[0]?.id} /> : <Link className="button" href="/login">Đăng nhập để hợp tác</Link>}<a className="button button--secondary" href="#experiences">Xem trải nghiệm</a></div></div>
+          <div className="provider-hero__actions">{isAgency ? <><ProviderChatAction experienceId={detail.experiences[0]?.id} />{showScheduleLink(session) && <Link className="button button--secondary" href={`/explore/providers/${params.id}/schedule`}>Xem lịch trống</Link>}</> : <Link className="button" href="/login">Đăng nhập để hợp tác</Link>}<a className="button button--secondary" href="#experiences">Xem trải nghiệm</a></div></div>
         <div className="provider-portrait" role="img" aria-label={`Minh họa ${detail.provider_name}`}><div className="portrait-seal"><span>Est.</span><strong>HN</strong></div><p>Artisan workshop</p><small>{detail.craft_type}</small></div>
       </section>
 

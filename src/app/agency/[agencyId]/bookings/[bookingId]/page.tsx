@@ -19,7 +19,7 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
   return <main className="bkg-page">
     <header><p>HANOI ARTISAN BRIDGE · BKG138</p><h1>Booking Detail</h1><span>Chỉ xem · mọi thay đổi do Local Provider thực hiện</span></header>
     <BookingDetailView detail={detail} />
-    <p className="bkg-actions"><Link href="/messages">Chat</Link><Link href="/explore">← Back</Link></p>
+    <p className="bkg-actions"><Link href="/messages">Chat</Link><Link href={`/agency/${params.agencyId}/bookings`}>← Back</Link></p>
     <style>{bookingDetailStyles}</style>
   </main>
 }

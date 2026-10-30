@@ -454,6 +454,19 @@ did and what the humans decided.
 | Spec issues found | none |
 | Commit | see `git log` ("test(BKG): failing tests for US-1/US-2"); not pushed. |
 
+### Entry 28: 30/10 Claude Code — BKG 013 Step 6 (code, US-1/US-2)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement` Step 6: T015–T017, T019–T022, T028–T033 ("Do not change any test") plus three mutation checks |
+| Feature and tasks | `specs/013-bkg-schedule`, T015–T033 |
+| What the agent produced | Phase A: `src/lib/booking/availability.ts` (`buildCalendarBlocks` paints Unavailable → operating windows Available → On hold/Booked, merges, public view drops `booking_id` before merging; `calculateAvailability`), `src/lib/booking/provider-schedule.ts` (`getProviderSchedule` authorize → validate (#71) → expire → read, public blocks from the allow-list; `scheduleEntryFor`, `showScheduleLink`), `GET /api/bkg/providers/[providerId]/schedule`, SCH139 `src/app/provider/[providerId]/schedule/page.tsx` (block → panel with `BookingActionsBar` + View → BKG135), SCH140 `src/app/explore/providers/[id]/schedule/page.tsx` (owner redirect, Select day, Request Quote → Explore), "Xem lịch trống" link in `src/app/explore/providers/[id]/page.tsx` (EXP file, one link). Phase B: `src/lib/booking/agency-bookings.ts`, `GET /api/bkg/agency/bookings`, BKG137 `src/app/agency/[agencyId]/bookings/page.tsx`, SCH141 `src/app/agency/[agencyId]/schedule/page.tsx` (status + date filters), `src/app/agency/[agencyId]/agency-booking-gate.ts` (gate + own villages, L1); nav links in `src/app/provider/[providerId]/page.tsx`, `edit/page.tsx`, `src/app/agency/[agencyId]/page.tsx` (PRF files, link edits only); BKG138 Back → BKG137. |
+| Human review | Pending. |
+| Tests | `npm test`: `Test Files 76 passed (76)`, `Tests 501 passed (501)`; `npm run lint` first failed in `availability.ts` and the T007 test file (TS2345: `hours` typed `OperatingHoursRow[]`, too narrow for stored rows) — fixed in code by a wider `HoursRow` type, test unchanged; then lint exit 0. `git diff --stat 9257631 -- tests/` empty. **Mutations** (restored, files identical): (a) `agency_name` added to public blocks → T011 and T013 FAIL `expected [ 'agency_name', 'end_at', …(2) ] to deeply equal [ 'end_at', 'start_at', 'status' ]`, restored → pass; (b) `expireDueHolds` before `authorizeProviderSchedule` → T012 "denied requests write nothing" FAIL `expected [ Array(5) ] to deeply equal [ Array(5) ]`, restored → pass; (c) Bookings outside an Available window skipped (Unavailable wins) → T007 #32 FAIL `expected [ [ '00:00', '00:00', 'Unavailable' ] ] to deeply equal …`, restored → pass. |
+| Spec issues found | none |
+| Commit | see `git log` ("feat(BKG): US-1 View Schedule and US-2 Availability"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

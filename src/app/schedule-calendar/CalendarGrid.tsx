@@ -34,8 +34,8 @@ export default function CalendarGrid({ days, blocks, selectedDate, hrefFor }: {
             const href = hrefFor?.(block)
             const style = { left: `${left}%`, width: `${width}%` }
             return href
-              ? <Link key={block.start_at} href={href} className={`cal-block ${statusClass(block.status)}`} style={style} title={label}><span>{label}</span></Link>
-              : <span key={block.start_at} className={`cal-block ${statusClass(block.status)}`} style={style} title={label}><span>{label}</span></span>
+              ? <Link key={`${block.start_at}-${block.booking_id ?? block.status}`} href={href} className={`cal-block ${statusClass(block.status)}`} style={style} title={label}><span>{label}</span></Link>
+              : <span key={`${block.start_at}-${block.booking_id ?? block.status}`} className={`cal-block ${statusClass(block.status)}`} style={style} title={label}><span>{label}</span></span>
           })}
         </div>
       </section>

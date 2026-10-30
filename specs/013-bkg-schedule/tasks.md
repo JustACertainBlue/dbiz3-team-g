@@ -77,13 +77,13 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 
 ### Implementation for Phase A
 
-- [ ] T015 [US2] Implement `buildCalendarBlocks` and `calculateAvailability` in `src/lib/booking/availability.ts` (makes T007, T008 pass; T009 must stay green)
-- [ ] T016 [US1] Implement `getProviderSchedule` in `src/lib/booking/provider-schedule.ts`: `authorizeProviderSchedule` → validate (#71, `isQueryDate`, `addDays`) → `expireDueHolds(now)` → `calculateAvailability`; public blocks built from the allow-list `{ start_at, end_at, status }`; `operating_hours` with seven keys; plus `scheduleEntryFor` and `showScheduleLink` (makes T010–T012, T039 pass)
-- [ ] T017 [US1] Add `GET` in `src/app/api/bkg/providers/[providerId]/schedule/route.ts` with the `BookingError` → status mapping (400, 403, 404) (makes T013 pass)
-- [ ] T019 [US1] Screen SCH139 in `src/app/provider/[providerId]/schedule/page.tsx` (`canOpenCreateBooking` gate; `getProviderSchedule` owner view; range links "← 30 ngày trước / 30 ngày sau →"; selecting an own block (query `booking`) shows a panel with `BookingActionsBar` from `src/app/provider/[providerId]/bookings/[bookingId]/BookingActionsBar.tsx` and View → BKG135 (#76); Create → BKG134; Operating hours → `/provider/{providerId}/edit`)
-- [ ] T020 [US1] Screen SCH140 in `src/app/explore/providers/[id]/schedule/page.tsx` (#82), branching on `scheduleEntryFor` (tested): `'redirect-owner'` → redirect to `/provider/{id}/schedule`; `'public'` → public view; `'not-found'` → not-found message; `'denied'` → access-denied message; "Select day" (query `day`) highlights that row; Request Quote → `/explore/providers/{id}` (#75)
-- [ ] T021 [US1] Add the "Xem lịch trống" link to `src/app/explore/providers/[id]/page.tsx`, shown only when `showScheduleLink(session)` (tested by T039), next to the Chat action (#82) — EXP-owned file: one link only
-- [ ] T022 [US1] Run `npm test`: all suites pass (459 + Foundational + Phase A), no test file edited since T014; mark T002–T021 and T039 `[X]` in `specs/013-bkg-schedule/tasks.md`
+- [X] T015 [US2] Implement `buildCalendarBlocks` and `calculateAvailability` in `src/lib/booking/availability.ts` (makes T007, T008 pass; T009 must stay green)
+- [X] T016 [US1] Implement `getProviderSchedule` in `src/lib/booking/provider-schedule.ts`: `authorizeProviderSchedule` → validate (#71, `isQueryDate`, `addDays`) → `expireDueHolds(now)` → `calculateAvailability`; public blocks built from the allow-list `{ start_at, end_at, status }`; `operating_hours` with seven keys; plus `scheduleEntryFor` and `showScheduleLink` (makes T010–T012, T039 pass)
+- [X] T017 [US1] Add `GET` in `src/app/api/bkg/providers/[providerId]/schedule/route.ts` with the `BookingError` → status mapping (400, 403, 404) (makes T013 pass)
+- [X] T019 [US1] Screen SCH139 in `src/app/provider/[providerId]/schedule/page.tsx` (`canOpenCreateBooking` gate; `getProviderSchedule` owner view; range links "← 30 ngày trước / 30 ngày sau →"; selecting an own block (query `booking`) shows a panel with `BookingActionsBar` from `src/app/provider/[providerId]/bookings/[bookingId]/BookingActionsBar.tsx` and View → BKG135 (#76); Create → BKG134; Operating hours → `/provider/{providerId}/edit`)
+- [X] T020 [US1] Screen SCH140 in `src/app/explore/providers/[id]/schedule/page.tsx` (#82), branching on `scheduleEntryFor` (tested): `'redirect-owner'` → redirect to `/provider/{id}/schedule`; `'public'` → public view; `'not-found'` → not-found message; `'denied'` → access-denied message; "Select day" (query `day`) highlights that row; Request Quote → `/explore/providers/{id}` (#75)
+- [X] T021 [US1] Add the "Xem lịch trống" link to `src/app/explore/providers/[id]/page.tsx`, shown only when `showScheduleLink(session)` (tested by T039), next to the Chat action (#82) — EXP-owned file: one link only
+- [X] T022 [US1] Run `npm test`: all suites pass (459 + Foundational + Phase A), no test file edited since T014; mark T002–T021 and T039 `[X]` in `specs/013-bkg-schedule/tasks.md`
 
 **Checkpoint**: Phase A demonstrable alone (quickstart §2–§3).
 
@@ -105,12 +105,12 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 
 ### Implementation for Phase B
 
-- [ ] T028 [US1] Implement `listAgencyBookings` in `src/lib/booking/agency-bookings.ts`: `authorizeAgencyList` → validate → `expireDueHolds(now)` → read; names from `villages.name` and the Provider's `published_version_no` in `provider_profile_versions` (#79) (makes T023–T025 pass)
-- [ ] T029 [US1] Add `GET` in `src/app/api/bkg/agency/bookings/route.ts` (makes T026 pass)
-- [ ] T030 [US1] Screen BKG137 in `src/app/agency/[agencyId]/bookings/page.tsx` (`canViewAgencyBooking`-style gate: Tour Agency on its own `agencyId`; filters status / village / date range as page query; rows with Booking detail → BKG138; Schedule → SCH141; empty state)
-- [ ] T031 [US1] Screen SCH141 in `src/app/agency/[agencyId]/schedule/page.tsx` (same gate; date range and **status filter** as page query (screen-spec SCH141 element 3, analyze M1), passed to `listAgencyBookings`; default range today .. +29, UI choice; `CalendarGrid` with own Booking blocks labelled by status, View booking → BKG138; Chat → `/messages`)
-- [ ] T032 [US1] Navigation (#68, #69): in `src/app/provider/[providerId]/page.tsx` and `src/app/provider/[providerId]/edit/page.tsx` "Dashboard" → `/provider/{id}/dashboard`, "Schedule" → `/provider/{id}/schedule`; in `src/app/agency/[agencyId]/page.tsx` "Bookings" → `/agency/{id}/bookings`, "Schedule" → `/agency/{id}/schedule`; in `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx` Back → `/agency/{agencyId}/bookings`
-- [ ] T033 [US1] Run `npm test`: all suites pass, no test file edited since T027; mark T023–T032 `[X]` in `specs/013-bkg-schedule/tasks.md`
+- [X] T028 [US1] Implement `listAgencyBookings` in `src/lib/booking/agency-bookings.ts`: `authorizeAgencyList` → validate → `expireDueHolds(now)` → read; names from `villages.name` and the Provider's `published_version_no` in `provider_profile_versions` (#79) (makes T023–T025 pass)
+- [X] T029 [US1] Add `GET` in `src/app/api/bkg/agency/bookings/route.ts` (makes T026 pass)
+- [X] T030 [US1] Screen BKG137 in `src/app/agency/[agencyId]/bookings/page.tsx` (`canViewAgencyBooking`-style gate: Tour Agency on its own `agencyId`; filters status / village / date range as page query; rows with Booking detail → BKG138; Schedule → SCH141; empty state)
+- [X] T031 [US1] Screen SCH141 in `src/app/agency/[agencyId]/schedule/page.tsx` (same gate; date range and **status filter** as page query (screen-spec SCH141 element 3, analyze M1), passed to `listAgencyBookings`; default range today .. +29, UI choice; `CalendarGrid` with own Booking blocks labelled by status, View booking → BKG138; Chat → `/messages`)
+- [X] T032 [US1] Navigation (#68, #69): in `src/app/provider/[providerId]/page.tsx` and `src/app/provider/[providerId]/edit/page.tsx` "Dashboard" → `/provider/{id}/dashboard`, "Schedule" → `/provider/{id}/schedule`; in `src/app/agency/[agencyId]/page.tsx` "Bookings" → `/agency/{id}/bookings`, "Schedule" → `/agency/{id}/schedule`; in `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx` Back → `/agency/{agencyId}/bookings`
+- [X] T033 [US1] Run `npm test`: all suites pass, no test file edited since T027; mark T023–T032 `[X]` in `specs/013-bkg-schedule/tasks.md`
 
 **Checkpoint**: Phase B demonstrable alone (quickstart §4–§5).
 

@@ -1,103 +1,99 @@
 # Quickstart: 001-ait-core (AI Tour Matching)
 
-This guide provides exact commands to set up, seed, test, and run the feature slice from a fresh clone on **macOS** and **Windows** using only free tools.
+Requires Node.js 22 or newer, Git 2.40 or newer and Python 3.11 (or `uv`). Run from the repository
+root; commands are the same on macOS and Windows (PowerShell: type `curl.exe`). AIT is merged into
+`main`; the old `001-ait-core` branch is stale and is not used.
+
+No `.env` is needed for this slice: AI extraction is a local mock (no OpenAI call) and route distance is
+mocked (no Google Maps call). All data comes from the shared JSON runtime seeded from `data/seed/`.
 
 ---
 
-## 1. Prerequisites
+## 1. Fresh clone, checks, one dev server
 
-- **Node.js**: `>= 22.0.0` (Free, available via [nodejs.org](https://nodejs.org))
-- **Git**: `>= 2.40`
-- **Python** (for running the synthetic seed validation script in `data/`): `>= 3.11` (or `uv`)
-
----
-
-## 2. Setup from Fresh Clone
-
-### macOS & Linux
-```bash
-# 1. Clone & checkout branch
+```text
 git clone https://github.com/JustACertainBlue/dbiz3-team-g.git
 cd dbiz3-team-g
-git switch 001-ait-core
-
-# 2. Install dependencies
-npm install
-
-# 3. Environment configuration
-cp .env.example .env 2>/dev/null || cat << 'EOF' > .env
-NODE_ENV=development
-PORT=3000
-OPENAI_API_KEY=mock-key-for-test
-DATABASE_URL=file:./dev.db
-EOF
-```
-
-### Windows (PowerShell)
-```powershell
-# 1. Clone & checkout branch
-git clone https://github.com/JustACertainBlue/dbiz3-team-g.git
-cd dbiz3-team-g
-git switch 001-ait-core
-
-# 2. Install dependencies
-npm install
-
-# 3. Environment configuration
-if (!(Test-Path .env)) {
-@"
-NODE_ENV=development
-PORT=3000
-OPENAI_API_KEY=mock-key-for-test
-DATABASE_URL=file:./dev.db
-"@ | Out-File -FilePath .env -Encoding utf8
-}
-```
-
----
-
-## 3. Seed Data Verification & Loading
-
-Verify the canonical synthetic seed data before running tests:
-
-### macOS / Linux / Windows
-```bash
+git switch main
+npm ci
+uv run tools/start_feature.py --use specs/001-ait-core
+uv run tools/start_feature.py --check
 python data/scripts/validate_seed.py
-```
-*Expected output: All 46 CSV tables validated, foreign keys intact, 0 errors.*
-
----
-
-## 4. Run Automated Tests (Test-First Verification)
-
-Run the full automated test suite verifying business rules `BR-001` through `BR-022`:
-
-```bash
-# Run all tests
 npm test
-
-# Run contract tests only
-npx vitest run tests/contract/
-
-# Run business rules unit tests only
-npx vitest run tests/unit/
-```
-
-### Seed Data Assertion Check
-Included automated test fixture loads canonical seed data from `data/seed/` and validates:
-- Exactly 8 craft villages in `data/seed/villages.csv` (including Bát Tràng, Vạn Phúc, Chuông, Quất Động, Phú Vinh).
-- Seeded verified experiences belong to Verified local providers with published profile versions.
-
----
-
-## 5. Start the Application
-
-Start the local development server:
-
-```bash
+npm run lint
+npm run demo:reset
 npm run dev
 ```
 
-Open your browser at:
-- **Matching Interface (Screen AIT121)**: `http://localhost:3000/ai-matching`
-- **Health Check & API**: `http://localhost:3000/api/ait/sessions`
+Expected: `--check` prints `OK`; `validate_seed.py` prints `PASS: 47 CSVs/load headers; …`; `npm test`
+ends with all tests passed; `npm run lint` prints no error. `npm run demo:reset` copies `data/seed/*.csv`
+to `.demo-data/runtime.json` (git-ignored). Run **only one** dev server and stop it before any
+`demo:reset` (the runtime is loaded once per process).
+
+Useful test subsets:
+
+```text
+npx vitest run tests/integration/ait-matching-api.test.ts
+npx vitest run tests/contract/ tests/unit/clarification.test.ts tests/unit/recommendations.test.ts
+```
+
+Seed facts used below (Experiences of Verified Providers with a published profile version):
+
+| Village | Experience | Max pax | Price / pax | Provider `craft_type` |
+|---|---|---|---|---|
+| Vạn Phúc | Dệt lụa truyền thống | 13 | 175,000 | Silk/Textile |
+| Bát Tràng | Nặn gốm thủ công | 12 | 150,000 | Ceramics |
+| Phú Vinh | Đan mây tre | 14 | 200,000 | Other |
+| Chuông | Làm nón lá | 15 | 225,000 | Other |
+| Quất Động | Thêu họa tiết | 16 | 250,000 | Silk/Textile |
+
+Demo Agency: cookie `hab_demo_account=agency` (Công ty Du lịch Tràng An,
+`02e568d8-d65e-54b1-a554-b411150d1dcb`). Switch roles with the Role Switcher at the top of each page.
+
+## 2. Demo path (one Matching Session, AIT121)
+
+> The expected results in §2 and §3 are the behaviour after `tasks.md` Phase 5 (Round 3 fixes, spec
+> #23–#34). Until T054 is checked, parts of this path (origin follow-up, Budget suggestion, redirect,
+> Retry, opening Messages) do not match `main`.
+
+Open `http://localhost:3000/explore`, choose **Tour Agency**, then **AI Tour Matching**
+(`http://localhost:3000/ai-matching`). Send each line in the same conversation:
+
+| # | Message | Expected |
+|---|---|---|
+| 1 | `Silk weaving` | Follow-up questions for group size, date and origin (OQ #4, #29); no cards |
+| 2 | `10 pax on 2026-11-20 from Hoàn Kiếm` | 5 cards, Vạn Phúc #1; scores differ; each explanation names only evaluated factors (#25) |
+| 3 | `Change to 15 pax` | Only Quất Động and Chuông |
+| 4 | `Change to 13 pax` | 4 cards, no Bát Tràng (max 12) |
+| 5 | `Change to 200 pax` | No match; the message names capacity (largest group 16); no Budget suggestion (#24) |
+| 6 | `Change to 10 pax, budget 20,000 VND per person` | No match; Budget suggestion 150,000 (#23) |
+| 7 | `Change budget to 150,000 VND per person` | At least one card (Bát Tràng) |
+
+On a card: **Request Quote** twice keeps the same Quote Request and opens Messages (COM048) with that
+Chat selected (#31); **Chat** opens the same Chat for that Provider; no Booking is created (BR-009,
+BR-010, BR-018, BR-019). A fresh session with message 1 + `15 pax on 2026-11-20 from Hoàn Kiếm` gives
+the same list as row 3.
+
+Access: as **Guest**, `http://localhost:3000/ai-matching` redirects to `/login` (BR-002, #28); as
+**Local Provider** or an Admin, an access-restricted page is shown.
+
+Failure: stop the dev server and send a message from an open AIT121 page. Expected: "Temporary AI
+Failure — we couldn't process your request right now. Your conversation is saved." with **Retry**, and
+no cards (FR-003, BR-017, #27).
+
+## 3. Same path with curl (API)
+
+```text
+curl -s -X POST http://localhost:3000/api/ait/sessions -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{}"
+curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/messages -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{\"sender\":\"Agency\",\"text\":\"Silk weaving, 10 pax on 2026-11-20 from Hoàn Kiếm\"}"
+curl -s -X POST http://localhost:3000/api/ait/matching -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{\"session_id\":\"<session_id>\",\"tour_preference_profile\":<tour_preference_profile from the previous response>}"
+curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/quote -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{\"experience_id\":\"c8281688-2dc1-5cb1-9ff6-139df04ba562\"}"
+curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/chat -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{\"experience_id\":\"c8281688-2dc1-5cb1-9ff6-139df04ba562\"}"
+```
+
+Expected: session `201` with `session_id`; the messages response has `extraction.is_complete =
+true` and a `tour_preference_profile`; matching returns `top_matches` with Vạn Phúc #1; running quote or
+chat twice returns the same `quote_request_id` / `chat_session_id`. With cookie `guest` every AIT route
+returns `401`.
+
+Afterwards: stop the dev server; `npm run demo:reset` restores the seed.

@@ -1,118 +1,162 @@
 # Contract: AI Tour Matching REST API
 
+Updated 2026-10-30 (Round 3, `tasks.md` Phase 5) to match the code on `main` and the behaviour after
+Phase 5. Spec decisions referenced as `#n` are in spec §10.
+
+**Authentication** (all endpoints): demo session cookie `hab_demo_account` (`guest | agency | provider |
+ubnd | hdt`, `src/lib/auth/demo-session.ts`); AUT login is not integrated. Every endpoint authorizes
+first, then validates the body, then reads or writes; a denied or invalid request writes nothing.
+
+| Status | When |
+|---|---|
+| `401` | Not authenticated (Guest) — BR-002 |
+| `403` | Authenticated but not a Tour Agency, or the matching session belongs to another Agency — BR-001 |
+
 ## Endpoints Summary
 
 | Method | Path | Summary | Spec References |
 |---|---|---|---|
-| `POST` | `/api/ait/sessions` | Open new matching session | FR-001, BR-001, BR-002, BR-016 |
-| `POST` | `/api/ait/sessions/:id/messages` | Send message, analyze intent & receive recommendations/clarifications | FR-002..FR-009, BR-004..BR-008, BR-017 |
-| `POST` | `/api/ait/sessions/:id/quote` | Initiate Request Quote handoff | FR-011, BR-009, BR-018 |
-| `POST` | `/api/ait/sessions/:id/chat` | Initiate direct Chat handoff | FR-011, BR-019 |
-| `GET` | `/api/ait/preferences/:agencyId` | Fetch Agency preference profile & personalized ranking | FR-010, FR-016, BR-022 |
-| `POST` | `/api/ait/decay` | Trigger time decay on preference signals | FR-015, BR-021 |
+| `POST` | `/api/ait/sessions` | Open a matching session | FR-001, BR-001, BR-002, BR-016 |
+| `POST` | `/api/ait/sessions/:id/messages` | Store an Agency message and analyze the conversation; or re-analyze (`retry`) | FR-002..FR-004, FR-009, BR-004, BR-008, BR-017, #27, #29, #33, #34 |
+| `GET` | `/api/ait/sessions/:id/messages` | Conversation history | FR-002 |
+| `POST` | `/api/ait/matching` | Retrieve, filter, rank and explain candidates for a Tour Preference Profile; no-match relaxation | FR-005..FR-008, FR-012, BR-003, BR-005..BR-007, BR-011, BR-020, #23..#26, #30, #32 |
+| `POST` | `/api/ait/sessions/:id/quote` | Request Quote handoff | FR-011, BR-009, BR-010, BR-018, #31 |
+| `POST` | `/api/ait/sessions/:id/chat` | Direct Chat handoff | FR-011, BR-019, #31 |
+| `GET` | `/api/ait/preferences/:agencyId` | Agency preference profile and personalized ranking | FR-010, FR-016, BR-022 |
+
+There is no `/api/ait/decay` endpoint; time decay (FR-015, BR-021) is a library function
+(`src/lib/decay/time-decay.ts`).
 
 ---
 
 ### 1. `POST /api/ait/sessions`
-Opens a new matching session for an authenticated Tour Agency.
 
-- **Headers**:
-  - `Authorization: Bearer <token>`
+- **Request body**: `{}`
 - **Response `201 Created`**:
   ```json
   {
-    "matching_session_id": "7f8b911a-3e5c-48c2-bb50-3a812da05b10",
-    "agency_id": "4b68e9e1-2c06-4447-b8db-d50d75c87910",
-    "started_at": "2026-10-07T09:00:00Z",
-    "status": "Active"
+    "matching_session_id": "7749ac9e-a2b6-4cb1-b878-42a66f237c9f",
+    "session_id": "7749ac9e-a2b6-4cb1-b878-42a66f237c9f",
+    "agency_id": "02e568d8-d65e-54b1-a554-b411150d1dcb",
+    "started_at": "2026-10-30T15:41:50.169Z",
+    "last_activity_at": "2026-10-30T15:41:50.169Z",
+    "status": "active"
   }
   ```
-- **Error Responses**:
-  - `401 Unauthorized` / `302 Redirect /login`: When user is not authenticated (`BR-002`).
-  - `403 Forbidden`: When user role is not `Agency` (`BR-001`).
+- **Errors**: `401 { "error": "Unauthorized", "redirectTo": "/login" }`; `403` for a non-Agency actor
+  (no session is created, #28).
 
 ---
 
 ### 2. `POST /api/ait/sessions/:id/messages`
-Processes natural language tour requirements from the Tour Agency.
 
-- **Request Body**:
+- **Request body (new message)**: `{ "sender": "Agency", "text": "Silk weaving, 10 pax on 2026-11-20 from Hoàn Kiếm" }`
+  (`text` 1–2,000 characters).
+- **Request body (Retry, #33)**: `{ "retry": true }` — re-analyzes the stored conversation; no message is
+  added.
+- **Response `201 Created`** (new message) / **`200 OK`** (retry):
   ```json
   {
-    "message_text": "We have 15 French tourists visiting Hanoi on Nov 10, wanting a traditional pottery workshop in Bat Trang with budget around 400,000 VND per person."
-  }
-  ```
-- **Response `200 OK` (When critical fields are complete — Recommendations produced)**:
-  ```json
-  {
-    "message_id": "6a9f4a90-3fb1-43ee-b141-9277d0a28f80",
-    "is_complete": true,
-    "tour_context": {
-      "group_size": 15,
-      "tour_purpose": "Cultural Workshop",
-      "craft_types": ["Pottery"],
-      "target_date": "2026-11-10",
-      "budget_max": 400000,
-      "origin": "Old Quarter, Hanoi"
+    "message": { "message_id": "…", "sender": "Agency", "text": "…", "sent_at": "…" },
+    "extraction": {
+      "is_complete": true,
+      "processing_status": "Success",
+      "retry_available": false,
+      "follow_up_questions": [],
+      "tour_context": {
+        "group_size": 10,
+        "target_date_or_range": { "start_date": "2026-11-20" },
+        "origin_or_route": { "origin_address": "Hoàn Kiếm" },
+        "craft_preference": "silk"
+      }
     },
-    "recommendations": {
-      "run_no": 1,
-      "top_matches": [
-        {
-          "rank": 1,
-          "experience_id": "550e8400-e29b-41d4-a716-446655440000",
-          "name": "Bat Trang Traditional Ceramic Crafting",
-          "provider_name": "Gom Su Bat Trang Artisan Co.",
-          "village_name": "Bat Trang Ceramic Village",
-          "match_score": 94.5,
-          "experience_fit_score": 96.0,
-          "price_per_person": 350000,
-          "explanation": "Perfect match for group size 15 and budget 400k. Verified master artisan workshop located in Bat Trang."
-        }
-      ],
-      "additional_suggestions": []
+    "tour_preference_profile": {
+      "hard_constraints": { "group_size": 10, "target_date_or_range": { "start_date": "2026-11-20" }, "origin": { "origin_address": "Hoàn Kiếm" } },
+      "matching_attributes": [{ "type": "craft_preference", "value": "silk" }],
+      "preference_weights": { "experience_fit": 0.4, "route_convenience": 0.25, "agency_preferences": 0.2, "provider_quality": 0.15 }
     }
   }
   ```
-- **Response `200 OK` (When critical fields are missing — Clarification requested)**:
-  ```json
-  {
-    "message_id": "6a9f4a90-3fb1-43ee-b141-9277d0a28f80",
-    "is_complete": false,
-    "follow_up_questions": [
-      "How many participants will be joining this tour?",
-      "What is your intended date or timeframe for visiting?"
-    ],
-    "recommendations": null
-  }
-  ```
-- **Response `503 Service Unavailable`**:
+  `message` is `null` on retry. While any OQ #4 field (group size, date, origin, Experience preference
+  #34) is missing: `is_complete: false`, one follow-up question per missing field, and
+  `tour_preference_profile: null`. No field is defaulted (#29).
+- **Response `503 Service Unavailable`** (AI processing failed, #27): the Agency message stays stored.
   ```json
   {
     "error_code": "AI_SERVICE_UNAVAILABLE",
-    "message": "Temporary AI Failure. Conversation state is preserved.",
+    "message": "Temporary AI Failure — we couldn't process your request right now. Your conversation is saved.",
     "retry_available": true
   }
   ```
+- **Errors**: `400` empty or over-long text; `401`; `403`.
 
 ---
 
-### 3. `POST /api/ait/sessions/:id/quote`
-Triggers commercial Request Quote interest handoff (`BR-009`, `BR-018`).
+### 3. `POST /api/ait/matching`
 
-- **Request Body**:
+- **Request body**: `{ "session_id": "…", "tour_preference_profile": { … from §2 … } }`
+- **Response `200 OK` (matches)**: candidates scoring below 60 are dropped (#30); up to 5 `top_matches`
+  and up to 5 `additional_suggestions`.
   ```json
   {
-    "experience_id": "550e8400-e29b-41d4-a716-446655440000"
+    "top_matches": [
+      {
+        "experience_id": "c8281688-2dc1-5cb1-9ff6-139df04ba562",
+        "provider_id": "…",
+        "experience_name": "Dệt lụa truyền thống",
+        "provider_name": "Xưởng thủ công Vạn Phúc",
+        "village_name": "Vạn Phúc",
+        "rank": 1,
+        "match_score": 89.4,
+        "price_per_person": 175000,
+        "max_participants": 13,
+        "explanation": "Matches your silk preference (Silk/Textile). Takes up to 13 pax for your group of 10. About 12 km from Hoàn Kiếm (estimated)."
+      }
+    ],
+    "additional_suggestions": []
   }
   ```
+  The explanation names only evaluated profile factors (#25); the wording above is illustrative.
+- **Response `200 OK` (no match, FR-012)**:
+  ```json
+  {
+    "top_matches": [],
+    "relaxation_suggestions": {
+      "relaxation_suggestions": [
+        { "criterion": "Budget", "suggested_value": 150000 },
+        { "criterion": "Distance", "suggested_value": "Expand radius by 15km to include outer craft villages" },
+        { "criterion": "Dates", "suggested_value": "Consider flexible dates (+/- 2 days)" }
+      ],
+      "conversation_prompt": "…"
+    }
+  }
+  ```
+  `criterion` ∈ {Budget, Distance, Dates}. The Budget value is the lowest price among candidates that
+  pass every non-budget constraint and score ≥ 60 (#23, #30); it is omitted when there is none. When
+  capacity is the reason, `conversation_prompt` names it with the largest accepted group (#24).
+- **Errors**: `400` missing `tour_preference_profile`; `401`; `403`.
+
+---
+
+### 4. `POST /api/ait/sessions/:id/quote`
+
+- **Request body**: `{ "experience_id": "c8281688-2dc1-5cb1-9ff6-139df04ba562" }`
 - **Response `200 OK`**:
   ```json
-  {
-    "quote_request_id": "11112222-3333-4444-5555-666677778888",
-    "is_new_request": true,
-    "chat_session_id": "88889999-aaaa-bbbb-cccc-ddddeeeeffff",
-    "status": "Submitted"
-  }
+  { "quote_request_id": "b4ebaa04-0675-4ca9-a02c-75f6a2cc1ba1", "chat_session_id": "3bc2a986-bee0-4137-b1ba-d326d9883961", "is_new_request": true }
   ```
-  *(Re-submitting returns `is_new_request: false` with the same `quote_request_id` per `BR-018`)*.
+  Repeating for the same Agency–Experience returns the same `quote_request_id` with
+  `is_new_request: false` (BR-018); the Chat is the Agency–Provider pair Chat (BR-019); no Booking is
+  created (BR-009, BR-010). The UI then opens `/messages?chat_session_id=<chat_session_id>` (#31).
+- **Errors**: `401`; `403`; `400` missing `experience_id`; `404` unknown Experience; `409` Provider not
+  available.
+
+---
+
+### 5. `POST /api/ait/sessions/:id/chat`
+
+- **Request body**: `{ "experience_id": "…" }`
+- **Response `200 OK`**: `{ "chat_session_id": "…", "initial_message_id": "…" }` — the existing Active
+  Chat of the Agency–Provider pair is reused (BR-019); no Quote Request and no Booking are created. The UI
+  then opens `/messages?chat_session_id=<chat_session_id>` (#31).
+- **Errors**: as §4.

@@ -63,9 +63,16 @@ Test gap: integration tests call service functions directly; nothing exercises
 turn 2 = 15 pax excludes caps < 15; 200 pax and 20,000 VND → no-match + `relaxation_suggestions`;
 Request Quote ×2 → same ID; Chat ×2 → same ID.
 
-Re-verify checklist for round 3 (one session, sequential): Silk → 10 pax → 15 pax (2 cards) →
-13 pax (no Bát Tràng) → 200 pax (no-match) → 20,000 VND (no-match); Silk → Vạn Phúc #1; scores
-differ; Quote ×2 and Chat ×2 keep their IDs.
+Re-verify checklist for round 3 (one session, sequential; every message states origin + craft, spec #29):
+"Silk weaving" (follow-ups) → "10 pax on 2026-11-20 from Hoàn Kiếm" (5 cards, Vạn Phúc #1) → "Change
+to 15 pax" (2 cards) → "Change to 13 pax" (no Bát Tràng) → "Change to 200 pax" (no-match, capacity
+named, #24) → "Change to 10 pax, budget 20,000 VND per person" (no-match, Budget suggestion 150,000,
+#23); scores differ; Quote ×2 and Chat ×2 keep their IDs and open Messages (#31). Full path:
+`specs/001-ait-core/quickstart.md` §2.
+
+Round 3 result on `main` `fc29cbc` (30 Oct 2026): B1, B3 fixed; B2 partly (scores differ, Silk → Vạn
+Phúc #1, but template explanation and name-based craft match); B4 partly (Chat keeps its ID, opens no
+screen). Further defects D1–D10 and their fix tasks: `specs/001-ait-core/tasks.md` Phase 5.
 
 Non-blocking: Đường Lâm still in `specs/001-ait-core/quickstart.md:88`, `research.md:35`,
 `tests/unit/hard-constraints.test.ts:37`; test comment "seed max ≤ 20" (actual 18 Đào Thục, 16 among

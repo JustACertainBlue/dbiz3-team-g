@@ -15,7 +15,7 @@ Owning Local Provider or owning Tour Agency. `200`:
 
 | Field | Note |
 |---|---|
-| `booking_id`, `experience_name`, `start_at`, `end_at`, `group_size`, `agreed_price`, `notice_period`, `cancellation_policy`, `status`, `last_updated_at` | FR-007 §5.1 |
+| `booking_id`, `experience_name`, `start_at`, `end_at`, `group_size`, `agreed_price`, `notice_period`, `cancellation_policy`, `status`, `last_updated_at` | FR-007 §5.1; `group_size`, `notice_period` integers and `agreed_price` (VND) a number in JSON, not strings (#57) |
 | `agency_contact` | Provider view only (#53) |
 | `provider_profile_link` | Agency view only (#53) |
 | `hold_expires_at` | On hold only |
@@ -29,7 +29,8 @@ Re-check when `start_at` or `duration` changes → `409 SLOT_UNAVAILABLE` (#47).
 max → `400` (#7). No change (#52) → `200` with the current Booking as `updated_booking`, nothing written, no message, and `agency_notification_message_id` = `null`, `audit_log_id` = `null`.
 
 `200`: `updated_booking`, `private_schedule_synced`, `public_schedule_updated` (when time changed),
-`agency_notification_message_id`, `audit_log_id`.
+`agency_notification_message_id`, `audit_log_id`. `updated_booking` is the Provider view of the
+GET body above, from the same serializer (#57), also when nothing changed (#52).
 
 ## POST `/api/bkg/bookings/{bookingId}/status` — F-SCHED-05 (US-5)
 

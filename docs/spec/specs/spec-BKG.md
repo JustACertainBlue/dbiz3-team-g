@@ -455,6 +455,7 @@ sequenceDiagram
 - 2026-10-30 #54: BKG135 is opened from BKG134 after create, from the Provider page, or by URL; BKG138 is at `/agency/{agencyId}/bookings/{bookingId}`, opened by URL or from the Booking Update message.
 - 2026-10-30 #55: Yes. One Booking Update message is sent per event and serves as both.
 - 2026-10-30 #56: No. It is used only if that Chat is Active and belongs to the same Agency–Provider pair; otherwise the FR-008 order continues.
+- 2026-10-30 #57: The same shape as the F-SCHED-07 output (§5.1 FR-007): spec field names, `group_size` (Integer) and `agreed_price` (Decimal) returned as JSON numbers, produced by the same serializer as the Booking Detail read.
 
 **10. Open questions**
 
@@ -516,6 +517,7 @@ sequenceDiagram
 | 54 | Without the Booking lists (BKG133, BKG137), how are BKG135 and BKG138 reached in this slice? | No | UI/UX / BA | **Closed** | BKG135 is opened from BKG134 after create, from the Provider page, or by URL; BKG138 is at `/agency/{agencyId}/bookings/{bookingId}`, opened by URL or from the Booking Update message. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 | 55 | Are FR-008 `chat_auto_message_id` and FR-004/005 `agency_notification_message_id` the same message? | Yes (US-5) | BA | **Closed** | Yes. One Booking Update message is sent per event and serves as both. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 | 56 | Is `source_chat_session_id` used for the Booking Update message even if that Chat is Closed or belongs to another Agency–Provider pair? | No | BA | **Closed** | No. It is used only if that Chat is Active and belongs to the same Agency–Provider pair; otherwise the FR-008 order continues. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 57 | §5.1 FR-004 defines `updated_booking` only as "Object; Required". Which fields does it carry, with which names and types? | Yes (US-5, US-3) | BA | **Closed** | The same shape as the F-SCHED-07 output (§5.1 FR-007): spec field names, `group_size` (Integer) and `agreed_price` (Decimal) returned as JSON numbers, produced by the same serializer as the Booking Detail read. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 
 **11. Traceability to DBIZ2**
 

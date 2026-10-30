@@ -77,21 +77,22 @@ Details, arguments to paste, and the MVP Alpha gates G1–G8: `docs/build/claude
 ## 5. Where we are now (update this section when it changes)
 
 - Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in.
-State checked on 30 Oct 2026 at `main` = `d2b7d5a` (details: `03-module-status.md`).
+State checked on 30 Oct 2026 at `main` = `7057d5c` (details: `03-module-status.md`).
 
 - **On `main`**: AIT (`specs/001-ait-core`, PR #6 merged as `3e0e047`), PRF
   (`specs/002-prf-core`, PR #8 squash-merged as `222216d`), EXP (`specs/001-exp-core`, merged
   with `ada9e44` "unify functional prototype on JSON runtime"), BKG US-4 (`specs/004-bkg-core`,
-  PR #17 merged as `343e4ce`), BKG US-5 (`specs/011-bkg-manage` up to `fa2d8c2`, PR #20 merged as
-  `5cae545`), BKG spec #57 (PR #21, `d2b7d5a`). `npm test` at `fa2d8c2` (the tree PR #20 merged):
-  56 files, 406 tests pass (not rerun on `main` itself).
+  PR #17 merged as `343e4ce`), BKG US-5 + US-3 (`specs/011-bkg-manage`, PR #20 merged as
+  `5cae545` and PR #22 merged as `7057d5c`), BKG spec #57 (PR #21). `npm test` on `main` `7057d5c`:
+  61 files, 427 tests pass; `npm run lint` passes (run 30 Oct 2026).
 - **Not merged**: AUT (`001-aut-registration`, feature folders `001`–`010-aut-*`), ADM
-  (`003-adm-core`), `member/spec-consistency`, `ngthu/update-specs`, BKG US-3 (rest of `011-bkg-manage`, PR not opened yet).
-- **BKG**: owned by the human running this session. US-4 Create Booking is on `main`. Round 2
-  is on branch `011-bkg-manage` (`specs/011-bkg-manage`, US-5 Manage Booking + US-3 View Bookings):
-  US-5 on `main` (PR #20). US-3 code done (`2ed1c1c`), T001–T046 all done, 427 tests + lint pass;
-  demos on macOS: quickstart §4 15/15 (Entry 16), §5 9/9 (Entry 20). Waiting for: push + PR to
-  `main` (human pushes) and the Windows run (G1). Spec decisions #26–#57 on `main`; #58 (BKG144
+  (`003-adm-core`), `member/spec-consistency`, `ngthu/update-specs`.
+- **BKG**: owned by the human running this session. On `main`: US-4 Create Booking
+  (`specs/004-bkg-core`, PR #17), US-5 Manage Booking and US-3 View Bookings (`specs/011-bkg-manage`,
+  PR #20, #22; T001–T046 done). Demos on macOS: 004 §4 8/8, 011 §4 15/15 (build-log Entry 16), §5 9/9
+  (Entry 20). Still missing: a post-merge non-author review of PR #17 and PR #22 (merged without a
+  GitHub review; AIT/PRF/EXP owners to check `applyBatch` in `src/lib/demo/json-repository.ts`), and
+  the Windows run (G1) for 004 and 011. Spec decisions #26–#57 on `main`; #58 (BKG144
   `target_status` optional) decided but not yet written to `docs/spec/`. Read `docs/build/claude-context/04-bkg-brief.md` and
   `specs/011-bkg-manage/tasks.md` before doing anything on BKG.
 - **IAC**: no module of its own; only `src/lib/demo/commercial-handoff-service.ts` and the

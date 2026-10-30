@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 export interface ExperienceOption {
@@ -19,10 +20,6 @@ export interface AgencyOption {
 
 interface CreatedBooking {
   booking_id: string
-  status: string
-  created_at: string
-  hold_expires_at: string
-  public_schedule_block: { start_at: string; end_at: string; status: string }
 }
 
 const formatVnd = (value: number) => `${value.toLocaleString('vi-VN')} VND`
@@ -32,6 +29,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
   experiences: ExperienceOption[]
   agencies: AgencyOption[]
 }) {
+  const router = useRouter()
   const first = experiences[0]
   const [experienceId, setExperienceId] = useState(first?.experience_id ?? '')
   const [agencyId, setAgencyId] = useState(agencies[0]?.agency_id ?? '')
@@ -43,7 +41,6 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
   const [policyText, setPolicyText] = useState(JSON.stringify(first?.conditions.cancellation_policy ?? {}))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [created, setCreated] = useState<CreatedBooking | null>(null)
 
   const experience = useMemo(() => experiences.find(row => row.experience_id === experienceId), [experiences, experienceId])
 
@@ -87,26 +84,13 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
         setError(json.error ? `${json.error.code}: ${json.error.message}` : 'Không tạo được Booking.')
         return
       }
-      setCreated(json.data)
+      // #54: a successful create opens BKG135 (replaces the in-place result of #43).
+      router.push(`/provider/${providerId}/bookings/${json.data.booking_id}`)
     } catch {
       setError('Không kết nối được máy chủ. Thử lại.')
     } finally {
       setSaving(false)
     }
-  }
-
-  // Until BKG135 exists, the created Booking is shown here (spec #43).
-  if (created) {
-    return <section className="bkg-result">
-      <h2>Đã tạo Booking · {created.status}</h2>
-      <dl>
-        <dt>Booking ID</dt><dd>{created.booking_id}</dd>
-        <dt>Thời gian</dt><dd>{created.public_schedule_block.start_at} → {created.public_schedule_block.end_at}</dd>
-        <dt>Tạo lúc</dt><dd>{created.created_at}</dd>
-        <dt>Giữ chỗ đến</dt><dd>{created.hold_expires_at}</dd>
-      </dl>
-      <p className="bkg-actions"><Link href={`/provider/${providerId}`}>← Về trang Provider</Link></p>
-    </section>
   }
 
   if (!experiences.length) {

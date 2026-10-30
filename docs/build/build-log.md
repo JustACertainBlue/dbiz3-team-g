@@ -335,6 +335,21 @@ did and what the humans decided.
 | Spec issues found | none. Note: FR-007 has no `duration`, so after #57 `updated_booking` no longer carries the duration; `end_at` reflects it. |
 | Commit | see `git log` ("test(BKG): failing tests for US-3 (T028-T032)"); not pushed. |
 
+### Entry 19: 30/10 Claude Code — BKG 011 Step 6 (code, US-3)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Only T033–T042. Do not change any test. If a test seems wrong, stop and tell me.` Human note: BKG144 prefills duration from `end_at − start_at` (#57). |
+| Feature and tasks | `specs/011-bkg-manage`, T033–T042 |
+| What the agent produced | `src/lib/booking/booking-actions.ts` (T033, FR-007 matrix); `src/lib/booking/booking-detail.ts` (T034: `toBookingDetail(row, view, now)` = the one string→number conversion, `getBookingDetail` authorizes first, then `expireDueHolds`, then re-reads); `updateBooking` now returns `updated_booking` through `toBookingDetail(…, 'provider', now)` in both branches (#57, #52); `canManageBooking` / `canViewAgencyBooking` in `booking-access.ts` (T035); `GET` in `src/app/api/bkg/bookings/[bookingId]/route.ts` (T036); screens BKG135 `…/bookings/[bookingId]/page.tsx` + `BookingActionsBar.tsx` (disabled buttons stay visible, Cancel asks for a reason), BKG144 `edit/page.tsx` + `EditBookingForm.tsx` (sends only changed fields, duration from `end_at − start_at`, status select without Completed, "keep status" default), BKG136 `arrival/page.tsx` + `ConfirmArrival.tsx` (shows `validation_error`), BKG138 `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx` (read-only, Chat, Back → `/explore`), shared `BookingDetailView.tsx` and `load-provider-booking.ts` (T037–T040); BKG134 navigates to BKG135 after create (T041, #54). |
+| Human review | Pending. |
+| Tests | `npm test`: `Test Files 61 passed (61)`, `Tests 427 passed (427)` (408 + 19 US-3 cases); `npm run lint` passed; `git diff --stat 3c143fd -- tests/` empty. Smoke run on the running dev server (not the quickstart §5 demo): BKG135/144/136 as `provider` and BKG138 as `agency` → 200 with the right screen id; Guest on BKG135 and Tràng An on `4bf17b30…` → access-denied text; `GET /api/bkg/bookings/40da0dca…` → numbers (`group_size` 11, `agreed_price` 2000000). |
+| Spec issues found | none. Choices to review: BKG144 `target_status` is optional ("keep status") although the screen spec marks it Required, because an update without a status change is a valid F-SCHED-04 call and Booked → Booked is `INVALID_TRANSITION`; BKG138 Back goes to `/explore` because BKG137 does not exist yet; the Provider page has no link to BKG135 yet (#54 allows URL and BKG134). |
+| Human decisions (review) | Approved the 3 choices. BKG144 keeps two calls (PATCH, then `POST /status`, BR-007); a failing `/status` after a successful PATCH now says "Chi tiết đã lưu, trạng thái chưa đổi (vẫn {status})" + the error, never a general success — verified in the built-in browser on `40da0dca…` (group size 12 + Cancelled with a blank reason → that message; `GET` shows `group_size` 12, status Booked). Spec **#58** to add at the next spec-BKG edit: "BKG144 target_status is optional (default: keep current) so details can be edited without a status change; screen spec says Required" (Decided by Vũ Khánh Linh, 2026-10-30). |
+| Draft for checklist §3 (T046, show before writing) | Known limitation: BKG138 Back goes to `/explore` (BKG137 Agency Booking list not built), spec BKG138 §5 row 2 → planned with BKG137 (story and session to be set by the human). Known limitation: no link from the Provider page to BKG135; reachable by URL, after create on BKG134, or from the Booking Update message (#54) → planned with BKG133 Provider Booking list (story and session to be set by the human). |
+| Commit | see `git log` ("feat(BKG): US-3 View Bookings (T033-T042)"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

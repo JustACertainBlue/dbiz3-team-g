@@ -111,16 +111,16 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 
 ### Implementation for User Story 3
 
-- [ ] T033 [P] [US3] Implement `src/lib/booking/booking-actions.ts` (makes T028 pass)
-- [ ] T034 [US3] Implement `src/lib/booking/booking-detail.ts` using `loadBookingForActor` and `bookingActions`, with one serializer `toBookingDetail(row, view, now)` that converts the stored strings to numbers once; `getBookingDetail` and `updateBooking`'s `updated_booking` (T021/T026 output, both branches incl. #52) both use it (#57) (makes T029 and the #57 case of T031 pass)
-- [ ] T035 [US3] Add `canManageBooking` and `canViewAgencyBooking` to `src/lib/booking/booking-access.ts` (makes T030 pass)
-- [ ] T036 [US3] Add `GET` to `src/app/api/bkg/bookings/[bookingId]/route.ts` (makes T031 pass)
-- [ ] T037 [US3] Screen BKG135 in `src/app/provider/[providerId]/bookings/[bookingId]/page.tsx` (server component; `canManageBooking` gate; FR-007 fields; buttons from `bookingActions`: Confirm/Book and Cancel post to `/status`, Update → BKG144, Mark Group Arrival → BKG136; disabled buttons shown disabled, SC-007)
-- [ ] T038 [US3] Screen BKG144 in `src/app/provider/[providerId]/bookings/[bookingId]/edit/page.tsx` and `src/app/provider/[providerId]/bookings/[bookingId]/edit/EditBookingForm.tsx` (fields of screen-spec BKG144; target status select without Completed; reason required for Cancelled; Save → `PATCH` and/or `/status`; Discard → BKG135; stale errors cleared on change, price input without step restriction as in BKG134)
-- [ ] T039 [US3] Screen BKG136 in `src/app/provider/[providerId]/bookings/[bookingId]/arrival/page.tsx` (booking and scheduled start; Confirm Group Arrival → `/arrival`; shows `validation_error` when not applied; Cancel → BKG135)
-- [ ] T040 [US3] Screen BKG138 in `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx` (`canViewAgencyBooking` gate; read-only FR-007 fields; no action buttons; Chat → `/messages`; Back → `/explore`)
-- [ ] T041 [US3] In `src/app/provider/[providerId]/bookings/new/CreateBookingForm.tsx` navigate to BKG135 after a successful create (replaces the in-place result of #43, per #54)
-- [ ] T042 [US3] Run `npm test`: all suites pass, no test file edited since T032; mark T028–T041 `[X]` in `specs/011-bkg-manage/tasks.md`
+- [X] T033 [P] [US3] Implement `src/lib/booking/booking-actions.ts` (makes T028 pass)
+- [X] T034 [US3] Implement `src/lib/booking/booking-detail.ts` using `loadBookingForActor` and `bookingActions`, with one serializer `toBookingDetail(row, view, now)` that converts the stored strings to numbers once; `getBookingDetail` and `updateBooking`'s `updated_booking` (T021/T026 output, both branches incl. #52) both use it (#57) (makes T029 and the #57 case of T031 pass)
+- [X] T035 [US3] Add `canManageBooking` and `canViewAgencyBooking` to `src/lib/booking/booking-access.ts` (makes T030 pass)
+- [X] T036 [US3] Add `GET` to `src/app/api/bkg/bookings/[bookingId]/route.ts` (makes T031 pass)
+- [X] T037 [US3] Screen BKG135 in `src/app/provider/[providerId]/bookings/[bookingId]/page.tsx` (server component; `canManageBooking` gate; FR-007 fields; buttons from `bookingActions`: Confirm/Book and Cancel post to `/status`, Update → BKG144, Mark Group Arrival → BKG136; disabled buttons shown disabled, SC-007)
+- [X] T038 [US3] Screen BKG144 in `src/app/provider/[providerId]/bookings/[bookingId]/edit/page.tsx` and `src/app/provider/[providerId]/bookings/[bookingId]/edit/EditBookingForm.tsx` (fields of screen-spec BKG144; target status select without Completed; reason required for Cancelled; Save → `PATCH` and/or `/status`; Discard → BKG135; stale errors cleared on change, price input without step restriction as in BKG134)
+- [X] T039 [US3] Screen BKG136 in `src/app/provider/[providerId]/bookings/[bookingId]/arrival/page.tsx` (booking and scheduled start; Confirm Group Arrival → `/arrival`; shows `validation_error` when not applied; Cancel → BKG135)
+- [X] T040 [US3] Screen BKG138 in `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx` (`canViewAgencyBooking` gate; read-only FR-007 fields; no action buttons; Chat → `/messages`; Back → `/explore`)
+- [X] T041 [US3] In `src/app/provider/[providerId]/bookings/new/CreateBookingForm.tsx` navigate to BKG135 after a successful create (replaces the in-place result of #43, per #54)
+- [X] T042 [US3] Run `npm test`: all suites pass, no test file edited since T032; mark T028–T041 `[X]` in `specs/011-bkg-manage/tasks.md`
 
 **Checkpoint**: US-3 screens work on top of US-5.
 

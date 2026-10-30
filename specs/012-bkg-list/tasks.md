@@ -94,10 +94,10 @@ call that checks it, so it is not expired by the list's own expiry (#64).
 
 ## Phase 4: Polish and verification
 
-- [ ] T026 Run `npm run lint`, `python data/scripts/validate_seed.py`, `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
-- [ ] T027 Walk quickstart §4 (API) and §5 (screens) of `specs/012-bkg-list/quickstart.md` after `npm run demo:reset` with **one** dev server; record each step (clicked in the browser vs checked by curl) in `docs/build/build-log.md` (Windows run still needed for G1)
-- [ ] T028 Draft the build-log entries for this feature in `docs/build/build-log.md` (§2 entries, §3 spec issues, §4 lessons)
-- [ ] T029 Draft the update of `docs/build/mvp-alpha-checklist.md` §3: close #12 (Provider page → BKG133 → BKG135); add new limitations if any — show to the human before writing
+- [X] T026 Run `npm run lint`, `python data/scripts/validate_seed.py`, `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
+- [X] T027 Walk quickstart §4 (API) and §5 (screens) of `specs/012-bkg-list/quickstart.md` after `npm run demo:reset` with **one** dev server; record each step (clicked in the browser vs checked by curl) in `docs/build/build-log.md` (Windows run still needed for G1)
+- [X] T028 Draft the build-log entries for this feature in `docs/build/build-log.md` (§2 entries, §3 spec issues, §4 lessons)
+- [X] T029 Draft the update of `docs/build/mvp-alpha-checklist.md` §3: close #12 (Provider page → BKG133 → BKG135); add new limitations if any — show to the human before writing
 
 ---
 

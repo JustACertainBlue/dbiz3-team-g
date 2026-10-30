@@ -163,6 +163,8 @@ export async function createBooking(
   const startAt = hanoiTimestamp(request.start)
   const endAt = hanoiTimestamp(request.start + request.duration * 60_000) // BR-020
 
+  // Check + write must stay synchronous inside this lock. If any await is added between
+  // findConflict and applyBatch, add a race test with an async pause (see build-log §4).
   return withBookingWriteLock(() => {
     // FR-003: atomic re-check against operating hours and On hold/Booked Bookings (BR-005, AC-BKG-RACE).
     const hours = repository.all('provider_operating_hours')

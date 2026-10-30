@@ -132,3 +132,4 @@ repository method (single-persist batch), needed for BR-019.
 | Open Question #33 (Agency booking-read permission) | Only needed for F-SCHED-02/07 | Not needed for US-4. |
 | BKG134 navigation | Success goes to BKG135 (US-3), Cancel to BKG133 (US-6), both out of scope | Per spec #43 the page shows the created Booking (id, status, hold expiry) in place; Cancel returns to the Provider page. |
 | No expiry worker | US-5 | Per spec #40 an On hold Booking past `hold_expires_at` keeps blocking its slot until the worker exists (research R6). |
+| Race test does not prove the write lock (AC-BKG-RACE) | Check and write are one synchronous block today, so T015 passes even without the lock (build-log §4) | US-5 must add the async-pause race test before adding any await inside the booking write lock. |

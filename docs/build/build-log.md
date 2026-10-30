@@ -428,6 +428,71 @@ did and what the humans decided.
 | Spec issues found | none. Windows run (G1) still pending. |
 | Commit | see `git log` ("docs(BKG): US-6 demo and polish (T026-T029)"); not pushed. |
 
+### Entry 26: 30/10 Claude Code — BKG 013 plan, tasks and analyze (US-1, US-2)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `start_feature.py --spec docs/spec/specs/spec-BKG.md BKG --name schedule` (gave `013-bkg-schedule`), `--use`, `--check`; `/speckit-plan` (US-1 + US-2, Phase A = F-SCHED-09 + F-SCHED-01 + SCH139/SCH140, Phase B = F-SCHED-02 + SCH141/BKG137 + nav); `/speckit-tasks`; `/speckit-analyze` |
+| Feature and tasks | `specs/013-bkg-schedule`, T001–T039 |
+| What the agent produced | `spec.md` snapshot (with #32, #33, #68–#82), `plan.md`, `research.md`, `data-model.md`, `contracts/schedule-api.md`, `quickstart.md`, `tasks.md` |
+| Human review | First plan review 6/8: the SCH140 route and entry point were not in the spec → human decided **#82** (PR #27); after `--refresh` the review was 8/8. Quickstart corrected before the tasks commit: Tràng An has a seed Booking (`0971a1b6…`, Completed, Phú Vinh). Analyze (0 CRITICAL): **H1** `CalendarGrid` moved to Foundational so Phase A and B share no task; **M1** SCH141 status filter added; **M2** calendar `status` is any string; **M3** helper `scheduleEntryFor` + `showScheduleLink` with test T039 for the SCH140 redirect and the Agency-only Explore link; **M4** T009 takes its slots from `calculateAvailability`. Recorded only: **L1** BKG137 village filter options come from the villages of the Agency's own Bookings; **L2** SCH139/SCH140 pages reuse the `canOpenCreateBooking` gate for the owner check (comment in code); **M3 (nav part)** the #68/#69 navigation links have no automated test, checked in the demo (T035); **L3** the human approved writing checklist §3 directly in T037. |
+| Tests | n/a (planning) |
+| Spec issues found | #82 (SCH140 route) — raised by the plan review, closed in the spec before tasks. |
+| Commit | `4c863c6` (plan), `6083bdf` (tasks), analyze fixes in the next commit |
+
+### Entry 27: 30/10 Claude Code — BKG 013 Step 5 (tests first, US-1/US-2)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Step 5 only: T001–T004, T007–T014, T039, T023–T027 (tests and red runs). Code only T005/T006/T018 after T004.` |
+| Feature and tasks | `specs/013-bkg-schedule`, T001–T014, T018, T023–T027, T039 |
+| What the agent produced | Tests: `tests/unit/bkg-schedule-dates.test.ts` (T002), `bkg-schedule-access.test.ts` (T003), `bkg-availability.test.ts` (T007–T008), `bkg-availability-consistency.test.ts` (T009, slots taken from `calculateAvailability`), `bkg-provider-schedule.test.ts` (T010–T012, incl. the #73 allow-list and "denied requests write nothing"), `bkg-schedule-entry.test.ts` (T039), `tests/integration/bkg-schedule-api.test.ts` (T013), `bkg-agency-bookings.test.ts` (T023–T025), `tests/integration/bkg-agency-bookings-api.test.ts` (T026). Code after the T004 red run: `addDays`, `isQueryDate` (`clock.ts`), `authorizeProviderSchedule`, `authorizeAgencyList` (`booking-access.ts`), shared `src/app/schedule-calendar/CalendarGrid.tsx` (T018, UI only). |
+| Human review | Pending. |
+| Tests | T001 baseline 459 passed. T004: 6 failed — `addDays/isQueryDate/authorizeProviderSchedule/authorizeAgencyList is not a function`; after T005/T006 → 6 passed. T014 (Phase A): `Test Files 5 failed (5)` — `Cannot find module '@/lib/booking/availability'` (T007–T009), `'@/lib/booking/provider-schedule'` (T010–T012, T039), `'@/app/api/bkg/providers/[providerId]/schedule/route'` (T013). T027 (Phase B): `Test Files 2 failed (2)` — `Cannot find module '@/lib/booking/agency-bookings'`, `'@/app/api/bkg/agency/bookings/route'`. Full `npm test`: `Test Files 7 failed \| 69 passed (76)`, `Tests 465 passed (465)` (459 existing + 6 Foundational). `npm run lint` fails only in the 7 new test files (TS2307 missing modules; TS7006 implicit any that follows from them). |
+| Spec issues found | none |
+| Commit | see `git log` ("test(BKG): failing tests for US-1/US-2"); not pushed. |
+
+### Entry 28: 30/10 Claude Code — BKG 013 Step 6 (code, US-1/US-2)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement` Step 6: T015–T017, T019–T022, T028–T033 ("Do not change any test") plus three mutation checks |
+| Feature and tasks | `specs/013-bkg-schedule`, T015–T033 |
+| What the agent produced | Phase A: `src/lib/booking/availability.ts` (`buildCalendarBlocks` paints Unavailable → operating windows Available → On hold/Booked, merges, public view drops `booking_id` before merging; `calculateAvailability`), `src/lib/booking/provider-schedule.ts` (`getProviderSchedule` authorize → validate (#71) → expire → read, public blocks from the allow-list; `scheduleEntryFor`, `showScheduleLink`), `GET /api/bkg/providers/[providerId]/schedule`, SCH139 `src/app/provider/[providerId]/schedule/page.tsx` (block → panel with `BookingActionsBar` + View → BKG135), SCH140 `src/app/explore/providers/[id]/schedule/page.tsx` (owner redirect, Select day, Request Quote → Explore), "Xem lịch trống" link in `src/app/explore/providers/[id]/page.tsx` (EXP file, one link). Phase B: `src/lib/booking/agency-bookings.ts`, `GET /api/bkg/agency/bookings`, BKG137 `src/app/agency/[agencyId]/bookings/page.tsx`, SCH141 `src/app/agency/[agencyId]/schedule/page.tsx` (status + date filters), `src/app/agency/[agencyId]/agency-booking-gate.ts` (gate + own villages, L1); nav links in `src/app/provider/[providerId]/page.tsx`, `edit/page.tsx`, `src/app/agency/[agencyId]/page.tsx` (PRF files, link edits only); BKG138 Back → BKG137. |
+| Human review | Pending. |
+| Tests | `npm test`: `Test Files 76 passed (76)`, `Tests 501 passed (501)`; `npm run lint` first failed in `availability.ts` and the T007 test file (TS2345: `hours` typed `OperatingHoursRow[]`, too narrow for stored rows) — fixed in code by a wider `HoursRow` type, test unchanged; then lint exit 0. `git diff --stat 9257631 -- tests/` empty. **Mutations** (restored, files identical): (a) `agency_name` added to public blocks → T011 and T013 FAIL `expected [ 'agency_name', 'end_at', …(2) ] to deeply equal [ 'end_at', 'start_at', 'status' ]`, restored → pass; (b) `expireDueHolds` before `authorizeProviderSchedule` → T012 "denied requests write nothing" FAIL `expected [ Array(5) ] to deeply equal [ Array(5) ]`, restored → pass; (c) Bookings outside an Available window skipped (Unavailable wins) → T007 #32 FAIL `expected [ [ '00:00', '00:00', 'Unavailable' ] ] to deeply equal …`, restored → pass. |
+| Spec issues found | none |
+| Commit | see `git log` ("feat(BKG): US-1 View Schedule and US-2 Availability"); not pushed. |
+
+### Entry 29: 30/10 Claude Code — BKG 013 demo finding: public blocks crossed midnight (#72)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Demo quickstart §2 step A2 stopped the run; human approved: new test first, then remove `mergePublic`, mutation (a) again, full test + lint |
+| Feature and tasks | `specs/013-bkg-schedule`, T016 fix, T035 |
+| What the agent produced | Finding (curl, `agency` on `50f2c8fc…`, October): one public block `2026-10-05T17:00 → 2026-10-10T09:00` Unavailable — `mergePublic` in `getProviderSchedule` merged across local midnight, against #72 ("per local day 00:00–24:00"). New tests in `tests/unit/bkg-provider-schedule.test.ts` (appended; no existing test changed): every public block ends on its own local day or at the next midnight; the public view equals `buildCalendarBlocks(…, 'public')`. Fix in `src/lib/booking/provider-schedule.ts`: public view = `buildCalendarBlocks(…, 'public')` + allow-list map; `mergePublic` removed. |
+| Human review | Fix approach approved before coding. |
+| Tests | Red: `AssertionError: expected false to be true` and `expected [ …(4) ] to deeply equal [ …(9) ]` (2 failed). After the fix: `Test Files 76 passed (76)`, `Tests 503 passed (503)`; lint exit 0; `git diff d7986c0 -- tests/` = 22 added lines, none removed. Mutation (a) again: `agency_name` in public blocks → T011 and T013 FAIL; restored (identical) → pass. |
+| Spec issues found | none (code bug against #72) |
+| Commit | see `git log` ("fix(BKG): public schedule blocks stay within one local day (#72)"); not pushed. |
+
+### Entry 30: 30/10 Claude Code — BKG 013 demo (quickstart §2–§5, macOS) and polish (T034–T038)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5), run by the agent at the human's request |
+| Command and argument | After the #72 fix (`7d1f5c7`): stop the agent's dev server, `npm run demo:reset`, one `npm run dev` (Terminal tab "dev server 012"); quickstart §2 by curl, §3/§5 in the built-in browser, §4 by curl; T034 checks |
+| Feature and tasks | `specs/013-bkg-schedule`, T034–T038 |
+| What the agent produced | No code change. **Phase A API (curl)**: A1 owner October → 2026-10-05 Unavailable 00–08 / Available 08–09 / Booked 09–10 (`4bf17b30…`) / Available 10–17 / Unavailable 17–24, 2026-10-06 Unavailable all day, 2026-10-10 Booked 09–10 inside an Unavailable day (#32), `operating_hours` "1" = 08:00–17:00 and 2–7 empty; A2 Agency → key set only `{end_at, start_at, status}`, no Agency name / id / price / `booking_id`, 43 blocks, **0 crossing midnight**; A3 no dates → 2026-10-30 .. 2026-11-29; A4 46 days → 400; A5 ubnd/hdt/guest → 403, unknown and Pending-Verification Provider for Agency → 404, Provider on another Provider → 403. **Phase A screens**: *clicked* SCH139 (2026-09-30 range) 30 day rows, 10-05 and 10-10 Booked blocks are links; *clicked* the 10-05 block → panel "Booking đã chọn" with Confirm/Book disabled, Update, Cancel, Mark Group Arrival enabled; *clicked* View → BKG135 `4bf17b30…` Booked; *clicked* BKG134 create (Tràng An, 2026-11-02 09:00) → SCH139 default range 2026-10-30 → 2026-11-28 shows 11-02 On hold 09–10, 11-03 Unavailable all day (weekday without hours); Provider *opened* SCH140 URL → redirected (307) to SCH139; Tour Agency *clicked* Explore Provider page "Xem lịch trống" (next to "Chat với Provider") → SCH140: 11-02 On hold block, no Agency name, price or hold expiry, no block links, Request Quote → Explore page; *clicked* Select day 2026-11-02 → that row highlighted; *checked by curl*: UBND/HDT/Guest/Agency on SCH139 and UBND/HDT/Guest on SCH140 → access-denied text, 0 rendered blocks; Explore link only for `agency` (guest/provider/ubnd: none). **Phase B API (curl)**: `agency` → 200, `0971a1b6…` Completed Phú Vinh "Xưởng thủ công Phú Vinh" then `2117706f…` On hold Bát Tràng, numbers as int; `?status=Cancelled` → `[]`; provider/ubnd/hdt/guest → 403. **Phase B screens**: Agency nav "Bookings" *clicked* → BKG137 with those 2 rows and village filter options Bát Tràng, Phú Vinh; Booking detail → BKG138 (link wraps onto two lines, so the agent's click at its centre hit the table cell — opened with the link's own `click()`; not an app bug); *clicked* BKG138 Back → BKG137; *clicked* Schedule → SCH141 default 2026-10-30 → 2026-11-28, one On hold block linking to BKG138; *checked by curl*: Tràng An on Hồng Hà's BKG137/SCH141 and provider/ubnd/guest on Tràng An's BKG137 → denied. Provider nav *clicked*: "Dashboard" → DSH018, "Schedule" (from PRF128) → SCH139. Dev-server log: no error. Note: the seed has no Provider without operating hours; "no hours → no Available" is covered by T007 and shown in the demo by weekdays without hours (Unavailable all day). **T034**: lint exit 0, `validate_seed` PASS, `--check` OK. **T037**: checklist §3 #11 closed, #13 nav part closed, #10 extended to BKG137/SCH139/SCH140/SCH141. **T038**: `specs/013-bkg-schedule/pr-notes.md` with PRF and EXP owner sections. |
+| Human review | Requested the agent to run the demo; checklist written directly (analyze L3). |
+| Tests | Not rerun after Entry 29 (no code change); 503/503. |
+| Spec issues found | none. Windows run (G1) pending. |
+| Commit | see `git log` ("docs(BKG): US-1/US-2 demo and polish (T034-T038)"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -461,3 +526,4 @@ does not happen again.
 | 15 (BKG 011) | First version of `update-booking`, `change-status` and `mark-arrival` ran `expireDueHoldsLocked` before the ownership check, so a denied request (Agency/UBND/HDT/Guest) on 2026-10-05 still cancelled expired seed hold `54d7a276…` and wrote history + a message. | T015 `nothing is written` snapshot assertion failed. | Code fixed, test unchanged: authorize with `loadBookingForActor` first, then run expiry, then re-read the Booking. Any service that writes as a side effect must check permission before the first write. |
 | 16–17 (BKG 011) | Unit and API tests for F-SCHED-04 checked only the top-level keys of the response, so `updated_booking` shipped with string numbers and DB field names; found only when reading the curl output of the US-5 demo. | Human read the demo JSON (Entry 16). | Spec #57 + tests that assert `typeof … === 'number'` and that PATCH equals the next GET (T029, T031). Read the demo response bodies, not only the status codes. |
 | 22–23 (BKG 012) | Draft T013 would have created 25 holds at `SEED_NOW` and checked them at 2026-10-06: the list's own expiry (#64) would cancel them, so the test would fail for the wrong reason after the code was correct — and only 9 slots fit one Monday. | `/speckit-analyze` H1, before Step 5. | Rule in tasks.md: create hold fixtures with the same `now` as the call that checks them; count operating-hours slots before choosing fixture sizes. |
+| 28–29 (BKG 013) | `getProviderSchedule` merged public blocks again after `buildCalendarBlocks`, across local midnight (one block 10-05 17:00 → 10-10 09:00); all tests passed because T011/T013 only checked the key set and the #72 tests called `buildCalendarBlocks` directly. | Agent's own curl demo (quickstart §2 A2), reading the response body. | A shape test must also check boundaries (here: each block inside one local day), and run through the public entry point, not only the helper. New tests added before the fix. |

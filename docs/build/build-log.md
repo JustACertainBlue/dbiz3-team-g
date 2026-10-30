@@ -467,6 +467,19 @@ did and what the humans decided.
 | Spec issues found | none |
 | Commit | see `git log` ("feat(BKG): US-1 View Schedule and US-2 Availability"); not pushed. |
 
+### Entry 29: 30/10 Claude Code — BKG 013 demo finding: public blocks crossed midnight (#72)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Demo quickstart §2 step A2 stopped the run; human approved: new test first, then remove `mergePublic`, mutation (a) again, full test + lint |
+| Feature and tasks | `specs/013-bkg-schedule`, T016 fix, T035 |
+| What the agent produced | Finding (curl, `agency` on `50f2c8fc…`, October): one public block `2026-10-05T17:00 → 2026-10-10T09:00` Unavailable — `mergePublic` in `getProviderSchedule` merged across local midnight, against #72 ("per local day 00:00–24:00"). New tests in `tests/unit/bkg-provider-schedule.test.ts` (appended; no existing test changed): every public block ends on its own local day or at the next midnight; the public view equals `buildCalendarBlocks(…, 'public')`. Fix in `src/lib/booking/provider-schedule.ts`: public view = `buildCalendarBlocks(…, 'public')` + allow-list map; `mergePublic` removed. |
+| Human review | Fix approach approved before coding. |
+| Tests | Red: `AssertionError: expected false to be true` and `expected [ …(4) ] to deeply equal [ …(9) ]` (2 failed). After the fix: `Test Files 76 passed (76)`, `Tests 503 passed (503)`; lint exit 0; `git diff d7986c0 -- tests/` = 22 added lines, none removed. Mutation (a) again: `agency_name` in public blocks → T011 and T013 FAIL; restored (identical) → pass. |
+| Spec issues found | none (code bug against #72) |
+| Commit | see `git log` ("fix(BKG): public schedule blocks stay within one local day (#72)"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -500,3 +513,4 @@ does not happen again.
 | 15 (BKG 011) | First version of `update-booking`, `change-status` and `mark-arrival` ran `expireDueHoldsLocked` before the ownership check, so a denied request (Agency/UBND/HDT/Guest) on 2026-10-05 still cancelled expired seed hold `54d7a276…` and wrote history + a message. | T015 `nothing is written` snapshot assertion failed. | Code fixed, test unchanged: authorize with `loadBookingForActor` first, then run expiry, then re-read the Booking. Any service that writes as a side effect must check permission before the first write. |
 | 16–17 (BKG 011) | Unit and API tests for F-SCHED-04 checked only the top-level keys of the response, so `updated_booking` shipped with string numbers and DB field names; found only when reading the curl output of the US-5 demo. | Human read the demo JSON (Entry 16). | Spec #57 + tests that assert `typeof … === 'number'` and that PATCH equals the next GET (T029, T031). Read the demo response bodies, not only the status codes. |
 | 22–23 (BKG 012) | Draft T013 would have created 25 holds at `SEED_NOW` and checked them at 2026-10-06: the list's own expiry (#64) would cancel them, so the test would fail for the wrong reason after the code was correct — and only 9 slots fit one Monday. | `/speckit-analyze` H1, before Step 5. | Rule in tasks.md: create hold fixtures with the same `now` as the call that checks them; count operating-hours slots before choosing fixture sizes. |
+| 28–29 (BKG 013) | `getProviderSchedule` merged public blocks again after `buildCalendarBlocks`, across local midnight (one block 10-05 17:00 → 10-10 09:00); all tests passed because T011/T013 only checked the key set and the #72 tests called `buildCalendarBlocks` directly. | Agent's own curl demo (quickstart §2 A2), reading the response body. | A shape test must also check boundaries (here: each block inside one local day), and run through the public entry point, not only the helper. New tests added before the fix. |

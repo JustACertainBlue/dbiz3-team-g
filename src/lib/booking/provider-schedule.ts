@@ -1,6 +1,6 @@
 import type { ActorSession } from '../auth/demo-session'
 import { demoRepository } from '../demo/json-repository'
-import { calculateAvailability, type CalendarBlock } from './availability'
+import { buildCalendarBlocks, calculateAvailability, type CalendarBlock } from './availability'
 import { authorizeProviderSchedule } from './booking-access'
 import { addDays, hanoiDate, isQueryDate, systemClock, type Clock } from './clock'
 import { BookingError, invalid } from './create-booking'
@@ -40,29 +40,23 @@ export async function getProviderSchedule(
   const range = validRange(query, now)
   await expireDueHolds(now)
 
-  const { availability_calendar } = calculateAvailability(providerId, range, now)
+  const repository = demoRepository()
+  // #72: blocks are per local day in both views; buildCalendarBlocks already merges within a day.
   // #73: the public view is built from an allow-list, never by deleting fields.
   const calendar_blocks = view === 'owner'
-    ? availability_calendar
-    : mergePublic(availability_calendar.map(({ start_at, end_at, status }) => ({ start_at, end_at, status })))
+    ? calculateAvailability(providerId, range, now).availability_calendar
+    : buildCalendarBlocks(
+        repository.all('provider_operating_hours').filter(row => row.provider_id === providerId),
+        repository.all('bookings').filter(row => row.provider_id === providerId),
+        range.date_from, range.date_to, 'public',
+      ).map(({ start_at, end_at, status }) => ({ start_at, end_at, status }))
 
   // #78: the seven ISO weekdays, each with its windows.
   const operating_hours: OperatingHours = Object.fromEntries(['1', '2', '3', '4', '5', '6', '7'].map(day => [day, []]))
-  for (const row of demoRepository().all('provider_operating_hours').filter(item => item.provider_id === providerId)) {
+  for (const row of repository.all('provider_operating_hours').filter(item => item.provider_id === providerId)) {
     operating_hours[String(Number(row.weekday))]?.push({ local_start: row.local_start, local_end: row.local_end })
   }
   return { calendar_blocks, operating_hours }
-}
-
-// Adjacent Bookings with the same status become one anonymous block in the public view.
-function mergePublic(blocks: CalendarBlock[]): CalendarBlock[] {
-  const merged: CalendarBlock[] = []
-  for (const block of blocks) {
-    const last = merged[merged.length - 1]
-    if (last && last.end_at === block.start_at && last.status === block.status) last.end_at = block.end_at
-    else merged.push({ ...block })
-  }
-  return merged
 }
 
 // SCH140 entry (#74, #82; analyze M3).

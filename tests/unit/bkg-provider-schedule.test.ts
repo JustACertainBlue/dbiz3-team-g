@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { SEED_NOW } from '@/lib/booking/clock'
+import { buildCalendarBlocks } from '@/lib/booking/availability'
 import { getProviderSchedule } from '@/lib/booking/provider-schedule'
 
 // T010–T012: F-SCHED-01 (US-1 AS-1, AS-2; FR-001; #71, #73, #74, #78, #80; BR-009, SC-010).
@@ -81,5 +82,26 @@ describe('T012 | authorize → validate → expire → read (#80)', () => {
     const before = snapshot()
     await invalid(getProviderSchedule(otherOwner, OTHER, { date_from: '2026-10-06', date_to: '2026-10-05' }, at('2026-10-02T00:00:00+07:00')))
     expect(snapshot()).toEqual(before)
+  })
+})
+
+describe('#72 | public blocks stay within one local day (demo finding, Entry 29)', () => {
+  beforeEach(() => demoRepository().reset())
+
+  it('every public block starts and ends on the same local day (or at the next midnight)', async () => {
+    const { calendar_blocks } = await getProviderSchedule(DEMO_IDENTITIES.agency, PROVIDER, OCT, seedNow)
+    for (const block of calendar_blocks) {
+      const day = block.start_at.slice(0, 10)
+      const nextMidnight = new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10) + 'T00:00:00+07:00'
+      expect(block.end_at.slice(0, 10) === day || block.end_at === nextMidnight).toBe(true)
+    }
+  })
+
+  it('the public view equals buildCalendarBlocks in public mode', async () => {
+    const range = { date_from: '2026-10-05', date_to: '2026-10-10' }
+    const { calendar_blocks } = await getProviderSchedule(DEMO_IDENTITIES.agency, PROVIDER, range, seedNow)
+    const hours = demoRepository().all('provider_operating_hours').filter(row => row.provider_id === PROVIDER)
+    const bookings = demoRepository().all('bookings').filter(row => row.provider_id === PROVIDER)
+    expect(calendar_blocks).toEqual(buildCalendarBlocks(hours, bookings, range.date_from, range.date_to, 'public'))
   })
 })

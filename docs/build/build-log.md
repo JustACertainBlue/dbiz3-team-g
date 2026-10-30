@@ -309,6 +309,19 @@ did and what the humans decided.
 | Spec issues found | none. Finding: `updated_booking` in steps 3–4 returns numeric fields as strings (`"group_size":"11"`, `"duration_minutes":"60"`, `"agreed_price_total":"2000000.00"`), because the JSON runtime is loaded from CSV — checked against §5.1 in the next entry. |
 | Commit | see `git log` ("docs(BKG): US-5 API demo on macOS"); not pushed. Windows run (G1) still pending. |
 
+### Entry 17: 30/10 Claude Code — BKG numeric fields check (CSV strings)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Human prompt: read-only review of every comparison/calculation on `group_size`, `max_participants`, `duration_minutes`, `agreed_price_total`, `notice_period_hours`, `unread_count` in `src/lib/booking/`, then a test first |
+| Feature and tasks | `specs/011-bkg-manage`, #7 / §5.1 FR-003 (no task id; guard test) |
+| What the agent produced | Review: all reads are wrapped in `Number()` before comparing or computing (`create-booking.ts:90,163`, `update-booking.ts:69–72,81,85–87`, `agency-sync.ts:63`, also `operating-hours.ts:38` weekday); inputs pass `isPositiveInteger`; stored values stay strings by design (`data-model.md`). New test `tests/unit/bkg-numeric-fields.test.ts`: Experience `max_participants` = `"13"` (string, as from CSV) → create and update accept group size 9 and reject 14. No code change. |
+| Human review | Pending PR review. |
+| Tests | Checked, green: new file 2/2 pass. **Mutation**: string comparison at `create-booking.ts:163` and `update-booking.ts:81` → both cases FAIL (`promise rejected "group_size exceeds max_part…" instead of resolving`, because `"9" > "13"`); restored → pass. Full `npm test`: 57 files, 408/408; `npm run lint` passed. |
+| Spec issues found | §5.1 FR-004 defines `updated_booking` only as "Object; Required" (no fields, no types); it currently returns the raw row with string values and DB names. Raised as spec-BKG #57; decided (ii) by the human: same shape as F-SCHED-07 output, one serializer with GET detail. FR-003 create output has no numeric fields, so nothing to test there. |
+| Commit | see `git log` ("test(BKG): guard numeric comparisons against CSV strings"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

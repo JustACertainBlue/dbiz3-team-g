@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { parse } from 'csv-parse/sync'
-import type { BatchInsert, DemoDatabase, DemoRepository, DemoRow } from './types'
+import type { BatchOperation, DemoDatabase, DemoRepository, DemoRow } from './types'
 
 function createFromSeed(root: string): DemoDatabase {
   const seedDirectory = join(root, 'data', 'seed')
@@ -90,17 +90,29 @@ export class JsonDemoRepository implements DemoRepository {
     return removed
   }
 
-  // Inserts rows into several tables with one persist. The in-memory tables change only after
-  // the write succeeds, so a failed persist leaves none of the rows (BKG BR-019).
-  applyBatch(inserts: readonly BatchInsert[]): DemoRow[] {
+  // Inserts rows and updates single rows across several tables with one persist. The in-memory
+  // tables change only after the write succeeds, so a failed persist leaves none of the changes
+  // (BKG BR-019, spec #44). An update that matches no row throws before anything is written.
+  applyBatch(operations: readonly BatchOperation[]): DemoRow[] {
     const tables = { ...this.database.tables }
-    for (const { table, row } of inserts) {
-      tables[table] = [...(tables[table] ?? []), { ...row }]
+    const results: DemoRow[] = []
+    for (const operation of operations) {
+      const rows = tables[operation.table] ?? []
+      if ('row' in operation) {
+        tables[operation.table] = [...rows, { ...operation.row }]
+        results.push({ ...operation.row })
+        continue
+      }
+      const index = rows.findIndex(operation.match)
+      if (index < 0) throw new Error(`applyBatch: no ${operation.table} row matches the update`)
+      const updated = { ...rows[index], ...operation.changes } as DemoRow
+      tables[operation.table] = rows.map((row, i) => (i === index ? updated : row))
+      results.push({ ...updated })
     }
     const next: DemoDatabase = { ...this.database, tables }
     this.persist(next)
     this.database = next
-    return inserts.map(({ row }) => ({ ...row }))
+    return results
   }
 
   snapshot(tableNames: readonly string[]): Record<string, DemoRow[]> {

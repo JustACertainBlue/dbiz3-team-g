@@ -55,9 +55,9 @@ All values are from `data/seed/` (read through the volatile repository, `NODE_EN
 
 ### Code
 
-- [ ] T007 [P] Implement `src/lib/booking/clock.ts`: `SEED_NOW` constant and `type Clock = () => Date` with a wall-clock default (makes T003 pass)
-- [ ] T008 Add `applyBatch` to `src/lib/demo/json-repository.ts` and its signature to `DemoRepository` in `src/lib/demo/types.ts`: build the new tables on a copy, persist once, swap in memory only after the write succeeds; keep every existing method unchanged (makes T004 pass). Shared file used by AIT/PRF/EXP: the 280 existing tests must still pass (analyze M4)
-- [ ] T009 [P] Implement `src/lib/booking/write-lock.ts`: in-process promise-chain mutex `withBookingWriteLock<T>(fn: () => Promise<T> | T): Promise<T>` (makes T005 pass)
+- [X] T007 [P] Implement `src/lib/booking/clock.ts`: `SEED_NOW` constant and `type Clock = () => Date` with a wall-clock default (makes T003 pass)
+- [X] T008 Add `applyBatch` to `src/lib/demo/json-repository.ts` and its signature to `DemoRepository` in `src/lib/demo/types.ts`: build the new tables on a copy, persist once, swap in memory only after the write succeeds; keep every existing method unchanged (makes T004 pass). Shared file used by AIT/PRF/EXP: the 280 existing tests must still pass (analyze M4)
+- [X] T009 [P] Implement `src/lib/booking/write-lock.ts`: in-process promise-chain mutex `withBookingWriteLock<T>(fn: () => Promise<T> | T): Promise<T>` (makes T005 pass)
 
 **Checkpoint**: T003–T005 pass; full `npm test` still green
 
@@ -84,14 +84,14 @@ All values are from `data/seed/` (read through the volatile repository, `NODE_EN
 
 ### Implementation for User Story 4
 
-- [ ] T018 [P] [US4] Implement `src/lib/booking/operating-hours.ts`: ISO weekday and local minutes in Asia/Ho_Chi_Minh (same formula as `src/lib/explore/availability.ts`), whole `[start, end)` inside one window of that weekday (makes T010 pass)
-- [ ] T019 [P] [US4] Implement `src/lib/booking/conflicts.ts`: half-open overlap against rows of the same `provider_id` with status On hold or Booked, using stored status only (makes T011 pass)
-- [ ] T020 [US4] Implement `src/lib/booking/create-booking.ts` (depends on T007–T009, T018, T019): role check (BR-001), Provider Verified + user Active (BR-018, #37), Experience own and unarchived (BR-018), Agency exists and user Approved (#39), input validation (OQ #7, #8, #38, #42, duration > 0), conditions prefill (BR-020), `source_chat_session_id` stored as given (H2), then inside `withBookingWriteLock`: operating-hours fit + conflict check, build the `bookings` row (`end_at`, `hold_expires_at`, `+07:00` timestamps from the injected clock) and the history row, `applyBatch` once; typed errors map to the contract codes (makes T012–T015 pass)
-- [ ] T031 [US4] Add `canOpenCreateBooking(session, providerId)` to `src/lib/booking/create-booking.ts`: true only for an authenticated Local Provider whose `providerId` equals the argument (makes T029 pass)
-- [ ] T021 [US4] Implement `POST` in `src/app/api/bkg/bookings/route.ts`: read `demoSessionFromRequest`, parse JSON body, call `createBooking`, map errors to 400/403/404/409 bodies of the contract (makes T016 pass)
-- [ ] T022 [US4] Implement screen BKG134 in `src/app/provider/[providerId]/bookings/new/page.tsx` (server component: denies access unless `canOpenCreateBooking(session, providerId)` (T031); reads the session Provider's unarchived Experiences and Approved Agencies through `demoRepository()`) and `src/app/provider/[providerId]/bookings/new/CreateBookingForm.tsx` (client form: fields of screen-spec BKG134 §3, conditions prefilled from the chosen Experience, rate × pax shown as a suggestion only, posts to `/api/bkg/bookings`, shows the created Booking in place per #43, Cancel returns to `/provider/[providerId]`)
-- [ ] T023 [US4] Add a "Create Booking" link for the owning Provider in `src/app/provider/[providerId]/page.tsx` pointing to `/provider/[providerId]/bookings/new` (no other change to that page)
-- [ ] T024 [US4] Run `npm test`; all suites pass, including the 280 existing tests (analyze M4), with no test file edited since T030; mark T018–T023 and T031 `[X]` in `specs/004-bkg-core/tasks.md`
+- [X] T018 [P] [US4] Implement `src/lib/booking/operating-hours.ts`: ISO weekday and local minutes in Asia/Ho_Chi_Minh (same formula as `src/lib/explore/availability.ts`), whole `[start, end)` inside one window of that weekday (makes T010 pass)
+- [X] T019 [P] [US4] Implement `src/lib/booking/conflicts.ts`: half-open overlap against rows of the same `provider_id` with status On hold or Booked, using stored status only (makes T011 pass)
+- [X] T020 [US4] Implement `src/lib/booking/create-booking.ts` (depends on T007–T009, T018, T019): role check (BR-001), Provider Verified + user Active (BR-018, #37), Experience own and unarchived (BR-018), Agency exists and user Approved (#39), input validation (OQ #7, #8, #38, #42, duration > 0), conditions prefill (BR-020), `source_chat_session_id` stored as given (H2), then inside `withBookingWriteLock`: operating-hours fit + conflict check, build the `bookings` row (`end_at`, `hold_expires_at`, `+07:00` timestamps from the injected clock) and the history row, `applyBatch` once; typed errors map to the contract codes (makes T012–T015 pass)
+- [X] T031 [US4] Add `canOpenCreateBooking(session, providerId)` to `src/lib/booking/create-booking.ts`: true only for an authenticated Local Provider whose `providerId` equals the argument (makes T029 pass)
+- [X] T021 [US4] Implement `POST` in `src/app/api/bkg/bookings/route.ts`: read `demoSessionFromRequest`, parse JSON body, call `createBooking`, map errors to 400/403/404/409 bodies of the contract (makes T016 pass)
+- [X] T022 [US4] Implement screen BKG134 in `src/app/provider/[providerId]/bookings/new/page.tsx` (server component: denies access unless `canOpenCreateBooking(session, providerId)` (T031); reads the session Provider's unarchived Experiences and Approved Agencies through `demoRepository()`) and `src/app/provider/[providerId]/bookings/new/CreateBookingForm.tsx` (client form: fields of screen-spec BKG134 §3, conditions prefilled from the chosen Experience, rate × pax shown as a suggestion only, posts to `/api/bkg/bookings`, shows the created Booking in place per #43, Cancel returns to `/provider/[providerId]`)
+- [X] T023 [US4] Add a "Create Booking" link for the owning Provider in `src/app/provider/[providerId]/page.tsx` pointing to `/provider/[providerId]/bookings/new` (no other change to that page)
+- [X] T024 [US4] Run `npm test`; all suites pass, including the 280 existing tests (analyze M4), with no test file edited since T030; mark T018–T023 and T031 `[X]` in `specs/004-bkg-core/tasks.md`
 
 **Checkpoint**: US-4 works end to end through the API and BKG134
 

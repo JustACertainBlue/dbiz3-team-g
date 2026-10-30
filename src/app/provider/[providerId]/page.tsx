@@ -158,6 +158,9 @@ export default function ProviderProfilePage({
           <Link href={`/provider/${params.providerId}/edit`} className="spec-btn-black">
             ✏ EDIT PROVIDER PROFILE
           </Link>
+          <Link href={`/provider/${params.providerId}/bookings/new`} className="spec-btn-black">
+            + CREATE BOOKING
+          </Link>
         </div>
 
         {/* Hero Section matching PRF127.png */}

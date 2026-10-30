@@ -77,27 +77,26 @@ Details, arguments to paste, and the MVP Alpha gates G1–G8: `docs/build/claude
 ## 5. Where we are now (update this section when it changes)
 
 - Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in.
-State checked on 30 Oct 2026 at `main` = `ce2609d` (details: `03-module-status.md`).
+State checked on 30 Oct 2026 at `main` = `fa4d9d2` (details: `03-module-status.md`).
 
 - **On `main`**: AIT (`specs/001-ait-core`, PR #6 merged as `3e0e047`), PRF
   (`specs/002-prf-core`, PR #8 squash-merged as `222216d`), EXP (`specs/001-exp-core`, merged
   with `ada9e44` "unify functional prototype on JSON runtime"), BKG US-4 (`specs/004-bkg-core`,
   PR #17 merged as `343e4ce`), BKG US-5 + US-3 (`specs/011-bkg-manage`, PR #20 merged as
   `5cae545` and PR #22 merged as `7057d5c`), BKG US-6 (`specs/012-bkg-list`, PR #25 as `c3f0c64`),
-  BKG spec #57–#82 (PR #21, #24, #26, #27). `npm test` on `main` `c3f0c64`: 67 files, 459 tests pass;
-  `npm run lint` passes (run 30 Oct 2026).
+  BKG US-1 + US-2 (`specs/013-bkg-schedule`, PR #28 as `fa4d9d2`), BKG spec #57–#82 (PR #21, #24,
+  #26, #27). `npm test` on `main` `fa4d9d2`: 76 files, 503 tests pass; `npm run lint` passes
+  (run 30 Oct 2026).
 - **Not merged**: AUT (`001-aut-registration`, feature folders `001`–`010-aut-*`), ADM
   (`003-adm-core`), `member/spec-consistency`, `ngthu/update-specs`.
-- **BKG**: owned by the human running this session. On `main`: US-4 Create Booking
-  (`specs/004-bkg-core`, PR #17), US-5 Manage Booking and US-3 View Bookings (`specs/011-bkg-manage`,
-  PR #20, #22), US-6 List Bookings (`specs/012-bkg-list`, PR #25). **Round 4 (last)** on branch
-  `013-bkg-schedule` (`specs/013-bkg-schedule`, US-1 View Schedule + US-2 Availability; SCH139,
-  SCH140, SCH141, BKG137, nav): T001–T039 done, 503 tests + lint pass, demo Phase A and B on macOS
-  (build-log Entries 26–30, one demo finding fixed test-first in Entry 29); not pushed, PR not
-  opened (description draft: `specs/013-bkg-schedule/pr-notes.md`, PRF/EXP owner sections). Still
-  missing: post-merge non-author reviews of PR #17, #22, #25 (merged without a GitHub review;
-  AIT/PRF/EXP owners to check `applyBatch` in `src/lib/demo/json-repository.ts`) and the Windows run
-  (G1) for 004, 011, 012, 013. Spec decisions #26–#82 on `main`. Read `docs/build/claude-context/04-bkg-brief.md` and
+- **BKG**: owned by the human running this session. **Code complete on `main` `fa4d9d2`**: all six
+  stories US-1..US-6 (F-SCHED-01..10) in four rounds — `specs/004-bkg-core` (US-4, PR #17),
+  `specs/011-bkg-manage` (US-5 + US-3, PR #20, #22), `specs/012-bkg-list` (US-6, PR #25),
+  `specs/013-bkg-schedule` (US-1 + US-2, PR #28); 503 tests + lint pass; spec decisions #26–#82 on
+  `main`; summary in build-log Entry 31. Still missing: the Windows run (G1) for 004, 011, 012, 013,
+  and post-merge non-author reviews of PR #17, #22, #25, #28 (all merged without a GitHub review;
+  AIT/PRF/EXP owners: `applyBatch` in `src/lib/demo/json-repository.ts`; PRF owner: Provider/Agency
+  navigation links; EXP owner: the "Xem lịch trống" link on the Explore Provider page). Read `docs/build/claude-context/04-bkg-brief.md` and
   `specs/011-bkg-manage/tasks.md` before doing anything on BKG.
 - **IAC**: no module of its own; only `src/lib/demo/commercial-handoff-service.ts` and the
   shared `/messages` page (Quote/Chat handoff from Explore and AIT).

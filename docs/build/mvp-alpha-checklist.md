@@ -47,10 +47,10 @@ limitation discovered by the instructor that is not written here is.
 | 7 | BKG: ~~Chat auto-message and Agency notification on Booking events (F-SCHED-08) are not built~~ **Closed by 011 US-5**: one Booking Update message per create/update/status/arrival/expiry in the FR-008 Chat. Still open: Chat pre-fill of BKG134. | BKG FR-003, FR-008, BR-012 | Pre-fill: IAC |
 | 8 | BKG: (Updated by 011) The 72-hour expiry runs lazily at the start of every BKG request plus a 60-second timer in the dev server (#50), not at the exact second and not as a separate background worker; the timer lives in one Node process. | BKG BR-004, spec #40, #50, AC-BKG-EXPIRY | Background worker with PostgreSQL (Session 10–11) |
 | 9 | BKG: Demo session (hab_demo_account) instead of AUT login; the "+ CREATE BOOKING" link is shown to every viewer, access is enforced on BKG134. | BKG BR-001, AUT F-AUTH-16 | Session 11 |
-| 10 | BKG: A denied BKG133/BKG134/BKG135/BKG144/BKG136/BKG138/DSH018 page answers HTTP 200 with an access-denied message instead of 403; no Booking data is rendered, and the APIs do return 403. | BKG BR-001, BR-002, BR-014; screen SR-001 | Decide at review |
-| 11 | BKG: BKG138 Back goes to `/explore`, because the Agency Booking list BKG137 is not built. | screen-spec-BKG138 §5 | With BKG137 (not planned yet) |
+| 10 | BKG: A denied BKG133/BKG134/BKG135/BKG144/BKG136/BKG137/BKG138/DSH018/SCH139/SCH140/SCH141 page answers HTTP 200 with an access-denied message instead of 403; no Booking data is rendered, and the APIs do return 403 (404 for an unknown or non-Verified Provider on SCH140). | BKG BR-001, BR-002, BR-014; screen SR-001 | Decide at review |
+| 11 | BKG: ~~BKG138 Back goes to `/explore`, because the Agency Booking list BKG137 is not built~~ **Closed by 013**: BKG138 Back → BKG137 Booking History; Agency nav "Bookings" → BKG137, "Schedule" → SCH141 (#68). | screen-spec-BKG138 §5, #68 | Done |
 | 12 | BKG: ~~The Provider page has no link to BKG135~~ **Closed by 012 US-6**: Provider page → Bookings → BKG133 → Detail → BKG135 (#66). | BKG #54, #66, screen-spec-BKG135 | Done |
-| 13 | BKG: DSH018 has only the "Own booking action summary" panel and is reached by URL; the profile, schedule and conversation panels and the shared Provider navigation (the "Dashboard" link still opens PRF127) are not built. | BKG #65, screen-spec-DSH018 | With PRF / SCH / CHAT (not planned yet) |
+| 13 | BKG: DSH018 has only the "Own booking action summary" panel; the profile, schedule and conversation panels are not built. ~~The Provider "Dashboard" link still opens PRF127~~ **nav part closed by 013**: "Dashboard" → DSH018, "Schedule" → SCH139 (#69). | BKG #65, #69, screen-spec-DSH018 | Other panels: with PRF / SCH / CHAT (not planned yet) |
 
 ## 4. Sign-off
 

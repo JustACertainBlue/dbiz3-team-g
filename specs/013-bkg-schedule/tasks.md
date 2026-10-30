@@ -118,11 +118,11 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 
 ## Phase 5: Polish and verification
 
-- [ ] T034 Run `npm run lint`, `python data/scripts/validate_seed.py`, `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
-- [ ] T035 Walk quickstart §2–§5 of `specs/013-bkg-schedule/quickstart.md` after `npm run demo:reset` with **one** dev server; record each step (clicked vs curl) in `docs/build/build-log.md` (Windows G1 still pending)
-- [ ] T036 Draft build-log entries in `docs/build/build-log.md` (§2 entries, §3 spec issues incl. #82 found by the plan review, §4 lessons)
-- [ ] T037 Update `docs/build/mvp-alpha-checklist.md` §3: close #11 (BKG138 Back → BKG137) and #13 (nav Dashboard → DSH018; note the other DSH018 panels remain), extend #10 to SCH139/SCH140/SCH141/BKG137 (human approved writing directly, analyze L3)
-- [ ] T038 Draft the PR description in `specs/013-bkg-schedule/pr-notes.md` with a section for the PRF owner (`src/app/provider/[providerId]/page.tsx`, `edit/page.tsx`, `src/app/agency/[agencyId]/page.tsx`: link edits only) and the EXP owner (`src/app/explore/providers/[id]/page.tsx`: one link, #82)
+- [X] T034 Run `npm run lint`, `python data/scripts/validate_seed.py`, `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
+- [X] T035 Walk quickstart §2–§5 of `specs/013-bkg-schedule/quickstart.md` after `npm run demo:reset` with **one** dev server; record each step (clicked vs curl) in `docs/build/build-log.md` (Windows G1 still pending)
+- [X] T036 Draft build-log entries in `docs/build/build-log.md` (§2 entries, §3 spec issues incl. #82 found by the plan review, §4 lessons)
+- [X] T037 Update `docs/build/mvp-alpha-checklist.md` §3: close #11 (BKG138 Back → BKG137) and #13 (nav Dashboard → DSH018; note the other DSH018 panels remain), extend #10 to SCH139/SCH140/SCH141/BKG137 (human approved writing directly, analyze L3)
+- [X] T038 Draft the PR description in `specs/013-bkg-schedule/pr-notes.md` with a section for the PRF owner (`src/app/provider/[providerId]/page.tsx`, `edit/page.tsx`, `src/app/agency/[agencyId]/page.tsx`: link edits only) and the EXP owner (`src/app/explore/providers/[id]/page.tsx`: one link, #82)
 
 ---
 

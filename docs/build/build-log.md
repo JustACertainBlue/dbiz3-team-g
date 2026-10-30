@@ -350,6 +350,19 @@ did and what the humans decided.
 | Draft for checklist §3 (T046, show before writing) | Known limitation: BKG138 Back goes to `/explore` (BKG137 Agency Booking list not built), spec BKG138 §5 row 2 → planned with BKG137 (story and session to be set by the human). Known limitation: no link from the Provider page to BKG135; reachable by URL, after create on BKG134, or from the Booking Update message (#54) → planned with BKG133 Provider Booking list (story and session to be set by the human). |
 | Commit | see `git log` ("feat(BKG): US-3 View Bookings (T033-T042)"); not pushed. |
 
+### Entry 20: 30/10 Claude Code — BKG 011 US-3 screen demo (quickstart §5, macOS)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); the human ran `npm run demo:reset` and one `npm run dev` (started 4 s after the reset); the agent clicked through in the built-in browser at the human's request |
+| Command and argument | `specs/011-bkg-manage/quickstart.md` §5 steps 1–8 on `localhost:3000`, at `2ed1c1c` |
+| Feature and tasks | `specs/011-bkg-manage`, US-3 demo path (T044 screens part) |
+| What the agent produced | No code change. (1) BKG134 (Tràng An, 2026-11-09 09:00, 60 min, 10 pax, 2,000,000) → opens BKG135 `91fbe7ff…`: On hold, hold until 2026-11-02 13:22, agency contact shown; Confirm/Book, Update, Cancel enabled, Mark Group Arrival visible and **disabled**. (2) Update → BKG144 prefilled (duration 60 from `end_at − start_at`, status "Giữ nguyên (On hold)"); group size 11, keep status, Save → BKG135 shows 11, still On hold, hold expiry unchanged (`PATCH 200`, no `/status` call). (3) Confirm/Book → Booked, no hold line; Confirm/Book disabled, Update/Cancel enabled, **Mark Group Arrival visible but disabled** (start 2026-11-09 not reached). (4) Second Booking `3d48179a…` (11:00, 8 pax) → Cancel shows "Lý do hủy (bắt buộc)"; "Xác nhận hủy" disabled when empty and when only spaces; "Group postponed" → Cancelled, all four buttons disabled. (5) Seed `4bf17b30…` (Hồng Hà, 2026-10-05) → Mark Group Arrival enabled → BKG136 → Confirm Group Arrival → back on BKG135, Completed, all buttons disabled. (6) Tour Agency (Tràng An) on BKG138 `/agency/02e568d8…/bookings/91fbe7ff…`: read-only, 11 pax, Booked, "Xem hồ sơ Provider" link (route works), **no button in the page**, only links Chat and Back. (7) Same Agency on BKG135, BKG144 and BKG136 URLs of `91fbe7ff…` → access-denied text, no Booking data. (8) Tràng An on BKG138 of `4bf17b30…` → "Chỉ Tour Agency của Booking này mới xem được trang này."; UBND, HDT, Guest on BKG135 → denied, no price in the HTML. §5 step 8 API: `GET` as `agency` → `HTTP 200`, all actions false, `provider_profile_link`, numbers. Dev-server log: every request 200/201, no error. |
+| Human review | Requested the agent to run it; results reported in chat. |
+| Tests | Not rerun (no code change since `2ed1c1c`, 427/427). |
+| Spec issues found | none. Observation: denied pages answer HTTP 200 with a denial message (like BKG134 in 004), not 403; the data is not rendered. Windows run (G1) still pending. |
+| Commit | Not committed yet. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

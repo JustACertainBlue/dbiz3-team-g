@@ -51,6 +51,7 @@ limitation discovered by the instructor that is not written here is.
 | 11 | BKG: ~~BKG138 Back goes to `/explore`, because the Agency Booking list BKG137 is not built~~ **Closed by 013**: BKG138 Back → BKG137 Booking History; Agency nav "Bookings" → BKG137, "Schedule" → SCH141 (#68). | screen-spec-BKG138 §5, #68 | Done |
 | 12 | BKG: ~~The Provider page has no link to BKG135~~ **Closed by 012 US-6**: Provider page → Bookings → BKG133 → Detail → BKG135 (#66). | BKG #54, #66, screen-spec-BKG135 | Done |
 | 13 | BKG: DSH018 has only the "Own booking action summary" panel; the profile, schedule and conversation panels are not built. ~~The Provider "Dashboard" link still opens PRF127~~ **nav part closed by 013**: "Dashboard" → DSH018, "Schedule" → SCH139 (#69). | BKG #65, #69, screen-spec-DSH018 | Other panels: with PRF / SCH / CHAT (not planned yet) |
+| 14 | `npm audit` reports 15 dependency vulnerabilities (5 moderate, 6 high, 4 critical) on `main` `4de9d95` (up from 9 with 3 critical at Entry 2); `npm audit fix` is not run because it may change the agreed stack versions. Prototype only, no external deployment. | build-log §3 #4 | Upgrade the shared stack together with all module owners before any external deployment (not planned yet) |
 
 ## 4. Sign-off
 

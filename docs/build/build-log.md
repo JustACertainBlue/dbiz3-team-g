@@ -322,6 +322,19 @@ did and what the humans decided.
 | Spec issues found | §5.1 FR-004 defines `updated_booking` only as "Object; Required" (no fields, no types); it currently returns the raw row with string values and DB names. Raised as spec-BKG #57; decided (ii) by the human: same shape as F-SCHED-07 output, one serializer with GET detail. FR-003 create output has no numeric fields, so nothing to test there. |
 | Commit | see `git log` ("test(BKG): guard numeric comparisons against CSV strings"); not pushed. |
 
+### Entry 18: 30/10 Claude Code — BKG 011 #57 follow-up and Step 5 (tests first, US-3)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Human merged `origin/main` (PR #21, spec #57) into `011-bkg-manage`; `start_feature.py --refresh`, `--check` OK; then `/speckit-implement Only T028–T032 (US-3 tests). Write tests only; no code that makes them pass.` |
+| Feature and tasks | `specs/011-bkg-manage`, T028–T032; #57 edits to T026, T029, T031, T034 |
+| What the agent produced | Docs (commit `64b6cba`): spec snapshot refreshed with #57; `contracts/manage-booking-api.md` — GET fields typed as numbers, PATCH `updated_booking` = Provider view of the GET body from the same serializer, also for #52; `tasks.md` — #57 cases added to T029 and T031, T034 builds one serializer `toBookingDetail` used by `getBookingDetail` and `updateBooking`, note on T026. Tests: `tests/unit/bkg-booking-actions.test.ts` (T028, FR-007 matrix incl. `now == start_at`, Agency always none), `tests/unit/bkg-booking-detail.test.ts` (T029, Provider/Agency views, numbers, `hold_expires_at` only On hold, FORBIDDEN/NOT_FOUND, expiry first but a denied read writes nothing, #57 incl. #52), `tests/unit/bkg-detail-page-access.test.ts` (T030), `tests/integration/bkg-booking-detail-api.test.ts` (T031, GET 200/403/404, #57 PATCH body = next GET body). No code. |
+| Human review | Pending. |
+| Tests | T032 red run (4 files): `Test Files 4 failed (4)`, `Tests 8 failed (8)`. Reasons: `Cannot find module '@/lib/booking/booking-actions'` and `'@/lib/booking/booking-detail'` (T028, T029 suites); `canManageBooking is not a function` / `canViewAgencyBooking is not a function` (T030, 4 cases); `routes[method] is not a function` (T031, no `GET` export, 3 cases); #57 case: `AssertionError: expected 'string' to be 'number'` (PATCH `updated_booking.group_size` is still the stored string). Full `npm test`: `Test Files 4 failed \| 57 passed (61)`, `Tests 8 failed \| 408 passed (416)` — every existing test still green. `npm run lint` fails only in the 4 new files (TS2307 missing modules, TS2305 missing exports). |
+| Spec issues found | none. Note: FR-007 has no `duration`, so after #57 `updated_booking` no longer carries the duration; `end_at` reflects it. |
+| Commit | see `git log` ("test(BKG): failing tests for US-3 (T028-T032)"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

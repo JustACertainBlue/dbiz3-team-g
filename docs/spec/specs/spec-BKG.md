@@ -482,6 +482,7 @@ sequenceDiagram
 - 2026-10-30 #79: `group_size`, `agreed_price` and `notice_period` are JSON numbers (#57). `provider_name` comes from the Provider's active profile version and `village_name` from the Provider's village.
 - 2026-10-30 #80: Authorize, then validate the query, then expire due holds (#50), then read. A denied or invalid request writes nothing (as #64, #67).
 - 2026-10-30 #81: No. The create and update checks stay as they are; a consistency test shows that a slot F-SCHED-09 reports as Available is accepted by create, and a slot it reports as occupied or Unavailable is rejected with Slot Unavailable.
+- 2026-10-30 #82: SCH140 is at `/explore/providers/{providerId}/schedule`. It is opened by URL and by a "Xem lịch trống" link on the Explore Provider page, shown only to Tour Agencies, next to the Chat button. The owning Local Provider opening that URL is sent to SCH139 (#74).
 
 **10. Open questions**
 
@@ -568,6 +569,7 @@ sequenceDiagram
 | 79 | F-SCHED-02 output: which types, and where do `provider_name` and `village_name` come from? | Yes (US-1) | BA / Data | **Closed** | `group_size`, `agreed_price` and `notice_period` are JSON numbers (#57). `provider_name` comes from the Provider's active profile version and `village_name` from the Provider's village. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 | 80 | In which order do F-SCHED-01 and F-SCHED-02 authorize, validate and expire holds? | Yes (US-1) | BA | **Closed** | Authorize, then validate the query, then expire due holds (#50), then read. A denied or invalid request writes nothing (as #64, #67). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 | 81 | FR-009 says F-SCHED-03/F-SCHED-04 use its result. Must the existing create and update checks be rewritten on top of F-SCHED-09? | No | BA / Tech | **Closed** | No. The create and update checks stay as they are; a consistency test shows that a slot F-SCHED-09 reports as Available is accepted by create, and a slot it reports as occupied or Unavailable is rejected with Slot Unavailable. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 82 | Where is SCH140 (Provider Schedule – Agency View), and how does a Tour Agency reach it? | Yes (US-1) | UI/UX | **Closed** | SCH140 is at `/explore/providers/{providerId}/schedule`. It is opened by URL and by a "Xem lịch trống" link on the Explore Provider page, shown only to Tour Agencies, next to the Chat button. The owning Local Provider opening that URL is sent to SCH139 (#74). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 
 **11. Traceability to DBIZ2**
 

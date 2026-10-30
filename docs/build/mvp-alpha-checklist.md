@@ -43,10 +43,13 @@ limitation discovered by the instructor that is not written here is.
 | 3 | Storage layer utilizes zero-config CSV seed reader instead of Drizzle ORM dual-adapter for MVP Alpha vertical slice | plan.md §Complexity | Session 9 |
 | 4 | Lightbox gallery modal on Experience Detail (BR-016) is implemented on Frontend UI but lacks automated component test | BR-016 | Session 10 |
 | 5 | BKG: BR-019 (status + history together) is met by one atomic persist of the JSON runtime file, not a database transaction. | BKG BR-019 | PostgreSQL migration (Session 10–11) |
-| 6 | BKG: The Booking write lock is in-process only; two Node processes sharing one runtime.json are not protected, and the race test (T015) does not prove the lock (build-log §4). | BKG AC-BKG-RACE | US-5 / PostgreSQL |
-| 7 | BKG: Chat auto-message and Agency notification on Booking events (F-SCHED-08) are not built; Chat pre-fill of BKG134 is not built. | BKG FR-003, FR-008, BR-012 | US-5 / IAC |
-| 8 | BKG: No 72-hour expiry worker; an expired On hold keeps blocking its slot until the worker exists. | BKG BR-004, spec #40, AC-BKG-EXPIRY | US-5 |
+| 6 | BKG: The Booking write lock is in-process only; two Node processes sharing one runtime.json are not protected. (Updated by 011: the race test now proves the lock — a test-only async pause between check and write makes two creates, and two updates, commit both when the lock is removed; build-log Entries 14–15.) | BKG AC-BKG-RACE | PostgreSQL migration (Session 10–11) |
+| 7 | BKG: ~~Chat auto-message and Agency notification on Booking events (F-SCHED-08) are not built~~ **Closed by 011 US-5**: one Booking Update message per create/update/status/arrival/expiry in the FR-008 Chat. Still open: Chat pre-fill of BKG134. | BKG FR-003, FR-008, BR-012 | Pre-fill: IAC |
+| 8 | BKG: (Updated by 011) The 72-hour expiry runs lazily at the start of every BKG request plus a 60-second timer in the dev server (#50), not at the exact second and not as a separate background worker; the timer lives in one Node process. | BKG BR-004, spec #40, #50, AC-BKG-EXPIRY | Background worker with PostgreSQL (Session 10–11) |
 | 9 | BKG: Demo session (hab_demo_account) instead of AUT login; the "+ CREATE BOOKING" link is shown to every viewer, access is enforced on BKG134. | BKG BR-001, AUT F-AUTH-16 | Session 11 |
+| 10 | BKG: A denied BKG134/BKG135/BKG144/BKG136/BKG138 page answers HTTP 200 with an access-denied message instead of 403; no Booking data is rendered, and the APIs do return 403. | BKG BR-001, BR-002, BR-014; screen SR-001 | Decide at review |
+| 11 | BKG: BKG138 Back goes to `/explore`, because the Agency Booking list BKG137 is not built. | screen-spec-BKG138 §5 | With BKG137 (not planned yet) |
+| 12 | BKG: The Provider page has no link to BKG135; it is reached by URL, after create on BKG134, or from the Booking Update message (#54). | BKG #54, screen-spec-BKG135 | With BKG133 (not planned yet) |
 
 ## 4. Sign-off
 

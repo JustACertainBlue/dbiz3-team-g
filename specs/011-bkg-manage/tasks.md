@@ -88,7 +88,7 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 - [X] T023 [US5] Implement `src/lib/booking/change-status.ts` (F-SCHED-05): `expireDueHoldsLocked(now)` first inside the lock (H1), transitions per FR-005 and #45, reason required for Cancelled, one batch with Booking + history + message (makes T011 pass)
 - [X] T024 [US5] Implement `src/lib/booking/mark-arrival.ts` (F-SCHED-06): `expireDueHoldsLocked(now)` first inside the lock (H1), Booked and `now >= start_at`, `arrival_at`, one batch with Booking + history + message; rejected cases return `transition_applied = false` without writing (makes T012 pass)
 - [X] T025 [US5] Make T015 pass: ownership through `loadBookingForActor` in `src/lib/booking/update-booking.ts`, `src/lib/booking/change-status.ts`, `src/lib/booking/mark-arrival.ts`; no BR-018 check on existing Bookings (#51)
-- [X] T026 [US5] Implement routes `PATCH` in `src/app/api/bkg/bookings/[bookingId]/route.ts`, `POST` in `src/app/api/bkg/bookings/[bookingId]/status/route.ts` and `POST` in `src/app/api/bkg/bookings/[bookingId]/arrival/route.ts`: demo session, error mapping per contract, `startExpiryTimer()` on module load, a no-op under `NODE_ENV=test` (M1) (makes T016 pass)
+- [X] T026 [US5] Implement routes `PATCH` in `src/app/api/bkg/bookings/[bookingId]/route.ts`, `POST` in `src/app/api/bkg/bookings/[bookingId]/status/route.ts` and `POST` in `src/app/api/bkg/bookings/[bookingId]/arrival/route.ts`: demo session, error mapping per contract, `startExpiryTimer()` on module load, a no-op under `NODE_ENV=test` (M1) (makes T016 pass). #57 (decided after this task): the `PATCH` body's `updated_booking` moves to the T034 serializer
 - [X] T027 [US5] Run `npm test`: all suites pass (350 existing + Foundational + US-5), no test file edited since T017; mark T007–T026 `[X]` in `specs/011-bkg-manage/tasks.md`
 
 **Checkpoint**: US-5 works end to end through the API (quickstart §4).
@@ -103,24 +103,24 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 
 ### Tests for User Story 3 (write all, run, see them fail)
 
-- [ ] T028 [P] [US3] Button-state tests in `tests/unit/bkg-booking-actions.test.ts` for `bookingActions(status, now, startAt, actor)` in `src/lib/booking/booking-actions.ts`, one case per FR-007 matrix row: On hold → `confirm`, `update`, `cancel` true, `mark_arrival` false; Booked and `now < start_at` → `update`, `cancel` true, `mark_arrival` false (BR-017, SC-007); Booked and `now >= start_at` (exactly equal included) → `update`, `cancel`, `mark_arrival` true; Completed and Cancelled → all false (US-3 AS-5); actor `agency` → all false in every status
-- [ ] T029 [P] [US3] Detail tests in `tests/unit/bkg-booking-detail.test.ts` for `getBookingDetail(session, bookingId, { now })` in `src/lib/booking/booking-detail.ts`: Provider view of `4bf17b30…` has the FR-007 fields, `agency_contact` = Agency `company_name` + `contact_info` and no `provider_profile_link` (US-3 AS-1, #53); Agency `ebf4fcfa…` view has `provider_profile_link = /explore/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374`, no `agency_contact`, all actions false (US-3 AS-2); `hold_expires_at` only for On hold; `last_updated_at` = `updated_at`; another Agency → `FORBIDDEN` (US-3 AS-3, BR-002, BR-008); UBND, HDT, Guest → `FORBIDDEN` (US-3 AS-4, BR-014); runs `expireDueHolds(now)` (the locking variant) first (#50)
-- [ ] T030 [P] [US3] Page-access tests in `tests/unit/bkg-detail-page-access.test.ts` for `canManageBooking(session, providerId, booking)` and `canViewAgencyBooking(session, agencyId, booking)` in `src/lib/booking/booking-access.ts`: the owning Provider on its own URL → true, on another Provider's URL or another Provider's Booking → false; the owning Agency on its own URL → true, another Agency → false; UBND, HDT, Guest → false (BKG135/BKG144/BKG136 and BKG138 gates)
-- [ ] T031 [P] [US3] API tests in `tests/integration/bkg-booking-detail-api.test.ts` for `GET /api/bkg/bookings/{id}`: `provider` → 200 with `agency_contact` and `actions`; a Booking created for Tràng An (`02e568d8…`) read with cookie `agency` → 200 read-only, all actions false; `agency` on `4bf17b30…` (Agency `ebf4fcfa…`) → 403; `ubnd`, `hdt`, `guest` → 403; unknown → 404
-- [ ] T032 [US3] Run `npx vitest run tests/unit/bkg-booking-actions.test.ts tests/unit/bkg-booking-detail.test.ts tests/unit/bkg-detail-page-access.test.ts tests/integration/bkg-booking-detail-api.test.ts`; confirm they fail because the code is missing; paste the output into `docs/build/build-log.md`
+- [X] T028 [P] [US3] Button-state tests in `tests/unit/bkg-booking-actions.test.ts` for `bookingActions(status, now, startAt, actor)` in `src/lib/booking/booking-actions.ts`, one case per FR-007 matrix row: On hold → `confirm`, `update`, `cancel` true, `mark_arrival` false; Booked and `now < start_at` → `update`, `cancel` true, `mark_arrival` false (BR-017, SC-007); Booked and `now >= start_at` (exactly equal included) → `update`, `cancel`, `mark_arrival` true; Completed and Cancelled → all false (US-3 AS-5); actor `agency` → all false in every status
+- [X] T029 [P] [US3] Detail tests in `tests/unit/bkg-booking-detail.test.ts` for `getBookingDetail(session, bookingId, { now })` in `src/lib/booking/booking-detail.ts`: Provider view of `4bf17b30…` has the FR-007 fields, `agency_contact` = Agency `company_name` + `contact_info` and no `provider_profile_link` (US-3 AS-1, #53); Agency `ebf4fcfa…` view has `provider_profile_link = /explore/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374`, no `agency_contact`, all actions false (US-3 AS-2); `hold_expires_at` only for On hold; `last_updated_at` = `updated_at`; another Agency → `FORBIDDEN` (US-3 AS-3, BR-002, BR-008); UBND, HDT, Guest → `FORBIDDEN` (US-3 AS-4, BR-014); runs `expireDueHolds(now)` (the locking variant) first (#50); `group_size`, `agreed_price` and `notice_period` are JSON numbers (§5.1 FR-007, #57). #57: `updateBooking(provider, id, { group_size: 11 })` returns an `updated_booking` deep-equal to `getBookingDetail(provider, id)` read right after (spec names, `group_size` = 11 and `agreed_price` = 2000000 as numbers, no `duration_minutes`/`agreed_price_total`), also for the no-change case (#52)
+- [X] T030 [P] [US3] Page-access tests in `tests/unit/bkg-detail-page-access.test.ts` for `canManageBooking(session, providerId, booking)` and `canViewAgencyBooking(session, agencyId, booking)` in `src/lib/booking/booking-access.ts`: the owning Provider on its own URL → true, on another Provider's URL or another Provider's Booking → false; the owning Agency on its own URL → true, another Agency → false; UBND, HDT, Guest → false (BKG135/BKG144/BKG136 and BKG138 gates)
+- [X] T031 [P] [US3] API tests in `tests/integration/bkg-booking-detail-api.test.ts` for `GET /api/bkg/bookings/{id}`: `provider` → 200 with `agency_contact` and `actions`; a Booking created for Tràng An (`02e568d8…`) read with cookie `agency` → 200 read-only, all actions false; `agency` on `4bf17b30…` (Agency `ebf4fcfa…`) → 403; `ubnd`, `hdt`, `guest` → 403; unknown → 404; #57: `PATCH` with `{ group_size: 11 }` as `provider` → 200 and `updated_booking` deep-equals the body of the following `GET` as `provider`, with `typeof group_size`, `agreed_price`, `notice_period` = `number`
+- [X] T032 [US3] Run `npx vitest run tests/unit/bkg-booking-actions.test.ts tests/unit/bkg-booking-detail.test.ts tests/unit/bkg-detail-page-access.test.ts tests/integration/bkg-booking-detail-api.test.ts`; confirm they fail because the code is missing; paste the output into `docs/build/build-log.md`
 
 ### Implementation for User Story 3
 
-- [ ] T033 [P] [US3] Implement `src/lib/booking/booking-actions.ts` (makes T028 pass)
-- [ ] T034 [US3] Implement `src/lib/booking/booking-detail.ts` using `loadBookingForActor` and `bookingActions` (makes T029 pass)
-- [ ] T035 [US3] Add `canManageBooking` and `canViewAgencyBooking` to `src/lib/booking/booking-access.ts` (makes T030 pass)
-- [ ] T036 [US3] Add `GET` to `src/app/api/bkg/bookings/[bookingId]/route.ts` (makes T031 pass)
-- [ ] T037 [US3] Screen BKG135 in `src/app/provider/[providerId]/bookings/[bookingId]/page.tsx` (server component; `canManageBooking` gate; FR-007 fields; buttons from `bookingActions`: Confirm/Book and Cancel post to `/status`, Update → BKG144, Mark Group Arrival → BKG136; disabled buttons shown disabled, SC-007)
-- [ ] T038 [US3] Screen BKG144 in `src/app/provider/[providerId]/bookings/[bookingId]/edit/page.tsx` and `src/app/provider/[providerId]/bookings/[bookingId]/edit/EditBookingForm.tsx` (fields of screen-spec BKG144; target status select without Completed; reason required for Cancelled; Save → `PATCH` and/or `/status`; Discard → BKG135; stale errors cleared on change, price input without step restriction as in BKG134)
-- [ ] T039 [US3] Screen BKG136 in `src/app/provider/[providerId]/bookings/[bookingId]/arrival/page.tsx` (booking and scheduled start; Confirm Group Arrival → `/arrival`; shows `validation_error` when not applied; Cancel → BKG135)
-- [ ] T040 [US3] Screen BKG138 in `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx` (`canViewAgencyBooking` gate; read-only FR-007 fields; no action buttons; Chat → `/messages`; Back → `/explore`)
-- [ ] T041 [US3] In `src/app/provider/[providerId]/bookings/new/CreateBookingForm.tsx` navigate to BKG135 after a successful create (replaces the in-place result of #43, per #54)
-- [ ] T042 [US3] Run `npm test`: all suites pass, no test file edited since T032; mark T028–T041 `[X]` in `specs/011-bkg-manage/tasks.md`
+- [X] T033 [P] [US3] Implement `src/lib/booking/booking-actions.ts` (makes T028 pass)
+- [X] T034 [US3] Implement `src/lib/booking/booking-detail.ts` using `loadBookingForActor` and `bookingActions`, with one serializer `toBookingDetail(row, view, now)` that converts the stored strings to numbers once; `getBookingDetail` and `updateBooking`'s `updated_booking` (T021/T026 output, both branches incl. #52) both use it (#57) (makes T029 and the #57 case of T031 pass)
+- [X] T035 [US3] Add `canManageBooking` and `canViewAgencyBooking` to `src/lib/booking/booking-access.ts` (makes T030 pass)
+- [X] T036 [US3] Add `GET` to `src/app/api/bkg/bookings/[bookingId]/route.ts` (makes T031 pass)
+- [X] T037 [US3] Screen BKG135 in `src/app/provider/[providerId]/bookings/[bookingId]/page.tsx` (server component; `canManageBooking` gate; FR-007 fields; buttons from `bookingActions`: Confirm/Book and Cancel post to `/status`, Update → BKG144, Mark Group Arrival → BKG136; disabled buttons shown disabled, SC-007)
+- [X] T038 [US3] Screen BKG144 in `src/app/provider/[providerId]/bookings/[bookingId]/edit/page.tsx` and `src/app/provider/[providerId]/bookings/[bookingId]/edit/EditBookingForm.tsx` (fields of screen-spec BKG144; target status select without Completed; reason required for Cancelled; Save → `PATCH` and/or `/status`; Discard → BKG135; stale errors cleared on change, price input without step restriction as in BKG134)
+- [X] T039 [US3] Screen BKG136 in `src/app/provider/[providerId]/bookings/[bookingId]/arrival/page.tsx` (booking and scheduled start; Confirm Group Arrival → `/arrival`; shows `validation_error` when not applied; Cancel → BKG135)
+- [X] T040 [US3] Screen BKG138 in `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx` (`canViewAgencyBooking` gate; read-only FR-007 fields; no action buttons; Chat → `/messages`; Back → `/explore`)
+- [X] T041 [US3] In `src/app/provider/[providerId]/bookings/new/CreateBookingForm.tsx` navigate to BKG135 after a successful create (replaces the in-place result of #43, per #54)
+- [X] T042 [US3] Run `npm test`: all suites pass, no test file edited since T032; mark T028–T041 `[X]` in `specs/011-bkg-manage/tasks.md`
 
 **Checkpoint**: US-3 screens work on top of US-5.
 
@@ -128,10 +128,10 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 
 ## Phase 5: Polish and verification
 
-- [ ] T043 Run `npm run lint`, `python data/scripts/validate_seed.py`, `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
-- [ ] T044 Walk quickstart §4 (API) and §5 (screens) of `specs/011-bkg-manage/quickstart.md` after `npm run demo:reset` with **one** dev server; record each step in `docs/build/build-log.md` (Windows run still needed for G1)
-- [ ] T045 Draft the build-log entries for this feature in `docs/build/build-log.md` (§2 entries, §3 spec issues, §4 lessons, including the T009/T022 mutation results)
-- [ ] T046 Draft updates for `docs/build/mvp-alpha-checklist.md` §3: close #7 (Chat message now sent), update #6 (race test now proves the lock) and #8 (expiry worker exists, lazy + timer per #50); add new BKG limitations if any — show to the human before writing
+- [X] T043 Run `npm run lint`, `python data/scripts/validate_seed.py`, `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
+- [X] T044 Walk quickstart §4 (API) and §5 (screens) of `specs/011-bkg-manage/quickstart.md` after `npm run demo:reset` with **one** dev server; record each step in `docs/build/build-log.md` (Windows run still needed for G1)
+- [X] T045 Draft the build-log entries for this feature in `docs/build/build-log.md` (§2 entries, §3 spec issues, §4 lessons, including the T009/T022 mutation results)
+- [X] T046 Draft updates for `docs/build/mvp-alpha-checklist.md` §3: close #7 (Chat message now sent), update #6 (race test now proves the lock) and #8 (expiry worker exists, lazy + timer per #50); add new BKG limitations if any — show to the human before writing
 
 ---
 
@@ -141,7 +141,7 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`); 
 - Phase 2: T002, T003 → T004 → T005, T006.
 - Phase 3: **T007 → T008 → T009 first**; then T010–T016 → T017 → T018 → T019 → T020 → T021 → T022 → T023 → T024 → T025 → T026 → T027.
 - Phase 4: T028–T031 → T032 → T033 → T034 → T035 → T036 → T037 → T038 → T039 → T040 → T041 → T042.
-- Test → code pairs: T002→T005, T003→T006, T007(a)→T008/T009, T007(b)→T021/T022, T014→T018/T019, T013→T020, T010→T021, T011→T023, T012→T024, T015→T025, T016→T026, T028→T033, T029→T034, T030→T035, T031→T036.
+- Test → code pairs: T002→T005, T003→T006, T007(a)→T008/T009, T007(b)→T021/T022, T014→T018/T019, T013→T020, T010→T021, T011→T023, T012→T024, T015→T025, T016→T026, T028→T033, T029→T034, T030→T035, T031→T036 (#57 case → T034).
 - US-3 depends on US-5 only through the API and services; US-5 needs no screen.
 
 ## Parallel examples

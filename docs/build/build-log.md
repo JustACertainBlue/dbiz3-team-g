@@ -296,6 +296,86 @@ did and what the humans decided.
 | Spec issues found | none |
 | Commit | `61f2ce4`; not pushed. US-5 API demo (quickstart §4) not yet run. |
 
+### Entry 16: 30/10 Claude Code + human — BKG 011 US-5 API demo (quickstart §4, macOS)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); the human ran `demo:reset` and one `npm run dev`, the agent ran the curl steps and read `/messages` in the built-in browser |
+| Command and argument | `npm run demo:reset` (47 tables), `npm run dev` (one server, `localhost:3000`, started after the reset), then `specs/011-bkg-manage/quickstart.md` §4 steps 1–15 |
+| Feature and tasks | `specs/011-bkg-manage`, US-5 demo path (part of T043/T044 evidence) |
+| What the agent produced | No code change. Results: (1) create → `201`, `40da0dca…`, On hold, hold until 2026-11-02T12:46:43+07:00 (72 h); (3) group size 11 → `200`, `audit_log_id` and `agency_notification_message_id` set; (4) same update → `200`, both `null`, `updated_at` unchanged; (5) 16:30 → `409 SLOT_UNAVAILABLE` "outside the Provider operating hours"; (6) confirm → `200` On hold → Booked; (7) arrival before start → `200`, `transition_applied` `false`, `Tour Start Time Not Reached`; (8) arrival on seed `4bf17b30…` → `200`, `true`, Completed, `availability_released` `true`; (9) second create → `201`, `ea1d553c…`; (11) cancel without reason → `400 VALIDATION_ERROR`; (12) cancel with reason → `200` Cancelled, reason "Group postponed"; (13) update the cancelled Booking → `409 BOOKING_TERMINAL`; (14) cancel as Agency → `403 FORBIDDEN`; (15) `/messages` as Tràng An: exactly 5 Booking Update messages in the Chat with Bát Tràng (steps 1, 3, 6, 9, 12). `chat_messages` in `runtime.json` since the demo start: 7 Booking Update messages — 5 for Agency `02e568d8`, step 8 Completed in the Chat of Agency `ebf4fcfa`, seed expiry `54d7a276…` Cancelled in the Chat of Agency `14390b41`; steps 4, 5, 7, 11, 13, 14 wrote none. 15/15 match the quickstart. |
+| Human review | The human started the server; results read back by the agent. |
+| Tests | Not rerun (no code change since Entry 15; 406/406 before the demo). |
+| Spec issues found | none. Finding: `updated_booking` in steps 3–4 returns numeric fields as strings (`"group_size":"11"`, `"duration_minutes":"60"`, `"agreed_price_total":"2000000.00"`), because the JSON runtime is loaded from CSV — checked against §5.1 in the next entry. |
+| Commit | see `git log` ("docs(BKG): US-5 API demo on macOS"); not pushed. Windows run (G1) still pending. |
+
+### Entry 17: 30/10 Claude Code — BKG numeric fields check (CSV strings)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Human prompt: read-only review of every comparison/calculation on `group_size`, `max_participants`, `duration_minutes`, `agreed_price_total`, `notice_period_hours`, `unread_count` in `src/lib/booking/`, then a test first |
+| Feature and tasks | `specs/011-bkg-manage`, #7 / §5.1 FR-003 (no task id; guard test) |
+| What the agent produced | Review: all reads are wrapped in `Number()` before comparing or computing (`create-booking.ts:90,163`, `update-booking.ts:69–72,81,85–87`, `agency-sync.ts:63`, also `operating-hours.ts:38` weekday); inputs pass `isPositiveInteger`; stored values stay strings by design (`data-model.md`). New test `tests/unit/bkg-numeric-fields.test.ts`: Experience `max_participants` = `"13"` (string, as from CSV) → create and update accept group size 9 and reject 14. No code change. |
+| Human review | Pending PR review. |
+| Tests | Checked, green: new file 2/2 pass. **Mutation**: string comparison at `create-booking.ts:163` and `update-booking.ts:81` → both cases FAIL (`promise rejected "group_size exceeds max_part…" instead of resolving`, because `"9" > "13"`); restored → pass. Full `npm test`: 57 files, 408/408; `npm run lint` passed. |
+| Spec issues found | §5.1 FR-004 defines `updated_booking` only as "Object; Required" (no fields, no types); it currently returns the raw row with string values and DB names. Raised as spec-BKG #57; decided (ii) by the human: same shape as F-SCHED-07 output, one serializer with GET detail. FR-003 create output has no numeric fields, so nothing to test there. |
+| Commit | see `git log` ("test(BKG): guard numeric comparisons against CSV strings"); not pushed. |
+
+### Entry 18: 30/10 Claude Code — BKG 011 #57 follow-up and Step 5 (tests first, US-3)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Human merged `origin/main` (PR #21, spec #57) into `011-bkg-manage`; `start_feature.py --refresh`, `--check` OK; then `/speckit-implement Only T028–T032 (US-3 tests). Write tests only; no code that makes them pass.` |
+| Feature and tasks | `specs/011-bkg-manage`, T028–T032; #57 edits to T026, T029, T031, T034 |
+| What the agent produced | Docs (commit `64b6cba`): spec snapshot refreshed with #57; `contracts/manage-booking-api.md` — GET fields typed as numbers, PATCH `updated_booking` = Provider view of the GET body from the same serializer, also for #52; `tasks.md` — #57 cases added to T029 and T031, T034 builds one serializer `toBookingDetail` used by `getBookingDetail` and `updateBooking`, note on T026. Tests: `tests/unit/bkg-booking-actions.test.ts` (T028, FR-007 matrix incl. `now == start_at`, Agency always none), `tests/unit/bkg-booking-detail.test.ts` (T029, Provider/Agency views, numbers, `hold_expires_at` only On hold, FORBIDDEN/NOT_FOUND, expiry first but a denied read writes nothing, #57 incl. #52), `tests/unit/bkg-detail-page-access.test.ts` (T030), `tests/integration/bkg-booking-detail-api.test.ts` (T031, GET 200/403/404, #57 PATCH body = next GET body). No code. |
+| Human review | Pending. |
+| Tests | T032 red run (4 files): `Test Files 4 failed (4)`, `Tests 8 failed (8)`. Reasons: `Cannot find module '@/lib/booking/booking-actions'` and `'@/lib/booking/booking-detail'` (T028, T029 suites); `canManageBooking is not a function` / `canViewAgencyBooking is not a function` (T030, 4 cases); `routes[method] is not a function` (T031, no `GET` export, 3 cases); #57 case: `AssertionError: expected 'string' to be 'number'` (PATCH `updated_booking.group_size` is still the stored string). Full `npm test`: `Test Files 4 failed \| 57 passed (61)`, `Tests 8 failed \| 408 passed (416)` — every existing test still green. `npm run lint` fails only in the 4 new files (TS2307 missing modules, TS2305 missing exports). |
+| Spec issues found | none. Note: FR-007 has no `duration`, so after #57 `updated_booking` no longer carries the duration; `end_at` reflects it. |
+| Commit | see `git log` ("test(BKG): failing tests for US-3 (T028-T032)"); not pushed. |
+
+### Entry 19: 30/10 Claude Code — BKG 011 Step 6 (code, US-3)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Only T033–T042. Do not change any test. If a test seems wrong, stop and tell me.` Human note: BKG144 prefills duration from `end_at − start_at` (#57). |
+| Feature and tasks | `specs/011-bkg-manage`, T033–T042 |
+| What the agent produced | `src/lib/booking/booking-actions.ts` (T033, FR-007 matrix); `src/lib/booking/booking-detail.ts` (T034: `toBookingDetail(row, view, now)` = the one string→number conversion, `getBookingDetail` authorizes first, then `expireDueHolds`, then re-reads); `updateBooking` now returns `updated_booking` through `toBookingDetail(…, 'provider', now)` in both branches (#57, #52); `canManageBooking` / `canViewAgencyBooking` in `booking-access.ts` (T035); `GET` in `src/app/api/bkg/bookings/[bookingId]/route.ts` (T036); screens BKG135 `…/bookings/[bookingId]/page.tsx` + `BookingActionsBar.tsx` (disabled buttons stay visible, Cancel asks for a reason), BKG144 `edit/page.tsx` + `EditBookingForm.tsx` (sends only changed fields, duration from `end_at − start_at`, status select without Completed, "keep status" default), BKG136 `arrival/page.tsx` + `ConfirmArrival.tsx` (shows `validation_error`), BKG138 `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx` (read-only, Chat, Back → `/explore`), shared `BookingDetailView.tsx` and `load-provider-booking.ts` (T037–T040); BKG134 navigates to BKG135 after create (T041, #54). |
+| Human review | Pending. |
+| Tests | `npm test`: `Test Files 61 passed (61)`, `Tests 427 passed (427)` (408 + 19 US-3 cases); `npm run lint` passed; `git diff --stat 3c143fd -- tests/` empty. Smoke run on the running dev server (not the quickstart §5 demo): BKG135/144/136 as `provider` and BKG138 as `agency` → 200 with the right screen id; Guest on BKG135 and Tràng An on `4bf17b30…` → access-denied text; `GET /api/bkg/bookings/40da0dca…` → numbers (`group_size` 11, `agreed_price` 2000000). |
+| Spec issues found | none. Choices to review: BKG144 `target_status` is optional ("keep status") although the screen spec marks it Required, because an update without a status change is a valid F-SCHED-04 call and Booked → Booked is `INVALID_TRANSITION`; BKG138 Back goes to `/explore` because BKG137 does not exist yet; the Provider page has no link to BKG135 yet (#54 allows URL and BKG134). |
+| Human decisions (review) | Approved the 3 choices. BKG144 keeps two calls (PATCH, then `POST /status`, BR-007); a failing `/status` after a successful PATCH now says "Chi tiết đã lưu, trạng thái chưa đổi (vẫn {status})" + the error, never a general success — verified in the built-in browser on `40da0dca…` (group size 12 + Cancelled with a blank reason → that message; `GET` shows `group_size` 12, status Booked). Spec **#58** to add at the next spec-BKG edit: "BKG144 target_status is optional (default: keep current) so details can be edited without a status change; screen spec says Required" (Decided by Vũ Khánh Linh, 2026-10-30). |
+| Draft for checklist §3 (T046, show before writing) | Known limitation: BKG138 Back goes to `/explore` (BKG137 Agency Booking list not built), spec BKG138 §5 row 2 → planned with BKG137 (story and session to be set by the human). Known limitation: no link from the Provider page to BKG135; reachable by URL, after create on BKG134, or from the Booking Update message (#54) → planned with BKG133 Provider Booking list (story and session to be set by the human). |
+| Commit | see `git log` ("feat(BKG): US-3 View Bookings (T033-T042)"); not pushed. |
+
+### Entry 20: 30/10 Claude Code — BKG 011 US-3 screen demo (quickstart §5, macOS)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); the human ran `npm run demo:reset` and one `npm run dev` (started 4 s after the reset); the agent clicked through in the built-in browser at the human's request |
+| Command and argument | `specs/011-bkg-manage/quickstart.md` §5 steps 1–8 on `localhost:3000`, at `2ed1c1c` |
+| Feature and tasks | `specs/011-bkg-manage`, US-3 demo path (T044 screens part) |
+| What the agent produced | No code change. (1) BKG134 (Tràng An, 2026-11-09 09:00, 60 min, 10 pax, 2,000,000) → opens BKG135 `91fbe7ff…`: On hold, hold until 2026-11-02 13:22, agency contact shown; Confirm/Book, Update, Cancel enabled, Mark Group Arrival visible and **disabled**. (2) Update → BKG144 prefilled (duration 60 from `end_at − start_at`, status "Giữ nguyên (On hold)"); group size 11, keep status, Save → BKG135 shows 11, still On hold, hold expiry unchanged (`PATCH 200`, no `/status` call). (3) Confirm/Book → Booked, no hold line; Confirm/Book disabled, Update/Cancel enabled, **Mark Group Arrival visible but disabled** (start 2026-11-09 not reached). (4) Second Booking `3d48179a…` (11:00, 8 pax) → Cancel shows "Lý do hủy (bắt buộc)"; "Xác nhận hủy" disabled when empty and when only spaces; "Group postponed" → Cancelled, all four buttons disabled. (5) Seed `4bf17b30…` (Hồng Hà, 2026-10-05) → Mark Group Arrival enabled → BKG136 → Confirm Group Arrival → back on BKG135, Completed, all buttons disabled. (6) Tour Agency (Tràng An) on BKG138 `/agency/02e568d8…/bookings/91fbe7ff…`: read-only, 11 pax, Booked, "Xem hồ sơ Provider" link (route works), **no button in the page**, only links Chat and Back. (7) Same Agency on BKG135, BKG144 and BKG136 URLs of `91fbe7ff…` → access-denied text, no Booking data. (8) Tràng An on BKG138 of `4bf17b30…` → "Chỉ Tour Agency của Booking này mới xem được trang này."; UBND, HDT, Guest on BKG135 → denied, no price in the HTML. §5 step 8 API: `GET` as `agency` → `HTTP 200`, all actions false, `provider_profile_link`, numbers. Dev-server log: every request 200/201, no error. |
+| Human review | Requested the agent to run it; results reported in chat. |
+| Tests | Not rerun (no code change since `2ed1c1c`, 427/427). |
+| Spec issues found | none. Observation: denied pages answer HTTP 200 with a denial message (like BKG134 in 004), not 403; the data is not rendered. Windows run (G1) still pending. |
+| Commit | Not committed yet. |
+
+### Entry 21: 30/10 Claude Code — BKG 011 polish (T043–T046)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | Human prompt: T043–T046, commit each step |
+| Feature and tasks | `specs/011-bkg-manage`, T043–T046 |
+| What the agent produced | T043: `npm run lint` passed (`tsconfig.tsbuildinfo` reverted), `python data/scripts/validate_seed.py` → `PASS: 47 CSVs/load headers; …`, `start_feature.py --check` → OK. T044: quickstart §4 (Entry 16, 15/15) and §5 (Entry 20, 9/9) on macOS; Windows still open. T045: this entry, §3 rows 8–9, §4 lesson for Entries 16–17; mutation results stay in Entries 14–15 (T009 create race, T022 update race, `applyBatch` persist-first). T046: `docs/build/mvp-alpha-checklist.md` §3 — #6 updated (race test now proves the lock), #7 F-SCHED-08 part closed (pre-fill still open), #8 updated (lazy + 60 s timer, #50), new #10 (denied pages answer 200 + message), #11 (BKG138 Back → `/explore`), #12 (no Provider-page link to BKG135). |
+| Human review | Checklist rows requested by the human in the prompt. |
+| Tests | No code change; last full run 427/427 at `2ed1c1c`. |
+| Spec issues found | none new. |
+| Commit | checklist `dd0e093`; this entry with T043–T046 marks in the next commit; not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -311,6 +391,8 @@ is never fixed silently in code.
 | 5 | Entry 3 | SC-011 described HDT_Admin activation, contradicting BR-015 and closed question 23, which specify automatic System promotion. | Source EXP spec SC-011 corrected in Entry 4 and snapshot refreshed. | Closed document inconsistency; runtime worker still open |
 | 6 | Entry 3 | Nearby relation requires 20 km but `data/` has no village coordinates. | Source EXP spec §10 question 30; same-Provider and same-type relations run locally. | Open data decision |
 | 7 | Entry 3 | A complete EXP delivery needs durable PostgreSQL storage, Auth/Chat adapters and a weekly worker, absent from this branch. | Tracked in `specs/001-exp-core/implementation-status.md`. | Open integration work |
+| 8 | Verify / Entry 16–17 (BKG 011) | §5.1 FR-004 defined `updated_booking` only as "Object; Required"; the API returned the raw row with string numbers and DB names. | spec-BKG #57 (PR #21): same shape as F-SCHED-07, one serializer. | Closed; code in Entry 19 |
+| 9 | Step 6 / Entry 19 (BKG 011) | screen-spec-BKG144 marks `target_status` Required, but details must be editable without a status change (Booked → Booked is an invalid transition). | spec-BKG #58 to be added at the next spec edit (decided 2026-10-30). | Decided; not yet in `docs/spec/` |
 
 ## 4. Agent mistakes worth remembering
 
@@ -325,3 +407,4 @@ does not happen again.
 | 2 | Direct read of `provider.business_name` from `provider_profiles.csv` instead of versioned `provider_profile_versions.csv` | Provider name assertion failed in `provider-service.test.ts` | Always join `provider_profile_versions` per Session 5 data model |
 | 10 (BKG) | The AC-BKG-RACE test (T015, `tests/unit/bkg-create-race.test.ts`) passes even with `withBookingWriteLock` removed: check (`findConflict`) and write (`applyBatch` → synchronous `persist`) run in one synchronous block, so no request can interleave in one Node process. AC-BKG-RACE currently holds because of that synchronous critical section; the lock itself is tested on its own by T005 (`tests/unit/bkg-write-lock.test.ts`). | Mutation check on 2026-10-30: lock removed temporarily, T015 still passed, file restored. | Comment above the lock in `src/lib/booking/create-booking.ts`. Before adding any `await` between check and write, add a test-only `afterConflictCheck` async pause option to `createBooking` and a new T015 case that fires two creates with the pause: it must fail without the lock and pass with it (plan.md Complexity Tracking, US-5). |
 | 15 (BKG 011) | First version of `update-booking`, `change-status` and `mark-arrival` ran `expireDueHoldsLocked` before the ownership check, so a denied request (Agency/UBND/HDT/Guest) on 2026-10-05 still cancelled expired seed hold `54d7a276…` and wrote history + a message. | T015 `nothing is written` snapshot assertion failed. | Code fixed, test unchanged: authorize with `loadBookingForActor` first, then run expiry, then re-read the Booking. Any service that writes as a side effect must check permission before the first write. |
+| 16–17 (BKG 011) | Unit and API tests for F-SCHED-04 checked only the top-level keys of the response, so `updated_booking` shipped with string numbers and DB field names; found only when reading the curl output of the US-5 demo. | Human read the demo JSON (Entry 16). | Spec #57 + tests that assert `typeof … === 'number'` and that PATCH equals the next GET (T029, T031). Read the demo response bodies, not only the status codes. |

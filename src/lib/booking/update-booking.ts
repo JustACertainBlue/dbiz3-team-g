@@ -4,6 +4,7 @@ import { demoRepository } from '../demo/json-repository'
 import type { BatchOperation, DemoRow } from '../demo/types'
 import { bookingUpdateOperations } from './agency-sync'
 import { loadBookingForActor } from './booking-access'
+import { toBookingDetail, type BookingDetail } from './booking-detail'
 import { hanoiTimestamp, systemClock, type Clock } from './clock'
 import { findConflict } from './conflicts'
 import { BookingError, invalid, isPositiveInteger, validateConditions } from './create-booking'
@@ -16,7 +17,7 @@ import { withBookingWriteLock } from './write-lock'
 const EDITABLE_FIELDS = ['start_at', 'duration', 'group_size', 'agreed_price', 'booking_conditions'] // #48
 
 export interface UpdateBookingResult {
-  updated_booking: DemoRow
+  updated_booking: BookingDetail // #57: F-SCHED-07 shape
   private_schedule_synced: boolean
   public_schedule_updated: boolean
   agency_notification_message_id: string | null
@@ -90,7 +91,7 @@ export async function updateBooking(
     const changedFields = Object.keys(changes)
     if (changedFields.length === 0) {
       // #52: nothing to write, no message, null ids.
-      return { updated_booking: { ...booking }, private_schedule_synced: true, public_schedule_updated: false, agency_notification_message_id: null, audit_log_id: null }
+      return { updated_booking: toBookingDetail(booking, 'provider', new Date(now)), private_schedule_synced: true, public_schedule_updated: false, agency_notification_message_id: null, audit_log_id: null }
     }
 
     const startAt = hanoiTimestamp(start)
@@ -135,7 +136,7 @@ export async function updateBooking(
     repository.applyBatch(operations) // #44: one persist for the whole event
 
     return {
-      updated_booking: updated,
+      updated_booking: toBookingDetail(updated, 'provider', new Date(now)),
       private_schedule_synced: true,
       public_schedule_updated: timeChanged,
       agency_notification_message_id: sync.messageId,

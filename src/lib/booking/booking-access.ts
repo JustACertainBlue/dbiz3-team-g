@@ -18,3 +18,13 @@ export function loadBookingForActor(session: ActorSession, bookingId: string): {
   }
   throw new BookingError('FORBIDDEN', 'Only the Local Provider or Tour Agency of this Booking can open it')
 }
+
+// Page gate for BKG135/BKG144/BKG136: the owning Local Provider on its own URL.
+export function canManageBooking(session: ActorSession, providerId: string, booking: DemoRow): boolean {
+  return session.authenticated && session.role === 'LocalProvider' && session.providerId === providerId && booking.provider_id === providerId
+}
+
+// Page gate for BKG138: the owning Tour Agency on its own URL.
+export function canViewAgencyBooking(session: ActorSession, agencyId: string, booking: DemoRow): boolean {
+  return session.authenticated && session.role === 'TourAgency' && session.agencyId === agencyId && booking.agency_id === agencyId
+}

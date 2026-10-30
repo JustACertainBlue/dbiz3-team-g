@@ -92,8 +92,10 @@ State checked on 30 Oct 2026 at `main` = `7057d5c` (details: `03-module-status.m
   PR #20, #22; T001–T046 done). Demos on macOS: 004 §4 8/8, 011 §4 15/15 (build-log Entry 16), §5 9/9
   (Entry 20). Still missing: a post-merge non-author review of PR #17 and PR #22 (merged without a
   GitHub review; AIT/PRF/EXP owners to check `applyBatch` in `src/lib/demo/json-repository.ts`), and
-  the Windows run (G1) for 004 and 011. Spec decisions #26–#57 on `main`; #58 (BKG144
-  `target_status` optional) decided but not yet written to `docs/spec/`. Read `docs/build/claude-context/04-bkg-brief.md` and
+  the Windows run (G1) for 004 and 011. Spec decisions #26–#67 on `main` (#58–#67 via PR #24).
+  **Round 3** on branch `012-bkg-list` (`specs/012-bkg-list`, US-6 List Bookings: BKG133 + minimal
+  DSH018): T001–T029 done, 459 tests + lint pass, demo §4 7/7 and §5 8/8 on macOS (build-log
+  Entries 22–25); not pushed, PR not opened; Windows G1 pending. Read `docs/build/claude-context/04-bkg-brief.md` and
   `specs/011-bkg-manage/tasks.md` before doing anything on BKG.
 - **IAC**: no module of its own; only `src/lib/demo/commercial-handoff-service.ts` and the
   shared `/messages` page (Quote/Chat handoff from Explore and AIT).

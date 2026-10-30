@@ -376,6 +376,58 @@ did and what the humans decided.
 | Spec issues found | none new. |
 | Commit | checklist `dd0e093`; this entry with T043–T046 marks in the next commit; not pushed. |
 
+### Entry 22: 30/10 Claude Code — BKG 012 plan, tasks and analyze (US-6)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `start_feature.py --spec docs/spec/specs/spec-BKG.md BKG --name list` (gave `012-bkg-list`, no rename), `--use`, `--check` OK; `/speckit-plan` (US-6 + minimal DSH018 argument approved by the human), `/speckit-tasks` (test before code for every trace row), `/speckit-analyze` |
+| Feature and tasks | `specs/012-bkg-list`, T001–T029 |
+| What the agent produced | `spec.md` snapshot (with #58–#67, PR #24), `plan.md`, `research.md`, `data-model.md`, `contracts/list-bookings-api.md`, `quickstart.md`, `tasks.md` |
+| Human review | Plan review 8/8 Yes (one fix before commit: order authorize → validate → expire → read, so a non-owner always gets 403). Step 3 check 4/4. Analyze: **C1** AS-4 had only a demo check → pure helper `bookingListRowView` + test (also **M1**, SC-011 label); **H1** fixtures created at `SEED_NOW` would expire before a later `now` → every hold fixture uses the checking `now`, T013 uses 21 holds on 3 Mondays; **H2** the UI default `date_from` = today hides past Booked Bookings needing arrival → human chose (a): BKG133 always shows "N Booking cần xử lý nằm ngoài bộ lọc" + "Xem tất cả" from the tested `countActionsOutsideFilter`; **M3** Completed/Cancelled fixtures through `markArrival` / `changeStatus`; **L1** API create on Monday 2027-01-04. Recorded only: **M2** #66 links and the denied BKG133/DSH018 pages have no automated test, checked in the demo (T027); **M4** `providerBookingSummary` runs `expireDueHolds` once per page — idempotent (#46), accepted at seed size; **L2** BKG133/DSH018 reuse the gate named `canOpenCreateBooking` (owning Provider on its own URL), not renamed because 004 uses it; **L3** BKG133 imports `bookingDetailStyles` from the BKG135 folder, accepted until a third screen needs it. |
+| Tests | n/a (planning) |
+| Spec issues found | none (all gaps were closed as #58–#67 before planning) |
+| Commit | `f63502f` (plan), `6769dd7` (tasks), analyze fixes in the next commit |
+
+### Entry 23: 30/10 Claude Code — BKG 012 Step 5 (tests first, US-6)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Step 5 only: T001–T004 and T007–T017 (tests and their red runs). Code only for T005/T006 after their red run (T004). Do not write code that makes T007–T016 pass.` |
+| Feature and tasks | `specs/012-bkg-list`, T001–T017 |
+| What the agent produced | Tests: `tests/unit/bkg-hanoi-date.test.ts` (T002), `bkg-list-access.test.ts` (T003), `bkg-list-bookings.test.ts` (T007–T012, incl. "a denied list request writes nothing" with a deep snapshot of bookings, history and chat tables), `bkg-list-summary.test.ts` (T013–T014), `bkg-list-row-view.test.ts` (T015), `tests/integration/bkg-list-api.test.ts` (T016). Code (T005, T006 only, after T004): `hanoiDate` in `src/lib/booking/clock.ts`, `authorizeProviderList` in `src/lib/booking/booking-access.ts`. |
+| Human review | Pending. |
+| Tests | T001 baseline: `Tests 427 passed (427)`. T004: 4 failed — `hanoiDate is not a function`, `authorizeProviderList is not a function`; after T005/T006 → 4 passed. T017: `Test Files 4 failed (4)` — `Cannot find module '@/lib/booking/list-bookings'` (T007–T014 suites), `Cannot find module '@/lib/booking/list-row-view'` (T015), `routes.GET is not a function` (4 T016 cases); the T016 "POST create is unchanged (201)" case passes as intended. Full `npm test`: `Test Files 4 failed \| 63 passed (67)`, `Tests 4 failed \| 432 passed (436)` — 427 existing + 4 Foundational + 1 POST case. `npm run lint` fails only in the new test files (TS2307 missing modules; TS2339 that follow from the missing module types). One test-helper type (`rowOf`) was made generic before this commit so lint can pass once the module exists — not a behaviour change. Mutation check of the authorize/expire order is done in Step 6, when the service exists. |
+| Spec issues found | none |
+| Commit | see `git log` ("test(BKG): failing tests for US-6"); not pushed. |
+
+### Entry 24: 30/10 Claude Code — BKG 012 Step 6 (code, US-6)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Step 6 only: T018–T025. Do not change any test. If a test seems wrong, stop and tell me.` plus one mutation check |
+| Feature and tasks | `specs/012-bkg-list`, T018–T025 |
+| What the agent produced | `src/lib/booking/list-bookings.ts` (`listProviderBookings`: authorize → validate → `expireDueHolds` → read; filters on `hanoiDate(start_at)`, sort #60, counts #61, paging #63, `requires_action` via `bookingActions` #59, `Number()` for `group_size`; `providerBookingSummary` and `countActionsOutsideFilter` walk pages of 100); `src/lib/booking/list-row-view.ts` (`bookingListRowView`); `GET` in `src/app/api/bkg/bookings/route.ts` (POST unchanged); BKG133 `src/app/provider/[providerId]/bookings/page.tsx` (filters as page query, default `date_from` = today, "Xoá bộ lọc", always "N Booking cần xử lý nằm ngoài bộ lọc" + "Xem tất cả", "⚑ Cần xử lý" text label, Detail, Create, Messages, empty state, paging); DSH018 `src/app/provider/[providerId]/dashboard/page.tsx` (summary only); Provider pages' Bookings links → BKG133 (Agency link unchanged). |
+| Human review | Pending. |
+| Tests | First run 22/23: `RangeError: Invalid time value` for `date_from = '2026-13-01'` — a code bug in date validation (now checks `NaN` first); test unchanged. Then `npm test`: `Test Files 67 passed (67)`, `Tests 459 passed (459)`; `npm run lint` passed; `git diff --stat c427c8d -- tests/` empty. **Mutation**: `expireDueHolds` moved before `authorizeProviderList` → "a denied list request writes nothing" and "an invalid query from the owner writes nothing" FAIL (`expected [ Array(5) ] to deeply equal [ Array(5) ]`); restored from a copy → both pass. |
+| Spec issues found | none. Observation: the Provider nav "Dashboard" link still points to `/provider/{id}` (PRF127), not DSH018; #65/#66 did not ask to change it, so it is left as is. |
+| Commit | see `git log` ("feat(BKG): US-6 List Bookings"); not pushed. |
+
+### Entry 25: 30/10 Claude Code — BKG 012 demo (quickstart §4, §5, macOS) and polish (T026–T029)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5), run by the agent at the human's request |
+| Command and argument | Old dev server (PID 92096, started before the 012 code) stopped with `kill`; `npm run demo:reset`; one `npm run dev` in Terminal tab "dev server 012"; quickstart §4 by curl, §5 in the built-in browser; then T026 checks |
+| Feature and tasks | `specs/012-bkg-list`, T026–T029 |
+| What the agent produced | No code change. **§4 (curl)**: (1) `provider` → 200, `4bf17b30…` then `5782011c…`, both `requires_action` true, `group_size` 6 / 11 numbers, `status_counts` four keys, `total_count` 2; (2) `?status=Cancelled` → `[]`, counts still `Booked: 2`; (3) 2026-10-05 only → `4bf17b30…`, `Booked: 1`; (4) reversed range → 400 `VALIDATION_ERROR`; (5) `page_size=101` → 400, `page=5` → `[]`, `total_count` 2; (6) `provider_id=70efa801…` → 403; (7) agency, ubnd, hdt, guest → 403. **§5**: (1) *clicked*: BKG134 create (Tràng An, 2026-11-09 09:00, 10 pax) → BKG135 `1ce6931f…`; (2) *clicked* BKG133: `date_from` = 30/10/2026, one row On hold with "Giữ chỗ đến 2026-11-02 15:34" and "⚑ Cần xử lý", line "⚑ 2 Booking cần xử lý nằm ngoài bộ lọc · Xem tất cả"; (3) *clicked* "Xem tất cả": 3 rows ascending (10-05 Booked, 10-10 Booked, 11-09 On hold), all "Cần xử lý", out-of-filter line 0; (4) *clicked* status Cancelled + Lọc: empty-state text, out-of-filter line 3; (5) *clicked* Detail → BKG135 of `1ce6931f…` (On hold); (6) *clicked* Provider page "Bookings" → BKG133; (7) *clicked* DSH018: On hold 1, Booked 2, Completed 0, Cancelled 0, "⚑ 3 Booking cần xử lý", Bookings → BKG133; (8) Tour Agency *clicked* (role switch, BKG133 opened in the browser; DSH018 fetched in the page): access-denied text, no data; UBND, HDT, Guest *checked by curl* on BKG133 and DSH018: denied, no data. Dev-server log: every request 200/201, no error. **T026**: `npm run lint` exit 0, `validate_seed` PASS, `--check` OK. **T029**: checklist §3 #12 closed, #10 extended to BKG133/DSH018, new #13 (DSH018 summary only, nav "Dashboard" still PRF127). |
+| Human review | Requested the agent to run the demo; results reported in chat. |
+| Tests | Not rerun after Entry 24 (no code change); last run 459/459. |
+| Spec issues found | none. Windows run (G1) still pending. |
+| Commit | see `git log` ("docs(BKG): US-6 demo and polish (T026-T029)"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -408,3 +460,4 @@ does not happen again.
 | 10 (BKG) | The AC-BKG-RACE test (T015, `tests/unit/bkg-create-race.test.ts`) passes even with `withBookingWriteLock` removed: check (`findConflict`) and write (`applyBatch` → synchronous `persist`) run in one synchronous block, so no request can interleave in one Node process. AC-BKG-RACE currently holds because of that synchronous critical section; the lock itself is tested on its own by T005 (`tests/unit/bkg-write-lock.test.ts`). | Mutation check on 2026-10-30: lock removed temporarily, T015 still passed, file restored. | Comment above the lock in `src/lib/booking/create-booking.ts`. Before adding any `await` between check and write, add a test-only `afterConflictCheck` async pause option to `createBooking` and a new T015 case that fires two creates with the pause: it must fail without the lock and pass with it (plan.md Complexity Tracking, US-5). |
 | 15 (BKG 011) | First version of `update-booking`, `change-status` and `mark-arrival` ran `expireDueHoldsLocked` before the ownership check, so a denied request (Agency/UBND/HDT/Guest) on 2026-10-05 still cancelled expired seed hold `54d7a276…` and wrote history + a message. | T015 `nothing is written` snapshot assertion failed. | Code fixed, test unchanged: authorize with `loadBookingForActor` first, then run expiry, then re-read the Booking. Any service that writes as a side effect must check permission before the first write. |
 | 16–17 (BKG 011) | Unit and API tests for F-SCHED-04 checked only the top-level keys of the response, so `updated_booking` shipped with string numbers and DB field names; found only when reading the curl output of the US-5 demo. | Human read the demo JSON (Entry 16). | Spec #57 + tests that assert `typeof … === 'number'` and that PATCH equals the next GET (T029, T031). Read the demo response bodies, not only the status codes. |
+| 22–23 (BKG 012) | Draft T013 would have created 25 holds at `SEED_NOW` and checked them at 2026-10-06: the list's own expiry (#64) would cancel them, so the test would fail for the wrong reason after the code was correct — and only 9 slots fit one Monday. | `/speckit-analyze` H1, before Step 5. | Rule in tasks.md: create hold fixtures with the same `now` as the call that checks them; count operating-hours slots before choosing fixture sizes. |

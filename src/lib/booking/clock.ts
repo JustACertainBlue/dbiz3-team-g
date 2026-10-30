@@ -11,3 +11,8 @@ const HANOI_OFFSET = 7 * 3_600_000
 export function hanoiTimestamp(timestamp: number): string {
   return new Date(timestamp + HANOI_OFFSET).toISOString().slice(0, 19) + '+07:00'
 }
+
+// YYYY-MM-DD of an instant in Asia/Ho_Chi_Minh (#31); the F-SCHED-10 date filter compares these (#62).
+export function hanoiDate(timestamp: number): string {
+  return new Date(timestamp + HANOI_OFFSET).toISOString().slice(0, 10)
+}

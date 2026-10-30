@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { parse } from 'csv-parse/sync'
-import type { DemoDatabase, DemoRepository, DemoRow } from './types'
+import type { BatchInsert, DemoDatabase, DemoRepository, DemoRow } from './types'
 
 function createFromSeed(root: string): DemoDatabase {
   const seedDirectory = join(root, 'data', 'seed')
@@ -88,6 +88,19 @@ export class JsonDemoRepository implements DemoRepository {
       this.persist()
     }
     return removed
+  }
+
+  // Inserts rows into several tables with one persist. The in-memory tables change only after
+  // the write succeeds, so a failed persist leaves none of the rows (BKG BR-019).
+  applyBatch(inserts: readonly BatchInsert[]): DemoRow[] {
+    const tables = { ...this.database.tables }
+    for (const { table, row } of inserts) {
+      tables[table] = [...(tables[table] ?? []), { ...row }]
+    }
+    const next: DemoDatabase = { ...this.database, tables }
+    this.persist(next)
+    this.database = next
+    return inserts.map(({ row }) => ({ ...row }))
   }
 
   snapshot(tableNames: readonly string[]): Record<string, DemoRow[]> {

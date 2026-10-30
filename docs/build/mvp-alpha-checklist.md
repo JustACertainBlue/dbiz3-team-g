@@ -42,6 +42,11 @@ limitation discovered by the instructor that is not written here is.
 | 2 | Granular experience image deletion guard (cannot delete last image in required category before uploading replacement) not enforced in standalone API | BR-015 | Session 10 |
 | 3 | Storage layer utilizes zero-config CSV seed reader instead of Drizzle ORM dual-adapter for MVP Alpha vertical slice | plan.md §Complexity | Session 9 |
 | 4 | Lightbox gallery modal on Experience Detail (BR-016) is implemented on Frontend UI but lacks automated component test | BR-016 | Session 10 |
+| 5 | BKG: BR-019 (status + history together) is met by one atomic persist of the JSON runtime file, not a database transaction. | BKG BR-019 | PostgreSQL migration (Session 10–11) |
+| 6 | BKG: The Booking write lock is in-process only; two Node processes sharing one runtime.json are not protected, and the race test (T015) does not prove the lock (build-log §4). | BKG AC-BKG-RACE | US-5 / PostgreSQL |
+| 7 | BKG: Chat auto-message and Agency notification on Booking events (F-SCHED-08) are not built; Chat pre-fill of BKG134 is not built. | BKG FR-003, FR-008, BR-012 | US-5 / IAC |
+| 8 | BKG: No 72-hour expiry worker; an expired On hold keeps blocking its slot until the worker exists. | BKG BR-004, spec #40, AC-BKG-EXPIRY | US-5 |
+| 9 | BKG: Demo session (hab_demo_account) instead of AUT login; the "+ CREATE BOOKING" link is shown to every viewer, access is enforced on BKG134. | BKG BR-001, AUT F-AUTH-16 | Session 11 |
 
 ## 4. Sign-off
 

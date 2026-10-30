@@ -9,12 +9,18 @@ export interface DemoDatabase {
   tables: Record<string, DemoRow[]>
 }
 
+export interface BatchInsert {
+  table: string
+  row: DemoRow
+}
+
 export interface DemoRepository {
   all(table: string): DemoRow[]
   find(table: string, predicate: (row: DemoRow) => boolean): DemoRow | undefined
   insert(table: string, row: DemoRow): DemoRow
   update(table: string, predicate: (row: DemoRow) => boolean, changes: Partial<DemoRow>): DemoRow | undefined
   remove(table: string, predicate: (row: DemoRow) => boolean): number
+  applyBatch(inserts: readonly BatchInsert[]): DemoRow[]
   snapshot(tableNames: readonly string[]): Record<string, DemoRow[]>
   reset(): void
 }

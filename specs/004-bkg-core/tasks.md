@@ -102,7 +102,7 @@ All values are from `data/seed/` (read through the volatile repository, `NODE_EN
 - [X] T025 Run `npm run lint`, `python data/scripts/validate_seed.py` and `uv run tools/start_feature.py --check`; do not commit the rewritten `tsconfig.tsbuildinfo`
 - [X] T026 Walk the demo path in `specs/004-bkg-core/quickstart.md` §4 after `npm run demo:reset` and record each step's result in `docs/build/build-log.md` (Step 7 needs a second laptop: macOS and Windows)
 - [X] T027 Draft the build-log entry for this run in `docs/build/build-log.md` (§2 entry; §3 spec issues; §4 agent mistakes, if any)
-- [ ] T028 Draft BKG rows for `docs/build/mvp-alpha-checklist.md` §3 Known limitations: in-process lock only (one Node process), single persist instead of a DB transaction, Chat auto-message/F-SCHED-08 deferred to US-5, no expiry worker (#40), demo session instead of AUT — show to the human before writing
+- [X] T028 Draft BKG rows for `docs/build/mvp-alpha-checklist.md` §3 Known limitations: in-process lock only (one Node process), single persist instead of a DB transaction, Chat auto-message/F-SCHED-08 deferred to US-5, no expiry worker (#40), demo session instead of AUT — show to the human before writing
 
 ---
 

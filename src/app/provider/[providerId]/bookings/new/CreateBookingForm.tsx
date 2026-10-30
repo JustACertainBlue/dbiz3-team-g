@@ -113,7 +113,8 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
     return <p className="bkg-panel">Provider chưa có Experience nào đang hoạt động, nên chưa tạo được Booking.</p>
   }
 
-  return <form className="bkg-form" onSubmit={submit}>
+  // Any field change clears the previous server error, so a stale message never sits next to new input.
+  return <form className="bkg-form" onSubmit={submit} onChange={() => setError(null)}>
     <label>Experience
       <select value={experienceId} onChange={event => selectExperience(event.target.value)} required>
         {experiences.map(row => <option key={row.experience_id} value={row.experience_id}>{row.name}</option>)}
@@ -136,7 +137,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
         <input type="number" min={1} max={experience?.max_participants} step={1} value={groupSize} onChange={event => setGroupSize(Number(event.target.value))} required />
       </label>
       <label>Giá thỏa thuận cho cả đoàn (VND)
-        <input type="number" min={1} step={1000} value={agreedPrice} onChange={event => setAgreedPrice(Number(event.target.value))} required />
+        <input type="number" min={1} step="any" value={agreedPrice} onChange={event => setAgreedPrice(Number(event.target.value))} required />
       </label>
     </div>
     {experience && <div className="bkg-panel">Gợi ý: {formatVnd(experience.price_per_person)} × {groupSize} khách = {formatVnd(experience.price_per_person * groupSize)}. Giá thỏa thuận vẫn có thể sửa.</div>}

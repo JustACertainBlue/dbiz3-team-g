@@ -14,7 +14,7 @@ did and what the humans decided.
 |---|---|---|---|---|---|
 | `specs/001-exp-core` | EXP | US-1–4; FR-001–017 attempted, with explicit remaining integrations | Group G, human reviewer pending | `001-exp-core` | Local prototype and tested domain logic; not fully complete |
 | `specs/001-prf-core` | PRF | US-3 (P1), US-4 (P1), US-5 (P1), US-6 (P1), US-1 (P2), US-2 (P2) | Group G | `002-prf-core` | Complete (Ready for Review) |
-| `specs/004-bkg-core` | BKG | US-4 (P1) Create Booking | Group G (linhkhanh-vu) | `004-bkg-core` | Step 5 (tests first): tests written and red; no BKG code yet |
+| `specs/004-bkg-core` | BKG | US-4 (P1) Create Booking | Group G (linhkhanh-vu) | `004-bkg-core` | Step 6 done (350/350 tests green); Step 7 browser demo path pending |
 
 ## 2. Run entries
 
@@ -230,6 +230,32 @@ did and what the humans decided.
 | Tests | T030 red run (`npm test`): `Test Files 11 failed \| 35 passed (46)`, `Tests 2 failed \| 280 passed (282)`. New failures: `Cannot find module '@/lib/booking/create-booking'` (bkg-page-access), and the extended files still fail on `Cannot find module` (`@/lib/booking/clock`, `@/app/api/bkg/bookings/route`); `applyBatch is not a function` unchanged. The 280 existing tests pass. |
 | Spec issues found | H1 → Clarification #44 "BR-019 is met by a single atomic persist on the JSON runtime until PostgreSQL" to be added to `docs/spec/specs/spec-BKG.md` at the next spec change. MEDIUM/LOW L1–L4 recorded here: L1 empty folder from T002; L2 BR-006/015/016 trivially met; L3 SC-003 checked indirectly until US-1; L4 `notice_period` vs `notice_period_hours` naming. |
 | Commit | See `git log` (message "test(BKG): add tests from analyze findings (H2, M1, M2); record H1, M3, M4"); not pushed. |
+
+### Entry 11: 30/10 Claude Code — BKG US-4 Step 6 (code) and T025
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Only the code tasks T007–T009, T018–T023 and T031, then T024. Do not change any test. If a test seems wrong, stop and tell me which and why. Run the full npm test at the end and show me the last lines. Mark finished tasks [X] in tasks.md. Do not commit.`; then T025 |
+| Feature and tasks | `specs/004-bkg-core`, tasks T007–T009, T018–T025, T031 |
+| What the agent produced | `src/lib/booking/{clock,write-lock,operating-hours,conflicts,create-booking}.ts`; `applyBatch` added to `src/lib/demo/json-repository.ts` and `BatchInsert` to `src/lib/demo/types.ts` (existing methods unchanged); `src/app/api/bkg/bookings/route.ts`; BKG134 at `src/app/provider/[providerId]/bookings/new/{page,CreateBookingForm}.tsx`; "+ CREATE BOOKING" link in `src/app/provider/[providerId]/page.tsx`; lock comment and race-test follow-up (commit `6dc3999`) |
+| Human review | Pending PR review. Agreed deviations: the Provider page link is visible to every viewer like the existing Edit button (access is enforced on BKG134 by `canOpenCreateBooking`); T015 does not prove the lock (§4 row "10 (BKG)"). |
+| Tests | `npm test`: `Test Files 46 passed (46)`, `Tests 350 passed (350)` (280 existing + 70 BKG); no test file changed since `4b715f9`. One `npm run lint` error (`DemoRow` not assignable to `OperatingHoursRow`) fixed in code on the first retry. T025: `npm run lint` passed; `validate_seed.py` PASS (47 CSVs); `start_feature.py --check` OK; `tsconfig.tsbuildinfo` restored, not committed. |
+| Spec issues found | none new |
+| Commit | `6cd4665` (code), `6dc3999` (race-test note); not pushed. Browser demo path (T026) not yet verified. |
+
+### Entry 12: 30/10 Claude Code + human — BKG US-4 demo path (T026, macOS)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) with the human clicking; Claude Code's built-in browser for step 8 |
+| Command and argument | `npm run demo:reset`, `npm run dev` (served on `localhost:3001`), then `specs/004-bkg-core/quickstart.md` §4 |
+| Feature and tasks | `specs/004-bkg-core`, T026 |
+| What the agent produced | No code change. Results: (3) BKG134 shows Experience "Nặn gốm thủ công", capacity 12, conditions prefilled `24` / `{"before_hours":24,"refund_percent":80}`; (4) Mon 2026-11-02 09:00, 60 min, 10 pax → On hold, created 2026-10-30T10:47:08+07:00, hold until 2026-11-02T10:47:08+07:00 (72 h), `POST /api/bkg/bookings 201`; (5) same values again → `SLOT_UNAVAILABLE` overlap, `409`; (6) 16:30 + 60 min → `SLOT_UNAVAILABLE` outside operating hours, `409`; (7) group size 13 → blocked by the browser (`max=12`), no request sent; (8) Tour Agency on `/provider/50f2c8fc…/bookings/new` → "Chỉ Local Provider sở hữu hồ sơ này mới tạo được Booking.", and `POST /api/bkg/bookings` as Agency → `403 FORBIDDEN`; (9) HTTP codes read from the dev-server log. |
+| Human review | Steps 3–7 screenshots from the human; step 8 and the Agency API call run by the agent in the built-in browser. |
+| Tests | Not rerun (no code change since Entry 11). |
+| Spec issues found | none. Non-blocking UI finding: at step 7 the red error from step 6 stays on screen while the browser shows its own `max=12` tooltip, so the visible message is stale; the server-side 400 for group size is covered by T016 only. Two dev servers ran at once (3000 and 3001) on one `runtime.json` — the multi-process limitation; demo used 3001 only. |
+| Commit | Not committed. Windows run of the same path still pending (G1). Follow-up fixes in `src/app/provider/[providerId]/bookings/new/CreateBookingForm.tsx`, verified in the built-in browser: (1) any field change clears the previous error; (2) agreed-price input used `step={1000}` with `min={1}`, so the browser accepted only 1, 1001, …, 2000001 and rejected round prices such as 2,000,000 VND — now `step="any"`. After the fixes: 2,000,000 at 16:30 → `SLOT_UNAVAILABLE`, then changing group size removes the message. `npm test` 350/350, `npm run lint` passed. |
 
 ## 3. Spec issues found while building
 

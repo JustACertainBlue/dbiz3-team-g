@@ -389,6 +389,19 @@ did and what the humans decided.
 | Spec issues found | none (all gaps were closed as #58–#67 before planning) |
 | Commit | `f63502f` (plan), `6769dd7` (tasks), analyze fixes in the next commit |
 
+### Entry 23: 30/10 Claude Code — BKG 012 Step 5 (tests first, US-6)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) |
+| Command and argument | `/speckit-implement Step 5 only: T001–T004 and T007–T017 (tests and their red runs). Code only for T005/T006 after their red run (T004). Do not write code that makes T007–T016 pass.` |
+| Feature and tasks | `specs/012-bkg-list`, T001–T017 |
+| What the agent produced | Tests: `tests/unit/bkg-hanoi-date.test.ts` (T002), `bkg-list-access.test.ts` (T003), `bkg-list-bookings.test.ts` (T007–T012, incl. "a denied list request writes nothing" with a deep snapshot of bookings, history and chat tables), `bkg-list-summary.test.ts` (T013–T014), `bkg-list-row-view.test.ts` (T015), `tests/integration/bkg-list-api.test.ts` (T016). Code (T005, T006 only, after T004): `hanoiDate` in `src/lib/booking/clock.ts`, `authorizeProviderList` in `src/lib/booking/booking-access.ts`. |
+| Human review | Pending. |
+| Tests | T001 baseline: `Tests 427 passed (427)`. T004: 4 failed — `hanoiDate is not a function`, `authorizeProviderList is not a function`; after T005/T006 → 4 passed. T017: `Test Files 4 failed (4)` — `Cannot find module '@/lib/booking/list-bookings'` (T007–T014 suites), `Cannot find module '@/lib/booking/list-row-view'` (T015), `routes.GET is not a function` (4 T016 cases); the T016 "POST create is unchanged (201)" case passes as intended. Full `npm test`: `Test Files 4 failed \| 63 passed (67)`, `Tests 4 failed \| 432 passed (436)` — 427 existing + 4 Foundational + 1 POST case. `npm run lint` fails only in the new test files (TS2307 missing modules; TS2339 that follow from the missing module types). One test-helper type (`rowOf`) was made generic before this commit so lint can pass once the module exists — not a behaviour change. Mutation check of the authorize/expire order is done in Step 6, when the service exists. |
+| Spec issues found | none |
+| Commit | see `git log` ("test(BKG): failing tests for US-6"); not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

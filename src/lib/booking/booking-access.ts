@@ -28,3 +28,14 @@ export function canManageBooking(session: ActorSession, providerId: string, book
 export function canViewAgencyBooking(session: ActorSession, agencyId: string, booking: DemoRow): boolean {
   return session.authenticated && session.role === 'TourAgency' && session.agencyId === agencyId && booking.agency_id === agencyId
 }
+
+// F-SCHED-10: the list is always the session's own Provider (#67); naming another one is forbidden.
+export function authorizeProviderList(session: ActorSession, requestedProviderId?: string | null): string {
+  if (!session.authenticated || session.role !== 'LocalProvider' || !session.providerId) {
+    throw new BookingError('FORBIDDEN', 'Only a Local Provider can list its Bookings')
+  }
+  if (requestedProviderId && requestedProviderId !== session.providerId) {
+    throw new BookingError('FORBIDDEN', 'A Local Provider can list only its own Bookings')
+  }
+  return session.providerId
+}

@@ -22,7 +22,7 @@ npm run dev
 Run **only one** dev server. Demo Provider `50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374` (cookie `provider`)
 is open Mondays 08:00–17:00 and has two Booked Bookings (2026-10-05, 2026-10-10 — the latter on a
 Saturday, outside its hours, #32). Demo Agency `02e568d8-d65e-54b1-a554-b411150d1dcb` (cookie `agency`,
-Tràng An) has no Booking in the seed.
+Tràng An) has one seed Booking: `0971a1b6…`, Completed, at Phú Vinh on 2026-09-26.
 
 ## 2. Phase A — API
 
@@ -61,8 +61,9 @@ curl -s "http://localhost:3000/api/bkg/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13
 
 ## 4. Phase B — API
 
-1. As `agency` after step 3.3 (the new Booking is for Tràng An). Expect `HTTP 200`, one row with
-   `village_name`, `provider_name`, numbers for `group_size`, `agreed_price`, `notice_period`.
+1. As `agency` after step 3.3 (the new Booking is for Tràng An). Expect `HTTP 200`, two rows ascending:
+   `0971a1b6…` (Completed, Phú Vinh, "Xưởng thủ công Phú Vinh") then the new On hold at Bát Tràng; numbers
+   for `group_size`, `agreed_price`, `notice_period`.
 
 ```bash
 curl -s "http://localhost:3000/api/bkg/agency/bookings" -H "Cookie: hab_demo_account=agency" -w "\nHTTP %{http_code}\n"

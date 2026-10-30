@@ -493,6 +493,21 @@ did and what the humans decided.
 | Spec issues found | none. Windows run (G1) pending. |
 | Commit | see `git log` ("docs(BKG): US-1/US-2 demo and polish (T034-T038)"); not pushed. |
 
+### Entry 31: 30/10 Claude Code + human — BKG module summary
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) with linhkhanh-vu deciding every spec question and merging |
+| Command and argument | Summary of the four BKG rounds (no new code) |
+| Feature and tasks | `specs/004-bkg-core`, `specs/011-bkg-manage`, `specs/012-bkg-list`, `specs/013-bkg-schedule` |
+| What the agent produced | **Round 1** `004-bkg-core` — US-4 Create Booking (F-SCHED-03), PR #17 (`343e4ce`); tests 280 → 350. **Round 2** `011-bkg-manage` — US-5 Manage Booking (F-SCHED-04/05/06/08, 72-hour expiry) and US-3 View Bookings (F-SCHED-07; BKG135, BKG144, BKG136, BKG138), PR #20 (`5cae545`) and #22 (`7057d5c`); tests → 427. **Round 3** `012-bkg-list` — US-6 List Bookings (F-SCHED-10; BKG133, minimal DSH018), PR #25 (`c3f0c64`); tests → 459. **Round 4** `013-bkg-schedule` — US-2 Availability (F-SCHED-09) and US-1 View Schedule (F-SCHED-01/02; SCH139, SCH140, SCH141, BKG137, navigation), PR #28 (`fa4d9d2`); tests → 503. **Spec**: decisions #26–#82 closed in `docs/spec/specs/spec-BKG.md` (incl. the older #32 and #33), through spec PRs #18 (#26, #27, #44–#49), #19 (#50–#56), #21 (#57), #24 (#58–#67), #26 (#32, #33, #68–#81), #27 (#82); every gap was asked and decided before plan or tasks, none filled in code. **Shared files touched**: `src/lib/demo/json-repository.ts` (`applyBatch` with updates, round 2), Provider/Agency pages (navigation links, rounds 3–4), Explore Provider page (one link, round 4). |
+| Human review | All decisions by linhkhanh-vu. PR #17, #22, #25, #28 were merged **without a GitHub review** — post-merge non-author reviews requested. |
+| Tests | `main` `fa4d9d2`: `Test Files 76 passed (76)`, `Tests 503 passed (503)`; lint passed. Mutation checks: create/update race (lock), `applyBatch` persist-first, numeric comparison, list authorize-before-expiry, public allow-list, schedule authorize-before-expiry, #32 precedence. |
+| Spec issues found | See §3 rows 8–9 and the spec PRs above. Open outside BKG: #34 (BR-013 unused), #35 (FK). |
+| Commit | see `git log` ("docs: BKG module complete"); not pushed. **Still missing**: Windows run (G1) for 004, 011, 012, 013; the post-merge reviews. |
+
+Main lessons (details in §4): (1) a race test must pause between check and write, or it does not prove the lock (Entry 10); (2) authorize before any write, including expiry — a denied request must write nothing (Entry 15); (3) tests that only check keys miss wrong types and wrong boundaries — assert `typeof` and per-day boundaries, through the public entry point (Entries 16–17, 28–29); (4) create fixtures with the same `now` that checks them (Entries 22–23); (5) read the demo response bodies, not only status codes — two of the defects were found that way.
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

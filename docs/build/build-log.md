@@ -14,7 +14,7 @@ did and what the humans decided.
 |---|---|---|---|---|---|
 | `specs/001-exp-core` | EXP | US-1–4; FR-001–017 attempted, with explicit remaining integrations | Group G, human reviewer pending | `001-exp-core` | Local prototype and tested domain logic; not fully complete |
 | `specs/001-prf-core` | PRF | US-3 (P1), US-4 (P1), US-5 (P1), US-6 (P1), US-1 (P2), US-2 (P2) | Group G | `002-prf-core` | Complete (Ready for Review) |
-| `specs/003-iac-core` | IAC | US-1 (P1) | Group G | `003-iac-core` | Step 1–4 complete (Prepare, Plan, Tasks, Analyze); ready for Step 5 (Tests First) |
+| `specs/003-iac-core` | IAC | US-1 (P1) | Group G | `003-iac-core` | Step 1-6 complete (Setup, Foundational, US-1 tests & code, Polish); all tests passing |
 
 ## 2. Run entries
 
@@ -218,6 +218,19 @@ did and what the humans decided.
 | Spec issues found | `close_reason` in FR-004 is NOT stored in `data/schema.sql` (logged for future slice; FR-004 out of scope for US-1). |
 | Commit | Pushed to GitHub on branch `003-iac-core` (WIP) |
 
+### Entry 10: 01/11 Group G — IAC Core Implementation and Test-First Execution (US-1 Complete)
+
+| Field | Value |
+|---|---|
+| Path and agent | B (Antigravity agent, Gemini 3.8 Flash) |
+| Command and argument | Steps 5 (Tests First), 6 (Code Implementation), and 7 (Verification & Polish) for US-1 (P1) |
+| Feature and tasks | `specs/003-iac-core`, tasks `T001` to `T024` (All tasks complete) |
+| What the agent produced | Created `src/lib/iac/types.ts`, `src/lib/iac/validators.ts`, `src/lib/iac/seed-accessor.ts`, `src/lib/iac/auth-guard.ts`, `src/lib/iac/markdown-utils.ts`, `src/lib/iac/chat-service.ts`, `src/app/api/iac/sessions/route.ts`, `src/app/api/iac/sessions/[id]/messages/route.ts`; updated `src/app/messages/page.tsx` with live IAC endpoints, bold/italic rendering, unread count badge, and clean UI; added test suites `tests/unit/chat-seed-data.test.ts`, `tests/unit/chat-types-validation.test.ts`, `tests/unit/chat-auth-guard.test.ts`, `tests/unit/chat-markdown.test.ts`, `tests/contract/chat-sessions-api.test.ts`, `tests/contract/chat-messages-api.test.ts`, `tests/contract/chat-list-history.test.ts`, `tests/integration/chat-flow.test.ts`, and `tests/unit/chat-no-booking.test.ts`. |
+| Human review | Accepted. Verified that Step 5 test suites were authored and failed before implementation. Verified that all 317 tests pass across 44 test files, TypeScript check (`npm run lint`) passes with 0 errors, and seed validation passes. |
+| Tests | `317 passed (317)` across 44 test files; `npm run lint`: 0 errors; `uv run python data/scripts/validate_seed.py`: PASS. |
+| Spec issues found | Confirmed seed data fixture conflict: `data/seed/chat_sessions.csv` already contains an Active session for the default seed agency-provider pair, so tests verify session creation by clearing pre-existing chat rows in `beforeEach`. |
+| Commit | Complete on branch `003-iac-core`. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -245,3 +258,4 @@ does not happen again.
 | 2 | EXP / local preview | Running `npm run build` while `npm run dev` used the same `.next` directory invalidated a development server chunk and made `/explore` return HTTP 500. | `next.config.mjs` now separates development output (`.next-dev`) from production output (`.next`); verified a production build while dev served `/explore` successfully. |
 | 2 | Relative import in unit tests used `../../helpers` instead of `../helpers` | Vitest reported module resolution error on run | Always check relative folder depth when importing local test helpers |
 | 2 | Direct read of `provider.business_name` from `provider_profiles.csv` instead of versioned `provider_profile_versions.csv` | Provider name assertion failed in `provider-service.test.ts` | Always join `provider_profile_versions` per Session 5 data model |
+| 10 | DemoRow string typing & seed session collision | In-memory demo repository requires all row field values to be strings (Record<string, string>), and the seed CSV already had an active session between the default test agency and provider. | Use string representation for demo repository records and ensure test fixtures reset or clear existing pairs before testing session creation. |

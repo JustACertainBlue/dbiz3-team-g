@@ -10,8 +10,8 @@
 
 **Purpose**: Module structure initialization and dependency verification.
 
-- [ ] T001 Verify project dependencies and TypeScript build setup for IAC in `tsconfig.json` and `package.json`
-- [ ] T002 [P] Configure environment template in `.env.example` ensuring runtime compatibility with existing services
+- [X] T001 Verify project dependencies and TypeScript build setup for IAC in `tsconfig.json` and `package.json`
+- [X] T002 [P] Configure environment template in `.env.example` ensuring runtime compatibility with existing services
 
 ---
 
@@ -21,12 +21,12 @@
 
 **⚠️ CRITICAL**: No user story implementation can begin until this phase is complete.
 
-- [ ] T003 Test: Seed data loader verification for Tour Agency and Local Provider accounts in `tests/unit/chat-seed-data.test.ts` (loads `data/seed/user_accounts.csv`, `agency_profiles.csv`, and `provider_profiles.csv`, verifying at least 1 valid Tour Agency and 1 Local Provider fixture)
-- [ ] T004 Implement seed data accessor helper in `src/lib/iac/seed-accessor.ts` (satisfies T003)
-- [ ] T005 [P] Test: Domain types and Zod validation schemas for sessions, messages, and pagination cursors in `tests/unit/chat-types-validation.test.ts`
-- [ ] T006 [P] Implement TypeScript interfaces and Zod validation schemas in `src/lib/iac/types.ts` and `src/lib/iac/validators.ts` (satisfies T005)
-- [ ] T007 [P] Test: Participant isolation and role verification guard in `tests/unit/chat-auth-guard.test.ts` (checks `BR-001`, `BR-002`, `BR-003`, `BR-016`)
-- [ ] T008 [P] Implement authentication and participant authorization guard in `src/lib/iac/auth-guard.ts` (satisfies T007)
+- [X] T003 Test: Seed data loader verification for Tour Agency and Local Provider accounts in `tests/unit/chat-seed-data.test.ts` (loads `data/seed/user_accounts.csv`, `agency_profiles.csv`, and `provider_profiles.csv`, verifying at least 1 valid Tour Agency and 1 Local Provider fixture)
+- [X] T004 Implement seed data accessor helper in `src/lib/iac/seed-accessor.ts` (satisfies T003)
+- [X] T005 [P] Test: Domain types and Zod validation schemas for sessions, messages, and pagination cursors in `tests/unit/chat-types-validation.test.ts`
+- [X] T006 [P] Implement TypeScript interfaces and Zod validation schemas in `src/lib/iac/types.ts` and `src/lib/iac/validators.ts` (satisfies T005)
+- [X] T007 [P] Test: Participant isolation and role verification guard in `tests/unit/chat-auth-guard.test.ts` (checks `BR-001`, `BR-002`, `BR-003`, `BR-016`)
+- [X] T008 [P] Implement authentication and participant authorization guard in `src/lib/iac/auth-guard.ts` (satisfies T007)
 
 **Checkpoint**: Foundation ready — user story testing and implementation can now begin.
 
@@ -40,31 +40,31 @@
 ### Group 1: Chat Session Management & Single Active Pair
 *Covers: FR-001, BR-001, BR-004, BR-005, BR-012, AC-IAC-PAIR, AC-IAC-NAV*
 
-- [ ] T009 [P] [US1] Test: Open/create active chat session and unique active pair reuse in `tests/contract/chat-sessions-api.test.ts` (checks `FR-001`, `BR-001`, `BR-004`, `BR-005`, `AC-IAC-PAIR`)
-- [ ] T010 [US1] Implement session management service in `src/lib/iac/chat-service.ts` (`findOrCreateActiveSession`, reusing existing active session for Agency–Provider pair) (satisfies T009)
-- [ ] T011 [US1] Implement session REST API route in `src/app/api/iac/sessions/route.ts` (`POST /api/iac/sessions`) (satisfies T009, depends on T010)
+- [X] T009 [P] [US1] Test: Open/create active chat session and unique active pair reuse in `tests/contract/chat-sessions-api.test.ts` (checks `FR-001`, `BR-001`, `BR-004`, `BR-005`, `AC-IAC-PAIR`)
+- [X] T010 [US1] Implement session management service in `src/lib/iac/chat-service.ts` (`findOrCreateActiveSession`, reusing existing active session for Agency–Provider pair) (satisfies T009)
+- [X] T011 [US1] Implement session REST API route in `src/app/api/iac/sessions/route.ts` (`POST /api/iac/sessions`) (satisfies T009, depends on T010)
 
 ### Group 2: Messaging, Markdown Formatting & Length Validation
 *Covers: FR-002, BR-006, BR-007, BR-012, BR-018, BR-021, AC-IAC-CLOSED*
 
-- [ ] T012 [P] [US1] Test: Message formatting, bold/italic parsing, max 4000 length constraint, and XSS sanitization in `tests/unit/chat-markdown.test.ts` (checks `BR-007`)
-- [ ] T013 [P] [US1] Test: Send message endpoint, immutability, timestamp update, and closed session rejection in `tests/contract/chat-messages-api.test.ts` (checks `FR-002`, `BR-006`, `BR-018`, `BR-021`)
-- [ ] T014 [P] [US1] Implement markdown parsing and sanitization utilities in `src/lib/iac/markdown-utils.ts` (satisfies T012)
-- [ ] T015 [US1] Implement message creation in `src/lib/iac/chat-service.ts` (`sendMessage`, updating `last_message_at` and incrementing recipient `unread_count`) (satisfies T013)
-- [ ] T016 [US1] Implement messages REST API route in `src/app/api/iac/sessions/[id]/messages/route.ts` (`POST /api/iac/sessions/:id/messages`) (satisfies T013, depends on T014, T015)
+- [X] T012 [P] [US1] Test: Message formatting, bold/italic parsing, max 4000 length constraint, and XSS sanitization in `tests/unit/chat-markdown.test.ts` (checks `BR-007`)
+- [X] T013 [P] [US1] Test: Send message endpoint, immutability, timestamp update, and closed session rejection in `tests/contract/chat-messages-api.test.ts` (checks `FR-002`, `BR-006`, `BR-018`, `BR-021`)
+- [X] T014 [P] [US1] Implement markdown parsing and sanitization utilities in `src/lib/iac/markdown-utils.ts` (satisfies T012)
+- [X] T015 [US1] Implement message creation in `src/lib/iac/chat-service.ts` (`sendMessage`, updating `last_message_at` and incrementing recipient `unread_count`) (satisfies T013)
+- [X] T016 [US1] Implement messages REST API route in `src/app/api/iac/sessions/[id]/messages/route.ts` (`POST /api/iac/sessions/:id/messages`) (satisfies T013, depends on T014, T015)
 
 ### Group 3: Chat List, Activity Sorting, Unread Counter & History Pagination
 *Covers: FR-003, BR-002, BR-013, BR-014, BR-015, BR-016, BR-017*
 
-- [ ] T017 [P] [US1] Test: Chat list sorting by latest message, unread counter reset on history view, and 50-message pagination in `tests/contract/chat-list-history.test.ts` (checks `FR-003`, `BR-013`, `BR-014`, `BR-015`, `BR-016`, `BR-017`)
-- [ ] T018 [US1] Implement chat list and paginated history retrieval in `src/lib/iac/chat-service.ts` (`listUserChats`, `getSessionMessages`, resetting caller's `unread_count`) (satisfies T017)
-- [ ] T019 [US1] Implement list endpoint in `src/app/api/iac/sessions/route.ts` (`GET /api/iac/sessions`) and history endpoint in `src/app/api/iac/sessions/[id]/messages/route.ts` (`GET /api/iac/sessions/:id/messages`) (satisfies T017, depends on T018)
+- [X] T017 [P] [US1] Test: Chat list sorting by latest message, unread counter reset on history view, and 50-message pagination in `tests/contract/chat-list-history.test.ts` (checks `FR-003`, `BR-013`, `BR-014`, `BR-015`, `BR-016`, `BR-017`)
+- [X] T018 [US1] Implement chat list and paginated history retrieval in `src/lib/iac/chat-service.ts` (`listUserChats`, `getSessionMessages`, resetting caller's `unread_count`) (satisfies T017)
+- [X] T019 [US1] Implement list endpoint in `src/app/api/iac/sessions/route.ts` (`GET /api/iac/sessions`) and history endpoint in `src/app/api/iac/sessions/[id]/messages/route.ts` (`GET /api/iac/sessions/:id/messages`) (satisfies T017, depends on T018)
 
 ### Group 4: User Interface & End-to-End Integration Flow
 *Covers: Screens COM048, COM065, SC-001 .. SC-010*
 
-- [ ] T020 [P] [US1] Test: End-to-end integration flow between Tour Agency and Local Provider in `tests/integration/chat-flow.test.ts` (verifies complete flow: open from context, send formatted message, receive unread notification, reset on read, verify persistence)
-- [ ] T021 [US1] Update conversational chat UI in `src/app/messages/page.tsx` connecting to real IAC endpoints (`/api/iac/sessions`, `/api/iac/sessions/:id/messages`) with live message list, bold/italic rendering, unread badge, and input submission (satisfies T020)
+- [X] T020 [P] [US1] Test: End-to-end integration flow between Tour Agency and Local Provider in `tests/integration/chat-flow.test.ts` (verifies complete flow: open from context, send formatted message, receive unread notification, reset on read, verify persistence)
+- [X] T021 [US1] Update conversational chat UI in `src/app/messages/page.tsx` connecting to real IAC endpoints (`/api/iac/sessions`, `/api/iac/sessions/:id/messages`) with live message list, bold/italic rendering, unread badge, and input submission (satisfies T020)
 
 **Checkpoint**: At this point, User Story 1 (P1) is fully functional and testable independently.
 
@@ -74,9 +74,9 @@
 
 **Purpose**: Verification, quickstart validation, and clean-up.
 
-- [ ] T022 [P] Validate that zero booking records are created during any chat action (`BR-018`) in `tests/unit/chat-no-booking.test.ts`
-- [ ] T023 Run full regression test suite (`npm test`) and TypeScript check (`npm run lint`)
-- [ ] T024 Follow and verify clean-clone demo path in `specs/003-iac-core/quickstart.md`
+- [X] T022 [P] Validate that zero booking records are created during any chat action (`BR-018`) in `tests/unit/chat-no-booking.test.ts`
+- [X] T023 Run full regression test suite (`npm test`) and TypeScript check (`npm run lint`)
+- [X] T024 Follow and verify clean-clone demo path in `specs/003-iac-core/quickstart.md`
 
 ---
 

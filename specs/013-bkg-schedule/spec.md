@@ -1,0 +1,586 @@
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-BKG.md sha256=ca0ac014f7a69bc4acd9898573d084022f2fcd5ac2b4487eeb59dace6ef7d632 taken=2026-10-30T09:08Z -->
+<!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-BKG.md, then run:
+     uv run tools/start_feature.py --refresh -->
+
+# Spec Document: Schedule/Booking
+
+| **Field**                 | **Value**                                                                                                                                                                          |
+|---------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Module ID                 | BKG                                                                                                                                                                                |
+| Module name               | Schedule/Booking                                                                                                                                                                   |
+| Spec version | v0.2 — consistency revision |
+| Author (team member)      | Group G                                                                                                                                                                            |
+| Date | 28/09/2026 |
+| Status | Revised — pending human approval |
+| Approved by (Client role) | Pending human approval |
+| DBIZ2 source              | Function List rows **F-SCHED-01 .. F-SCHED-10**; Use Case **UC-BOOK-01 .. UC-BOOK-06**; Screens **BKG133, BKG134, BKG135, BKG144, BKG136, BKG137, BKG138, SCH139, SCH140, SCH141** |
+
+Shared actor/state/field definitions: [Consistency Contract](../docs/consistency-contract.md). Exact current Function contracts are in §5/5.1. Technical choices and unresolved field-design questions are explicitly separated there.
+
+**1. Purpose and scope (mandatory)**
+
+> The Schedule / Booking Management module allows Local Providers to manage the complete lifecycle of their own bookings after agreement with a Tour Agency, and calculates/displays their resulting availability (operating hours are configured separately, on `F-PROFILE-04`). It also provides public Provider schedules and read-only private Agency schedules that stay synchronized with booking changes.
+
+**In scope**
+
+- Display Local Provider public schedule.
+
+- Display Tour Agency private schedule containing only its own bookings.
+
+- Calculate Provider availability (`F-SCHED-09`) from the Provider's operating hours — configured on `F-PROFILE-04` (Edit Local Provider Profile), outside this module — combined with active On hold/Booked Booking blocks. MVP does not include Provider-defined Unavailable or Blackout periods; only operating hours and Booking blocks feed the calculation.
+
+- Local Provider creates a Booking after Agency–Provider negotiation.
+
+- Every new Booking starts as **On hold**.
+
+- On-hold period lasts **72 hours**.
+
+- Local Provider updates Booking details.
+
+- Local Provider changes permitted Booking status.
+
+- Local Provider marks Group Arrival / completion.
+
+- Display full Booking Detail according to actor and lifecycle state.
+
+- Synchronize Booking changes to the Agency Private Schedule.
+
+- Synchronize blocked Provider time to public schedule.
+
+- Notify Agency through Chat auto-message when defined Booking changes occur.
+
+**Out of scope**
+
+- Tour Agency creating, confirming, updating or cancelling a Booking.
+
+- HDT/UBND controlling Booking lifecycle.
+
+- Guest access to private Booking Detail.
+
+- Payment processing.
+
+- Contract/e-contract management.
+
+- Quote negotiation itself; this occurs through Chat before Booking creation.
+
+- Manual editing of On hold/Booked schedule blocks independently of Booking records.
+
+- Configuring operating hours (owned by `F-PROFILE-04` / Edit Local Provider Profile, PRF module) and any manual Provider "Manage Availability" editor screen — this module only calculates and displays the result.
+
+- Provider-defined Unavailable/Blackout periods — not supported anywhere in MVP; the earlier `availability_type` design (Available/Unavailable/Blackout) is dropped.
+
+- Admin override of Completed or Cancelled Booking states unless explicitly added later.
+
+- Full notification-center functionality.
+
+**Depends on**
+
+| **Dependency**                                     | **Purpose**                                                                                          |
+|----------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| **AUT – Authentication, Access & User Management** | Enforces booking ownership and role/data scope.                                                      |
+| **PRF – Profile Management**                       | Supplies Experience, duration, capacity, pricing defaults, booking conditions, and the Provider's operating hours via `F-PROFILE-04` (Edit Local Provider Profile) — the sole input to `F-SCHED-09`'s availability calculation besides active Bookings. |
+| **CHAT – In-app Chat**                             | Supplies negotiation context before Booking creation and receives automatic Booking update messages. |
+| **EXP / AIT**                                      | May originate Quote/Chat that later results in a Booking.                                            |
+| **Background Worker / Scheduler**                  | Handles the 72-hour On hold expiry rule.                                                             |
+
+**2. Actors (mandatory)**
+
+| **Actor**             | **Role in this module**                                                                | **Where it comes from**                |
+|-----------------------|----------------------------------------------------------------------------------------|----------------------------------------|
+| **Local Provider**    | Primary owner of Booking lifecycle, views Provider availability, and manages its own Booking list | F-SCHED-01, 03–07, 10                  |
+| **Tour Agency**       | Views Provider public schedule, own private schedule and own Booking details read-only | F-SCHED-01, F-SCHED-02, F-SCHED-07    |
+| **System**            | Synchronizes schedules, calculates Provider availability, and performs automatic Booking-related updates | F-SCHED-08, F-SCHED-09                |
+| **Background Worker** | Applies scheduled 72-hour On hold expiry                                               | System Configuration / F-SCHED-03 rule |
+| **Chat module**       | Provides source negotiation context and receives booking-update messages               | F-SCHED-03, 04, 05, 08                 |
+
+**3. User scenarios and acceptance criteria (mandatory)**
+
+## **US-1 (P1): View Schedule — UC-BOOK-01**
+
+**Journey.** As a Tour Agency or Local Provider, I want to view schedule information so that I can understand availability and my own booking commitments.
+
+### **Acceptance scenarios**
+
+1.  Given a Local Provider opens its Provider Schedule, when the schedule loads, then operating hours and time blocks with permitted status information are displayed.
+
+2.  Given a Tour Agency opens a Provider's public schedule, then other Agencies' identity, agreed price, contact information and private Booking conditions are not exposed.
+
+3.  Given a Tour Agency opens its private Agency Schedule, then only that Agency's own Bookings are shown.
+
+4.  Given a Booking changes, then the Agency Private Schedule reflects the latest synchronized data.
+
+5.  Given date/status filters are supplied on the private schedule, then only matching Agency-owned Bookings are returned.
+
+UC-BOOK-01 maps to F-SCHED-01 and F-SCHED-02.
+
+## **US-2 (P1): View Calculated Availability — UC-BOOK-02**
+
+**Journey.** As a Local Provider, I want to see my calculated availability so that Agencies see realistic booking windows, without needing a separate manual editor in this module — operating hours are set once on my Profile.
+
+### **Acceptance scenarios**
+
+1.  Given a Local Provider has operating hours configured on `F-PROFILE-04`, when the Provider Schedule or public schedule loads, then `F-SCHED-09` derives and displays availability from those operating hours plus active (On hold/Booked) Booking blocks.
+
+2.  Given an existing On hold or Booked Booking occupies a time range, then that range is shown as unavailable/occupied, and a new Booking cannot be created there.
+
+3.  Given a Completed or Cancelled Booking, then its time range does not block future availability.
+
+4.  Given a Provider has not yet configured operating hours on `F-PROFILE-04`, then `F-SCHED-09` has no basis for availability and the Provider Schedule shows no available periods until operating hours are set.
+
+**Note:** MVP has no manual "Manage Availability" editor and no Unavailable/Blackout period concept — editing operating hours happens only on `F-PROFILE-04`, outside this module. Superseded acceptance criteria that assumed manual availability editing, conflict-on-save blocking, or Unavailable/Blackout periods within this module are removed; see Open Question #25 (Resolved).
+
+UC-BOOK-02 maps to F-SCHED-09.
+
+## **US-3 (P1): View Bookings — UC-BOOK-03**
+
+**Journey.** As a Tour Agency or Local Provider, I want to view a Booking I am involved in so that I can see its current details and status.
+
+### **Acceptance scenarios**
+
+1.  Given a Local Provider opens one of its Bookings, then full Booking detail and status-appropriate action buttons are displayed.
+
+2.  Given a Tour Agency opens one of its own Bookings, then full permitted details are displayed in read-only mode.
+
+3.  Given an Agency attempts to open another Agency's Booking, access is denied.
+
+4.  Given HDT, UBND or Guest attempts to access the operational Booking Detail screen, access is denied.
+
+5.  Given status is terminal, action buttons are not available.
+
+UC-BOOK-03 maps to F-SCHED-07.
+
+## **US-4 (P1): Create Booking — UC-BOOK-04**
+
+**Journey.** As a Local Provider, I want to create a Booking after reaching agreement with a Tour Agency so that the agreed time is reserved and visible to both parties.
+
+### **Acceptance scenarios**
+
+1.  Given Agency and Local Provider have agreed through Chat, when the Provider creates a Booking with valid details, then a new Booking is created with status **On hold**.
+
+2.  The system sets hold_expires_at = created_at + 72 hours.
+
+3.  The corresponding Provider schedule slot becomes blocked as **On hold** immediately.
+
+4.  The Booking is synchronized to the Agency Private Schedule.
+
+5.  Given the requested time conflicts with Provider availability or another On hold/Booked Booking, then creation must not silently create a conflicting Booking.
+
+6.  Tour Agency cannot perform Create Booking.
+
+F-SCHED-03 explicitly states that **every newly created Booking MUST have initial status On hold for 72 hours**.
+
+## **US-5 (P1): Manage Booking — UC-BOOK-05**
+
+**Journey.** As a Local Provider, I want to update and progress my Booking so that its state reflects the actual collaboration with the Tour Agency.
+
+### **Acceptance scenarios**
+
+1.  Given a Booking is On hold, when the Provider confirms it, then it advances to **Booked**.
+
+2.  Given an On hold Booking cannot proceed, the Provider may cancel it.
+
+3.  Given a Booked Booking changes in date/time/group size/agreed price/conditions, then details are updated and schedules are synchronized.
+
+4.  Given a Booked Booking reaches the tour start time and the group arrives, when Provider selects Mark Group Arrival, then status becomes Completed.
+
+5.  Given a Booking becomes Cancelled or Completed, then the Booking remains available as history but no longer exposes lifecycle action buttons.
+
+6.  Every create/update/status/arrival event, including automatic 72-hour On hold expiry, triggers Agency private-schedule synchronization.
+
+7.  Tour Agency sees updated Booking state but cannot change it.
+
+UC-BOOK-05 maps to F-SCHED-04 through F-SCHED-08.
+
+## **US-6 (P1): List Bookings — UC-BOOK-06**
+
+**Journey.** As a Local Provider, I want to see all of my Bookings in one management list, ordered by scheduled start time and highlighting what needs my action, so that I can manage inbound allotments without opening each one individually.
+
+### **Acceptance scenarios**
+
+1.  Given a Local Provider opens Booking Management, when the list loads, then it shows all of that Provider's own Bookings, ordered by scheduled start time.
+
+2.  Given the Provider applies a status filter or date range, then the list recomputes for that scope only.
+
+3.  Given a Booking is an active On hold Booking awaiting confirmation, or a Booked Booking eligible for Mark Group Arrival, then the list highlights it as requiring Provider action.
+
+4.  Given the Provider selects a Booking from the list, then its full detail opens through F-SCHED-07.
+
+5.  Given a Tour Agency or any other actor attempts to call this function for a Provider it does not own, access is denied.
+
+6.  Given the Provider has zero Bookings (or the filter matches none), then the list shows an explicit empty state, not an error.
+
+UC-BOOK-06 maps to F-SCHED-10.
+
+### **Edge cases**
+
+- On hold reaches exactly 72 hours while Provider is confirming it.
+
+- Provider attempts to modify a Completed/Cancelled Booking.
+
+- Two Booking operations try to reserve the same time slot concurrently.
+
+- Provider moves an existing Booking to a conflicting time.
+
+- Agency is offline when Booking changes.
+
+- Chat session referenced for synchronization no longer exists.
+
+- Local Provider attempts Mark Group Arrival before scheduled start time — **must be rejected/disabled by F-SCHED-06 itself (see BR-010); the UI action button's enabled state must reflect this, not status alone (see F-SCHED-07).**
+
+
+- A Booking expires automatically while the Booking Detail screen is open.
+
+- A schedule sync succeeds for Provider but fails for Agency view.
+
+### Consistency acceptance examples
+
+| AC ID | Given / When | Expected result |
+|---|---|---|
+| AC-BKG-HOLD | Provider creates valid negotiated booking | On hold with original72h expiry; own Agency schedule includes hold immediately. |
+| AC-BKG-RACE | Two valid requests try the same occupied interval | At most one permitted booking commits; failed request creates no block. |
+| AC-BKG-EXPIRY | Confirm competes with worker at hold deadline | One conditional transition wins; expired hold is Cancelled; no duplicate event/message. |
+| AC-BKG-HOURS | Provider has no configured operating hours and no bookings | No available periods, not fully available. |
+| AC-BKG-COMPLETE | Provider selects status on BKG144 | No Completed option; F-SCHED-06 applies the existing arrival/time rule. |
+
+**4. Flows (mandatory)**
+
+**4.1 Usage flow**
+
+```mermaid
+graph TD
+  P["Provider BKG134: valid agreed details"] --> V{"Atomic availability check"}
+  V -->|Fail| E["Error; no booking created"]
+  V -->|Pass| H["Create On hold; original72h expiry"]
+  H --> S["Sync Agency SCH141/BKG137 + Chat"]
+  S --> D{"Confirm / Cancel / Expiry"}
+  D -->|Confirm before expiry| B["Booked"]
+  D -->|Cancel or72h reached| C["Cancelled"]
+  B --> A{"Mark Arrival on/after start or Cancel"}
+  A -->|Mark Arrival| F["Completed; current approved rule"]
+  A -->|Cancel| C
+  C --> U["Sync status/occupancy/history"]
+  F --> U
+  U --> AG["Agency read-only BKG138/SCH141"]
+```
+
+**4.2 Sequence for the main flow**
+
+```mermaid
+sequenceDiagram
+    actor Provider
+    actor Agency
+    participant UI as Frontend
+    participant API as Backend
+    participant DB as Database
+    participant Worker
+    Note over Provider,UI: UC-BOOK-02 SCH139#59; operating hours edited only on PRF128
+    UI->>API: Calculate availability (F-SCHED-09)
+    API->>DB: Read operating hours and On hold/Booked occupancy
+    API-->>UI: Calculated slots#59; no operating hours means no available periods
+    Note over Provider,UI: UC-BOOK-04 BKG134
+    Provider->>UI: Select Agency ID, Experience, time, group and agreed total price
+    UI->>API: createBooking (F-SCHED-03)
+    API->>API: Validate ownership, Agency identity and input
+    API->>DB: Atomically recheck availability and create On hold, expires_at=created_at+72h
+    alt Conflict/validation/permission failure
+        API-->>UI: Defined error#59; no Booking or schedule block committed
+    else Commit succeeds
+        API->>DB: Persist booking event and Agency schedule projection
+        API->>API: Resolve Active pair Chat and send booking auto-message (F-SCHED-08)
+        API-->>UI: BKG135 On hold
+        API-->>Agency: BKG137/SCH141 includes own On hold
+    end
+    Note over Provider,Worker: UC-BOOK-05 BKG144#59; confirm vs72h expiry race
+    par Provider action
+        Provider->>API: Update fields or target_status Booked/Cancelled
+        API->>DB: Lock/check current state and original deadline, then permitted atomic transition
+    and Expiry worker
+        Worker->>API: Expire due On hold booking
+        API->>DB: Conditional On hold→Cancelled if deadline reached#59; record automatic expiry once
+    end
+    Note over API,DB: At expiry boundary confirmation fails#59; only one transition wins. Repeated worker does not duplicate events/messages.
+    API->>DB: Synchronize resulting schedule and occupancy
+    API->>API: Deliver linked chat update#59; retry without duplicating the committed booking event
+    Note over Provider,UI: F-SCHED-06 BKG136#59; retain current arrival/completion requirement
+    Provider->>UI: Mark Group Arrival
+    UI->>API: markArrival(booking_id)
+    API->>DB: Check owner, Booked status and now>=start_at#59; set Completed and arrived_at once
+    API-->>UI: BKG135 result or defined invalid-state/time error
+    Note over Agency,UI: UC-BOOK-01/03 SCH141/BKG137/BKG138#59; Agency read-only
+    Agency->>API: Read own schedule/booking details
+    API->>DB: Scope by own organization
+    API-->>Agency: Canonical status and latest update#59; no other Agency details
+    Note over Provider,UI: UC-BOOK-06 BKG133 uses F-SCHED-10, own bookings only
+```
+
+**5. Functional requirements (mandatory)**
+
+| FR ID | Function List ID | Requirement — system MUST | Actor | Priority |
+|---|---|---|---|---|
+| FR-001 | F-SCHED-01 | Display a Local Provider's public availability schedule in calendar format for the Local Provider itself and permitted Tour Agencies. Shows: Available time slots (unrestricted), On-hold blocks (time + status badge only), Booked blocks (time + status badge only), operating hours. Does NOT show: Agency name, contact, agreed price, booking conditions, expiry of on-hold. Only shows time blocked + status label. Public Schedule shows duration blocks (Google Calendar style). LP monitors own availability from this view. <br><br>For the Local Provider view, selecting a Booking block or Booking entry on the Provider Schedule navigates to F-SCHED-07 Booking Detail. Booking status is not changed directly by F-SCHED-01.<br><br>Availability displayed by F-SCHED-01 is calculated through F-SCHED-09 from the Provider's configured operating hours and active On hold / Booked Booking blocks. F-SCHED-01 does not provide manual availability editing.<br><br>Unavailable periods represent times outside the Provider's configured operating hours or periods occupied by active Booking constraints. | Tour Agency / Local Provider | Must |
+| FR-002 | F-SCHED-02 | Display Tour Agency's private schedule showing only own bookings with FULL details. Shows: Village name, Local Provider name, experience name, dates/times, group size, agreed price, booking conditions (notice period, cancellation policy), current status (On hold / Booked / Completed / Cancelled), last update timestamp. Can filter by: status, village, date range. Syncs real-time when LP updates booking (via F-SCHED-08). Does NOT show: Other agencies' bookings, LP's internal notes. | Tour Agency | Must |
+| FR-003 | F-SCHED-03 | Local Provider creates a booking after negotiation with the Tour Agency. The system may pre-fill relevant information from Chat context, including Agency information, selected Experience, interested dates, group size, and estimated budget. Local Provider enters the final booking details, including exact date/time, duration, final group size, agreed price, and booking conditions. Every newly created booking MUST have the initial status "On hold" for 72 hours. The corresponding time slot is immediately blocked on the Provider Public Schedule as an On hold block and synchronized to the Agency Private Schedule. Immediately before committing the Booking, the system atomically re-checks the requested time range against Provider availability and all existing On hold / Booked Bookings.<br><br>If a conflicting block exists, Booking creation is rejected with Slot Unavailable and no Booking record is committed.<br><br>The 72-hour hold countdown starts only after successful Booking creation. <br><br>MVP constraint: Each Booking represents exactly one scheduled occurrence/time block defined by start_at + duration. Multi-slot Bookings are not supported. | Local Provider | Must |
+| FR-004 | F-SCHED-04 | Local Provider updates booking details such as date, time, group size, agreed price, or booking conditions. This function updates booking detail fields only; status changes are handled separately by F-SCHED-05. Changes are synchronized immediately to the Agency Private Schedule and the affected Tour Agency is informed of the update. When date/time changes, the new slot is atomically checked against availability and existing On hold/Booked Bookings before the update is committed. | Local Provider | Must |
+| FR-005 | F-SCHED-05 | Local Provider manages Booking status transitions according to the official Booking lifecycle:<br><br>On hold → Booked<br>On hold → Cancelled<br>Booked → Cancelled<br><br>Booked → Completed is handled separately through F-SCHED-06 Mark Group Arrival. When status changes, the Agency Private Schedule and Public Provider Schedule are synchronized accordingly. | Local Provider | Must |
+| FR-006 | F-SCHED-06 | Local Provider marks group arrival on or after the scheduled tour start date. This action transitions the booking from "Booked" to "Completed". Once completed, the booking becomes historical and no longer blocks Public Schedule availability.<br><br>Before applying Booked → Completed, the server MUST validate:<br>(1) current booking status = Booked; and<br>(2) current server time >= booking.start_at.<br><br>If either condition fails, the transition is rejected and the Booking remains unchanged.<br><br>Mark Group Arrival applies to the Booking as a whole. The MVP does not support per-slot arrival tracking or partial completion. One successful Mark Group Arrival action transitions the entire Booking from Booked to Completed. | Local Provider | Must |
+| FR-007 | F-SCHED-07 | Display full booking detail with all information: dates, group size, price, booking conditions (notice period, cancellation policy), status, LP profile link (for Agency), Agency contact (for LP). <br><br>DISPLAY CONTENT: Same for both parties (LP + Agency)<br>- Experience name, dates/times, group size, agreed price<br>- Booking conditions (notice period, cancellation policy)<br>- Current status (On hold / Booked / Completed / Cancelled)<br>- Last update timestamp, LP/Agency contact<br><br>ACTION BUTTONS (Local Provider only):<br><br>- Status "On hold":<br>  [Confirm/Book], [Update], [Cancel] ENABLED.<br><br>- Status "Booked" AND current server time < start_at:<br>  [Update], [Cancel] ENABLED;<br>  [Mark Group Arrival] DISABLED.<br><br>- Status "Booked" AND current server time >= start_at:<br>  [Update], [Cancel], [Mark Group Arrival] ENABLED.<br><br>- Status "Completed":<br>  All buttons DISABLED (View only).<br><br>- Status "Cancelled":<br>  All buttons DISABLED (View only).<br><br>Agency: No action buttons (View only)<br><br>ACCESS CONTROL: <br>- Local Provider: View own bookings + action buttons per status<br>- Tour Agency: View own bookings (Read-only, no buttons)<br>- UBND/HDT/Guest: Cannot access<br><br>Payment processing and payment-status tracking are outside the current MVP scope. agreed_price represents the commercial amount agreed for the Booking and must not be interpreted as proof of payment. | Local Provider / Tour Agency | Must |
+| FR-008 | F-SCHED-08 | System event: When LP updates/creates booking via F-SCHED-03/04/05/06, automatically sync changes to Agency's Private Schedule. Triggered on: Create booking (F-SCHED-03), Update details (F-SCHED-04), Status change (F-SCHED-05), Mark arrival (F-SCHED-06), Automatic 72-hour On hold expiry. Sync includes: Update Private Schedule table row, send Chat auto-message to Agency with update summary, mark as "latest update" timestamp. Sync happens in real-time (within seconds) OR on next Agency session load (if Agency not actively viewing Private Schedule). No manual refresh needed by Agency.<br><br>For Booking update messages, the target Chat is resolved in this order:<br>1. use source_chat_session_id when the Booking originated from an Active Chat;<br>2. otherwise use the most recent Active Chat between the same Agency and Local Provider;<br>3. if no Active Chat exists, create a new Active Chat with source = Booking and link it to booking_id before sending the system-generated update message. | System | Must |
+| FR-009 | F-SCHED-09 | Calculates the Local Provider's available and occupied time periods for use by the Provider Schedule and public schedule views. The function does not provide manual availability editing on SCH139. Availability is derived from the Provider's configured operating hours together with active Booking blocks. On hold and Booked Bookings occupy their corresponding time ranges and therefore make those periods unavailable for another Booking. Completed and Cancelled Bookings do not block future availability. The calculated result is consumed by F-SCHED-01 when rendering the Provider Schedule and is also used by F-SCHED-03/F-SCHED-04 when checking whether a requested Booking time is available. <br><br>Calculates the Local Provider's available and occupied time periods.<br><br>Baseline availability is derived from the recurring Provider operating_hours configured through F-PROFILE-04.<br><br>On hold and Booked Bookings block their corresponding time ranges.<br>Completed and Cancelled Bookings do not block availability.<br><br>The MVP does not support manually configured blackout dates or ad-hoc unavailable periods. F-SCHED-09 is a calculation function only and does not provide availability-editing controls. | System | Must |
+| FR-010 | F-SCHED-10 | Displays the authenticated Local Provider's own Bookings in a management list. Bookings may be filtered by lifecycle status and date range and are ordered by scheduled start time. The list highlights Bookings requiring Provider action, including active On hold Bookings awaiting confirmation and Booked Bookings eligible for Mark Group Arrival. Selecting a Booking opens its full detail through F-SCHED-07. The Local Provider cannot access Bookings belonging to another Provider. | Local Provider | Must |
+
+**5.1 Input / Output contract**
+
+| FR ID | Input fields and validation | Required | Output fields | Notes |
+|---|---|---|---|---|
+| FR-001 | provider_id (ID; Required — own for Local Provider, selected Provider for Tour Agency)<br><br>date_from (Date; Optional — defaults to current date)<br><br>date_to (Date; Optional — defaults to date_from + 29 days) | As specified per field | calendar_blocks (Array<Object{<br>  start_at,<br>  end_at,<br>  status: Enum[Available, On hold, Booked, Unavailable]<br>}>; Required)<br><br>operating_hours (Object; Required — recurring profile/provider operating hours applicable to the displayed period) | Same contract as F-SCHED-01; optional fields are not required. |
+| FR-002 | agency_id (ID; Required — from session)<br>status (Enum[On hold, Booked, Completed, Cancelled]; Optional)<br>village_id (ID; Optional)<br>date_from (Date; Optional)<br>date_to (Date; Optional) | As specified per field | bookings (Array<Object>; Required), each with:<br>- booking_id (ID; Required)<br>- village_name, provider_name, experience_name (String; Required)<br>- start_at, end_at (DateTime; Required)<br>- group_size (Integer; Required)<br>- agreed_price (Decimal; Required)<br>- notice_period, cancellation_policy (see F-PROFILE-06; Required)<br>- status (Enum[On hold, Booked, Completed, Cancelled]; Required)<br>- last_updated_at (DateTime; Required) | Same contract as F-SCHED-02; optional fields are not required. |
+| FR-003 | experience_id (ID; Required)<br><br>agency_id (ID; Required)<br><br>start_at (DateTime; Required)<br><br>duration (see F-PROFILE-06; Required)<br><br>group_size (Integer > 0; Required — must be <= Experience max_participants)<br><br>agreed_price (Decimal > 0, VND; Required — total agreed price for the Booking, not per-person price)<br><br>booking_conditions (Object{notice_period, cancellation_policy}; Required — prefilled as a snapshot from the Experience and may be adjusted by the Local Provider before Booking creation)<br><br>source_chat_session_id (ID; Optional — for pre-fill) | As specified per field | booking_id (ID; Required)<br>status (Enum["On hold"]; Required)<br>created_at (DateTime; Required)<br>hold_expires_at (DateTime; Required — created_at + 72h)<br>public_schedule_block (Object{start_at, end_at, status}; Required)<br>private_schedule_synced (Boolean; Required) | Same contract as F-SCHED-03; optional fields are not required. |
+| FR-004 | booking_id (ID; Required)<br>start_at (DateTime; Optional — changing date/time does NOT reset hold_expires_at; an On hold Booking retains its original 72-hour expiry)<br>duration (see F-PROFILE-06; Optional)<br>group_size (Integer > 0; Optional)<br>agreed_price (Decimal; Optional)<br>booking_conditions (Object; Optional)<br>(at least one field must be provided) | As specified per field | updated_booking (Object; Required)<br>private_schedule_synced (Boolean; Required)<br>public_schedule_updated (Boolean; Optional — when time/date changes)<br>agency_notification_message_id (ID; Required)<br>audit_log_id (ID; Required) | Same contract as F-SCHED-04; optional fields are not required. |
+| FR-005 | booking_id (ID; Required)<br><br>target_status (Enum[Booked, Cancelled]; Required)<br><br>cancellation_reason (Text; Required when target_status = Cancelled; otherwise omitted) | As specified per field | booking_status (Enum; Required)<br>status_history_entry (Object{from_status, to_status, changed_by, changed_at, reason}; Required)<br>schedules_synced (Boolean; Required)<br>agency_notification_message_id (ID; Required) | Same contract as F-SCHED-05; optional fields are not required. |
+| FR-006 | booking_id (ID; Required — status must be Booked and start date reached) | As specified per field | transition_applied (Boolean; Required)<br><br>booking_status (Enum[Booked, Completed]; Required — resulting Booking status; remains Booked when the transition is rejected)<br><br>arrived_at (DateTime; Optional — returned only when transition_applied = true)<br><br>status_history_entry (Object; Optional — created only when transition_applied = true)<br><br>private_schedule_synced (Boolean; Required — true only when a successful transition requires synchronization)<br><br>availability_released (Boolean; Required — true only after successful Booked → Completed)<br><br>validation_error (<br>  Enum[<br>    Booking Not Booked,<br>    Tour Start Time Not Reached<br>  ];<br>  Optional — returned when transition_applied = false<br>) | Same contract as F-SCHED-06; optional fields are not required. |
+| FR-007 | booking_id (ID; Required)<br>requester_id (ID; Required — from session; must be the LP or Agency of the booking) | As specified per field | experience_name (String; Required)<br>start_at, end_at (DateTime; Required)<br>group_size (Integer; Required)<br>agreed_price (Decimal; Required)<br>notice_period, cancellation_policy (see F-PROFILE-06; Required)<br>status (Enum[On hold, Booked, Completed, Cancelled]; Required)<br>last_updated_at (DateTime; Required)<br>provider_profile_link (URL; Optional — Agency view)<br>agency_contact (Object; Optional — LP view) | Same contract as F-SCHED-07; optional fields are not required. |
+| FR-008 | booking_event (Object{event_type: Enum[create, update, status_change, mark_arrival, auto_expiry], booking_id, changed_fields}; Required) | As specified per field | private_schedule_updated (Boolean; Required)<br><br>chat_auto_message_id (ID; Required)<br><br>latest_update_at (DateTime; Required)<br><br>recipient_read_status (Enum[Seen, Unseen]; Required — internal state for the booking system message; not a visible per-message read receipt) | Same contract as F-SCHED-08; optional fields are not required. |
+| FR-009 | provider_id (ID; Required)<br><br>date_from (Date; Required)<br><br>date_to (Date; Optional — same as date_from when omitted)<br><br>operating_hours (<br>  Object;<br>  Required — recurring Provider operating hours from F-PROFILE-04<br>)<br><br>booking_blocks (<br>  Array<Object{<br>    booking_id,<br>    start_at,<br>    end_at,<br>    status: Enum[On hold, Booked, Completed, Cancelled]<br>  }>;<br>  Required<br>) | As specified per field | availability_calendar (Object; Required)<br>available_slots (Array<Object{start_at, end_at}>; Required)<br>occupied_slots (Array<Object{booking_id, start_at, end_at, status: Enum[On hold, Booked]}>; Required)<br>calculated_at (DateTime; Required) | Same contract as F-SCHED-09; optional fields are not required. |
+| FR-010 | provider_id (ID; Required — own Provider from session)<br>status (Enum[On hold, Booked, Completed, Cancelled]; Optional)<br>date_from (Date; Optional)<br>date_to (Date; Optional)<br>page (Integer; Optional — default 1)<br>page_size (Integer; Optional — default 20) | As specified per field | bookings (Array<Object>; Required), each with:<br>- booking_id (ID; Required)<br>- experience_name (String; Required)<br>- agency_name (String; Required)<br>- start_at (DateTime; Required)<br>- end_at (DateTime; Required)<br>- group_size (Integer; Required)<br>- status (Enum[On hold, Booked, Completed, Cancelled]; Required)<br>- hold_expires_at (DateTime; Optional — On hold only)<br>- requires_action (Boolean; Required)<br>status_counts (Map<Enum[On hold, Booked, Completed, Cancelled], Integer>; Required)<br>total_count (Integer; Required) | Same contract as F-SCHED-10; optional fields are not required. |
+
+**5.2 Business rules**
+
+| **Rule ID** | **Rule**                                                                                                                       | **Why it exists**                                              |
+|-------------|--------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| **BR-001**  | Only Local Provider controls Booking lifecycle actions.                                                                        | Preserves the agreed business ownership model.                 |
+| **BR-002**  | Tour Agency may view only its own Booking/schedule information and cannot perform lifecycle actions.                           | Protects ownership and prevents Agency-side manipulation.      |
+| **BR-003**  | Every newly created Booking starts in On hold.                                                                                 | Provides a consistent Booking entry state.                     |
+| **BR-004**  | Initial On hold duration is exactly **72 hours**.                                                                              | Gives the Provider a fixed commitment window.                  |
+| **BR-005**  | Creating an On hold Booking immediately blocks the relevant Provider time slot.                                                | Prevents double allocation.                                    |
+| **BR-006**  | On hold and Booked schedule blocks originate from Booking records and are not manually edited anywhere; the only other availability input, operating hours, is edited on `F-PROFILE-04` (PRF module), not within this module. | Keeps schedule state consistent with Bookings and avoids a duplicate editor.                 |
+| **BR-007**  | Booking detail changes and Booking status changes are separate functions.                                                      | Prevents accidental lifecycle modification during field edits. |
+| **BR-008**  | Agency Private Schedule is read-only and contains only that Agency's own Bookings.                                             | Protects other Agencies' data.                                 |
+| **BR-009**  | Public Provider Schedule must not reveal Agency identity, contact, agreed price or private booking conditions.                 | Protects commercial/private information.                       |
+| **BR-010**  | Mark Group Arrival is permitted only for a Booked Booking on or after tour start.                                              | Prevents premature completion.                                 |
+| **BR-011**  | Completed and Cancelled are terminal/view-only states.                                                                         | Stabilizes Booking history.                                    |
+| **BR-012**  | Every create/update/status/arrival event must synchronize Agency Private Schedule.                                             | Maintains cross-party consistency.                             |
+| **BR-014**  | UBND/HDT/Guest cannot access the operational Booking Detail screen defined by F-SCHED-07.                                      | Separates monitoring from Booking operations.                  |
+| **BR-015**  | Booking negotiation precedes Booking creation; Request Quote itself is not a Booking.                                          | Separates commercial discussion from committed reservation.    |
+| **BR-016**  | MVP: one Booking has exactly one operating time slot. There is no multi-slot/multi-session Booking and no fractional arrival progress (e.g. "1/2 slots"); Mark Group Arrival (BR-010) sets Status directly to Completed. | Keeps the Booking data model and lifecycle unambiguous for MVP; screen specs describing partial arrival progress are out of date and must be revised. |
+| **BR-017**  | An action button's enabled/visible state must reflect that action's own full gating rule, not status alone. In particular, Mark Group Arrival must stay disabled until both status = Booked **and** current time ≥ the Booking's scheduled start time (BR-010). | Prevents F-SCHED-07 (Booking Detail) from exposing an action before its precondition (BR-010) is actually met. |
+| **BR-018** | The server accepts Booking creation only for an active, Verified Local Provider and an unarchived Experience owned by that Provider. If verification is later withdrawn, historical Bookings remain for audit; no new Booking is accepted. | Keeps operational transactions tied to an eligible published service. |
+| **BR-019** | Every Booking creation inserts its initial On hold history event. Every accepted status change updates `bookings.status`/`updated_at` and appends one `booking_status_history` row in a single database transaction; failure rolls back both. The 72-hour expiry worker uses the same path and records an expiry reason. | Prevents status and history from disagreeing. |
+| **BR-020** | `end_at` must equal `start_at + duration_minutes`. `conditions_snapshot` preserves the agreed `notice_period_hours` and `cancellation_policy` at Booking creation and is updated only when F-SCHED-04 explicitly changes agreed conditions. | Keeps availability and commercial terms reproducible. |
+
+**6. Key entities (mandatory)**
+
+| **Entity**                        | **Attributes from Input/Output**                                                                                                                 | **Relationships**                                         |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
+| **Booking**                       | booking_id, experience_id, agency_id, provider_id, start_at, duration, group_size, agreed_price, conditions, status, created_at, hold_expires_at | belongs to one Agency, Provider and Experience            |
+| **Booking Status History**        | from_status, to_status, changed_by, changed_at, reason                                                                                           | has many entries per Booking                              |
+| **Public Schedule Block**         | start_at, end_at, status                                                                                                                         | derived from Provider availability/Booking                |
+| **Agency Private Schedule Entry** | booking details, status, last_updated_at                                                                                                         | derived from one Booking                                  |
+| **Provider Operating Hours**      | recurring weekly hours by weekday (owned by `F-PROFILE-04`, PRF module — referenced, not defined, by this module)                                | belongs to one Provider; consumed as input by F-SCHED-09  |
+| **Booking Condition**             | notice_period, cancellation_policy                                                                                                               | copied/referenced from Experience or agreed Booking       |
+| **Booking Event**                 | event_type, booking_id, changed_fields                                                                                                           | triggers synchronization                                  |
+| **Group Arrival Record**          | booking_id, arrived_at                                                                                                                           | associated with Booking completion                        |
+| **Chat Booking Update Message**   | chat_session/message ID, Booking update summary                                                                                                  | associated with Booking and Agency/Provider communication |
+
+**7. Screens involved**
+
+| Screen ID | Screen name | Functions in this module |
+|---|---|---|
+| BKG133 | Booking Management | F-SCHED-10 |
+| BKG134 | Create Booking | F-SCHED-03 |
+| BKG135 | Booking Detail | F-SCHED-07 |
+| BKG136 | Confirm Group Arrival | F-SCHED-06 |
+| BKG137 | Booking History | F-SCHED-02 |
+| BKG138 | Booking Detail | F-SCHED-07 |
+| BKG144 | Edit Booking Detail | F-SCHED-04, F-SCHED-05 |
+| DSH018 | Local Provider Dashboard | F-SCHED-01, F-SCHED-10 |
+| SCH139 | Provider Schedule | F-SCHED-01, F-SCHED-05, F-SCHED-06, F-SCHED-07, F-SCHED-09 |
+| SCH140 | Provider Schedule – Agency View | F-SCHED-01, F-SCHED-09 |
+| SCH141 | Agency Schedule | F-SCHED-02, F-SCHED-07 |
+
+**8. Success criteria (mandatory)**
+
+| **SC ID**  | **Criterion**                                                                             | **How it is measured**                                             |
+|------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| **SC-001** | Every newly created Booking enters On hold rather than a later lifecycle state.           | Create Booking and inspect initial status.                         |
+| **SC-002** | Every On hold Booking receives an expiry exactly 72 hours after creation.                 | Compare created_at and hold_expires_at.                            |
+| **SC-003** | An On hold Booking immediately blocks the corresponding Provider time period.             | Compare Provider Schedule before/after Booking creation.           |
+| **SC-004** | Agency Private Schedule reflects Booking changes without manual Agency edits.             | Create/update/status-change a Booking and inspect Agency Schedule. |
+| **SC-005** | Tour Agency cannot update/cancel/confirm a Booking.                                       | Attempt each lifecycle mutation with Agency role.                  |
+| **SC-006** | UBND/HDT cannot perform Booking lifecycle actions.                                        | Attempt Booking Detail/lifecycle access using Admin roles.         |
+| **SC-007** | Provider cannot complete a Booking through Group Arrival before the scheduled start time; the action button itself is disabled, not just blocked server-side. | Attempt early Group Arrival, and inspect the button's enabled state before start time. |
+| **SC-008** | Completed/Cancelled Bookings remain viewable as history but expose no lifecycle actions.  | Open terminal-state Booking Detail.                                |
+| **SC-009** | F-SCHED-09 derives availability only from Provider operating hours and Booking blocks; no manual Unavailable/Blackout editing is exposed in this module. | Inspect calculated availability and verify no availability-edit action exists. |
+| **SC-010** | Public schedules do not expose another Agency's identity or commercial Booking details.   | Inspect SCH140 using unrelated Agency accounts.                    |
+| **SC-011** | Provider's Booking list (F-SCHED-10) shows only its own Bookings, ordered by scheduled start time, with On hold-awaiting-confirmation and arrival-eligible Bookings visibly highlighted. | Apply filters/date range on Booking Management; verify ordering, highlighting, and cross-Provider access denial. |
+
+**9. Assumptions**
+
+- F-SCHED-03 in the final Function List is authoritative over the older direct-Confirmed branch in Usage Flow and Sequence Diagram.
+
+- Booking status and Provider availability are distinct concepts.
+
+- Provider availability can exist without a Booking; On hold and Booked blocks are generated by Booking state.
+
+- Chat negotiation occurs before Booking creation.
+
+- F-SCHED-08 synchronization applies even when the Agency is not actively online; the latest data is visible on next session load.
+
+- Automatic 72-hour expiry requires a scheduled/background process even though the current F-SCHED rows do not define a separate expiry function.
+
+- Schedule and Booking timestamps should use a consistent system time representation; exact storage timezone is not defined in the provided source.
+
+
+## Clarifications
+
+- 2026-10-29 #28: ISO 8601: 1 = Monday … 7 = Sunday.
+- 2026-10-29 #29: The whole [start_at, end_at) must fit inside one operating-hours window of that weekday.
+- 2026-10-29 #30: No notice-period check at creation in MVP (FR-003 states none); notice_period_hours is kept only in conditions_snapshot.
+- 2026-10-29 #31: Weekday and local time are derived in Asia/Ho_Chi_Minh; timestamps are stored as timestamptz.
+- 2026-10-29 #36: The Agency schedule is derived from `bookings` (filtered by `agency_id`); there is no separate copy.
+- 2026-10-30 #37: Yes: "active" means `user_accounts.account_status = 'Active'` for the Provider's user.
+- 2026-10-30 #38: The Provider may enter any duration > 0; it need not equal the Experience's `duration_minutes`.
+- 2026-10-30 #39: The selected Agency's `user_accounts.account_status` must be 'Approved'; otherwise creation is rejected and nothing is written.
+- 2026-10-30 #40: Yes: an On hold Booking keeps blocking its slot until the expiry worker cancels it; the stored `status` is authoritative.
+- 2026-10-30 #41: No: intervals that only touch do not conflict (half-open `[start_at, end_at)`, as in the schema EXCLUDE).
+- 2026-10-30 #42: Yes: adjusted `booking_conditions` are validated with the schema shape (`notice_period_hours` integer ≥ 0, non-empty `cancellation_policy` object).
+- 2026-10-30 #43: Yes: until BKG135 exists, BKG134 shows the created Booking (id, status, hold expiry) in place.
+- 2026-10-30 #26: (a) Booking Events are not persisted. The trail is `booking_status_history` plus `chat_messages` with `message_kind = 'Booking Update'` and `booking_id`; a re-run of the expiry worker cannot duplicate an event because expiry is a conditional transition on `status`.
+- 2026-10-30 #27: `recipient_read_status` is derived from the Agency user's `chat_participants` row: Seen when `last_read_message_id` has reached the Booking Update message, otherwise Unseen; each Booking Update message increments `unread_count`. `audit_log_id` is one `audit_logs` row per F-SCHED-04 update (`action = 'booking.update'`, `target_type = 'booking'`, `change_or_result` = changed fields with before/after values).
+- 2026-10-30 #44: BR-019 is met by a single atomic persist on the JSON runtime until PostgreSQL: all rows of one event are written in one persist, and none are kept if the persist fails.
+- 2026-10-30 #45: No. Confirm is accepted only while `now < hold_expires_at`. At or after the deadline the confirm is rejected and the Booking is cancelled through the expiry path (AC-BKG-EXPIRY: one conditional transition wins; the expired hold ends Cancelled).
+- 2026-10-30 #46: `changed_by` is empty (System). `reason` is the fixed text "Automatic expiry: 72-hour On hold elapsed".
+- 2026-10-30 #47: Yes. When `start_at` or `duration` changes, the whole new `[start_at, end_at)` is re-checked: it must fit one operating-hours window (#29) and must not overlap another On hold/Booked Booking of the Provider, excluding the Booking being updated.
+- 2026-10-30 #48: Only `start_at`, `duration`, `group_size`, `agreed_price` and `booking_conditions` (the FR-004 list); never `experience_id` or `agency_id`. Only while On hold or Booked (BR-011). `hold_expires_at` is not reset (#6); `group_size` stays <= `max_participants` (#7).
+- 2026-10-30 #49: Template: "Booking {status}: {experience}, {start}–{end}, {group_size} pax, {agreed_price} VND", plus "changed: {fields}" for F-SCHED-04. Messages are sent for all five events, including Create. The target Chat follows the FR-008 order (#13).
+- 2026-10-30 #50: Yes. An expired On hold is cancelled at the next BKG request or within one 60-second timer tick; a confirm at or after the deadline is still rejected because expiry runs first (#45).
+- 2026-10-30 #51: Yes. BR-018 applies to creation only; lifecycle actions on existing Bookings stay allowed and historical Bookings remain.
+- 2026-10-30 #52: No. Nothing is written and no message is sent; the current Booking is returned with `agency_notification_message_id` and `audit_log_id` set to null.
+- 2026-10-30 #53: `agency_contact` = `agency_profiles.company_name` + `agency_profiles.contact_info`; `provider_profile_link` = `/explore/providers/{provider_id}`.
+- 2026-10-30 #54: BKG135 is opened from BKG134 after create, from the Provider page, or by URL; BKG138 is at `/agency/{agencyId}/bookings/{bookingId}`, opened by URL or from the Booking Update message.
+- 2026-10-30 #55: Yes. One Booking Update message is sent per event and serves as both.
+- 2026-10-30 #56: No. It is used only if that Chat is Active and belongs to the same Agency–Provider pair; otherwise the FR-008 order continues.
+- 2026-10-30 #57: The same shape as the F-SCHED-07 output (§5.1 FR-007): spec field names, `group_size` (Integer) and `agreed_price` (Decimal) returned as JSON numbers, produced by the same serializer as the Booking Detail read.
+- 2026-10-30 #58: No. BKG144 `target_status` is optional (default: keep current) so details can be edited without a status change; screen spec says Required.
+- 2026-10-30 #59: `requires_action` is true when the Booking is On hold and `now < hold_expires_at`, or Booked and `now >= start_at` (no upper bound, BR-010, BR-017); the same rule as the F-SCHED-07 Confirm/Book and Mark Group Arrival buttons.
+- 2026-10-30 #60: Ascending `start_at`; ties ordered by `booking_id`.
+- 2026-10-30 #61: `status_counts` covers the Provider and the date range, ignoring the status filter, and always has all four statuses (zero included). `total_count` counts the Bookings matching all filters (for paging).
+- 2026-10-30 #62: Both filter the local date of `start_at` in Asia/Ho_Chi_Minh (#31), inclusive at both ends; `date_from > date_to` is a validation error.
+- 2026-10-30 #63: `page` is an integer >= 1; `page_size` an integer 1–100; other values are a validation error. A page beyond the last returns an empty list with `total_count` (AS-6), not an error.
+- 2026-10-30 #64: Yes. Due On hold Bookings are expired first (#50), so a just-expired hold is listed as Cancelled with `requires_action` false.
+- 2026-10-30 #65: A minimal DSH018 at `/provider/{providerId}/dashboard` with only the Own booking action summary: `status_counts`, the number of Bookings with `requires_action`, and the Bookings button to BKG133. The profile, schedule and conversation panels come with their own modules.
+- 2026-10-30 #66: BKG133 is at `/provider/{providerId}/bookings` for the owning Local Provider. The Provider pages' Bookings links point to BKG133; the Agency pages' `/bookings` link (future BKG137) is unchanged.
+- 2026-10-30 #67: `provider_id` always comes from the session; the API answers 403 FORBIDDEN to Tour Agency, UBND, HDT, Guest and to a request naming another Provider. The BKG133 and DSH018 pages show an access-denied message.
+- 2026-10-30 #32: Accepted legacy data; the seed is not changed. F-SCHED-09 shows both Bookings as On hold / Booked occupied blocks, because an occupied range takes precedence over Unavailable.
+- 2026-10-30 #33: The prototype enforces Agency and Provider read access by ownership (`agency_id` / `provider_id`, BR-002, BR-008) in code and does not consult seed `role_permissions` until AUT/RBAC is built. Adding a `view_own_bookings` permission to the seed is a separate change by the `data/` owner.
+- 2026-10-30 #68: BKG137 is the list at `/agency/{agencyId}/bookings` and SCH141 the calendar at `/agency/{agencyId}/schedule`; both use the same F-SCHED-02 service with status, village and date-range filters, ordered by ascending `start_at` (as #60), without paging. BKG138 Back goes to BKG137. The Agency navigation's Bookings and Schedule links open these two screens.
+- 2026-10-30 #69: "Dashboard" opens DSH018 (`/provider/{providerId}/dashboard`) and "Schedule" opens SCH139 (`/provider/{providerId}/schedule`). PRF127 stays reachable through the "Hồ sơ Xưởng (PRF127)" link of the role bar.
+- 2026-10-30 #70: A server-rendered CSS grid: one row per day of the range, each row a 00:00–24:00 timeline with blocks sized by their duration and a text status label (not colour alone); on narrow screens each row becomes a list of timed chips. No calendar library.
+- 2026-10-30 #71: F-SCHED-01: `date_from` defaults to today in Asia/Ho_Chi_Minh (#31) and `date_to` to `date_from` + 29 days; dates are `YYYY-MM-DD`; `date_from > date_to` or a range longer than 31 days is a validation error. F-SCHED-09: `date_to` defaults to `date_from`. F-SCHED-02: the API has no default dates.
+- 2026-10-30 #72: Per local day 00:00–24:00, half-open `[start, end)`: On hold and Booked Bookings are On hold / Booked blocks; the rest of an operating-hours window is Available; everything else is Unavailable. Adjacent ranges with the same status are merged. A day without operating hours is Unavailable all day (US-2 AS-4); Completed and Cancelled Bookings block nothing (US-2 AS-3). Past times are not treated specially (#30).
+- 2026-10-30 #73: Only in the owning Local Provider's own view (SCH139) do On hold / Booked blocks also carry `booking_id`. The public schedule and SCH140 never carry `booking_id`, Agency identity, price or hold expiry (BR-009, SC-010).
+- 2026-10-30 #74: Any authenticated Tour Agency, for a Verified Provider; an unknown or non-Verified Provider is not found. The owning Local Provider is sent to SCH139; another Local Provider, UBND, HDT and Guest are denied.
+- 2026-10-30 #75: No. BKG does not re-implement quoting: SCH140's "Request Quote" links to the existing Explore Provider page `/explore/providers/{providerId}`. "Select day" only highlights that day's blocks and stays on the screen.
+- 2026-10-30 #76: Selecting an own Booking block shows a panel with the same buttons and rules as BKG135 (BR-017): Confirm/Cancel act in place, Mark arrival opens BKG136, View opens BKG135. "Operating hours" opens PRF128 (`/provider/{providerId}/edit`); Create opens BKG134.
+- 2026-10-30 #77: `availability_calendar` has the same shape as F-SCHED-01 `calendar_blocks` for the same range; `available_slots` and `occupied_slots` follow §5.1; `calculated_at` is the calculation time. F-SCHED-09 is an internal System function without its own HTTP route; F-SCHED-01 uses it.
+- 2026-10-30 #78: An object with the seven ISO weekdays as keys (#28), each an array of `{local_start, local_end}`; a weekday without hours has an empty array.
+- 2026-10-30 #79: `group_size`, `agreed_price` and `notice_period` are JSON numbers (#57). `provider_name` comes from the Provider's active profile version and `village_name` from the Provider's village.
+- 2026-10-30 #80: Authorize, then validate the query, then expire due holds (#50), then read. A denied or invalid request writes nothing (as #64, #67).
+- 2026-10-30 #81: No. The create and update checks stay as they are; a consistency test shows that a slot F-SCHED-09 reports as Available is accepted by create, and a slot it reports as occupied or Unavailable is rejected with Slot Unavailable.
+- 2026-10-30 #82: SCH140 is at `/explore/providers/{providerId}/schedule`. It is opened by URL and by a "Xem lịch trống" link on the Explore Provider page, shown only to Tour Agencies, next to the Chat button. The owning Local Provider opening that URL is sent to SCH139 (#74).
+
+**10. Open questions**
+
+| **\#** | **Question**                                                                                                                                                                     | **Blocking?** | **Owner**   | **Status** | **Answer / Decision**                                                                                                                                                                                                                                                                       |
+|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|-------------|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1 | What is the canonical status after On hold confirmation: **Booked** or **Confirmed**? F-SCHED-05 uses both terms across the module. | No | BA | **Closed** | **Booked** is the canonical lifecycle status. `Confirmed` is legacy wording and must not be used as a separate or preferred Booking status. |
+| 2 | Should F-SCHED-05 be rewritten as On hold → Booked, rather than On hold → Confirmed? | No | BA | **Closed** | **Yes.** F-SCHED-05 uses **On hold → Booked**. |
+| 3 | Is Completed reachable only through F-SCHED-06 Mark Group Arrival, or can F-SCHED-05 directly set Completed? | No | BA | **Closed** | **Completed is only reached through F-SCHED-06 Mark Group Arrival.** F-SCHED-05 must not directly set a Booking to Completed. |
+| 4 | When 72 hours expires without confirmation, is the Booking automatically changed to Cancelled, or is a separate Expired status required? | No | BA | **Closed** | The Booking is automatically changed to **Cancelled**. No separate Expired status is required for MVP. |
+| 5 | Should automatic 72-hour expiry trigger F-SCHED-08 schedule/chat synchronization? | No | BA / Tech | **Closed** | **Yes.** Automatic cancellation after 72 hours should trigger the same **schedule and chat synchronization** as a normal Booking cancellation. |
+| 6 | Does changing an On hold Booking's date/time reset its 72-hour hold expiry? | No | Client / BA | **Closed** | **No.** Changing date/time does **not** reset `hold_expires_at`; an On hold Booking retains the original 72-hour expiry established at successful creation. |
+| 7 | Must group_size \<= Experience.max_participants at Booking creation/update? | No | BA | **Closed** | **Yes.** group_size must not exceed Experience.max_participants at both Booking creation and update. |
+| 8 | Is agreed_price total Booking price or per-person price, and what is the currency? | No | Client / BA | **Closed** | agreed_price is the **total Booking price for the entire group**, in **VND**. |
+| 9 | Are Booking conditions mandatory fields at Booking creation, or automatically copied from the Experience unless negotiated otherwise? | No | BA | **Closed** | Booking conditions are **automatically copied from the selected Experience** at creation. They can be adjusted if both parties negotiate different conditions. |
+| 10 | Is cancellation reason mandatory whenever a Booking is cancelled? | No | Client | **Closed** | **Yes.** `cancellation_reason` is required when `target_status = Cancelled`; otherwise it is omitted. |
+| 11 | Should actual arrived_at time be persisted when Mark Group Arrival is used? | No | BA | **Closed** | **Yes.** The system persists the actual **arrived_at timestamp** when Mark Group Arrival is completed. |
+| 12 | Are payment_notes in F-SCHED-07 part of MVP, given payment processing is not otherwise defined? | No | BA | **Closed** | **No.** `payment_notes` is not part of the current F-SCHED-07 Function List contract. Payment processing and payment-status tracking remain outside MVP scope. |
+| 13 | Which Chat session receives F-SCHED-08 auto-messages, and what happens if no Chat exists? | No | BA / Tech | **Closed** | Resolve the target Chat in this order: **(1)** use `source_chat_session_id` when the Booking originated from an Active Chat; **(2)** otherwise use the most recent Active Chat between the same Agency and Local Provider; **(3)** if no Active Chat exists, create a new Active Chat with source = Booking, link it to `booking_id`, and post the system-generated update message there. |
+| 14 | Should delivery status really be Seen/Unseen when the current Chat scope does not clearly define read receipts? | No | BA | Closed | recipient_read_status=Seen/Unseen is internal tracking for booking system messages; no visible per-message receipt is introduced. |
+| 15 | What default date range is used when F-SCHED-01 public schedule receives no date filter? | No | UI/UX | **Closed** | `date_from` defaults to the **current date** and `date_to` defaults to **date_from + 29 days**. |
+| 16 | Should Unavailable/Blackout periods from F-SCHED-09 appear on the Provider public schedule? | No | BA | **Superseded** | Originally **Yes** — Provider-defined Unavailable/Blackout periods were to be reflected on the public schedule. **Superseded by Open Question #25 (Resolved):** MVP does not support Unavailable/Blackout periods at all, on any screen, so this no longer applies. Kept for history; do not implement. |
+| 17 | What is the difference between Unavailable and Blackout? | No | BA | **Superseded** | Originally: **Unavailable** = temporary capacity/operational constraint; **Blackout** = predefined non-operating period (holidays, planned closures). **Superseded by Open Question #25 (Resolved):** neither concept is built in MVP; `availability_type` is dropped from the data model. Kept for history; do not implement. |
+| 18 | Is operating_hours recurring by weekday or configured per date? | No | BA | **Closed** | operating_hours is configured as **recurring weekly hours by weekday**, on `F-PROFILE-04` (Edit Local Provider Profile, PRF module) per Open Question #25 (Resolved). Per-date exceptions (Unavailable/Blackout) are not built in MVP, so there are no exceptions to the weekly pattern. |
+| 19 | When an Availability change conflicts with an existing On hold/Booked Booking, should Save be blocked or only warn the Provider? | No | Client / BA | **Superseded** | This requirement is **not defined in the current Schedule/Booking Function List**. F-SCHED-09 is calculation-only and does not validate or save operating-hours edits. Any conflict-on-save rule for F-PROFILE-04 is outside this BKG specification unless separately added to the Profile Management source. |
+| 20 | Current Sequence Diagram permits direct creation as Confirmed, conflicting with F-SCHED-03. Should Module 5 Sequence be updated? | No | BA | **Closed** | **Yes.** The final F-SCHED-03 is authoritative: every newly created Booking starts as **On hold**. Direct creation as Confirmed/Booked is not part of the current Function List. The Sequence Diagram must be updated accordingly. |
+| 21 | Current Usage Flow contains decision Initial Booking Action: Hold or Confirm?, conflicting with F-SCHED-03. Should it be replaced by mandatory On hold creation? | No | BA | **Closed** | **Yes.** The Usage Flow must use mandatory **On hold** creation, followed later by the permitted **On hold → Booked** transition or cancellation. |
+| 22 | Screen BKG144 says status can only move forward, while cancellation from Booked is also allowed. Should wording be changed to “only permitted predefined transitions”? | No | UI/UX / BA | **Closed** | **Yes.** Change the wording to **“only permitted predefined transitions”** to allow valid cancellation transitions. |
+| 23 | Screen BKG137 uses statuses “pending, confirmed, completed, cancelled”, while Function List uses On hold / Booked / Completed / Cancelled. Should Screen terminology be updated? | No | UI/UX / BA | **Closed** | **Yes.** Use **On hold / Booked / Completed / Cancelled** as the canonical status terminology. |
+| 24 | Should Public Provider Schedule F-SCHED-01 be viewable directly by Tour Agency as implied by SCH140, even though its Actor column currently says Local Provider only? | No | BA | **Closed** | **Yes.** F-SCHED-01 is a **public Provider Schedule** and should be viewable by **Tour Agency**. The Actor definition for SCH140 should be updated accordingly. |
+| 25 | F-SCHED-09 has been redefined as a calculation-only function (derives availability from configured operating hours + active Bookings) and explicitly does **not** provide manual availability editing on `SCH139`. If operating hours / Unavailable / Blackout periods are no longer configured through `SCH139`, which screen (if any) provides that configuration in MVP? | No | BA | **Resolved** | **Operating hours are configured on `F-PROFILE-04` (Edit Local Provider Profile, PRF module)**, not on any BKG screen. **MVP does not support manually configured Unavailable/Blackout periods at all** — no screen, in this module or any other, provides that editing. `F-SCHED-09` therefore derives availability from exactly two inputs: the Provider's `F-PROFILE-04` operating hours and Booking blocks. This resolution **supersedes** Open Questions #16 and #17 and drops the earlier `availability_type` design from the BKG data model. Open Question #18 defines the recurring weekly pattern; Open Question #19 is superseded because conflict-on-save behavior for Profile operating-hours editing is not defined by the current Schedule/Booking Function List. |
+| 26 | F-SCHED-08 lists a **Booking Event** {event_type, booking_id, changed_fields} (§6 Key entities), but `data/` has no table for it. Must Booking Events be persisted? (a) No: the trail is `booking_status_history` + `chat_messages` (`message_kind = 'Booking Update'`, `booking_id`); a re-run of the expiry worker cannot duplicate the event because expiry is a conditional transition on `status` (AC-BKG-EXPIRY). (b) Yes: add an event table to `data/`. | No for US-4; Yes before US-5 (F-SCHED-08) | BA / Data | **Closed** | (a) Booking Events are not persisted. The trail is `booking_status_history` plus `chat_messages` with `message_kind = 'Booking Update'` and `booking_id`; a re-run of the expiry worker cannot duplicate an event because expiry is a conditional transition on `status`. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 27 | Where are two F-SCHED outputs stored? `recipient_read_status` (FR-008; OQ #14 defines its meaning, not its storage): derived from `chat_participants.last_read_message_id` / `unread_count`, or a new column? `audit_log_id` (FR-004): one `audit_logs` row per F-SCHED-04 update (`target_type = 'booking'`)? | No for US-4; Yes before US-5 | BA / Data | **Closed** | `recipient_read_status` is derived from the Agency user's `chat_participants` row: Seen when `last_read_message_id` has reached the Booking Update message, otherwise Unseen; each Booking Update message increments `unread_count`. `audit_log_id` is one `audit_logs` row per F-SCHED-04 update (`action = 'booking.update'`, `target_type = 'booking'`, `change_or_result` = changed fields with before/after values). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 28 | `provider_operating_hours.weekday` is 1–7, but neither `data/04-data-model.md` nor `data/07-data-dictionary.md` nor this spec defines which day is 1. Is it ISO 8601 (1 = Monday)? | **Yes** (F-SCHED-03 availability re-check, AC-BKG-HOURS) | Data | **Closed** | ISO 8601: 1 = Monday … 7 = Sunday. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-29. |
+| 29 | Must the whole requested interval [start_at, end_at) fit inside one operating-hours window of that weekday, or only start_at? FR-003 says "re-checks the requested time range against Provider availability" without stating it. | **Yes** (F-SCHED-03, F-SCHED-09) | BA | **Closed** | The whole [start_at, end_at) must fit inside one operating-hours window of that weekday. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-29. |
+| 30 | Is a notice-period rule enforced at creation (e.g. start_at ≥ now + notice_period_hours)? The data docs list a notice-period check as a backend duty, but FR-003 states no such rule. | **Yes** (F-SCHED-03) | BA | **Closed** | No notice-period check at creation in MVP (FR-003 states none); notice_period_hours is kept only in conditions_snapshot. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-29. |
+| 31 | Which timezone is used to derive weekday and local time for the operating-hours check? Assumption: "exact storage timezone is not defined". Proposal: compute in Asia/Ho_Chi_Minh, store timestamptz (seed uses +07:00). | **Yes** (F-SCHED-03, F-SCHED-09) | BA / Tech | **Closed** | Weekday and local time are derived in Asia/Ho_Chi_Minh; timestamps are stored as timestamptz. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-29. |
+| 32 | Under ISO weekday numbering, two active seed bookings fall outside their Provider's operating hours: On hold `54d7a276…` (Sun 2026-10-11; Provider `70efa801…` has weekday 2) and Booked `5782011c…` (Sat 2026-10-10; Provider `50f2c8fc…` has weekday 1). F-SCHED-09 must still show them as occupied; F-SCHED-03 would reject them today. Should the seed be aligned, or is this accepted legacy data? | No | Data | **Closed** | Accepted legacy data; the seed is not changed. F-SCHED-09 shows both Bookings as On hold / Booked occupied blocks, because an occupied range takes precedence over Unavailable. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 33 | Seed `role_permissions` gives Tour_Agency no booking-read permission, yet F-SCHED-02 and F-SCHED-07 grant the Agency read access to its own Bookings (BR-002, BR-008). Add a permission (e.g. `view_own_bookings`) to the seed? | No for US-4; Yes for F-SCHED-02/07 | Data | **Closed** | The prototype enforces Agency and Provider read access by ownership (`agency_id` / `provider_id`, BR-002, BR-008) in code and does not consult seed `role_permissions` until AUT/RBAC is built. Adding a `view_own_bookings` permission to the seed is a separate change by the `data/` owner. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 34 | §5.2 numbers jump from BR-012 to BR-014. Confirm BR-013 is intentionally unused (no rule removed). | No | BA | Open | |
+| 35 | Note: `bookings.source_chat_session_id` has no FK to `chat_sessions`, while `chat_sessions.booking_id` references `bookings` (DEFERRABLE INITIALLY DEFERRED). Intended? | No | Data | Open | |
+| 36 | US-4 AS-4 says the Booking "is synchronized to the Agency Private Schedule", but `data/` has no private-schedule table. Is the Agency schedule a separate copy, or derived from `bookings`? | Yes (US-4 AS-4) | BA | **Closed** | The Agency schedule is derived from `bookings` (filtered by `agency_id`); there is no separate copy. A Booking is visible to its Agency as soon as it is created. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-29. |
+| 37 | BR-018 requires an "active" Local Provider. Does "active" mean `user_accounts.account_status = 'Active'` for the Provider's user? | Yes (US-4) | BA / Data | **Closed** | Yes: "active" means `user_accounts.account_status = 'Active'` for the Provider's user. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 38 | Must the Booking `duration` equal the Experience's `duration_minutes`, or may the Provider enter any duration > 0 (FR-003 says only "see F-PROFILE-06")? | Yes (US-4) | BA | **Closed** | The Provider may enter any duration > 0; it need not equal the Experience's `duration_minutes`. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 39 | Must the selected Agency account be Approved, or is an existing `agency_id` enough (FR-003 states no status rule)? | Yes (US-4) | BA | **Closed** | The selected Agency's `user_accounts.account_status` must be 'Approved'; otherwise creation is rejected and nothing is written. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 40 | Does an On hold Booking past `hold_expires_at`, not yet cancelled by the expiry worker, still block its slot? (Schema EXCLUDE filters on `status` only.) | No for US-4; Yes for US-5 | BA / Tech | **Closed** | Yes: an On hold Booking keeps blocking its slot until the expiry worker cancels it; the stored `status` is authoritative. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 41 | Do intervals that only touch (one ends when the next starts) conflict? The schema EXCLUDE uses half-open `[start_at, end_at)`, so they do not. | No | BA / Data | **Closed** | No: intervals that only touch do not conflict (half-open `[start_at, end_at)`, as in the schema EXCLUDE). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 42 | When the Provider adjusts `booking_conditions`, are they validated with the schema shape (`notice_period_hours` integer ≥ 0, non-empty `cancellation_policy` object)? | No | BA / Data | **Closed** | Yes: adjusted `booking_conditions` are validated with the schema shape (`notice_period_hours` integer ≥ 0, non-empty `cancellation_policy` object). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 43 | BKG134 "Create On hold" navigates to BKG135 (US-3, out of this slice). May the US-4 slice show the created Booking on BKG134 until BKG135 exists? | No | UI/UX / BA | **Closed** | Yes: until BKG135 exists, BKG134 shows the created Booking (id, status, hold expiry) in place. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 44 | BR-019 requires status + history "in a single database transaction", but the MVP prototype stores data in the shared JSON runtime, which has no transactions. How is BR-019 met until PostgreSQL? | No (US-4 done) | BA / Tech | **Closed** | BR-019 is met by a single atomic persist on the JSON runtime until PostgreSQL: all rows of one event are written in one persist, and none are kept if the persist fails. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 45 | Can an On hold Booking be confirmed (On hold → Booked) when `now >= hold_expires_at` but the expiry worker has not run yet? | Yes (US-5) | BA | **Closed** | No. Confirm is accepted only while `now < hold_expires_at`. At or after the deadline the confirm is rejected and the Booking is cancelled through the expiry path (AC-BKG-EXPIRY: one conditional transition wins; the expired hold ends Cancelled). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 46 | For the automatic 72-hour expiry, what are `changed_by` and `reason` of the `booking_status_history` row (`reason` is NOT NULL for Cancelled)? | Yes (US-5) | BA / Data | **Closed** | `changed_by` is empty (System). `reason` is the fixed text "Automatic expiry: 72-hour On hold elapsed". Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 47 | FR-004 re-checks availability "when date/time changes". Is the slot also re-checked when only `duration` changes (which changes `end_at`)? | Yes (US-5) | BA | **Closed** | Yes. When `start_at` or `duration` changes, the whole new `[start_at, end_at)` is re-checked: it must fit one operating-hours window (#29) and must not overlap another On hold/Booked Booking of the Provider, excluding the Booking being updated. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 48 | Which fields can F-SCHED-04 change, and in which statuses? | Yes (US-5) | BA | **Closed** | Only `start_at`, `duration`, `group_size`, `agreed_price` and `booking_conditions` (the FR-004 list); never `experience_id` or `agency_id`. Only while On hold or Booked (BR-011). `hold_expires_at` is not reset (#6); `group_size` stays <= `max_participants` (#7). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 49 | F-SCHED-08 sends a Chat auto-message "with update summary" but defines no content, and it is triggered by Create (F-SCHED-03) too. What is the message, and is Create included? | Yes (US-5) | BA / UI/UX | **Closed** | Template: "Booking {status}: {experience}, {start}–{end}, {group_size} pax, {agreed_price} VND", plus "changed: {fields}" for F-SCHED-04. Messages are sent for all five events, including Create. The target Chat follows the FR-008 order (#13). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 50 | The 72-hour expiry has no background process on the JSON runtime. Is it acceptable that an expired On hold is cancelled at the next BKG request or within one 60-second timer tick, rather than at the exact second? | Yes (US-5) | BA / Tech | **Closed** | Yes. An expired On hold is cancelled at the next BKG request or within one 60-second timer tick; a confirm at or after the deadline is still rejected because expiry runs first (#45). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 51 | BR-018 blocks new Bookings when the Provider is not Verified or the Experience is archived. Are update, confirm, cancel and arrival on existing Bookings still allowed in that case? | Yes (US-5) | BA | **Closed** | Yes. BR-018 applies to creation only; lifecycle actions on existing Bookings stay allowed and historical Bookings remain. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 52 | If an F-SCHED-04 request sends values equal to the current ones, is it an update event? | No | BA | **Closed** | No. Nothing is written and no message is sent; the current Booking is returned with `agency_notification_message_id` and `audit_log_id` set to null. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 53 | FR-007 does not define the source of `agency_contact` and `provider_profile_link`. | No | BA / UI/UX | **Closed** | `agency_contact` = `agency_profiles.company_name` + `agency_profiles.contact_info`; `provider_profile_link` = `/explore/providers/{provider_id}`. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 54 | Without the Booking lists (BKG133, BKG137), how are BKG135 and BKG138 reached in this slice? | No | UI/UX / BA | **Closed** | BKG135 is opened from BKG134 after create, from the Provider page, or by URL; BKG138 is at `/agency/{agencyId}/bookings/{bookingId}`, opened by URL or from the Booking Update message. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 55 | Are FR-008 `chat_auto_message_id` and FR-004/005 `agency_notification_message_id` the same message? | Yes (US-5) | BA | **Closed** | Yes. One Booking Update message is sent per event and serves as both. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 56 | Is `source_chat_session_id` used for the Booking Update message even if that Chat is Closed or belongs to another Agency–Provider pair? | No | BA | **Closed** | No. It is used only if that Chat is Active and belongs to the same Agency–Provider pair; otherwise the FR-008 order continues. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 57 | §5.1 FR-004 defines `updated_booking` only as "Object; Required". Which fields does it carry, with which names and types? | Yes (US-5, US-3) | BA | **Closed** | The same shape as the F-SCHED-07 output (§5.1 FR-007): spec field names, `group_size` (Integer) and `agreed_price` (Decimal) returned as JSON numbers, produced by the same serializer as the Booking Detail read. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 58 | screen-spec-BKG144 marks `target_status` Required. Must the Provider pick a status change to save detail edits on BKG144? | No (BKG144) | UI/UX / BA | **Closed** | No. BKG144 `target_status` is optional (default: keep current) so details can be edited without a status change; screen spec says Required. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 59 | FR-010 `requires_action`: what exactly makes a Booking require Provider action? | Yes (US-6) | BA | **Closed** | `requires_action` is true when the Booking is On hold and `now < hold_expires_at`, or Booked and `now >= start_at` (no upper bound, BR-010, BR-017); the same rule as the F-SCHED-07 Confirm/Book and Mark Group Arrival buttons. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 60 | FR-010 "ordered by scheduled start time": ascending or descending, and what breaks ties? | Yes (US-6) | BA | **Closed** | Ascending `start_at`; ties ordered by `booking_id`. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 61 | FR-010 `status_counts`: which scope, and how does `total_count` relate to the filters? | Yes (US-6) | BA | **Closed** | `status_counts` covers the Provider and the date range, ignoring the status filter, and always has all four statuses (zero included). `total_count` counts the Bookings matching all filters (for paging). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 62 | FR-010 `date_from` / `date_to`: which field, inclusive, which timezone, and what if `date_from > date_to`? | Yes (US-6) | BA | **Closed** | Both filter the local date of `start_at` in Asia/Ho_Chi_Minh (#31), inclusive at both ends; `date_from > date_to` is a validation error. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 63 | FR-010 `page` / `page_size`: limits and out-of-range behaviour? | Yes (US-6) | BA / Tech | **Closed** | `page` is an integer >= 1; `page_size` an integer 1–100; other values are a validation error. A page beyond the last returns an empty list with `total_count` (AS-6), not an error. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 64 | Does F-SCHED-10 apply the 72-hour expiry before listing? | Yes (US-6) | BA | **Closed** | Yes. Due On hold Bookings are expired first (#50), so a just-expired hold is listed as Cancelled with `requires_action` false. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 65 | DSH018 "Own booking action summary": what does it show in this slice? No DSH018 route exists yet. | Yes (US-6) | UI/UX / BA | **Closed** | A minimal DSH018 at `/provider/{providerId}/dashboard` with only the Own booking action summary: `status_counts`, the number of Bookings with `requires_action`, and the Bookings button to BKG133. The profile, schedule and conversation panels come with their own modules. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 66 | Where is BKG133, and where do the existing `/bookings` links (a route that does not exist) go? | Yes (US-6) | UI/UX | **Closed** | BKG133 is at `/provider/{providerId}/bookings` for the owning Local Provider. The Provider pages' Bookings links point to BKG133; the Agency pages' `/bookings` link (future BKG137) is unchanged. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 67 | FR-010 AS-5 "any other actor": how are Tour Agency, UBND, HDT, Guest and another Provider denied? | Yes (US-6) | BA | **Closed** | `provider_id` always comes from the session; the API answers 403 FORBIDDEN to Tour Agency, UBND, HDT, Guest and to a request naming another Provider. The BKG133 and DSH018 pages show an access-denied message. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 68 | F-SCHED-02 maps to both BKG137 Booking History and SCH141 Agency Schedule. What does each show, and where does BKG138 Back go? | Yes (US-1) | UI/UX / BA | **Closed** | BKG137 is the list at `/agency/{agencyId}/bookings` and SCH141 the calendar at `/agency/{agencyId}/schedule`; both use the same F-SCHED-02 service with status, village and date-range filters, ordered by ascending `start_at` (as #60), without paging. BKG138 Back goes to BKG137. The Agency navigation's Bookings and Schedule links open these two screens. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 69 | The Provider navigation's "Dashboard" opens PRF127 and "Schedule" points to `/schedule`, which does not exist. Where do they go? | Yes (US-1) | UI/UX | **Closed** | "Dashboard" opens DSH018 (`/provider/{providerId}/dashboard`) and "Schedule" opens SCH139 (`/provider/{providerId}/schedule`). PRF127 stays reachable through the "Hồ sơ Xưởng (PRF127)" link of the role bar. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 70 | How is the FR-001 "calendar format … duration blocks" rendered without a new dependency? | Yes (US-1) | UI/UX / Tech | **Closed** | A server-rendered CSS grid: one row per day of the range, each row a 00:00–24:00 timeline with blocks sized by their duration and a text status label (not colour alone); on narrow screens each row becomes a list of timed chips. No calendar library. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 71 | Default date range and limits for F-SCHED-01, F-SCHED-09 and F-SCHED-02? | Yes (US-1, US-2) | BA | **Closed** | F-SCHED-01: `date_from` defaults to today in Asia/Ho_Chi_Minh (#31) and `date_to` to `date_from` + 29 days; dates are `YYYY-MM-DD`; `date_from > date_to` or a range longer than 31 days is a validation error. F-SCHED-09: `date_to` defaults to `date_from`. F-SCHED-02: the API has no default dates. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 72 | How are a day's `calendar_blocks` divided? | Yes (US-1, US-2) | BA | **Closed** | Per local day 00:00–24:00, half-open `[start, end)`: On hold and Booked Bookings are On hold / Booked blocks; the rest of an operating-hours window is Available; everything else is Unavailable. Adjacent ranges with the same status are merged. A day without operating hours is Unavailable all day (US-2 AS-4); Completed and Cancelled Bookings block nothing (US-2 AS-3). Past times are not treated specially (#30). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 73 | FR-001 lets the Local Provider select a Booking block to open F-SCHED-07, but the output has no `booking_id`. How? | Yes (US-1) | BA | **Closed** | Only in the owning Local Provider's own view (SCH139) do On hold / Booked blocks also carry `booking_id`. The public schedule and SCH140 never carry `booking_id`, Agency identity, price or hold expiry (BR-009, SC-010). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 74 | Who may open SCH140 (Provider Schedule – Agency View)? | Yes (US-1) | BA | **Closed** | Any authenticated Tour Agency, for a Verified Provider; an unknown or non-Verified Provider is not found. The owning Local Provider is sent to SCH139; another Local Provider, UBND, HDT and Guest are denied. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 75 | SCH140 shows "Request Quote" and an optional quote context, which belong to F-EXPLORE-11. Does BKG build them? | No | UI/UX / BA | **Closed** | No. BKG does not re-implement quoting: SCH140's "Request Quote" links to the existing Explore Provider page `/explore/providers/{providerId}`. "Select day" only highlights that day's blocks and stays on the screen. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 76 | What are SCH139's "Selected booking and permitted quick actions"? | Yes (US-1) | UI/UX | **Closed** | Selecting an own Booking block shows a panel with the same buttons and rules as BKG135 (BR-017): Confirm/Cancel act in place, Mark arrival opens BKG136, View opens BKG135. "Operating hours" opens PRF128 (`/provider/{providerId}/edit`); Create opens BKG134. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 77 | FR-009 `availability_calendar` is only "Object". What is it, and is F-SCHED-09 an API of its own? | Yes (US-2) | BA / Tech | **Closed** | `availability_calendar` has the same shape as F-SCHED-01 `calendar_blocks` for the same range; `available_slots` and `occupied_slots` follow §5.1; `calculated_at` is the calculation time. F-SCHED-09 is an internal System function without its own HTTP route; F-SCHED-01 uses it. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 78 | What is the shape of FR-001 `operating_hours`? | Yes (US-1) | BA / Data | **Closed** | An object with the seven ISO weekdays as keys (#28), each an array of `{local_start, local_end}`; a weekday without hours has an empty array. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 79 | F-SCHED-02 output: which types, and where do `provider_name` and `village_name` come from? | Yes (US-1) | BA / Data | **Closed** | `group_size`, `agreed_price` and `notice_period` are JSON numbers (#57). `provider_name` comes from the Provider's active profile version and `village_name` from the Provider's village. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 80 | In which order do F-SCHED-01 and F-SCHED-02 authorize, validate and expire holds? | Yes (US-1) | BA | **Closed** | Authorize, then validate the query, then expire due holds (#50), then read. A denied or invalid request writes nothing (as #64, #67). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 81 | FR-009 says F-SCHED-03/F-SCHED-04 use its result. Must the existing create and update checks be rewritten on top of F-SCHED-09? | No | BA / Tech | **Closed** | No. The create and update checks stay as they are; a consistency test shows that a slot F-SCHED-09 reports as Available is accepted by create, and a slot it reports as occupied or Unavailable is rejected with Slot Unavailable. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 82 | Where is SCH140 (Provider Schedule – Agency View), and how does a Tour Agency reach it? | Yes (US-1) | UI/UX | **Closed** | SCH140 is at `/explore/providers/{providerId}/schedule`. It is opened by URL and by a "Xem lịch trống" link on the Explore Provider page, shown only to Tour Agencies, next to the Chat button. The owning Local Provider opening that URL is sent to SCH139 (#74). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+
+**11. Traceability to DBIZ2**
+
+| **Spec section**               | **DBIZ2 source**           | **Location**                                                                                                                                                                                                                              |
+|--------------------------------|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **1. Purpose**                 | Schematic design 1.1 / 1.2 | **sheet Schematic1, sections 1.1 System Objectives and 1.2 System Main Functions – Schedule / Booking Management**                                                                                                                         |
+| **4.1 Usage flow**             | Usage Flow figure          | **sheet Schematic2, Local Provider flow: “View Public Schedule” → “Receive Request Quote & Chat” → Booking lifecycle decisions → Auto-Sync → Booking History; Tour Agency flow: “Receive Booking Sync” → “View Private Booking Details”** |
+| **4.2 Sequence**               | Sequence Diagram figure    | **sheet Schematic2, Module 5: Schedule / Booking Management – UC-BOOK-01, UC-BOOK-03, UC-BOOK-04, UC-BOOK-05**                                                                                                                            |
+| **5. Functional requirements** | Function List              | **sheet FL&Cost1, F-SCHED-01 .. F-SCHED-10**                                                                                                                                                                                              |
+| **7. Screens**                 | Screen List                | **sheet ST, BKG133, BKG134, BKG135, BKG144, BKG136, BKG137, BKG138, SCH139, SCH140, SCH141**                                                                                                                                              |

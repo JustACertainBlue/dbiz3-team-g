@@ -121,10 +121,10 @@ export default function ProviderProfilePage({
         </div>
 
         <nav className="spec-nav">
-          <Link href={`/provider/${params.providerId}`}>Dashboard</Link>
+          <Link href={`/provider/${params.providerId}/dashboard`}>Dashboard</Link>
           <Link href={`/provider/${params.providerId}/experiences`}>Experience Management</Link>
-          <Link href="/bookings">Bookings</Link>
-          <Link href="/schedule">Schedule</Link>
+          <Link href={`/provider/${params.providerId}/bookings`}>Bookings</Link>
+          <Link href={`/provider/${params.providerId}/schedule`}>Schedule</Link>
           <Link href="/messages" style={{ color: '#be123c' }}>Messages ●</Link>
         </nav>
 
@@ -157,6 +157,9 @@ export default function ProviderProfilePage({
           <div className="spec-action-label">Provider Administration</div>
           <Link href={`/provider/${params.providerId}/edit`} className="spec-btn-black">
             ✏ EDIT PROVIDER PROFILE
+          </Link>
+          <Link href={`/provider/${params.providerId}/bookings/new`} className="spec-btn-black">
+            + CREATE BOOKING
           </Link>
         </div>
 

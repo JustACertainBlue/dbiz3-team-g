@@ -29,7 +29,7 @@ export default function RoleSwitcher() {
 
   const handleSelectRole = async (newRole: CurrentUserRole) => {
     await setCurrentRole(newRole)
-    window.location.assign(newRole === 'TourAgency' ? '/explore' : newRole === 'LocalProvider' ? `/provider/${providerId}` : newRole === 'UBND' ? '/admin/providers' : newRole === 'HDT' ? '/admin/providers' : '/explore')
+    window.location.assign(newRole === 'TourAgency' ? '/explore' : newRole === 'LocalProvider' ? `/provider/${providerId}` : newRole === 'UBND' ? '/admin' : newRole === 'HDT' ? '/admin' : '/explore')
   }
 
   return (
@@ -220,6 +220,8 @@ export default function RoleSwitcher() {
         {role === 'UBND' && (
           <>
             <span style={{ color: '#f87171', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG ADMIN:</span>
+            <Link href="/admin" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 800, background: '#991b1b', padding: '2px 7px', borderRadius: '3px' }}>📊 Dashboard (ADM079)</Link>
+            <span style={{ color: '#475569' }}>·</span>
             <Link href="/admin/providers" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 800 }}>Provider review</Link>
             <span style={{ color: '#475569' }}>·</span>
             <Link href={`/village/${ubndVillageId}`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 800 }}>
@@ -229,7 +231,7 @@ export default function RoleSwitcher() {
         )}
 
         {role === 'HDT' && (
-          <><span style={{ color: '#c4b5fd', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG HDT:</span><Link href="/admin/providers" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 700 }}>Provider review</Link></>
+          <><span style={{ color: '#c4b5fd', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG HDT:</span><Link href="/admin" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 800, background: '#6d28d9', padding: '2px 7px', borderRadius: '3px' }}>📊 Dashboard (ADM079)</Link><span style={{ color: '#475569' }}> · </span><Link href="/admin/providers" style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 700 }}>Provider review</Link></>
         )}
 
         {/* LUỒNG 4: GUEST */}

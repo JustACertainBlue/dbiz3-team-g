@@ -689,6 +689,27 @@ Edit to an existing test (approved in chat 2026-11-04):
 |---|---|---|---|
 | `tests/prf/unit/validators.test.ts:45-52` | weekday 7 must be rejected ("outside 0-6") | 0 and 8 rejected, 7 accepted | `data/schema.sql` `operating_weekday_chk` (1–7), seed has 7, spec-BKG #28 ISO weekdays |
 
+### Entry 40: 04/11 Claude Code + human — PRF slice A2: Request Revision only on Pending Verification (#33), PRF127 from data (`linh/prf-fixes-2`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); linhkhanh-vu decided #33 and approved the edits of T035 AC3 and T036; branch `linh/prf-fixes-2` from `main` `b37cad9` (not pushed) |
+| Command and argument | Test first (`8c9fb25`, then the route 409 test), then code; mutation checks; full suite; demo on macOS |
+| Feature and tasks | `specs/002-prf-core` US-3 (FR-003), US-6 (FR-005), BR-007; checklist §3 #39, #40 (G2) |
+| What the agent produced | `src/lib/prf/provider-service.ts`: `reviewProvider` refuses Request Revision with 409 unless the reviewed version is Pending Verification (#33); `getProviderProfile` returns `availability.operating_hours` (#78 shape, HH:MM) and the version's `booking_conditions` instead of fixed values, `experiences` (non-archived, FR-003 Full), and for owner / UBND / HDT the status of the revision under review (#32). `src/lib/prf/visibility.ts`: Agency also receives `experiences`. Verify route maps 409. `src/lib/prf/provider-page-view.ts` (new): `providerPageView` (canEdit / canCreateBooking owner only, canReview UBND + Pending Verification, display rows). PRF127 `src/app/provider/[providerId]/page.tsx` rewritten without fixed text. Spec: spec-PRF #33 (§10 + Clarifications); `specs/002-prf-core` refreshed. Checklist §3 #39, #40 closed. |
+| Human review | Decision #33 and test edits (2026-11-04). Code review pending. |
+| Tests | Red first: 6 failing in `provider-profile-a2.test.ts` (Request Revision resolved instead of 409 ×2; `availability` was `{days_open}`; fixed `booking_conditions`; no `experiences`; owner saw Verified instead of Pending Verification) + `provider-page-view.test.ts` missing module; route test: 500 instead of 409 (a first version of that test got 403 because the demo UBND cookie is Hạ Thái; rewritten on Hạ Thái before the route fix). Green: `Test Files 108 passed (108)`, `Tests 717 passed (717)`; `npm run lint` passed. Mutation (each reverted, files byte-identical): no 409 guard → 3 red; owner sees the profile-row status → 1 red; Edit shown to everyone → 1 red. |
+| Demo (macOS, built-in browser; data reset before) | Clicked: Tour Agency → PRF127 Bát Tràng: none of the old fixed texts, no Edit / Create Booking / review panel; shows Ceramics, Bát Tràng, Gia Lâm, Kiều Anh Thư, Experience "Nặn gốm thủ công" 150.000 ₫, contact, "Thứ Hai 08:00–17:00", "notice_hours: 24". Local Provider → PRF128 Business Name changed and saved → PRF128 header "VERIFICATION STATUS: PENDING VERIFICATION", PRF127 badge "PENDING VERIFICATION" with Edit / Create Booking. UBND Admin (demo identity Hạ Thái) → PRF127 Hạ Thái (Pending Verification) shows the review panel → Approve → badge "VERIFIED PROVIDER", panel gone. Curl: Request Revision on Hạ Thái now Verified → 409; Explore Bát Tràng (with pending revision) 200. Hạ Thái stays 404 on Explore after Approve because the seed village is inactive and its only Experience is archived (data, not this change). |
+| Spec issues found | #33 (decided). |
+| Commit | see `git log` on `linh/prf-fixes-2`; not pushed. |
+
+Edits to existing tests (approved in chat 2026-11-04):
+
+| File:line | Before | After | Reason |
+|---|---|---|---|
+| `tests/prf/unit/provider-service.test.ts:346` (T035 AC3) | Request Revision on the Verified fixture without a pending revision → Revision Required | the owner first submits a major revision, then Request Revision → Revision Required | spec-PRF #33 |
+| `tests/prf/integration/provider-routes.test.ts` (T036 describe) | cases share state; Request Revision ran after Approve on Hạ Thái | `beforeEach(() => demoRepository().reset())`; no assertion changed | order dependence: after Approve, #33 refuses Request Revision |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

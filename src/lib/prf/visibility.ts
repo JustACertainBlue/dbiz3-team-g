@@ -135,6 +135,7 @@ export function filterProviderFields(
     base.availability = profile.availability
     base.booking_conditions = profile.booking_conditions
     base.verification_status = profile.verification_status
+    base.experiences = profile.experiences // FR-003 Full: experiences
     return base
   }
 

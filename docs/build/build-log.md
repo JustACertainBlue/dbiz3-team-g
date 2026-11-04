@@ -557,6 +557,29 @@ Edits to existing tests (approved in chat 2026-11-04; reason: move to the server
 
 Notes: L2 — when a name is missing the table/top 10 now show the raw id instead of an invented name (not reachable with the seed). T043 asserts Active Collaborations 4 → 3 rather than "baseline + 1" because the BKG create also expires the seed hold `54d7a276`. The ADM unit tests that pass a `SessionLike` object directly still use Bát Tràng (scope logic, unchanged).
 
+### Entry 34: 04/11 Claude Code + human — fix(auth): demoSessionFromRequest no longer trusts x-mock-session
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); linhkhanh-vu decided scope; branch `linh/auth-no-header` (not pushed) |
+| Command and argument | Test first, then fix of `src/lib/auth/demo-session.ts`; PRF route tests moved from the header to the demo cookie |
+| Feature and tasks | Cross-module (no feature folder): found in the ADM review (Entry 33), checklist §3 #30 |
+| What the agent produced | `demoSessionFromRequest` returns the identity of the `hab_demo_account` cookie or Guest; the legacy `x-mock-session` JSON header is no longer read. `tests/integration/auth-no-header.test.ts`: on AIT (`POST /api/ait/sessions`), BKG (`GET /api/bkg/agency/bookings`, `POST /api/bkg/bookings`), PRF (`GET /api/prf/agency/:id`, `PATCH /api/prf/provider/:id`) and EXP (`POST /api/demo/handoff`, `GET /api/demo/conversations`) a forged header without the cookie gives exactly the Guest response (status and body) and writes nothing. `tests/prf/helpers/mockSession.ts` gains `demoCookie(session)`. Comment in `src/lib/adm/admin-session.ts` updated. Docs: 03-module-status, CLAUDE.md §5, checklist §3 #30 closed. Commits `dbd5d6b`, `b01791e`. |
+| Human review | Decisions by linhkhanh-vu (2026-11-04): compare with Guest instead of a fixed 401 (BKG Guest = 403 per spec-BKG #67); option (A) for the PRF tests below. |
+| Tests | Red first (`dbd5d6b`): 4 failing for the right reason — forged header got AIT 201 instead of Guest 401, BKG 200 instead of 403, PRF `tax_id` leaked, EXP handoff 201 instead of 403. After the fix the 4 PRF files were red as expected (18 tests), then green after the edits below. Green: `Test Files 104 passed (104)`, `Tests 694 passed (694)`; `npm run lint` passed. Mutation: header fallback restored → the 4 new tests red; reverted (byte-identical). Type-only fix in the new test before commit of the fix: `Handler` context parameter made required (PRF handlers need `{ params }`). |
+| Demo (macOS, after `npm run demo:reset`) | Clicked every RoleSwitcher role: Guest → `/explore`; Tour Agency → `/explore`, `/agency/:id/edit` (PRF `GET /api/prf/agency/:id` 200), `/ai-matching` (`POST /api/ait/sessions` 201); Local Provider → `/provider/:id` and `/edit` (PRF 200), BKG133; UBND → `/admin` 🔒 Hạ Thái, `/admin/providers`; HDT → `/admin`. No `/api/*` response ≥ 400 in any role. Curl: forged header vs Guest vs real cookie — AIT 401/401/201, BKG 403/403/200, EXP conversations 401/401/200, PRF agency `tax_id` absent/absent/present. |
+| Spec issues found | None. Note for IAC: `003-iac-core` authenticates from client headers `x-mock-user-id` / `x-mock-role` (same class of issue). |
+| Commit | see `git log` on `linh/auth-no-header`; not pushed. |
+
+Edits to existing tests (approved in chat 2026-11-04: header → cookie, and option (A) where the demo cookie has one identity per role):
+
+| File:line | Before | After | Reason |
+|---|---|---|---|
+| `tests/prf/integration/agency-routes.test.ts:30`, `ai-routes.test.ts:18`, `experience-routes.test.ts:30`, `provider-routes.test.ts:39, 126, 146, 198` | `'x-mock-session': JSON.stringify(session)` | `cookie: demoCookie(session)` (+ import) | the header is no longer read |
+| `tests/prf/integration/agency-routes.test.ts:15, 19, 76-84` | `OTHER_AGENCY_ID = '9999…'`; another Agency patches the demo Agency | `OTHER_AGENCY_ID` = Công ty Du lịch Thăng Long; the demo Agency patches it → 403 | (A): the cookie cannot be another Agency |
+| `tests/prf/integration/provider-routes.test.ts:153-159` | the Draft Provider patches the Verified Provider | the demo Provider (Bát Tràng) patches the Draft Provider → 403 | (A) |
+| `tests/prf/integration/provider-routes.test.ts:185-231` (T036) | UBND Bát Tràng verifies the Bát Tràng Provider; UBND Phú Vinh is cross-village | UBND Hạ Thái (demo identity) verifies the Hạ Thái Provider (Pending Verification); cross-village = UBND Hạ Thái on the Bát Tràng Provider → 403 | (A): the demo UBND is assigned to Hạ Thái |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

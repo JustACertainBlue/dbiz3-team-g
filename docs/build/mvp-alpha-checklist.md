@@ -67,7 +67,7 @@ limitation discovered by the instructor that is not written here is.
 | 27 | ADM: Agencies awaiting approval are listed from `agency_registration_requests` (Pending Approval); the seed has none, so the panel shows only the Hạ Thái Provider until AUT writes registrations to the runtime. | ADM FR-007; AUT F-AUTH-04 | Session 10 |
 | 28 | ADM: Data is read from the shared JSON runtime (`.demo-data/runtime.json`), not PostgreSQL. | ADM FR-002; `data/schema.sql` | Session 9–10 |
 | 29 | ADM: `/admin` loads `/api/adm/filter-options` about 10 times on page load (stable afterwards); not optimised. | ADM FR-006 | Session 11 |
-| 30 | All modules: the shared `demoSessionFromRequest` still accepts a client-supplied `x-mock-session` header when no `hab_demo_account` cookie is sent (BKG, AIT, PRF routes); ADM reads the cookie only. Fix planned as a separate PR. | ADM AC-ADM-SCOPE; BKG BR-001; AIT BR-001 | Session 9 |
+| 30 | ~~All modules: the shared `demoSessionFromRequest` still accepts a client-supplied `x-mock-session` header when no `hab_demo_account` cookie is sent (BKG, AIT, PRF routes); ADM reads the cookie only. Fix planned as a separate PR.~~ **Closed by fix(auth)** (`linh/auth-no-header`): `demoSessionFromRequest` reads the cookie only; a forged header without the cookie is a Guest on every module (`tests/integration/auth-no-header.test.ts`). | ADM AC-ADM-SCOPE; BKG BR-001; AIT BR-001 | Session 9 |
 
 ## 4. Sign-off
 

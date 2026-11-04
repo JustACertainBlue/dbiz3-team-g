@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
 import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
 
 export default function EditExperiencePage({
@@ -32,11 +33,7 @@ export default function EditExperiencePage({
     description: '',
   })
 
-  const [images, setImages] = useState({
-    artisan_working: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80',
-    workshop_space: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=800&q=80',
-    finished_product: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=800&q=80',
-  })
+  const [images, setImages] = useState<ExperienceImageItem[]>([])
 
   useEffect(() => {
     let alive = true
@@ -57,11 +54,7 @@ export default function EditExperiencePage({
           description: data.description || '',
         })
         setHasActiveBookings(Boolean(data.has_active_bookings))
-        const nextImages = { ...images }
-        for (const image of data.images || []) {
-          if (image.category in nextImages) nextImages[image.category as keyof typeof nextImages] = image.url
-        }
-        setImages(nextImages)
+        setImages((data.images || []) as ExperienceImageItem[])
       }).finally(() => { if (alive) setSessionReady(true) })
     const onRoleChanged = () => {
       setRole(getCurrentRole())
@@ -129,11 +122,7 @@ export default function EditExperiencePage({
           rules: [{ threshold_hours: 24, fee_percentage: 50 }],
           notes: formData.cancellation_rules_text,
         },
-        images: [
-          { url: images.artisan_working, category: 'artisan_working' },
-          { url: images.workshop_space, category: 'workshop_space' },
-          { url: images.finished_product, category: 'finished_product' },
-        ],
+        images: toImagesPayload(images),
       }
 
       const res = await fetch(`/api/prf/experience/${params.experienceId}`, {
@@ -400,38 +389,7 @@ export default function EditExperiencePage({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="prf-field-group">
-                  <label className="prf-label">1. Nghệ nhân đang thao tác (artisan_working)</label>
-                  <input
-                    type="url"
-                    required
-                    value={images.artisan_working}
-                    onChange={e => setImages({ ...images, artisan_working: e.target.value })}
-                    className="prf-input"
-                  />
-                </div>
-                <div className="prf-field-group">
-                  <label className="prf-label">2. Không gian xưởng (workshop_space)</label>
-                  <input
-                    type="url"
-                    required
-                    value={images.workshop_space}
-                    onChange={e => setImages({ ...images, workshop_space: e.target.value })}
-                    className="prf-input"
-                  />
-                </div>
-                <div className="prf-field-group">
-                  <label className="prf-label">3. Sản phẩm hoàn thiện (finished_product)</label>
-                  <input
-                    type="url"
-                    required
-                    value={images.finished_product}
-                    onChange={e => setImages({ ...images, finished_product: e.target.value })}
-                    className="prf-input"
-                  />
-                </div>
-              </div>
+              <ExperienceImagesField images={images} onChange={setImages} />
             </div>
           </div>
 

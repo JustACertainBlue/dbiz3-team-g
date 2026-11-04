@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { imageMetadataError } from './experience-images'
 
 /** T009 – Zod validation schemas for PRF module */
 
@@ -45,6 +46,24 @@ export const ProviderProfilePatchSchema = z.object({
     .optional(),
 })
 
+// Slice B: a new image (upload) carries its metadata (BR-008); categories are the data/ values (Q4).
+export const ExperienceImageSchema = z.object({
+  url: z.string().url(),
+  file_name: z.string().min(1).max(255).optional(),
+  category: z.enum(['Activity', 'Space', 'Product']),
+  media_type: z.string(),
+  file_size_bytes: z.number(),
+  width_px: z.number(),
+  height_px: z.number(),
+  caption: z.string().max(255).optional(),
+}).superRefine((image, ctx) => {
+  const error = imageMetadataError(image)
+  if (error) ctx.addIssue({ code: z.ZodIssueCode.custom, message: error })
+})
+
+/** On update an existing image is kept by its stored file id (BR-015). */
+export const KeptImageSchema = z.object({ file_id: z.string().min(1) })
+
 export const ExperienceCreateSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().min(10).max(3000),
@@ -55,18 +74,12 @@ export const ExperienceCreateSchema = z.object({
   notice_period_hours: z.number().int().nonnegative(),
   experience_location_address: z.string().max(500).optional(),
   cancellation_policy: z.unknown().optional(),
-  images: z
-    .array(
-      z.object({
-        url: z.string().url(),
-        category: z.enum(['artisan_working', 'workshop_space', 'finished_product']),
-        caption: z.string().max(255).optional(),
-      }),
-    )
-    .min(3),
+  images: z.array(ExperienceImageSchema).min(3),
 })
 
-export const ExperienceUpdateSchema = ExperienceCreateSchema.partial()
+export const ExperienceUpdateSchema = ExperienceCreateSchema.partial().extend({
+  images: z.array(z.union([KeptImageSchema, ExperienceImageSchema])).optional(),
+})
 
 export const VerifyProviderSchema = z.object({
   decision: z.enum(['Approve', 'Request Revision']),

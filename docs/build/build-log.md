@@ -710,6 +710,29 @@ Edits to existing tests (approved in chat 2026-11-04):
 | `tests/prf/unit/provider-service.test.ts:346` (T035 AC3) | Request Revision on the Verified fixture without a pending revision → Revision Required | the owner first submits a major revision, then Request Revision → Revision Required | spec-PRF #33 |
 | `tests/prf/integration/provider-routes.test.ts` (T036 describe) | cases share state; Request Revision ran after Approve on Hạ Thái | `beforeEach(() => demoRepository().reset())`; no assertion changed | order dependence: after Approve, #33 refuses Request Revision |
 
+### Entry 41: 04/11 Claude Code + human — PRF slice B: BR-003, BR-008, BR-009/BR-015, BR-016, pricing/capacity (`linh/prf-fixes-3`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); linhkhanh-vu decided Q4 (data/ categories), #34 (pricing/capacity), the old-test edits and the file-picker UI; branch `linh/prf-fixes-3` from `main` `5d7be8a` (not pushed) |
+| Command and argument | Spec #34 (`e8005b6`); test first (`26a87c5`); code; mutation checks; full suite; demo on macOS |
+| Feature and tasks | `specs/002-prf-core` US-5 (FR-006), US-3 (FR-003), US-6 AC5; BR-003, BR-008, BR-009, BR-015, BR-016; checklist §3 #1, #2, #4, #35, #36 (H1), #40; G3 |
+| What the agent produced | `src/lib/prf/experience-images.ts` (new): data/ categories Activity/Space/Product, `imageMetadataError` (BR-008, consistency contract), `missingCategories`, `canRemoveImage`. `src/lib/prf/lightbox.ts` (new): open/next/previous/close. `src/lib/prf/validators.ts`: `ExperienceImageSchema` (metadata required, BR-008), `KeptImageSchema`; update images = kept `file_id` or new upload. `src/lib/prf/experience-service.ts`: "Required Image Category Missing" on create; `stored_files` written with the real metadata; update checks the whole new image list before writing (kept images must belong to the Experience; "Last Required Category Image Cannot Be Deleted"); `getExperienceById` returns file_id, category and metadata. `src/lib/prf/provider-service.ts`: `pricing` = lowest, `capacity` = largest non-archived Experience (#34). `provider-page-view.ts`: `pricingLine`, `capacityLine`. UI: `ExperienceImagesField.tsx` (new, EXP069/EXP070 file picker reading type/size/dimensions in the browser), EXP068 rewritten (gallery + lightbox, no Unsplash, no fallback values), PRF127 pricing line. Spec-PRF #34; snapshot refreshed. Checklist §3 rows 1, 2, 4, 35, 40 closed, 36 H1 closed, 41 (EXP BR-014 exception, decided as Q5 earlier and missed until now), 42 (no binary storage), 43 (EXP069 price step) added; G3 status updated (not ticked). |
+| Human review | Decisions Q4, #34, test edits, UI approach (2026-11-04). Code review pending. |
+| Tests | Red first (`26a87c5`): 7 failing (old tests now using data/ categories rejected by the old enum; pricing 150000 instead of 90000; capacity defined for Hạ Thái; PRF127 pricing line missing) + `experience-images` and `lightbox` modules missing. The BR-003 route tests passed before any code (supplementary). Green: `Test Files 111 passed (111)`, `Tests 739 passed (739)`; `npm run lint` passed. Mutation (each reverted, files byte-identical): provider PATCH open to HDT → 1 red; experience update open to UBND (role and ownership) → 1 red (opening the role check alone stayed green because the ownership check still refuses UBND); BR-008 check disabled → 3 red; BR-015 check disabled → 1 red; lightbox next without wrap → 1 red; pricing from the first Experience → 1 red. |
+| Demo (macOS, built-in browser; data reset before) | Clicked as Local Provider: EXP068 Bát Tràng gallery shows the 3 seed images (Activity/Space/Product, 1920×1080); image 2 opens the lightbox "2 / 3"; Next → 3 / 3 → 1 / 3 (wrap); Previous → 3 / 3; Escape closes. EXP070: the three Remove buttons are disabled (BR-015 tooltip); a 800×600 file → "Image must be at least 1280 px wide (BR-008)"; a 1600×900 PNG added to Product → the old Product Remove button becomes enabled → removed → Save → success. Files were created in the page with a canvas and set on the file input by script (the pane has no file dialog). Curl: GET shows Product = san-pham-moi.png, image/png, 31455 bytes, 1600×900, `upload://…`; the old seed Product file is gone from `stored_files`; PATCH dropping the only Product → 400 "Last Required Category Image Cannot Be Deleted"; UBND PATCH experience → 403. EXP069: created "Vẽ men lam trên gốm mộc" (91 000 ₫, 20 pax, three scripted files 1920×1080 / 1280×720 / 1600×900) → EXP067. Tour Agency → PRF127 "từ 91.000 ₫/khách · Tối đa 20 khách", both Experiences listed. Found: EXP069 price `step` rejects 90 000 (row 43); size shown as "0.0 MB" for small files → fixed to KB before commit. |
+| Spec issues found | #34 (decided). |
+| Commit | see `git log` on `linh/prf-fixes-3`; not pushed. |
+
+Edits to existing tests (approved in chat 2026-11-04: image categories to data/ values and valid metadata added; no assertion changed):
+
+| File | Change |
+|---|---|
+| `tests/prf/unit/validators.test.ts` (10 image objects) | `artisan_working` / `workshop_space` / `finished_product` → `Activity` / `Space` / `Product`; `media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080` added |
+| `tests/prf/unit/experience-service.test.ts` (5 image objects, 1 test title) | same; title "missing artisan_working image category" → "missing Activity image category" |
+| `tests/prf/integration/experience-routes.test.ts` (6 image objects) | same |
+| `tests/integration/demo-functional-flow.test.ts` (3 image objects) | same |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

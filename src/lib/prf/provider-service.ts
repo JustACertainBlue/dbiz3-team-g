@@ -102,8 +102,10 @@ export async function getProviderProfile(
   // Related data from experiences & operating hours
   const allExperiences = await loadExperiences()
   const experiences = allExperiences.filter(e => e.provider_id === providerId)
-  const defaultPricing = experiences.length > 0 ? experiences[0].price_per_person : 0
-  const defaultCapacity = experiences.length > 0 ? experiences[0].max_participants : 0
+  // spec-PRF #34: lowest price and largest capacity among the non-archived Experiences; empty without one.
+  const activeExperiences = experiences.filter(exp => !exp.archived_at)
+  const pricing = activeExperiences.length > 0 ? Math.min(...activeExperiences.map(exp => exp.price_per_person)) : undefined
+  const capacity = activeExperiences.length > 0 ? Math.max(...activeExperiences.map(exp => exp.max_participants)) : undefined
 
   // Village metadata from villages.csv
   const villages = await loadVillages()
@@ -136,14 +138,13 @@ export async function getProviderProfile(
     // status of the published profile.
     verification_status: (isOwner || isUBND || isHDT) ? reviewStatus(provider, version) : provider.verification_status,
     public_images: [],
-    pricing: defaultPricing,
-    capacity: defaultCapacity,
+    pricing,
+    capacity,
     contact,
     // FR-003 (#40): booking conditions of the shown version and the real weekly operating hours.
     booking_conditions: parseJsonObject(version?.booking_conditions),
     availability: { operating_hours: weeklyOperatingHours(providerId) },
-    experiences: experiences
-      .filter(exp => !exp.archived_at)
+    experiences: activeExperiences
       .map(exp => ({
         experience_id: exp.experience_id, name: exp.name, category: exp.category,
         duration_minutes: exp.duration_minutes, max_participants: exp.max_participants, price_per_person: exp.price_per_person,

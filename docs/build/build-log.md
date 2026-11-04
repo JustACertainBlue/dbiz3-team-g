@@ -628,6 +628,47 @@ are marked "not recorded".
 | Spec issues found | Not recorded; found at the port: spec-ADM #21, #22 and User Management moved to AUT (Entry 33) |
 | Commit | `fbcd7be`, `cbbb8dd` on `003-adm-core` (PR #12, closed); cherry-picked as `928eca8`, `9cea251` in PR #34 |
 
+### Entry 38: 04/11 Claude Code — `/speckit-analyze` for PRF and EXP (checklist G5)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5): PRF analyzed in the main session, EXP by a read-only subagent (key claims spot-checked by grep); requested by linhkhanh-vu |
+| Command and argument | `/speckit-analyze` on `specs/002-prf-core` and `specs/001-exp-core` (read-only; no code change) after the G4 refresh; both `--check` OK |
+| Feature and tasks | PRF T001–T060 (2 open: T002, T005); EXP T001–T029 (1 open: T027) |
+| What the agent produced | Reports below; checklist §3 rows 35–38. No file under `src/`, `tests/`, `specs/` changed by this step. |
+| Human review | Pending. |
+| Tests | Not run for PRF in this step (suite at `deaf3ab`: 694/694). EXP subagent ran the EXP and handoff tests: 11 files, 49/49 pass. |
+| Spec issues found | None new in `docs/spec/`; EXP §10 Q28/Q29 still open. |
+| Commit | see `git log` on `linh/ci-windows`; not pushed. |
+
+**PRF** — 7 FR, 21 BR, 8 SC, 35 acceptance scenarios, 60 tasks; 4 CRITICAL, 3 HIGH:
+
+| ID | Severity | Finding | Status |
+|---|---|---|---|
+| C1 | CRITICAL (Constitution II) | BR-003 / SC-008 / US-6 AC5 (HDT, UBND read-only) has no test, although T035 claims AC5. API enforces it (`src/lib/prf/provider-service.ts:149`); PRF127 shows Edit/Create Booking links to UBND (seen, not clicked). | Open; checklist §3 #35 |
+| C2 | CRITICAL (Constitution II) | BR-008 (image format, 10 MB, 1280×720) has no test. | Open; checklist §3 #1 |
+| C3 | CRITICAL (Constitution II) | BR-015 (last image per category) has no test and is not enforced. | Open; checklist §3 #2 |
+| C4 | CRITICAL (Constitution II) | BR-016 (owner gallery lightbox) has no test. | Open; checklist §3 #4 |
+| H1 | HIGH | `tasks.md` "Step 3.2 Coverage check" claims every BR has a test task; false for BR-003, BR-008, BR-015, BR-016. | Open; checklist §3 #36 |
+| H2 | HIGH | `plan.md` stack (Next.js 15, Drizzle, Cloudinary, msw; T002/T005 open) conflicts with `package.json` (Next 14, none of them; JSON runtime). | Open; checklist §3 #36 |
+| H3 | HIGH | T023 "fields for all FR-004 inputs" is marked done, but PRF128 shows hard-coded non-seed values. | Open; checklist §3 #33 |
+
+Medium (not listed in full): `plan.md` 500 ms p95 goal has no task.
+
+**EXP** — 17 FR, 15 BR, 11 SC, 29 tasks; 4 CRITICAL, 3 HIGH (6 MEDIUM, 4 LOW not listed):
+
+| ID | Severity | Finding | Status |
+|---|---|---|---|
+| C1 | CRITICAL (Constitution II) | No pre-implementation failing run for T019–T025 (US-2, and US-3/US-4 detail pages); stated in `tasks.md:54`. | Cannot be fixed after the fact; checklist §3 #37 |
+| C2 | CRITICAL (Constitution II) | The live Quote/Chat handoff (`src/lib/demo/commercial-handoff-service.ts`, `/api/demo/handoff`, `ExperienceActions.tsx`, `ProviderChatAction.tsx`, `ada9e44`) is in no task and has no red run (tests exist and pass). | Open; checklist §3 #37 |
+| C3 | CRITICAL (Constitution V) | EXP reached `main` by direct commits (`4a1ae27`, `bf30cea`, `2e79614`, `ada9e44`); PR #9 closed unmerged with 0 reviews. | Open; checklist G6 |
+| C4 | CRITICAL (Constitution III) | US-1–4 and FR-001–017 built in one pass after the US-1 slice (`plan.md:43` admits it). | Acknowledged; checklist §3 #37 |
+| H1 | HIGH | Quote/Chat buttons never send the FR-007 `request_quote` / `open_chat` Explore event, so strong actions never become preference signals. | Open; checklist §3 #38 |
+| H2 | HIGH | `src/lib/explore/handoff.ts` (tested by T023) is imported only by its test; the live handoff lacks the F-AUTH-16 check, the Agency/source context in the first message, and hiding Request Quote after use (FR-011/012). | Open; checklist §3 #38 |
+| H3 | HIGH | `implementation-status.md`, `plan.md`, `quickstart.md`, build-log §3 row 3 still say Quote/Chat is unavailable; quickstart names a "Dùng doanh nghiệp mẫu" control that no longer exists (role switch is `RoleSwitcher`). | Open; checklist §3 #38 |
+
+Build-log §3 row 3 (US-1 AC2 Agency actions) is partly closed by `ada9e44` (Quote/Chat on Experience detail and Provider page); the rest is EXP H1/H2 and card-level actions.
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

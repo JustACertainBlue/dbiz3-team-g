@@ -9,7 +9,7 @@ export type ApiResult = { networkError: true } | { ok: boolean; status: number; 
 export type MessageOutcome =
   | { kind: 'clarify'; questions: string[] }
   | { kind: 'match'; profile: unknown }
-  | { kind: 'failure'; text: string; retry: 'reanalyze' }
+  | { kind: 'failure'; text: string; retry: 'reanalyze' | 'resend' }
 
 export type HandoffOutcome =
   | { kind: 'success'; navigateTo: string }
@@ -18,7 +18,10 @@ export type HandoffOutcome =
 const AI_FAILURE: MessageOutcome = { kind: 'failure', text: AI_FAILURE_TEXT, retry: 'reanalyze' }
 
 export function messageOutcome(result: ApiResult): MessageOutcome {
-  if ('networkError' in result || !result.ok) return AI_FAILURE
+  // #36: a network error means the message never reached the server, so Retry resends it;
+  // any server response means it was stored, so Retry re-analyzes (#33).
+  if ('networkError' in result) return { kind: 'failure', text: AI_FAILURE_TEXT, retry: 'resend' }
+  if (!result.ok) return AI_FAILURE
   const extraction = result.body?.extraction
   if (!extraction || extraction.processing_status === 'Temporary AI Failure') return AI_FAILURE
   const questions: string[] = extraction.follow_up_questions ?? []

@@ -1,5 +1,5 @@
 // Craft and Experience-type vocabulary for AI Tour Matching (spec AIT §10 #32, #34).
-// craft_type and category values are the enums of data/04-data-model.md.
+// craft_type and category values are the enums of data/04-data-model.md. "đồng" alone is the currency (#37).
 
 export type CraftType =
   | 'Ceramics'
@@ -24,7 +24,7 @@ const CRAFTS: CraftEntry[] = [
   { preference: 'pottery', label: 'pottery', craftType: 'Ceramics', keywords: ['pottery', 'ceramic', 'gốm'] },
   { preference: 'woodcarving', label: 'woodcarving', craftType: 'Woodcarving', keywords: ['woodcarving', 'carving', 'wood', 'gỗ', 'tạc'] },
   { preference: 'food', label: 'food and cooking', craftType: 'Food/Culinary', keywords: ['culinary', 'cooking', 'food', 'ẩm thực'] },
-  { preference: 'metalwork', label: 'metalwork', craftType: 'Metalwork', keywords: ['metal', 'bronze', 'đúc', 'đồng'] },
+  { preference: 'metalwork', label: 'metalwork', craftType: 'Metalwork', keywords: ['metal', 'bronze', 'đúc đồng', 'đồ đồng', 'đúc'] },
   { preference: 'painting', label: 'lacquer and painting', craftType: 'Paper/Painting', keywords: ['lacquer', 'painting', 'paper', 'sơn mài', 'tranh'] },
   { preference: 'conical hat', label: 'conical hat making', craftType: 'Other', keywords: ['conical hat', 'nón'] },
   { preference: 'bamboo', label: 'bamboo and rattan weaving', craftType: 'Other', keywords: ['bamboo', 'rattan', 'mây', 'tre'] },

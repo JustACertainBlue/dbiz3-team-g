@@ -14,7 +14,8 @@ interface Message {
   clarificationQuestions?: string[]
   recommendations?: any[]
   relaxationLines?: string[]
-  retry?: 'reanalyze'
+  retry?: 'reanalyze' | 'resend'
+  retryText?: string
 }
 
 export default function AiMatchingScreen() {
@@ -188,7 +189,7 @@ export default function AiMatchingScreen() {
       } else if (outcome.kind === 'match') {
         await fetchMatchingResults(outcome.profile)
       } else {
-        addAssistant({ text: outcome.text, retry: outcome.retry })
+        addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
     } finally {
       setLoading(false)
@@ -418,11 +419,11 @@ export default function AiMatchingScreen() {
                 </ul>
               )}
 
-              {/* Temporary AI Failure: Retry re-analyzes the saved conversation (#27, #33) */}
-              {msg.retry === 'reanalyze' && (
+              {/* Temporary AI Failure: Retry re-analyzes the saved conversation (#33) or resends an unsent message (#36) */}
+              {msg.retry && (
                 <button
                   id="retry-analysis-btn"
-                  onClick={() => analyze({ retry: true })}
+                  onClick={() => analyze(msg.retry === 'resend' && msg.retryText ? { sender: 'Agency', text: msg.retryText } : { retry: true })}
                   disabled={loading}
                   style={{ marginTop: '10px', backgroundColor: '#D97706', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
                 >

@@ -1,3 +1,5 @@
+import type { MatchFactors } from '@/lib/matching/scoring-engine'
+
 export interface RecommendationItem {
   experience_id: string
   provider_id?: string
@@ -23,29 +25,51 @@ export interface RelaxationOutput {
   conversation_prompt: string
 }
 
+// BR-020, #30: candidates scoring below the no-match threshold are never shown.
+export const SCORE_THRESHOLD = 60
+
+export function applyScoreThreshold<T extends { match_score?: number }>(candidates: T[]): T[] {
+  return candidates.filter(candidate => candidate.match_score === undefined || candidate.match_score >= SCORE_THRESHOLD)
+}
+
+const vnd = (amount: number) => amount.toLocaleString('en-US')
+
+// #25: only factors that the scoring actually evaluated (match_factors), never a craft the Agency did not ask for.
+function explain(item: any, score: number): string {
+  const f: MatchFactors = item.match_factors || {}
+  const parts = [`Match score ${score}/100.`]
+  if (f.craft) {
+    parts.push(f.craft.matched
+      ? `Matches your ${f.craft.label} preference (${f.craft.craft_type}).`
+      : `Does not match your ${f.craft.label} preference.`)
+  }
+  if (f.experience_types) {
+    const types = f.experience_types.requested.join(' / ')
+    parts.push(f.experience_types.matched ? `A ${types} experience, as requested.` : `Not a ${types} experience.`)
+  }
+  if (f.max_participants !== undefined && f.group_size !== undefined) {
+    parts.push(`Takes up to ${f.max_participants} pax for your group of ${f.group_size}.`)
+  }
+  if (f.budget_per_person !== undefined && f.price_per_person !== undefined) {
+    parts.push(`${vnd(f.price_per_person)} VND per person, within your ${vnd(f.budget_per_person)} VND budget.`)
+  }
+  if (f.distance_km !== undefined) {
+    parts.push(`About ${f.distance_km} km from ${f.origin ?? 'your starting point'} (estimated).`)
+  }
+  return parts.join(' ')
+}
+
 export async function buildRecommendations(
   rankedCandidates: any[]
 ): Promise<RecommendationOutput> {
-  const topMatchesRaw = rankedCandidates.slice(0, 5)
-  const additionalRaw = rankedCandidates.slice(5, 10)
+  const shown = applyScoreThreshold(rankedCandidates)
+  const topMatchesRaw = shown.slice(0, 5)
+  const additionalRaw = shown.slice(5, 10)
 
   const formatItem = (item: any, index: number, offset: number): RecommendationItem => {
     const expName = item.experience_name || item.name || `Experience ${item.experience_id}`
     const rank = item.rank || offset + index + 1
     const score = item.match_score ?? 85
-
-    const expLower = expName.toLowerCase()
-    let craftMention = 'authentic artisan craft'
-    if (expLower.includes('lụa')) craftMention = 'silk weaving'
-    else if (expLower.includes('gốm')) craftMention = 'pottery ceramics'
-    else if (expLower.includes('nón')) craftMention = 'conical hat making'
-    else if (expLower.includes('thêu')) craftMention = 'traditional embroidery'
-    else if (expLower.includes('mây')) craftMention = 'bamboo & rattan weaving'
-
-    const village = item.village_name ? ` in ${item.village_name}` : ''
-    const cap = item.max_participants || item.max_capacity ? ` (capacity up to ${item.max_participants || item.max_capacity} pax)` : ''
-
-    const explanation = `Matches requirements with a score of ${score}/100. Strong fit for ${craftMention}${village}${cap} with verified local artisans.`
 
     return {
       experience_id: item.experience_id,
@@ -54,7 +78,7 @@ export async function buildRecommendations(
       provider_name: item.provider_name,
       rank,
       match_score: score,
-      explanation,
+      explanation: explain(item, score),
     }
   }
 
@@ -67,21 +91,24 @@ export async function buildRecommendations(
   }
 }
 
+/**
+ * FR-012 relaxation (#23, #24). `candidates` are the candidates that pass every hard constraint except
+ * the budget; ranked ones carry `match_score` and only those reaching the threshold count (#30).
+ */
 export async function buildRelaxationSuggestions(
-  results: any[],
-  criteria: any
+  candidates: any[],
+  criteria: any,
+  options: { largest_group_size?: number } = {}
 ): Promise<RelaxationOutput> {
   const suggestions: RelaxationSuggestion[] = []
+  const budget = criteria?.max_budget_per_person
+  const prices = applyScoreThreshold(candidates || []).map(c => Number(c.price_per_person)).filter(price => Number.isFinite(price))
+  const cheapest = prices.length > 0 ? Math.min(...prices) : undefined
 
-  if (criteria?.max_budget_per_person) {
+  if (budget !== undefined && cheapest !== undefined && cheapest > budget) {
     suggestions.push({
       criterion: 'Budget',
-      suggested_value: Math.round(criteria.max_budget_per_person * 1.3),
-    })
-  } else {
-    suggestions.push({
-      criterion: 'Budget',
-      suggested_value: 600000,
+      suggested_value: cheapest,
     })
   }
 
@@ -95,8 +122,15 @@ export async function buildRelaxationSuggestions(
     suggested_value: 'Consider flexible dates (+/- 2 days)',
   })
 
-  const conversation_prompt =
+  const groupSize = criteria?.group_size
+  const largest = options.largest_group_size
+  let conversation_prompt =
     'No experiences currently meet all criteria above 60/100. You can relax your budget or travel distance, or adjust group size to see more artisan options.'
+  if (groupSize !== undefined && largest !== undefined && groupSize > largest) {
+    conversation_prompt = `No Experience can take a group of ${groupSize} pax: the largest group an eligible Experience accepts is ${largest} pax. You can split the group or reduce the number of guests.`
+  } else if (suggestions[0]?.criterion === 'Budget' && cheapest !== undefined) {
+    conversation_prompt = `No Experience fits a budget of ${vnd(budget)} VND per person. The lowest price that meets your other requirements is ${vnd(cheapest)} VND per person.`
+  }
 
   return {
     relaxation_suggestions: suggestions,

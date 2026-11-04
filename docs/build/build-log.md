@@ -594,6 +594,40 @@ Edits to existing tests (approved in chat 2026-11-04: header → cookie, and opt
 | Spec issues found | None in `docs/spec/`. Found outside the spec: a member's personal e-mail in `docs/env/Environment Readiness Report.md:71` (G7, human-owned folder, not edited). |
 | Commit | see `git log` on `linh/ci-windows`; not pushed. |
 
+### Entry 36: 07/10–14/10 nguyenthu-0505 — AIT rounds 1–2 (PR #6) — reconstructed from git history on 2026-11-04
+
+Reconstructed from git history on 2026-11-04 by linhkhanh-vu with Claude Code (checklist G8). Source:
+the commits of PR #6 and the round 2 review notes in `docs/build/claude-context/03-module-status.md`.
+Fields that git does not record are marked "not recorded".
+
+| Field | Value |
+|---|---|
+| Path and agent | Not recorded (author nguyenthu-0505; Spec Kit workflow) |
+| Command and argument | Plan (`3938f47`, 07/10), then Steps 5–6 for `specs/001-ait-core` US-1; round 2 fixes after review |
+| Feature and tasks | `specs/001-ait-core`, US-1 (P1) AI Tour Matching; task range not recorded |
+| What the agent produced | `3a107c1` (07/10): US-1 conversational matching — `src/lib/matching/*` (constraint, scoring, recommendation, session, handoff), `src/lib/ai/extractor.ts`, `src/lib/db/seed-loader.ts`, `/api/ait/sessions*`, `/ai-matching` page; 13 test files (43 files, +7132). `b88c8b9` (10/10, same change also as `bc6e2a2`): `POST /api/ait/matching`, extractor regex, seed loader fixes; `tests/integration/matching-scenarios.test.ts`, `tests/unit/seed-data.test.ts`. `1004f50` (14/10): fixes after review round 2 (B1–B4) in extractor, scoring, session and handoff services; `tests/integration/multi-turn-api.test.ts`, `tests/unit/hard-constraints.test.ts` |
+| Human review | linhkhanh-vu requested changes twice on PR #6 (round 2 defects B1–B4); PR merged 14/10 by the author as `3e0e047` without an approval |
+| Tests | Not recorded at `3a107c1` or `1004f50`. At `b88c8b9` (review round 2): 14 files, 83 tests pass. Test-first order not recorded |
+| Spec issues found | Not recorded in the build log; later gaps became spec-AIT #23–#37 (Entry 32) |
+| Commit | `3938f47`, `3a107c1`, `bc6e2a2`/`b88c8b9`, `1004f50` (merges `8b0bc36`, `cb3e2ad`); PR #6 → `3e0e047` |
+
+### Entry 37: 18/10–20/10 thuvutp-prog — original ADM build on `003-adm-core` (PR #12) — reconstructed from git history on 2026-11-04
+
+Reconstructed from git history on 2026-11-04 by linhkhanh-vu with Claude Code (checklist G8). Source:
+the two commits of PR #12 (closed, superseded by PR #34) and Entry 33. Fields that git does not record
+are marked "not recorded".
+
+| Field | Value |
+|---|---|
+| Path and agent | Not recorded (author thuvutp-prog; Spec Kit workflow) |
+| Command and argument | Plan (`fbcd7be`, 18/10), then implementation of `specs/003-adm-core` T010–T039 (from the PR #12 description) |
+| Feature and tasks | `specs/003-adm-core`, US-1 (P1) View Admin Dashboard, T010–T039 |
+| What the agent produced | `fbcd7be`: `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/admin-dashboard-api.md`, `spec.md` snapshot. `cbbb8dd` (20/10): `/admin` page and admin components, `/api/adm/{dashboard,filter-options,users,villages}`, `src/lib/adm/*` (metrics, scope guard, trend calculator, user service), 17 test files under `tests/adm/` (42 files, +7154) |
+| Human review | Not recorded on PR #12. Reviewed by linhkhanh-vu with `/verify-module ADM` on 04/11 (Entry 33): defects A1–A14, then ported onto `main` (PR #34) |
+| Tests | Not recorded at `cbbb8dd`; test-first order not recorded. After the port and fixes: 690 tests pass (Entry 33) |
+| Spec issues found | Not recorded; found at the port: spec-ADM #21, #22 and User Management moved to AUT (Entry 33) |
+| Commit | `fbcd7be`, `cbbb8dd` on `003-adm-core` (PR #12, closed); cherry-picked as `928eca8`, `9cea251` in PR #34 |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

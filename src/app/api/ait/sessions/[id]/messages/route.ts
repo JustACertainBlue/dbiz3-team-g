@@ -34,17 +34,27 @@ export async function POST(
   try {
     const access = await authorize(request, params.id)
     if (access.error) return access.error
-    const body = await request.json()
-    const sender = body.sender || 'Agency'
-    const text = body.text || ''
+    const body = await request.json().catch(() => null)
+    if (!body) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
 
-    const message = await addMessage(params.id, sender, text)
+    // #33: Retry re-analyzes the stored conversation and adds no message.
+    const isRetry = body.retry === true
+    const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', body.text || '')
     const allMessages = await getMessages(params.id)
 
     const extraction = await extractTourContext({
       sessionId: params.id,
       messages: allMessages,
     })
+
+    // FR-003, BR-017, #27: AI failure keeps the conversation and returns 503 with Retry; no profile.
+    if (extraction.processing_status === 'Temporary AI Failure') {
+      return NextResponse.json({
+        error_code: 'AI_SERVICE_UNAVAILABLE',
+        message: "Temporary AI Failure — we couldn't process your request right now. Your conversation is saved.",
+        retry_available: true,
+      }, { status: 503 })
+    }
 
     let tourPreferenceProfile = null
     if (extraction.is_complete) {
@@ -55,7 +65,7 @@ export async function POST(
       message,
       extraction,
       tour_preference_profile: tourPreferenceProfile,
-    }, { status: 201 })
+    }, { status: isRetry ? 200 : 201 })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal error' }, { status: 400 })
   }

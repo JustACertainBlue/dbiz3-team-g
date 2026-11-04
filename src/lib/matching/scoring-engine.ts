@@ -1,3 +1,16 @@
+import { craftLabel, craftTypeForPreference } from '@/lib/matching/craft-taxonomy'
+
+export interface MatchFactors {
+  craft?: { preference: string; label: string; craft_type?: string; matched: boolean }
+  experience_types?: { requested: string[]; matched: boolean }
+  group_size?: number
+  max_participants?: number
+  budget_per_person?: number
+  price_per_person?: number
+  distance_km?: number
+  origin?: string
+}
+
 export interface ScoredCandidate {
   experience_id: string
   provider_id: string
@@ -43,23 +56,15 @@ export async function scoreCandidate(
     }
   }
 
-  // Craft preference alignment (Silk -> Van Phuc #1, Pottery -> Bat Trang #1, etc.)
+  // Craft preference alignment by the Provider's published craft_type (#26, #32)
   const craftAttr = matchingAttr.find((a: any) => a.type === 'craft_preference')?.value?.toLowerCase()
   const expName = (candidate.name || candidate.experience_name || '').toLowerCase()
   const villageName = (candidate.village_name || '').toLowerCase()
+  const wantedCraftType = craftAttr ? craftTypeForPreference(craftAttr) : undefined
+  const craftMatched = Boolean(wantedCraftType) && candidate.craft_type === wantedCraftType
 
   if (craftAttr) {
-    if (
-      (craftAttr.includes('silk') || craftAttr.includes('lụa')) && (expName.includes('lụa') || villageName.includes('vạn phúc')) ||
-      (craftAttr.includes('pottery') || craftAttr.includes('ceramic') || craftAttr.includes('gốm')) && (expName.includes('gốm') || villageName.includes('bát tràng')) ||
-      (craftAttr.includes('hat') || craftAttr.includes('nón')) && (expName.includes('nón') || villageName.includes('chuông')) ||
-      (craftAttr.includes('embroider') || craftAttr.includes('thêu')) && (expName.includes('thêu') || villageName.includes('quất động')) ||
-      (craftAttr.includes('bamboo') || craftAttr.includes('mây')) && (expName.includes('mây') || villageName.includes('phú vinh'))
-    ) {
-      experienceFitScore = 100
-    } else {
-      experienceFitScore = 65
-    }
+    experienceFitScore = craftMatched ? 100 : 65
   }
 
   // 2. Route Convenience Score (shorter distance -> higher score)
@@ -100,10 +105,24 @@ export async function scoreCandidate(
 
   const normalizedScore = Math.round(Math.max(0, Math.min(100, totalScore)) * 10) / 10
 
+  // Factors actually evaluated for this candidate; the explanation is built from these only (#25).
+  const hard = profile?.hard_constraints || {}
+  const matchFactors: MatchFactors = {
+    craft: craftAttr ? { preference: craftAttr, label: craftLabel(craftAttr), craft_type: wantedCraftType, matched: craftMatched } : undefined,
+    experience_types: requestedTypes.length > 0 ? { requested: requestedTypes, matched: requestedTypes.includes(candidateType) } : undefined,
+    group_size: hard.group_size,
+    max_participants: candidate.max_participants ?? candidate.max_capacity,
+    budget_per_person: hard.max_budget_per_person,
+    price_per_person: candidate.price_per_person,
+    distance_km: distanceKm,
+    origin: hard.origin?.origin_address,
+  }
+
   return {
     ...candidate,
     match_score: normalizedScore,
     experience_fit_score: experienceFitScore,
+    match_factors: matchFactors,
   }
 }
 

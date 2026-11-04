@@ -10,7 +10,7 @@ import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extract
 describe('T011 | Intent Extraction & Clarification (FR-003, FR-004, BR-004, BR-017)', () => {
   it('FR-003 / AC-AIT-ORDER: extracts complete tour context from full input', async () => {
     const messages = [
-      { sender: 'Agency', text: '15 French tourists, Nov 10, pottery workshop in Bat Trang, budget 400k VND each' },
+      { sender: 'Agency', text: '15 French tourists, Nov 10, pottery workshop in Bat Trang, budget 400k VND each, from Hoàn Kiếm' },
     ]
     const result = await extractTourContext(messages)
     expect(result.is_complete).toBe(true)
@@ -87,5 +87,63 @@ describe('T011 | Intent Extraction & Clarification (FR-003, FR-004, BR-004, BR-0
     const profile = await buildTourPreferenceProfile(tourContext)
     expect(profile.hard_constraints.group_size).toBe(12)
     expect(profile.hard_constraints.max_budget_per_person).toBe(300000)
+  })
+})
+
+// T035 (Round 3, D6): all OQ #4 critical fields before matching; nothing defaulted (#29, #34, #35).
+describe('T035 | Completeness per OQ #4 (FR-003, BR-004, #29, #34, #35)', () => {
+  const extract = (text: string) => extractTourContext([{ sender: 'Agency', text }])
+
+  it('#29: no origin → incomplete with an origin follow-up and no default origin', async () => {
+    const result = await extract('silk weaving, 10 pax on 2026-11-20')
+    expect(result.is_complete).toBe(false)
+    expect(result.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(true)
+    expect(result.tour_context.origin_or_route).toBeUndefined()
+  })
+
+  it('#29: no Experience preference → incomplete with a preference follow-up and no default experience_types', async () => {
+    const result = await extract('10 pax on 2026-11-20 from Hoàn Kiếm')
+    expect(result.is_complete).toBe(false)
+    expect(result.follow_up_questions.some((q: string) => /craft|experience/i.test(q))).toBe(true)
+    expect(result.tour_context.experience_types).toBeUndefined()
+  })
+
+  it('#34: a craft or a stated Experience type ("workshop") counts as a preference', async () => {
+    expect((await extract('pottery workshop, 10 pax on 2026-11-20 from Hoàn Kiếm')).is_complete).toBe(true)
+    const workshop = await extract('workshop, 10 pax on 2026-11-20 from Hoàn Kiếm')
+    expect(workshop.is_complete).toBe(true)
+    expect(workshop.tour_context.experience_types).toEqual(['Workshop/Hands-on'])
+  })
+
+  it('#35: "near X" and "from <district>" are origins; a craft village as destination is not', async () => {
+    expect((await extract('pottery workshop near Hanoi, 10 pax on 2026-11-20')).is_complete).toBe(true)
+    const longBien = await extract('pottery workshop, 10 pax on 2026-11-20 from Long Biên')
+    expect(longBien.is_complete).toBe(true)
+    expect(longBien.tour_context.origin_or_route?.origin_address).toBe('Long Biên')
+    const destination = await extract('pottery workshop in Bat Trang, 10 pax on 2026-11-20')
+    expect(destination.is_complete).toBe(false)
+    expect(destination.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(true)
+  })
+
+  it('#29: the profile has no Experience type attribute the Agency did not state', async () => {
+    const profile = await buildTourPreferenceProfile({
+      group_size: 10,
+      target_date_or_range: { start_date: '2026-11-20' },
+      origin_or_route: { origin_address: 'Hoàn Kiếm' },
+      craft_preference: 'silk',
+    } as never)
+    expect(profile.matching_attributes.some((a: { type: string }) => a.type === 'experience_type')).toBe(false)
+  })
+})
+
+// #37 (Round 3): a budget in "đồng" keeps the stated craft preference and sets the budget.
+describe('#37 | Budget in đồng', () => {
+  it('"budget 500.000 đồng per person" keeps silk and reads 500000', async () => {
+    const result = await extractTourContext([
+      { sender: 'Agency', text: 'Silk weaving, 10 pax on 2026-11-20 from Hoàn Kiếm' },
+      { sender: 'Agency', text: 'Change to 10 pax, budget 500.000 đồng per person' },
+    ])
+    expect(result.tour_context.craft_preference).toBe('silk')
+    expect(result.tour_context.budget?.max_per_person).toBe(500000)
   })
 })

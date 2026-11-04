@@ -68,3 +68,33 @@ describe('T019 | Multi-Factor Scoring (FR-007, BR-006)', () => {
     expect(ranked[0].rank).toBe(1)
   })
 })
+
+// T037 (Round 3, D5): craft preference matched by the Provider's published craft_type (#26, #32).
+describe('T037 | Craft match by craft_type (FR-007, BR-006, #26, #32)', () => {
+  const withCraft = (value: string) => ({ ...profile, matching_attributes: [{ type: 'craft_preference', value }] })
+  const exp = (name: string, village_name: string, craft_type: string) => ({ ...candidate, name, village_name, craft_type })
+
+  it('silk: Quất Động (Silk/Textile) gets the same craft fit as Vạn Phúc', async () => {
+    const vanPhuc = await scoreCandidate(exp('Dệt lụa truyền thống', 'Vạn Phúc', 'Silk/Textile'), withCraft('silk'))
+    const quatDong = await scoreCandidate(exp('Thêu họa tiết', 'Quất Động', 'Silk/Textile'), withCraft('silk'))
+    expect(quatDong.experience_fit_score).toBe(vanPhuc.experience_fit_score)
+  })
+
+  it('silk: an Experience with no craft keyword in its name or village still matches by craft_type', async () => {
+    const plain = await scoreCandidate(exp('Workshop A', 'Làng X', 'Silk/Textile'), withCraft('silk'))
+    const other = await scoreCandidate(exp('Workshop B', 'Làng Y', 'Ceramics'), withCraft('silk'))
+    expect(plain.experience_fit_score).toBeGreaterThan(other.experience_fit_score)
+  })
+
+  it.each(['conical hat', 'bamboo'])('%s: Chuông and Phú Vinh (both Other) get the same craft fit (#32 limitation)', async value => {
+    const chuong = await scoreCandidate(exp('Làm nón lá', 'Chuông', 'Other'), withCraft(value))
+    const phuVinh = await scoreCandidate(exp('Đan mây tre', 'Phú Vinh', 'Other'), withCraft(value))
+    expect(chuong.experience_fit_score).toBe(phuVinh.experience_fit_score)
+  })
+
+  it('no craft preference: no candidate gets a craft-match bonus', async () => {
+    const silk = await scoreCandidate(exp('Dệt lụa truyền thống', 'Vạn Phúc', 'Silk/Textile'), profile)
+    const pottery = await scoreCandidate(exp('Nặn gốm thủ công', 'Bát Tràng', 'Ceramics'), profile)
+    expect(silk.experience_fit_score).toBe(pottery.experience_fit_score)
+  })
+})

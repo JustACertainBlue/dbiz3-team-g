@@ -112,8 +112,10 @@ describe('Multi-Turn Session & API Flow Verification', () => {
     filtered = await applyHardConstraints(candidates, profile.hard_constraints)
     expect(filtered.eligible_candidates).toHaveLength(0)
 
-    relaxation = await buildRelaxationSuggestions([], profile.hard_constraints)
+    const withoutBudget = await applyHardConstraints(candidates, { ...profile.hard_constraints, max_budget_per_person: undefined })
+    relaxation = await buildRelaxationSuggestions(withoutBudget.eligible_candidates, profile.hard_constraints)
     expect(relaxation.relaxation_suggestions.some(r => r.criterion === 'Budget')).toBe(true)
+    expect(relaxation.relaxation_suggestions.find(r => r.criterion === 'Budget')?.suggested_value).toBe(150000)
   })
 
   it('enforces quote request idempotency per (agency, experience) pair (BR-018)', async () => {

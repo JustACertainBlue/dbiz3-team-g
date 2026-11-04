@@ -12,6 +12,8 @@ The AI Tour Matching module (`AIT`) provides an interactive natural-language mat
 
 The technical implementation uses a modern fullstack TypeScript web application on Node.js / Next.js with PostgreSQL storage, OpenAI structured outputs for natural-language extraction, Google Maps API for route convenience evaluation, and Vitest for test-first automated verification.
 
+> **As built on `main` (updated 2026-10-30, Round 3):** Next.js 14 (App Router) + React 18, Vitest 2. Storage is the shared JSON runtime (`src/lib/demo/json-repository.ts`, seeded from `data/seed/*.csv`; tests use an in-memory copy); PostgreSQL (`data/schema.sql`) remains the target and `src/lib/db/client.ts` is a stub. Natural-language extraction is a local rule-based mock (`src/lib/ai/extractor.ts`); no OpenAI call. Route distance is a mocked per-village table; no Google Maps call. Access uses the demo session cookie `hab_demo_account`, not a Bearer token. Matching runs through `POST /api/ait/matching` (see `contracts/matching-api.md`). These gaps are listed in `docs/build/mvp-alpha-checklist.md` §3. The sections below keep the original target design.
+
 ---
 
 ## Technical Context
@@ -107,6 +109,8 @@ tests/
     └── ait-flow.test.ts
 ```
 
+As built, the AIT routes are `src/app/api/ait/sessions/route.ts`, `sessions/[id]/messages|quote|chat/route.ts`, `matching/route.ts` and `preferences/[agencyId]/route.ts` (no `decay` route; `src/lib/decay/time-decay.ts` is a library); the screen helpers are `src/app/ai-matching/matching-view.ts` and `ai-matching-access.ts` (Round 3); tests are in `tests/unit/*.test.ts`, `tests/contract/*.test.ts` and `tests/integration/ait-*.test.ts`.
+
 **Structure Decision**: Integrated fullstack Next.js application with modular domain logic in `src/lib/`, screen AIT121 UI in `src/app/ai-matching/page.tsx`, and comprehensive test suites in `tests/`.
 
 ---
@@ -119,3 +123,6 @@ tests/
 | **Cloud Deployment** | Deferred to Session 11 | Local development server (`npm run dev`) satisfies all MVP Alpha demonstration requirements with zero hosting cost. |
 | **Distance Matrix Cache** | Avoid external rate limits | In-memory/local coordinate table provides instant deterministic travel time calculation for Hanoi craft villages during test suites. |
 | **OpenAI Structured Outputs** | Guarantees schema adherence | Free-form prompting requires fragile JSON parsing and causes intermittent test failures. |
+| **As built: JSON runtime instead of PostgreSQL** | One shared prototype runtime for all modules on `main` | A per-module database client would split the demo data; `src/lib/db/client.ts` stays a stub until the team migrates. |
+| **As built: rule-based extractor mock instead of OpenAI** | Runs offline with no key | Development stub only; the spec forbids a rule-based fallback in production (FR-003, SR-003) — listed as an Alpha limitation. |
+| **As built: mocked distance instead of Google Maps** | No API key, deterministic tests | Distance is labelled "estimated" in explanations (#25); listed as an Alpha limitation. |

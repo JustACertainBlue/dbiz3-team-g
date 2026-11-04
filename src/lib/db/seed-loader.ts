@@ -22,6 +22,7 @@ export interface Experience {
   description: string
   category: string
   experience_type?: string
+  craft_type?: string
   duration_minutes: number
   price_per_person: number
   max_participants: number
@@ -151,12 +152,14 @@ export async function loadExperiences(): Promise<Experience[]> {
 
     // For general AI matching seed catalog, return verified active experiences
     if (isVerified) {
+      const publishedVersion = providerVersions.find(version => version.provider_id === row.provider_id && version.version_no === prov?.published_version_no)
       experiences.push({
         experience_id: row.experience_id,
         provider_id: row.provider_id,
         name: row.name,
         experience_name: row.name,
-        provider_name: providerVersions.find(version => version.provider_id === row.provider_id && version.version_no === prov?.published_version_no)?.business_name,
+        provider_name: publishedVersion?.business_name,
+        craft_type: publishedVersion?.craft_type || undefined,
         village_id: prov?.village_id,
         description: row.description,
         category: row.category,

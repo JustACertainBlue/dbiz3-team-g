@@ -16,6 +16,7 @@ import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
 import { applyHardConstraints } from '@/lib/matching/constraint-engine'
 import { rankCandidates } from '@/lib/matching/scoring-engine'
 import {
+  applyScoreThreshold,
   buildRecommendations,
   buildRelaxationSuggestions,
 } from '@/lib/matching/recommendation-service'
@@ -23,10 +24,12 @@ import { loadExperiences } from '@/lib/db/seed-loader'
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    // Authorize before reading the body (contract: authorize → validate → read/write).
     const actor = demoSessionFromRequest(request)
     if (!actor.authenticated) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (actor.role !== 'TourAgency' || !actor.agencyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const body = await request.json().catch(() => null)
+    if (!body) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     if (body.session_id) {
       const matchingSession = await getMatchingSession(body.session_id)
       if (!matchingSession || matchingSession.agency_id !== actor.agencyId) {
@@ -61,9 +64,18 @@ export async function POST(request: Request) {
     const filtered = await applyHardConstraints(enrichedCandidates, constraints)
     const eligible = filtered.eligible_candidates
 
-    // 3. If no candidates survive → return relaxation suggestions (BR-011, BR-020)
-    if (eligible.length === 0) {
-      const relaxation = await buildRelaxationSuggestions([], constraints)
+    // 3. Score + rank surviving candidates (FR-007) and drop those below 60/100 (BR-020, #30)
+    const ranked = applyScoreThreshold(await rankCandidates(eligible, profile))
+
+    // 4. No candidate left → relaxation suggestions (BR-011, FR-012, #23, #24)
+    if (ranked.length === 0) {
+      const { max_budget_per_person: _budget, budget_per_person: _legacyBudget, ...withoutBudget } = constraints
+      const budgetFree = await applyHardConstraints(enrichedCandidates, withoutBudget)
+      const budgetFreeRanked = await rankCandidates(budgetFree.eligible_candidates, profile)
+      const largestGroup = enrichedCandidates.reduce((max, c) => Math.max(max, Number(c.max_participants) || 0), 0)
+      const relaxation = await buildRelaxationSuggestions(budgetFreeRanked, constraints, {
+        largest_group_size: enrichedCandidates.length > 0 ? largestGroup : undefined,
+      })
       return NextResponse.json({
         top_matches: [],
         relaxation_suggestions: {
@@ -73,10 +85,7 @@ export async function POST(request: Request) {
       })
     }
 
-    // 4. Score + rank surviving candidates (FR-007)
-    const ranked = await rankCandidates(eligible, profile)
-
-    // 5. Build recommendation output (FR-008, BR-007)
+    // 5. Build recommendation output (FR-008, BR-007, #25)
     const recs = await buildRecommendations(ranked)
 
     return NextResponse.json({

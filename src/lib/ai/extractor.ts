@@ -1,4 +1,17 @@
 import type { TourContext, TourPreferenceProfile } from '@/lib/matching/types'
+import { detectCraftPreference, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
+
+const HANOI_PLACES = [
+  'Hoàn Kiếm', 'Hoan Kiem', 'Old Quarter', 'Ba Đình', 'Tây Hồ', 'Long Biên', 'Cầu Giấy', 'Đống Đa',
+  'Hai Bà Trưng', 'Hoàng Mai', 'Thanh Xuân', 'Nam Từ Liêm', 'Bắc Từ Liêm', 'Hà Đông', 'Hà Nội', 'Hanoi',
+]
+
+// #35: the text after "from" / "near" up to a comma or the next clause, else a named Hanoi place.
+function detectOrigin(text: string): string | undefined {
+  const stated = text.match(/(?:^|[\s,])(?:from|near|xuất phát từ)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at)\s|[,.;!?]|$)/iu)
+  if (stated) return stated[1].trim()
+  return HANOI_PLACES.find(place => new RegExp(`(?<![\\p{L}])${place}(?![\\p{L}])`, 'iu').test(text))
+}
 
 export interface MessageInput {
   sender?: string
@@ -82,39 +95,21 @@ export async function extractTourContext(
       }
     }
 
-    // 4. Craft & Experience preferences
-    if (/silk|lụa/i.test(text)) {
-      craftPref = 'silk'
-    } else if (/pottery|ceramic|gốm/i.test(text)) {
-      craftPref = 'pottery'
-    } else if (/conical hat|nón lá/i.test(text)) {
-      craftPref = 'conical hat'
-    } else if (/embroider|thêu/i.test(text)) {
-      craftPref = 'embroidery'
-    } else if (/bamboo|mây tre/i.test(text)) {
-      craftPref = 'bamboo'
-    }
+    // 4. Craft & Experience preferences (#32, #34): only what the Agency states
+    const craft = detectCraftPreference(text)
+    if (craft) craftPref = craft
+    const types = detectExperienceTypes(text)
+    if (types.length > 0) tourContext.experience_types = types
 
-    // 5. Origin / Route
-    if (/Bat Trang|Bát Tràng/i.test(text)) {
-      tourContext.origin_or_route = { origin_address: 'Hanoi Center', destination_address: 'Bat Trang' }
-    } else if (/Van Phuc|Vạn Phúc/i.test(text)) {
-      tourContext.origin_or_route = { origin_address: 'Hanoi Center', destination_address: 'Van Phuc' }
-    } else if (/Chuong|Chuông/i.test(text)) {
-      tourContext.origin_or_route = { origin_address: 'Hanoi Center', destination_address: 'Chuong' }
-    } else if (/Hoàn Kiếm|Old Quarter|Hanoi/i.test(text) && !tourContext.origin_or_route) {
-      tourContext.origin_or_route = { origin_address: 'Old Quarter, Hanoi' }
-    }
-  }
-
-  if (!tourContext.origin_or_route) {
-    tourContext.origin_or_route = { origin_address: 'Old Quarter, Hanoi' }
+    // 5. Origin (#35): "from X", "near X" or a named Hanoi district/city. A craft village named
+    // only as a place to visit is a destination, never an origin.
+    const origin = detectOrigin(text)
+    if (origin) tourContext.origin_or_route = { origin_address: origin }
   }
 
   if (craftPref) {
     tourContext.craft_preference = craftPref
   }
-  tourContext.experience_types = ['Workshop/Hands-on']
 
   const followUps: string[] = []
   if (tourContext.group_size === undefined) {
@@ -122,6 +117,12 @@ export async function extractTourContext(
   }
   if (!tourContext.target_date_or_range) {
     followUps.push('What is your desired date or date range for the tour?')
+  }
+  if (!tourContext.origin_or_route) {
+    followUps.push('Where will the group start from (for example "from Hoàn Kiếm")?')
+  }
+  if (!tourContext.craft_preference && !tourContext.experience_types?.length) {
+    followUps.push('Which craft or type of experience are you looking for (for example silk weaving, pottery or a hands-on workshop)?')
   }
 
   const isComplete = followUps.length === 0
@@ -145,7 +146,7 @@ export async function buildTourPreferenceProfile(
     origin: tourContext.origin_or_route,
   }
 
-  const matchingAttributes = (tourContext.experience_types || ['Workshop/Hands-on']).map(type => ({
+  const matchingAttributes = (tourContext.experience_types || []).map(type => ({
     type: 'experience_type',
     value: type,
   }))

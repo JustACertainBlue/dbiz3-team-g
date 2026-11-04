@@ -5,7 +5,7 @@ the latest commit on that branch must be re-checked (`/team-status`).
 
 | Module | Feature folder | Branch / PR | Owner (driver) | Status | Last verified |
 |---|---|---|---|---|---|
-| AIT | `specs/001-ait-core` | `001-ait-core` / PR #6 (opened by nguyenthu-0505), merged as `3e0e047` | nguyenthu-0505 | On `main`; runs on the JSON runtime since `ada9e44`. Round 2 defects B1–B4: see below | 29 Oct 2026, `main` `ada9e44` (tests only) |
+| AIT | `specs/001-ait-core` | `001-ait-core` / PR #6 (opened by nguyenthu-0505), merged as `3e0e047`; Round 3 fixes on `linh/ait-fixes` (not pushed) | nguyenthu-0505 (Round 3 fixes: linhkhanh-vu) | On `main`; runs on the JSON runtime since `ada9e44`. Round 3 verify of `main` `fc29cbc`: B1, B3 fixed; B2, B4 partly. Round 3 fixes D1–D11 + spec #23–#37 on `linh/ait-fixes`: route-level tests, no fabricated results on failure (503 + Retry), useful relaxation, 60/100 threshold, explanations from evaluated factors, craft by `craft_type`, OQ #4 completeness, Guest → Login, Quote/Chat open Messages. Limitations: checklist §3 rows 15–24 | 4 Nov 2026, `linh/ait-fixes` `009e996`: 81 files, 588/588 tests, lint OK; round 3 checklist demo passed (macOS) |
 | BKG | `specs/004-bkg-core` (US-4); `specs/011-bkg-manage` (US-5 + US-3); `specs/012-bkg-list` (US-6); `specs/013-bkg-schedule` (US-1 + US-2) | PR #17 (`343e4ce`), #20 (`5cae545`), #22 (`7057d5c`), #25 (`c3f0c64`), #28 (`fa4d9d2`); spec PRs #18, #19, #21, #24, #26, #27 | linhkhanh-vu | **Code complete on `main`**: US-1..US-6, F-SCHED-01..10; T-lists of all four features done; demos on macOS (build-log Entries 12, 16, 20, 25, 30); checklist §3 BKG rows 5–13 current. **Missing**: Windows G1 for 004/011/012/013; post-merge non-author review of PR #17, #22, #25, #28 (no GitHub review on any; owners: AIT/PRF/EXP for `applyBatch`, PRF for nav links, EXP for the Explore link). Spec #26–#82 on `main` | 30 Oct 2026, `main` `fa4d9d2`: 76 files, 503/503 tests, lint OK |
 | AUT | `specs/001-aut-registration` … `specs/010-aut-manage-accounts` (10 folders) | `001-aut-registration`, last `07d60b0` (linh-daotruc, 29 Oct) | linh-daotruc | **Not merged**: 14 commits ahead, 22 behind `main`. `main` uses the demo session instead | 29 Oct 2026, branch inspected, not run |
 | PRF | `specs/002-prf-core` | `002-prf-core` / PR #8, squash-merged as `222216d` | nguyenthu-0505 | On `main`; US-1–6. Branch still has 14 commits not on `main` (last `e8e9e5c`, 21 Oct) | 29 Oct 2026, `main` `ada9e44` (tests only) |
@@ -63,9 +63,16 @@ Test gap: integration tests call service functions directly; nothing exercises
 turn 2 = 15 pax excludes caps < 15; 200 pax and 20,000 VND → no-match + `relaxation_suggestions`;
 Request Quote ×2 → same ID; Chat ×2 → same ID.
 
-Re-verify checklist for round 3 (one session, sequential): Silk → 10 pax → 15 pax (2 cards) →
-13 pax (no Bát Tràng) → 200 pax (no-match) → 20,000 VND (no-match); Silk → Vạn Phúc #1; scores
-differ; Quote ×2 and Chat ×2 keep their IDs.
+Re-verify checklist for round 3 (one session, sequential; every message states origin + craft, spec #29):
+"Silk weaving" (follow-ups) → "10 pax on 2026-11-20 from Hoàn Kiếm" (5 cards, Vạn Phúc #1) → "Change
+to 15 pax" (2 cards) → "Change to 13 pax" (no Bát Tràng) → "Change to 200 pax" (no-match, capacity
+named, #24) → "Change to 10 pax, budget 20,000 VND per person" (no-match, Budget suggestion 150,000,
+#23); scores differ; Quote ×2 and Chat ×2 keep their IDs and open Messages (#31). Full path:
+`specs/001-ait-core/quickstart.md` §2.
+
+Round 3 result on `main` `fc29cbc` (30 Oct 2026): B1, B3 fixed; B2 partly (scores differ, Silk → Vạn
+Phúc #1, but template explanation and name-based craft match); B4 partly (Chat keeps its ID, opens no
+screen). Further defects D1–D10 and their fix tasks: `specs/001-ait-core/tasks.md` Phase 5.
 
 Non-blocking: Đường Lâm still in `specs/001-ait-core/quickstart.md:88`, `research.md:35`,
 `tests/unit/hard-constraints.test.ts:37`; test comment "seed max ≤ 20" (actual 18 Đào Thục, 16 among
@@ -73,6 +80,12 @@ Verified); SQLite in quickstart vs PostgreSQL schema; mock login; card lacks Pro
 Details; PR description empty; `npm install` → 11 vulnerabilities (5 moderate, 2 high, 4 critical).
 
 ### Draft for `mvp-alpha-checklist.md` §3 (AIT rows)
+
+> **2026-11-04 (Round 3, `linh/ait-fixes`):** the rows below that are still true were moved to
+> `docs/build/mvp-alpha-checklist.md` §3 rows 15–24 (with new rows for #23 dates, #32 Other and provider quality).
+> Row 9 (Quote/Chat stubs) was removed: fixed by D10/#31. Rows 3 (template explanation) and 7 (session in
+> memory) are fixed; row 13 is covered by checklist row 14; row 11 (Should-have F-MATCH-10, 13–16) was not
+> re-verified in Round 3. This draft is kept for history.
 
 B1 and B2 are Must → fix before tagging; they are not limitations. B3/B4 may stay as row 9 because
 FR-011 is Should.
@@ -87,7 +100,6 @@ FR-011 is Should.
 | 6 | AIT: No database; seed read from CSV; `schema.sql` unused; `DATABASE_URL` unused. | AIT FR-005 | Session 9–10 |
 | 7 | AIT: Matching Session / Tour Preference Profile in server memory only. *(driver to confirm)* | AIT BR-016, FR-004 | Session 10 |
 | 8 | AIT: Mock login (Agency Account ID only); access check covers Guest vs Tour Agency only. | AIT BR-001, BR-002; AUT F-AUTH-16 | Session 9–10 |
-| 9 | AIT: Request Quote / Chat are stubs: not persisted, new ID per click, Chat opens no screen. | AIT FR-011 (Should), BR-018, BR-019, AS-10, AS-11 | Session 10 |
 | 10 | AIT: Card has no "View Details" and no Provider name. | AIT FR-008 | Session 10 |
 | 11 | AIT: Should-have F-MATCH-10, 13–16 not implemented. | AIT BR-012–015, BR-021, BR-022 | Session 11 |
 | 12 | AIT: Docs/test drift (Đường Lâm, "seed max ≤ 20"). | Constitution P1 | Session 9 |

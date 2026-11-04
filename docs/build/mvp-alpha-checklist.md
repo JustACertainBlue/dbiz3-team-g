@@ -52,6 +52,16 @@ limitation discovered by the instructor that is not written here is.
 | 12 | BKG: ~~The Provider page has no link to BKG135~~ **Closed by 012 US-6**: Provider page → Bookings → BKG133 → Detail → BKG135 (#66). | BKG #54, #66, screen-spec-BKG135 | Done |
 | 13 | BKG: DSH018 has only the "Own booking action summary" panel; the profile, schedule and conversation panels are not built. ~~The Provider "Dashboard" link still opens PRF127~~ **nav part closed by 013**: "Dashboard" → DSH018, "Schedule" → SCH139 (#69). | BKG #65, #69, screen-spec-DSH018 | Other panels: with PRF / SCH / CHAT (not planned yet) |
 | 14 | `npm audit` reports 15 dependency vulnerabilities (5 moderate, 6 high, 4 critical) on `main` `4de9d95` (up from 9 with 3 critical at Entry 2); `npm audit fix` is not run because it may change the agreed stack versions. Prototype only, no external deployment. | build-log §3 #4 | Upgrade the shared stack together with all module owners before any external deployment (not planned yet) |
+| 15 | AIT: AI extraction is a local rule-based mock; no LLM is called. It reads group size, date, budget, origin (#35), craft (#32, #37) and Experience type (#34) from keywords only; free wording outside those keywords is not understood. Development stub only (the spec forbids a rule-based fallback). | AIT FR-003, FR-004, BR-017, SR-003 | Session 9 |
+| 16 | AIT: "Temporary AI Failure + Retry" is real in the UI and API (503 + Retry, #27, #33, #36), but an AI failure can only be produced by a test mock or a stopped server, because no real AI call exists. | AIT FR-003, AC-AIT-FAIL, BR-017 | Session 9 |
+| 17 | AIT: Route distance is a fixed per-village table, not Google Maps Distance Matrix; explanations label it "estimated" (#25). | AIT FR-006, BR-005, OQ #9 | Session 10 |
+| 18 | AIT: Date availability (operating hours, On hold / Booked) is not checked in matching; the Budget suggestion (#23) therefore considers capacity only, not dates. | AIT FR-006, #23 | Session 10 |
+| 19 | AIT: Provider quality in the match score is a fixed per-Experience value in code, not read from `data/`. | AIT FR-007 | Session 10 |
+| 20 | AIT: Providers whose `craft_type` is Other (Chuông, Phú Vinh) match a hat or bamboo preference equally; a finer taxonomy needs a change in `data/`. | AIT #32 | Session 11 |
+| 21 | AIT: Demo session cookie (`hab_demo_account`) instead of AUT login; access is Guest → Login, non-Agency → restricted page (#28). | AIT BR-001, BR-002; AUT F-AUTH-16 | Session 9–10 |
+| 22 | AIT: Recommendation cards have no "View Experience" action and do not show the Provider name. | AIT FR-008, AIT121 element 7 | Session 10 |
+| 23 | AIT: Test title in `tests/integration/matching-scenarios.test.ts:65` says "all seed max ≤ 20" (largest eligible group is 16; 18 overall). | Constitution I | Session 9 |
+| 24 | AIT: Matching sessions, messages, Quote Requests and Chats are stored in the shared JSON runtime (`.demo-data/runtime.json`), not PostgreSQL (`src/lib/db/client.ts` is a stub). | AIT FR-005, FR-011; `data/schema.sql` | Session 9–10 |
 
 ## 4. Sign-off
 

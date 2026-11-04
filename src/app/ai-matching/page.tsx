@@ -1,7 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { refreshDemoSession, setCurrentRole } from '@/lib/prf/client-session'
+import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, noMatchView, type ApiResult } from './matching-view'
+import { RESTRICTED_TEXT } from './ai-matching-access'
 
 interface Message {
   id: string
@@ -10,11 +13,13 @@ interface Message {
   sent_at: string
   clarificationQuestions?: string[]
   recommendations?: any[]
-  relaxationSuggestions?: any[]
-  conversationPrompt?: string
+  relaxationLines?: string[]
+  retry?: 'reanalyze' | 'resend'
+  retryText?: string
 }
 
 export default function AiMatchingScreen() {
+  const router = useRouter()
   const [role, setRole] = useState<'Agency' | 'Guest'>('Guest')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [agencyId, setAgencyId] = useState<string>('')
@@ -109,7 +114,7 @@ export default function AiMatchingScreen() {
             Access Restricted to Tour Agencies
           </h2>
           <p style={{ color: '#94A3B8', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
-            AI Tour Matching is exclusively available for verified Tour Agencies. Guests are redirected to the sign-in portal (BR-002).
+            {RESTRICTED_TEXT}
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button
@@ -154,225 +159,98 @@ export default function AiMatchingScreen() {
     )
   }
 
-  const handleSendMessage = async (customPrompt?: string) => {
-    const textToSend = customPrompt || inputText
-    if (!textToSend.trim() || !sessionId) return
+  const addAssistant = (message: Omit<Message, 'id' | 'sender' | 'sent_at'>) =>
+    setMessages(prev => [
+      ...prev,
+      { id: `assistant-${Date.now()}-${prev.length}`, sender: 'Assistant', sent_at: new Date().toLocaleTimeString(), ...message },
+    ])
 
-    const userMsg: Message = {
-      id: `msg-${Date.now()}`,
-      sender: 'Agency',
-      text: textToSend,
-      sent_at: new Date().toLocaleTimeString(),
-    }
-
-    setMessages(prev => [...prev, userMsg])
-    if (!customPrompt) setInputText('')
-    setLoading(true)
-
+  const postJson = async (url: string, body: unknown): Promise<ApiResult> => {
     try {
-      const res = await fetch(`/api/ait/sessions/${sessionId}/messages`, {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender: 'Agency', text: textToSend }),
+        body: JSON.stringify(body),
       })
-
-      if (res.ok) {
-        const data = await res.json()
-        const extraction = data.extraction
-
-        if (!extraction.is_complete && extraction.follow_up_questions?.length > 0) {
-          const assistantMsg: Message = {
-            id: `assistant-${Date.now()}`,
-            sender: 'Assistant',
-            text: 'I need a few more details to find the best craft match for your tour:',
-            sent_at: new Date().toLocaleTimeString(),
-            clarificationQuestions: extraction.follow_up_questions,
-          }
-          setMessages(prev => [...prev, assistantMsg])
-        } else {
-          // If complete, fetch recommendations or build them
-          await fetchMatchingResults(data.tour_preference_profile || extraction.tour_context)
-        }
-      }
+      return { ok: res.ok, status: res.status, body: await res.json().catch(() => null) }
     } catch {
-      // Fallback response for resilient demonstration
-      simulateMatchingFlow(textToSend)
+      return { networkError: true }
+    }
+  }
+
+  // Analyze a new Agency message, or on Retry the stored conversation without adding a message (#33).
+  const analyze = async (body: Record<string, unknown>) => {
+    if (!sessionId) return
+    setLoading(true)
+    try {
+      const outcome = messageOutcome(await postJson(`/api/ait/sessions/${sessionId}/messages`, body))
+      if (outcome.kind === 'clarify') {
+        addAssistant({ text: 'I need a few more details to find the best craft match for your tour:', clarificationQuestions: outcome.questions })
+      } else if (outcome.kind === 'match') {
+        await fetchMatchingResults(outcome.profile)
+      } else {
+        addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const simulateMatchingFlow = (prompt: string) => {
-    // Offline fallback — check for group size before showing any results
-    if (!/(\d+)\s*(?:pax|guests?|people|tourists?|passengers?|người)/i.test(prompt)) {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `assistant-${Date.now()}`,
-          sender: 'Assistant',
-          text: 'To tailor the artisan workshop, please clarify your group size and date range.',
-          clarificationQuestions: [
-            'Could you please specify your expected group size or number of guests/pax?',
-            'What is your desired date or date range for the tour?',
-          ],
-          sent_at: new Date().toLocaleTimeString(),
-        },
-      ])
-      return
-    }
+  const handleSendMessage = async (customPrompt?: string) => {
+    const textToSend = customPrompt || inputText
+    if (!textToSend.trim() || !sessionId) return
 
-    // Offline fallback with seed-correct values (no matching logic possible without server)
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `assistant-${Date.now()}`,
-        sender: 'Assistant',
-        text: '(Offline mode) Showing seed catalog — live matching unavailable. Results are not filtered by your group size.',
-        sent_at: new Date().toLocaleTimeString(),
-        recommendations: [
-          {
-            experience_id: 'b70bd0fa-6a81-5aec-9ff6-5303210b2fad',
-            provider_id: '867719ea-c962-56a1-a88c-3f96e8d0af65',
-            experience_name: 'Làm nón lá',
-            provider_name: 'Xưởng thủ công Chuông',
-            village_name: 'Chuông',
-            rank: 1,
-            match_score: 0,
-            price_per_person: 225000,
-            max_participants: 15,
-            explanation: 'Offline fallback — run the dev server for real AI matching.',
-          },
-        ],
-      },
-    ])
+    setMessages(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'Agency', text: textToSend, sent_at: new Date().toLocaleTimeString() }])
+    if (!customPrompt) setInputText('')
+    await analyze({ sender: 'Agency', text: textToSend })
   }
 
   /**
-   * Calls the real matching pipeline via the server API.
-   * The server runs: loadExperiences → applyHardConstraints → rankCandidates → buildRecommendations
-   * and returns top_matches + optional relaxation_suggestions based on the profile built from
-   * the session conversation history.
+   * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
+   * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
-  const fetchMatchingResults = async (profileOrContext: any) => {
-    try {
-      const res = await fetch('/api/ait/matching', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: sessionId,
-          tour_preference_profile: profileOrContext,
-        }),
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        const topMatches: any[] = data.top_matches || []
-        const relaxation = data.relaxation_suggestions
-
-        if (topMatches.length > 0) {
-          setMessages(prev => [
-            ...prev,
-            {
-              id: `assistant-${Date.now()}`,
-              sender: 'Assistant',
-              text: 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
-              sent_at: new Date().toLocaleTimeString(),
-              recommendations: topMatches.map(m => ({
-                experience_id: m.experience_id,
-                provider_id: m.provider_id,
-                experience_name: m.experience_name || m.name,
-                provider_name: m.provider_name,
-                village_name: m.village_name,
-                rank: m.rank,
-                match_score: m.match_score,
-                price_per_person: m.price_per_person,
-                max_participants: m.max_participants,
-                explanation: m.explanation,
-              })),
-            },
-          ])
-        } else {
-          // No candidates passed constraints → show relaxation suggestions (BR-011, BR-020)
-          setMessages(prev => [
-            ...prev,
-            {
-              id: `assistant-${Date.now()}`,
-              sender: 'Assistant',
-              text: relaxation?.conversation_prompt ||
-                'No experiences currently meet all criteria above 60/100. You can relax your budget, travel distance, or adjust group size to see more artisan options.',
-              sent_at: new Date().toLocaleTimeString(),
-              relaxationSuggestions: relaxation?.relaxation_suggestions || [],
-            },
-          ])
-        }
-        return
-      }
-    } catch {
-      // Server unavailable — fall through to offline fallback below
+  const fetchMatchingResults = async (profile: unknown) => {
+    const result = await postJson('/api/ait/matching', { session_id: sessionId, tour_preference_profile: profile })
+    if ('networkError' in result || !result.ok) {
+      addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
+      return
     }
-
-    // API not reachable: show offline notice
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `assistant-${Date.now()}`,
-        sender: 'Assistant',
-        text: 'Could not reach the matching server. Please ensure the dev server is running (`npm run dev`) and refresh.',
-        sent_at: new Date().toLocaleTimeString(),
-      },
-    ])
+    const topMatches: any[] = result.body?.top_matches || []
+    if (topMatches.length > 0) {
+      addAssistant({
+        text: 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
+        recommendations: topMatches.map(m => ({
+          experience_id: m.experience_id,
+          provider_id: m.provider_id,
+          experience_name: m.experience_name || m.name,
+          provider_name: m.provider_name,
+          village_name: m.village_name,
+          rank: m.rank,
+          match_score: m.match_score,
+          price_per_person: m.price_per_person,
+          max_participants: m.max_participants,
+          explanation: m.explanation,
+        })),
+      })
+    } else {
+      // No candidate reaches the constraints or 60/100 → relaxation suggestions (BR-011, FR-012)
+      const view = noMatchView(result.body)
+      addAssistant({ text: view.prompt, relaxationLines: view.lines })
+    }
   }
 
-  const handleRequestQuote = async (experienceId: string) => {
+  // Request Quote / Chat: open Messages (COM048) with the Chat selected only after success (#31).
+  const runHandoff = async (kind: 'quote' | 'chat', experienceId: string, statusKey: string) => {
     if (!sessionId) return
-    setQuoteStatus(prev => ({ ...prev, [experienceId]: 'sending' }))
-
-    try {
-      const res = await fetch(`/api/ait/sessions/${sessionId}/quote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          experience_id: experienceId,
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setQuoteStatus(prev => ({
-          ...prev,
-          [experienceId]: `Quote Requested: ${data.quote_request_id} (No booking created — awaiting provider quote)`,
-        }))
-      }
-    } catch {
-      setQuoteStatus(prev => ({
-        ...prev,
-        [experienceId]: 'Quote Request Submitted (Zero booking created)',
-      }))
-    }
+    const setStatus = kind === 'quote' ? setQuoteStatus : setChatStatus
+    setStatus(prev => ({ ...prev, [statusKey]: kind === 'quote' ? 'Requesting quote…' : 'Opening chat…' }))
+    const outcome = handoffOutcome(await postJson(`/api/ait/sessions/${sessionId}/${kind}`, { experience_id: experienceId }))
+    if (outcome.kind === 'success') router.push(outcome.navigateTo)
+    else setStatus(prev => ({ ...prev, [statusKey]: outcome.text }))
   }
 
-  const handleChat = async (experienceId: string, providerId: string) => {
-    if (!sessionId) return
-    setChatStatus(prev => ({ ...prev, [providerId]: 'connecting' }))
-
-    try {
-      const res = await fetch(`/api/ait/sessions/${sessionId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          experience_id: experienceId,
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setChatStatus(prev => ({
-          ...prev,
-          [providerId]: `Connected to Chat ${data.chat_session_id}`,
-        }))
-      }
-    } catch {
-      setChatStatus(prev => ({ ...prev, [providerId]: 'Chat opened with Provider' }))
-    }
-  }
+  const handleRequestQuote = (experienceId: string) => runHandoff('quote', experienceId, experienceId)
+  const handleChat = (experienceId: string, providerId: string) => runHandoff('chat', experienceId, providerId)
 
   return (
     <div
@@ -462,8 +340,7 @@ export default function AiMatchingScreen() {
               id="role-guest-btn"
               onClick={async () => {
                 await setCurrentRole('Guest')
-                setAgencyId('')
-                setRole('Guest')
+                router.replace('/login')
               }}
               style={{
                 background: (role as string) === 'Guest' ? '#EF4444' : 'transparent',
@@ -534,6 +411,25 @@ export default function AiMatchingScreen() {
               </div>
 
               <div>{msg.text}</div>
+
+              {/* Relaxation suggestions (BR-011, FR-012, #23, #24) */}
+              {msg.relaxationLines && msg.relaxationLines.length > 0 && (
+                <ul id="relaxation-suggestions" style={{ margin: '10px 0 0 0', paddingLeft: '18px', fontSize: '13px', color: '#CBD5E1' }}>
+                  {msg.relaxationLines.map(line => <li key={line}>{line}</li>)}
+                </ul>
+              )}
+
+              {/* Temporary AI Failure: Retry re-analyzes the saved conversation (#33) or resends an unsent message (#36) */}
+              {msg.retry && (
+                <button
+                  id="retry-analysis-btn"
+                  onClick={() => analyze(msg.retry === 'resend' && msg.retryText ? { sender: 'Agency', text: msg.retryText } : { retry: true })}
+                  disabled={loading}
+                  style={{ marginTop: '10px', backgroundColor: '#D97706', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Retry
+                </button>
+              )}
 
               {/* Clarification questions follow-up list */}
               {msg.clarificationQuestions && msg.clarificationQuestions.length > 0 && (
@@ -690,7 +586,12 @@ export default function AiMatchingScreen() {
                             borderRadius: '4px',
                           }}
                         >
-                          ✓ {quoteStatus[rec.experience_id]}
+                          {quoteStatus[rec.experience_id] === HANDOFF_FAILURE_TEXT ? (
+                            <>
+                              {HANDOFF_FAILURE_TEXT}{' '}
+                              <button className="handoff-retry-btn" onClick={() => handleRequestQuote(rec.experience_id)}>Retry</button>
+                            </>
+                          ) : quoteStatus[rec.experience_id]}
                         </div>
                       )}
 
@@ -705,7 +606,12 @@ export default function AiMatchingScreen() {
                             borderRadius: '4px',
                           }}
                         >
-                          💬 {chatStatus[rec.provider_id]}
+                          {chatStatus[rec.provider_id] === HANDOFF_FAILURE_TEXT ? (
+                            <>
+                              {HANDOFF_FAILURE_TEXT}{' '}
+                              <button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Retry</button>
+                            </>
+                          ) : chatStatus[rec.provider_id]}
                         </div>
                       )}
                     </div>

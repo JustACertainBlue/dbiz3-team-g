@@ -25,7 +25,7 @@ describe('T031 | Matching Scenarios — Seed-Data Assertions (AS-5/6/8/9)', () =
   // -------------------------------------------------------------------------
   it('AS-5/BR-005: group of 15 → Bát Tràng (cap 12) and Vạn Phúc (cap 13) are eliminated', async () => {
     const extraction = await extractTourContext([
-      { sender: 'Agency', text: '15 tourists, pottery ceramic, date 2026-11-15, budget 500000 VND' },
+      { sender: 'Agency', text: '15 tourists, pottery ceramic, date 2026-11-15, budget 500000 VND, from Hoàn Kiếm' },
     ])
     expect(extraction.is_complete).toBe(true)
     expect(extraction.tour_context.group_size).toBe(15)

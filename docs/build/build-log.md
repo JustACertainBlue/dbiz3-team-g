@@ -508,6 +508,30 @@ did and what the humans decided.
 
 Main lessons (details in §4): (1) a race test must pause between check and write, or it does not prove the lock (Entry 10); (2) authorize before any write, including expiry — a denied request must write nothing (Entry 15); (3) tests that only check keys miss wrong types and wrong boundaries — assert `typeof` and per-day boundaries, through the public entry point (Entries 16–17, 28–29); (4) create fixtures with the same `now` that checks them (Entries 22–23); (5) read the demo response bodies, not only status codes — two of the defects were found that way.
 
+### Entry 32: 30/10–04/11 Claude Code + human — AIT Round 3 verify and fixes (D1–D11, spec #23–#37)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); linhkhanh-vu decided every spec question; branch `linh/ait-fixes` (not pushed) |
+| Command and argument | `/verify-module AIT` on `main` `fc29cbc`, then `/speckit-analyze` ×2, Step 5 (tests first) and Step 6 (code) for `specs/001-ait-core/tasks.md` Phase 5 (T034–T056) |
+| Feature and tasks | `specs/001-ait-core`; spec decisions #23–#31 (PR #32), #32–#35 and #36–#37 (this branch) |
+| What the agent produced | Verify: B1, B3 fixed; B2, B4 partly; new defects D1 (fake offline card and fake Quote success), D2 (useless relaxation), D3 (no 60/100 threshold), D4 (template explanation), D5 (craft by hard-coded names), D6 (origin and preference defaulted), D7 (Guest not redirected), D8 (no route-level test), D9 (stale quickstart), D10 (Chat opened no screen), D11 (Quote/Chat validated before authorizing). Fixes: `src/lib/matching/craft-taxonomy.ts` (new), `src/lib/ai/extractor.ts`, `src/lib/matching/scoring-engine.ts`, `src/lib/matching/recommendation-service.ts`, `src/lib/db/seed-loader.ts` (`craft_type`), `src/app/api/ait/matching/route.ts`, `sessions/[id]/messages|quote|chat/route.ts`, `src/app/ai-matching/page.tsx`, `matching-view.ts`, `ai-matching-access.ts`, `layout.tsx` (new). Docs: tasks Phase 5, contract rewritten, plan "as built", quickstart. Commits `cb808f0`, `1c6dfe0`, `4a3f84e`, `009e996`. |
+| Human review | Decisions #23–#37 by linhkhanh-vu. Edits to existing tests approved in chat (table below). No GitHub review yet. |
+| Tests | Red first: 21 failing for the right reasons (`cb808f0`), then 4 for #36/#37 (`4a3f84e`). Green: `Test Files 81 passed (81)`, `Tests 588 passed (588)`; `npm run lint` passed. Mutation checks (each reverted): T034 — extractor keeps the first group size, Quote always new, Chat ignores the existing pair Chat → all red; D1 — view returns cards on network error, handoff reports success on network error, route drops the 503 → all red; D2 — Budget suggestion back to budget × 1.3 → 3 red. |
+| Demo (macOS, after `npm run demo:reset`) | Clicked in the browser pane: Guest → `/login`; Local Provider → restricted page; Agency: "Silk weaving" (3 follow-ups) → "10 pax on 2026-11-20 from Hoàn Kiếm" (5 cards, Vạn Phúc #1) → 15 (Quất Động, Chuông) → 13 (no Bát Tràng) → 200 (capacity 16 named) → 20,000 VND (Budget 150,000) → 150,000 VND (Bát Tràng); "budget 500.000 đồng" keeps silk (#37); Request Quote ×2 and Chat on Bát Tràng open `/messages` with the same Chat; server stopped → #27 message + Retry, no card; server restarted → Retry resends (5 cards) and the session holds the message once (#36). Curl: the same sequence, Quote ×2 / Chat ×2 same IDs, bookings 8 → 8, Guest 401, Provider 403. The 503 Retry path (#33) is covered by `tests/integration/ait-failure-api.test.ts` only (no real AI call to fail). |
+| Spec issues found | §3 row 10. |
+| Commit | see `git log` on `linh/ait-fixes`; not pushed. |
+
+Edits to existing tests (each approved by the human in chat):
+
+| File:line | Before | After | Reason |
+|---|---|---|---|
+| `tests/unit/clarification.test.ts:13` | `'15 French tourists, Nov 10, pottery workshop in Bat Trang, budget 400k VND each'` | same text + `', from Hoàn Kiếm'` | #29: origin is a critical field; asserts unchanged |
+| `tests/integration/matching-scenarios.test.ts:28` | `'15 tourists, pottery ceramic, date 2026-11-15, budget 500000 VND'` | same text + `', from Hoàn Kiếm'` | #29; asserts unchanged |
+| `tests/integration/multi-turn-api.test.ts:115` | `buildRelaxationSuggestions([], profile.hard_constraints)` | candidates that pass every non-budget constraint; added assert Budget = 150000 | #23: the Budget value comes from those candidates |
+| `tests/unit/ai-matching-view.test.ts:12` | network error in the "re-analyze Retry" table | own test: network error → `retry: 'resend'` | #36 |
+| `tests/unit/craft-taxonomy.test.ts:10` | Metalwork `'đồng'` | `'đúc đồng', 'đồ đồng'` | #37: "đồng" alone is the currency |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -525,6 +549,7 @@ is never fixed silently in code.
 | 7 | Entry 3 | A complete EXP delivery needs durable PostgreSQL storage, Auth/Chat adapters and a weekly worker, absent from this branch. | Tracked in `specs/001-exp-core/implementation-status.md`. | Open integration work |
 | 8 | Verify / Entry 16–17 (BKG 011) | §5.1 FR-004 defined `updated_booking` only as "Object; Required"; the API returned the raw row with string numbers and DB names. | spec-BKG #57 (PR #21): same shape as F-SCHED-07, one serializer. | Closed; code in Entry 19 |
 | 9 | Step 6 / Entry 19 (BKG 011) | screen-spec-BKG144 marks `target_status` Required, but details must be editable without a status change (Booked → Booked is an invalid transition). | spec-BKG #58 to be added at the next spec edit (decided 2026-10-30). | Decided; not yet in `docs/spec/` |
+| 10 | Verify, Analyze, Demo / Entry 32 (AIT round 3) | Spec silent on: relaxation values, capacity no-match, explanation content, craft taxonomy, failure screen, non-Agency access, defaults for OQ #4 fields, threshold placement, Quote/Chat navigation, "Experience preference", origin wording, Retry after a network error, "đồng" as currency. | spec-AIT #23–#31 (PR #32), #32–#35, #36–#37 (`linh/ait-fixes`). | Closed |
 
 ## 4. Agent mistakes worth remembering
 
@@ -542,3 +567,4 @@ does not happen again.
 | 16–17 (BKG 011) | Unit and API tests for F-SCHED-04 checked only the top-level keys of the response, so `updated_booking` shipped with string numbers and DB field names; found only when reading the curl output of the US-5 demo. | Human read the demo JSON (Entry 16). | Spec #57 + tests that assert `typeof … === 'number'` and that PATCH equals the next GET (T029, T031). Read the demo response bodies, not only the status codes. |
 | 22–23 (BKG 012) | Draft T013 would have created 25 holds at `SEED_NOW` and checked them at 2026-10-06: the list's own expiry (#64) would cancel them, so the test would fail for the wrong reason after the code was correct — and only 9 slots fit one Monday. | `/speckit-analyze` H1, before Step 5. | Rule in tasks.md: create hold fixtures with the same `now` as the call that checks them; count operating-hours slots before choosing fixture sizes. |
 | 28–29 (BKG 013) | `getProviderSchedule` merged public blocks again after `buildCalendarBlocks`, across local midnight (one block 10-05 17:00 → 10-10 09:00); all tests passed because T011/T013 only checked the key set and the #72 tests called `buildCalendarBlocks` directly. | Agent's own curl demo (quickstart §2 A2), reading the response body. | A shape test must also check boundaries (here: each block inside one local day), and run through the public entry point, not only the helper. New tests added before the fix. |
+| 32 (AIT) | The first #33 implementation re-analyzed after any failure; after a network error the unsent message was lost while the screen said "Your conversation is saved". All tests passed because the route test forced a 503, where the message is stored. | Agent's own demo: stopped the server, sent a message, restarted, clicked Retry, and read the reply. | Before choosing a retry, ask where the data is at the failure (stored or not); demo failure paths with the real cause (server down), not only the mocked one (#36). |

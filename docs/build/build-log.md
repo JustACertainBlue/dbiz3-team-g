@@ -580,6 +580,20 @@ Edits to existing tests (approved in chat 2026-11-04: header → cookie, and opt
 | `tests/prf/integration/provider-routes.test.ts:153-159` | the Draft Provider patches the Verified Provider | the demo Provider (Bát Tràng) patches the Draft Provider → 403 | (A) |
 | `tests/prf/integration/provider-routes.test.ts:185-231` (T036) | UBND Bát Tràng verifies the Bát Tràng Provider; UBND Phú Vinh is cross-village | UBND Hạ Thái (demo identity) verifies the Hạ Thái Provider (Pending Verification); cross-village = UBND Hạ Thái on the Bát Tràng Provider → 403 | (A): the demo UBND is assigned to Hạ Thái |
 
+### Entry 35: 04/11 Claude Code + human — CI on Windows/macOS and MVP Alpha checklist re-check
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); linhkhanh-vu decided scope (works alone, no messages to the team, no tag); branch `linh/ci-windows` (not pushed) |
+| Command and argument | Add GitHub Actions CI for gate G1; re-check every gate of `docs/build/mvp-alpha-checklist.md` at `main` `deaf3ab` |
+| Feature and tasks | No feature folder; no `specs/`, `src/` or `tests/` change |
+| What the agent produced | `.github/workflows/ci.yml` (windows-latest + macos-latest, Node 22, Python 3: `npm ci`, `validate_seed.py`, `npm test`, `npm run lint`; no new dependency). Checklist: §1 lists PRF, EXP, AIT, BKG, ADM; every gate has a status line and none is ticked; §3 rows 31–34; §4 only linhkhanh-vu re-signed ("No"). Docs: CLAUDE.md §5, 03-module-status. |
+| Human review | Decisions by linhkhanh-vu (2026-11-04): §1 = every module on `main`; §4 only own row; re-check every gate and tick only what is shown; G6 left empty with the list of unreviewed PRs. |
+| Tests | Local (macOS, Node 24.16, Python 3.14): seed `PASS: 47 CSVs`, `Test Files 104 passed (104)`, `Tests 694 passed (694)`, lint OK. Actions run: none yet (needs a push). `start_feature.py --check` per folder: OK 001-ait, 001-exp, 003-adm, 013-bkg; DRIFT 002-prf, 004/011/012-bkg. |
+| Demo (macOS, after `npm run demo:reset`) | Clicked in the built-in browser: EXP (Agency) `/explore` → Bát Tràng Provider → Experience; AIT silk request → 5 cards, Vạn Phúc #1 → Request Quote → `/messages`; BKG (Provider) SCH139 → BKG134 create (Tràng An, 10 pax, 2026-11-09 09:00) → BKG135 On hold → Confirm/Book → Booked → BKG133; Agency BKG137 → BKG138 Booked; PRF edit Save, Experiences, UBND Approve Hạ Thái → Verified; ADM UBND (🔒 Hạ Thái) and HDT (new Booking listed). Found: PRF128 hard-coded values; Save with no change → "new version pending" (checklist §3 #33–34). |
+| Spec issues found | None in `docs/spec/`. Found outside the spec: a member's personal e-mail in `docs/env/Environment Readiness Report.md:71` (G7, human-owned folder, not edited). |
+| Commit | see `git log` on `linh/ci-windows`; not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

@@ -11,7 +11,8 @@
  * with a mock Request, following the AIT pattern in tests/integration/.
  * No running server required.
  */
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
+import { demoRepository } from '@/lib/demo/json-repository'
 
 // Route handler imported directly — FAILS until T017 creates the file
 import { GET as getProviderRoute, PATCH as patchProviderRoute } from '@/app/api/prf/provider/[providerId]/route'
@@ -189,6 +190,8 @@ describe('T036 | POST /api/prf/provider/:id/verify – US-6 integration', () => 
   const HA_THAI_VILLAGE_ID = '6dfbb5e9-f92e-58a0-b090-d67cea160f62'
   const PENDING_PROVIDER_ID = SEED_IDS.providerPending
   const ubnd = ubndSession(HA_THAI_VILLAGE_ID)
+  // Each case starts from the seed: Approve makes Hạ Thái Verified, and spec-PRF #33 then refuses Request Revision.
+  beforeEach(() => demoRepository().reset())
 
   function makeVerifyRequest(
     providerId: string,

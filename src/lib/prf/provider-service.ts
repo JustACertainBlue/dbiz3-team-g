@@ -30,6 +30,35 @@ export class ForbiddenError extends Error {
   }
 }
 
+function parseJsonObject(value: string | null | undefined): Record<string, unknown> {
+  try {
+    const parsed = value ? JSON.parse(value) : {}
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {}
+  } catch {
+    return {}
+  }
+}
+
+/** spec-BKG #78 shape: the seven ISO weekdays, each with its HH:MM windows. */
+function weeklyOperatingHours(providerId: string): Record<string, Array<{ local_start: string; local_end: string }>> {
+  const hours: Record<string, Array<{ local_start: string; local_end: string }>> =
+    Object.fromEntries(['1', '2', '3', '4', '5', '6', '7'].map(day => [day, []]))
+  for (const row of demoRepository().all('provider_operating_hours').filter(item => item.provider_id === providerId)) {
+    hours[String(Number(row.weekday))]?.push({ local_start: row.local_start.slice(0, 5), local_end: row.local_end.slice(0, 5) })
+  }
+  return hours
+}
+
+/** #32: while a revision of a published Provider is open, its review state is the version's own status. */
+function reviewStatus(
+  provider: { verification_status: string; published_version_no: string | null; current_version_no?: string | number | null },
+  version: { version_no: number; version_status: string } | undefined,
+): string {
+  const revisionOpen = Boolean(provider.published_version_no) && version !== undefined
+    && version.version_no !== Number(provider.published_version_no)
+  return revisionOpen ? version!.version_status : provider.verification_status
+}
+
 export async function getProviderProfile(
   providerId: string,
   actorSession?: ActorSession,
@@ -103,18 +132,22 @@ export async function getProviderProfile(
     location_address: version?.location_address || '',
     artisan_names: artisanNamesList,
     business_registration_number: version?.business_registration_number || '',
-    verification_status: provider.verification_status,
+    // #32: the owner, UBND and HDT see the status of the revision under review; others see the
+    // status of the published profile.
+    verification_status: (isOwner || isUBND || isHDT) ? reviewStatus(provider, version) : provider.verification_status,
     public_images: [],
     pricing: defaultPricing,
     capacity: defaultCapacity,
     contact,
-    booking_conditions: {
-      cancellation_notice_hours: 24,
-      deposit_percentage: 20,
-    },
-    availability: {
-      days_open: [1, 2, 3, 4, 5, 6],
-    },
+    // FR-003 (#40): booking conditions of the shown version and the real weekly operating hours.
+    booking_conditions: parseJsonObject(version?.booking_conditions),
+    availability: { operating_hours: weeklyOperatingHours(providerId) },
+    experiences: experiences
+      .filter(exp => !exp.archived_at)
+      .map(exp => ({
+        experience_id: exp.experience_id, name: exp.name, category: exp.category,
+        duration_minutes: exp.duration_minutes, max_participants: exp.max_participants, price_per_person: exp.price_per_person,
+      })),
     quality_metrics: {
       total_bookings: demoRepository().all('bookings').filter(row => experiences.some(exp => exp.experience_id === row.experience_id)).length,
       average_booking_value: 0,
@@ -322,6 +355,14 @@ export async function reviewProvider(
         'revision_comments are required when requesting revision (US-6 AC3)',
       )
       ;(err as unknown as { statusCode: number }).statusCode = 400
+      throw err
+    }
+    // spec-PRF #33: Request Revision applies only to a version in Pending Verification.
+    const versions = await loadProviderProfileVersions()
+    const reviewed = versions.find(v => v.provider_id === providerId && v.version_no === Number(provider.current_version_no || provider.published_version_no || 1))
+    if (reviewStatus(provider, reviewed) !== 'Pending Verification') {
+      const err = new Error('Request Revision applies only to a profile version in Pending Verification (spec-PRF #33)')
+      ;(err as unknown as { statusCode: number }).statusCode = 409
       throw err
     }
     recordAuditLog(

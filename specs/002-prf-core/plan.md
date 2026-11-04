@@ -168,3 +168,9 @@ Re-copied after spec-PRF #31 (PRF128 shows only FR-004 inputs) and #32 (`provide
 stays Verified while a version is published; revisions carry their own `version_status`). Implemented in
 `src/lib/prf/provider-service.ts`, `src/lib/prf/provider-edit-form.ts` and PRF128; tests
 `tests/prf/unit/provider-versioning.test.ts`, `tests/prf/unit/provider-edit-form.test.ts` (build-log Entry 39).
+
+## Spec refresh 2026-11-04 (slice A2, `linh/prf-fixes-2`)
+
+Re-copied after spec-PRF #33 (Request Revision only on a Pending Verification version; otherwise 409).
+Implemented in `reviewProvider` and the verify route; PRF127 view rules in `src/lib/prf/provider-page-view.ts`
+(build-log Entry 40).

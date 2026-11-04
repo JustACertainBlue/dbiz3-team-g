@@ -61,6 +61,13 @@ export async function POST(
         headers: { 'Content-Type': 'application/json' },
       })
     }
+    if ((error as { statusCode?: number }).statusCode === 409) {
+      // spec-PRF #33: no version in Pending Verification to request a revision on.
+      return new Response(JSON.stringify({ error: (error as Error).message }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
     if ((error as { statusCode?: number }).statusCode === 400) {
       return new Response(JSON.stringify({ error: (error as Error).message }), {
         status: 400,

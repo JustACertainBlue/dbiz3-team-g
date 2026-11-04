@@ -344,6 +344,13 @@ describe('T035 | reviewProvider – US-6 (Verify Provider Profile)', () => {
 
   // ── US-6 AC3: Request Revision ────────────────────────────────────────────
   it('sets status to Revision Required when requesting revision with comments (AC3)', async () => {
+    // spec-PRF #33: Request Revision applies only to a Pending Verification version, so the
+    // Verified fixture first submits a major revision.
+    await updateProviderProfile(
+      VERIFIED_PROVIDER_ID,
+      providerSession(VERIFIED_PROVIDER_ID, SEED_IDS.provider1VerifiedUserId),
+      { business_name: 'Xưởng gốm Bát Tràng (bản sửa đổi)' },
+    )
     const res = await reviewProvider(
       VERIFIED_PROVIDER_ID,
       assignedUbndSession,

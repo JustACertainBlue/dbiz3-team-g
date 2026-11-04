@@ -16,7 +16,7 @@ import { PATCH as prfProviderPatch } from '@/app/api/prf/provider/[providerId]/r
 import { POST as expHandoff } from '@/app/api/demo/handoff/route'
 import { GET as expConversations } from '@/app/api/demo/conversations/route'
 
-type Handler = (request: never, context?: never) => Promise<Response> | Response
+type Handler = (request: never, context: never) => Promise<Response> | Response
 type Call = { status: number; body: unknown }
 
 const AGENCY_ID = DEMO_IDENTITIES.agency.agencyId!

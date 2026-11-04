@@ -121,3 +121,17 @@ export function hdtSession(
 }
 
 export { SEED_IDS }
+
+// Route requests carry the server-side demo session cookie (src/lib/auth/demo-session.ts); the
+// x-mock-session header is no longer read. The cookie names the demo account for the session's role.
+const DEMO_ACCOUNT: Record<ActorRole, string> = {
+  Guest: 'guest',
+  TourAgency: 'agency',
+  LocalProvider: 'provider',
+  UBND: 'ubnd',
+  HDT: 'hdt',
+}
+
+export function demoCookie(session: MockSession): string {
+  return `hab_demo_account=${DEMO_ACCOUNT[session.role]}`
+}

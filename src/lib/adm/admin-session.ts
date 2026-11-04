@@ -4,8 +4,7 @@ import type { SessionLike } from './scope-guard'
 /**
  * A2 (AC-ADM-SCOPE, SC-007): the admin actor comes only from the server-side demo session cookie
  * (hab_demo_account). Client-supplied session JSON (x-mock-session, hab_mock_session) is ignored, so a
- * UBND Admin cannot choose another village and nobody can claim HDT. This reads the cookie directly
- * because demoSessionFromRequest still accepts the legacy x-mock-session header when no cookie is sent.
+ * UBND Admin cannot choose another village and nobody can claim HDT.
  */
 export function adminSessionFromRequest(req: Request): SessionLike | null {
   const encoded = req.headers.get('cookie')?.split(';').map(part => part.trim())

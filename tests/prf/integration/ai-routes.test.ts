@@ -6,6 +6,7 @@ import {
   providerSession,
   guestSession,
   SEED_IDS,
+  demoCookie,
 } from '../helpers/mockSession'
 
 describe('T052 | AI Refinement Route Integration Tests (FR-007)', () => {
@@ -15,7 +16,7 @@ describe('T052 | AI Refinement Route Integration Tests (FR-007)', () => {
     return new Request('http://localhost:3000/api/prf/ai/description', {
       method: 'POST',
       headers: {
-        'x-mock-session': JSON.stringify(session),
+        cookie: demoCookie(session),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),

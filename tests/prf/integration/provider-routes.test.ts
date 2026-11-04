@@ -23,6 +23,7 @@ import {
   ubndSession,
   hdtSession,
   SEED_IDS,
+  demoCookie,
 } from '../helpers/mockSession'
 
 const VERIFIED_PROVIDER_ID = SEED_IDS.provider1Verified  // 50f2c8fc — Verified
@@ -36,7 +37,7 @@ function makeRequest(
   return new Request(url, {
     method: 'GET',
     headers: {
-      'x-mock-session': JSON.stringify(session),
+      cookie: demoCookie(session),
     },
   })
 }
@@ -123,7 +124,7 @@ describe('T015 | GET /api/prf/provider/:id – US-3 integration', () => {
     it('returns 405 for a DELETE request to this route', async () => {
       const req = new Request(
         `http://localhost:3000/api/prf/provider/${VERIFIED_PROVIDER_ID}`,
-        { method: 'DELETE', headers: { 'x-mock-session': JSON.stringify(guestSession()) } },
+        { method: 'DELETE', headers: { cookie: demoCookie(guestSession()) } },
       )
       const res = await getProviderRoute(req, { params: { providerId: VERIFIED_PROVIDER_ID } })
       expect([405, 404]).toContain(res.status)
@@ -143,7 +144,7 @@ describe('T020 | PATCH /api/prf/provider/:id – US-4 integration', () => {
     return new Request(url, {
       method: 'PATCH',
       headers: {
-        'x-mock-session': JSON.stringify(session),
+        cookie: demoCookie(session),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -151,11 +152,12 @@ describe('T020 | PATCH /api/prf/provider/:id – US-4 integration', () => {
   }
 
   it('returns 403 when updating another provider profile (BR-002)', async () => {
-    const anotherProvider = providerSession(SEED_IDS.providerDraft, SEED_IDS.providerDraftUserId)
-    const req = makePatchRequest(VERIFIED_PROVIDER_ID, anotherProvider, {
+    // The demo Provider (cookie `provider`, Bát Tràng) updating another Provider's profile (the Draft one)
+    const demoProvider = providerSession(VERIFIED_PROVIDER_ID, SEED_IDS.provider1VerifiedUserId)
+    const req = makePatchRequest(SEED_IDS.providerDraft, demoProvider, {
       general_description: 'Unauthorized update',
     })
-    const res = await patchProviderRoute(req, { params: { providerId: VERIFIED_PROVIDER_ID } })
+    const res = await patchProviderRoute(req, { params: { providerId: SEED_IDS.providerDraft } })
     expect(res.status).toBe(403)
   })
 
@@ -183,8 +185,10 @@ describe('T020 | PATCH /api/prf/provider/:id – US-4 integration', () => {
 // ─── T036: POST /api/prf/provider/:id/verify – US-6 integration ───────────────
 
 describe('T036 | POST /api/prf/provider/:id/verify – US-6 integration', () => {
-  const assignedUbnd = ubndSession(SEED_IDS.village1)
-  const crossVillageUbnd = ubndSession(SEED_IDS.village2)
+  // Demo UBND identity (cookie `ubnd`) is assigned to Hạ Thái; the Hạ Thái Provider is Pending Verification.
+  const HA_THAI_VILLAGE_ID = '6dfbb5e9-f92e-58a0-b090-d67cea160f62'
+  const PENDING_PROVIDER_ID = SEED_IDS.providerPending
+  const ubnd = ubndSession(HA_THAI_VILLAGE_ID)
 
   function makeVerifyRequest(
     providerId: string,
@@ -195,7 +199,7 @@ describe('T036 | POST /api/prf/provider/:id/verify – US-6 integration', () => 
     return new Request(url, {
       method: 'POST',
       headers: {
-        'x-mock-session': JSON.stringify(session),
+        cookie: demoCookie(session),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -203,36 +207,36 @@ describe('T036 | POST /api/prf/provider/:id/verify – US-6 integration', () => 
   }
 
   it('returns 403 on cross-village verification attempt (BR-005)', async () => {
-    const req = makeVerifyRequest(VERIFIED_PROVIDER_ID, crossVillageUbnd, { decision: 'Approve' })
+    const req = makeVerifyRequest(VERIFIED_PROVIDER_ID, ubnd, { decision: 'Approve' })
     const res = await postVerifyRoute(req, { params: { providerId: VERIFIED_PROVIDER_ID } })
     expect(res.status).toBe(403)
   })
 
   it('returns 200 and sets status to Verified on Approve', async () => {
-    const req = makeVerifyRequest(VERIFIED_PROVIDER_ID, assignedUbnd, { decision: 'Approve' })
-    const res = await postVerifyRoute(req, { params: { providerId: VERIFIED_PROVIDER_ID } })
+    const req = makeVerifyRequest(PENDING_PROVIDER_ID, ubnd, { decision: 'Approve' })
+    const res = await postVerifyRoute(req, { params: { providerId: PENDING_PROVIDER_ID } })
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.verification_status).toBe('Verified')
   })
 
   it('returns 200 and sets status to Revision Required with comments', async () => {
-    const req = makeVerifyRequest(VERIFIED_PROVIDER_ID, assignedUbnd, {
+    const req = makeVerifyRequest(PENDING_PROVIDER_ID, ubnd, {
       decision: 'Request Revision',
       revision_comments: 'Yêu cầu cập nhật chứng chỉ nghệ nhân.',
     })
-    const res = await postVerifyRoute(req, { params: { providerId: VERIFIED_PROVIDER_ID } })
+    const res = await postVerifyRoute(req, { params: { providerId: PENDING_PROVIDER_ID } })
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.verification_status).toBe('Revision Required')
   })
 
   it('returns 400 when Request Revision is sent without revision_comments', async () => {
-    const req = makeVerifyRequest(VERIFIED_PROVIDER_ID, assignedUbnd, {
+    const req = makeVerifyRequest(PENDING_PROVIDER_ID, ubnd, {
       decision: 'Request Revision',
       revision_comments: '',
     })
-    const res = await postVerifyRoute(req, { params: { providerId: VERIFIED_PROVIDER_ID } })
+    const res = await postVerifyRoute(req, { params: { providerId: PENDING_PROVIDER_ID } })
     expect(res.status).toBe(400)
   })
 })

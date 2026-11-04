@@ -383,6 +383,12 @@ sequenceDiagram
 
 - Search is not treated as a standalone Explore function because no Search function currently exists in the Function List.
 
+## Clarifications
+
+- 2026-11-04 #29: `source_context` is stored in `explore_interactions.filter_values` as `{"source_context": "Card" | "Detail Page"}` on the `request_quote` / `open_chat` interaction; no new column. The interaction belongs to the Agency's current Explore session.
+- 2026-11-04 #32: Only a new Quote Request (`is_new_request` = true) logs a `request_quote` interaction; reusing the existing Quote for the same Agency and Experience (FR-011) logs nothing.
+- 2026-11-04 #33: Chat started from the Explore Provider page carries `source_context` = "Detail Page".
+
 **10. Open questions**
 
 | **\#**                                                                            | **Question**                                                                                                                                                                          | **Blocking?** | **Owner**         | **Status**                                                                                                                                                                                                                           | **Anwers/ Decision**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -415,9 +421,11 @@ sequenceDiagram
 | 26 | The Sequence Diagram still labels Request Quote as UC-DIS-06 and uses villageId, while current Function List uses experience_id. Should the sequence be updated? | No | BA | Closed | Sequence uses experience_id and current UC-DIS-04 mapping. |
 | 27 | Is AI model retraining from Explore metrics part of MVP, or should Explore only tune ranking parameters? | No | Product / AI | Closed | MVP tunes versioned ranking parameters through F-EXPLORE-14..17. No standalone AI-model retraining pipeline is specified. |
 | 28 | Which persisted entity and attributes store FR-006 detail visits (`entered_at`, `exited_at`, `scroll_depth_pct`, `sections_viewed`, `next_action`, `time_to_next_action`), and how are they linked to an Agency and Experience? | Yes | BA / Data | Open | Blocks full US-2/FR-006. No storage mapping is defined in the current data model. The local prototype does not claim durable FR-006 completion; the team chose not to change `data/` in this slice. |
-| 29 | Where is FR-007 `source_context` (Card or Detail Page) stored alongside a strong Quote/Chat action so the source can be traced after handoff? | Yes | BA / Data / Chat | Open | Blocks full FR-007. No explicit physical column is defined. The prototype passes source context through a handoff interface only. |
+| 29 | Where is FR-007 `source_context` (Card or Detail Page) stored alongside a strong Quote/Chat action so the source can be traced after handoff? | Yes | BA / Data / Chat | Closed | `source_context` is stored in `explore_interactions.filter_values` as `{"source_context": "Card" | "Detail Page"}` on the `request_quote` / `open_chat` interaction; no new column. The interaction belongs to the Agency's current Explore session. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
 | 30 | What authoritative location data and coordinate source supports F-EXPLORE-04's closed 20 km Nearby rule, and which entity owns it? | Yes | BA / Data | Open | Blocks Nearby. The radius is defined, but the current Village data lacks coordinates. Same-Provider and same-craft suggestions can run without Nearby. |
 | 31 | What source supplies F-EXPLORE-03 optional `included_items` and `excluded_items` for each Experience? | No | BA / PRF | Open | The current Experience model has no explicit fields for these lists. Omit unavailable optional values rather than fabricate them. |
+| 32 | Does a repeated Request Quote for the same Agency and Experience (an existing Quote is reused, FR-011) log another FR-007 interaction? | No | BA | Closed | Only a new Quote Request (`is_new_request` = true) logs a `request_quote` interaction; reusing the existing Quote for the same Agency and Experience (FR-011) logs nothing. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
+| 33 | Which FR-007 `source_context` does a Chat started from the Explore Provider page carry? The enum has only Card and Detail Page. | No | BA / UI/UX | Closed | Chat started from the Explore Provider page carries `source_context` = "Detail Page". Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
 
 **11. Traceability to DBIZ2**
 

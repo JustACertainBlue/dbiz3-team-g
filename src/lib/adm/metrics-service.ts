@@ -12,11 +12,17 @@ import {
   loadExperiences,
   loadQuoteRequests,
   loadChatSessions,
+  loadBookingStatusHistory,
+  loadExperienceProviderMap,
   SeedBooking,
+  SeedBookingStatusHistory,
+  SeedQuoteRequest,
+  SeedChatSession,
   SeedAgency,
   SeedProvider,
 } from '@/lib/db/seed-loader'
 import { resolveAdminScope, SessionLike } from './scope-guard'
+import { listPendingVerification } from './pending-service'
 import {
   resolveDateRange,
   calculatePreviousPeriod,
@@ -46,6 +52,54 @@ function isWithinPeriod(dateStr: string, startDate: Date, endDate: Date): boolea
   return time >= startDate.getTime() && time <= endDate.getTime()
 }
 
+// contract:110 — Booking totals, status, trend, table and top 10 use the Booking created_at (A4).
+function createdInPeriod(b: { created_at: string }, startDate: Date, endDate: Date): boolean {
+  return isWithinPeriod(b.created_at, startDate, endDate)
+}
+
+// Snapshot at the end date: the record existed by then (A4).
+function existedAt(createdAt: string | undefined, endDate: Date): boolean {
+  return !createdAt || new Date(createdAt).getTime() <= endDate.getTime()
+}
+
+// Status of a Booking at a point in time, from booking_status_history (A5, contract:110).
+function statusAt(history: SeedBookingStatusHistory[], at: Date): string | null {
+  let latest: SeedBookingStatusHistory | null = null
+  for (const h of history) {
+    if (new Date(h.changed_at).getTime() > at.getTime()) continue
+    if (!latest || new Date(h.changed_at).getTime() >= new Date(latest.changed_at).getTime()) latest = h
+  }
+  return latest ? latest.to_status : null
+}
+
+function activePairsAt(bookings: SeedBooking[], history: SeedBookingStatusHistory[], at: Date): Set<string> {
+  const byBooking = new Map<string, SeedBookingStatusHistory[]>()
+  for (const h of history) byBooking.set(h.booking_id, [...(byBooking.get(h.booking_id) || []), h])
+  const pairs = new Set<string>()
+  for (const b of bookings) {
+    if (!existedAt(b.created_at, at)) continue
+    const status = statusAt(byBooking.get(b.booking_id) || [], at)
+    if (status === 'On hold' || status === 'Booked') pairs.add(`${b.agency_id}::${b.provider_id}`)
+  }
+  return pairs
+}
+
+// spec-ADM #22: an Agency is relevant to a village when it has a Booking, Quote Request or Chat with a
+// Provider in that village (BR-008, same activity types as BR-015).
+function relevantAgencyIds(
+  villageProviderIds: Set<string>,
+  bookings: SeedBooking[],
+  quotes: SeedQuoteRequest[],
+  chats: SeedChatSession[],
+  experienceProvider: Map<string, string>
+): Set<string> {
+  const ids = new Set<string>()
+  for (const b of bookings) if (villageProviderIds.has(b.provider_id)) ids.add(b.agency_id)
+  for (const q of quotes) if (villageProviderIds.has(experienceProvider.get(q.experience_id) || '')) ids.add(q.agency_id)
+  for (const c of chats) if (villageProviderIds.has(c.provider_id)) ids.add(c.agency_id)
+  return ids
+}
+
 export async function filterDashboardMetrics(
   session: SessionLike,
   filters: DashboardFilterParams = {}
@@ -62,13 +116,14 @@ export async function filterDashboardMetrics(
     effectiveFilters.endDate
   )
 
-  const [metricCards, agencyMetrics, providerMetrics, bookingMetrics, collaborationMetrics] =
+  const [metricCards, agencyMetrics, providerMetrics, bookingMetrics, collaborationMetrics, pendingVerification] =
     await Promise.all([
       calculateMetricCards(session, effectiveFilters),
       aggregateAgencyMetrics(session, effectiveFilters),
       aggregateProviderMetrics(session, effectiveFilters),
       aggregateBookingMetrics(session, effectiveFilters),
       getTopCollaborationPairs(session, effectiveFilters),
+      listPendingVerification(session, effectiveFilters.villageId || null),
     ])
 
   return {
@@ -84,6 +139,7 @@ export async function filterDashboardMetrics(
     providerMetrics,
     bookingMetrics,
     collaborationMetrics,
+    pendingVerification,
   }
 }
 
@@ -99,10 +155,14 @@ export async function calculateMetricCards(
   )
   const { prevStartDate, prevEndDate } = calculatePreviousPeriod(startDate, endDate)
 
-  const [allBookings, allAgencies, allProviders] = await Promise.all([
+  const [allBookings, allAgencies, allProviders, allQuotes, allChats, history, experienceProvider] = await Promise.all([
     loadBookings(),
     loadAgencies(),
     loadProviders(),
+    loadQuoteRequests(),
+    loadChatSessions(),
+    loadBookingStatusHistory(),
+    loadExperienceProviderMap(),
   ])
 
   // Scope providers
@@ -111,16 +171,11 @@ export async function calculateMetricCards(
     : allProviders
   const scopedProviderIds = new Set(scopedProviders.map(p => p.provider_id))
 
-  // Scope agencies (UBND: agencies interacting with assigned village)
+  // Scope agencies (UBND / village filter: Agencies relevant to the village, #22; no fallback, A13)
   let scopedAgencies: SeedAgency[] = allAgencies
   if (scope.effectiveVillageId) {
-    const villageBookings = allBookings.filter(b => scopedProviderIds.has(b.provider_id))
-    const interactingAgencyIds = new Set(villageBookings.map(b => b.agency_id))
-    scopedAgencies = allAgencies.filter(a => interactingAgencyIds.has(a.agency_id))
-    if (scopedAgencies.length === 0) {
-      // Fallback to active registered agencies if no direct historical bookings
-      scopedAgencies = allAgencies.filter(a => a.account_status === 'Approved')
-    }
+    const relevant = relevantAgencyIds(scopedProviderIds, allBookings, allQuotes, allChats, experienceProvider)
+    scopedAgencies = allAgencies.filter(a => relevant.has(a.agency_id))
   }
 
   // Scope bookings by provider village
@@ -128,23 +183,22 @@ export async function calculateMetricCards(
     ? allBookings.filter(b => scopedProviderIds.has(b.provider_id))
     : allBookings
 
-  // Current period bookings
-  const currentPeriodBookings = scopedBookings.filter(b =>
-    isWithinPeriod(b.start_at || b.created_at, startDate, endDate)
+  // Bookings created in the current and previous period (A4)
+  const currentPeriodBookings = scopedBookings.filter(b => createdInPeriod(b, startDate, endDate))
+  const prevPeriodBookings = scopedBookings.filter(b => createdInPeriod(b, prevStartDate, prevEndDate))
+
+  // 1. Total Agencies and 2. Total Providers: snapshots at the end date (A4, contract:110)
+  const totalAgenciesVal = scopedAgencies.filter(a => existedAt(a.created_at, endDate)).length
+  const agencyTrend = calculateTrendPercentage(
+    totalAgenciesVal,
+    scopedAgencies.filter(a => existedAt(a.created_at, prevEndDate)).length || null
   )
 
-  // Previous period bookings
-  const prevPeriodBookings = scopedBookings.filter(b =>
-    isWithinPeriod(b.start_at || b.created_at, prevStartDate, prevEndDate)
+  const totalProvidersVal = scopedProviders.filter(p => existedAt(p.created_at, endDate)).length
+  const providerTrend = calculateTrendPercentage(
+    totalProvidersVal,
+    scopedProviders.filter(p => existedAt(p.created_at, prevEndDate)).length || null
   )
-
-  // 1. Total Agencies
-  const totalAgenciesVal = scopedAgencies.length
-  const agencyTrend = calculateTrendPercentage(totalAgenciesVal, totalAgenciesVal) // static accounts
-
-  // 2. Total Providers
-  const totalProvidersVal = scopedProviders.length
-  const providerTrend = calculateTrendPercentage(totalProvidersVal, totalProvidersVal)
 
   // 3. Total Bookings
   const totalBookingsVal = currentPeriodBookings.length
@@ -154,26 +208,11 @@ export async function calculateMetricCards(
     prevBookingsVal > 0 ? prevBookingsVal : null
   )
 
-  // 4. Active Collaborations (BR-017, AC-ADM-PAIR):
-  // Distinct (agency_id, provider_id) pairs with >= 1 booking in 'On hold' or 'Booked' status in current period
-  const activeCollabPairs = new Set<string>()
-  for (const b of currentPeriodBookings) {
-    if (b.status === 'On hold' || b.status === 'Booked') {
-      activeCollabPairs.add(`${b.agency_id}::${b.provider_id}`)
-    }
-  }
-  const activeCollabVal = activeCollabPairs.size
-
-  const prevActiveCollabPairs = new Set<string>()
-  for (const b of prevPeriodBookings) {
-    if (b.status === 'On hold' || b.status === 'Booked') {
-      prevActiveCollabPairs.add(`${b.agency_id}::${b.provider_id}`)
-    }
-  }
-  const collabTrend = calculateTrendPercentage(
-    activeCollabVal,
-    prevActiveCollabPairs.size > 0 ? prevActiveCollabPairs.size : null
-  )
+  // 4. Active Collaborations (BR-017, AC-ADM-PAIR, A5): distinct pairs with an On hold or Booked
+  // Booking at the end date, from booking_status_history; the trend compares with the previous end date.
+  const activeCollabVal = activePairsAt(scopedBookings, history, endDate).size
+  const prevActiveCollab = activePairsAt(scopedBookings, history, prevEndDate).size
+  const collabTrend = calculateTrendPercentage(activeCollabVal, prevActiveCollab > 0 ? prevActiveCollab : null)
 
   return [
     {
@@ -218,28 +257,26 @@ export async function aggregateAgencyMetrics(
     filters.endDate
   )
 
-  const [allAgencies, allBookings, allQuotes, allChats, allProviders] = await Promise.all([
+  const [allAgencies, allBookings, allQuotes, allChats, allProviders, experienceProvider] = await Promise.all([
     loadAgencies(),
     loadBookings(),
     loadQuoteRequests(),
     loadChatSessions(),
     loadProviders(),
+    loadExperienceProviderMap(),
   ])
 
-  // Filter agencies by scope
+  // Filter agencies by scope (#22: relevant = Booking, Quote Request or Chat with a village Provider; no fallback, A13)
+  const villageProviders = scope.effectiveVillageId
+    ? new Set(allProviders.filter(p => p.village_id === scope.effectiveVillageId).map(p => p.provider_id))
+    : null
   let scopedAgencies = allAgencies
-  if (scope.effectiveVillageId) {
-    const villageProviders = new Set(
-      allProviders.filter(p => p.village_id === scope.effectiveVillageId).map(p => p.provider_id)
-    )
-    const interactingAgencyIds = new Set(
-      allBookings.filter(b => villageProviders.has(b.provider_id)).map(b => b.agency_id)
-    )
-    scopedAgencies = allAgencies.filter(a => interactingAgencyIds.has(a.agency_id))
-    if (scopedAgencies.length === 0) {
-      scopedAgencies = allAgencies
-    }
+  if (villageProviders) {
+    const relevant = relevantAgencyIds(villageProviders, allBookings, allQuotes, allChats, experienceProvider)
+    scopedAgencies = allAgencies.filter(a => relevant.has(a.agency_id))
   }
+  // A14: activity inside the scope only (Quote Request → Provider of its Experience)
+  const inScope = (providerId: string | undefined) => !villageProviders || villageProviders.has(providerId || '')
 
   // Canonical status breakdown (FR-007)
   const countsByStatus: Record<AgencyAccountStatus, number> = {
@@ -272,21 +309,21 @@ export async function aggregateAgencyMetrics(
   let chatCount = 0
 
   for (const b of allBookings) {
-    if (isWithinPeriod(b.start_at || b.created_at, startDate, endDate)) {
+    if (inScope(b.provider_id) && createdInPeriod(b, startDate, endDate)) {
       activeAgencyIds.add(b.agency_id)
       bookingCount++
     }
   }
 
   for (const q of allQuotes) {
-    if (isWithinPeriod(q.created_at, startDate, endDate)) {
+    if (inScope(experienceProvider.get(q.experience_id)) && isWithinPeriod(q.created_at, startDate, endDate)) {
       activeAgencyIds.add(q.agency_id)
       quoteCount++
     }
   }
 
   for (const c of allChats) {
-    if (isWithinPeriod(c.created_at, startDate, endDate)) {
+    if (inScope(c.provider_id) && isWithinPeriod(c.created_at, startDate, endDate)) {
       activeAgencyIds.add(c.agency_id)
       chatCount++
     }
@@ -296,7 +333,7 @@ export async function aggregateAgencyMetrics(
 
   return {
     countsByStatus,
-    activeAgencyCount: activeAgencyCount > 0 ? activeAgencyCount : Math.min(scopedAgencies.length, 3),
+    activeAgencyCount,
     activityDistribution: [
       { activityType: 'Booking', count: bookingCount },
       { activityType: 'Quote Request', count: quoteCount },
@@ -317,12 +354,13 @@ export async function aggregateProviderMetrics(
     filters.endDate
   )
 
-  const [allProviders, allVillages, allBookings, allQuotes, allChats] = await Promise.all([
+  const [allProviders, allVillages, allBookings, allQuotes, allChats, experienceProvider] = await Promise.all([
     loadProviders(),
     loadVillages(),
     loadBookings(),
     loadQuoteRequests(),
     loadChatSessions(),
+    loadExperienceProviderMap(),
   ])
 
   // Filter providers by scope (BR-009)
@@ -388,18 +426,22 @@ export async function aggregateProviderMetrics(
 
   let totalBookingCount = 0
   for (const b of allBookings) {
-    if (scopedProviderIds.has(b.provider_id) && isWithinPeriod(b.start_at || b.created_at, startDate, endDate)) {
+    if (scopedProviderIds.has(b.provider_id) && createdInPeriod(b, startDate, endDate)) {
       activeProviderIds.add(b.provider_id)
       totalBookingCount++
-      const craft = providerCraftMap.get(b.provider_id) || 'General Craft'
+      const craft = providerCraftMap.get(b.provider_id) || ''
       const key = `${craft}::Booking`
       activityMap.set(key, (activityMap.get(key) || 0) + 1)
     }
   }
 
+  // A14, BR-016: a Quote Request is received by the Provider of its Experience; count it under that
+  // Provider's craft type and only inside the scope.
   for (const q of allQuotes) {
-    if (isWithinPeriod(q.created_at, startDate, endDate)) {
-      const key = `General Craft::Quote Request`
+    const providerId = experienceProvider.get(q.experience_id) || ''
+    if (scopedProviderIds.has(providerId) && isWithinPeriod(q.created_at, startDate, endDate)) {
+      activeProviderIds.add(providerId)
+      const key = `${providerCraftMap.get(providerId) || ''}::Quote Request`
       activityMap.set(key, (activityMap.get(key) || 0) + 1)
     }
   }
@@ -407,7 +449,7 @@ export async function aggregateProviderMetrics(
   for (const c of allChats) {
     if (scopedProviderIds.has(c.provider_id) && isWithinPeriod(c.created_at, startDate, endDate)) {
       activeProviderIds.add(c.provider_id)
-      const craft = providerCraftMap.get(c.provider_id) || 'General Craft'
+      const craft = providerCraftMap.get(c.provider_id) || ''
       const key = `${craft}::Chat`
       activityMap.set(key, (activityMap.get(key) || 0) + 1)
     }
@@ -422,17 +464,9 @@ export async function aggregateProviderMetrics(
     }
   })
 
-  // Ensure standard categories exist
-  if (activityDistribution.length === 0) {
-    activityDistribution.push(
-      { craftType: 'Ceramics', activityType: 'Booking', count: 0 },
-      { craftType: 'Ceramics', activityType: 'Quote Request', count: 0 }
-    )
-  }
-
   return {
     countsByVillageAndStatus,
-    activeProviderCount: activeProviderIds.size > 0 ? activeProviderIds.size : scopedProviders.length,
+    activeProviderCount: activeProviderIds.size,
     bookingCount: totalBookingCount,
     activityDistribution,
   }
@@ -465,7 +499,7 @@ export async function aggregateBookingMetrics(
   let filtered = allBookings.filter(b => scopedProviderIds.has(b.provider_id))
 
   // Filter by time period
-  filtered = filtered.filter(b => isWithinPeriod(b.start_at || b.created_at, startDate, endDate))
+  filtered = filtered.filter(b => createdInPeriod(b, startDate, endDate))
 
   // Filter by Agency and Provider (BR-014, AC-ADM-FILTER)
   const agencyList = filters.agencyIds && filters.agencyIds.length > 0
@@ -511,7 +545,7 @@ export async function aggregateBookingMetrics(
   // Time-series trend line (BR-019)
   const trendBuckets = new Map<string, number>()
   for (const b of filtered) {
-    const d = new Date(b.start_at || b.created_at)
+    const d = new Date(b.created_at)
     let key: string
     if (granularity === 'Daily') {
       key = d.toISOString().split('T')[0]
@@ -546,6 +580,7 @@ export async function filterBookingTable(
   filters: DashboardFilterParams = {}
 ): Promise<BookingRecord[]> {
   const scope = resolveAdminScope(session, filters.villageId || null)
+  const { startDate, endDate } = resolveDateRange(filters.preset || 'Last 30 days', filters.startDate, filters.endDate)
 
   const [allBookings, allProviders, allAgencies, allExperiences] = await Promise.all([
     loadBookings(),
@@ -558,8 +593,8 @@ export async function filterBookingTable(
   const agencyMap = new Map(allAgencies.map(a => [a.agency_id, a]))
   const expMap = new Map(allExperiences.map(e => [e.experience_id, e]))
 
-  // Scope by village (BR-010)
-  let bookings = allBookings
+  // Bookings created in the period (A3, contract:110), then scope by village (BR-010)
+  let bookings = allBookings.filter(b => createdInPeriod(b, startDate, endDate))
   if (scope.effectiveVillageId) {
     bookings = bookings.filter(b => {
       const p = providerMap.get(b.provider_id)
@@ -592,9 +627,9 @@ export async function filterBookingTable(
   return bookings.map(b => ({
     bookingId: b.booking_id,
     date: b.start_at,
-    agencyName: agencyMap.get(b.agency_id)?.company_name || 'Tour Agency Partner',
-    providerName: providerMap.get(b.provider_id)?.business_name || 'Artisan Workshop',
-    experienceName: expMap.get(b.experience_id)?.name || 'Trải nghiệm làng nghề',
+    agencyName: agencyMap.get(b.agency_id)?.company_name || b.agency_id,
+    providerName: providerMap.get(b.provider_id)?.business_name || b.provider_id,
+    experienceName: expMap.get(b.experience_id)?.name || b.experience_id,
     status: b.status,
     price: b.agreed_price_total,
   }))
@@ -606,6 +641,7 @@ export async function getTopCollaborationPairs(
 ): Promise<CollaborationMetrics> {
   const scope = resolveAdminScope(session, filters.villageId || null)
   const sortBy = filters.sortBy || 'Frequency'
+  const { startDate, endDate } = resolveDateRange(filters.preset || 'Last 30 days', filters.startDate, filters.endDate)
 
   const [allBookings, allAgencies, allProviders] = await Promise.all([
     loadBookings(),
@@ -625,6 +661,7 @@ export async function getTopCollaborationPairs(
   let confirmedBookings = allBookings.filter(
     b =>
       scopedProviderIds.has(b.provider_id) &&
+      createdInPeriod(b, startDate, endDate) &&
       (b.status === 'Booked' || b.status === 'Completed')
   )
 
@@ -681,9 +718,9 @@ export async function getTopCollaborationPairs(
 
   let topPairs: CollaborationPair[] = Array.from(pairsMap.values()).map(p => ({
     agencyId: p.agencyId,
-    agencyName: agencyMap.get(p.agencyId) || 'Indochina Heritage Voyages',
+    agencyName: agencyMap.get(p.agencyId) || p.agencyId,
     providerId: p.providerId,
-    providerName: providerMap.get(p.providerId)?.business_name || 'Artisan Workshop',
+    providerName: providerMap.get(p.providerId)?.business_name || p.providerId,
     bookingCount: p.bookingCount,
     lastDate: p.lastDate,
   }))

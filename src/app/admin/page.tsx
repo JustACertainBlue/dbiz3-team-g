@@ -1,13 +1,15 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   DashboardFilterParams,
   DashboardMetricsResponse,
   VillagesResponse,
   CollaborationSortBy,
 } from '@/lib/adm/types'
-import { getCurrentRole, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { refreshDemoSession, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { adminPageAccess } from './admin-page-access'
+import { nextVillageFilter } from './village-filter-state'
 import { AdminSidebar } from '@/app/components/admin/AdminSidebar'
 import { FilterPanel } from '@/app/components/admin/FilterPanel'
 import { MetricCards } from '@/app/components/admin/MetricCards'
@@ -18,7 +20,10 @@ import { BookingTable } from '@/app/components/admin/BookingTable'
 import { TopPairsList } from '@/app/components/admin/TopPairsList'
 
 export default function AdminDashboardPage() {
-  const [role, setRole] = useState<CurrentUserRole>('HDT')
+  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [displayName, setDisplayName] = useState('')
+  const [access, setAccess] = useState<'allow' | 'restricted' | null>(null)
+  const villageLockedRef = useRef(false)
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -40,25 +45,21 @@ export default function AdminDashboardPage() {
     sortBy: 'Frequency',
   })
 
-  // Synchronize active role from client session
+  // The actor comes from the server-side demo session (A2); non-admins see the restricted state (L3).
   useEffect(() => {
     setMounted(true)
-    const current = getCurrentRole()
-    if (current === 'HDT' || current === 'UBND') {
-      setRole(current)
-    } else {
-      // Ensure admin view defaults to an authenticated HDT Admin session
-      setRole('HDT')
-      setCurrentRole('HDT')
+    const sync = () => {
+      refreshDemoSession()
+        .then(session => {
+          setRole(session.role)
+          setDisplayName(session.displayName)
+          setAccess(adminPageAccess(session))
+        })
+        .catch(() => setAccess('restricted'))
     }
-
-    const handleRoleChanged = () => {
-      const updated = getCurrentRole()
-      setRole(updated)
-    }
-
-    window.addEventListener('hab_role_changed', handleRoleChanged)
-    return () => window.removeEventListener('hab_role_changed', handleRoleChanged)
+    sync()
+    window.addEventListener('hab_role_changed', sync)
+    return () => window.removeEventListener('hab_role_changed', sync)
   }, [])
 
   // Load villages configuration
@@ -70,12 +71,10 @@ export default function AdminDashboardPage() {
       if (res.ok) {
         const data: VillagesResponse = await res.json()
         setVillagesData(data)
-        if (data.isLocked && data.assignedVillageId) {
-          setFilters(prev => ({ ...prev, villageId: data.assignedVillageId }))
-        } else if (!data.isLocked) {
-          // HDT platform-wide: reset if previously locked
-          setFilters(prev => (prev.villageId === data.assignedVillageId ? { ...prev, villageId: null } : prev))
-        }
+        // A7: UBND → assigned village; HDT after a locked village → All Villages; HDT's own choice is kept
+        const prevLocked = villageLockedRef.current
+        villageLockedRef.current = data.isLocked
+        setFilters(prev => ({ ...prev, villageId: nextVillageFilter({ villageId: prev.villageId ?? null, locked: prevLocked }, data).villageId }))
       } else {
         const err = await res.json().catch(() => ({}))
         setError(err.error || `Failed to load villages: HTTP ${res.status}`)
@@ -119,16 +118,16 @@ export default function AdminDashboardPage() {
   }, [filters, role])
 
   useEffect(() => {
-    if (mounted) {
+    if (mounted && access === 'allow') {
       loadVillages()
     }
-  }, [mounted, role, loadVillages])
+  }, [mounted, access, role, loadVillages])
 
   useEffect(() => {
-    if (mounted) {
+    if (mounted && access === 'allow') {
       loadDashboard()
     }
-  }, [mounted, loadDashboard])
+  }, [mounted, access, loadDashboard])
 
   const handleFilterChange = (updated: Partial<DashboardFilterParams>) => {
     setFilters(prev => ({ ...prev, ...updated }))
@@ -138,7 +137,17 @@ export default function AdminDashboardPage() {
     setFilters(prev => ({ ...prev, sortBy }))
   }
 
-  if (!mounted) return null
+  if (!mounted || access === null) return null
+
+  if (access === 'restricted') {
+    return (
+      <main className="admin-state">
+        <h1>Admin Dashboard</h1>
+        <p>Chọn tài khoản UBND Admin hoặc HDT Admin để truy cập.</p>
+        <a href="/login">Chọn tài khoản demo</a>
+      </main>
+    )
+  }
 
   return (
     <div
@@ -153,6 +162,7 @@ export default function AdminDashboardPage() {
       {/* 1. Fixed Dark Left Sidebar matching ADM079.png */}
       <AdminSidebar
         currentRole={role}
+        displayName={displayName}
         activeTab="dashboard"
         onOpenNotice={msg => setModalNotice(msg)}
       />
@@ -266,10 +276,7 @@ export default function AdminDashboardPage() {
               }}
             >
               {/* Left Panel: Pending Verification */}
-              <PendingVerificationPanel
-                villageId={dashboardData.scope.effectiveVillageId}
-                onOpenNotice={msg => setModalNotice(msg)}
-              />
+              <PendingVerificationPanel items={dashboardData.pendingVerification} />
 
               {/* Right Panel: Booking Status Donut Chart */}
               <BookingStatusDonut bookingMetrics={dashboardData.bookingMetrics} />

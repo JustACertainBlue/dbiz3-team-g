@@ -6,6 +6,7 @@ import { CurrentUserRole } from '@/lib/prf/client-session'
 
 interface AdminSidebarProps {
   currentRole: CurrentUserRole
+  displayName?: string
   activeTab?: 'dashboard' | 'users'
   onSelectTab?: (tab: 'dashboard') => void
   onOpenNotice?: (msg: string) => void
@@ -13,12 +14,14 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({
   currentRole,
+  displayName = '',
   activeTab = 'dashboard',
   onSelectTab,
   onOpenNotice,
 }: AdminSidebarProps) {
-  const adminName = currentRole === 'UBND' ? 'Nguyen Van Canh' : 'Vo Minh Khoa'
-  const adminInitials = currentRole === 'UBND' ? 'NC' : 'VK'
+  // A8: the demo identity's displayName (src/lib/auth/demo-session.ts), not an invented person
+  const adminName = displayName
+  const adminInitials = currentRole === 'UBND' ? 'UB' : 'HD'
   const adminSub = currentRole === 'UBND' ? 'UBND ADMIN' : 'ADMIN'
 
   return (

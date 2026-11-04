@@ -1,3 +1,4 @@
+import type { PendingVerificationItem } from './pending-service'
 /**
  * Admin Dashboard (ADM) Core Slice TypeScript Definitions
  * Aligned with spec.md §5.1, contracts/admin-dashboard-api.md, and data/schema.sql
@@ -45,7 +46,7 @@ export interface AgencyStatusItem {
 export interface AgencyMetrics {
   countsByStatus: Record<AgencyAccountStatus, number>
   activeAgencyCount: number
-  activityDistribution?: AgencyActivityItem[]
+  activityDistribution: AgencyActivityItem[]
   statusChartData: AgencyStatusItem[]
 }
 
@@ -125,6 +126,7 @@ export interface DashboardMetricsResponse {
   providerMetrics: ProviderMetrics
   bookingMetrics: BookingMetrics
   collaborationMetrics: CollaborationMetrics
+  pendingVerification: PendingVerificationItem[]
 }
 
 export interface VillageOption {

@@ -117,13 +117,8 @@ const CANONICAL_VILLAGES: Village[] = [
 ]
 
 export async function loadVillages(): Promise<Village[]> {
-  const seedPath = path.join(process.cwd(), 'data', 'seed', 'villages.csv')
-  if (!fs.existsSync(seedPath)) {
-    return CANONICAL_VILLAGES
-  }
-
-  const csv = fs.readFileSync(seedPath, 'utf-8')
-  const rows = parseCsv(csv)
+  const rows = demoRepository().all('villages')
+  if (rows.length === 0) return CANONICAL_VILLAGES
 
   return rows.map(row => ({
     village_id: row.village_id,
@@ -206,6 +201,7 @@ export interface SeedAgency {
   company_name: string
   company_type?: string
   account_status: string
+  created_at: string
 }
 
 export interface SeedProvider {
@@ -216,6 +212,7 @@ export interface SeedProvider {
   business_name: string
   craft_type: string
   account_status: string
+  created_at: string
 }
 
 export interface SeedQuoteRequest {
@@ -232,23 +229,19 @@ export interface SeedChatSession {
   created_at: string
 }
 
+// ADM079 loaders read the shared JSON runtime (seeded from data/seed/*.csv), so Bookings, Quote
+// Requests and Chats written by BKG, AIT and EXP are visible to the dashboard (A1, BR-007).
 export async function loadBookings(): Promise<SeedBooking[]> {
-  const filePath = path.join(process.cwd(), 'data', 'seed', 'bookings.csv')
-  if (!fs.existsSync(filePath)) return []
-
-  const csv = fs.readFileSync(filePath, 'utf-8')
-  const rows = parseCsv(csv)
-
-  return rows.map(r => ({
+  return demoRepository().all('bookings').map(r => ({
     booking_id: r.booking_id,
     agency_id: r.agency_id,
     provider_id: r.provider_id,
     experience_id: r.experience_id,
     source_chat_session_id: r.source_chat_session_id,
     start_at: r.start_at,
-    duration_minutes: parseInt(r.duration_minutes || '60', 10),
-    group_size: parseInt(r.group_size || '1', 10),
-    agreed_price_total: parseFloat(r.agreed_price_total || '0'),
+    duration_minutes: parseInt(String(r.duration_minutes || '60'), 10),
+    group_size: parseInt(String(r.group_size || '1'), 10),
+    agreed_price_total: parseFloat(String(r.agreed_price_total || '0')),
     status: r.status as SeedBooking['status'],
     created_at: r.created_at,
     updated_at: r.updated_at,
@@ -258,81 +251,70 @@ export async function loadBookings(): Promise<SeedBooking[]> {
   }))
 }
 
+export interface SeedBookingStatusHistory {
+  booking_id: string
+  from_status: string
+  to_status: string
+  changed_at: string
+}
+
+export async function loadBookingStatusHistory(): Promise<SeedBookingStatusHistory[]> {
+  return demoRepository().all('booking_status_history').map(r => ({
+    booking_id: r.booking_id,
+    from_status: r.from_status,
+    to_status: r.to_status,
+    changed_at: r.changed_at,
+  }))
+}
+
+function userStatuses(): Map<string, string> {
+  return new Map(demoRepository().all('user_accounts').map(u => [u.user_id, u.account_status]))
+}
+
 export async function loadAgencies(): Promise<SeedAgency[]> {
-  const agencyPath = path.join(process.cwd(), 'data', 'seed', 'agency_profiles.csv')
-  const usersPath = path.join(process.cwd(), 'data', 'seed', 'user_accounts.csv')
-
-  if (!fs.existsSync(agencyPath)) return []
-
-  const agencyRows = parseCsv(fs.readFileSync(agencyPath, 'utf-8'))
-  const userStatusMap = new Map<string, string>()
-
-  if (fs.existsSync(usersPath)) {
-    const userRows = parseCsv(fs.readFileSync(usersPath, 'utf-8'))
-    for (const u of userRows) {
-      userStatusMap.set(u.user_id, u.account_status)
-    }
-  }
-
-  return agencyRows.map(r => ({
+  const statuses = userStatuses()
+  return demoRepository().all('agency_profiles').map(r => ({
     agency_id: r.agency_id,
     user_id: r.user_id,
     company_name: r.company_name,
     company_type: r.company_type,
-    account_status: userStatusMap.get(r.user_id) || 'Approved',
+    account_status: statuses.get(r.user_id) || 'Approved',
+    created_at: r.created_at,
   }))
 }
 
 export async function loadProviders(): Promise<SeedProvider[]> {
-  const provPath = path.join(process.cwd(), 'data', 'seed', 'provider_profiles.csv')
-  const versionsPath = path.join(process.cwd(), 'data', 'seed', 'provider_profile_versions.csv')
-  const usersPath = path.join(process.cwd(), 'data', 'seed', 'user_accounts.csv')
-
-  if (!fs.existsSync(provPath)) return []
-
-  const provRows = parseCsv(fs.readFileSync(provPath, 'utf-8'))
+  const repository = demoRepository()
   const versionsMap = new Map<string, { business_name: string; craft_type: string }>()
-
-  if (fs.existsSync(versionsPath)) {
-    const verRows = parseCsv(fs.readFileSync(versionsPath, 'utf-8'))
-    for (const v of verRows) {
-      if (!versionsMap.has(v.provider_id) || v.version_status === 'Verified') {
-        versionsMap.set(v.provider_id, {
-          business_name: v.business_name,
-          craft_type: v.craft_type,
-        })
-      }
+  for (const v of repository.all('provider_profile_versions')) {
+    if (!versionsMap.has(v.provider_id) || v.version_status === 'Verified') {
+      versionsMap.set(v.provider_id, { business_name: v.business_name, craft_type: v.craft_type })
     }
   }
+  const statuses = userStatuses()
 
-  const userStatusMap = new Map<string, string>()
-  if (fs.existsSync(usersPath)) {
-    const userRows = parseCsv(fs.readFileSync(usersPath, 'utf-8'))
-    for (const u of userRows) {
-      userStatusMap.set(u.user_id, u.account_status)
-    }
-  }
-
-  return provRows.map(r => {
+  return repository.all('provider_profiles').map(r => {
     const ver = versionsMap.get(r.provider_id)
     return {
       provider_id: r.provider_id,
       user_id: r.user_id,
       village_id: r.village_id,
       verification_status: r.verification_status,
-      business_name: ver?.business_name || 'Local Artisan Workshop',
-      craft_type: ver?.craft_type || 'General Craft',
-      account_status: userStatusMap.get(r.user_id) === 'Disabled' ? 'Disabled' : 'Active',
+      business_name: ver?.business_name || r.provider_id,
+      craft_type: ver?.craft_type || '',
+      account_status: statuses.get(r.user_id) === 'Disabled' ? 'Disabled' : 'Active',
+      created_at: r.created_at,
     }
   })
 }
 
-export async function loadQuoteRequests(): Promise<SeedQuoteRequest[]> {
-  const filePath = path.join(process.cwd(), 'data', 'seed', 'quote_requests.csv')
-  if (!fs.existsSync(filePath)) return []
+// Quote Request → Provider: a Quote Request belongs to the Provider of its Experience (spec-ADM #22).
+export async function loadExperienceProviderMap(): Promise<Map<string, string>> {
+  return new Map(demoRepository().all('experiences').map(e => [e.experience_id, e.provider_id]))
+}
 
-  const rows = parseCsv(fs.readFileSync(filePath, 'utf-8'))
-  return rows.map(r => ({
+export async function loadQuoteRequests(): Promise<SeedQuoteRequest[]> {
+  return demoRepository().all('quote_requests').map(r => ({
     quote_request_id: r.quote_request_id,
     agency_id: r.agency_id,
     experience_id: r.experience_id,
@@ -341,15 +323,10 @@ export async function loadQuoteRequests(): Promise<SeedQuoteRequest[]> {
 }
 
 export async function loadChatSessions(): Promise<SeedChatSession[]> {
-  const filePath = path.join(process.cwd(), 'data', 'seed', 'chat_sessions.csv')
-  if (!fs.existsSync(filePath)) return []
-
-  const rows = parseCsv(fs.readFileSync(filePath, 'utf-8'))
-  return rows.map(r => ({
+  return demoRepository().all('chat_sessions').map(r => ({
     chat_session_id: r.chat_session_id,
     agency_id: r.agency_id,
     provider_id: r.provider_id,
-    created_at: r.started_at || r.created_at || new Date().toISOString(),
+    created_at: r.started_at || r.created_at,
   }))
 }
-

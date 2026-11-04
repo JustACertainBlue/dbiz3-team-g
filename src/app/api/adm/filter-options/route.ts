@@ -1,29 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { loadAgencies, loadProviders } from '@/lib/db/seed-loader'
 import { SessionLike } from '@/lib/adm/scope-guard'
+import { adminSessionFromRequest } from '@/lib/adm/admin-session'
 import { FilterOptionsResponse } from '@/lib/adm/types'
 
-function getSessionFromRequest(req: NextRequest): SessionLike | null {
-  const header = req.headers.get('x-mock-session')
-  if (header) {
-    try {
-      return JSON.parse(header) as SessionLike
-    } catch {
-      // ignore
-    }
-  }
-
-  const cookie = req.cookies.get('hab_mock_session')?.value || req.cookies.get('x-mock-session')?.value
-  if (cookie) {
-    try {
-      return JSON.parse(decodeURIComponent(cookie)) as SessionLike
-    } catch {
-      // ignore
-    }
-  }
-
-  return null
-}
+const getSessionFromRequest = adminSessionFromRequest
 
 export async function GET(req: NextRequest) {
   const session = getSessionFromRequest(req)

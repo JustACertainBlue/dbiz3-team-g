@@ -135,3 +135,15 @@ describe('T035 | Completeness per OQ #4 (FR-003, BR-004, #29, #34, #35)', () => 
     expect(profile.matching_attributes.some((a: { type: string }) => a.type === 'experience_type')).toBe(false)
   })
 })
+
+// #37 (Round 3): a budget in "đồng" keeps the stated craft preference and sets the budget.
+describe('#37 | Budget in đồng', () => {
+  it('"budget 500.000 đồng per person" keeps silk and reads 500000', async () => {
+    const result = await extractTourContext([
+      { sender: 'Agency', text: 'Silk weaving, 10 pax on 2026-11-20 from Hoàn Kiếm' },
+      { sender: 'Agency', text: 'Change to 10 pax, budget 500.000 đồng per person' },
+    ])
+    expect(result.tour_context.craft_preference).toBe('silk')
+    expect(result.tour_context.budget?.max_per_person).toBe(500000)
+  })
+})

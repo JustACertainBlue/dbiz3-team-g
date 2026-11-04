@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-AIT.md sha256=5cf57f4279eb492d1df6635773e706fc784eebe5446d0988011f0678b0a3cd87 taken=2026-11-04T09:02Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-AIT.md sha256=8be455f99f04bb7b142ce8639ebd686d5d4308dd1326da35a8d0a3735e25a7fe taken=2026-11-04T09:23Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-AIT.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -370,6 +370,8 @@ sequenceDiagram
 - 2026-10-30 #33: Retry re-runs the analysis of the stored conversation without adding a message.
 - 2026-10-30 #34: A craft (#32) or a stated Experience type (Experience `category` enum, "workshop" → Workshop/Hands-on) counts as an Experience preference.
 - 2026-11-04 #35: "from X", "near X" or a named Hanoi district/city is a stated origin; a craft village named only as a destination is not.
+- 2026-11-04 #36: After a network error Retry resends the unsent message; after a 503 Retry only re-analyzes (#33).
+- 2026-11-04 #37: Metalwork matches "đúc đồng", "đồ đồng", "metal", "bronze", "đúc"; "đồng" alone (currency) matches no craft.
 
 **10. Open questions**
 
@@ -410,6 +412,8 @@ sequenceDiagram
 | 33 | #27 Retry "resends the last message". Does Retry add the Agency message to the conversation again? | No | UI/UX / Tech | **Closed** | No. Retry re-runs the analysis of the stored conversation; no message is added, so the conversation has no duplicate. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 | 34 | OQ #4 / #29 require "at least one Experience preference". What counts as one? | No | BA / AI | **Closed** | A craft (mapped by #32) or an Experience type stated by the Agency, matched to the Experience `category` enum of `data/04-data-model.md` ("workshop", "hands-on" → Workshop/Hands-on; "show", "performance", "puppet" → Cultural Show; "sightseeing" → Sightseeing; "tasting", "culinary" → Culinary/Tasting; "combo" → Combo). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 | 35 | #29 requires an origin "stated by the Agency". Which wording counts as a stated origin, and does a named craft village count? | No | BA / AI | **Closed** | "from X", "near X", or a named Hanoi district or city (e.g. Hoàn Kiếm, Old Quarter, Hanoi) is a stated origin. A craft village named only as a place to visit (e.g. "workshop in Bat Trang") is a destination, not an origin. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
+| 36 | #33 says Retry re-analyzes the stored conversation. What does Retry do when the Agency message never reached the server (network error)? | No | UI/UX / Tech | **Closed** | On a network error the message was not stored, so Retry sends that same message again (no duplicate is possible). On a 503 (AI failure) the message is stored, so Retry only re-analyzes the stored conversation (#33). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
+| 37 | #32 maps "đồng" to Metalwork, but "đồng" is also the Vietnamese currency (e.g. "500.000 đồng"). When does it count as a Metalwork preference? | No | BA / AI | **Closed** | Metalwork matches "đúc đồng", "đồ đồng", "metal", "bronze" and "đúc". "đồng" on its own (currency) does not match any craft. This amends the #32 keyword list. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
 
 **11. Traceability to DBIZ2**
 

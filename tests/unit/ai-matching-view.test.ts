@@ -9,13 +9,16 @@ describe('T047 | messageOutcome never shows fabricated results (FR-003, BR-017, 
   })
 
   it.each([
-    ['network error', { networkError: true }],
     ['503', { ok: false, status: 503, body: { error_code: 'AI_SERVICE_UNAVAILABLE', retry_available: true } }],
     ['500', { ok: false, status: 500, body: { error: 'x' } }],
     ['incomplete without follow-ups', { ok: true, status: 201, body: { extraction: { is_complete: false, follow_up_questions: [] }, tour_preference_profile: null } }],
   ])('%s → failure with a re-analyze Retry, no cards', (_label, input) => {
     const outcome = messageOutcome(input as never)
     expect(outcome).toEqual({ kind: 'failure', text: AI_FAILURE_TEXT, retry: 'reanalyze' })
+  })
+
+  it('#36: network error → failure whose Retry resends the unsent message, no cards', () => {
+    expect(messageOutcome({ networkError: true })).toEqual({ kind: 'failure', text: AI_FAILURE_TEXT, retry: 'resend' })
   })
 
   it('follow-up questions → clarify', () => {

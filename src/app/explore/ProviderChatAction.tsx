@@ -14,7 +14,7 @@ export default function ProviderChatAction({ experienceId }: { experienceId?: st
     setError('')
     const response = await fetch('/api/demo/handoff', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'chat', experience_id: experienceId }),
+      body: JSON.stringify({ action: 'chat', experience_id: experienceId, source_context: 'Detail Page' }), // spec-EXP #33
     })
     const body = await response.json()
     if (!response.ok) {

@@ -55,3 +55,17 @@ describe('T022: Collaboration Metrics & Ranking (FR-010, BR-018, AC-ADM-PAIR)', 
     }
   })
 })
+
+// T047 (A3): top 10 counts Booked + Completed Bookings created in the period (contract:110).
+describe('T047 | A3 top 10 follows the period', () => {
+  const session = createHdtSession()
+
+  it('2026-09-20..25 → 5 pairs; 2026-09-26..10-01 → none (only an On hold Booking); empty period → none', async () => {
+    const p1 = await getTopCollaborationPairs(session, { preset: 'Custom', startDate: '2026-09-20T00:00:00+07:00', endDate: '2026-09-25T23:59:59+07:00' })
+    expect(p1.topPairs).toHaveLength(5)
+    const p2 = await getTopCollaborationPairs(session, { preset: 'Custom', startDate: '2026-09-26T00:00:00+07:00', endDate: '2026-10-01T23:59:59+07:00' })
+    expect(p2.topPairs).toEqual([])
+    const empty = await getTopCollaborationPairs(session, { preset: 'Custom', startDate: '2026-08-01T00:00:00+07:00', endDate: '2026-08-10T23:59:59+07:00' })
+    expect(empty.topPairs).toEqual([])
+  })
+})

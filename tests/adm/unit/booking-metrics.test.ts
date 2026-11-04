@@ -49,3 +49,12 @@ describe('T018: Booking Metrics & Trend Series (FR-009, BR-007, BR-010, BR-019)'
     expect(Array.isArray(metrics.bookingTable)).toBe(true)
   })
 })
+
+// T049 (A4): status breakdown and trend use Booking created_at (contract:110).
+describe('T049 | A4 status breakdown and trend by created_at', () => {
+  it('2026-09-20..25 → Completed 2, Booked 3, Cancelled 2, On hold 0; trend total 7', async () => {
+    const m = await aggregateBookingMetrics(createHdtSession(), { preset: 'Custom', startDate: '2026-09-20T00:00:00+07:00', endDate: '2026-09-25T23:59:59+07:00' })
+    expect(m.countsByStatus).toEqual({ 'On hold': 0, Booked: 3, Completed: 2, Cancelled: 2 })
+    expect(m.trendChartData.reduce((sum, p) => sum + p.count, 0)).toBe(7)
+  })
+})

@@ -63,3 +63,26 @@ describe('T019: Booking Table Entity Filters & AND Intersection (FR-006, BR-014,
     }
   })
 })
+
+// T047 (A3): the Booking table follows the period by Booking created_at (contract:110).
+describe('T047 | A3 booking table follows the period', () => {
+  const session = createHdtSession()
+  const P1 = { preset: 'Custom' as const, startDate: '2026-09-20T00:00:00+07:00', endDate: '2026-09-25T23:59:59+07:00' }
+  const P2 = { preset: 'Custom' as const, startDate: '2026-09-26T00:00:00+07:00', endDate: '2026-10-01T23:59:59+07:00' }
+  const EMPTY = { preset: 'Custom' as const, startDate: '2026-08-01T00:00:00+07:00', endDate: '2026-08-10T23:59:59+07:00' }
+
+  it('2026-09-20..25 → the 7 seed Bookings created on 2026-09-23 only', async () => {
+    const rows = await filterBookingTable(session, P1)
+    expect(rows).toHaveLength(7)
+    expect(rows.some(r => r.bookingId.startsWith('54d7a276'))).toBe(false)
+  })
+
+  it('2026-09-26..10-01 → only 54d7a276 (created 2026-09-28)', async () => {
+    const rows = await filterBookingTable(session, P2)
+    expect(rows.map(r => r.bookingId.slice(0, 8))).toEqual(['54d7a276'])
+  })
+
+  it('an empty period → []', async () => {
+    expect(await filterBookingTable(session, EMPTY)).toEqual([])
+  })
+})

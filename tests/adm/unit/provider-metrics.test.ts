@@ -48,3 +48,26 @@ describe('T015: Provider Metrics & Verification Matrix (FR-008, BR-009, BR-016)'
     }
   })
 })
+
+// T062 (A13) + T064 (A14): no invented numbers; UBND Quote Requests scoped by the Experience's Provider.
+describe('T062/T064 | A13 + A14 provider metrics', () => {
+  const P1 = { preset: 'Custom' as const, startDate: '2026-09-20T00:00:00+07:00', endDate: '2026-09-25T23:59:59+07:00' }
+
+  it('A13: UBND Hạ Thái → 0 active Providers and no placeholder activity rows', async () => {
+    const m = await aggregateProviderMetrics(createUbndSession(SEED_ADMIN_IDS.haThaiVillageId), P1)
+    expect(m.activeProviderCount).toBe(0)
+    expect(m.activityDistribution.filter(a => a.count > 0)).toEqual([])
+    expect(m.activityDistribution.some(a => a.craftType === 'Ceramics')).toBe(false)
+  })
+
+  it('A13: HDT in an empty period → 0 active Providers (no fallback to the Provider total)', async () => {
+    const m = await aggregateProviderMetrics(createHdtSession(), { preset: 'Custom', startDate: '2026-08-01T00:00:00+07:00', endDate: '2026-08-10T23:59:59+07:00' })
+    expect(m.activeProviderCount).toBe(0)
+  })
+
+  it('A14: UBND Bát Tràng Quote Requests = 2, under craft type Ceramics (not General Craft)', async () => {
+    const m = await aggregateProviderMetrics(createUbndSession(SEED_ADMIN_IDS.batTrangVillageId), P1)
+    const quotes = m.activityDistribution.filter(a => a.activityType === 'Quote Request')
+    expect(quotes).toEqual([{ craftType: 'Ceramics', activityType: 'Quote Request', count: 2 }])
+  })
+})

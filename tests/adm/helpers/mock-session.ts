@@ -19,6 +19,8 @@ export const SEED_ADMIN_IDS = {
   vanPhucVillageId: 'c0d0d95f-d59c-5c35-946a-f397e380dd14',
   // Chuông Village
   chuongVillageId: '688d408b-9d98-5b66-bfa7-659a67462108',
+  // Hạ Thái Village — the UBND demo identity on main (ubnd_village_assignments.csv:6)
+  haThaiVillageId: '6dfbb5e9-f92e-58a0-b090-d67cea160f62',
   // UBND user assigned to Bát Tràng (ubnd_village_assignments.csv)
   ubndUserId: 'ubnd-user-001',
   // HDT platform administrator
@@ -68,8 +70,17 @@ export function createGuestSession(): MockAdminSession {
   }
 }
 
+// Route requests use the server-side demo session cookie (src/lib/auth/demo-session.ts);
+// the cookie only names the account, so a UBND request is always UBND Hạ Thái.
 export function toSessionHeader(session: MockAdminSession): Record<string, string> {
-  return {
-    'x-mock-session': JSON.stringify(session),
-  }
+  const account = !session.authenticated
+    ? 'guest'
+    : session.adminType === 'HDT'
+      ? 'hdt'
+      : session.adminType === 'UBND'
+        ? 'ubnd'
+        : session.role === 'TourAgency'
+          ? 'agency'
+          : 'guest'
+  return { cookie: `hab_demo_account=${account}` }
 }

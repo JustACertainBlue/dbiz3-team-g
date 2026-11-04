@@ -52,3 +52,31 @@ describe('T010: Summary Metric Cards Calculation (FR-003, BR-017, AC-ADM-PAIR)',
     expect(typeof activeCollab!.value).toBe('number')
   })
 })
+
+// T049 (A4) + T051 (A5): time basis per docs/spec/docs/consistency-contract.md:110.
+describe('T049/T051 | A4 + A5 metric cards time basis', () => {
+  const session = createHdtSession()
+  const value = (cards: { label: string; value: number }[], label: string) => cards.find(c => c.label === label)!.value
+  const P1 = { preset: 'Custom' as const, startDate: '2026-09-20T00:00:00+07:00', endDate: '2026-09-25T23:59:59+07:00' }
+  const P2 = { preset: 'Custom' as const, startDate: '2026-09-26T00:00:00+07:00', endDate: '2026-10-01T23:59:59+07:00' }
+  const EMPTY = { preset: 'Custom' as const, startDate: '2026-08-01T00:00:00+07:00', endDate: '2026-08-10T23:59:59+07:00' }
+
+  it('A4: Total Bookings counts Bookings created in the period (7, then 1)', async () => {
+    expect(value(await calculateMetricCards(session, P1), 'Total Bookings')).toBe(7)
+    expect(value(await calculateMetricCards(session, P2), 'Total Bookings')).toBe(1)
+  })
+
+  it('A4: Agency and Provider totals are snapshots at the end date (none existed before 2026-09-03)', async () => {
+    const p1 = await calculateMetricCards(session, P1)
+    expect(value(p1, 'Total Agencies')).toBe(8)
+    expect(value(p1, 'Total Providers')).toBe(8)
+    const empty = await calculateMetricCards(session, EMPTY)
+    expect(value(empty, 'Total Agencies')).toBe(0)
+    expect(value(empty, 'Total Providers')).toBe(0)
+  })
+
+  it('A5: Active Collaborations = pairs with an On hold/Booked Booking at the end date (history): 5 at 09-25, 4 at 10-01', async () => {
+    expect(value(await calculateMetricCards(session, P1), 'Active Collaborations')).toBe(5)
+    expect(value(await calculateMetricCards(session, P2), 'Active Collaborations')).toBe(4)
+  })
+})

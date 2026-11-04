@@ -42,7 +42,7 @@ describe('T039: Full Dashboard End-to-End User Journey (Scenarios 1..11)', () =>
   })
 
   it('executes complete UBND monitoring journey with strict village isolation', async () => {
-    const session = createUbndSession(SEED_ADMIN_IDS.batTrangVillageId)
+    const session = createUbndSession(SEED_ADMIN_IDS.haThaiVillageId)
 
     // 1. Initial dashboard load
     const req = new NextRequest('http://localhost:3000/api/adm/dashboard', {
@@ -54,6 +54,6 @@ describe('T039: Full Dashboard End-to-End User Journey (Scenarios 1..11)', () =>
 
     expect(data.scope.adminType).toBe('UBND')
     expect(data.scope.isVillageFilterLocked).toBe(true)
-    expect(data.scope.effectiveVillageId).toBe(SEED_ADMIN_IDS.batTrangVillageId)
+    expect(data.scope.effectiveVillageId).toBe(SEED_ADMIN_IDS.haThaiVillageId)
   })
 })

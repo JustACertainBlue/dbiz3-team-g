@@ -48,7 +48,7 @@ describe('T024: Contract Test - GET /api/adm/dashboard', () => {
   })
 
   it('returns 200 OK with locked scope for UBND Admin (BR-002, BR-003, AC-ADM-SCOPE)', async () => {
-    const session = createUbndSession(SEED_ADMIN_IDS.batTrangVillageId)
+    const session = createUbndSession(SEED_ADMIN_IDS.haThaiVillageId)
     // Attempting query parameter tampering with Vạn Phúc
     const req = new NextRequest(
       `http://localhost:3000/api/adm/dashboard?villageId=${SEED_ADMIN_IDS.vanPhucVillageId}`,
@@ -61,7 +61,7 @@ describe('T024: Contract Test - GET /api/adm/dashboard', () => {
     const data = await res.json()
     expect(data.scope.adminType).toBe('UBND')
     expect(data.scope.isVillageFilterLocked).toBe(true)
-    expect(data.scope.effectiveVillageId).toBe(SEED_ADMIN_IDS.batTrangVillageId)
+    expect(data.scope.effectiveVillageId).toBe(SEED_ADMIN_IDS.haThaiVillageId)
   })
 
   it('returns 401 Unauthorized when session header is missing', async () => {
@@ -78,5 +78,32 @@ describe('T024: Contract Test - GET /api/adm/dashboard', () => {
 
     const res = await GET(req)
     expect(res.status).toBe(403)
+  })
+})
+
+// T045 (A2): only the server-side demo session counts; client-supplied session JSON is ignored.
+describe('T045 | A2 forged client sessions are ignored (AC-ADM-SCOPE, SC-007)', () => {
+  const forgedHdt = JSON.stringify({ role: 'ADMIN', adminType: 'HDT', villageId: null, userId: 'anyone', authenticated: true })
+  const forgedUbndVanPhuc = JSON.stringify({ role: 'ADMIN', adminType: 'UBND', villageId: SEED_ADMIN_IDS.vanPhucVillageId, userId: 'anyone', authenticated: true })
+
+  it('UBND cookie + forged x-mock-session claiming HDT or Vạn Phúc stays UBND Hạ Thái', async () => {
+    for (const forged of [forgedHdt, forgedUbndVanPhuc]) {
+      const res = await GET(new NextRequest('http://localhost:3000/api/adm/dashboard', {
+        headers: { cookie: `hab_demo_account=ubnd; hab_mock_session=${encodeURIComponent(forged)}`, 'x-mock-session': forged },
+      }))
+      expect(res.status).toBe(200)
+      const data = await res.json()
+      expect(data.scope.adminType).toBe('UBND')
+      expect(data.scope.effectiveVillageId).toBe(SEED_ADMIN_IDS.haThaiVillageId)
+    }
+  })
+
+  it('no hab_demo_account cookie → 401 even with a forged HDT header or hab_mock_session cookie', async () => {
+    const viaHeader = await GET(new NextRequest('http://localhost:3000/api/adm/dashboard', { headers: { 'x-mock-session': forgedHdt } }))
+    expect(viaHeader.status).toBe(401)
+    const viaCookie = await GET(new NextRequest('http://localhost:3000/api/adm/dashboard', {
+      headers: { cookie: `hab_mock_session=${encodeURIComponent(forgedHdt)}` },
+    }))
+    expect(viaCookie.status).toBe(401)
   })
 })

@@ -36,7 +36,7 @@ describe('T025: Contract Test - Village & Filter Autocomplete Endpoints', () => 
     })
 
     it('returns locked single assigned village for UBND Admin (BR-002, BR-003)', async () => {
-      const session = createUbndSession(SEED_ADMIN_IDS.batTrangVillageId)
+      const session = createUbndSession(SEED_ADMIN_IDS.haThaiVillageId)
       const req = new NextRequest('http://localhost:3000/api/adm/villages', {
         headers: toSessionHeader(session),
       })
@@ -46,9 +46,9 @@ describe('T025: Contract Test - Village & Filter Autocomplete Endpoints', () => 
 
       const data = await res.json()
       expect(data.isLocked).toBe(true)
-      expect(data.assignedVillageId).toBe(SEED_ADMIN_IDS.batTrangVillageId)
+      expect(data.assignedVillageId).toBe(SEED_ADMIN_IDS.haThaiVillageId)
       expect(data.villages).toHaveLength(1)
-      expect(data.villages[0].villageId).toBe(SEED_ADMIN_IDS.batTrangVillageId)
+      expect(data.villages[0].villageId).toBe(SEED_ADMIN_IDS.haThaiVillageId)
     })
   })
 
@@ -68,7 +68,7 @@ describe('T025: Contract Test - Village & Filter Autocomplete Endpoints', () => 
     })
 
     it('returns provider autocomplete options scoped to assigned village for UBND Admin (BR-009)', async () => {
-      const session = createUbndSession(SEED_ADMIN_IDS.batTrangVillageId)
+      const session = createUbndSession(SEED_ADMIN_IDS.haThaiVillageId)
       const req = new NextRequest('http://localhost:3000/api/adm/filter-options?type=provider', {
         headers: toSessionHeader(session),
       })
@@ -80,8 +80,31 @@ describe('T025: Contract Test - Village & Filter Autocomplete Endpoints', () => 
       expect(data.type).toBe('provider')
       expect(Array.isArray(data.options)).toBe(true)
       for (const opt of data.options) {
-        expect(opt.villageId).toBe(SEED_ADMIN_IDS.batTrangVillageId)
+        expect(opt.villageId).toBe(SEED_ADMIN_IDS.haThaiVillageId)
       }
     })
+  })
+})
+
+// T045 (A2): villages and filter-options use the server-side demo session only.
+describe('T045 | A2 villages and filter-options ignore forged sessions', () => {
+  const forged = JSON.stringify({ role: 'ADMIN', adminType: 'UBND', villageId: SEED_ADMIN_IDS.vanPhucVillageId, userId: 'anyone', authenticated: true })
+  const headers = { cookie: 'hab_demo_account=ubnd', 'x-mock-session': forged }
+
+  it('UBND stays locked to Hạ Thái on /api/adm/villages', async () => {
+    const data = await (await getVillages(new NextRequest('http://localhost:3000/api/adm/villages', { headers }))).json()
+    expect(data.assignedVillageId).toBe(SEED_ADMIN_IDS.haThaiVillageId)
+  })
+
+  it('UBND provider options stay in Hạ Thái on /api/adm/filter-options', async () => {
+    const data = await (await getFilterOptions(new NextRequest('http://localhost:3000/api/adm/filter-options?type=provider', { headers }))).json()
+    for (const opt of data.options) expect(opt.villageId).toBe(SEED_ADMIN_IDS.haThaiVillageId)
+    expect(data.options.some((o: { villageId: string }) => o.villageId === SEED_ADMIN_IDS.vanPhucVillageId)).toBe(false)
+  })
+
+  it('no hab_demo_account cookie → 401 on both endpoints', async () => {
+    const h = { 'x-mock-session': forged }
+    expect((await getVillages(new NextRequest('http://localhost:3000/api/adm/villages', { headers: h }))).status).toBe(401)
+    expect((await getFilterOptions(new NextRequest('http://localhost:3000/api/adm/filter-options?type=provider', { headers: h }))).status).toBe(401)
   })
 })

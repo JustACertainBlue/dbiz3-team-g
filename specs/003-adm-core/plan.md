@@ -24,6 +24,8 @@ The technical implementation uses a modern fullstack TypeScript web application 
 
 **Storage**: PostgreSQL (with local SQLite option for zero-config testing; CSV seed loader `src/lib/db/seed-loader.ts` reading `data/seed/`). Canonical schema and seed defined in `data/`.
 
+> **As built on `main` (Phase 5 port, 2026-11-04):** ADM reads the shared JSON runtime through `demoRepository()` (`src/lib/demo/json-repository.ts`, seeded from `data/seed/*.csv`; tests use an in-memory copy), so Bookings created or changed by BKG are visible. PostgreSQL remains the target; `src/lib/db/client.ts` is a stub. Access uses the server-side demo session (`demoSessionFromRequest`, cookie `hab_demo_account`, identities in `src/lib/auth/demo-session.ts`: HDT, UBND Hạ Thái); client-supplied session JSON (`x-mock-session`, `hab_mock_session`) is not accepted. KPI time basis follows `docs/spec/docs/consistency-contract.md:110`. User Management (ADM095) is out of scope (spec-ADM:48, moved to AUT).
+
 **Test Runner**: Vitest (Unit, Contract, and Integration test suites)
 
 **Target Platform**: macOS 13+ and Windows 11 with free tools (Node.js runtime / Responsive Web, Screen `ADM079`)
@@ -136,7 +138,7 @@ tests/
 
 | Item / Decision | Need | Simpler Alternative Rejected Because |
 |---|---|---|
-| **Mock Session via Header / RoleSwitcher** | Deferred Login UI to Session 11 | Full OAuth / JWT login UI is out of scope until Session 11. Reusing `RoleSwitcher` and `x-mock-session` allows instant testing of both HDT and UBND operational views without authentication blockers. |
+| **Demo session cookie / RoleSwitcher** (was: `x-mock-session` header, replaced 2026-11-04) | Deferred Login UI to Session 11 | Full OAuth / JWT login UI is out of scope until Session 11. The shared server-side demo session (`hab_demo_account`, `demoSessionFromRequest`) gives HDT and UBND views without trusting client-supplied session JSON (AC-ADM-SCOPE, SC-007). |
 | **Server-Side Scope Guard** | Enforce administrative boundary (BR-002, BR-010) | Client-side filtering alone allows unauthorized cross-village data leakage via direct API calls or tampered query parameters. |
 | **In-Memory Seed Aggregator for Local Testing** | Zero-config instant local execution | Heavy OLAP cubes or background aggregation workers add significant operational overhead and fail the zero-config requirement on macOS/Windows workstations. |
 | **Strict Read-Only Architecture** | Enforce BR-006 & BR-013 | No POST/PUT/PATCH/DELETE endpoints are implemented under `/api/adm/*`, preventing any accidental state modification from the monitoring screen. |

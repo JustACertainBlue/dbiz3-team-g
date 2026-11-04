@@ -108,6 +108,96 @@
 
 ---
 
+## Phase 5: Port + review fixes (`linh/adm-fixes`, 2026-11-04)
+
+**Purpose**: Port `003-adm-core` onto `main` (cherry-picks `928eca8`, `9cea251` of `fbcd7be`, `cbbb8dd`) and fix the review findings A1–A14 of the Step 7 verify (C1–C15).
+**Sources**: spec-ADM §5/§5.2, #21 (Clarifications 2026-11-04); `docs/spec/docs/consistency-contract.md:108-110` (ADM079 KPI time basis).
+**Rule**: every test task is written and seen failing for the right reason before its code task (Constitution II). Existing ADM tests may be edited only where they contradict contract:110 (`created_at`, Active Collaborations at the end date) or the move to the demo session; each edit is logged in the build log.
+**Determinism**: tests that count Bookings use the `Custom` period with fixed `startDate`/`endDate`, or create Bookings through BKG with the wall clock and use `Last 7 days`; `demoRepository().reset()` in `beforeEach`.
+
+### A1 — Read the shared runtime, not the CSV seed
+*Covers: BR-007, FR-002, contract:110*
+
+- [ ] T043 [A1] Test: tests/adm/integration/adm-runtime-api.test.ts — through `GET /api/adm/dashboard` (cookie `hdt`): create a Booking with `POST /api/bkg/bookings` (cookie `provider`), then `Last 7 days` shows Total Bookings 1, status On hold 1 and the new `booking_id` in the table; cancel it with `POST /api/bkg/bookings/[id]/status` → status Cancelled 1; Active Collaborations (pairs with an On hold/Booked Booking at the end date, contract:110) is the baseline + 1 after the create (new pair Công ty Du lịch Tràng An–Xưởng thủ công Bát Tràng) and back to the baseline after the cancel. The BKG write also runs the 72-hour expiry, so the expired seed hold `54d7a276` must appear as Cancelled on the dashboard (as in the runtime), not On hold as in the CSV. Must fail (ADM reads `data/seed/*.csv`).
+- [ ] T044 [A1] Make `loadBookings`, `loadAgencies`, `loadProviders`, `loadVillages`, `loadQuoteRequests`, `loadChatSessions` in src/lib/db/seed-loader.ts read `demoRepository().all(...)`; add `loadBookingStatusHistory` (satisfies T043).
+
+### A2 — Server-side demo session only
+*Covers: BR-001, BR-002, BR-003, AC-ADM-SCOPE, SC-007*
+
+- [ ] T045 [A2] Rewrite tests/adm/helpers/mock-session.ts so `toSessionHeader` sends the cookie `hab_demo_account` (`hdt`, `ubnd`, `agency`, `guest`) and add `SEED_ADMIN_IDS.haThaiVillageId` (UBND demo identity, `ubnd_village_assignments.csv:6`); update the route tests that expected UBND = Bát Tràng (session change, logged). New tests in tests/adm/contract/dashboard-api.test.ts and villages-filter-api.test.ts: a forged `x-mock-session` header or `hab_mock_session` cookie claiming HDT or another village is ignored on `/api/adm/dashboard`, `/api/adm/villages`, `/api/adm/filter-options` (UBND stays Hạ Thái; without `hab_demo_account` → 401). L3: `adminPageAccess(DEMO_IDENTITIES[key])` (tests/adm/unit/admin-page-access.test.ts) → `allow` for hdt, ubnd and `restricted` for guest, agency, provider, and the `/admin` page shows the restricted state as `/admin/providers` does. Must fail (routes trust the client JSON; no page guard).
+- [ ] T046 [A2] In the three routes use `demoSessionFromRequest(req)` mapped to `SessionLike` (role, `adminType`, `villageId` from `DEMO_IDENTITIES`); in src/app/admin/page.tsx and src/app/components/admin/FilterPanel.tsx read the role with `refreshDemoSession()`; add src/app/admin/admin-page-access.ts and render the restricted state in src/app/admin/page.tsx for non-admin actors (satisfies T045).
+
+### A3 — Booking table and top 10 follow the period
+*Covers: BR-005, AS-5, FR-009(3), FR-010, contract:110*
+
+- [ ] T047 [A3] Test: in tests/adm/unit/booking-table.test.ts and collaboration-metrics.test.ts (new cases) — with a `Custom` period that holds only some seed Bookings by `created_at`, `filterBookingTable` and `getTopCollaborationPairs` return only Bookings created in the period; an empty period returns `[]` for both. Route level in adm-runtime-api.test.ts: `Last 7 days` after reset → empty table and top 10. Must fail (no period filter).
+- [ ] T048 [A3] Apply the period (by `created_at`) in `filterBookingTable` and `getTopCollaborationPairs` (src/lib/adm/metrics-service.ts) (satisfies T047).
+
+### A4 — Time basis per contract:110
+*Covers: FR-004, FR-009, BR-015, BR-016, contract:110*
+
+- [ ] T049 [A4] Test: in tests/adm/unit/metric-cards.test.ts and booking-metrics.test.ts (new cases) — Total Bookings, status breakdown and trend count Bookings by `created_at` in the period (`Custom` 2026-09-20..2026-09-25 → the 7 seed Bookings created 2026-09-23; 2026-09-26..2026-10-01 → 1); activity metrics count Quote Requests, Chats and Bookings created in the period; Agency and Provider totals are snapshots at the end date (`created_at` ≤ end). Must fail (code uses `start_at`).
+- [ ] T050 [A4] Use `created_at` for every Booking period check (`isWithinPeriod` calls in metrics-service.ts) and filter Agency/Provider totals by `created_at` ≤ end date (satisfies T049).
+
+### A5 — Active Collaborations at the end date
+*Covers: BR-017, AC-ADM-PAIR, contract:110*
+
+- [ ] T051 [A5] Test: in tests/adm/unit/metric-cards.test.ts (new case) — Active Collaborations = distinct Agency–Provider pairs with at least one Booking whose status at the end date (latest `booking_status_history` row with `changed_at` ≤ end, created ≤ end) is On hold or Booked; expected values computed from `data/seed/booking_status_history.csv` for two `Custom` end dates; the trend compares with the same count at the previous period's end. Must fail (code counts in-period Bookings by `start_at`).
+- [ ] T052 [A5] Compute Active Collaborations from `loadBookingStatusHistory()` at the end date in `calculateMetricCards` (satisfies T051).
+
+### A6 — Pending Verification panel from the seed, read-only
+*Covers: Constitution I, BR-012, ADM079 screen spec :97, :102, FR-007, FR-008*
+
+- [ ] T053 [A6] Test: tests/adm/unit/pending-verification.test.ts — `listPendingVerification(scope)` returns Providers with `verification_status = Pending Verification` (seed: Xưởng thủ công Hạ Thái, submitted 2026-09-12) and Agency registration requests in Pending Approval (seed: none); UBND sees only its village's Providers and no Agencies; HDT with no pending items → `[]`; the panel markup (renderToStaticMarkup, as filter-panel.test.ts) has no View/Verify buttons and shows "No accounts awaiting review" when empty. Must fail (module does not exist; panel is hard-coded).
+- [ ] T054 [A6] Create src/lib/adm/pending-service.ts; return `pendingVerification` from `/api/adm/dashboard`; render it in PendingVerificationPanel.tsx without buttons; remove the hard-coded accounts (satisfies T053).
+
+### A7 — Village filter after a role switch
+*Covers: FR-005, BR-004*
+
+- [ ] T055 [A7] Test: tests/adm/unit/village-filter-state.test.ts — `nextVillageFilter(previous, villagesResponse)`: UBND → its assigned village; HDT after UBND (previous = an assigned village, response unlocked) → `null` (All Villages); HDT keeps a village it chose itself. Must fail (module does not exist).
+- [ ] T056 [A7] Extract `nextVillageFilter` to src/app/admin/village-filter-state.ts and use it in src/app/admin/page.tsx (replaces the branch at :74-77) (satisfies T055).
+
+### A8 — No invented names
+*Covers: Constitution I*
+
+- [ ] T057 [A8] Test: tests/adm/unit/display-names.test.ts — every Booking row and top pair built from the seed and from a BKG-created Booking has Agency, Provider and Experience names from `data/` (never "Indochina Heritage Voyages", "Tour Agency Partner", "Artisan Workshop", "Trải nghiệm làng nghề"); AdminSidebar shows the demo identity's `displayName`. Must fail (sidebar names hard-coded).
+- [ ] T058 [A8] Show `displayName` in AdminSidebar.tsx; fall back to the raw id instead of invented names in metrics-service.ts (satisfies T057).
+
+### A9 — User Management out of scope
+- [X] T059 [A9] Removed ADM095 (`eed00ea`, spec-ADM:48 → AUT).
+
+### A10 — Quickstart and plan
+- [ ] T060 [A10] Update specs/003-adm-core/quickstart.md (`main`, `npm ci`, `npm run demo:reset`, 47 CSVs, no `.env`, demo identities: HDT, UBND Hạ Thái; `Last 90 days` for seed data; a BKG-created Booking for `Last 7 days`) and plan.md "As built" (JSON runtime, demo session).
+
+### A11 — `tsconfig.tsbuildinfo`
+- [X] T061 [A11] Untracked by the port (main ignores it since PR #30).
+
+### A12 — Route tests through the demo cookie
+- Covered by T045 (helper) and T043 (runtime route test).
+
+### A13 — No invented numbers when data is missing (found while porting)
+*Covers: BR-008, BR-015, BR-016, edge case "One or more metric sources return no data"*
+
+- [ ] T062 [A13] Test: in tests/adm/unit/agency-metrics.test.ts and provider-metrics.test.ts (new cases) — UBND Hạ Thái (no Bookings, Quote Requests or Chats with its Providers): Agency status counts are all 0 (no fallback to every Agency); an Agency with only a Quote Request or only a Chat with a village Provider is counted as relevant (#22), `activeAgencyCount` 0 (no `min(n, 3)`), `activeProviderCount` 0 (no fallback to the Provider total), no placeholder "Ceramics" activity rows; an empty `Custom` period gives 0 active Agencies/Providers for HDT. Must fail (fallbacks at metrics-service.ts:118-121, :239-241, :297, :424-429, :433).
+- [ ] T063 [A13] Remove those fallbacks; relevant Agencies for UBND = Booking, Quote Request or Chat with a Provider in the village (#22) in `calculateMetricCards` and `aggregateAgencyMetrics` (satisfies T062).
+
+### A14 — UBND activity metrics stay in the village (found while porting)
+*Covers: BR-010, BR-015, BR-016*
+
+- [ ] T064 [A14] Test: in tests/adm/unit/agency-metrics.test.ts and provider-metrics.test.ts (new cases) — for UBND, Agency activity counts (Bookings, Quote Requests, Chats) and Provider Quote Request counts include only records of Providers in the assigned village (Quote → Experience → Provider); Quote Requests use the Provider's `craft_type`, not "General Craft". Must fail (counts use every record).
+- [ ] T065 [A14] Scope those counts in `aggregateAgencyMetrics` / `aggregateProviderMetrics` (satisfies T064).
+
+### H1 — Contract and plan
+- [X] T067 Update specs/003-adm-core/contracts/admin-dashboard-api.md (cookie `hab_demo_account` instead of `x-mock-session`, 401/403, `pendingVerification`, time basis per contract:110, #21, #22, no `/api/adm/users`) and plan.md Complexity Tracking (:141).
+
+### Order (L1)
+T067 (docs) → A1 (T043–T044) → A2 (T045–T046) → A4 (T049–T050) → A3 (T047–T048) → A5 (T051–T052) → A13/A14 (T062–T065) → A6, A7, A8 (T053–T058) → T060 → T066. A1–A5, A13 and A14 all edit `src/lib/adm/metrics-service.ts`, so they run in sequence; A6–A8 touch separate files.
+
+### Verify
+- [ ] T066 `npm test` (paste last line), `npm run lint`; mutation checks A1 (read CSV again → T043 red), A2 (trust `x-mock-session` again → T045 red), A3 (drop the period filter → T047 red), each reverted; `npm run demo:reset`, re-run C1–C15 (C6 now expected: cards ignore Agency/Provider filters, #21) with `Last 90 days` and one BKG-created Booking, clicked in the browser and with curl; build-log entry, `docs/build/mvp-alpha-checklist.md` §3 ADM rows (including M2: ADM is read-only and does not run the BKG 72-hour expiry, so an expired hold shows On hold until the next BKG request — same cause as BKG row 8), `docs/build/claude-context/03-module-status.md` ADM row.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

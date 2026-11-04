@@ -4,6 +4,19 @@
 
 This contract defines the HTTP REST interface exposed by the Next.js App Router API routes to support Screen `ADM079` (Admin Dashboard).
 
+> **Updated 2026-11-04 (Phase 5 port, T067).** Authentication is the server-side demo session: cookie
+> `hab_demo_account` (`hdt`, `ubnd`, …; identities in `src/lib/auth/demo-session.ts`). A client-supplied
+> session (`x-mock-session` header, `hab_mock_session` cookie) is ignored. No cookie or Guest → `401`;
+> an authenticated actor that is not HDT/UBND → `403`. UBND's village comes from its identity
+> (`ubnd_village_assignments.csv`), never from the request. Data comes from the shared JSON runtime, so
+> Bookings created or changed by BKG are included. Time basis (`docs/spec/docs/consistency-contract.md:110`):
+> Agency/Provider totals are snapshots at the end date; Booking totals, status breakdown, trend, table and
+> top 10 use the Booking `created_at` within the period; Active Collaborations are pairs with an On hold or
+> Booked Booking at the end date (from `booking_status_history`). Agency/Provider filters apply to the
+> Booking table, top 10, status breakdown and trend, not to the four cards (spec #21). UBND Agency scope =
+> Agencies with a Booking, Quote Request or Chat with a Provider in the village (spec #22). There is no
+> `/api/adm/users` endpoint (User Management belongs to AUT, spec-ADM:48).
+
 ---
 
 ## Endpoints Summary
@@ -22,17 +35,7 @@ Retrieves all aggregated operational metrics for the Admin Dashboard according t
 
 ### Request
 
-- **Headers**:
-  - `x-mock-session`: JSON string representing the authenticated session:
-    ```json
-    {
-      "role": "ADMIN",
-      "adminType": "HDT", // or "UBND"
-      "villageId": null,  // or UUID for UBND admin
-      "userId": "hdt-user-001",
-      "authenticated": true
-    }
-    ```
+- **Cookie**: `hab_demo_account=hdt` or `hab_demo_account=ubnd` (see the note above).
 
 - **Query Parameters**:
   | Parameter | Type | Required | Default | Description |
@@ -169,13 +172,17 @@ Retrieves all aggregated operational metrics for the Admin Dashboard according t
 }
 ```
 
+The response also contains `pendingVerification` (A6): `Array<{ kind: 'Provider' | 'Agency', id, name, villageId | null, submittedAt }>`
+— Providers with `verification_status = Pending Verification` and Agency registration requests in Pending Approval,
+read-only; UBND receives only its village's Providers and no Agencies.
+
 ### Error Responses
 
 - `400 Bad Request`:
   ```json
   { "error": "Invalid date range: startDate must be before or equal to endDate" }
   ```
-- `401 Unauthorized`:
+- `401 Unauthorized` (no `hab_demo_account` cookie, or Guest; a forged `x-mock-session` is ignored):
   ```json
   { "error": "Authentication required. Please provide a valid session." }
   ```
@@ -192,7 +199,7 @@ Retrieves the list of craft villages eligible for filtering.
 
 ### Request
 
-- **Headers**: `x-mock-session` (Admin role required)
+- **Cookie**: `hab_demo_account` (HDT or UBND)
 
 ### Response `200 OK`
 
@@ -229,7 +236,7 @@ Provides autocomplete suggestions for Tour Agencies and Local Providers.
 
 ### Request
 
-- **Headers**: `x-mock-session`
+- **Cookie**: `hab_demo_account` (HDT or UBND)
 - **Query Parameters**:
   - `type`: `agency` | `provider` (Required)
   - `query`: `string` (Optional search substring)

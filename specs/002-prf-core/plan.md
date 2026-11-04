@@ -161,3 +161,10 @@ All PRF business logic lives in `src/lib/prf/`. Tests live in `tests/prf/`.
 `spec.md` re-copied from `docs/spec/specs/spec-PRF.md` with `start_feature.py --refresh`. The only
 change is in the Mermaid sequence diagram: `;` inside messages is escaped as `#59` (11 lines). No FR,
 BR, acceptance scenario or field changed, so this plan and `tasks.md` still match the spec.
+
+## Spec refresh 2026-11-04 (slice A, `linh/prf-fixes`)
+
+Re-copied after spec-PRF #31 (PRF128 shows only FR-004 inputs) and #32 (`provider_profiles.verification_status`
+stays Verified while a version is published; revisions carry their own `version_status`). Implemented in
+`src/lib/prf/provider-service.ts`, `src/lib/prf/provider-edit-form.ts` and PRF128; tests
+`tests/prf/unit/provider-versioning.test.ts`, `tests/prf/unit/provider-edit-form.test.ts` (build-log Entry 39).

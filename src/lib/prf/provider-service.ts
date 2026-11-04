@@ -160,11 +160,33 @@ export async function updateProviderProfile(
 
   const data = ProviderProfilePatchSchema.parse(input)
 
+  const repository = demoRepository()
+  const versions = await loadProviderProfileVersions()
+  const currentVersion = versions.find(version => version.provider_id === providerId && version.version_no === Number(provider.current_version_no || provider.published_version_no || 1))
+    || versions.find(version => version.provider_id === providerId)
+  if (!currentVersion) throw new ProviderNotFoundError('Provider profile version not found')
+
+  // BR-007 (decision Q2, 2026-11-04): once a version is published, the review state of a later
+  // revision lives on provider_profile_versions.version_status; provider_profiles.verification_status
+  // stays Verified so Explore, AI Matching and Booking keep using the published version.
+  const publishedVersionNo = provider.published_version_no ? Number(provider.published_version_no) : null
+  const revisionOpen = publishedVersionNo !== null && currentVersion.version_no !== publishedVersionNo
+  // FR-004 / BR-018: a major change is a real change of a major field, not its presence in the request.
+  const hasMajorChange =
+    (data.business_name !== undefined && data.business_name !== currentVersion.business_name) ||
+    (data.craft_type !== undefined && data.craft_type !== currentVersion.craft_type) ||
+    (data.business_registration !== undefined && data.business_registration !== currentVersion.business_registration_number)
+
   let verification_status = provider.verification_status
   let new_version_pending = false
   let published_version_intact = false
 
-  if (verification_status === 'Draft') {
+  if (revisionOpen) {
+    // A revision is already pending or requires revision: edit that revision, never add another one.
+    verification_status = currentVersion.version_status
+    new_version_pending = true
+    published_version_intact = true
+  } else if (verification_status === 'Draft') {
     const isComplete = Boolean(
       data.business_name &&
         data.craft_type &&
@@ -177,15 +199,11 @@ export async function updateProviderProfile(
     if (isComplete) {
       verification_status = 'Pending Verification'
     }
-  } else if (verification_status === 'Verified') {
-    const hasMajorChange = Boolean(
-      data.business_name || data.craft_type || data.business_registration,
-    )
-    if (hasMajorChange) {
-      new_version_pending = true
-      published_version_intact = true
-    }
+  } else if (verification_status === 'Verified' && hasMajorChange) {
+    new_version_pending = true
+    published_version_intact = true
   }
+  const createRevision = new_version_pending && !revisionOpen
 
   recordAuditLog(
     actorSession.userId || 'unknown-user',
@@ -195,11 +213,6 @@ export async function updateProviderProfile(
     { verification_status, new_version_pending, published_version_intact },
   )
 
-  const repository = demoRepository()
-  const versions = await loadProviderProfileVersions()
-  const currentVersion = versions.find(version => version.provider_id === providerId && version.version_no === Number(provider.current_version_no || provider.published_version_no || 1))
-    || versions.find(version => version.provider_id === providerId)
-  if (!currentVersion) throw new ProviderNotFoundError('Provider profile version not found')
   const now = new Date().toISOString()
   const parseObject = (value: string) => { try { return value ? JSON.parse(value) as Record<string, unknown> : {} } catch { return {} } }
   const buildChanges = () => {
@@ -218,7 +231,7 @@ export async function updateProviderProfile(
     return changes
   }
   const versionChanges = buildChanges()
-  if (new_version_pending) {
+  if (createRevision) {
     const nextVersion = Math.max(...versions.filter(version => version.provider_id === providerId).map(version => version.version_no), 0) + 1
     repository.insert('provider_profile_versions', {
       provider_id: providerId, version_no: String(nextVersion), version_status: 'Pending Verification',
@@ -233,12 +246,16 @@ export async function updateProviderProfile(
       submitted_at: now, published_at: '',
     })
     repository.update('provider_profiles', row => row.provider_id === providerId, {
-      current_version_no: String(nextVersion), verification_status: 'Pending Verification', updated_at: now,
+      current_version_no: String(nextVersion), updated_at: now,
     })
     verification_status = 'Pending Verification'
   } else {
     repository.update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === String(currentVersion.version_no), versionChanges)
-    repository.update('provider_profiles', row => row.provider_id === providerId, { verification_status, updated_at: now })
+    if (revisionOpen) {
+      repository.update('provider_profiles', row => row.provider_id === providerId, { updated_at: now })
+    } else {
+      repository.update('provider_profiles', row => row.provider_id === providerId, { verification_status, updated_at: now })
+    }
   }
   if (data.operating_hours) {
     repository.remove('provider_operating_hours', row => row.provider_id === providerId)
@@ -315,12 +332,19 @@ export async function reviewProvider(
       { decision, revisionComments },
     )
     const now = new Date().toISOString()
+    const reviewedVersionNo = String(provider.current_version_no || provider.published_version_no || 1)
     demoRepository().insert('provider_verification_reviews', {
       review_id: randomUUID(), provider_id: providerId,
-      version_no: String(provider.current_version_no || provider.published_version_no || 1),
+      version_no: reviewedVersionNo,
       reviewer_user_id: actorSession.userId || '', decision, revision_comments: revisionComments, reviewed_at: now,
     })
-    demoRepository().update('provider_profiles', row => row.provider_id === providerId, { verification_status: 'Revision Required', updated_at: now })
+    if (provider.published_version_no && reviewedVersionNo !== String(provider.published_version_no)) {
+      // BR-007: only the revision needs changes; the published version stays public.
+      demoRepository().update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === reviewedVersionNo, { version_status: 'Revision Required' })
+      demoRepository().update('provider_profiles', row => row.provider_id === providerId, { updated_at: now })
+    } else {
+      demoRepository().update('provider_profiles', row => row.provider_id === providerId, { verification_status: 'Revision Required', updated_at: now })
+    }
     return {
       success: true,
       provider_id: providerId,
@@ -345,6 +369,11 @@ export async function reviewProvider(
       review_id: randomUUID(), provider_id: providerId, version_no: String(nextPublishedVersion),
       reviewer_user_id: actorSession.userId || '', decision, revision_comments: '', reviewed_at: now,
     })
+    const previousPublished = provider.published_version_no ? String(provider.published_version_no) : ''
+    if (previousPublished && previousPublished !== String(nextPublishedVersion)) {
+      // US-6 AC2 / BR-007: the approved revision replaces the previously published version.
+      demoRepository().update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === previousPublished, { version_status: 'Superseded' })
+    }
     demoRepository().update('provider_profiles', row => row.provider_id === providerId, {
       verification_status: 'Verified', published_version_no: String(nextPublishedVersion), updated_at: now,
     })

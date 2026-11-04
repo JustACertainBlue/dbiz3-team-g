@@ -42,13 +42,15 @@ describe('T057 | Boundary-value tests for Zod schemas', () => {
       expect(ProviderProfilePatchSchema.safeParse({ business_name: '' }).success).toBe(false)
     })
 
-    it('rejects invalid operating hour weekday outside 0-6', () => {
-      const invalid = {
+    it('rejects invalid operating hour weekday outside ISO 1-7 (data/schema.sql operating_weekday_chk, spec-BKG #28)', () => {
+      const period = (weekday: number) => ({
         operating_hours: [
-          { weekday: 7, local_start: '08:00', local_end: '17:00' },
+          { weekday, local_start: '08:00', local_end: '17:00' },
         ],
-      }
-      expect(ProviderProfilePatchSchema.safeParse(invalid).success).toBe(false)
+      })
+      expect(ProviderProfilePatchSchema.safeParse(period(0)).success).toBe(false)
+      expect(ProviderProfilePatchSchema.safeParse(period(8)).success).toBe(false)
+      expect(ProviderProfilePatchSchema.safeParse(period(7)).success).toBe(true)
     })
 
     it('rejects deposit percentage outside 0-100', () => {

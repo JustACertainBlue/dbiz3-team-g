@@ -62,6 +62,12 @@ limitation discovered by the instructor that is not written here is.
 | 22 | AIT: Recommendation cards have no "View Experience" action and do not show the Provider name. | AIT FR-008, AIT121 element 7 | Session 10 |
 | 23 | AIT: Test title in `tests/integration/matching-scenarios.test.ts:65` says "all seed max ≤ 20" (largest eligible group is 16; 18 overall). | Constitution I | Session 9 |
 | 24 | AIT: Matching sessions, messages, Quote Requests and Chats are stored in the shared JSON runtime (`.demo-data/runtime.json`), not PostgreSQL (`src/lib/db/client.ts` is a stub). | AIT FR-005, FR-011; `data/schema.sql` | Session 9–10 |
+| 25 | ADM: Demo session cookie (`hab_demo_account`) instead of AUT login; UBND demo identity is Hạ Thái (no Bookings), Bát Tràng figures are shown through the HDT village filter. | ADM BR-001, BR-002; AUT F-AUTH-16 | Session 9–10 |
+| 26 | ADM: The dashboard is read-only and does not run the BKG 72-hour expiry, so an expired hold shows as On hold (and counts in Active Collaborations) until the next BKG request runs the expiry — same cause as row 8. | ADM BR-006, BR-007, BR-017; BKG FR-005 | Session 10 |
+| 27 | ADM: Agencies awaiting approval are listed from `agency_registration_requests` (Pending Approval); the seed has none, so the panel shows only the Hạ Thái Provider until AUT writes registrations to the runtime. | ADM FR-007; AUT F-AUTH-04 | Session 10 |
+| 28 | ADM: Data is read from the shared JSON runtime (`.demo-data/runtime.json`), not PostgreSQL. | ADM FR-002; `data/schema.sql` | Session 9–10 |
+| 29 | ADM: `/admin` loads `/api/adm/filter-options` about 10 times on page load (stable afterwards); not optimised. | ADM FR-006 | Session 11 |
+| 30 | All modules: the shared `demoSessionFromRequest` still accepts a client-supplied `x-mock-session` header when no `hab_demo_account` cookie is sent (BKG, AIT, PRF routes); ADM reads the cookie only. Fix planned as a separate PR. | ADM AC-ADM-SCOPE; BKG BR-001; AIT BR-001 | Session 9 |
 
 ## 4. Sign-off
 

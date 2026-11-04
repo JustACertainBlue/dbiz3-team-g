@@ -194,7 +194,7 @@
 T067 (docs) → A1 (T043–T044) → A2 (T045–T046) → A4 (T049–T050) → A3 (T047–T048) → A5 (T051–T052) → A13/A14 (T062–T065) → A6, A7, A8 (T053–T058) → T060 → T066. A1–A5, A13 and A14 all edit `src/lib/adm/metrics-service.ts`, so they run in sequence; A6–A8 touch separate files.
 
 ### Verify
-- [ ] T066 `npm test` (paste last line), `npm run lint`; mutation checks A1 (read CSV again → T043 red), A2 (trust `x-mock-session` again → T045 red), A3 (drop the period filter → T047 red), each reverted; `npm run demo:reset`, re-run C1–C15 (C6 now expected: cards ignore Agency/Provider filters, #21) with `Last 90 days` and one BKG-created Booking, clicked in the browser and with curl; build-log entry, `docs/build/mvp-alpha-checklist.md` §3 ADM rows (including M2: ADM is read-only and does not run the BKG 72-hour expiry, so an expired hold shows On hold until the next BKG request — same cause as BKG row 8), `docs/build/claude-context/03-module-status.md` ADM row.
+- [X] T066 `npm test` (paste last line), `npm run lint`; mutation checks A1 (read CSV again → T043 red), A2 (trust `x-mock-session` again → T045 red), A3 (drop the period filter → T047 red), each reverted; `npm run demo:reset`, re-run C1–C15 (C6 now expected: cards ignore Agency/Provider filters, #21) with `Last 90 days` and one BKG-created Booking, clicked in the browser and with curl; build-log entry, `docs/build/mvp-alpha-checklist.md` §3 ADM rows (including M2: ADM is read-only and does not run the BKG 72-hour expiry, so an expired hold shows On hold until the next BKG request — same cause as BKG row 8), `docs/build/claude-context/03-module-status.md` ADM row.
 
 ---
 

@@ -111,6 +111,6 @@ asked to re-sign at `deaf3ab`.
 |---|---|---|
 | Nguyen Thu (`nguyenthu-0505`) | Core Feature Dev (PRF, AIT) | Not re-confirmed at `deaf3ab` (signed "yes" for PRF at `f5e7223` on 14/10). |
 | Thu Vu (`thuvutp-prog`) | ADM, macOS Validation | Not re-confirmed at `deaf3ab` (signed "yes" for PRF at `f5e7223` on 14/10). |
-| Khanh Linh Vu (`linhkhanh-vu`) | BKG owner; AIT round 3, ADM port, fix(auth); this checklist | **No.** G1 waits for the Windows Actions run; G2–G8 are not met (§2 status lines). No `mvp-alpha` tag until they are. |
+| Khanh Linh Vu (`linhkhanh-vu`) | BKG owner; AIT round 3, ADM port, fix(auth); this checklist | **No.** G4, G5, G7, G8 met (04/11); G1 waits for the Windows Actions run; G2, G3, G6 not met (§2 status lines). No `mvp-alpha` tag until they are. |
 | Viet Hoang (`JustACertainBlue`) | EXP, Seed & Windows Validation | Not re-confirmed at `deaf3ab` (signed "yes" for PRF at `f5e7223` on 14/10). |
 | Truc Linh (`linh-daotruc`) | AUT, QA & Acceptance Testing | Not re-confirmed at `deaf3ab` (signed "yes" for PRF at `f5e7223` on 14/10). |

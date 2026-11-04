@@ -7,7 +7,8 @@ import {
   VillagesResponse,
   CollaborationSortBy,
 } from '@/lib/adm/types'
-import { refreshDemoSession, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { startAdminRoleSync } from './admin-role-sync'
 import { adminPageAccess } from './admin-page-access'
 import { nextVillageFilter } from './village-filter-state'
 import { AdminSidebar } from '@/app/components/admin/AdminSidebar'
@@ -48,18 +49,11 @@ export default function AdminDashboardPage() {
   // The actor comes from the server-side demo session (A2); non-admins see the restricted state (L3).
   useEffect(() => {
     setMounted(true)
-    const sync = () => {
-      refreshDemoSession()
-        .then(session => {
-          setRole(session.role)
-          setDisplayName(session.displayName)
-          setAccess(adminPageAccess(session))
-        })
-        .catch(() => setAccess('restricted'))
-    }
-    sync()
-    window.addEventListener('hab_role_changed', sync)
-    return () => window.removeEventListener('hab_role_changed', sync)
+    return startAdminRoleSync(session => {
+      setRole(session.role)
+      setDisplayName(session.displayName)
+      setAccess(adminPageAccess(session))
+    })
   }, [])
 
   // Load villages configuration

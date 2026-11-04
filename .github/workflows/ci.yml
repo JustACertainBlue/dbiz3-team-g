@@ -1,0 +1,47 @@
+# MVP Alpha gate G1: a clean clone installs, validates the seed, tests and
+# type-checks on Windows and macOS. Uses only what package.json and
+# package-lock.json already declare; validate_seed.py needs the Python
+# standard library only.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Validate seed
+        run: python data/scripts/validate_seed.py
+
+      - name: Tests
+        run: npm test
+
+      - name: Lint (tsc --noEmit)
+        run: npm run lint

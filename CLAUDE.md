@@ -77,7 +77,13 @@ Details, arguments to paste, and the MVP Alpha gates G1–G8: `docs/build/claude
 ## 5. Where we are now (update this section when it changes)
 
 - Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in.
-State checked on 4 Nov 2026 at `main` = `7c1fde6` (details: `03-module-status.md`).
+State checked on 4 Nov 2026 at `main` = `deaf3ab` (details: `03-module-status.md`).
+- **MVP Alpha checklist** re-checked at `deaf3ab` on 4 Nov 2026 (branch `linh/ci-windows`, not
+  pushed): §1 lists PRF, EXP, AIT, BKG, ADM; **no gate ticked**, no tag. G1 waits for the GitHub
+  Actions run of `.github/workflows/ci.yml` (windows-latest + macos-latest); G2 PRF US-4 edit page
+  has hard-coded values; G4 DRIFT in 002, 004, 011, 012; G6 no merged PR has a non-author review;
+  G7 a member's Gmail in `docs/env/`; G8 no entry for AIT rounds 1–2 and the original ADM build.
+  The human works alone on this ("tự làm hết, không nhờ nhóm"): no messages to the team.
 
 - **On `main`**: AIT (`specs/001-ait-core`, PR #6 merged as `3e0e047`), PRF
   (`specs/002-prf-core`, PR #8 squash-merged as `222216d`), EXP (`specs/001-exp-core`, merged
@@ -86,9 +92,10 @@ State checked on 4 Nov 2026 at `main` = `7c1fde6` (details: `03-module-status.md
   `5cae545` and PR #22 merged as `7057d5c`), BKG US-6 (`specs/012-bkg-list`, PR #25 as `c3f0c64`),
   BKG US-1 + US-2 (`specs/013-bkg-schedule`, PR #28 as `fa4d9d2`), BKG spec #57–#82 (PR #21, #24,
   #26, #27), AIT round 3 (PR #33 as `5d0131a`; spec-AIT #23–#37), ADM (`specs/003-adm-core`, ported
-  in PR #34 as `7c1fde6`; spec-ADM #21–#22; User Management moved to AUT). `npm test` on `main`
-  `7c1fde6`: 103 files, 690 tests pass; `npm run lint` passes (run 4 Nov 2026). PR #33 and #34 were
-  merged without a GitHub review (nguyenthu-0505, thuvutp-prog requested).
+  in PR #34 as `7c1fde6`; spec-ADM #21–#22; User Management moved to AUT), fix(auth) (PR #35 as
+  `deaf3ab`: `demoSessionFromRequest` reads only the cookie). `npm test` on `main` `deaf3ab`:
+  104 files, 694 tests pass; `npm run lint` passes (run 4 Nov 2026). PR #33, #34 and #35 were
+  merged without a GitHub review (nguyenthu-0505, thuvutp-prog, JustACertainBlue requested).
 - **Not merged**: AUT (`001-aut-registration`, PR #11; stack drift Next 16 / React 19 / Vitest 5 /
   `pg`), IAC (`003-iac-core`, PR #16: US-1 chat core, authenticates from client headers
   `x-mock-user-id` / `x-mock-role`), `member/spec-consistency`, `ngthu/update-specs` (leftovers that
@@ -105,8 +112,8 @@ State checked on 4 Nov 2026 at `main` = `7c1fde6` (details: `03-module-status.md
 - **IAC**: not on `main` yet; `main` has `src/lib/demo/commercial-handoff-service.ts` and the
   shared `/messages` page (Quote/Chat handoff from Explore and AIT). PR #16 (`003-iac-core`) adds the
   US-1 chat core.
-- **Auth**: the server-side demo session comes only from the `hab_demo_account` cookie. Branch
-  `linh/auth-no-header` removes the last fallback that trusted a client `x-mock-session` header
+- **Auth**: the server-side demo session comes only from the `hab_demo_account` cookie. PR #35
+  (`linh/auth-no-header`, merged as `deaf3ab`) removed the last fallback that trusted a client `x-mock-session` header
   (checklist §3 #30); never add client-supplied identity headers again.
 - **Runtime**: all modules on `main` share one JSON runtime
   (`src/lib/demo/json-repository.ts`): the CSV seed is copied once to `.demo-data/runtime.json`

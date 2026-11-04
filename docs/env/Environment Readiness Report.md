@@ -68,7 +68,7 @@ DBIZ3 Session 6 environment check (path B)
   [PASS] Operating system      Windows 11 AMD64
   [PASS] Python (via uv)       3.13.9
   [PASS] Git                   2.55.0
-  [PASS] Git identity          Ng Thu <ngtthuw245@gmail.com>
+  [PASS] Git identity          Ng Thu <member@example.invalid>
   [PASS] GitHub CLI            2.101.0
   [PASS] GitHub login          logged in
   [PASS] uv                    0.12.18

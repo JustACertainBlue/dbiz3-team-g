@@ -580,6 +580,95 @@ Edits to existing tests (approved in chat 2026-11-04: header → cookie, and opt
 | `tests/prf/integration/provider-routes.test.ts:153-159` | the Draft Provider patches the Verified Provider | the demo Provider (Bát Tràng) patches the Draft Provider → 403 | (A) |
 | `tests/prf/integration/provider-routes.test.ts:185-231` (T036) | UBND Bát Tràng verifies the Bát Tràng Provider; UBND Phú Vinh is cross-village | UBND Hạ Thái (demo identity) verifies the Hạ Thái Provider (Pending Verification); cross-village = UBND Hạ Thái on the Bát Tràng Provider → 403 | (A): the demo UBND is assigned to Hạ Thái |
 
+### Entry 35: 04/11 Claude Code + human — CI on Windows/macOS and MVP Alpha checklist re-check
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); linhkhanh-vu decided scope (works alone, no messages to the team, no tag); branch `linh/ci-windows` (not pushed) |
+| Command and argument | Add GitHub Actions CI for gate G1; re-check every gate of `docs/build/mvp-alpha-checklist.md` at `main` `deaf3ab` |
+| Feature and tasks | No feature folder; no `specs/`, `src/` or `tests/` change |
+| What the agent produced | `.github/workflows/ci.yml` (windows-latest + macos-latest, Node 22, Python 3: `npm ci`, `validate_seed.py`, `npm test`, `npm run lint`; no new dependency). Checklist: §1 lists PRF, EXP, AIT, BKG, ADM; every gate has a status line and none is ticked; §3 rows 31–34; §4 only linhkhanh-vu re-signed ("No"). Docs: CLAUDE.md §5, 03-module-status. |
+| Human review | Decisions by linhkhanh-vu (2026-11-04): §1 = every module on `main`; §4 only own row; re-check every gate and tick only what is shown; G6 left empty with the list of unreviewed PRs. |
+| Tests | Local (macOS, Node 24.16, Python 3.14): seed `PASS: 47 CSVs`, `Test Files 104 passed (104)`, `Tests 694 passed (694)`, lint OK. Actions run: none yet (needs a push). `start_feature.py --check` per folder: OK 001-ait, 001-exp, 003-adm, 013-bkg; DRIFT 002-prf, 004/011/012-bkg. |
+| Demo (macOS, after `npm run demo:reset`) | Clicked in the built-in browser: EXP (Agency) `/explore` → Bát Tràng Provider → Experience; AIT silk request → 5 cards, Vạn Phúc #1 → Request Quote → `/messages`; BKG (Provider) SCH139 → BKG134 create (Tràng An, 10 pax, 2026-11-09 09:00) → BKG135 On hold → Confirm/Book → Booked → BKG133; Agency BKG137 → BKG138 Booked; PRF edit Save, Experiences, UBND Approve Hạ Thái → Verified; ADM UBND (🔒 Hạ Thái) and HDT (new Booking listed). Found: PRF128 hard-coded values; Save with no change → "new version pending" (checklist §3 #33–34). |
+| Spec issues found | None in `docs/spec/`. Found outside the spec: a member's personal e-mail in `docs/env/Environment Readiness Report.md:71` (G7, human-owned folder, not edited). |
+| Commit | see `git log` on `linh/ci-windows`; not pushed. |
+
+### Entry 36: 07/10–14/10 nguyenthu-0505 — AIT rounds 1–2 (PR #6) — reconstructed from git history on 2026-11-04
+
+Reconstructed from git history on 2026-11-04 by linhkhanh-vu with Claude Code (checklist G8). Source:
+the commits of PR #6 and the round 2 review notes in `docs/build/claude-context/03-module-status.md`.
+Fields that git does not record are marked "not recorded".
+
+| Field | Value |
+|---|---|
+| Path and agent | Not recorded (author nguyenthu-0505; Spec Kit workflow) |
+| Command and argument | Plan (`3938f47`, 07/10), then Steps 5–6 for `specs/001-ait-core` US-1; round 2 fixes after review |
+| Feature and tasks | `specs/001-ait-core`, US-1 (P1) AI Tour Matching; task range not recorded |
+| What the agent produced | `3a107c1` (07/10): US-1 conversational matching — `src/lib/matching/*` (constraint, scoring, recommendation, session, handoff), `src/lib/ai/extractor.ts`, `src/lib/db/seed-loader.ts`, `/api/ait/sessions*`, `/ai-matching` page; 13 test files (43 files, +7132). `b88c8b9` (10/10, same change also as `bc6e2a2`): `POST /api/ait/matching`, extractor regex, seed loader fixes; `tests/integration/matching-scenarios.test.ts`, `tests/unit/seed-data.test.ts`. `1004f50` (14/10): fixes after review round 2 (B1–B4) in extractor, scoring, session and handoff services; `tests/integration/multi-turn-api.test.ts`, `tests/unit/hard-constraints.test.ts` |
+| Human review | linhkhanh-vu requested changes twice on PR #6 (round 2 defects B1–B4); PR merged 14/10 by the author as `3e0e047` without an approval |
+| Tests | Not recorded at `3a107c1` or `1004f50`. At `b88c8b9` (review round 2): 14 files, 83 tests pass. Test-first order not recorded |
+| Spec issues found | Not recorded in the build log; later gaps became spec-AIT #23–#37 (Entry 32) |
+| Commit | `3938f47`, `3a107c1`, `bc6e2a2`/`b88c8b9`, `1004f50` (merges `8b0bc36`, `cb3e2ad`); PR #6 → `3e0e047` |
+
+### Entry 37: 18/10–20/10 thuvutp-prog — original ADM build on `003-adm-core` (PR #12) — reconstructed from git history on 2026-11-04
+
+Reconstructed from git history on 2026-11-04 by linhkhanh-vu with Claude Code (checklist G8). Source:
+the two commits of PR #12 (closed, superseded by PR #34) and Entry 33. Fields that git does not record
+are marked "not recorded".
+
+| Field | Value |
+|---|---|
+| Path and agent | Not recorded (author thuvutp-prog; Spec Kit workflow) |
+| Command and argument | Plan (`fbcd7be`, 18/10), then implementation of `specs/003-adm-core` T010–T039 (from the PR #12 description) |
+| Feature and tasks | `specs/003-adm-core`, US-1 (P1) View Admin Dashboard, T010–T039 |
+| What the agent produced | `fbcd7be`: `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/admin-dashboard-api.md`, `spec.md` snapshot. `cbbb8dd` (20/10): `/admin` page and admin components, `/api/adm/{dashboard,filter-options,users,villages}`, `src/lib/adm/*` (metrics, scope guard, trend calculator, user service), 17 test files under `tests/adm/` (42 files, +7154) |
+| Human review | Not recorded on PR #12. Reviewed by linhkhanh-vu with `/verify-module ADM` on 04/11 (Entry 33): defects A1–A14, then ported onto `main` (PR #34) |
+| Tests | Not recorded at `cbbb8dd`; test-first order not recorded. After the port and fixes: 690 tests pass (Entry 33) |
+| Spec issues found | Not recorded; found at the port: spec-ADM #21, #22 and User Management moved to AUT (Entry 33) |
+| Commit | `fbcd7be`, `cbbb8dd` on `003-adm-core` (PR #12, closed); cherry-picked as `928eca8`, `9cea251` in PR #34 |
+
+### Entry 38: 04/11 Claude Code — `/speckit-analyze` for PRF and EXP (checklist G5)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5): PRF analyzed in the main session, EXP by a read-only subagent (key claims spot-checked by grep); requested by linhkhanh-vu |
+| Command and argument | `/speckit-analyze` on `specs/002-prf-core` and `specs/001-exp-core` (read-only; no code change) after the G4 refresh; both `--check` OK |
+| Feature and tasks | PRF T001–T060 (2 open: T002, T005); EXP T001–T029 (1 open: T027) |
+| What the agent produced | Reports below; checklist §3 rows 35–38. No file under `src/`, `tests/`, `specs/` changed by this step. |
+| Human review | Pending. |
+| Tests | Not run for PRF in this step (suite at `deaf3ab`: 694/694). EXP subagent ran the EXP and handoff tests: 11 files, 49/49 pass. |
+| Spec issues found | None new in `docs/spec/`; EXP §10 Q28/Q29 still open. |
+| Commit | see `git log` on `linh/ci-windows`; not pushed. |
+
+**PRF** — 7 FR, 21 BR, 8 SC, 35 acceptance scenarios, 60 tasks; 4 CRITICAL, 3 HIGH:
+
+| ID | Severity | Finding | Status |
+|---|---|---|---|
+| C1 | CRITICAL (Constitution II) | BR-003 / SC-008 / US-6 AC5 (HDT, UBND read-only) has no test, although T035 claims AC5. API enforces it (`src/lib/prf/provider-service.ts:149`); PRF127 shows Edit/Create Booking links to UBND (seen, not clicked). | Open; checklist §3 #35 |
+| C2 | CRITICAL (Constitution II) | BR-008 (image format, 10 MB, 1280×720) has no test. | Open; checklist §3 #1 |
+| C3 | CRITICAL (Constitution II) | BR-015 (last image per category) has no test and is not enforced. | Open; checklist §3 #2 |
+| C4 | CRITICAL (Constitution II) | BR-016 (owner gallery lightbox) has no test. | Open; checklist §3 #4 |
+| H1 | HIGH | `tasks.md` "Step 3.2 Coverage check" claims every BR has a test task; false for BR-003, BR-008, BR-015, BR-016. | Open; checklist §3 #36 |
+| H2 | HIGH | `plan.md` stack (Next.js 15, Drizzle, Cloudinary, msw; T002/T005 open) conflicts with `package.json` (Next 14, none of them; JSON runtime). | Open; checklist §3 #36 |
+| H3 | HIGH | T023 "fields for all FR-004 inputs" is marked done, but PRF128 shows hard-coded non-seed values. | Open; checklist §3 #33 |
+
+Medium (not listed in full): `plan.md` 500 ms p95 goal has no task.
+
+**EXP** — 17 FR, 15 BR, 11 SC, 29 tasks; 4 CRITICAL, 3 HIGH (6 MEDIUM, 4 LOW not listed):
+
+| ID | Severity | Finding | Status |
+|---|---|---|---|
+| C1 | CRITICAL (Constitution II) | No pre-implementation failing run for T019–T025 (US-2, and US-3/US-4 detail pages); stated in `tasks.md:54`. | Cannot be fixed after the fact; checklist §3 #37 |
+| C2 | CRITICAL (Constitution II) | The live Quote/Chat handoff (`src/lib/demo/commercial-handoff-service.ts`, `/api/demo/handoff`, `ExperienceActions.tsx`, `ProviderChatAction.tsx`, `ada9e44`) is in no task and has no red run (tests exist and pass). | Open; checklist §3 #37 |
+| C3 | CRITICAL (Constitution V) | EXP reached `main` by direct commits (`4a1ae27`, `bf30cea`, `2e79614`, `ada9e44`); PR #9 closed unmerged with 0 reviews. | Open; checklist G6 |
+| C4 | CRITICAL (Constitution III) | US-1–4 and FR-001–017 built in one pass after the US-1 slice (`plan.md:43` admits it). | Acknowledged; checklist §3 #37 |
+| H1 | HIGH | Quote/Chat buttons never send the FR-007 `request_quote` / `open_chat` Explore event, so strong actions never become preference signals. | Open; checklist §3 #38 |
+| H2 | HIGH | `src/lib/explore/handoff.ts` (tested by T023) is imported only by its test; the live handoff lacks the F-AUTH-16 check, the Agency/source context in the first message, and hiding Request Quote after use (FR-011/012). | Open; checklist §3 #38 |
+| H3 | HIGH | `implementation-status.md`, `plan.md`, `quickstart.md`, build-log §3 row 3 still say Quote/Chat is unavailable; quickstart names a "Dùng doanh nghiệp mẫu" control that no longer exists (role switch is `RoleSwitcher`). | Open; checklist §3 #38 |
+
+Build-log §3 row 3 (US-1 AC2 Agency actions) is partly closed by `ada9e44` (Quote/Chat on Experience detail and Provider page); the rest is EXP H1/H2 and card-level actions.
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

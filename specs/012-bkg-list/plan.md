@@ -144,3 +144,13 @@ URL, so no client state is needed.
 | Denied pages answer HTTP 200 with a message | Same as BKG134/135 (checklist §3 #10) | API answers 403; pages render no Booking data. |
 | DSH018 other panels | Belong to PRF, SCH, CHAT | Only the booking action summary is built (#65). DSH018 is reached by URL; the shared Provider navigation (DSH018/EXP067/BKG133/SCH139/COM065) is not built in this slice. |
 | BKG137 Agency list | US-1 / F-SCHED-02 | Agency `/bookings` link stays as it is (#66); checklist §3 #11 stays open. |
+
+## Spec refresh 2026-11-04 (checklist G4)
+
+`spec.md` re-copied from `docs/spec/specs/spec-BKG.md` with `start_feature.py --refresh`. Added since
+the snapshot: #32, #33 (closed), #68–#82. All are additive; none changes F-SCHED-10 or DSH018 as built
+here.
+
+| Clarification | Status for this feature |
+|---|---|
+| #32, #33, #68–#82 | covered in `specs/013-bkg-schedule` (US-1, US-2) |

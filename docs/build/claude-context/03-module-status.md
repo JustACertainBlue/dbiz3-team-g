@@ -5,21 +5,37 @@ the latest commit on that branch must be re-checked (`/team-status`).
 
 | Module | Feature folder | Branch / PR | Owner (driver) | Status | Last verified |
 |---|---|---|---|---|---|
-| AIT | `specs/001-ait-core` | `001-ait-core` / PR #6 (nguyenthu-0505), merged as `3e0e047`; Round 3 fixes PR #33 merged as `5d0131a` (2026-11-04, no review yet; nguyenthu-0505 requested) | nguyenthu-0505 (Round 3 fixes: linhkhanh-vu) | On `main`. Round 3: D1–D11 fixed, spec-AIT #23–#37, build log Entry 32, limitations checklist §3 rows 15–24 | 4 Nov 2026, `main` `7c1fde6`: 103 files, 690/690, lint OK |
+| AIT | `specs/001-ait-core` | `001-ait-core` / PR #6 (nguyenthu-0505), merged as `3e0e047`; Round 3 fixes PR #33 merged as `5d0131a` (2026-11-04, no review yet; nguyenthu-0505 requested) | nguyenthu-0505 (Round 3 fixes: linhkhanh-vu) | On `main`. Round 3: D1–D11 fixed, spec-AIT #23–#37, build log Entry 32, limitations checklist §3 rows 15–24. No build-log entry for rounds 1–2 (checklist G8) | 4 Nov 2026, `main` `deaf3ab`: 104 files, 694/694, lint OK; demo path clicked (macOS) |
 | BKG | `specs/004-bkg-core` (US-4); `specs/011-bkg-manage` (US-5 + US-3); `specs/012-bkg-list` (US-6); `specs/013-bkg-schedule` (US-1 + US-2) | PR #17 (`343e4ce`), #20 (`5cae545`), #22 (`7057d5c`), #25 (`c3f0c64`), #28 (`fa4d9d2`); spec PRs #18, #19, #21, #24, #26, #27 | linhkhanh-vu | **Code complete on `main`**: US-1..US-6, F-SCHED-01..10; T-lists of all four features done; demos on macOS (build-log Entries 12, 16, 20, 25, 30); checklist §3 BKG rows 5–13 current. **Missing**: Windows G1 for 004/011/012/013; post-merge non-author review of PR #17, #22, #25, #28 (no GitHub review on any; owners: AIT/PRF/EXP for `applyBatch`, PRF for nav links, EXP for the Explore link). Spec #26–#82 on `main` | 30 Oct 2026, `main` `fa4d9d2`: 76 files, 503/503 tests, lint OK |
 | AUT | `specs/001-aut-registration` … `specs/010-aut-manage-accounts` (10 folders) | `001-aut-registration`, last `07d60b0` (linh-daotruc, 29 Oct) / PR #11 (open, no review) | linh-daotruc | **Not merged**: 22 ahead, 112 behind `main`; stack drift (Next 16 / React 19 / Vitest 5 / `pg` vs `main` Next 14 / React 18 / Vitest 2), 13 conflicts at the 30 Oct dry run; User Management (ADM095) now belongs here (spec-ADM:48). `main` uses the demo session instead | 4 Nov 2026, branch inspected, not run |
-| PRF | `specs/002-prf-core` | `002-prf-core` / PR #8, squash-merged as `222216d` | nguyenthu-0505 | On `main`; US-1–6. Branch still has 14 commits not on `main` (last `e8e9e5c`, 21 Oct) | 29 Oct 2026, `main` `ada9e44` (tests only) |
-| EXP | `specs/001-exp-core` | `001-exp-core`, PR #9; tip `ada9e44` = `main` | JustACertainBlue (Codex) | On `main`; US-1–4 attempted, see `specs/001-exp-core/implementation-status.md` | 29 Oct 2026, `main` `ada9e44` (tests only) |
-| ADM | `specs/003-adm-core` | Ported onto `main` as PR #34 (`7c1fde6`, merged 2026-11-04 without review; thuvutp-prog requested); PR #12 closed as superseded | thuvutp-prog (port + fixes: linhkhanh-vu) | On `main`: A1–A14 fixed (runtime data, demo-cookie session, contract:110 time basis, spec-ADM #21–#22, User Management moved to AUT), role-sync loop fixed; build log Entry 33; limitations checklist §3 rows 25–29 | 4 Nov 2026, `main` `7c1fde6`: 103 files, 690/690, lint OK; C1–C15 demo (macOS) |
+| PRF | `specs/002-prf-core` | `002-prf-core` / PR #8, squash-merged as `222216d` | nguyenthu-0505 | On `main`; US-1–6. Branch still has 14 commits not on `main` (last `e8e9e5c`, 21 Oct). Snapshot DRIFT vs spec-PRF; US-4 edit page partly hard-coded (checklist §3 #33–34) | 4 Nov 2026, `main` `deaf3ab`: demo path clicked (macOS) |
+| EXP | `specs/001-exp-core` | `001-exp-core`, PR #9; tip `ada9e44` = `main` | JustACertainBlue (Codex) | On `main`; US-1–4 attempted, see `specs/001-exp-core/implementation-status.md` | 4 Nov 2026, `main` `deaf3ab`: demo path clicked (macOS) |
+| ADM | `specs/003-adm-core` | Ported onto `main` as PR #34 (`7c1fde6`, merged 2026-11-04 without review; thuvutp-prog requested); PR #12 closed as superseded | thuvutp-prog (port + fixes: linhkhanh-vu) | On `main`: A1–A14 fixed (runtime data, demo-cookie session, contract:110 time basis, spec-ADM #21–#22, User Management moved to AUT), role-sync loop fixed; build log Entry 33; limitations checklist §3 rows 25–29 | 4 Nov 2026, `main` `deaf3ab`: 104 files, 694/694, lint OK; UBND + HDT demo path clicked (macOS). No build-log entry for the original build on `003-adm-core` (checklist G8) |
 | IAC | `specs/003-iac-core` (on the branch) | `003-iac-core`, last `e85ce85` (mizaki311, 1 Nov) / PR #16 (open, no review) | mizaki311 | **Not merged**: 3 ahead, 23 behind `main`; plan + US-1 chat core (`src/lib/iac/*`, `/api/iac/sessions*`, `/messages`). Reads the runtime (`demoRepository`), but authenticates from client headers `x-mock-user-id` / `x-mock-role` (same spoofing class as the removed `x-mock-session`); folder number 003 clashes with ADM | 4 Nov 2026, branch inspected, not run |
 
 Also not merged: `member/spec-consistency` (4 ahead, 143 behind; leftover after PR #2; would
 overwrite spec-BKG and `data/`) and `ngthu/update-specs` (1 ahead, 141 behind; leftover after PR #3;
 would overwrite the seed). No open PR for either; owners asked to delete or cherry-pick `bf29e15`.
 
-Test run on `main` `7c1fde6` after `npm ci` (4 Nov 2026): `Test Files 103 passed (103)`,
-`Tests 690 passed (690)`; `npm run lint` passes. `npm audit`: see checklist §3 #14.
-Branch `linh/auth-no-header` (fix(auth), not pushed): 104 files, 694/694.
+Test run on `main` `deaf3ab` (fix(auth), PR #35 merged 4 Nov 2026, no review): `Test Files 104
+passed (104)`, `Tests 694 passed (694)`; `npm run lint` passes; `validate_seed.py` PASS (macOS,
+Node 24.16, Python 3.14). `npm audit`: see checklist §3 #14.
+
+MVP Alpha checklist re-checked at `deaf3ab` on 4 Nov 2026 (`linh/ci-windows`, not pushed): §1 =
+PRF, EXP, AIT, BKG, ADM; every §1 demo path clicked on macOS (built-in browser, after
+`npm run demo:reset`); no gate ticked. Per module:
+
+| Module | `start_feature.py --check` | Demo path 4 Nov (macOS) |
+|---|---|---|
+| AIT `001-ait-core` | OK | OK: 5 ranked cards, Vạn Phúc #1, Request Quote → `/messages` |
+| EXP `001-exp-core` | OK | OK: `/explore` → Provider → Experience (Agency) |
+| PRF `002-prf-core` | **DRIFT** | US-3, US-5, US-6 OK (UBND Approve → Verified); **US-4 edit page has hard-coded values** and Save with no change → "new version pending" (checklist §3 #33–34) |
+| ADM `003-adm-core` | OK | OK: UBND locked to Hạ Thái; HDT lists the new Booking |
+| BKG `004`/`011`/`012` | **DRIFT** (spec-BKG #57–#82 added later) | — |
+| BKG `013-bkg-schedule` | OK | OK: SCH139 → BKG134 create → BKG135 Confirm/Book → BKG133; Agency BKG137 → BKG138 |
+
+Windows: `.github/workflows/ci.yml` (windows-latest + macos-latest) added on `linh/ci-windows`;
+no run yet (needs a push).
 
 Keep updating from `git branch -r`, `ls specs/` on each branch, open PRs, and the team's work
 allocation. Do not guess.

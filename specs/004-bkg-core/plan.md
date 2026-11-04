@@ -133,3 +133,16 @@ repository method (single-persist batch), needed for BR-019.
 | BKG134 navigation | Success goes to BKG135 (US-3), Cancel to BKG133 (US-6), both out of scope | Per spec #43 the page shows the created Booking (id, status, hold expiry) in place; Cancel returns to the Provider page. |
 | No expiry worker | US-5 | Per spec #40 an On hold Booking past `hold_expires_at` keeps blocking its slot until the worker exists (research R6). |
 | Race test does not prove the write lock (AC-BKG-RACE) | Check and write are one synchronous block today, so T015 passes even without the lock (build-log §4) | US-5 must add the async-pause race test before adding any await inside the booking write lock. |
+
+## Spec refresh 2026-11-04 (checklist G4)
+
+`spec.md` re-copied from `docs/spec/specs/spec-BKG.md` with `start_feature.py --refresh`. Added since
+the snapshot (2026-10-29): clarifications and open questions #26, #27, #32, #33, #44–#82. All are
+additive; none changes F-SCHED-03 (US-4) as built here. Mapping:
+
+| Clarification | Status for this feature |
+|---|---|
+| #44 (BR-019 single persist) | Already in this plan (Complexity table, analyze H1) |
+| #26, #27, #45–#58 | covered in `specs/011-bkg-manage` (US-5, US-3) |
+| #59–#67 | covered in `specs/012-bkg-list` (US-6) |
+| #32, #33, #68–#82 | covered in `specs/013-bkg-schedule` (US-1, US-2) |

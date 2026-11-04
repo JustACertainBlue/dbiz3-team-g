@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-PRF.md sha256=ed05cb899ff0f73201eedbdb47d8341edd7525d9f77fb5e0ab2a6aa633ac24fe taken=2026-11-04T15:17Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-PRF.md sha256=4fcda4a899f7e81e79b27d2c9686f69451f59b40ff28fc75d8ad557ca5d10f01 taken=2026-11-04T16:19Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-PRF.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -440,6 +440,7 @@ sequenceDiagram
 
 - 2026-11-04 #31: PRF128 shows only the FR-004 inputs (business_name, craft_type, artisan_names, business_registration_number, location_address, description, operating_hours, booking_conditions, profile images) plus the contact fields of the current profile version, all read from the Provider's data. Fields that FR-004 does not define (generation/guild title, establishment year, private group capacity, facilities, logistics, amenities) are not shown and not stored.
 - 2026-11-04 #32: provider_profiles.verification_status stays Verified while a published version exists. The review state of a later revision is provider_profile_versions.version_status (Pending Verification / Revision Required) of current_version_no. Explore, AI Tour Matching and Booking keep using published_version_no; Approve publishes the revision and marks the previous published version Superseded. A Save whose major-field values equal the current version is not a major change.
+- 2026-11-04 #33: Request Revision applies only to a profile version in Pending Verification. If the Provider has no version in Pending Verification (for example a Verified Provider without a pending revision), the request is refused with 409 and nothing changes; the Provider stays Verified and public (BR-007).
 
 **10. Open questions**
 
@@ -477,6 +478,7 @@ sequenceDiagram
 | 30 | UC-PRO-06 Provider Verification is absent from the current Sequence Diagram. Should Module 2 Sequence be updated to include the UBND verification flow? | No | BA | Closed | **Yes.** Update the Sequence Diagram to show UBND retrieving profiles (Status: Pending) and executing Approve/Request Revision. |
 | 31 | PRF128 (mockup) shows fields that FR-004 does not define (generation/guild title, establishment year, private group capacity, facilities, logistics, amenities). Are they part of the Provider profile? | Yes (US-4) | BA / UI/UX | Closed | PRF128 shows only the FR-004 inputs (business_name, craft_type, artisan_names, business_registration_number, location_address, description, operating_hours, booking_conditions, profile images) plus the contact fields of the current profile version, all read from the Provider's data. Fields that FR-004 does not define (generation/guild title, establishment year, private group capacity, facilities, logistics, amenities) are not shown and not stored. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
 | 32 | When a Verified Provider has a major revision pending or requiring revision, what is provider_profiles.verification_status, given that BR-007 keeps the last Verified version public and in Explore / AI Matching? | Yes (US-4, US-6) | BA / Data | Closed | provider_profiles.verification_status stays Verified while a published version exists. The review state of a later revision is provider_profile_versions.version_status (Pending Verification / Revision Required) of current_version_no. Explore, AI Tour Matching and Booking keep using published_version_no; Approve publishes the revision and marks the previous published version Superseded. A Save whose major-field values equal the current version is not a major change. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
+| 33 | Can UBND choose Request Revision on a Provider that has no submitted version under review (for example a Verified Provider without a pending revision)? | Yes (US-6) | BA | Closed | Request Revision applies only to a profile version in Pending Verification. If the Provider has no version in Pending Verification (for example a Verified Provider without a pending revision), the request is refused with 409 and nothing changes; the Provider stays Verified and public (BR-007). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
 
 **11. Traceability to DBIZ2**
 

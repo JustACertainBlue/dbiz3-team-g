@@ -30,7 +30,7 @@ export const ProviderProfilePatchSchema = z.object({
   operating_hours: z
     .array(
       z.object({
-        weekday: z.number().int().min(0).max(6),
+        weekday: z.number().int().min(1).max(7), // ISO 8601 (spec-BKG #28; data/schema.sql operating_weekday_chk)
         local_start: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
         local_end: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
         is_closed: z.boolean().default(false),

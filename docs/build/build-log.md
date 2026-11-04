@@ -669,6 +669,26 @@ Medium (not listed in full): `plan.md` 500 ms p95 goal has no task.
 
 Build-log §3 row 3 (US-1 AC2 Agency actions) is partly closed by `ada9e44` (Quote/Chat on Experience detail and Provider page); the rest is EXP H1/H2 and card-level actions.
 
+### Entry 39: 04/11 Claude Code + human — PRF slice A: unchanged Save, BR-007 visibility, PRF128 from data (`linh/prf-fixes`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); linhkhanh-vu approved decisions Q1, Q2 (spec-PRF #31, #32) and the weekday test edit; branch `linh/prf-fixes` from `main` `9f23088` (not pushed) |
+| Command and argument | Test first (`b093028`), then code; mutation checks; full suite; demo on macOS |
+| Feature and tasks | `specs/002-prf-core` US-4 (FR-004, BR-018, BR-021), US-6 AC2/AC3, BR-007; checklist §3 #33, #34 (G2) |
+| What the agent produced | `src/lib/prf/provider-service.ts`: major change = a real change of business_name / craft_type / business_registration against the current version; a revision of a published Provider gets its own `version_status`, `provider_profiles.verification_status` stays Verified (#32); a second save edits the open revision; Request Revision on an open revision marks only that version; Approve supersedes the old published version. `src/lib/prf/provider-edit-form.ts` (new): `profileToForm`, `buildProviderPatch` (only changed fields), `operatingHoursToRows` (#78 shape), FR-004 craft types, ISO weekday labels. PRF128 `src/app/provider/[providerId]/edit/page.tsx` rewritten: only FR-004 inputs read from the API and F-SCHED-01 operating hours (#31), no hard-coded values. `src/lib/prf/validators.ts`: weekday ISO 1–7. Spec: spec-PRF #31, #32 (§10 + Clarifications); `specs/002-prf-core` refreshed. Checklist §3 #33, #34 closed; #39, #40 added. |
+| Human review | Decisions Q1, Q2, weekday test edit (2026-11-04). Code review pending. |
+| Tests | Red first (`b093028`): 5 failing in `provider-versioning.test.ts` (unchanged Save made a new version; profile status became Pending Verification; Request Revision did not mark the revision; old version not Superseded), 1 failing weekday case (7 rejected), `provider-edit-form.test.ts` missing module. Green: `Test Files 106 passed (106)`, `Tests 706 passed (706)`; `npm run lint` passed. Mutation (each reverted, file byte-identical): presence-based major change → 1 red; profile status set to Pending Verification on a new revision → 3 red. |
+| Demo (macOS, built-in browser, after stopping the dev server and `npm run demo:reset`) | Clicked: Local Provider → PRF128 shows the seed values (Bát Tràng, Ceramics, HKD-HN-20260001, Kiều Anh Thư, Monday 08:00–17:00) and none of the old hard-coded texts; Save without change → "Không có thay đổi nào để lưu", no PATCH sent. Curl: PATCH with the five unchanged fields → `new_version_pending: false`, Explore Provider page 200. Clicked: Business Name → "Xưởng gốm Bát Tràng Mới", Save → "Bản sửa đổi … Pending Verification"; runtime v1 Verified, v2 Pending, profile Verified; Explore page (curl as agency) 200 with the old name only; BKG134 create (Tràng An, 10 pax, 2026-11-09 09:00) → BKG135 On hold. Curl: operating hours with Sunday (7) saved and returned by F-SCHED-01. Not clicked: UBND Approve of the revision (demo UBND is Hạ Thái, Bát Tràng is another village; covered by unit test). |
+| Spec issues found | #31, #32 (decided). Open: Request Revision without an open revision (checklist §3 #39). |
+| Commit | see `git log` on `linh/prf-fixes`; not pushed. |
+
+Edit to an existing test (approved in chat 2026-11-04):
+
+| File:line | Before | After | Reason |
+|---|---|---|---|
+| `tests/prf/unit/validators.test.ts:45-52` | weekday 7 must be rejected ("outside 0-6") | 0 and 8 rejected, 7 accepted | `data/schema.sql` `operating_weekday_chk` (1–7), seed has 7, spec-BKG #28 ISO weekdays |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

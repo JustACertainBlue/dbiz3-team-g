@@ -11,6 +11,7 @@ import {
   providerSession,
   guestSession,
   SEED_IDS,
+  demoCookie,
 } from '../helpers/mockSession'
 
 const VERIFIED_PROVIDER_ID = SEED_IDS.provider1Verified
@@ -27,7 +28,7 @@ describe('T025 | Experience Routes Integration Tests (US-5)', () => {
     return new Request(url, {
       method,
       headers: {
-        'x-mock-session': JSON.stringify(session),
+        cookie: demoCookie(session),
         'Content-Type': 'application/json',
       },
       body: body ? JSON.stringify(body) : undefined,

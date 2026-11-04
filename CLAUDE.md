@@ -77,7 +77,7 @@ Details, arguments to paste, and the MVP Alpha gates G1–G8: `docs/build/claude
 ## 5. Where we are now (update this section when it changes)
 
 - Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in.
-State checked on 30 Oct 2026 at `main` = `fa4d9d2` (details: `03-module-status.md`).
+State checked on 4 Nov 2026 at `main` = `7c1fde6` (details: `03-module-status.md`).
 
 - **On `main`**: AIT (`specs/001-ait-core`, PR #6 merged as `3e0e047`), PRF
   (`specs/002-prf-core`, PR #8 squash-merged as `222216d`), EXP (`specs/001-exp-core`, merged
@@ -85,10 +85,14 @@ State checked on 30 Oct 2026 at `main` = `fa4d9d2` (details: `03-module-status.m
   PR #17 merged as `343e4ce`), BKG US-5 + US-3 (`specs/011-bkg-manage`, PR #20 merged as
   `5cae545` and PR #22 merged as `7057d5c`), BKG US-6 (`specs/012-bkg-list`, PR #25 as `c3f0c64`),
   BKG US-1 + US-2 (`specs/013-bkg-schedule`, PR #28 as `fa4d9d2`), BKG spec #57–#82 (PR #21, #24,
-  #26, #27). `npm test` on `main` `fa4d9d2`: 76 files, 503 tests pass; `npm run lint` passes
-  (run 30 Oct 2026).
-- **Not merged**: AUT (`001-aut-registration`, feature folders `001`–`010-aut-*`), ADM
-  (`003-adm-core`), `member/spec-consistency`, `ngthu/update-specs`.
+  #26, #27), AIT round 3 (PR #33 as `5d0131a`; spec-AIT #23–#37), ADM (`specs/003-adm-core`, ported
+  in PR #34 as `7c1fde6`; spec-ADM #21–#22; User Management moved to AUT). `npm test` on `main`
+  `7c1fde6`: 103 files, 690 tests pass; `npm run lint` passes (run 4 Nov 2026). PR #33 and #34 were
+  merged without a GitHub review (nguyenthu-0505, thuvutp-prog requested).
+- **Not merged**: AUT (`001-aut-registration`, PR #11; stack drift Next 16 / React 19 / Vitest 5 /
+  `pg`), IAC (`003-iac-core`, PR #16: US-1 chat core, authenticates from client headers
+  `x-mock-user-id` / `x-mock-role`), `member/spec-consistency`, `ngthu/update-specs` (leftovers that
+  would overwrite spec-BKG and the seed).
 - **BKG**: owned by the human running this session. **Code complete on `main` `fa4d9d2`**: all six
   stories US-1..US-6 (F-SCHED-01..10) in four rounds — `specs/004-bkg-core` (US-4, PR #17),
   `specs/011-bkg-manage` (US-5 + US-3, PR #20, #22), `specs/012-bkg-list` (US-6, PR #25),
@@ -98,8 +102,12 @@ State checked on 30 Oct 2026 at `main` = `fa4d9d2` (details: `03-module-status.m
   AIT/PRF/EXP owners: `applyBatch` in `src/lib/demo/json-repository.ts`; PRF owner: Provider/Agency
   navigation links; EXP owner: the "Xem lịch trống" link on the Explore Provider page). Read `docs/build/claude-context/04-bkg-brief.md` and
   `specs/011-bkg-manage/tasks.md` before doing anything on BKG.
-- **IAC**: no module of its own; only `src/lib/demo/commercial-handoff-service.ts` and the
-  shared `/messages` page (Quote/Chat handoff from Explore and AIT).
+- **IAC**: not on `main` yet; `main` has `src/lib/demo/commercial-handoff-service.ts` and the
+  shared `/messages` page (Quote/Chat handoff from Explore and AIT). PR #16 (`003-iac-core`) adds the
+  US-1 chat core.
+- **Auth**: the server-side demo session comes only from the `hab_demo_account` cookie. Branch
+  `linh/auth-no-header` removes the last fallback that trusted a client `x-mock-session` header
+  (checklist §3 #30); never add client-supplied identity headers again.
 - **Runtime**: all modules on `main` share one JSON runtime
   (`src/lib/demo/json-repository.ts`): the CSV seed is copied once to `.demo-data/runtime.json`
   (git-ignored) and every write rewrites that file; tests use a volatile in-memory copy.

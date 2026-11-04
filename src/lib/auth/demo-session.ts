@@ -77,14 +77,7 @@ export function demoSessionFromRequest(request: NextRequest | Request): DemoSess
   const encoded = cookie?.split(';').map(part => part.trim()).find(part => part.startsWith(`${DEMO_SESSION_COOKIE}=`))?.split('=')[1]
   if (encoded) return demoSessionFor(decodeURIComponent(encoded))
 
-  // Temporary compatibility for existing PRF tests and clients while the UI moves to cookies.
-  const legacy = request.headers.get('x-mock-session')
-  if (legacy) {
-    try {
-      return JSON.parse(legacy) as DemoSession
-    } catch {
-      return DEMO_IDENTITIES.guest
-    }
-  }
+  // The session comes only from the hab_demo_account cookie; a client-supplied x-mock-session header is
+  // ignored, so a request without the cookie is a Guest.
   return DEMO_IDENTITIES.guest
 }

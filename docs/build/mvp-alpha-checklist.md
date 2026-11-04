@@ -49,8 +49,8 @@ PRF only at `f5e7223` and are replaced by the lines below.
     - #6 AIT (nguyenthu-0505): linhkhanh-vu requested changes twice; merged by the author without an approval.
     - #13–#35 (all BKG, AIT round 3, ADM port, fix(auth) and docs PRs; author linhkhanh-vu): merged by the author without a review. Reason: Solo work: merged without non-author review to keep pace; review was requested on #33–#35 but none was given.
     - Not through a pull request at all: the spec/data uploads and `Update spec-*.md` commits made on GitHub (Sep–Oct), and the EXP commits `4a1ae27`, `581e09a`, `bf30cea`, `2e79614`, `ada9e44` (pushed directly to `main`).
-- [ ] G7. No real personal data and no secret (key, password, token) in any committed file.
-  - **Status:** no secret found (pattern search for API keys, private keys and tokens; `.env.example` holds mock values only; seed e-mails use `example.invalid`). **One real personal e-mail** (a member's Gmail address) is committed in `docs/env/Environment Readiness Report.md:71`. `docs/env/` is human-owned; removal needs the owner (and the address stays in git history).
+- [x] G7. No real personal data and no secret (key, password, token) in any committed file.
+  - **Status:** no secret found (pattern search for API keys, private keys and tokens; `.env.example` holds mock values only; seed e-mails use `example.invalid`). The one real personal e-mail (a member's Gmail in `docs/env/Environment Readiness Report.md:71`) was replaced by `member@example.invalid` on 04/11 (edit approved by linhkhanh-vu); `git grep` for common webmail domains now finds nothing. The old address is still in git history; rewriting history was not done.
 - [ ] G8. `docs/build/build-log.md` has an entry for every agent run that changed code or tests.
   - **Status:** entries exist for PRF (Entries 1–7), EXP (Codex Entries 1–8), BKG (9–31), AIT round 3 (32), ADM port (33) and fix(auth) (34). **Missing:** AIT rounds 1–2 (`3a107c1`, `b88c8b9`, `1004f50`, PR #6) and the original ADM build on `003-adm-core` (`fbcd7be`, `cbbb8dd`; Entry 33 covers only the port). This CI change touches no `specs/`, `src/` or `tests/` file.
 

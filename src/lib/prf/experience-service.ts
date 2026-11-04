@@ -1,14 +1,25 @@
 import { randomUUID } from 'node:crypto'
 import type { ActorSession } from '../auth/demo-session'
 import { demoRepository } from '../demo/json-repository'
-import { ExperienceCreateSchema, ExperienceUpdateSchema } from './validators'
+import { ExperienceCreateSchema, ExperienceImageSchema, KeptImageSchema } from './validators'
+import { missingCategories, type ExperienceImageCategory } from './experience-images'
 import { ZodError } from 'zod'
 import { recordAuditLog } from './audit-logger'
 
 export interface ExperienceImageInput {
   url: string
-  category: 'artisan_working' | 'workshop_space' | 'finished_product'
+  file_name?: string
+  category: ExperienceImageCategory
+  media_type: string
+  file_size_bytes: number
+  width_px: number
+  height_px: number
   caption?: string
+}
+
+/** On update, an existing image is kept by its stored file id (BR-015). */
+export interface KeptImageInput {
+  file_id: string
 }
 
 export interface ExperienceInput {
@@ -34,6 +45,33 @@ export class ExperienceError extends Error {
 }
 
 const DEFAULT_OWNER_ID = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
+
+/** BR-008: a stored_files row with the uploaded metadata (data/schema.sql: size and dimensions > 0). */
+function insertStoredFile(image: ExperienceImageInput, uploadedBy: string, now: string): string {
+  const fileId = randomUUID()
+  demoRepository().insert('stored_files', {
+    file_id: fileId,
+    storage_key: image.url,
+    file_name: image.file_name || image.url.split('/').pop() || `${fileId}`,
+    media_type: image.media_type,
+    file_size_bytes: String(image.file_size_bytes),
+    width_px: String(image.width_px),
+    height_px: String(image.height_px),
+    uploaded_by: uploadedBy,
+    created_at: now,
+  })
+  return fileId
+}
+
+function parseUpdateImages(images: unknown[]): Array<ExperienceImageInput | KeptImageInput> {
+  return images.map(image => {
+    const kept = KeptImageSchema.safeParse(image)
+    if (kept.success && !(image as { url?: unknown }).url) return kept.data
+    const upload = ExperienceImageSchema.safeParse(image)
+    if (!upload.success) throw new ExperienceError(upload.error.issues.map(issue => issue.message).join('; '), 400)
+    return upload.data as ExperienceImageInput
+  })
+}
 
 /** T026: Create Experience */
 export async function createExperience(
@@ -62,16 +100,10 @@ export async function createExperience(
     throw err
   }
 
-  // BR-009: Must contain at least one image of each of the 3 required categories
-  const categories = new Set(parsed.images.map(img => img.category))
-  const requiredCategories: Array<'artisan_working' | 'workshop_space' | 'finished_product'> = [
-    'artisan_working',
-    'workshop_space',
-    'finished_product',
-  ]
-  const missing = requiredCategories.filter(cat => !categories.has(cat))
+  // BR-009: one image of each required category (FR-006 error "Required Image Category Missing").
+  const missing = missingCategories(parsed.images)
   if (missing.length > 0) {
-    throw new ExperienceError(`Missing required image categories: ${missing.join(', ')} (BR-009)`, 400)
+    throw new ExperienceError(`Required Image Category Missing: ${missing.join(', ')} (BR-009)`, 400)
   }
 
   const repository = demoRepository()
@@ -95,15 +127,7 @@ export async function createExperience(
     updated_at: now,
   })
   parsed.images.forEach((image, index) => {
-    const fileId = randomUUID()
-    repository.insert('stored_files', {
-      file_id: fileId,
-      storage_key: image.url,
-      file_name: image.url.split('/').pop() || `${fileId}.jpg`,
-      media_type: 'image/jpeg',
-      file_size_bytes: '0', width_px: '0', height_px: '0',
-      uploaded_by: actorSession.userId || '', created_at: now,
-    })
+    const fileId = insertStoredFile(image, actorSession.userId || '', now)
     repository.insert('profile_media', {
       profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: providerId,
       experience_id: expId, category: image.category, display_order: String(index + 1),
@@ -159,6 +183,8 @@ export async function updateExperience(
     }
   }
 
+  if (input.images && stored) planImageUpdate(experienceId, input.images as unknown[])
+
   recordAuditLog(
     actorSession.userId || 'unknown-user',
     'UPDATE_EXPERIENCE',
@@ -179,24 +205,7 @@ export async function updateExperience(
     if (input.experience_location_address !== undefined) changes.experience_location_address = input.experience_location_address
     if (input.cancellation_policy !== undefined) changes.cancellation_policy = JSON.stringify(input.cancellation_policy)
     repository.update('experiences', row => row.experience_id === experienceId, changes)
-    if (input.images) {
-      const previousMedia = repository.all('profile_media').filter(row => row.experience_id === experienceId)
-      const previousFileIds = new Set(previousMedia.map(row => row.file_id))
-      repository.remove('profile_media', row => row.experience_id === experienceId)
-      repository.remove('stored_files', row => previousFileIds.has(row.file_id))
-      input.images.forEach((image, index) => {
-        const fileId = randomUUID()
-        repository.insert('stored_files', {
-          file_id: fileId, storage_key: image.url, file_name: image.url.split('/').pop() || `${fileId}.jpg`,
-          media_type: 'image/jpeg', file_size_bytes: '0', width_px: '0', height_px: '0',
-          uploaded_by: actorSession.userId || '', created_at: new Date().toISOString(),
-        })
-        repository.insert('profile_media', {
-          profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: stored.provider_id,
-          experience_id: experienceId, category: image.category, display_order: String(index + 1),
-        })
-      })
-    }
+    if (input.images) applyImageUpdate(experienceId, stored.provider_id, input.images as unknown[], actorSession.userId || '')
   }
 
   // BR-020: Experience edit does NOT trigger provider re-verification
@@ -205,6 +214,47 @@ export async function updateExperience(
     provider_verification_status: 'Verified',
     reverification_triggered: false,
   }
+}
+
+/**
+ * BR-008, BR-009, BR-015: check the new image list of an update before anything is written.
+ * Kept images must belong to the Experience; every category must keep at least one image
+ * (FR-006 error "Last Required Category Image Cannot Be Deleted").
+ */
+function planImageUpdate(experienceId: string, images: unknown[]) {
+  const parsed = parseUpdateImages(images)
+  const media = demoRepository().all('profile_media').filter(row => row.experience_id === experienceId)
+  const categoryOf = new Map(media.map(row => [row.file_id, row.category]))
+  const resolved = parsed.map(image => {
+    if ('file_id' in image) {
+      const category = categoryOf.get(image.file_id)
+      if (!category) throw new ExperienceError(`Image ${image.file_id} does not belong to this Experience`, 400)
+      return { kept: image.file_id, category }
+    }
+    return { upload: image, category: image.category }
+  })
+  const missing = missingCategories(resolved)
+  if (missing.length > 0) {
+    throw new ExperienceError(`Last Required Category Image Cannot Be Deleted: ${missing.join(', ')} (BR-015)`, 400)
+  }
+  return resolved
+}
+
+function applyImageUpdate(experienceId: string, providerId: string, images: unknown[], uploadedBy: string) {
+  const repository = demoRepository()
+  const resolved = planImageUpdate(experienceId, images)
+  const keptIds = new Set(resolved.flatMap(item => item.kept ? [item.kept] : []))
+  const previousIds = repository.all('profile_media').filter(row => row.experience_id === experienceId).map(row => row.file_id)
+  const now = new Date().toISOString()
+  repository.remove('profile_media', row => row.experience_id === experienceId)
+  repository.remove('stored_files', row => previousIds.includes(row.file_id) && !keptIds.has(row.file_id))
+  resolved.forEach((item, index) => {
+    const fileId = item.kept ?? insertStoredFile(item.upload!, uploadedBy, now)
+    repository.insert('profile_media', {
+      profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: providerId,
+      experience_id: experienceId, category: item.category, display_order: String(index + 1),
+    })
+  })
 }
 
 /** T028: Delete Experience */
@@ -275,10 +325,15 @@ export async function getExperienceById(experienceId: string): Promise<unknown> 
   if (!row) throw new ExperienceError('Experience not found', 404)
   const bookings = repository.all('bookings').filter(booking => booking.experience_id === experienceId)
   const media = repository.all('profile_media').filter(item => item.experience_id === experienceId)
-    .map(item => ({
-      category: item.category,
-      url: repository.find('stored_files', file => file.file_id === item.file_id)?.storage_key || '',
-    }))
+    .sort((a, b) => Number(a.display_order) - Number(b.display_order))
+    .flatMap(item => {
+      const file = repository.find('stored_files', stored => stored.file_id === item.file_id)
+      return file ? [{
+        file_id: item.file_id, category: item.category, url: file.storage_key, file_name: file.file_name,
+        media_type: file.media_type, file_size_bytes: Number(file.file_size_bytes),
+        width_px: Number(file.width_px), height_px: Number(file.height_px),
+      }] : []
+    })
   return {
     ...row,
     duration_minutes: Number(row.duration_minutes),
@@ -286,7 +341,7 @@ export async function getExperienceById(experienceId: string): Promise<unknown> 
     max_participants: Number(row.max_participants),
     notice_period_hours: Number(row.notice_period_hours),
     has_active_bookings: bookings.some(booking => booking.status === 'On hold' || booking.status === 'Booked'),
-    images: media.filter(item => item.url),
+    images: media,
   }
 }
 

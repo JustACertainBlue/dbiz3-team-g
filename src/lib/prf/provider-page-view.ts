@@ -12,6 +12,8 @@ interface ProfileForView {
   verification_status?: string
   availability?: unknown
   booking_conditions?: unknown
+  pricing?: number
+  capacity?: number
 }
 
 export interface ProviderPageView {
@@ -23,6 +25,9 @@ export interface ProviderPageView {
   canReview: boolean
   operatingHours: string[]
   bookingConditions: string[]
+  /** spec-PRF #34: "từ X ₫/khách", or null without Experiences. */
+  pricingLine: string | null
+  capacityLine: string | null
 }
 
 export function providerPageView(profile: ProfileForView, session: ViewerSession): ProviderPageView {
@@ -37,6 +42,8 @@ export function providerPageView(profile: ProfileForView, session: ViewerSession
     canCreateBooking: isOwner,
     canReview: isUbnd && profile.verification_status === 'Pending Verification',
     operatingHours: operatingHoursToRows(hours).map(row => `${WEEKDAY_LABELS[row.weekday]} ${row.local_start}–${row.local_end}`),
+    pricingLine: typeof profile.pricing === 'number' ? `từ ${profile.pricing.toLocaleString('vi-VN')} ₫/khách` : null,
+    capacityLine: typeof profile.capacity === 'number' ? `Tối đa ${profile.capacity} khách` : null,
     bookingConditions: conditions.map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`),
   }
 }

@@ -174,3 +174,8 @@ stays Verified while a version is published; revisions carry their own `version_
 Re-copied after spec-PRF #33 (Request Revision only on a Pending Verification version; otherwise 409).
 Implemented in `reviewProvider` and the verify route; PRF127 view rules in `src/lib/prf/provider-page-view.ts`
 (build-log Entry 40).
+
+## Spec refresh 2026-11-04 (slice B, `linh/prf-fixes-3`)
+
+Re-copied after spec-PRF #34 (FR-003 `pricing` = lowest non-archived Experience price, `capacity` = largest
+`max_participants`, empty without Experiences). Implemented in `getProviderProfile` and PRF127 (build-log Entry 41).

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../ExperienceImagesField'
+import { missingCategories } from '@/lib/prf/experience-images'
 import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
 
 export default function AddExperiencePage({
@@ -30,11 +32,7 @@ export default function AddExperiencePage({
     description: '',
   })
 
-  const [images, setImages] = useState({
-    artisan_working: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=800&q=80',
-    workshop_space: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=800&q=80',
-    finished_product: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=800&q=80',
-  })
+  const [images, setImages] = useState<ExperienceImageItem[]>([])
 
   useEffect(() => {
     refreshDemoSession().then(session => setRole(session.role)).finally(() => setSessionReady(true))
@@ -85,11 +83,12 @@ export default function AddExperiencePage({
       return
     }
 
-    const imageList = [
-      { url: images.artisan_working, category: 'artisan_working' },
-      { url: images.workshop_space, category: 'workshop_space' },
-      { url: images.finished_product, category: 'finished_product' },
-    ]
+    const missing = missingCategories(images)
+    if (missing.length > 0) {
+      setError(`Required Image Category Missing: ${missing.join(', ')} (BR-009)`)
+      setSaving(false)
+      return
+    }
 
     try {
       const payload = {
@@ -105,7 +104,7 @@ export default function AddExperiencePage({
           rules: [{ threshold_hours: 24, fee_percentage: 50 }],
           notes: formData.cancellation_rules_text,
         },
-        images: imageList,
+        images: toImagesPayload(images),
       }
 
       const res = await fetch('/api/prf/experience', {
@@ -362,46 +361,7 @@ export default function AddExperiencePage({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="prf-field-group">
-                  <label className="prf-label">
-                    1. Ảnh nghệ nhân đang thao tác chế tác (artisan_working) *
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={images.artisan_working}
-                    onChange={e => setImages({ ...images, artisan_working: e.target.value })}
-                    className="prf-input"
-                  />
-                </div>
-
-                <div className="prf-field-group">
-                  <label className="prf-label">
-                    2. Ảnh không gian xưởng & khu vực trải nghiệm (workshop_space) *
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={images.workshop_space}
-                    onChange={e => setImages({ ...images, workshop_space: e.target.value })}
-                    className="prf-input"
-                  />
-                </div>
-
-                <div className="prf-field-group">
-                  <label className="prf-label">
-                    3. Ảnh sản phẩm thủ công hoàn thiện (finished_product) *
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={images.finished_product}
-                    onChange={e => setImages({ ...images, finished_product: e.target.value })}
-                    className="prf-input"
-                  />
-                </div>
-              </div>
+              <ExperienceImagesField images={images} onChange={setImages} />
             </div>
           </div>
 

@@ -31,6 +31,8 @@ interface ProviderData {
   business_registration_number?: string
   contact?: { phone_number?: string; business_email?: string }
   verification_status?: string
+  pricing?: number
+  capacity?: number
   availability?: unknown
   booking_conditions?: unknown
   experiences?: ProviderExperience[]
@@ -167,6 +169,11 @@ export default function ProviderProfilePage({
             )}
             {provider.location_address && (
               <div style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '0.75rem' }}>{provider.location_address}</div>
+            )}
+            {(view.pricingLine || view.capacityLine) && (
+              <div data-testid="prf127-pricing" style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+                {[view.pricingLine, view.capacityLine].filter(Boolean).join(' · ')}
+              </div>
             )}
             {provider.artisan_names && provider.artisan_names.length > 0 && (
               <div className="spec-chips-row">

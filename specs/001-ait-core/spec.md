@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-AIT.md sha256=ecc6efaf411a6fa8e0daa5039f4c8018760e34ce0e754c5f0ab9eb2c52a0d460 taken=2026-10-30T16:50Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-AIT.md sha256=5cf57f4279eb492d1df6635773e706fc784eebe5446d0988011f0678b0a3cd87 taken=2026-11-04T09:02Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-AIT.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -369,6 +369,7 @@ sequenceDiagram
 - 2026-10-30 #32: Full craft preference → `craft_type` mapping; Providers with `craft_type` Other match hat/bamboo preferences equally (known limitation).
 - 2026-10-30 #33: Retry re-runs the analysis of the stored conversation without adding a message.
 - 2026-10-30 #34: A craft (#32) or a stated Experience type (Experience `category` enum, "workshop" → Workshop/Hands-on) counts as an Experience preference.
+- 2026-11-04 #35: "from X", "near X" or a named Hanoi district/city is a stated origin; a craft village named only as a destination is not.
 
 **10. Open questions**
 
@@ -408,6 +409,7 @@ sequenceDiagram
 | 32 | #26 maps a craft preference to the Provider `craft_type` enum but lists only two values. What is the full mapping? | No | BA / Data | **Closed** | silk, lụa, embroidery, thêu, textile → Silk/Textile; pottery, ceramic, gốm → Ceramics; wood, woodcarving, carving, gỗ, tạc → Woodcarving; food, cooking, culinary, ẩm thực → Food/Culinary; metal, bronze, đúc, đồng → Metalwork; lacquer, painting, paper, sơn mài, tranh → Paper/Painting; conical hat, nón, bamboo, rattan, mây, tre → Other. Known limitation: Providers whose `craft_type` is Other (in the seed Chuông and Phú Vinh) match a hat or bamboo preference equally; telling them apart needs a finer taxonomy in `data/`. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 | 33 | #27 Retry "resends the last message". Does Retry add the Agency message to the conversation again? | No | UI/UX / Tech | **Closed** | No. Retry re-runs the analysis of the stored conversation; no message is added, so the conversation has no duplicate. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
 | 34 | OQ #4 / #29 require "at least one Experience preference". What counts as one? | No | BA / AI | **Closed** | A craft (mapped by #32) or an Experience type stated by the Agency, matched to the Experience `category` enum of `data/04-data-model.md` ("workshop", "hands-on" → Workshop/Hands-on; "show", "performance", "puppet" → Cultural Show; "sightseeing" → Sightseeing; "tasting", "culinary" → Culinary/Tasting; "combo" → Combo). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-10-30. |
+| 35 | #29 requires an origin "stated by the Agency". Which wording counts as a stated origin, and does a named craft village count? | No | BA / AI | **Closed** | "from X", "near X", or a named Hanoi district or city (e.g. Hoàn Kiếm, Old Quarter, Hanoi) is a stated origin. A craft village named only as a place to visit (e.g. "workshop in Bat Trang") is a destination, not an origin. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
 
 **11. Traceability to DBIZ2**
 

@@ -77,6 +77,10 @@ There is no `/api/ait/decay` endpoint; time decay (FR-015, BR-021) is a library 
     }
   }
   ```
+  `craft_preference` is an internal field derived from the Agency's stated Experience preference (#32,
+  #34); it is not one of the `tour_context` fields of spec OQ #3 and is not part of the FR-003 output
+  contract. A stated origin is "from X", "near X" or a named Hanoi district/city; a craft village named
+  only as a destination is not an origin (#35).
   `message` is `null` on retry. While any OQ #4 field (group size, date, origin, Experience preference
   #34) is missing: `is_complete: false`, one follow-up question per missing field, and
   `tour_preference_profile: null`. No field is defaulted (#29).

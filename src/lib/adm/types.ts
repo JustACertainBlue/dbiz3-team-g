@@ -162,23 +162,6 @@ export interface DashboardFilterParams {
   sortBy?: CollaborationSortBy
 }
 
-export interface UserAccountItem {
-  userId: string
-  name: string
-  email: string
-  role: 'ADMIN' | 'Tour_Agency' | 'Local_Provider'
-  adminType?: 'HDT' | 'UBND'
-  organization: string
-  status: 'Active' | 'Approved' | 'Disabled' | 'Pending Approval' | 'Rejected'
-  lastLogin: string | null
-  createdDate: string
-  villageId?: string | null
-  villageName?: string | null
-  phone?: string
-  title?: string
-  enabled: boolean
-}
-
 export interface PendingVerificationAccount {
   id: string
   name: string
@@ -188,41 +171,5 @@ export interface PendingVerificationAccount {
   submissionDate: string
   villageId?: string | null
   initials: string
-}
-
-export interface UserManagementResponse {
-  users: UserAccountItem[]
-  pendingUsers: PendingVerificationAccount[]
-  totalCount: number
-  scope: AdminScope
-}
-
-export interface CreateAccountPayload {
-  name: string
-  email: string
-  organization?: string
-  phone: string
-  role: 'ADMIN' | 'Local_Provider'
-  adminType?: 'UBND'
-  assignedVillageId?: string
-  address?: string
-  permissions?: string[]
-}
-
-export interface CreateAccountResult {
-  success: boolean
-  userId?: string
-  accountStatus?: 'Active'
-  mustChangePassword?: boolean
-  credentialEmailStatus?: 'Success' | 'Fail'
-  villageAssignment?: {
-    ubndUserId: string
-    villageId: string
-  }
-  providerProfileId?: string
-  profileVerificationStatus?: 'Draft'
-  successNotification?: string
-  account?: UserAccountItem
-  error?: string
 }
 

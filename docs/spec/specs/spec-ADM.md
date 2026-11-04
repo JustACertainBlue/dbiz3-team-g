@@ -282,6 +282,10 @@ sequenceDiagram
 
 - ADM095, ADM117, ADM118, VER146 and VER119 are included as related screens in the Admin journey, but their account-management and verification business logic remains owned by Authentication / Profile Management rather than F-ADMIN-01 .. F-ADMIN-10.
 
+## Clarifications
+
+- 2026-11-04 #21: The four metric cards follow only the time and village filters; Agency/Provider filters apply to the Booking table, top 10 pairs, status breakdown and trend.
+
 **10. Open questions**
 
 | **\#** | **Question**                                                                                                                                                                   | **Blocking?** | **Owner**  | **Status** | **Answer/Question**                                                                                                                                         |
@@ -306,6 +310,7 @@ sequenceDiagram
 | 18 | How is “Active Collaborations” on the metric card defined? | No | BA | Closed | The number of unique Agency–Provider pairs that have at least one On hold or Booked Booking in the selected reporting scope. |
 | 19 | Should Provider activity count Chat interactions, Bookings, or both? F-ADMIN-08 mentions both. | No | BA | Closed | Quote Request, Chat and Booking are separate Provider activity types. A Provider is Active when at least one of these activities occurs during the selected reporting period. |
 | 20 | Should the Module 6 Sequence Diagram be expanded to include filters and F-ADMIN-07–10 metric retrieval? | No | BA | Closed | Yes. Current sequence includes scoped filter requests, metrics, booking trend/list and top10 pairs. |
+| 21 | BR-005 says dashboard metrics respect the Agency and Provider filters, while FR-006 and the consistency contract call them result-list filters. Do the Agency/Provider filters change the four metric cards? | No | BA | **Closed** | No. The four metric cards follow only the time and village filters. The Agency and Provider filters apply to the result lists (Booking table, top 10 collaboration pairs) and to the Booking status breakdown and Booking trend charts (consistency contract: "Agency/Provider result-list filters"). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
 
 **11. Traceability to DBIZ2**
 

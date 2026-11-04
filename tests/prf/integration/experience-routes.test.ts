@@ -47,9 +47,9 @@ describe('T025 | Experience Routes Integration Tests (US-5)', () => {
         max_participants: 8,
         notice_period_hours: 12,
         images: [
-          { url: 'https://img.test/artisan.jpg', category: 'artisan_working' },
-          { url: 'https://img.test/space.jpg', category: 'workshop_space' },
-          { url: 'https://img.test/prod.jpg', category: 'finished_product' },
+          { url: 'https://img.test/artisan.jpg', category: 'Activity', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://img.test/space.jpg', category: 'Space', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://img.test/prod.jpg', category: 'Product', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
         ],
       }
       const req = makeRequest('POST', 'http://localhost:3000/api/prf/experience', owner, payload)
@@ -69,9 +69,9 @@ describe('T025 | Experience Routes Integration Tests (US-5)', () => {
         max_participants: 5,
         notice_period_hours: 12,
         images: [
-          { url: 'https://img.test/1.jpg', category: 'artisan_working' },
-          { url: 'https://img.test/2.jpg', category: 'workshop_space' },
-          { url: 'https://img.test/3.jpg', category: 'finished_product' },
+          { url: 'https://img.test/1.jpg', category: 'Activity', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://img.test/2.jpg', category: 'Space', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://img.test/3.jpg', category: 'Product', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
         ],
       }
       const req = makeRequest('POST', 'http://localhost:3000/api/prf/experience', owner, payload)

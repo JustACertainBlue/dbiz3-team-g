@@ -103,3 +103,27 @@ describe('A2 | #39 verify route answers 409 (spec-PRF #33)', () => {
     expect(row.verification_status).toBe('Verified')
   })
 })
+
+describe('Slice B | #40 / spec-PRF #34 pricing and capacity across Experiences', () => {
+  beforeEach(() => demoRepository().reset())
+
+  it('pricing = lowest non-archived price, capacity = largest max_participants', async () => {
+    const insert = (id: string, price: string, max: string, archived = '') => demoRepository().insert('experiences', {
+      experience_id: id, provider_id: BAT_TRANG, name: id, description: 'x', category: 'Workshop/Hands-on',
+      duration_minutes: '60', price_per_person: price, max_participants: max, notice_period_hours: '24',
+      experience_location_address: '', cancellation_policy: '{}', archived_at: archived, created_at: '', updated_at: '',
+    })
+    insert('cheap-small', '90000.00', '6')
+    insert('big', '300000.00', '30')
+    insert('archived-cheapest', '10000.00', '99', '2026-09-01T00:00:00+07:00')
+    const profile = await getProviderProfile(BAT_TRANG, agency)
+    expect(profile?.pricing).toBe(90000)
+    expect(profile?.capacity).toBe(30)
+  })
+
+  it('a Provider without a non-archived Experience has no pricing and no capacity', async () => {
+    const haThai = await getProviderProfile(SEED_IDS.providerPending, hdtSession())
+    expect(haThai?.pricing).toBeUndefined()
+    expect(haThai?.capacity).toBeUndefined()
+  })
+})

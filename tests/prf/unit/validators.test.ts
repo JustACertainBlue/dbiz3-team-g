@@ -82,9 +82,9 @@ describe('T057 | Boundary-value tests for Zod schemas', () => {
       max_participants: 15,
       notice_period_hours: 24,
       images: [
-        { url: 'https://example.com/artisan.jpg', category: 'artisan_working' },
-        { url: 'https://example.com/space.jpg', category: 'workshop_space' },
-        { url: 'https://example.com/product.jpg', category: 'finished_product' },
+        { url: 'https://example.com/artisan.jpg', category: 'Activity', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+        { url: 'https://example.com/space.jpg', category: 'Space', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+        { url: 'https://example.com/product.jpg', category: 'Product', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
       ],
     }
 
@@ -123,9 +123,9 @@ describe('T057 | Boundary-value tests for Zod schemas', () => {
       const invalidUrl = {
         ...validExperience,
         images: [
-          { url: 'not-a-valid-url', category: 'artisan_working' },
-          { url: 'https://example.com/2.jpg', category: 'workshop_space' },
-          { url: 'https://example.com/3.jpg', category: 'finished_product' },
+          { url: 'not-a-valid-url', category: 'Activity', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://example.com/2.jpg', category: 'Space', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://example.com/3.jpg', category: 'Product', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
         ],
       }
       expect(ExperienceCreateSchema.safeParse(invalidUrl).success).toBe(false)
@@ -134,8 +134,8 @@ describe('T057 | Boundary-value tests for Zod schemas', () => {
         ...validExperience,
         images: [
           { url: 'https://example.com/1.jpg', category: 'invalid_category' },
-          { url: 'https://example.com/2.jpg', category: 'workshop_space' },
-          { url: 'https://example.com/3.jpg', category: 'finished_product' },
+          { url: 'https://example.com/2.jpg', category: 'Space', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://example.com/3.jpg', category: 'Product', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
         ],
       }
       expect(ExperienceCreateSchema.safeParse(invalidCategory).success).toBe(false)
@@ -145,8 +145,8 @@ describe('T057 | Boundary-value tests for Zod schemas', () => {
       const fewImages = {
         ...validExperience,
         images: [
-          { url: 'https://example.com/1.jpg', category: 'artisan_working' },
-          { url: 'https://example.com/2.jpg', category: 'workshop_space' },
+          { url: 'https://example.com/1.jpg', category: 'Activity', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://example.com/2.jpg', category: 'Space', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
         ],
       }
       expect(ExperienceCreateSchema.safeParse(fewImages).success).toBe(false)

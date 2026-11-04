@@ -40,3 +40,10 @@ describe('A2 | #40 PRF127 view rules (providerPageView)', () => {
     expect(view.bookingConditions).toEqual(['notice_hours: 24'])
   })
 })
+
+describe('Slice B | spec-PRF #34 pricing line on PRF127', () => {
+  it('shows "từ X ₫/khách" and the capacity, or nothing without Experiences', () => {
+    expect(providerPageView({ provider_id: BAT_TRANG, pricing: 90000, capacity: 30 }, agency)).toMatchObject({ pricingLine: 'từ 90.000 ₫/khách', capacityLine: 'Tối đa 30 khách' })
+    expect(providerPageView({ provider_id: BAT_TRANG }, agency)).toMatchObject({ pricingLine: null, capacityLine: null })
+  })
+})

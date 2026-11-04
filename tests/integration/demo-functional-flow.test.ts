@@ -45,9 +45,9 @@ describe('functional demo foundation', () => {
       name: 'Trải nghiệm demo liên module', description: 'Dữ liệu do Provider tạo và Agency nhìn thấy.', category: 'Ceramics',
       duration_minutes: 90, price_per_person: 220000, max_participants: 18, notice_period_hours: 24,
       images: [
-        { url: 'https://example.invalid/demo/artisan.jpg', category: 'artisan_working' },
-        { url: 'https://example.invalid/demo/workshop.jpg', category: 'workshop_space' },
-        { url: 'https://example.invalid/demo/product.jpg', category: 'finished_product' },
+        { url: 'https://example.invalid/demo/artisan.jpg', category: 'Activity', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+        { url: 'https://example.invalid/demo/workshop.jpg', category: 'Space', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+        { url: 'https://example.invalid/demo/product.jpg', category: 'Product', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
       ],
     })
     const catalog = buildExplorePage(loadExploreRuntime(), { viewer: { kind: 'agency', agencyId: DEMO_IDENTITIES.agency.agencyId! }, pageSize: 50 })

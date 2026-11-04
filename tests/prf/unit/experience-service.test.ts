@@ -28,9 +28,9 @@ describe('T024 | Experience Service Unit Tests (US-5)', () => {
     max_participants: 10,
     notice_period_hours: 24,
     images: [
-      { url: 'https://img.test/artisan.jpg', category: 'artisan_working', caption: 'Nghệ nhân tạo hình' },
-      { url: 'https://img.test/workshop.jpg', category: 'workshop_space', caption: 'Xưởng làm gốm' },
-      { url: 'https://img.test/product.jpg', category: 'finished_product', caption: 'Sản phẩm hoàn thiện' },
+      { url: 'https://img.test/artisan.jpg', category: 'Activity', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080, caption: 'Nghệ nhân tạo hình' },
+      { url: 'https://img.test/workshop.jpg', category: 'Space', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080, caption: 'Xưởng làm gốm' },
+      { url: 'https://img.test/product.jpg', category: 'Product', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080, caption: 'Sản phẩm hoàn thiện' },
     ],
   }
 
@@ -69,12 +69,12 @@ describe('T024 | Experience Service Unit Tests (US-5)', () => {
 
   // ── BR-009: 3 required image categories ───────────────────────────────────
   describe('BR-009: Required image categories on creation', () => {
-    it('rejects experience creation when missing artisan_working image category', async () => {
+    it('rejects experience creation when missing Activity image category', async () => {
       const missingCategoryExp = {
         ...validNewExperience,
         images: [
-          { url: 'https://img.test/workshop.jpg', category: 'workshop_space' as const },
-          { url: 'https://img.test/product.jpg', category: 'finished_product' as const },
+          { url: 'https://img.test/workshop.jpg', category: 'Space' as const, media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
+          { url: 'https://img.test/product.jpg', category: 'Product' as const, media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
         ],
       }
       try {

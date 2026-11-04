@@ -147,3 +147,15 @@ and, in the dev server, on a timer (research R3). Shared files touched: `json-re
 | No Agency/Provider Booking list (US-6, US-1) | Out of scope | BKG135/BKG138 are opened from BKG134, the Provider page link, or by URL (#54). |
 | `commercial-handoff-service.ts` `message_kind` values not in schema | Belongs to AIT/IAC | Recorded in research.md only; not fixed here. BKG writes only `Booking Update`. |
 | Chat pre-fill of BKG134 | Needs IAC | Still deferred (004 H2). |
+
+## Spec refresh 2026-11-04 (checklist G4)
+
+`spec.md` re-copied from `docs/spec/specs/spec-BKG.md` with `start_feature.py --refresh`. Added since
+the snapshot: #32, #33 (closed), #58–#82. All are additive; none changes F-SCHED-04/05/06/07/08 as
+built here.
+
+| Clarification | Status for this feature |
+|---|---|
+| #58 (BKG144 `target_status` optional) | Decided during this feature (build-log Entry 19) and already implemented in `EditBookingForm.tsx` |
+| #59–#67 | covered in `specs/012-bkg-list` (US-6) |
+| #32, #33, #68–#82 | covered in `specs/013-bkg-schedule` (US-1, US-2) |

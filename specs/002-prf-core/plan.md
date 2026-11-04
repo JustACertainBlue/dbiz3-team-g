@@ -155,3 +155,9 @@ tests/
 **Structure Decision**: Single Next.js project (existing repo). PRF API routes are
 colocated under `src/app/api/prf/`, matching the existing `src/app/api/ait/` pattern.
 All PRF business logic lives in `src/lib/prf/`. Tests live in `tests/prf/`.
+
+## Spec refresh 2026-11-04 (checklist G4)
+
+`spec.md` re-copied from `docs/spec/specs/spec-PRF.md` with `start_feature.py --refresh`. The only
+change is in the Mermaid sequence diagram: `;` inside messages is escaped as `#59` (11 lines). No FR,
+BR, acceptance scenario or field changed, so this plan and `tasks.md` still match the spec.

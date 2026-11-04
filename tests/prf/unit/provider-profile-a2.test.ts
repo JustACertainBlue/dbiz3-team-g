@@ -83,3 +83,23 @@ describe('A2 | #40 FR-003 profile data comes from the Provider data', () => {
     expect((await getProviderProfile(BAT_TRANG, agency))?.verification_status).toBe('Verified')
   })
 })
+
+describe('A2 | #39 verify route answers 409 (spec-PRF #33)', () => {
+  beforeEach(() => demoRepository().reset())
+
+  it('POST verify Request Revision on a Verified Provider without a pending revision → 409, Provider stays Verified', async () => {
+    // The demo UBND cookie is assigned to Hạ Thái; Approve its pending profile first, then ask for a revision.
+    const { POST } = await import('@/app/api/prf/provider/[providerId]/verify/route')
+    const HA_THAI = SEED_IDS.providerPending
+    const verify = (body: unknown) => POST(new Request(`http://localhost:3000/api/prf/provider/${HA_THAI}/verify`, {
+      method: 'POST',
+      headers: { cookie: 'hab_demo_account=ubnd', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }), { params: { providerId: HA_THAI } })
+    expect((await verify({ decision: 'Approve' })).status).toBe(200)
+    const res = await verify({ decision: 'Request Revision', revision_comments: 'Bổ sung giấy phép.' })
+    expect(res.status).toBe(409)
+    const row = demoRepository().all('provider_profiles').find(r => r.provider_id === HA_THAI)!
+    expect(row.verification_status).toBe('Verified')
+  })
+})

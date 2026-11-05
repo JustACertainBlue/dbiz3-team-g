@@ -24,8 +24,7 @@ export function renderChatMarkdown(text: string): string {
   // 3. Italic: *text* -> <em>text</em>
   sanitized = sanitized.replace(/\*(.+?)\*/g, '<em>$1</em>')
 
-  // 4. Italic: _text_ -> <em>text</em>
-  sanitized = sanitized.replace(/_(.+?)_/g, '<em>$1</em>')
+  // spec-IAC #20: nothing else is rendered (no _text_ italic); all other markup stays escaped text.
 
   return sanitized
 }

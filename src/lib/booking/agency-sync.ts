@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { demoRepository } from '../demo/json-repository'
 import type { BatchOperation, DemoRow } from '../demo/types'
+import { findActivePairChat, newPairChatOperations } from '../iac/chat-pairs'
 
 // F-SCHED-08: every Booking event sends one 'Booking Update' message to the Agency (spec #49, #55).
 // The caller adds the returned operations to its own applyBatch call (one persist per event, #44)
@@ -27,9 +28,8 @@ function resolveChat(booking: DemoRow): DemoRow | undefined {
     const source = repository.find('chat_sessions', row => row.chat_session_id === booking.source_chat_session_id)
     if (source && samePairActive(source)) return source
   }
-  return repository.all('chat_sessions')
-    .filter(samePairActive)
-    .sort((a, b) => Date.parse(b.last_message_at || b.started_at) - Date.parse(a.last_message_at || a.started_at))[0]
+  // IAC FR-001: the pair has at most one Active Chat; the shared lookup is used by every Chat creator.
+  return findActivePairChat(booking.agency_id, booking.provider_id)
 }
 
 export function bookingUpdateOperations(
@@ -40,21 +40,16 @@ export function bookingUpdateOperations(
   const repository = demoRepository()
   const experience = repository.find('experiences', row => row.experience_id === booking.experience_id)
   const agencyUserId = repository.find('agency_profiles', row => row.agency_id === booking.agency_id)?.user_id ?? ''
-  const providerUserId = repository.find('provider_profiles', row => row.provider_id === booking.provider_id)?.user_id ?? ''
   const operations: BatchOperation[] = []
 
   let chat = resolveChat(booking)
   if (!chat) {
-    chat = {
-      chat_session_id: randomUUID(), agency_id: booking.agency_id, provider_id: booking.provider_id, source: 'Booking',
-      matching_session_id: '', experience_id: booking.experience_id, quote_request_id: '', booking_id: booking.booking_id,
-      status: 'Active', started_at: at, last_message_at: at, closed_at: '', closed_by: '',
-    }
-    operations.push(
-      { table: 'chat_sessions', row: chat },
-      { table: 'chat_participants', row: { chat_session_id: chat.chat_session_id, user_id: agencyUserId, last_read_message_id: '', unread_count: '1' } },
-      { table: 'chat_participants', row: { chat_session_id: chat.chat_session_id, user_id: providerUserId, last_read_message_id: '', unread_count: '0' } },
-    )
+    const created = newPairChatOperations({
+      agencyId: booking.agency_id, providerId: booking.provider_id, source: 'Booking', at,
+      experienceId: booking.experience_id, bookingId: booking.booking_id, unread: { agency: 1 },
+    })
+    chat = { ...created.chat, last_message_at: at }
+    operations.push({ ...created.operations[0], row: chat } as BatchOperation, ...created.operations.slice(1))
   } else {
     const chatId = chat.chat_session_id
     operations.push({ table: 'chat_sessions', match: row => row.chat_session_id === chatId, changes: { last_message_at: at } })

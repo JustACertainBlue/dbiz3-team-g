@@ -86,15 +86,22 @@ function recipientOf(chat: DemoRow, senderUserId: string): string {
 }
 
 /** F-CHAT-02: send a text message (FR-002, BR-006, BR-017, BR-021, spec-IAC #25, #26). */
-export async function sendMessage(session: ActorSession, chatSessionId: string, text: unknown, options: { now?: Clock } = {}) {
+export async function sendMessage(
+  session: ActorSession,
+  chatSessionId: string,
+  text: unknown,
+  // afterStatusCheck is a test-only seam between the Active check and the write (spec-IAC #38, lesson #13).
+  options: { now?: Clock; afterStatusCheck?: () => Promise<void> } = {},
+) {
   const chat = requireParticipant(session, chatSessionId)
   const senderUserId = session.userId!
   const trimmed = typeof text === 'string' ? text.trim() : ''
   if (!trimmed) throw new ChatError('VALIDATION_ERROR', 'Message cannot be empty')
   if (codePoints(trimmed) > MESSAGE_MAX_CODE_POINTS) throw new ChatError('VALIDATION_ERROR', `Message is longer than ${MESSAGE_MAX_CODE_POINTS} characters`)
-  return withChatWriteLock(() => {
+  return withChatWriteLock(async () => {
     const current = demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId)!
     if (current.status !== 'Active') throw new ChatError('CHAT_CLOSED', 'This Chat is closed; start a new Chat to continue')
+    if (options.afterStatusCheck) await options.afterStatusCheck()
     const sentAt = nextSentAt(chatSessionId, (options.now ?? systemClock)().toISOString())
     const message: DemoRow = {
       message_id: randomUUID(), chat_session_id: chatSessionId, sender_user_id: senderUserId, text: trimmed,
@@ -187,7 +194,7 @@ function historyItem(message: DemoRow) {
  * F-CHAT-03 history (BR-014, BR-015, Q6): 50 messages oldest → newest, older pages by before_cursor.
  * The first page resets the reader's unread count (BR-017, spec-IAC #23).
  */
-export async function getChatHistory(session: ActorSession, chatSessionId: string, query: { beforeCursor?: string } = {}) {
+export async function getChatHistory(session: ActorSession, chatSessionId: string, query: { beforeCursor?: string } = {}): Promise<ChatHistory> {
   const chat = requireParticipant(session, chatSessionId)
   const userId = session.userId!
   const messages = orderedMessages(chatSessionId)
@@ -208,10 +215,75 @@ export async function getChatHistory(session: ActorSession, chatSessionId: strin
       }])
     })
   }
-  return {
+  const result: ChatHistory = {
     chat_session_id: chat.chat_session_id,
     chat_status: chat.status as 'Active' | 'Closed',
     message_history: page.map(historyItem),
     has_more_messages: start > 0,
   }
+  // spec-IAC #34: who closed a Closed Chat and when.
+  if (chat.status === 'Closed') {
+    result.closed_at = chat.closed_at
+    result.closed_by_name = fullName(chat.closed_by)
+  }
+  return result
+}
+
+export interface ChatHistory {
+  chat_session_id: string
+  chat_status: 'Active' | 'Closed'
+  message_history: ReturnType<typeof historyItem>[]
+  has_more_messages: boolean
+  closed_at?: string
+  closed_by_name?: string
+}
+
+export const CLOSE_REASON_MAX_CODE_POINTS = 500 // spec-IAC #30
+export const CLOSE_SUCCESS_MESSAGE = 'Đã đóng hội thoại. Lịch sử vẫn được lưu; lần trao đổi sau sẽ mở hội thoại mới.' // #32
+
+/**
+ * F-CHAT-04 Close Chat (FR-004, BR-019, BR-020, BR-021, spec-IAC #29–#31, #37, #38): either participant;
+ * Active → Closed with closed_at / closed_by; one audit_logs row with the optional reason; no message,
+ * no unread change. closed_at is never earlier than the latest message (schema chat_message_not_closed).
+ */
+export async function closeChat(
+  session: ActorSession,
+  chatSessionId: string,
+  input: { closeReason?: unknown },
+  // afterStatusCheck is a test-only seam between the Active check and the write (lesson #13).
+  options: { now?: Clock; afterStatusCheck?: () => Promise<void> } = {},
+) {
+  requireParticipant(session, chatSessionId)
+  const userId = session.userId!
+  if (input.closeReason !== undefined && input.closeReason !== null && typeof input.closeReason !== 'string') {
+    throw new ChatError('VALIDATION_ERROR', 'close_reason must be text')
+  }
+  const reason = typeof input.closeReason === 'string' ? input.closeReason.trim() : ''
+  if (codePoints(reason) > CLOSE_REASON_MAX_CODE_POINTS) {
+    throw new ChatError('VALIDATION_ERROR', `close_reason is longer than ${CLOSE_REASON_MAX_CODE_POINTS} characters`)
+  }
+  return withChatWriteLock(async () => {
+    const current = demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId)!
+    if (current.status !== 'Active') throw new ChatError('CHAT_CLOSED', 'This Chat is already closed')
+    if (options.afterStatusCheck) await options.afterStatusCheck()
+    const now = (options.now ?? systemClock)().getTime()
+    const latest = orderedMessages(chatSessionId).at(-1)
+    const closedAt = new Date(Math.max(now, latest ? Date.parse(latest.sent_at) : now)).toISOString()
+    const change: Record<string, string> = { from: 'Active', to: 'Closed' }
+    if (reason) change.close_reason = reason
+    demoRepository().applyBatch([
+      { table: 'chat_sessions', match: row => row.chat_session_id === chatSessionId, changes: { status: 'Closed', closed_at: closedAt, closed_by: userId } },
+      {
+        table: 'audit_logs',
+        row: {
+          audit_id: randomUUID(), actor_user_id: userId, action: 'chat.close', target_type: 'chat_session',
+          target_id: chatSessionId, occurred_at: closedAt, change_or_result: JSON.stringify(change),
+        },
+      },
+    ])
+    return {
+      chat_session_id: chatSessionId, chat_status: 'Closed' as const, closed_at: closedAt, closed_by: userId,
+      success_message: CLOSE_SUCCESS_MESSAGE,
+    }
+  })
 }

@@ -789,6 +789,21 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Spec issues found | spec-IAC #18–#28 (§3 row 12). |
 | Commit | `e9c45c9` docs, `57e8d24` markdown (mizaki311), `76e4ad6` tests, code commit after this entry; not pushed. |
 
+### Entry 46: 05/11 Claude Code + human — IAC round 2: F-CHAT-04 Close Chat (`015-iac-close`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (decisions C1–C10 of 2026-11-05, C2 = 500 code points); branch `015-iac-close` from `main` `65f4b5b` (not pushed); also closed PR #16 unmerged with the requested comment (superseded by #44) and updated CLAUDE.md §5 (in the docs commit) |
+| Command and argument | Spec edits spec-IAC #29–#38 + two optional FR-003 history fields (#34), asked by the human; `start_feature.py --spec docs/spec/specs/spec-IAC.md IAC --name close`, `--check`; plan (stack of 014), 8-point review (all yes), tasks (test before code, close/send/open races, C8 end to end), analyze (0 CRITICAL, 0 HIGH, 1 LOW: #35 hint wording is UI copy); tests first (`a5160f8`); code; mutation checks; full suite ×3; curl + click demo |
+| Feature and tasks | `specs/015-iac-close`, T001–T020 |
+| What the agent produced | `src/lib/iac/chat-service.ts`: `closeChat` (participant check → reason ≤ 500 code points → lock → re-check Active → chat row Closed + one `audit_logs` row `chat.close`; `closed_at` ≥ latest `sent_at` because of schema trigger `chat_message_not_closed`), `afterStatusCheck` seam in `sendMessage` and `closeChat`, history `closed_at` / `closed_by_name` (#34). Route `src/app/api/iac/chats/[id]/close/route.ts`. `src/app/messages/close-chat.ts` (`closeReasonState`, `closedNotice`) and `/messages`: "Đóng hội thoại" button, confirm panel with optional reason and counter, success message, read-only notice + hint, no reopen button. BKG unchanged (#36). Docs: checklist §1 IAC row (Close step), §3 #53 Close done, #54 AIT F-MATCH-13 not built; `03-module-status.md`; `pr-notes.md`. |
+| Existing tests changed | None. |
+| Human review | Pending. |
+| Tests | Red (`a5160f8`): `Tests 21 failed | 883 passed (904)` — `closeChat is not a function` (21), missing close route and helper module; the AC-IAC-NAV guard passed already (behaviour from round 1). Green: `Test Files 143 passed (143)`, `Tests 910 passed (910)` three runs in a row; `npm run lint` passed. Mutation (each restored, 105/105 IAC tests green after): Closed re-check removed → 3 red (close twice, API 409, race d); participant check replaced by a lookup → 5 red; `closeChat` without lock → 4 red (races a–d); `sendMessage` status check before the lock → 2 red (races a, b); BKG accepts a Closed source Chat → C8 end-to-end red. |
+| Demo (macOS, built-in browser + curl, `npm run demo:reset` before) | Curl: Agency closes `a0b57355…` with "Đã chốt lịch" → 200 (closed_by Agency user, #32 text); again → 409; send → 409; history → Closed, `closed_by_name` "Lý Gia Hân"; Provider closes `35ed4094…` without reason → 200; 501-char reason → 400; agency/ubnd/hdt/guest on a Provider Chat → 403; Agency opens from Booking `0971a1b6…` → new Chat, `is_new_session` true; audit rows `chat.close` with/without `close_reason`. Clicked: Agency Explore "Chat với Provider" → new Bát Tràng Chat → "Đóng hội thoại" → "Hủy" (still Active, checked by API) → reason "Xong" → confirm → success message, "Đã đóng bởi Lý Gia Hân lúc … — chỉ xem", hint, no composer; Explore again → new Active Chat, the old one listed Closed; Provider closes that Chat without reason → read-only "Đã đóng bởi Kiều Anh Thư"; Provider BKG134 Booking 2026-11-09 for Tràng An → BKG135 "Chat" → new Active Chat `source Booking` with the Booking Update; `runtime.json`: two Closed Explore Chats unchanged + one Active Booking Chat. Console: only `ERR_CONNECTION_REFUSED` / RSC prefetch errors logged while the dev server was stopped between the curl and browser parts, none from the Close flow. |
+| Spec issues found | spec-IAC #29–#38 (§3 row 13). |
+| Commit | `63b1cb9` docs, `a5160f8` tests, code commit after this entry; not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -809,6 +824,7 @@ is never fixed silently in code.
 | 10 | Verify, Analyze, Demo / Entry 32 (AIT round 3) | Spec silent on: relaxation values, capacity no-match, explanation content, craft taxonomy, failure screen, non-Agency access, defaults for OQ #4 fields, threshold placement, Quote/Chat navigation, "Experience preference", origin wording, Retry after a network error, "đồng" as currency. | spec-AIT #23–#31 (PR #32), #32–#35, #36–#37 (`linh/ait-fixes`). | Closed |
 | 11 | Verify, Analyze / Entry 33 (ADM) | BR-005 vs FR-006/contract "result-list filters"; BR-008 "relevant to/interacting with" undefined; the ADM time basis was already fixed in `consistency-contract.md:110` but the code ignored it. | spec-ADM #21, #22; contract:110 applied in tasks Phase 5. | Closed |
 | 12 | Plan review, Analyze / Entry 45 (IAC 014) | Spec silent on: context message sender and kind, `source` per entry point, accepted markdown, reuse context, participant name/organization, unread reset/increment, Booking-source open, 4000 counting, unknown/non-participant Chat answer, context ids in history. | spec-IAC #18–#28 (2026-11-05). | Closed |
+| 13 | Prepare / Entry 46 (IAC 015) | F-CHAT-04 silent on: who may close, where `close_reason` lives (no column), closing a Closed Chat, `success_message`, confirmation, read-only view fields, new interaction after close, BKG Booking Updates after close, notification, concurrency. | spec-IAC #29–#38 (2026-11-05). | Closed |
 
 ## 4. Agent mistakes worth remembering
 

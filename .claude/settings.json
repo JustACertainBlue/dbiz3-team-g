@@ -1,7 +1,6 @@
 {
   "permissions": {
     "deny": [
-      "Bash(git push:*)",
       "Bash(git reset --hard:*)",
       "Bash(git clean:*)",
       "Bash(git merge:*)",
@@ -16,6 +15,19 @@
       "Bash(rm:*)",
       "Bash(git commit:*)",
       "Bash(npm install:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --quiet python \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.py\""
+          }
+        ]
+      }
     ]
   }
 }

@@ -43,5 +43,8 @@ jobs:
       - name: Tests
         run: npm test
 
+      - name: Hook tests (agent push guard)
+        run: python -m unittest discover -s tests/hooks -v
+
       - name: Lint (tsc --noEmit)
         run: npm run lint

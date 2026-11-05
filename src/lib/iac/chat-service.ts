@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import type { ActorSession } from '../auth/demo-session'
 import { demoRepository } from '../demo/json-repository'
-import type { DemoRow } from '../demo/types'
+import type { BatchOperation, DemoRow } from '../demo/types'
 import { ChatError, isParticipant, requireChatActor, requireParticipant, type ChatActor } from './chat-access'
+import { chatFileStore, classifyFile, storageKeyOf, validateBatch, type IncomingFile } from './chat-files'
 import { withChatWriteLock } from './chat-lock'
 import { messageOperations, nextSentAt, pairChatPlan, pairUserIds, type ChatSource, type PairContext } from './chat-pairs'
 
@@ -12,6 +13,8 @@ import { messageOperations, nextSentAt, pairChatPlan, pairUserIds, type ChatSour
 export const MESSAGE_MAX_CODE_POINTS = 4000 // FR-002, spec-IAC #25
 export const HISTORY_PAGE_SIZE = 50 // BR-015
 const PREVIEW_CODE_POINTS = 120
+export const ATTACHMENT_PREVIEW_PREFIX = 'Tệp đính kèm: ' // #48
+export const SEED_FILE_MISSING = 'Tệp mẫu không có nội dung.' // #40
 const SYSTEM_SENDER = 'Hệ thống'
 
 type Clock = () => Date
@@ -163,10 +166,18 @@ export function listChats(session: ActorSession): ChatListEntry[] {
         ...counterpart(actor, chat),
         unread_count: Number(own?.unread_count || 0),
       }
-      if (latest?.text) entry.last_message_preview = [...latest.text].slice(0, PREVIEW_CODE_POINTS).join('')
+      const preview = latest && previewOf(latest)
+      if (preview) entry.last_message_preview = [...preview].slice(0, PREVIEW_CODE_POINTS).join('')
       if (chat.last_message_at) entry.last_message_at = chat.last_message_at
       return entry
     })
+}
+
+// spec-IAC #48: a message without text that has attachments previews as its file names.
+function previewOf(message: DemoRow): string | undefined {
+  if (message.text) return message.text
+  const names = attachmentsOf(message.message_id).map(a => a.file_name)
+  return names.length ? `${ATTACHMENT_PREVIEW_PREFIX}${names.join(', ')}` : undefined
 }
 
 function attachmentsOf(messageId: string) {
@@ -286,4 +297,89 @@ export async function closeChat(
       success_message: CLOSE_SUCCESS_MESSAGE,
     }
   })
+}
+
+export interface AttachmentOutput {
+  attachment_id: string
+  file_name: string
+  file_type: string
+  file_size: number
+}
+
+/**
+ * F-CHAT-05 send attachments (FR-005, BR-003, BR-008–BR-010, BR-021, spec-IAC #39, #41–#47):
+ * authorize → validate every file → write the files → lock: re-check Active, write one Attachment
+ * message with its stored_files / chat_attachments rows in one batch. Any failure after the files were
+ * written removes them, so a refused or failed action leaves nothing (#46).
+ */
+export async function sendAttachments(
+  session: ActorSession,
+  chatSessionId: string,
+  files: readonly IncomingFile[],
+  // Test-only seams (lesson #13): afterFilesWritten pauses between the file write and the lock;
+  // failRecords runs inside the lock right before the record write.
+  options: { now?: Clock; afterFilesWritten?: () => Promise<void>; failRecords?: () => void } = {},
+): Promise<{ message_id: string; attachments: AttachmentOutput[]; sent_at: string }> {
+  const chat = requireParticipant(session, chatSessionId)
+  const senderUserId = session.userId!
+  validateBatch(files)
+  const store = chatFileStore()
+  const planned = files.map(file => ({ file, fileId: randomUUID(), attachmentId: randomUUID(), fileType: classifyFile(file.name)! }))
+  const written: string[] = []
+  try {
+    for (const item of planned) {
+      store.write(item.fileId, item.file.bytes)
+      written.push(item.fileId)
+    }
+    if (options.afterFilesWritten) await options.afterFilesWritten()
+    return await withChatWriteLock(async () => {
+      const current = demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId)!
+      if (current.status !== 'Active') throw new ChatError('CHAT_CLOSED', 'This Chat is closed; start a new Chat to continue')
+      const sentAt = nextSentAt(chatSessionId, (options.now ?? systemClock)().toISOString())
+      const message: DemoRow = {
+        message_id: randomUUID(), chat_session_id: chatSessionId, sender_user_id: senderUserId, text: '',
+        message_kind: 'Attachment', experience_id: current.experience_id, quote_request_id: current.quote_request_id,
+        booking_id: current.booking_id, sent_at: sentAt,
+      }
+      const rows: BatchOperation[] = planned.flatMap((item): BatchOperation[] => [
+        {
+          table: 'stored_files',
+          row: {
+            file_id: item.fileId, storage_key: storageKeyOf(item.fileId), file_name: item.file.name, media_type: item.fileType,
+            file_size_bytes: String(item.file.size), width_px: '', height_px: '', uploaded_by: senderUserId, created_at: sentAt,
+          },
+        },
+        {
+          table: 'chat_attachments',
+          row: { attachment_id: item.attachmentId, message_id: message.message_id, file_id: item.fileId, uploaded_by: senderUserId, created_at: sentAt },
+        },
+      ])
+      if (options.failRecords) options.failRecords()
+      demoRepository().applyBatch([...messageOperations(chatSessionId, message, recipientOf(chat, senderUserId)), ...rows])
+      return {
+        message_id: message.message_id,
+        attachments: planned.map(item => ({ attachment_id: item.attachmentId, file_name: item.file.name, file_type: item.fileType, file_size: item.file.size })),
+        sent_at: sentAt,
+      }
+    })
+  } catch (error) {
+    for (const fileId of written) store.remove(fileId)
+    throw error
+  }
+}
+
+/**
+ * F-CHAT-05 download (BR-011, BR-020, spec-IAC #40): participants only, Active or Closed Chat; an
+ * attachment outside this Chat answers like an unknown one (403, #27); no stored content → 404.
+ */
+export async function readAttachment(session: ActorSession, chatSessionId: string, attachmentId: string) {
+  requireParticipant(session, chatSessionId)
+  const repository = demoRepository()
+  const link = repository.find('chat_attachments', row => row.attachment_id === attachmentId)
+  const message = link && repository.find('chat_messages', row => row.message_id === link.message_id)
+  if (!link || !message || message.chat_session_id !== chatSessionId) throw new ChatError('FORBIDDEN', 'Chat access denied')
+  const stored = repository.find('stored_files', row => row.file_id === link.file_id)
+  const bytes = stored ? chatFileStore().read(stored.file_id) : null
+  if (!stored || !bytes) throw new ChatError('NOT_FOUND', SEED_FILE_MISSING)
+  return { file_name: stored.file_name, file_type: stored.media_type, bytes }
 }

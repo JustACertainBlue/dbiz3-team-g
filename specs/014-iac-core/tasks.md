@@ -101,7 +101,7 @@ All values from `data/seed/` through the volatile repository (`NODE_ENV=test`, `
 ### Existing-test edits (before the code they relate to)
 
 - [ ] T026 [US1] **[approved H1]** In `tests/unit/chat-markdown.test.ts` (from PR #16) replace the `_text_` expectation of "renders italic markdown *text* or _text_" by "`_text_` stays literal" (#20); add cases: `<b>x</b>` → `&lt;b&gt;x&lt;/b&gt;`, `***x***` and unclosed `**x` render no broken tag, `# heading` / `[a](b)` / `` `code` `` shown as text; log the edit in `docs/build/build-log.md`
-- [ ] T027 [US1] **[approved H2]** In `tests/integration/ait-exp-br-gaps.test.ts:71–102` add `await` to `createQuoteHandoff` / `createChatHandoff` and use `await expect(…).rejects.toThrow(…)` instead of `expect(() => …).toThrow(…)`; expected values unchanged; log it
+- [ ] T027 [US1] **[approved H2]** In `tests/integration/ait-exp-br-gaps.test.ts:71–102` add `await` to `createQuoteHandoff` / `createChatHandoff` and use `await expect(…).rejects.toThrow(…)` instead of `expect(() => …).toThrow(…)`; expected values unchanged; same `await` edit in `tests/integration/exp-handoff-signal.test.ts:87–89` (third synchronous caller, found while writing the tests; same H2 change); log it
 - [ ] T028 [US1] **[approved H2]** In `tests/integration/demo-functional-flow.test.ts:19–38` add `await`; replace `listConversations(…).find(…)` by `listChats` + `getChatHistory` and `sendConversationMessage` by `sendMessage` from `src/lib/iac/chat-service.ts`; keep the asserted values (same Quote / Chat ids, Experience context `c9f9faf7…`, first message contains "Nặn gốm thủ công", reply text visible to both participants, no Booking); log it
 
 ### Tests first (Phase B)

@@ -14,7 +14,7 @@ import { POST as bkgCreate } from '@/app/api/bkg/bookings/route'
 import { GET as prfAgencyGet } from '@/app/api/prf/agency/[agencyId]/route'
 import { PATCH as prfProviderPatch } from '@/app/api/prf/provider/[providerId]/route'
 import { POST as expHandoff } from '@/app/api/demo/handoff/route'
-import { GET as expConversations } from '@/app/api/demo/conversations/route'
+import { GET as iacChats } from '@/app/api/iac/chats/route'
 
 type Handler = (request: never, context: never) => Promise<Response> | Response
 type Call = { status: number; body: unknown }
@@ -76,14 +76,14 @@ describe('fix(auth) | x-mock-session without cookie is a Guest', () => {
     expect(snapshot()).toBe(before)
   })
 
-  it('EXP: forged Agency on POST /api/demo/handoff and GET /api/demo/conversations = Guest', async () => {
+  it('EXP/IAC: forged Agency on POST /api/demo/handoff and GET /api/iac/chats = Guest', async () => {
     const handoff = { action: 'quote', experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69' }
     const guestHandoff = await call(expHandoff, '/api/demo/handoff', asGuest, { method: 'POST', body: handoff })
     const before = snapshot()
     expect(await call(expHandoff, '/api/demo/handoff', forged('agency'), { method: 'POST', body: handoff })).toEqual(guestHandoff)
     expect(snapshot()).toBe(before)
 
-    const guestConversations = await call(expConversations, '/api/demo/conversations', asGuest)
-    expect(await call(expConversations, '/api/demo/conversations', forged('agency'))).toEqual(guestConversations)
+    const guestConversations = await call(iacChats, '/api/iac/chats', asGuest)
+    expect(await call(iacChats, '/api/iac/chats', forged('agency'))).toEqual(guestConversations)
   })
 })

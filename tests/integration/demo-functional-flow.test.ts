@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
-import { createChatHandoff, createQuoteHandoff, listConversations, sendConversationMessage } from '@/lib/demo/commercial-handoff-service'
+import { createChatHandoff, createQuoteHandoff } from '@/lib/demo/commercial-handoff-service'
+import { getChatHistory, listChats, sendMessage } from '@/lib/iac/chat-service'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { createExperience, deleteExperience } from '@/lib/prf/experience-service'
 import { reviewProvider } from '@/lib/prf/provider-service'
@@ -13,31 +14,34 @@ const pendingProviderId = '3a5d2ffc-79fa-5b75-a1e6-82beea3bed59'
 describe('functional demo foundation', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('creates one Quote, reuses the pair Chat, keeps Experience context, and never creates a Booking', () => {
+  it('creates one Quote, reuses the pair Chat, keeps Experience context, and never creates a Booking', async () => {
     const repository = demoRepository()
     const bookingsBefore = repository.all('bookings').length
-    const first = createQuoteHandoff(DEMO_IDENTITIES.agency, experienceId)
-    const second = createQuoteHandoff(DEMO_IDENTITIES.agency, experienceId)
+    const first = await createQuoteHandoff(DEMO_IDENTITIES.agency, experienceId)
+    const second = await createQuoteHandoff(DEMO_IDENTITIES.agency, experienceId)
 
     expect(first.is_new_request).toBe(true)
     expect(second).toMatchObject({ quote_request_id: first.quote_request_id, chat_session_id: first.chat_session_id, is_new_request: false })
     expect(repository.all('bookings')).toHaveLength(bookingsBefore)
-    const conversation = listConversations(DEMO_IDENTITIES.agency).find(row => row.chat_session_id === first.chat_session_id)
+    expect(listChats(DEMO_IDENTITIES.agency).some(row => row.chat_session_id === first.chat_session_id)).toBe(true)
+    const conversation = repository.find('chat_sessions', row => row.chat_session_id === first.chat_session_id)
     expect(conversation).toMatchObject({ experience_id: experienceId, quote_request_id: first.quote_request_id })
-    expect(conversation?.messages[0].text).toContain('Nặn gốm thủ công')
+    const history = await getChatHistory(DEMO_IDENTITIES.agency, first.chat_session_id)
+    expect(history.message_history[0].text).toContain('Nặn gốm thủ công')
   })
 
-  it('opens direct Chat without creating a Quote and persists a reply for both participants', () => {
+  it('opens direct Chat without creating a Quote and persists a reply for both participants', async () => {
     const repository = demoRepository()
     const quotesBefore = repository.all('quote_requests').length
-    const handoff = createChatHandoff(DEMO_IDENTITIES.agency, experienceId)
-    sendConversationMessage(DEMO_IDENTITIES.provider, handoff.chat_session_id, 'Xưởng đã nhận được yêu cầu.')
+    const handoff = await createChatHandoff(DEMO_IDENTITIES.agency, experienceId)
+    await sendMessage(DEMO_IDENTITIES.provider, handoff.chat_session_id, 'Xưởng đã nhận được yêu cầu.')
 
     expect(repository.all('quote_requests')).toHaveLength(quotesBefore)
-    const agencyView = listConversations(DEMO_IDENTITIES.agency).find(row => row.chat_session_id === handoff.chat_session_id)
-    const providerView = listConversations(DEMO_IDENTITIES.provider).find(row => row.chat_session_id === handoff.chat_session_id)
-    expect(agencyView?.messages.at(-1)?.text).toBe('Xưởng đã nhận được yêu cầu.')
-    expect(providerView?.experience_id).toBe(experienceId)
+    const agencyView = await getChatHistory(DEMO_IDENTITIES.agency, handoff.chat_session_id)
+    const providerView = await getChatHistory(DEMO_IDENTITIES.provider, handoff.chat_session_id)
+    expect(agencyView.message_history.at(-1)?.text).toBe('Xưởng đã nhận được yêu cầu.')
+    expect(providerView.message_history.at(-1)?.text).toBe('Xưởng đã nhận được yêu cầu.')
+    expect(repository.find('chat_sessions', row => row.chat_session_id === handoff.chat_session_id)?.experience_id).toBe(experienceId)
   })
 
   it('persists Provider Experience CRUD and Explore reads the same records', async () => {

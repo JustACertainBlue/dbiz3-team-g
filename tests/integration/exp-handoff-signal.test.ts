@@ -84,9 +84,9 @@ describe('Slice C | FR-007 signal from the live handoff (spec-EXP #29, #32, #33)
 describe('Slice C | FR-011 Request Quote hidden after use (Q8)', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('hasQuoteRequest is false before and true after this Agency asked for this Experience', () => {
+  it('hasQuoteRequest is false before and true after this Agency asked for this Experience', async () => {
     expect(hasQuoteRequest(DEMO_IDENTITIES.agency, EXPERIENCE)).toBe(false)
-    createQuoteHandoff(DEMO_IDENTITIES.agency, EXPERIENCE)
+    await createQuoteHandoff(DEMO_IDENTITIES.agency, EXPERIENCE)
     expect(hasQuoteRequest(DEMO_IDENTITIES.agency, EXPERIENCE)).toBe(true)
     expect(hasQuoteRequest(DEMO_IDENTITIES.guest, EXPERIENCE)).toBe(false)
   })

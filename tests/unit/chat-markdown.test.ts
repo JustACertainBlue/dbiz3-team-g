@@ -14,12 +14,20 @@ describe('T012 | Markdown Rendering & Sanitization (BR-007)', () => {
     expect(result).toBe('We confirm <strong>group size: 15</strong> for the tour')
   })
 
-  it('renders italic markdown *text* or _text_ to <em>text</em>', () => {
+  it('renders italic markdown *text* to <em>text</em>; _text_ stays literal (spec-IAC #20)', () => {
     const asterisks = 'Available on *Saturday morning*'
     expect(renderChatMarkdown(asterisks)).toBe('Available on <em>Saturday morning</em>')
 
     const underscores = 'Available on _Saturday morning_'
-    expect(renderChatMarkdown(underscores)).toBe('Available on <em>Saturday morning</em>')
+    expect(renderChatMarkdown(underscores)).toBe('Available on _Saturday morning_')
+  })
+
+  it('shows every other markup as text (spec-IAC #20)', () => {
+    expect(renderChatMarkdown('<b>x</b>')).toBe('&lt;b&gt;x&lt;/b&gt;')
+    expect(renderChatMarkdown('# heading [a](b) `code`')).toBe('# heading [a](b) `code`')
+    const unclosed = renderChatMarkdown('**not closed')
+    expect(unclosed).not.toContain('<strong>')
+    expect(unclosed).not.toContain('<em>')
   })
 
   it('renders combined bold and italic', () => {

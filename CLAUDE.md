@@ -76,20 +76,21 @@ Details, arguments to paste, and the MVP Alpha gates G1–G8: `docs/build/claude
 
 ## 5. Where we are now (update this section when it changes)
 
-- Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in.
-State checked on 5 Nov 2026 at `main` = `71429cc` (PR #41; details: `03-module-status.md`).
-`npm test` on `main` `71429cc`: 112 files, 745 tests pass; lint passes; CI run #12 (windows-latest +
-macos-latest) green. Branch `linh/g3-audit` (not pushed): 118 files, 782 tests.
-- **MVP Alpha checklist** on `main`: G1, G2, G4, G5, G7, G8 ticked; **G3 open** (exceptions in §2:
-  EXP BR-014 by decision; PRF BR-014, PRF BR-017, AIT BR-015 where the code breaks the rule — checklist
-  §3 #44–#46; PRF BR-013 UI-only; partial BRs) and **G6 open by decision** (no merged PR had a
-  non-author review). No tag. Full BR→test table: `docs/build/g3-br-audit.md`. The human works alone
-  ("tự làm hết, không nhờ nhóm"): no messages to the team.
-- **Since 4 Nov**: CI `.github/workflows/ci.yml` (PR #36, #37); PRF slice A (#38: unchanged Save,
-  PRF128 from data, spec-PRF #31–#32), A2 (#39: Request Revision 409, PRF127 from data, #33), B (#40:
-  Experience images BR-008/009/015, lightbox BR-016, pricing #34); EXP slice C (#41: FR-007 signal from
-  the live handoff, FR-011 hiding, spec-EXP #29/#32/#33). All merged by the human without review.
-  Stop the dev server before `npm run demo:reset`: it keeps the data in memory and writes it back.
+- Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in. The tag
+  `mvp-alpha` already exists (created by Ng Thu on `1004f50`): keep it, do not move it; a new tag
+  (e.g. `alpha-r2`) only if the human asks.
+State checked on 5 Nov 2026 at `main` = `65f4b5b` (PR #44; details: `03-module-status.md`).
+`npm test` on `main` `65f4b5b`: 137 files, 882 tests pass; lint passes; CI run #18 (windows-latest +
+macos-latest) green.
+- **MVP Alpha checklist** on `main`: G1, G2, G4, G5, G7, G8 ticked; **G3 open** (EXP BR-014 by
+  decision; PRF BR-013 UI-only; partial BRs; P1 acceptance scenarios not re-audited) and **G6 open by
+  decision** (no merged PR had a non-author review). Full BR→test table: `docs/build/g3-br-audit.md`.
+  The human works alone ("tự làm hết, không nhờ nhóm"): no messages to the team unless asked.
+- **Since 4 Nov**: CI (PR #36, #37); PRF slices A, A2, B (#38–#40); EXP slice C (#41); G3 audit (#42);
+  br-fixes (#43: AIT BR-015, PRF BR-017, PRF BR-014, PRF019 link; checklist §3 #44–#46, #48 closed);
+  IAC round 1 (#44, `specs/014-iac-core`: F-CHAT-01..03, spec-IAC #18–#28). All merged by the human
+  without review. Stop the dev server before `npm run demo:reset`: it keeps the data in memory and
+  writes it back.
 
 - **On `main`**: AIT (`specs/001-ait-core`, PR #6 merged as `3e0e047`), PRF
   (`specs/002-prf-core`, PR #8 squash-merged as `222216d`), EXP (`specs/001-exp-core`, merged
@@ -99,12 +100,13 @@ macos-latest) green. Branch `linh/g3-audit` (not pushed): 118 files, 782 tests.
   BKG US-1 + US-2 (`specs/013-bkg-schedule`, PR #28 as `fa4d9d2`), BKG spec #57–#82 (PR #21, #24,
   #26, #27), AIT round 3 (PR #33 as `5d0131a`; spec-AIT #23–#37), ADM (`specs/003-adm-core`, ported
   in PR #34 as `7c1fde6`; spec-ADM #21–#22; User Management moved to AUT), fix(auth) (PR #35 as
-  `deaf3ab`: `demoSessionFromRequest` reads only the cookie), PRF/EXP slices A–C (PR #38–#41).
-  PR #33–#41 were merged without a GitHub review.
+  `deaf3ab`: `demoSessionFromRequest` reads only the cookie), PRF/EXP slices A–C (PR #38–#41),
+  G3 audit (PR #42), br-fixes (PR #43 as `f7d2a54`), IAC round 1 (PR #44 as `65f4b5b`).
+  PR #33–#44 were merged without a GitHub review.
 - **Not merged**: AUT (`001-aut-registration`, PR #11; stack drift Next 16 / React 19 / Vitest 5 /
-  `pg`), IAC (`003-iac-core`, PR #16: US-1 chat core, authenticates from client headers
-  `x-mock-user-id` / `x-mock-role`), `member/spec-consistency`, `ngthu/update-specs` (leftovers that
-  would overwrite spec-BKG and the seed).
+  `pg`), `member/spec-consistency`, `ngthu/update-specs` (leftovers that would overwrite spec-BKG and
+  the seed). PR #16 (`003-iac-core`, mizaki311) was closed unmerged on 5 Nov as superseded by #44;
+  the branch is kept.
 - **BKG**: owned by the human running this session. **Code complete on `main` `fa4d9d2`**: all six
   stories US-1..US-6 (F-SCHED-01..10) in four rounds — `specs/004-bkg-core` (US-4, PR #17),
   `specs/011-bkg-manage` (US-5 + US-3, PR #20, #22), `specs/012-bkg-list` (US-6, PR #25),
@@ -114,9 +116,11 @@ macos-latest) green. Branch `linh/g3-audit` (not pushed): 118 files, 782 tests.
   AIT/PRF/EXP owners: `applyBatch` in `src/lib/demo/json-repository.ts`; PRF owner: Provider/Agency
   navigation links; EXP owner: the "Xem lịch trống" link on the Explore Provider page). Read `docs/build/claude-context/04-bkg-brief.md` and
   `specs/011-bkg-manage/tasks.md` before doing anything on BKG.
-- **IAC**: not on `main` yet; `main` has `src/lib/demo/commercial-handoff-service.ts` and the
-  shared `/messages` page (Quote/Chat handoff from Explore and AIT). PR #16 (`003-iac-core`) adds the
-  US-1 chat core.
+- **IAC**: round 1 on `main` (`specs/014-iac-core`, PR #44): one shared chat service `src/lib/iac/*`
+  used by Explore, AIT (`commercial-handoff-service.ts`) and BKG (`agency-sync.ts`) — at most one
+  Active Chat per Agency–Provider pair, Chat writes share `withBookingWriteLock`; routes
+  `/api/iac/chats…`; `/messages` = COM048 / COM065. Not built: F-CHAT-04 Close (next: `015-iac-close`),
+  F-CHAT-05 attachments (`016-iac-attach`), Provider start from a Quote Request (checklist §3 #50–#53).
 - **Auth**: the server-side demo session comes only from the `hab_demo_account` cookie. PR #35
   (`linh/auth-no-header`, merged as `deaf3ab`) removed the last fallback that trusted a client `x-mock-session` header
   (checklist §3 #30); never add client-supplied identity headers again.

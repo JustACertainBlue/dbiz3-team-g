@@ -22,7 +22,8 @@ export async function POST(
     if (!experienceId) {
       return NextResponse.json({ error: 'experience_id is required' }, { status: 400 })
     }
-    return NextResponse.json(createChatHandoff(actor, experienceId), { status: 200 })
+    // spec-IAC #19: source AI Matching with the checked Matching Session.
+    return NextResponse.json(await createChatHandoff(actor, experienceId, { source: 'AI Matching', matchingSessionId: params.id }), { status: 200 })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal error' }, { status: err instanceof HandoffError ? err.statusCode : 500 })
   }

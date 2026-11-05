@@ -4,21 +4,26 @@ import { createChatHandoff, createQuoteHandoff, HandoffError, SOURCE_CONTEXTS, t
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as { action?: 'quote' | 'chat'; experience_id?: string; source_context?: string }
+    const body = await request.json() as { action?: 'quote' | 'chat'; experience_id?: string; source_context?: string; chat_source?: string }
     if (!body.experience_id || (body.action !== 'quote' && body.action !== 'chat')) {
       return NextResponse.json({ error: { code: 'INVALID_HANDOFF', message: 'action and experience_id are required' } }, { status: 400 })
     }
     if (body.source_context !== undefined && !(SOURCE_CONTEXTS as readonly string[]).includes(body.source_context)) {
       return NextResponse.json({ error: { code: 'INVALID_HANDOFF', message: 'source_context must be Card or Detail Page (FR-007)' } }, { status: 400 })
     }
+    // spec-IAC #19: Explore Experience card/detail → Explore (default); Explore Provider page → Provider Profile.
+    if (body.chat_source !== undefined && body.chat_source !== 'Explore' && body.chat_source !== 'Provider Profile') {
+      return NextResponse.json({ error: { code: 'INVALID_HANDOFF', message: 'chat_source must be Explore or Provider Profile' } }, { status: 400 })
+    }
     const session = demoSessionFromRequest(request)
     // FR-007 (spec-EXP #29): the strong action is logged in the Agency's current Explore session.
     const signal = body.source_context
       ? { exploreSessionId: request.cookies.get('explore_session')?.value, sourceContext: body.source_context as SourceContext }
       : undefined
+    const context = { source: (body.chat_source ?? 'Explore') as 'Explore' | 'Provider Profile', signal }
     const result = body.action === 'quote'
-      ? createQuoteHandoff(session, body.experience_id, signal)
-      : createChatHandoff(session, body.experience_id, signal)
+      ? await createQuoteHandoff(session, body.experience_id, context)
+      : await createChatHandoff(session, body.experience_id, context)
     return NextResponse.json({ data: result }, { status: body.action === 'quote' ? 201 : 200 })
   } catch (error) {
     const status = error instanceof HandoffError ? error.statusCode : 500

@@ -386,7 +386,7 @@ export default function AddExperiencePage({
                   type="number"
                   required
                   min={1000}
-                  step={5000}
+                  step="any"
                   value={formData.price_per_person}
                   onChange={e => setFormData({ ...formData, price_per_person: Number(e.target.value) })}
                   className="prf-input"

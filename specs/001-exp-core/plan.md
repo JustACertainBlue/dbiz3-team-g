@@ -75,3 +75,20 @@ See [data-model.md](data-model.md) for entity mappings and unresolved persistenc
 | Media binaries | `stored_files.csv` contains metadata and keys but the referenced image binaries are absent; UI shows a deliberate placeholder. A real media store is needed to satisfy the final photo rendering requirement. |
 | Quote/Chat integration | Handoff permission and reuse rules are tested through interfaces only; no Auth or Chat implementation is connected. |
 | Ranking operations | Agency ranking runs locally. Weekly scheduling, atomic activation and rollback are only pure rules, not a running worker. |
+
+## As built (5 November 2026)
+
+This plan was written for the 13–14 October prototype. What runs on `main` now differs as follows; the
+sections above are kept for history.
+
+| Plan said | As built |
+|---|---|
+| Reads `data/seed/*.csv` directly | All modules share the JSON runtime `.demo-data/runtime.json` (`src/lib/demo/json-repository.ts`, `npm run demo:seed` / `demo:reset`); `src/lib/explore/seed-repository.ts` reads its snapshot. Explore sessions, events and weights stay in memory (`demo-runtime.ts`). |
+| Development Agency switch "Dùng doanh nghiệp mẫu" | Removed; roles come from the `RoleSwitcher` component and the server-side cookie `hab_demo_account` (`src/lib/auth/demo-session.ts`). |
+| No Auth or Chat connected; Quote/Chat through an interface (`handoff.ts`) | Live Quote/Chat in `src/lib/demo/commercial-handoff-service.ts` via `POST /api/demo/handoff` (Experience and Provider pages), shared with AIT; `handoff.ts` is not used by the running app. |
+| FR-007 signal only as pure logic | The live handoff logs `request_quote` / `open_chat` with `source_context` in `filter_values` (spec-EXP #29, #32, #33). |
+| FR-011 hiding not built | Request Quote is replaced by a note once the Agency sent a Quote for the Experience (`hasQuoteRequest`). |
+
+Not built in the Alpha: BR-014 / F-EXPLORE-17 ranking Draft, promotion, rollback and audit (Should, P2;
+checklist §3 row 41).
+

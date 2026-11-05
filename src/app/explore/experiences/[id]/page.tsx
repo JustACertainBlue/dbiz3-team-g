@@ -8,6 +8,7 @@ import ExploreTracker from '../../ExploreTracker';
 import { cookies } from 'next/headers';
 import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../../../lib/auth/demo-session';
 import ExperienceActions from '../../ExperienceActions';
+import { hasQuoteRequest } from '../../../../lib/demo/commercial-handoff-service';
 
 function slotLabel(value: string) {
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
@@ -49,7 +50,7 @@ export default function ExperienceEntry({ params }: { params: { id: string } }) 
             : <><div className="locked-rate"><span>◇</span><strong>Giá B2B được bảo vệ</strong></div><p>Đăng nhập bằng tài khoản Agency để xem giá hợp đồng và điều kiện hợp tác.</p></>}
           <div className="access-facts"><span><small>Sức chứa</small><strong>Tối đa {card.capacity.max_pax} khách</strong></span><span><small>Thời lượng</small><strong>{card.duration_minutes} phút</strong></span></div>
           {isAgency
-            ? <ExperienceActions experienceId={card.id} />
+            ? <ExperienceActions experienceId={card.id} quoteSent={hasQuoteRequest(session, card.id)} />
             : <div className="stack-actions"><Link className="button" href="/login">Đăng nhập để liên hệ</Link><Link className="button button--secondary" href="/login">Đăng ký Agency</Link></div>}
         </aside>
       </section>

@@ -1,23 +1,25 @@
-# EXP implementation status — 14 October 2026
+# EXP implementation status — 14 October 2026, updated 5 November 2026 (slice C, `linh/exp-fixes`)
 
 The requested scope is US-1 through US-4 and FR-001 through FR-017. This file distinguishes running behavior from tested domain logic and missing integrations. Canonical requirements remain in `docs/spec/specs/spec-EXP.md`.
 
 | Requirement | Current result | Remaining before calling it complete |
 |---|---|---|
-| FR-001–002 / US-1 | Verified seed catalog, pagination, category filter, Guest/Agency visibility, quick preview and empty state run locally. | Agency Quote/Chat in US-1 AC2 depends on Auth/Chat. Media binaries are unavailable. |
-| FR-003 / US-3–4 | Provider and Experience pages, role-specific price/contact, operating hours, public available/blocked periods, discounts, policies and other-craft suggestions run locally. | Real gallery media, complete optional included/excluded content and protected handoff are unavailable. |
+| FR-001–002 / US-1 | Verified seed catalog, pagination, category filter, Guest/Agency visibility, quick preview and empty state run locally. | Agency Quote/Chat (US-1 AC2) run on the Experience detail and Provider pages through `/api/demo/handoff` (demo session, not AUT). Cards have no Quote/Chat buttons yet. Media binaries are unavailable. |
+| FR-003 / US-3–4 | Provider and Experience pages, role-specific price/contact, operating hours, public available/blocked periods, discounts, policies and other-craft suggestions run locally. | Real gallery media and optional included/excluded content are unavailable. |
 | FR-004 | Same-Provider and same-craft related Experiences run locally. | `Nearby` within 20 km cannot be calculated: `data/` has no village coordinates. |
 | FR-005 | Local demo records click, preview, detail, filter and scroll with event IDs; Guest opt-in and duplicate protection are tested. | Durable PostgreSQL writes and real Auth identity are not connected. |
 | FR-006 | The local detail page now reports its elapsed visit time once on navigation or page/tab hide; the 60-second/two-Experience implicit-signal rule is tested as domain logic. | Full entered/exited time, scroll depth, sections viewed and next-action record cannot be stored under the current data model. The user chose to keep `data/` unchanged. Browser exit delivery and durable persistence still need integration verification. |
-| FR-007 | Strong-action types and the Auth/Chat integration port are defined and tested. | No live Quote/Chat action can emit the signal until adapters exist; `source_context` has no explicit physical column. |
+| FR-007 | The live handoff (`src/lib/demo/commercial-handoff-service.ts`) logs `request_quote` (new Quote only, #32) and `open_chat` in the Agency's Explore session with `filter_values.source_context` (#29, #33); the response returns `action_signal_log_id` (`tests/integration/exp-handoff-signal.test.ts`). | Explore sessions and interactions are in the dev server's memory, not PostgreSQL; a handoff without an Explore session logs nothing. Card-level actions (`source_context` = Card) do not exist yet. |
 | FR-008–010 / US-2 | Session pattern, explicit/implicit signals, Agency-specific weights, pinned ranking version, re-ranking and exposure snapshots work in the local in-memory demo. | Shared profile and exposure history are not persisted in PostgreSQL; historical decay belongs to MATCH. |
-| FR-011–012 | Quote/Chat handoff service tests permission first, once-per-Agency/Experience quote reuse, pair-chat reuse, contextual message and no Booking creation. | Actual F-AUTH-16, Quote repository and F-CHAT-01 implementations are external integration points; the UI marks Agency handoff unavailable. |
+| FR-011–012 | Quote/Chat handoff service tests permission first, once-per-Agency/Experience quote reuse, pair-chat reuse, contextual message and no Booking creation. | Live in the demo: Quote reuse, pair Chat, contextual message, no Booking, Request Quote hidden after use (FR-011, `hasQuoteRequest`). Open: the permission check is the demo role (not F-AUTH-16); the first message has no Agency information or source context (FR-012); `src/lib/explore/handoff.ts` and its test describe a port that the live path does not use. |
 | FR-013–016 | Aggregate metrics, the specified 0–100 quality formula, weekly KPI arithmetic and replay logic are covered by unit tests. | No scheduled aggregation or durable KPI time series; retention and search-vs-scroll Scenario B need additional event sources. |
 | FR-017 | Candidate weight bounds, 30-session/5-point gates and rollback threshold are tested as pure logic. | No weekly worker, atomic Draft→Active transaction, audit write or next-cohort live rollback is running. |
 
 The development-only deterministic ranking rule uses the Active seed version's `relevance` and `quality` weights. Relevance matches Agency `category:`/`provider:` preference keys; quality is normalized from historical seed interactions. Current-session interactions do not immediately alter another Agency's ranking. This is the code-level interpretation the user approved for this prototype, not a new data/spec contract.
 
 The source spec's SC-011 now agrees with BR-015 and closed question 23: System promotion is automatic after the gates pass; there is no Admin activation path. Open questions 28–31 record the unresolved detail-visit, strong-action source, Nearby-coordinate and included/excluded-content mappings. No `data/` file was changed.
+
+Slice C (5 Nov 2026) is recorded in build-log Entry 42; its tests were written and seen failing before the code.
 
 The code is a working EXP prototype, not a deploy-ready or fully accepted implementation of all 17 FRs. Completing the remaining items requires Auth/Chat integration, durable PostgreSQL storage, a scheduler, media and the explicitly deferred data-model decisions.
 

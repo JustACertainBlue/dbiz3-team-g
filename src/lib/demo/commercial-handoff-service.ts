@@ -2,6 +2,35 @@ import { randomUUID } from 'node:crypto'
 import type { ActorSession } from '../auth/demo-session'
 import { demoRepository } from './json-repository'
 import type { DemoRow } from './types'
+import { demoRuntime } from '../explore/demo-runtime'
+
+/** FR-007 source of a strong action (spec-EXP #29, #33). */
+export const SOURCE_CONTEXTS = ['Card', 'Detail Page'] as const
+export type SourceContext = typeof SOURCE_CONTEXTS[number]
+
+/** Explore context of a handoff started from EXP screens; AIT handoffs pass none. */
+export interface ExploreSignal {
+  exploreSessionId?: string
+  sourceContext: SourceContext
+}
+
+/**
+ * FR-007: record the strong action in the Agency's current Explore session, with
+ * filter_values = { source_context } (spec-EXP #29). Returns the interaction id, or null when there is
+ * no Explore session or the runtime does not log it (tracking scope, Experience not in the catalog).
+ */
+function logStrongAction(signal: ExploreSignal | undefined, action: 'request_quote' | 'open_chat', experienceId: string): string | null {
+  if (!signal?.exploreSessionId) return null
+  try {
+    const result = demoRuntime().recordEvent(signal.exploreSessionId, {
+      event_id: randomUUID(), action_type: action, experience_id: experienceId,
+      filter_values: { source_context: signal.sourceContext },
+    })
+    return result.logged ? result.interaction_log_id : null
+  } catch {
+    return null
+  }
+}
 
 export class HandoffError extends Error {
   constructor(message: string, public readonly statusCode = 400) {
@@ -64,7 +93,7 @@ function sendContextMessage(chatId: string, senderUserId: string, experience: De
   return message
 }
 
-export function createQuoteHandoff(session: ActorSession, experienceId: string) {
+export function createQuoteHandoff(session: ActorSession, experienceId: string, signal?: ExploreSignal) {
   requireAgency(session)
   const repository = demoRepository()
   const { experience, provider, providerUserId } = experienceContext(experienceId)
@@ -80,10 +109,12 @@ export function createQuoteHandoff(session: ActorSession, experienceId: string) 
   const chat = openPairChat(session.agencyId, provider.provider_id, experienceId, quote.quote_request_id, session.userId, providerUserId)
   if (isNewRequest) sendContextMessage(chat.chat_session_id, session.userId, experience, quote.quote_request_id, 'quote')
   if (repository.all('bookings').length !== bookingsBefore) throw new HandoffError('Quote handoff must not create a Booking', 500)
-  return { quote_request_id: quote.quote_request_id, chat_session_id: chat.chat_session_id, is_new_request: isNewRequest }
+  // spec-EXP #32: only a new Quote Request logs the FR-007 signal.
+  const actionSignalLogId = isNewRequest ? logStrongAction(signal, 'request_quote', experienceId) : null
+  return { quote_request_id: quote.quote_request_id, chat_session_id: chat.chat_session_id, is_new_request: isNewRequest, action_signal_log_id: actionSignalLogId }
 }
 
-export function createChatHandoff(session: ActorSession, experienceId: string) {
+export function createChatHandoff(session: ActorSession, experienceId: string, signal?: ExploreSignal) {
   requireAgency(session)
   const repository = demoRepository()
   const { experience, provider, providerUserId } = experienceContext(experienceId)
@@ -91,7 +122,13 @@ export function createChatHandoff(session: ActorSession, experienceId: string) {
   const chat = openPairChat(session.agencyId, provider.provider_id, experienceId, '', session.userId, providerUserId)
   const message = sendContextMessage(chat.chat_session_id, session.userId, experience, '', 'chat')
   if (repository.all('bookings').length !== bookingsBefore) throw new HandoffError('Chat handoff must not create a Booking', 500)
-  return { chat_session_id: chat.chat_session_id, initial_message_id: message.message_id }
+  return { chat_session_id: chat.chat_session_id, initial_message_id: message.message_id, action_signal_log_id: logStrongAction(signal, 'open_chat', experienceId) }
+}
+
+/** FR-011: the Agency already sent a Quote Request for this Experience (Request Quote is hidden). */
+export function hasQuoteRequest(session: ActorSession, experienceId: string): boolean {
+  if (!session.authenticated || session.role !== 'TourAgency' || !session.agencyId) return false
+  return Boolean(demoRepository().find('quote_requests', row => row.agency_id === session.agencyId && row.experience_id === experienceId))
 }
 
 export function listConversations(session: ActorSession) {

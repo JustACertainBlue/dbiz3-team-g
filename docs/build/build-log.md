@@ -760,6 +760,20 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Spec issues found | ADM BR-019 day count (end date excluded) not defined in spec-ADM. Code that breaks rules (no fix in this audit): PRF BR-014, PRF BR-017, AIT BR-015 (§3 #44–#46). Broken PRF019 link `/matching` (§3 #48). |
 | Commit | see `git log` on `linh/g3-audit`; not pushed. |
 
+### Entry 44: 05/11 Claude Code + human — br-fixes: AIT BR-015, PRF BR-017, PRF BR-014, PRF019 link (`linh/br-fixes`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu before IAC; branch `linh/br-fixes` from `main` `387a656` (not pushed) |
+| Command and argument | Test first (`97cbab0`), then code; mutation checks; full suite; curl and click demo |
+| Feature and tasks | AIT BR-001/BR-015 (FR-016), PRF BR-017 (FR-002), PRF BR-014 (FR-006), PRF019 link; checklist §3 #44, #45, #46, #48 |
+| What the agent produced | `src/app/api/ait/preferences/[agencyId]/route.ts`: `denied()` — Guest 401, other roles / other Agencies 403 (GET and POST). `src/lib/prf/agency-service.ts`: a changed Company Name or Tax ID is stored as an `agency_major_change_requests` row (Pending Review) and not written to `agency_profiles`. `src/lib/prf/experience-service.ts`: the lock uses real On hold/Booked Bookings (fixture id kept for the old unit tests), adds `experience_location_address`, rejects only changed values (numbers compared as numbers), error "Active Booking Field Locked" (FR-006 error name). `src/app/agency/[agencyId]/page.tsx`: link `/matching` → `/ai-matching`. Docs: checklist §3 #44–#46, #48 closed, #49 added (HDT review flow not built), G3 status; `docs/build/g3-br-audit.md` updated. |
+| Human review | Pending. |
+| Tests | Red first (`97cbab0`): AIT 5 failing (every caller got 200); PRF 6 failing (major values written at once; four locked fields accepted on `c9f9faf7`, which has two Booked seed Bookings). Two PRF tests first failed for the wrong reason (the seed already has a reviewed request for Tràng An) and were changed to count only new requests before the code. Green: `Test Files 120 passed (120)`, `Tests 799 passed (799)`; `npm run lint` passed. One test (unchanged locked values allowed) was added together with the numeric comparison and proven by mutation. Mutation (each reverted, files byte-identical): other Agency allowed → red; Guest allowed → red; name written at once → red; no request row → 2 red; lock by fixture id only → 4 red; location not locked → red; string comparison → red. |
+| Demo (macOS, dev server, data reset before and after) | Curl: preferences GET own as guest 401, provider 403, agency 200; other Agency 403. PATCH Agency `company_name` → 200 `requires_hdt_rereview: true`; runtime `agency_profiles.company_name` still "Công ty Du lịch Tràng An", new Pending Review request with the proposed name. PATCH price on `c9f9faf7` → 409 "Active Booking Field Locked". Clicked: PRF019 "AI Tour Matching" → `/ai-matching`. |
+| Spec issues found | None new. HDT review of major change requests is not built (§3 #49). |
+| Commit | see `git log` on `linh/br-fixes`; not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

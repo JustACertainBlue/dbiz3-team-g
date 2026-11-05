@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { ActorSession } from '@/lib/auth/demo-session'
 import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
 import { demoRepository } from '@/lib/demo/json-repository'
@@ -95,10 +96,20 @@ export async function updateAgencyProfile(
   for (const key of ['contact_person_name', 'phone_number', 'business_email'] as const) {
     if (parsed[key] !== undefined) nextContact[key] = parsed[key]
   }
-  const changes: Record<string, string> = { updated_at: new Date().toISOString() }
-  if (parsed.company_name !== undefined) changes.company_name = parsed.company_name
+  const now = new Date().toISOString()
+  const changes: Record<string, string> = { updated_at: now }
+  // BR-017 / FR-002: Company Name and Tax ID changes wait for HDT review; the approved values stay in
+  // effect, so they are stored as a Pending Review request instead of on the profile.
+  const proposedCompanyName = parsed.company_name !== undefined && parsed.company_name !== existing.company_name ? parsed.company_name : ''
+  const proposedTaxId = parsed.tax_id !== undefined && parsed.tax_id !== existing.tax_id ? parsed.tax_id : ''
+  if (proposedCompanyName || proposedTaxId) {
+    repository.insert('agency_major_change_requests', {
+      major_change_id: randomUUID(), agency_id: agencyId,
+      proposed_company_name: proposedCompanyName, proposed_tax_id: proposedTaxId,
+      review_status: 'Pending Review', submitted_at: now, reviewed_at: '',
+    })
+  }
   if (parsed.company_type !== undefined) changes.company_type = parsed.company_type
-  if (parsed.tax_id !== undefined) changes.tax_id = parsed.tax_id
   if (parsed.description !== undefined) changes.description = parsed.description
   if (parsed.team_size !== undefined) changes.team_size = String(parsed.team_size)
   if (parsed.tour_types !== undefined) changes.tour_types = JSON.stringify(parsed.tour_types)

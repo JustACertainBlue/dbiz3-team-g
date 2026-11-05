@@ -85,3 +85,15 @@ describe('PRF BR-014 | Experience fields locked by real active Bookings', () => 
     expect(experience(COMPLETED_ONLY_EXPERIENCE).price_per_person).toBe('260000')
   })
 })
+
+describe('PRF BR-014 | unchanged locked values are not a change', () => {
+  beforeEach(() => demoRepository().reset())
+
+  it('sending the current price and capacity with a description edit is accepted', async () => {
+    const id = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69'
+    const row = demoRepository().find('experiences', r => r.experience_id === id)!
+    const owner = providerSession(SEED_IDS.provider1Verified, SEED_IDS.provider1VerifiedUserId)
+    await expect(updateExperience(id, owner, { price_per_person: Number(row.price_per_person), max_participants: Number(row.max_participants), description: 'Mô tả mới, không đổi giá.' }))
+      .resolves.toMatchObject({ updated: true })
+  })
+})

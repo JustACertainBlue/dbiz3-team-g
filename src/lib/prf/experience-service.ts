@@ -173,13 +173,19 @@ export async function updateExperience(
     throw new ExperienceError('Forbidden: Only owning provider can update experience (BR-002)', 403)
   }
 
-  // Check active booking locked fields per BR-014
-  const hasActiveBooking = experienceId === 'exp-with-active-booking'
+  // BR-014 (checklist §3 #44): while the Experience has an On hold or Booked Booking, these fields cannot
+  // change. Real Bookings decide it; the fixture id stays for the existing unit tests.
+  const hasActiveBooking = experienceId === 'exp-with-active-booking' || repository.all('bookings')
+    .some(row => row.experience_id === experienceId && (row.status === 'On hold' || row.status === 'Booked'))
   if (hasActiveBooking) {
-    const lockedFields: Array<keyof ExperienceInput> = ['price_per_person', 'duration_minutes', 'max_participants']
-    const attemptedLocked = lockedFields.some(field => field in input && input[field] !== undefined)
+    const lockedFields = ['price_per_person', 'duration_minutes', 'max_participants', 'experience_location_address'] as const
+    // Unchanged values are allowed (numbers compared as numbers: the seed stores "150000.00").
+    const changed = (field: typeof lockedFields[number]) => !stored || (field === 'experience_location_address'
+      ? String(input[field]) !== String(stored[field] ?? '')
+      : Number(input[field]) !== Number(stored[field]))
+    const attemptedLocked = lockedFields.some(field => input[field] !== undefined && changed(field))
     if (attemptedLocked) {
-      throw new ExperienceError('Cannot modify locked fields while active bookings exist (BR-014)', 409)
+      throw new ExperienceError('Active Booking Field Locked: price, capacity, duration and location cannot change while active bookings exist (BR-014)', 409)
     }
   }
 

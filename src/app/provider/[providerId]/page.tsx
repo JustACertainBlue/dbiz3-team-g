@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { refreshDemoSession } from '@/lib/prf/client-session'
 import { providerPageView } from '@/lib/prf/provider-page-view'
+import { providerBkgLinks } from '@/lib/booking/nav-links'
 
 interface ProviderExperience {
   experience_id: string
@@ -135,10 +136,10 @@ export default function ProviderProfilePage({
         </div>
         {view.canEdit && (
           <nav className="spec-nav">
-            <Link href={`/provider/${params.providerId}/dashboard`}>Dashboard</Link>
+            <Link href={providerBkgLinks(params.providerId).dashboard}>Dashboard</Link>
             <Link href={`/provider/${params.providerId}/experiences`}>Experience Management</Link>
-            <Link href={`/provider/${params.providerId}/bookings`}>Bookings</Link>
-            <Link href={`/provider/${params.providerId}/schedule`}>Schedule</Link>
+            <Link href={providerBkgLinks(params.providerId).bookings}>Bookings</Link>
+            <Link href={providerBkgLinks(params.providerId).schedule}>Schedule</Link>
             <Link href="/messages">Messages</Link>
           </nav>
         )}

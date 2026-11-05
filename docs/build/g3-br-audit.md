@@ -1,4 +1,4 @@
-# G3 business-rule → test audit (5 November 2026, branch `linh/g3-audit`, base `main` `71429cc`)
+# G3 business-rule → test audit (5 November 2026, branch `linh/g3-audit`, base `main` `71429cc`; PRF BR-014/017 and AIT BR-015 updated after `linh/br-fixes`)
 
 Every BR of the five modules on `main`, checked line by line against the current code and tests (not
 against build logs). Method: five read-only audits (one per module) opened each candidate test and confirmed
@@ -16,8 +16,8 @@ not re-audited here.
 
 | Module | BRs | COVERED | PARTIAL | MISSING | CODE BREAKS | N/A |
 |---|---|---|---|---|---|---|
-| AIT | 22 | 16 | 0 | 0 | 1 (BR-015) | 5 (BR-012, 013, 021, 022 Should; see BR-014 note) |
-| PRF | 21 | 13 | 5 | 1 (BR-013) | 2 (BR-014, BR-017) | 0 |
+| AIT | 22 | 17 | 0 | 0 | 0 (BR-015 fixed, `linh/br-fixes`) | 5 (BR-012, 013, 021, 022 Should; see BR-014 note) |
+| PRF | 21 | 15 | 5 | 1 (BR-013) | 0 (BR-014, BR-017 fixed, `linh/br-fixes`) | 0 |
 | EXP | 15 | 10 | 0 | 1 (BR-014, decided exception) | 0 | 4 (BR-011, 012, 013, 015: learning loop, Should) |
 | BKG | 19 | 17 | 0 | 0 | 0 | 2 (BR-013 unused number, BR-015 other module) |
 | ADM | 19 | 16 | 3 | 0 | 0 | 0 |
@@ -40,7 +40,7 @@ not re-audited here.
 | 012 | N/A | — | — | FR-013/014 learning loop (Should) not built; AIT chats carry `source: 'Explore'` |
 | 013 | N/A | unit/time-decay.test.ts:37 (library) | lib/decay/time-decay.ts | FR-015 (Should), not wired |
 | 014 | COVERED (new) | ait-exp-br-gaps.test.ts:40 — Agency B keeps the global order after Agency A's profile | lib/preferences/preference-service.ts:81-117 | in-memory profile store (FR-016 partly built) |
-| 015 | CODE BREAKS | unit/preference-profile.test.ts:70 asserts an absent field only | app/api/ait/preferences/[agencyId]/route.ts:9-25 | no authentication: any caller reads/writes any Agency's profile; a GET-as-Guest 401 test would fail today |
+| 015 | COVERED (fixed) | integration/ait-preferences-auth.test.ts (Guest 401, other roles / other Agency 403, profile unchanged) | app/api/ait/preferences/[agencyId]/route.ts (`denied`) | fixed on `linh/br-fixes` (checklist §3 #46); store still in memory |
 | 016 | COVERED (new) | ait-exp-br-gaps.test.ts:57 — POST sessions 201, one row stored | app/api/ait/sessions/route.ts | |
 | 017 | COVERED | integration/ait-failure-api.test.ts:39 | app/api/ait/sessions/[id]/messages/route.ts:51-57 | |
 | 018 | COVERED (+new) | ait-matching-api.test.ts:94-105; ait-exp-br-gaps.test.ts:70 (reuse after a cancelled Booking) | commercial-handoff-service.ts | no separate code path for the cancelled case, so no mutation of its own |
@@ -66,10 +66,10 @@ not re-audited here.
 | 011 | PARTIAL | prf/unit/ai-service.test.ts:31 (one keyword) | lib/prf/ai-service.ts | AI is a local stub |
 | 012 | PARTIAL | ai-service.test.ts:23, :39 | ai-service.ts | PRF128 puts the draft into the description field; Save then makes it final |
 | 013 | MISSING | — | experiences/new/page.tsx (Accept/discard UI) | Accept/Edit/Regenerate/Discard exist only as UI; no pure helper to test |
-| 014 | CODE BREAKS | experience-service.test.ts:123 uses the fixture id `exp-with-active-booking` | experience-service.ts (`hasActiveBooking = experienceId === 'exp-with-active-booking'`) | real On hold/Booked Bookings do not lock fields: a price edit on `c9f9faf7` (two Booked seed Bookings) is accepted |
+| 014 | COVERED (fixed) | prf/unit/prf-br-fixes.test.ts (price/capacity/duration/location refused with 409 on Booked seed Experience; description allowed; Completed-only not locked; unchanged values allowed) | lib/prf/experience-service.ts | fixed on `linh/br-fixes` (§3 #44) |
 | 015 | COVERED | experience-images.test.ts:98-122 | experience-service.ts; experience-images.ts | |
 | 016 | PARTIAL | prf/unit/lightbox.test.ts:9-26 | lib/prf/lightbox.ts | tap-to-open on EXP068 not render-tested (client page) |
-| 017 | CODE BREAKS | agency-service.test.ts:72 (`requires_hdt_rereview` true) | agency-service.ts:79-82, 99-101 | new Company Name / Tax ID are written at once; the approved values do not stay in effect |
+| 017 | COVERED (fixed) | prf/unit/prf-br-fixes.test.ts (name/Tax ID kept, Pending Review request stored; other fields immediate) | lib/prf/agency-service.ts | fixed on `linh/br-fixes` (§3 #45); HDT review flow not built (§3 #49) |
 | 018 | COVERED (+new) | provider-versioning.test.ts:67; prf-br-gaps.test.ts:53, :58 (Craft Type, Business Registration) | provider-service.ts | |
 | 019 | COVERED (+new) | experience-service.test.ts:146-162; prf-br-gaps.test.ts:67 (real Booked seed Bookings) | experience-service.ts | |
 | 020 | COVERED (new) | prf-br-gaps.test.ts:76 (provider row unchanged) | experience-service.ts | |

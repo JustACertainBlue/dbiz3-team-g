@@ -75,7 +75,7 @@ export default function AgencyProfilePage({
 
         <nav className="spec-nav">
           <Link href="/explore">Explore</Link>
-          <Link href="/matching">AI Tour Matching</Link>
+          <Link href="/ai-matching">AI Tour Matching</Link>
           <Link href={agencyBkgLinks(params.agencyId).bookings}>Bookings</Link>
           <Link href={agencyBkgLinks(params.agencyId).schedule}>Schedule</Link>
           <Link href="/messages" style={{ color: '#be123c' }}>Messages ●</Link>

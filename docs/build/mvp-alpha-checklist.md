@@ -116,6 +116,7 @@ limitation discovered by the instructor that is not written here is.
 | 52 | IAC: the edge case "sender loses account access while the Chat is open" is not handled; the demo identities are always active. | IAC edge cases; AUT | With AUT |
 | 53 | IAC: ~~Close Chat (F-CHAT-04, COM048/COM065 "Close Chat") and~~ document upload (F-CHAT-05, COM125/COM126) ~~are~~ is not built; seed attachments are listed read-only in the history. **Close closed by `015-iac-close`** (spec-IAC #29–#38). The in-process write lock (shared with BKG) protects one Node process only. | IAC FR-005, BR-008–BR-011 | `016-iac-attach` |
 | 54 | AIT F-MATCH-13 (spec-AIT FR-013, Should): the post-matching learning event on Chat close or 30-minute inactivity is not built; F-CHAT-04 returns `closed_at` for it (spec-IAC #38). | AIT FR-013; IAC #38 | Not planned |
+| 55 | **Deviation from constitution V: agent pushes feature branches and opens PRs (solo work, no second reviewer to amend); merge stays human; enforced by PreToolUse hook** `.claude/hooks/block-git-push.py` (no main, force, delete, tags, `--mirror`, `--all`, `gh pr merge`). Constitution V and AGENTS.md rule 5 are not amended; G6 (non-author review) stays open. | Constitution V; CLAUDE.md §3 rule 3; build log §4 row 46 | Amend constitution V with a second reviewer, or revert |
 
 ## 4. Sign-off
 

@@ -1,6 +1,6 @@
 // T018: COM125 / COM126 dialog state (spec-IAC #49, BR-009, BR-010, #42, #43).
 import { describe, expect, it } from 'vitest'
-import { attachState } from '@/app/messages/attach-state'
+import { attachState, sizeLabel } from '@/app/messages/attach-state'
 
 const MB = 1_048_576
 const f = (name: string, size = 2048) => ({ name, size })
@@ -29,6 +29,12 @@ describe('T018 | attachState', () => {
       'Tệp rỗng',
     ])
     expect(state.canSend).toBe(false)
+  })
+
+  it('files under 1 KB show bytes, not "0.0 KB" (found in the demo)', () => {
+    expect(sizeLabel(4)).toBe('4 B')
+    expect(sizeLabel(1023)).toBe('1023 B')
+    expect(sizeLabel(1024)).toBe('1.0 KB')
   })
 
   it('exactly 10 MB is valid; six files → "Tối đa 5 tệp" and Send disabled', () => {

@@ -1,6 +1,7 @@
 import type { ActorSession } from '../auth/demo-session'
 import { demoRepository } from '../demo/json-repository'
 import type { DemoRow } from '../demo/types'
+import type { FileError } from './chat-file-rules'
 
 export type ChatErrorCode = 'FORBIDDEN' | 'NOT_FOUND' | 'VALIDATION_ERROR' | 'CHAT_CLOSED' | 'PROVIDER_UNAVAILABLE'
 
@@ -10,7 +11,7 @@ const STATUS: Record<ChatErrorCode, number> = {
 
 export class ChatError extends Error {
   readonly statusCode: number
-  constructor(public readonly code: ChatErrorCode, message: string) {
+  constructor(public readonly code: ChatErrorCode, message: string, public readonly fileErrors?: FileError[]) {
     super(message)
     this.name = 'ChatError'
     this.statusCode = STATUS[code]

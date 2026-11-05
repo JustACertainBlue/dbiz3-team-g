@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { parse } from 'csv-parse/sync'
 
@@ -10,6 +10,13 @@ const reset = process.argv.includes('--reset')
 if (existsSync(target) && !reset) {
   console.log(`Demo database already exists at ${target}. Use npm run demo:reset to replace it.`)
   process.exit(0)
+}
+
+// spec-IAC #39: uploaded Chat files belong to the runtime they were attached in.
+const chatFiles = join(root, '.demo-data', 'chat-files')
+if (existsSync(chatFiles)) {
+  rmSync(chatFiles, { recursive: true, force: true })
+  console.log(`Removed uploaded Chat files in ${chatFiles}`)
 }
 
 const tables = {}

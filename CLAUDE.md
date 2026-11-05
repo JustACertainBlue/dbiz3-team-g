@@ -121,8 +121,9 @@ macos-latest) green.
 - **IAC**: round 1 on `main` (`specs/014-iac-core`, PR #44): one shared chat service `src/lib/iac/*`
   used by Explore, AIT (`commercial-handoff-service.ts`) and BKG (`agency-sync.ts`) — at most one
   Active Chat per Agency–Provider pair, Chat writes share `withBookingWriteLock`; routes
-  `/api/iac/chats…`; `/messages` = COM048 / COM065. Not built: F-CHAT-04 Close (next: `015-iac-close`),
-  F-CHAT-05 attachments (`016-iac-attach`), Provider start from a Quote Request (checklist §3 #50–#53).
+  `/api/iac/chats…`; `/messages` = COM048 / COM065. Round 2 F-CHAT-04 Close on `main` (`015-iac-close`,
+  PR #45/#46); round 3 F-CHAT-05 attachments on `016-iac-attach` (files in `.demo-data/chat-files/`,
+  spec-IAC #39–#50). Not built: Provider start from a Quote Request (checklist §3 #50–#52, #56).
 - **Auth**: the server-side demo session comes only from the `hab_demo_account` cookie. PR #35
   (`linh/auth-no-header`, merged as `deaf3ab`) removed the last fallback that trusted a client `x-mock-session` header
   (checklist §3 #30); never add client-supplied identity headers again.

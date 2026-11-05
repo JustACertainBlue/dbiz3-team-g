@@ -747,6 +747,19 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Spec issues found | spec-EXP #29, #32, #33 (decided). |
 | Commit | see `git log` on `linh/exp-fixes`; not pushed. |
 
+### Entry 43: 05/11 Claude Code + human — G3 business-rule audit of all five modules, BKG screen tests (`linh/g3-audit`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5) with five read-only subagents (one per module); requested by linhkhanh-vu after CI run #12 on `main` `71429cc` was green; branch `linh/g3-audit` (not pushed) |
+| Command and argument | BR → test audit on the current code (each cited test opened and its assertions checked, not the build log); cheap gaps closed with tests and mutation checks; BKG M7/M2/M3 screens; docs |
+| Feature and tasks | AIT, PRF, EXP, BKG, ADM — all 96 BRs; checklist G3; build-log Entries 13, 22, 26 (M7, M2, M3) |
+| What the agent produced | `docs/build/g3-br-audit.md` (full table). New tests: `tests/adm/unit/adm-br-gaps.test.ts` (BR-006, 010, 012, 013, 014, 018 on P1 seed rows), `tests/prf/unit/prf-br-gaps.test.ts` (BR-003 Agency, 010, 018, 019, 020, 021), `tests/unit/bkg-br-gaps.test.ts` (BR-006, 007, 011), `tests/integration/ait-exp-br-gaps.test.ts` (AIT BR-003, 014, 016, 018, 019; EXP BR-002, 005, 009, 010), `tests/unit/bkg-screens.test.ts` (BKG135 buttons, BKG133/DSH018 access, BKG137 ⇄ SCH141 links; pages rendered with react-dom/server and mocked `next/headers`), `tests/unit/bkg-nav-links.test.ts`. Code: `src/lib/booking/nav-links.ts` (new) used by PRF127, PRF128, PRF019 for the #66/#68/#69 links. Docs: checklist §2 G3 status, §3 #44–#48; CLAUDE.md §5; `03-module-status.md`. |
+| Human review | Pending. |
+| Tests | The new BR tests cover code that already exists, so they passed when written (supplementary); each was proven by a mutation (reverted, files byte-identical): ADM AND→OR in `filterBookingTable`, Cancelled counted, UBND scope off, link in BookingTable → red (the older `booking-table.test.ts`/`filter-panel.test.ts` stayed green with the AND→OR mutation); PRF admin Agency edit, notice < 0, craft_type not major, real Bookings ignored on delete, Experience edit flips Provider status, hours not saved → red; BKG POST on schedule route, status change copies `group_size`, Completed not terminal → red; BKG135 Confirm always enabled, BKG133 gate open, DSH018/BKG137 links wrong, nav helper Dashboard → PRF127 → red; AIT unverified loaded, shared preference profile, Closed Chat reopened, sessions 200, EXP any role may hand off, strong = explicit weight → red. One BKG test was wrong at first (expected `markGroupArrival` to throw; it returns `validation_error` by design) and was corrected; one ADM test used a wrong Provider id and passed vacuously, corrected and extended. `nav-links` test red first (module missing). Green: `Test Files 118 passed (118)`, `Tests 782 passed (782)`; `npm run lint` passed. |
+| Spec issues found | ADM BR-019 day count (end date excluded) not defined in spec-ADM. Code that breaks rules (no fix in this audit): PRF BR-014, PRF BR-017, AIT BR-015 (§3 #44–#46). Broken PRF019 link `/matching` (§3 #48). |
+| Commit | see `git log` on `linh/g3-audit`; not pushed. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

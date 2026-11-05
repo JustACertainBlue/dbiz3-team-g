@@ -77,13 +77,19 @@ Details, arguments to paste, and the MVP Alpha gates G1–G8: `docs/build/claude
 ## 5. Where we are now (update this section when it changes)
 
 - Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in.
-State checked on 4 Nov 2026 at `main` = `deaf3ab` (details: `03-module-status.md`).
-- **MVP Alpha checklist** re-checked at `deaf3ab` on 4 Nov 2026 (branch `linh/ci-windows`, not
-  pushed): §1 lists PRF, EXP, AIT, BKG, ADM; **no gate ticked**, no tag. G1 waits for the GitHub
-  Actions run of `.github/workflows/ci.yml` (windows-latest + macos-latest); G2 PRF US-4 edit page
-  has hard-coded values; G4 DRIFT in 002, 004, 011, 012; G6 no merged PR has a non-author review;
-  G7 a member's Gmail in `docs/env/`; G8 no entry for AIT rounds 1–2 and the original ADM build.
-  The human works alone on this ("tự làm hết, không nhờ nhóm"): no messages to the team.
+State checked on 5 Nov 2026 at `main` = `71429cc` (PR #41; details: `03-module-status.md`).
+`npm test` on `main` `71429cc`: 112 files, 745 tests pass; lint passes; CI run #12 (windows-latest +
+macos-latest) green. Branch `linh/g3-audit` (not pushed): 118 files, 782 tests.
+- **MVP Alpha checklist** on `main`: G1, G2, G4, G5, G7, G8 ticked; **G3 open** (exceptions in §2:
+  EXP BR-014 by decision; PRF BR-014, PRF BR-017, AIT BR-015 where the code breaks the rule — checklist
+  §3 #44–#46; PRF BR-013 UI-only; partial BRs) and **G6 open by decision** (no merged PR had a
+  non-author review). No tag. Full BR→test table: `docs/build/g3-br-audit.md`. The human works alone
+  ("tự làm hết, không nhờ nhóm"): no messages to the team.
+- **Since 4 Nov**: CI `.github/workflows/ci.yml` (PR #36, #37); PRF slice A (#38: unchanged Save,
+  PRF128 from data, spec-PRF #31–#32), A2 (#39: Request Revision 409, PRF127 from data, #33), B (#40:
+  Experience images BR-008/009/015, lightbox BR-016, pricing #34); EXP slice C (#41: FR-007 signal from
+  the live handoff, FR-011 hiding, spec-EXP #29/#32/#33). All merged by the human without review.
+  Stop the dev server before `npm run demo:reset`: it keeps the data in memory and writes it back.
 
 - **On `main`**: AIT (`specs/001-ait-core`, PR #6 merged as `3e0e047`), PRF
   (`specs/002-prf-core`, PR #8 squash-merged as `222216d`), EXP (`specs/001-exp-core`, merged
@@ -93,9 +99,8 @@ State checked on 4 Nov 2026 at `main` = `deaf3ab` (details: `03-module-status.md
   BKG US-1 + US-2 (`specs/013-bkg-schedule`, PR #28 as `fa4d9d2`), BKG spec #57–#82 (PR #21, #24,
   #26, #27), AIT round 3 (PR #33 as `5d0131a`; spec-AIT #23–#37), ADM (`specs/003-adm-core`, ported
   in PR #34 as `7c1fde6`; spec-ADM #21–#22; User Management moved to AUT), fix(auth) (PR #35 as
-  `deaf3ab`: `demoSessionFromRequest` reads only the cookie). `npm test` on `main` `deaf3ab`:
-  104 files, 694 tests pass; `npm run lint` passes (run 4 Nov 2026). PR #33, #34 and #35 were
-  merged without a GitHub review (nguyenthu-0505, thuvutp-prog, JustACertainBlue requested).
+  `deaf3ab`: `demoSessionFromRequest` reads only the cookie), PRF/EXP slices A–C (PR #38–#41).
+  PR #33–#41 were merged without a GitHub review.
 - **Not merged**: AUT (`001-aut-registration`, PR #11; stack drift Next 16 / React 19 / Vitest 5 /
   `pg`), IAC (`003-iac-core`, PR #16: US-1 chat core, authenticates from client headers
   `x-mock-user-id` / `x-mock-role`), `member/spec-consistency`, `ngthu/update-specs` (leftovers that
@@ -121,8 +126,8 @@ State checked on 4 Nov 2026 at `main` = `deaf3ab` (details: `03-module-status.md
   PostgreSQL is the target schema but `src/lib/db/client.ts` is still a stub. Login is a demo
   session, not AUT.
 - **Known drift**: `specs/002-prf-core/plan.md` lists Next.js 15, Drizzle, Cloudinary and msw,
-  while `package.json` has Next.js 14 and none of those. Point this out to the PRF owner; do not
-  silently ignore either file.
+  while `package.json` has Next.js 14 and none of those (checklist §3 #36). Point this out to the PRF
+  owner; do not silently ignore either file.
 
 ## 6. Context files (read on demand, not all at once)
 

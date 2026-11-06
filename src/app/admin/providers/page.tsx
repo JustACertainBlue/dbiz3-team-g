@@ -1,20 +1,20 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { DEMO_SESSION_COOKIE, demoSessionFor } from '@/lib/auth/demo-session'
+import { DEMO_SESSION_COOKIE, demoSessionContextFor, sessionDisplayName } from '@/lib/auth/session'
 import { demoRepository } from '@/lib/demo/json-repository'
 
 export const dynamic = 'force-dynamic'
 
 export default function AdminProvidersPage() {
-  const session = demoSessionFor(cookies().get(DEMO_SESSION_COOKIE)?.value)
-  if (session.role !== 'UBND' && session.role !== 'HDT') {
+  const session = demoSessionContextFor(cookies().get(DEMO_SESSION_COOKIE)?.value)
+  if (session.role !== 'ADMIN' || !session.adminType) {
     return <main className="admin-state"><h1>Provider review</h1><p>Chọn tài khoản UBND Admin hoặc HDT Admin để truy cập.</p><Link href="/login">Chọn tài khoản demo</Link></main>
   }
   const repository = demoRepository()
   const versions = repository.all('provider_profile_versions')
   const villages = repository.all('villages')
   const providers = repository.all('provider_profiles')
-    .filter(row => session.role === 'HDT' || row.village_id === session.villageId)
+    .filter(row => session.adminType === 'HDT' || row.village_id === session.assignedVillageId)
     .map(provider => ({
       provider,
       version: versions.find(row => row.provider_id === provider.provider_id && row.version_no === provider.current_version_no),
@@ -22,7 +22,7 @@ export default function AdminProvidersPage() {
     }))
     .sort((a, b) => a.provider.verification_status.localeCompare(b.provider.verification_status))
 
-  return <main className="admin-review"><header><p>HANOI ARTISAN BRIDGE · ADMIN</p><h1>Provider verification queue</h1><span>{session.displayName} · {session.role === 'UBND' ? 'Phạm vi một làng nghề' : 'Theo dõi toàn Hà Nội'}</span></header>
+  return <main className="admin-review"><header><p>HANOI ARTISAN BRIDGE · ADMIN</p><h1>Provider verification queue</h1><span>{sessionDisplayName(session)} · {session.adminType === 'UBND' ? 'Phạm vi một làng nghề' : 'Theo dõi toàn Hà Nội'}</span></header>
     <section className="admin-summary"><div><strong>{providers.length}</strong><span>Tổng Provider trong phạm vi</span></div><div><strong>{providers.filter(row => row.provider.verification_status === 'Pending Verification').length}</strong><span>Chờ thẩm định</span></div><div><strong>{providers.filter(row => row.provider.verification_status === 'Revision Required').length}</strong><span>Cần chỉnh sửa</span></div></section>
     <section className="admin-table"><div className="admin-row admin-row--head"><span>Provider</span><span>Làng nghề</span><span>Trạng thái</span><span>Thao tác</span></div>
       {providers.map(item => <div className="admin-row" key={item.provider.provider_id}><span><strong>{item.version?.business_name || item.provider.provider_id}</strong><small>{item.version?.craft_type || 'Chưa khai báo nghề'}</small></span><span>{item.village?.name || 'Không xác định'}</span><span><mark data-status={item.provider.verification_status}>{item.provider.verification_status}</mark></span><span><Link href={`/admin/providers/${item.provider.provider_id}`}>Xem hồ sơ →</Link></span></div>)}

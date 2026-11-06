@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { filterDashboardMetrics } from '@/lib/adm/metrics-service'
-import { SessionLike } from '@/lib/adm/scope-guard'
 import { adminSessionFromRequest } from '@/lib/adm/admin-session'
 import { TimePreset, CollaborationSortBy } from '@/lib/adm/types'
 
@@ -15,21 +14,11 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const role = session.role ?? ''
-  const adminType = session.adminType ?? (role === 'HDT' ? 'HDT' : role === 'UBND' ? 'UBND' : null)
-  const isAuthorizedAdmin = (role === 'ADMIN' || role === 'HDT' || role === 'UBND') && (adminType === 'HDT' || adminType === 'UBND')
-
-  if (!isAuthorizedAdmin) {
+  if (session.role !== 'ADMIN' || !session.adminType) {
     return NextResponse.json(
       { error: 'Forbidden: Admin privileges required to view dashboard.' },
       { status: 403 }
     )
-  }
-
-  const normalizedSession: SessionLike = {
-    ...session,
-    role: 'ADMIN',
-    adminType,
   }
 
   try {
@@ -48,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     const sortBy = searchParams.get('sortBy') as CollaborationSortBy | null
 
-    const data = await filterDashboardMetrics(normalizedSession, {
+    const data = await filterDashboardMetrics(session, {
       preset: preset || undefined,
       startDate,
       endDate,

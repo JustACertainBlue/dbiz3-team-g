@@ -4,13 +4,9 @@
  * Aligned with contracts/admin-dashboard-api.md and Constitution Principle IV (no real personal data).
  */
 
-export interface MockAdminSession {
-  role: string
-  adminType: 'HDT' | 'UBND' | null
-  villageId: string | null
-  userId: string | null
-  authenticated: boolean
-}
+import type { SessionContext } from '@/lib/auth/session'
+
+export type MockAdminSession = SessionContext
 
 export const SEED_ADMIN_IDS = {
   // Bát Tràng Village
@@ -31,9 +27,13 @@ export function createHdtSession(userId: string = SEED_ADMIN_IDS.hdtUserId): Moc
   return {
     role: 'ADMIN',
     adminType: 'HDT',
-    villageId: null,
+    assignedVillageId: null,
     userId,
     authenticated: true,
+    agencyId: null,
+    providerId: null,
+    permissions: [],
+    dataScope: 'Platform-wide',
   }
 }
 
@@ -44,29 +44,41 @@ export function createUbndSession(
   return {
     role: 'ADMIN',
     adminType: 'UBND',
-    villageId,
+    assignedVillageId: villageId,
     userId,
     authenticated: true,
+    agencyId: null,
+    providerId: null,
+    permissions: [],
+    dataScope: 'Assigned village',
   }
 }
 
 export function createUnauthorizedSession(): MockAdminSession {
   return {
-    role: 'TourAgency',
+    role: 'Tour_Agency',
     adminType: null,
-    villageId: null,
+    assignedVillageId: null,
     userId: 'agency-user-001',
     authenticated: true,
+    agencyId: 'agency-001',
+    providerId: null,
+    permissions: [],
+    dataScope: 'Own organization',
   }
 }
 
 export function createGuestSession(): MockAdminSession {
   return {
-    role: 'Guest',
+    role: null,
     adminType: null,
-    villageId: null,
+    assignedVillageId: null,
     userId: null,
     authenticated: false,
+    agencyId: null,
+    providerId: null,
+    permissions: [],
+    dataScope: null,
   }
 }
 
@@ -79,7 +91,7 @@ export function toSessionHeader(session: MockAdminSession): Record<string, strin
       ? 'hdt'
       : session.adminType === 'UBND'
         ? 'ubnd'
-        : session.role === 'TourAgency'
+        : session.role === 'Tour_Agency'
           ? 'agency'
           : 'guest'
   return { cookie: `hab_demo_account=${account}` }

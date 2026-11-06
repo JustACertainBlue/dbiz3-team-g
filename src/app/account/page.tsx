@@ -32,7 +32,7 @@ export default function AccountPage() {
     } catch (error) { setError(error instanceof Error ? error.message : 'Không thể lưu. Vui lòng thử lại.') }
     finally { setSaving(false) }
   }
-  return <section className="account-page"><p>TÀI KHOẢN CÁ NHÂN</p><h1>{editing ? 'Chỉnh sửa tài khoản' : 'Tài khoản của tôi'}</h1>
+  return <section className="account-page"><p>TÀI KHOẢN CÁ NHÂN</p><p><Link href="/account/change-password">Đổi mật khẩu</Link></p><h1>{editing ? 'Chỉnh sửa tài khoản' : 'Tài khoản của tôi'}</h1>
     {account && <div style={{margin:'20px 0'}}>{!avatarFailed && <img src={`/api/auth/account/avatar?v=${avatarVersion}`} alt="Ảnh đại diện" width={80} height={80} style={{borderRadius:'50%',objectFit:'cover'}} onError={() => setAvatarFailed(true)}/>}<label>Ảnh đại diện — JPG/PNG, tối đa 2 MB<input type="file" accept="image/jpeg,image/png" disabled={saving} onChange={event => { const file = event.target.files?.[0]; if(file) void avatar(file); event.target.value = '' }}/></label><button type="button" disabled={saving} onClick={() => avatar()}>Gỡ ảnh đại diện</button></div>}
     {error && <p role="alert">{error} {!account && <Link href="/login">Đăng nhập</Link>}</p>}{saved && <p role="status">Đã lưu thông tin.</p>}
     {!account && !error && <p>Đang tải tài khoản…</p>}

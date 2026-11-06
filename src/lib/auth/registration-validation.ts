@@ -12,7 +12,7 @@ const TOUR_TYPES = [
 
 const COMPANY_TYPES = ["Travel Agency", "Tour Operator", "TMC"] as const;
 
-export const registrationSchema = z
+export const registrationFields = z
   .object({
     full_name: z
       .string()
@@ -69,8 +69,8 @@ export const registrationSchema = z
     registration_documents: z
       .array(z.any())
       .min(1, "At least one registration document is required"),
-  })
-  .refine((data) => data.password === data.confirm_password, {
+  });
+export const registrationSchema = registrationFields.refine((data) => data.password === data.confirm_password, {
     message: "Passwords do not match",
     path: ["confirm_password"],
   });

@@ -819,6 +819,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Spec issues found | spec-IAC #39–#50 (§3 row 14). |
 | Commit | `1295205` docs, `e0a1e24` tests, code commit after this entry; branch pushed by the agent, PR opened, merge left to the human. |
 
+### AUT PR #11 integration — 2026-11-07
+
+| Field | Value |
+|---|---|
+| Agent and scope | Codex; user explicitly requested local integration, conflict resolution, push and merge of PR #11 while preserving current flows; real email deferred |
+| Source | linh-daotruc's 22 original commits, ending `07d60b0`; original log retained as `aut-pr11-original-build-log.md` |
+| Output | AUT registration, OTP, login/logout, account/password/review/revision lifecycle ported to shared repository/session; adoption map `specs/AUT-INTEGRATION.md`; detailed changed-file guide `pr11-integration.md` |
+| Tests | Final combined regression 164 files / 1,011 tests passed, including the six API-boundary tests; build/TypeScript passed; seed validation and Python hook tests passed; 58 live HTTP checks across 34 role/page responses passed. Final combined check is recorded in the delivery result. |
+| Evidence limits | No claim of test-first history for the new adapter tests. The original member's red/green evidence remains historical. Browser policy guard stopped further visual checks; user explicitly chose CLI/API verification. Human reviewer boxes are not ticked by the agent. |
+| Deferred configuration | Real email unavailable; explicit local dev-outbox for synthetic testing only; PostgreSQL production deployment not part of this merge |
+| Git strategy | Preserve existing local commits and original PR author history; resolve the PR to the tested shared-runtime tree, then fast-forward its head and use a GitHub merge commit |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

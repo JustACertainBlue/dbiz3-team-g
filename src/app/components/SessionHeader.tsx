@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react'
 import type { SessionContext } from '@/lib/auth/session'
 
 function workspace(session: SessionContext): string {
+  if (session.mustChangePassword) return '/account/change-password'
   if (session.role === 'Local_Provider' && session.providerId) return `/provider/${session.providerId}/dashboard`
   if (session.role === 'ADMIN') return session.adminType === 'UBND' ? '/admin/providers' : '/admin'
   return '/explore'
 }
 
 function moduleLinks(session: SessionContext): Array<{ href: string; label: string }> {
+  if (session.mustChangePassword) return [{ href: '/account/change-password', label: 'Đổi mật khẩu tạm' }]
   if (session.role === 'Local_Provider' && session.providerId) {
     const base = `/provider/${session.providerId}`
     return [
@@ -57,6 +59,7 @@ export default function SessionHeader() {
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' })
       if (!response.ok) throw new Error('Logout failed')
+      sessionStorage.clear()
       window.location.assign('/login')
     } catch { setLogoutError('Không thể đăng xuất. Vui lòng thử lại.'); setLoggingOut(false) }
   }

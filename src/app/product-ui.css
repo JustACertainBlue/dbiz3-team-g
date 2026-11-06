@@ -1,4 +1,6 @@
 /* Shared accessibility and form foundations for the role workspaces. */
+.auth-panel{max-width:680px;margin:32px auto;padding:28px;background:#fffdf8;border:1px solid #ded8cb;border-radius:16px;color:#203229}
+.auth-panel h1{font:700 34px Georgia,serif;margin:18px 0}.auth-panel p{line-height:1.6;margin:16px 0}.auth-panel label{display:grid;gap:8px;margin:16px 0}.auth-panel input,.auth-panel select{padding:12px;border:1px solid #aab7ac;border-radius:8px;font:inherit}.auth-panel button{padding:12px 20px;background:#244c39;color:white;border:0;border-radius:8px;margin:16px 0;cursor:pointer}.auth-panel button:disabled{opacity:.5;cursor:not-allowed}.auth-panel [role=alert]{color:#a42621}.auth-panel [role=status]{color:#245c37}
 :where(a, button, input, select, textarea):focus-visible {
   outline: 3px solid #b7683c;
   outline-offset: 3px;

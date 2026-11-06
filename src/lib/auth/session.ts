@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { DEMO_SESSION_COOKIE, demoSessionFor, demoSessionFromRequest, type ActorSession } from './demo-session'
-import { productSessionFromRequest } from './product-session'
+import { productSessionFromRequest, accountNeedsPasswordChange } from './product-session'
 import { demoRepository } from '../demo/json-repository'
 
 export type AuthRole = 'ADMIN' | 'Tour_Agency' | 'Local_Provider'
@@ -10,6 +10,7 @@ export { DEMO_SESSION_COOKIE }
 
 /** The authentication contract consumed by business modules, independently of the auth adapter. */
 export interface SessionContext {
+  mustChangePassword?: boolean
   authenticated: boolean
   userId: string | null
   role: AuthRole | null
@@ -78,7 +79,12 @@ export function demoSessionContextFor(key: string | null | undefined): SessionCo
 
 export function sessionContextFromRequest(request: NextRequest | Request): SessionContext {
   const productSession = productSessionFromRequest(request)
-  if (productSession) return sessionContextFor(productSession)
+  if (productSession) {
+    const mustChangePassword = accountNeedsPasswordChange(productSession.userId)
+    const path = new URL(request.url).pathname
+    if (mustChangePassword && !['/api/auth/change-password', '/api/auth/session', '/api/auth/logout'].includes(path)) return sessionContextFor(demoSessionFor('guest'))
+    return { ...sessionContextFor(productSession), mustChangePassword }
+  }
   // Legacy demo cookies remain available only to the existing automated regression suite.
   // Development and production must authenticate through the opaque product session.
   return sessionContextFor(process.env.NODE_ENV === 'test' ? demoSessionFromRequest(request) : demoSessionFor('guest'))

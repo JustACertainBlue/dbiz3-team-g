@@ -44,7 +44,7 @@ function cookieValue(request: NextRequest | Request, name: string): string | nul
   const cookie = request.headers.get('cookie')
   const encoded = cookie?.split(';').map(part => part.trim())
     .find(part => part.startsWith(`${name}=`))?.slice(name.length + 1)
-  return encoded ? decodeURIComponent(encoded) : null
+  try { return encoded ? decodeURIComponent(encoded) : null } catch { return null }
 }
 
 /**
@@ -53,6 +53,7 @@ function cookieValue(request: NextRequest | Request, name: string): string | nul
  * Role and organization IDs always come from stored account data, never client input.
  */
 export function authenticatePrototype(email: string, password: string): LoginResult {
+  if (process.env.NODE_ENV === 'production') return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const normalizedEmail = email.trim().toLowerCase()
   if (!normalizedEmail || !password) return { ok: false, reason: 'INVALID_CREDENTIALS' }
 
@@ -113,9 +114,15 @@ export function revokeProductSession(request: NextRequest | Request): boolean {
 }
 
 export function workspacePath(identity: DemoSession): string {
+  if (accountNeedsPasswordChange(identity.userId)) return '/account/change-password'
   if (identity.role === 'TourAgency') return '/explore'
   if (identity.role === 'LocalProvider') return `/provider/${identity.providerId}/dashboard`
   if (identity.role === 'UBND') return '/admin/providers'
   if (identity.role === 'HDT') return '/admin'
   return '/explore'
+}
+
+export function accountNeedsPasswordChange(userId: string | null): boolean {
+  const row = userId && demoRepository().find('user_accounts', item => item.user_id === userId)
+  return Boolean(row && row.must_change_password === 'true' && !row.password_hash.includes('seedhash'))
 }

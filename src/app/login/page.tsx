@@ -33,7 +33,7 @@ function LoginForm() {
       if (!response.ok || !payload.data) throw new Error(payload.error?.message || 'Không thể đăng nhập.')
       const requested = searchParams.get('next')
       const safeRequested = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null
-      router.replace(safeRequested || payload.data.redirectTo)
+      router.replace(payload.data.redirectTo === '/account/change-password' ? payload.data.redirectTo : safeRequested || payload.data.redirectTo)
       router.refresh()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể đăng nhập.')
@@ -52,8 +52,9 @@ function LoginForm() {
         <label>Mật khẩu<input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" required /></label>
         {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
+        <a href="/forgot-password">Quên mật khẩu?</a>
+        <a href="/register">Đăng ký tài khoản Agency</a>
       </form>
-      <a href="/register">Đăng ký tài khoản Agency</a>
       <aside>
         <strong>Tài khoản thử nghiệm</strong>
         <p>Chọn một email mẫu bên dưới. Ở prototype hiện tại, nhập bất kỳ mật khẩu không rỗng.</p>

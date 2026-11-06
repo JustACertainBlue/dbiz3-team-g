@@ -1,44 +1,56 @@
-# AUT PR #11 integration
+# AUT PR #11 integration report
 
-Source: https://github.com/JustACertainBlue/dbiz3-team-g/pull/11
-Source head: `07d60b0e306518f23a75536af6e9f3335be146c8` (linh-daotruc).
+Source PR: https://github.com/JustACertainBlue/dbiz3-team-g/pull/11
+Original author: linh-daotruc (Truc Linh). Original head: `07d60b0e306518f23a75536af6e9f3335be146c8`.
 
-## Implemented
+## Result and integration decisions
 
-- Reused registration and OTP input validation from `src/lib/validation.ts`, adapting the Zod enum error option to the currently installed Zod 3.
-- Reused bcrypt password hashing/verification primitives from `src/lib/password.ts` with cost 12.
-- Adapted password authentication to the shared JSON repository, `hab_session` cookie and canonical SessionContext.
-- User role, organization and assigned village now resolve from stored accounts/profiles/assignments rather than the fixed demo identity list.
-- Agency login requires Approved; Provider/Admin login requires Active. Session reads revalidate status and role context.
-- Kept fixture-only password compatibility for the four original demo accounts in non-production environments. Real password hashes never use that fallback; production login never uses it.
-- Preserved existing role landing paths and API response format used by the integrated UI.
+All ten AUT stories from the PR are mapped to the current runtime in [the integration quickstart](../../specs/AUT-INTEGRATION.md). The original registration/OTP/status and recovery screens, input validation and bcrypt primitives were reused. The PostgreSQL account, review, recovery, revision and session rules were adapted to the shared JSON repository and SessionContext. The current role workspaces replace the AUT branch's placeholder dashboards. We keep Next.js 14/React 18/Vitest 2 and add bcryptjs 3.0.3 rather than replacing the existing dependency stack with the unrelated scaffold versions in the old PR.
+
+The source feature documents and original build log are retained. The ten spec snapshots were refreshed with `tools/start_feature.py`; each printed OK. Original SQL code and original tests remain in the member's Git commits. They are not installed as an unused parallel production database layer. The integration adds rule/contract tests for the corresponding behavior in the shared runtime. Historical task/checklist ticks in the source documents are not treated as fresh review evidence.
+
+## Implemented behavior
+
+- Registration and document capture, OTP issue/resend/verify, Pending Approval account/profile creation, HDT review, new Agency password login.
+- Duplicate email/tax validation, cryptographically random OTP with bcrypt verifier, ten-minute expiry, five-attempt lock, three resends within 15 minutes. OTP replay cannot create a second account.
+- Private PDF/JPEG/PNG documents, at most five and 10 MB per file (the spec limit), server-generated storage names, signature checks, HDT-only attachment download. Seed rows without actual file bytes remain visibly unavailable.
+- HDT creates UBND in an active, unassigned village; UBND creates Provider only in its assigned village. New Provider account Active and profile Draft are separate. The generated password forces change before business API access.
+- Existing account list/detail/filter/status actions retain local UI and village scope. Disable revokes sessions immediately; enable restores the previously recorded state through account_status_history, with earlier local audit history retained as a compatibility fallback.
+- Recovery uses a hashed single-use token valid for 15 minutes. Confirmation/complexity checks, password change, admin temporary-password reset and session revocation use the shared repository.
+- Request More Information keeps the account Pending Approval. A delivered edit link is hashed, single-use and valid for 24 hours. Replacing the link or resubmitting invalidates older links. Resubmission creates a new data/document version on the same request and preserves review history. Email remains immutable.
+- The shared `hab_session` cookie, canonical role/admin subtype/permissions and existing Agency/Provider/Admin routes remain in use. Current login, account, header, Provider layout and other local work are preserved in the integration branch history.
+
+## Email boundary explicitly accepted by the user
+
+Real email is unconfigured and is not represented as working. Without configuration, registration/recovery/credential issuance and password reset that require delivery report unavailable. Admin can record Request More Information, but no edit link is claimed delivered until a delivery adapter is available. Local-only `HAB_EMAIL_MODE=dev-outbox` writes synthetic test messages under ignored `.demo-data/otp-outbox/` and `.demo-data/auth-outbox/`; never to the public directory, API response or application log. Production refuses this adapter.
 
 ## Validation
 
-- Regression suite after the auth changes: 159 files / 988 tests passed.
-- Additional API contract test: password login, canonical session and logout for a new non-demo Agency passed (one test).
-- TypeScript passed before the final API test addition; production build is checked separately.
+- Final combined regression: 164 test files / 1,011 tests passed.
+- Included `aut-lifecycle-api.test.ts`: six tests passed (invalid login payload, delivery unavailable without account enumeration, anonymous/forged requests, role restrictions, configuration state).
+- Production build passed; TypeScript passed.
+- Seed validator: PASS, 47 CSVs and lifecycle/scope/ranking invariants.
+- Python hook tests: three tests passed.
+- `node scripts/smoke-auth.mjs`: PASS, 34 page responses and 58 HTTP checks across Agency, Provider, HDT and UBND; canonical login/session, scopes and logout verified.
+- Earlier limited browser check verified Provider login/dashboard/Experience navigation. Further browser automation was stopped by its URL-policy guard. At the user's instruction, final verification uses CLI/API, not a claim that every visual interaction was re-audited.
+- Final post-merge checks and commit/PR status are recorded in the delivery result. Real email, production deployment and independent human review are excluded from completion claims.
 
-## Remaining before PR #11 can be merged
+## Changed-file guide
 
-- Registration, private uploaded documents, OTP verification and resubmission must use the shared repository with transactional uniqueness and status transitions.
-- Compare and integrate Agency review and account-management rules with the current local implementations; preserve village restrictions.
-- Integrate credential issuance/recovery/change-password with a clearly configured delivery adapter. Real email is still unconfigured; do not advertise successful email delivery.
-- Port applicable PostgreSQL business tests and preserve their rule coverage; PostgreSQL-specific tests require an isolated database.
-- Reconcile feature documents/build logs and repository configuration without overwriting active module routes or dependency versions.
-- Resolve the PR branch against current main, run full regression/build and browser role-flow checks, then update and merge the PR. No merge or GitHub update has happened at this checkpoint.
+| Files | Purpose |
+|---|---|
+| `src/lib/auth/registration-*`, `password.ts`, `product-session.ts`, `session.ts` | Reused validation/password rules and one session/registration contract |
+| `src/lib/auth/lifecycle.ts`, `api-result.ts` | Recovery, password change, account creation/reset and versioned revision rules |
+| `src/lib/auth/admin-accounts.ts`, `agency-review.ts` | Atomic status/review operations and scope enforcement |
+| `src/lib/demo/json-repository.ts` | Transactional synchronous read/check/write under the shared file lock |
+| `src/app/api/auth/*`, `src/app/api/register/*` | API adapters and private document access |
+| `src/app/register/*`, `forgot-password/*`, `reset-password/*`, `account/*`, `admin/create-account/*`, `admin/users/*` | Member screens and current workspaces connected to the common backend |
+| `src/app/login/page.tsx`, `components/SessionHeader.tsx`, `product-ui.css` | Entry links, password-change gate, logout cleanup and shared form styling |
+| `tests/integration/aut-*.test.ts`, `tests/contract/*login*`, `*registration*`, `aut-lifecycle-api.test.ts`, `tests/unit/product-session.test.ts` | AUT integration, rejected paths and preserved session contract |
+| `scripts/smoke-auth.mjs` | Repeatable local CLI/API role smoke checks |
+| `specs/*-aut-*`, `specs/AUT-INTEGRATION.md`, `docs/build/aut-pr11-original-build-log.md` | Original contribution retained with explicit current-runtime guidance |
+| `AGENTS.md`, `docs/build/build-log.md`, this report | Current operating context and evidence; no source spec/data edits |
 
-The PR source remains intact on its original branch. This checkpoint is an integration in progress, not completion of AUT or approval of PR #11.
+## Known technical limits
 
-## Registration integration update
-
-- Reused the member's registration, OTP and status screens with scoped green/cream styling. Fixed the form/API field naming mismatch and optional blank business email validation.
-- Added JSON-backed registration and OTP services, plus register/verify/resend endpoints. No account is created before successful server-side OTP verification. Account/profile creation and OTP consumption are atomic and replay-safe.
-- Added a repository transaction that serializes the full synchronous read/check/write operation across local processes. Duplicate email/tax checks and OTP attempt updates run inside it.
-- OTP codes use cryptographic randomness and bcrypt verifiers; expire after 10 minutes; reject at five failed attempts; resend invalidates the earlier challenge and is limited to three within 15 minutes.
-- Added private PDF/JPEG/PNG document storage and an HDT-only download endpoint. Missing seed binaries stay explicitly unavailable. Files are limited to five, 5 MB each, with signature checks and server-generated storage names.
-- Delivery defaults to unavailable (503). For local tests only, explicitly set `HAB_EMAIL_MODE=dev-outbox`; codes are written to ignored `.demo-data/otp-outbox/`. No code is returned by an API or logged. This is not real email delivery.
-- Integration tests passed for registration → OTP → Pending Approval → HDT approval → password login, replay, five-attempt lock, failed-delivery rollback, resend invalidation, expiry and duplicate submissions.
-- Regression at that point: 161 files / 993 tests passed. Additional document/delivery guard tests: six passed; Agency review tests: three passed. Build passed before the latest document-download route and cosmetic text changes; TypeScript passed with the document route.
-
-Still outstanding: secure revise/resubmit workflow, the rest of account-creation/management differences, credential recovery/change/issuance integration, the full latest browser audit, PR conflict resolution, GitHub update and merge. The registration implementation above replaces the first registration TODO; it does not mark those other areas complete.
+JSON and local filesystem delivery remain prototype adapters. Auth rate-limit timestamps are private runtime metadata, not an addition to the logical domain model or CSV seed package. Real email transport, a production PostgreSQL adapter, distributed transactions/outbox dispatch, storage retention and production security hardening need their own deployment work. Files saved before a rejected registration may remain as unreferenced private objects until a retention job is implemented; none become publicly accessible. This merge preserves the user's functional-prototype scope rather than claiming a production release.

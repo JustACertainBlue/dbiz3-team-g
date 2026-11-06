@@ -7,7 +7,7 @@ short, factual and current.
 ## 1. Project
 
 - Product: `Hanoi Artisan Bridge`, team `G`, course DBIZ3, VJCBI College, Foreign Trade University.
-- Current step of the course process: Session 8 module implementation and integration. AIT, PRF and EXP are merged into `main` and share one functional prototype; AUT (`001-aut-registration`) and ADM (`003-adm-core`) are on unmerged branches; BKG and IAC have no module yet.
+- Current step of the course process: module integration. AIT, PRF, EXP, ADM, BKG and IAC share one functional prototype. AUT PR #11 is integrated with that runtime; its adoption map and quickstart are in `specs/AUT-INTEGRATION.md`. Real email and production PostgreSQL remain pending configuration/deployment.
 - Source of truth for MVP scope: `docs/prd.md`; source of truth for detailed function contracts: `docs/spec/`.
 - Source of truth for data: `data/` (data model and seed package from Session 5).
 
@@ -16,7 +16,7 @@ short, factual and current.
 - Language/Runtime: TypeScript 5.x / Node.js >= 22.0.0
 - Web framework: Next.js 14 (App Router) and React 18.
 - Target database: PostgreSQL (`data/schema.sql`); `src/lib/db/client.ts` is not implemented yet. The prototype on `main` stores all modules' data through one JSON runtime (`src/lib/demo/json-repository.ts`): `npm run demo:seed` copies `data/seed/*.csv` to `.demo-data/runtime.json` (git-ignored) and every write persists there; `npm run demo:reset` restores the seed. Tests use a volatile in-memory copy.
-- Login: demo session cookie `hab_demo_account` (`src/lib/auth/demo-session.ts`), not AUT.
+- Login: AUT bcrypt verification and opaque cookie `hab_session`; role, organization and scope load from the shared repository. Four synthetic seed identities retain fixture-password login in development only; production rejects it. Legacy `hab_demo_account` cookies are accepted only by automated tests. Email-dependent flows report unavailable unless the explicitly local `HAB_EMAIL_MODE=dev-outbox` adapter is enabled; never claim it sends real email.
 - Test runner: Vitest 2.
 - From the repository root: `npm ci`, `python data/scripts/validate_seed.py`, `npm test`, `npm run lint`, then `npm run demo:seed` and `npm run dev`.
 - When adding a module, reuse the agreed stack and document integrations and dependencies in that feature's plan.

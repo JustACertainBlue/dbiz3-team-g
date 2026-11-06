@@ -22,21 +22,25 @@ export function listAccounts(session: SessionContext) {
 }
 export function accountAction(session: SessionContext, userId: string, action: unknown) {
   const repo = demoRepository()
-  const account = repo.find('user_accounts', row => row.user_id === userId)
-  if (!account || !allowed(session, account)) throw new Error('FORBIDDEN')
+  const target = repo.find('user_accounts', row => row.user_id === userId)
+  if (!target || !allowed(session, target)) throw new Error('FORBIDDEN')
   if (action === 'reset_password') throw new Error('EMAIL_NOT_CONFIGURED')
   if (action !== 'enable' && action !== 'disable') throw new Error('INVALID_ACTION')
-  const audits = repo.all('audit_logs').filter(row => row.target_id === userId && row.action === 'DISABLE_ACCOUNT').sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))
-  const previous = audits[0] ? JSON.parse(audits[0].change_or_result).previous_status as string : null
-  if (action === 'enable' && (account.account_status !== 'Disabled' || !previous || previous === 'Disabled')) throw new Error('NO_PREVIOUS_STATUS')
-  if (action === 'disable' && account.account_status === 'Disabled') throw new Error('ALREADY_DISABLED')
-  const now = new Date().toISOString()
-  const status = action === 'disable' ? 'Disabled' : previous!
-  repo.applyBatch([
-    { table: 'user_accounts', match: row => row.user_id === userId, changes: { account_status: status, updated_at: now } },
-    ...repo.all('sessions').filter(row => action === 'disable' && row.user_id === userId && !row.revoked_at).map(row => ({ table: 'sessions', match: (sessionRow: DemoRow) => sessionRow.session_id === row.session_id, changes: { revoked_at: now } })),
-    { table: 'audit_logs', row: { audit_id: randomUUID(), actor_user_id: session.userId!, action: action === 'disable' ? 'DISABLE_ACCOUNT' : 'ENABLE_ACCOUNT', target_type: 'UserAccount', target_id: userId, occurred_at: now, change_or_result: JSON.stringify({ previous_status: account.account_status, status }) } },
-    { table: 'notifications', row: { notification_id: randomUUID(), recipient_user_id: userId, event_type: 'Account Status Changed', source_type: 'UserAccount', source_id: userId, payload: JSON.stringify({ status }), created_at: now, read_at: '', email_delivery_status: 'Fail' } },
-  ])
-  return { account_status: status }
+  return repo.transaction(tables => {
+    const table = (name: string) => tables[name] ??= []
+    const account = table('user_accounts').find(row => row.user_id === userId)!
+    if (session.adminType !== 'HDT' && !table('provider_profiles').some(row => row.user_id === userId && row.village_id === session.assignedVillageId && account.role_code === 'Local_Provider')) throw new Error('FORBIDDEN')
+    const histories = table('account_status_history').filter(row => row.user_id === userId && row.to_status === 'Disabled').sort((a,b) => b.changed_at.localeCompare(a.changed_at))
+    const audits = table('audit_logs').filter(row => row.target_id === userId && row.action === 'DISABLE_ACCOUNT').sort((a,b) => b.occurred_at.localeCompare(a.occurred_at))
+    const previous = histories[0]?.from_status || (audits[0] ? JSON.parse(audits[0].change_or_result).previous_status as string : null)
+    if (action === 'enable' && (account.account_status !== 'Disabled' || !previous || previous === 'Disabled')) throw new Error('NO_PREVIOUS_STATUS')
+    if (action === 'disable' && account.account_status === 'Disabled') throw new Error('ALREADY_DISABLED')
+    const before = account.account_status, status = action === 'disable' ? 'Disabled' : previous!, now = new Date().toISOString()
+    account.account_status = status; account.updated_at = now
+    for (const row of table('sessions')) if (action === 'disable' && row.user_id === userId && !row.revoked_at) row.revoked_at = now
+    table('account_status_history').push({ history_id: randomUUID(), user_id: userId, from_status: before, to_status: status, changed_by: session.userId!, changed_at: now, reason: action === 'disable' ? 'Disabled by administrator' : 'Restored previous status' })
+    table('audit_logs').push({ audit_id: randomUUID(), actor_user_id: session.userId!, action: action === 'disable' ? 'DISABLE_ACCOUNT' : 'ENABLE_ACCOUNT', target_type: 'UserAccount', target_id: userId, occurred_at: now, change_or_result: JSON.stringify({ previous_status: before, status }) })
+    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: userId, event_type: 'Account Status Changed', source_type: 'UserAccount', source_id: userId, payload: JSON.stringify({ status }), created_at: now, read_at: '', email_delivery_status: 'Fail' })
+    return { account_status: status }
+  })
 }

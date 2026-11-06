@@ -9,6 +9,7 @@ export async function POST(request: Request) {
   let body: { email?: unknown; password?: unknown }
   try { body = await request.json() as { email?: unknown; password?: unknown } }
   catch { return NextResponse.json({ error: { code: 'INVALID_REQUEST', message: 'Dữ liệu đăng nhập không hợp lệ.' } }, { status: 400 }) }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: { code: 'INVALID_REQUEST', message: 'Dữ liệu đăng nhập không hợp lệ.' } }, { status: 400 })
 
   const result = await authenticateAccount(typeof body.email === 'string' ? body.email : '', typeof body.password === 'string' ? body.password : '')
   if (!result.ok) {

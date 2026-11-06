@@ -1,5 +1,6 @@
 import './globals.css'
 import './screen-specs.css'
+import './product-ui.css'
 import React from 'react'
 
 export const metadata = {
@@ -7,7 +8,7 @@ export const metadata = {
   description: 'Hệ sinh thái kết nối các nghệ nhân làng nghề truyền thống Hà Nội với các công ty du lịch quốc tế và địa phương.',
 }
 
-import RoleSwitcher from './components/RoleSwitcher'
+import SessionHeader from './components/SessionHeader'
 
 export default function RootLayout({
   children,
@@ -25,8 +26,8 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <RoleSwitcher />
-        <main>{children}</main>
+        <SessionHeader />
+        <div id="page-content">{children}</div>
       </body>
     </html>
   )

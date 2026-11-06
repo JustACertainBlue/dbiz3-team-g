@@ -1,10 +1,10 @@
-import { cookies } from 'next/headers'
-import { DEMO_SESSION_COOKIE, demoSessionContextFor, type SessionContext } from '@/lib/auth/session'
+import { type SessionContext } from '@/lib/auth/session'
+import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/demo/json-repository'
 
 // Gate for BKG137 and SCH141: a Tour Agency on its own agencyId (BR-002, BR-008, #33).
 export function agencyPageSession(agencyId: string): SessionContext | null {
-  const session = demoSessionContextFor(cookies().get(DEMO_SESSION_COOKIE)?.value)
+  const session = currentServerSession()
   return session.authenticated && session.role === 'Tour_Agency' && session.agencyId === agencyId ? session : null
 }
 

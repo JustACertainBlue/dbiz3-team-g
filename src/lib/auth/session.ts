@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { DEMO_SESSION_COOKIE, demoSessionFor, demoSessionFromRequest, type ActorSession } from './demo-session'
+import { productSessionFromRequest } from './product-session'
 import { demoRepository } from '../demo/json-repository'
 
 export type AuthRole = 'ADMIN' | 'Tour_Agency' | 'Local_Provider'
@@ -76,7 +77,11 @@ export function demoSessionContextFor(key: string | null | undefined): SessionCo
 }
 
 export function sessionContextFromRequest(request: NextRequest | Request): SessionContext {
-  return sessionContextFor(demoSessionFromRequest(request))
+  const productSession = productSessionFromRequest(request)
+  if (productSession) return sessionContextFor(productSession)
+  // Legacy demo cookies remain available only to the existing automated regression suite.
+  // Development and production must authenticate through the opaque product session.
+  return sessionContextFor(process.env.NODE_ENV === 'test' ? demoSessionFromRequest(request) : demoSessionFor('guest'))
 }
 
 export interface AccessCheckResult {

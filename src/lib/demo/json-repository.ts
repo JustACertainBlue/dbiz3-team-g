@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync, rmdirSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import { parse } from 'csv-parse/sync'
 import type { BatchOperation, DemoDatabase, DemoRepository, DemoRow } from './types'
@@ -24,10 +25,39 @@ export class JsonDemoRepository implements DemoRepository {
   private database: DemoDatabase
   private readonly volatile: boolean
 
-  constructor(private readonly root = process.cwd()) {
+  constructor(private readonly root = process.cwd(), options: { volatile?: boolean } = {}) {
     this.filePath = join(root, '.demo-data', 'runtime.json')
-    this.volatile = process.env.NODE_ENV === 'test'
-    this.database = this.loadOrSeed()
+    this.volatile = options.volatile ?? process.env.NODE_ENV === 'test'
+    this.database = this.volatile ? createFromSeed(root) : this.withLock(() => this.loadOrSeed())
+  }
+
+  private withLock<T>(work: () => T): T {
+    if (this.volatile) return work()
+    mkdirSync(dirname(this.filePath), { recursive: true })
+    const lock = `${this.filePath}.lock`
+    const deadline = Date.now() + 5000
+    while (true) {
+      try { mkdirSync(lock); break }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+        if (Date.now() >= deadline) throw new Error('Demo database is busy. Retry the operation; inspect runtime.json.lock if its writer exited unexpectedly.')
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10)
+      }
+    }
+    try { return work() } finally { rmdirSync(lock) }
+  }
+
+  private refresh(): void {
+    if (!this.volatile) this.database = this.loadOrSeed()
+  }
+
+  private mutate<T>(work: () => T): T {
+    return this.withLock(() => {
+      this.refresh()
+      const previous = this.database
+      this.database = structuredClone(previous)
+      try { return work() } catch (error) { this.database = previous; throw error }
+    })
   }
 
   private loadOrSeed(): DemoDatabase {
@@ -47,7 +77,7 @@ export class JsonDemoRepository implements DemoRepository {
   private persist(database = this.database): void {
     if (this.volatile) return
     mkdirSync(dirname(this.filePath), { recursive: true })
-    const temporary = `${this.filePath}.tmp`
+    const temporary = `${this.filePath}.${process.pid}.${randomUUID()}.tmp`
     writeFileSync(temporary, `${JSON.stringify(database, null, 2)}\n`, 'utf8')
     renameSync(temporary, this.filePath)
   }
@@ -57,29 +87,36 @@ export class JsonDemoRepository implements DemoRepository {
   }
 
   all(table: string): DemoRow[] {
+    this.refresh()
     return this.table(table).map(row => ({ ...row }))
   }
 
   find(table: string, predicate: (row: DemoRow) => boolean): DemoRow | undefined {
+    this.refresh()
     const row = this.table(table).find(predicate)
     return row ? { ...row } : undefined
   }
 
   insert(table: string, row: DemoRow): DemoRow {
+    return this.mutate(() => {
     this.table(table).push({ ...row })
     this.persist()
     return { ...row }
+    })
   }
 
   update(table: string, predicate: (row: DemoRow) => boolean, changes: Partial<DemoRow>): DemoRow | undefined {
+    return this.mutate(() => {
     const row = this.table(table).find(predicate)
     if (!row) return undefined
     Object.assign(row, changes)
     this.persist()
     return { ...row }
+    })
   }
 
   remove(table: string, predicate: (row: DemoRow) => boolean): number {
+    return this.mutate(() => {
     const rows = this.table(table)
     const retained = rows.filter(row => !predicate(row))
     const removed = rows.length - retained.length
@@ -88,12 +125,17 @@ export class JsonDemoRepository implements DemoRepository {
       this.persist()
     }
     return removed
+    })
   }
 
   // Inserts rows and updates single rows across several tables with one persist. The in-memory
   // tables change only after the write succeeds, so a failed persist leaves none of the changes
   // (BKG BR-019, spec #44). An update that matches no row throws before anything is written.
   applyBatch(operations: readonly BatchOperation[]): DemoRow[] {
+    return this.mutate(() => this.batch(operations))
+  }
+
+  private batch(operations: readonly BatchOperation[]): DemoRow[] {
     const tables = { ...this.database.tables }
     const results: DemoRow[] = []
     for (const operation of operations) {
@@ -116,12 +158,15 @@ export class JsonDemoRepository implements DemoRepository {
   }
 
   snapshot(tableNames: readonly string[]): Record<string, DemoRow[]> {
-    return Object.fromEntries(tableNames.map(name => [name, this.all(name)]))
+    this.refresh()
+    return Object.fromEntries(tableNames.map(name => [name, this.table(name).map(row => ({ ...row }))]))
   }
 
   reset(): void {
+    this.mutate(() => {
     this.database = createFromSeed(this.root)
     this.persist()
+    })
   }
 }
 

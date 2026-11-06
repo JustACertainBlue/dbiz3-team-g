@@ -1,0 +1,42 @@
+.provider-workspace{min-height:calc(100vh - 100px);background:linear-gradient(180deg,#fbf8f1,#f5f0e6);color:#203229;padding:20px 0 0}
+.provider-workspace .spec-portal{background:transparent;min-height:0}
+.provider-workspace .spec-content-wrap,.provider-workspace .prf-container,.provider-workspace .bkg-page{max-width:1180px;margin:auto;padding:28px 24px 72px}
+.provider-workspace h1,.provider-workspace h2{font-family:var(--font-serif),Georgia,serif;color:#203229}
+.provider-workspace h1{font-size:clamp(28px,3.5vw,42px);line-height:1.2}
+.provider-workspace .spec-subheader{max-width:1132px;margin:0 auto;border:1px solid #ded8cb;border-radius:12px;background:#eef2e9;padding:14px 20px;display:flex;gap:16px;flex-wrap:wrap}
+.provider-workspace .spec-hero-box{border:1px solid #ded8cb;border-radius:22px;background:#fffdf8;padding:32px;box-shadow:0 12px 30px #20322908}
+.provider-workspace .prf-section-card,.provider-workspace .spec-form-section,.provider-workspace .bkg-panel{background:#fffdf8;border:1px solid #ded8cb;border-radius:16px;padding:24px;box-shadow:0 6px 18px #20322905}
+.provider-workspace .spec-action-bar{background:#eef2e9;border:1px solid #ded8cb;border-radius:12px;padding:16px;margin-bottom:22px;display:flex;gap:12px;flex-wrap:wrap}
+.provider-workspace .spec-btn-black,.provider-workspace .prf-btn-primary{background:#203f30;border-color:#203f30;border-radius:10px;color:#fff}
+.provider-workspace .spec-btn-white,.provider-workspace .prf-btn-outline{border:1px solid #bbc7ba;background:#fffdf8;border-radius:10px;color:#203229}
+.provider-workspace input,.provider-workspace select,.provider-workspace textarea{border-radius:9px;border-color:#bec9bd;font-size:14px;line-height:1.5}
+.provider-workspace input:disabled{background:#eeeee6;color:#5a665d}
+.provider-workspace .spec-form-section-header{border-color:#ded8cb}
+.provider-workspace .prf-sticky-footer{background:#fffdf8;border-top:1px solid #ded8cb}
+.provider-workspace .spec-hero-title{font-size:clamp(30px,4vw,48px)}
+.provider-workspace a{color:#355b46;text-underline-offset:3px}
+.provider-workspace .spec-btn-black,.provider-workspace .prf-btn-primary,.provider-workspace .bkg-link-btn{color:white}
+.provider-dashboard{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.provider-dashboard>header,.provider-dashboard>.provider-modules{grid-column:1/-1}
+.provider-dashboard>.bkg-panel{margin-top:0!important;min-width:0}
+.provider-dashboard .bkg-panel dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;border-top:1px solid #ded8cb;padding-top:16px}
+.provider-dashboard .booking-metric{padding:12px;border:1px solid #ded8cb;border-radius:12px;background:#f4f5ed}
+.provider-dashboard .booking-metric dt{font-size:12px}
+.provider-dashboard .booking-metric dd{margin-top:8px}
+.provider-dashboard .bkg-panel dd{font-size:23px;font-weight:700;color:#355b46}
+.provider-dashboard .bkg-panel>p{margin:12px 0;line-height:1.7}
+.provider-workspace .spec-exp-card{border-radius:16px;overflow:hidden;border:1px solid #ded8cb;box-shadow:0 8px 24px #20322908;background:#fffdf8}
+.provider-workspace .spec-hero-box{grid-template-columns:1.4fr 1fr;gap:32px}
+.provider-workspace .spec-badge-pill{border-radius:99px;padding:7px 12px;background:#e7eee3;color:#355b46}
+.provider-workspace .spec-info-box{background:#fffdf8;border:1px solid #ded8cb;border-radius:16px}
+.provider-workspace .spec-action-bar{justify-content:flex-start}
+.provider-workspace .spec-action-label{margin-right:auto}
+@media(max-width:760px){
+ .provider-dashboard{grid-template-columns:1fr}
+ .provider-workspace .spec-content-wrap,.provider-workspace .prf-container,.provider-workspace .bkg-page{padding:20px 14px 90px}
+ .provider-workspace [style*="grid-template-columns"]{grid-template-columns:1fr!important}
+ .provider-workspace .spec-hero-box{display:block;padding:22px}
+ .provider-workspace .prf-spec-header{flex-direction:column;align-items:stretch;gap:16px}
+ .provider-workspace .spec-form-section,.provider-workspace .prf-section-card{padding:18px}
+ .provider-workspace .prf-sticky-footer-content{flex-wrap:wrap;gap:12px}
+}

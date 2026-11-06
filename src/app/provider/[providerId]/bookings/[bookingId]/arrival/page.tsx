@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export default async function ConfirmArrivalPage({ params }: { params: { providerId: string; bookingId: string } }) {
   const detail = await loadProviderBooking(params.providerId, params.bookingId)
   if (!detail) {
-    return <main className="bkg-page bkg-state"><h1>Confirm Group Arrival</h1><p>Chỉ Local Provider sở hữu Booking này mới xác nhận được.</p><Link href="/login">Chọn tài khoản demo</Link><style>{bookingDetailStyles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Confirm Group Arrival</h1><p>Chỉ Local Provider sở hữu Booking này mới xác nhận được.</p><Link href="/login">Đăng nhập</Link><style>{bookingDetailStyles}</style></main>
   }
   const back = `/provider/${params.providerId}/bookings/${params.bookingId}`
   return <main className="bkg-page">

@@ -25,6 +25,8 @@ interface ExperienceDetail {
   duration_minutes: number
   price_per_person: number
   max_participants: number
+  notice_period_hours?: number
+  experience_location_address?: string
   images: ExperienceImage[]
 }
 
@@ -73,7 +75,7 @@ export default function ExperienceDetailPage({
   }, [lightbox.open, onKey])
 
   if (error) return <main style={{ padding: '3rem' }}><h1>{error}</h1><Link href={`/provider/${params.providerId}/experiences`}>← Quay lại danh sách</Link></main>
-  if (!experience) return <main style={{ padding: '3rem' }}>Đang tải trải nghiệm (EXP068)…</main>
+  if (!experience) return <main style={{ padding: '3rem' }}>Đang tải trải nghiệm…</main>
 
   const images = experience.images ?? []
   const current = images[lightbox.index]
@@ -83,7 +85,7 @@ export default function ExperienceDetailPage({
     <main style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#78716c', fontWeight: 700 }}>EXP068 · Chi tiết trải nghiệm (chủ sở hữu)</div>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#78716c', fontWeight: 700 }}>Chi tiết trải nghiệm của xưởng</div>
           <h1 style={{ margin: '0.25rem 0 1rem' }}>{experience.name}</h1>
         </div>
         <Link href={`/provider/${params.providerId}/experiences`}>← Quay lại danh sách</Link>
@@ -96,6 +98,11 @@ export default function ExperienceDetailPage({
       </div>
 
       <p style={{ lineHeight: 1.6 }}>{experience.description}</p>
+      <section className="prf-section-card" style={{ margin: '22px 0' }}><h2>Thông tin đón đoàn</h2><dl><dt>Địa điểm</dt><dd>{experience.experience_location_address || 'Chưa cập nhật'}</dd><dt>Thời gian báo trước</dt><dd>{experience.notice_period_hours ?? 'Chưa cập nhật'} giờ</dd></dl></section>
+      <nav aria-label="Quản lý trải nghiệm" style={{ display: 'flex', gap: 18, margin: '20px 0', flexWrap: 'wrap' }}>
+        <Link href={`/provider/${params.providerId}/experiences/${params.experienceId}/edit`}>Chỉnh sửa trải nghiệm</Link>
+        <Link href={`/provider/${params.providerId}/experiences/${params.experienceId}/delete`}>Xóa hoặc lưu trữ</Link>
+      </nav>
 
       <h2 style={{ fontSize: '0.9rem', textTransform: 'uppercase' }}>Bộ sưu tập hình ảnh ({images.length})</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>

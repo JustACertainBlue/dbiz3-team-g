@@ -1,6 +1,6 @@
 'use client'
 
-// PRF128 Edit Provider Profile (US-4, FR-004). Every field comes from the API; Save sends only the
+// PRF128 Chỉnh sửa hồ sơ xưởng (US-4, FR-004). Every field comes from the API; Save sends only the
 // changed fields (decision Q1 2026-11-04: no hard-coded demo values, only FR-004 inputs).
 // Image and registration-certificate uploads (BR-008) are not on this page yet: see checklist §3.
 
@@ -174,24 +174,6 @@ export default function EditProviderProfilePage({
 
   return (
     <div className="spec-portal">
-      <header className="spec-header">
-        <div>
-          <div className="spec-brand-title">HANOI ARTISAN BRIDGE</div>
-          <div className="spec-brand-sub">LOCAL PROVIDER PORTAL</div>
-        </div>
-
-        <nav className="spec-nav">
-          <Link href={providerBkgLinks(params.providerId).dashboard}>Dashboard</Link>
-          <Link href={`/provider/${params.providerId}/experiences`}>Experience Management</Link>
-          <Link href={providerBkgLinks(params.providerId).bookings}>Bookings</Link>
-          <Link href={providerBkgLinks(params.providerId).schedule}>Schedule</Link>
-          <Link href="/messages">Messages</Link>
-        </nav>
-
-        <div className="spec-user-profile">
-          <div style={{ fontWeight: 800 }}>{initial.business_name}</div>
-        </div>
-      </header>
 
       <div className="spec-subheader">
         <div>
@@ -206,7 +188,7 @@ export default function EditProviderProfilePage({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
           <div>
             <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827', margin: '0 0 0.5rem 0' }}>
-              Edit Provider Profile
+              Chỉnh sửa hồ sơ xưởng
             </h1>
             <p style={{ color: '#6b7280', fontSize: '0.9rem', maxWidth: '800px', margin: 0 }}>
               Business Name, Craft Type và Business Registration là trường trọng yếu: khi hồ sơ đã được xác minh, thay đổi chúng tạo một bản sửa đổi chờ UBND thẩm định, còn phiên bản đã xác minh vẫn hiển thị công khai.
@@ -232,13 +214,13 @@ export default function EditProviderProfilePage({
         <form onSubmit={handleSubmit}>
           <div className="spec-form-section">
             <div className="spec-form-section-header">
-              <div className="spec-section-num">01 Provider Identity</div>
+              <div className="spec-section-num">01 Thông tin xưởng</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
               <div>
                 {field('BUSINESS NAME (major field)', 'business_name')}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label className="spec-form-label" htmlFor="prf128-craft_type">CRAFT TYPE (major field)</label>
+                  <label className="spec-form-label" htmlFor="prf128-craft_type">Nhóm nghề — thay đổi cần thẩm định</label>
                   <select
                     id="prf128-craft_type"
                     className="spec-form-input"
@@ -260,7 +242,7 @@ export default function EditProviderProfilePage({
             </div>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="spec-form-label" htmlFor="prf128-general_description">DESCRIPTION</label>
+                <label className="spec-form-label" htmlFor="prf128-general_description">Mô tả</label>
                 <button
                   type="button"
                   disabled={refining}
@@ -284,7 +266,7 @@ export default function EditProviderProfilePage({
 
           <div className="spec-form-section">
             <div className="spec-form-section-header">
-              <div className="spec-section-num">02 Contact</div>
+              <div className="spec-section-num">02 Liên hệ</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
               {field('PHONE NUMBER', 'phone_number')}
@@ -294,7 +276,7 @@ export default function EditProviderProfilePage({
 
           <div className="spec-form-section">
             <div className="spec-form-section-header">
-              <div className="spec-section-num">03 Operating Hours (weekly, BR-021)</div>
+              <div className="spec-section-num">03 Giờ hoạt động hằng tuần</div>
               <button type="button" className="spec-btn-white" style={{ fontSize: '0.72rem' }} onClick={addHour}>
                 + ADD TIME RANGE
               </button>
@@ -305,17 +287,17 @@ export default function EditProviderProfilePage({
             {formData.operating_hours.map((row, index) => (
               <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1rem', marginBottom: '0.75rem', alignItems: 'end' }}>
                 <div>
-                  <label className="spec-form-label" htmlFor={`prf128-hours-${index}-weekday`}>WEEKDAY</label>
+                  <label className="spec-form-label" htmlFor={`prf128-hours-${index}-weekday`}>Ngày trong tuần</label>
                   <select id={`prf128-hours-${index}-weekday`} className="spec-form-input" value={row.weekday} onChange={e => setHour(index, 'weekday', e.target.value)}>
                     {Object.entries(WEEKDAY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="spec-form-label" htmlFor={`prf128-hours-${index}-start`}>FROM</label>
+                  <label className="spec-form-label" htmlFor={`prf128-hours-${index}-start`}>Từ giờ</label>
                   <input id={`prf128-hours-${index}-start`} type="time" className="spec-form-input" value={row.local_start} onChange={e => setHour(index, 'local_start', e.target.value)} />
                 </div>
                 <div>
-                  <label className="spec-form-label" htmlFor={`prf128-hours-${index}-end`}>TO</label>
+                  <label className="spec-form-label" htmlFor={`prf128-hours-${index}-end`}>Đến giờ</label>
                   <input id={`prf128-hours-${index}-end`} type="time" className="spec-form-input" value={row.local_end} onChange={e => setHour(index, 'local_end', e.target.value)} />
                 </div>
                 <button type="button" className="spec-btn-white" style={{ fontSize: '0.72rem' }} onClick={() => removeHour(index)}>

@@ -16,7 +16,7 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
   const session = agencyPageSession(params.agencyId)
   const styles = bookingDetailStyles + calendarStyles + scheduleStyles
   if (!session) {
-    return <main className="bkg-page bkg-state"><h1>Agency Schedule</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch này.</p><Link href="/login">Chọn tài khoản demo</Link><style>{styles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Agency Schedule</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch này.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
   }
   const base = `/agency/${params.agencyId}/schedule`
   const dateFrom = searchParams.date_from || hanoiDate(Date.now())

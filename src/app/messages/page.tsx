@@ -163,7 +163,7 @@ function MessagesContent() {
 
   if (!session) return <main className="messages-state"><p>Đang tải phiên demo…</p></main>
   if (!session.authenticated || (session.role !== 'Tour_Agency' && session.role !== 'Local_Provider')) {
-    return <main className="messages-state"><h1>Hộp thư B2B</h1><p>Hãy chọn tài khoản Agency hoặc Provider trên thanh demo để xem hội thoại.</p><Link href="/login">Chọn tài khoản demo</Link></main>
+    return <main className="messages-state"><h1>Hộp thư B2B</h1><p>Đăng nhập bằng tài khoản Agency hoặc Provider để xem hội thoại.</p><Link href="/login">Đăng nhập</Link></main>
   }
   const isAgency = session.role === 'Tour_Agency'
 

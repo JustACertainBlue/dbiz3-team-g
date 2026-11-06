@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { setCurrentRole, getAuthHeaders } from '@/lib/prf/client-session'
+import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 import type { AuthRole, SessionContext } from '@/lib/auth/session'
 
@@ -131,20 +131,15 @@ export default function EditAgencyProfilePage({
             Tài khoản <strong>{role === 'Local_Provider' ? 'Local Provider (Chủ xưởng)' : role || 'Guest'}</strong> không có quyền truy cập vào màn hình chỉnh sửa hồ sơ của Công ty Lữ hành (Tour Agency). Theo quy định an toàn hệ thống, chỉ chủ sở hữu tài khoản Agency mới có quyền quản lý hồ sơ này.
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/provider/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374" className="spec-btn-black">
-              ← Về Hồ sơ Xưởng của tôi (PRF127)
+            <Link href="/" className="spec-btn-black">
+              ← Về không gian làm việc
             </Link>
-            <button
-              onClick={async () => {
-                await setCurrentRole('TourAgency')
-                const session = await readSessionContext()
-                setRole(session.role)
-                setAuthorized(session.role === 'Tour_Agency' && session.agencyId === params.agencyId)
-              }}
+            <Link
+              href={`/login?next=/agency/${params.agencyId}/edit`}
               className="spec-btn-white"
             >
-              Chuyển sang tài khoản Agency
-            </button>
+              Đăng nhập Agency
+            </Link>
           </div>
         </div>
       </div>

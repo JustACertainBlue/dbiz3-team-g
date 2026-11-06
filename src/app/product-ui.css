@@ -1,0 +1,13 @@
+/* Shared accessibility and form foundations for the role workspaces. */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid #b7683c;
+  outline-offset: 3px;
+}
+:where(button, input, select, textarea) { font-family: inherit; }
+:where(button:disabled) { cursor: not-allowed; }
+:where(input, select, textarea) { max-width: 100%; }
+:where(.bkg-page, .prf-container, .admin-review, .admin-detail) { color: #203229; }
+:where(.prf-section-card, .bkg-panel) { border-radius: 14px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

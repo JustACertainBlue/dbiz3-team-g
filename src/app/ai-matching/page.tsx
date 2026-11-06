@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { setCurrentRole } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, noMatchView, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
@@ -119,14 +118,9 @@ export default function AiMatchingScreen() {
             {RESTRICTED_TEXT}
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button
+            <a
               id="switch-to-agency-btn"
-              onClick={async () => {
-                await setCurrentRole('TourAgency')
-                const session = await readSessionContext()
-                setAgencyId(session.agencyId || '')
-                setRole('Agency')
-              }}
+              href="/login?next=/ai-matching"
               style={{
                 backgroundColor: '#D97706',
                 color: '#FFF',
@@ -135,25 +129,10 @@ export default function AiMatchingScreen() {
                 borderRadius: '8px',
                 fontWeight: 600,
                 cursor: 'pointer',
+                textDecoration: 'none',
               }}
             >
               Sign In as Agency
-            </button>
-            <a
-              id="login-redirect-link"
-              href="/login"
-              style={{
-                backgroundColor: '#1E293B',
-                color: '#CBD5E1',
-                border: '1px solid #475569',
-                padding: '10px 18px',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: 500,
-              }}
-            >
-              Go to Login Page
             </a>
           </div>
         </div>
@@ -303,60 +282,10 @@ export default function AiMatchingScreen() {
           </div>
         </div>
 
-        {/* Role toggle for easy evaluation */}
+        {/* Current organization context comes from the authenticated session. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ fontSize: '12px', color: '#CBD5E1' }}>
             Active Agency: <strong style={{ color: '#F59E0B' }}>{agencyId}</strong>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              background: '#1E293B',
-              borderRadius: '8px',
-              padding: '3px',
-              border: '1px solid #334155',
-            }}
-          >
-            <button
-              id="role-agency-btn"
-              onClick={async () => {
-                await setCurrentRole('TourAgency')
-                const session = await readSessionContext()
-                setAgencyId(session.agencyId || '')
-                setRole('Agency')
-              }}
-              style={{
-                background: role === 'Agency' ? '#D97706' : 'transparent',
-                color: role === 'Agency' ? '#FFFFFF' : '#94A3B8',
-                border: 'none',
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Tour Agency
-            </button>
-            <button
-              id="role-guest-btn"
-              onClick={async () => {
-                await setCurrentRole('Guest')
-                router.replace('/login')
-              }}
-              style={{
-                background: (role as string) === 'Guest' ? '#EF4444' : 'transparent',
-                color: (role as string) === 'Guest' ? '#FFFFFF' : '#94A3B8',
-                border: 'none',
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Guest (Blocked)
-            </button>
           </div>
         </div>
       </header>

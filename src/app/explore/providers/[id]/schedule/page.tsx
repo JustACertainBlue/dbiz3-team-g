@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { DEMO_SESSION_COOKIE, demoSessionContextFor } from '@/lib/auth/session'
+import { currentServerSession } from '@/lib/auth/server-session'
 import { addDays, hanoiDate } from '@/lib/booking/clock'
 import { BookingError } from '@/lib/booking/create-booking'
 import { getProviderSchedule, scheduleEntryFor } from '@/lib/booking/provider-schedule'
@@ -12,7 +11,7 @@ export const dynamic = 'force-dynamic'
 
 // Screen SCH140 Provider Schedule – Agency View (F-SCHED-01 public view; #74, #75, #82).
 export default async function AgencyProviderSchedulePage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
-  const session = demoSessionContextFor(cookies().get(DEMO_SESSION_COOKIE)?.value)
+  const session = currentServerSession()
   const styles = bookingDetailStyles + calendarStyles
   const entry = scheduleEntryFor(session, params.id)
   if (entry === 'redirect-owner') redirect(`/provider/${params.id}/schedule`)
@@ -20,7 +19,7 @@ export default async function AgencyProviderSchedulePage({ params, searchParams 
     return <main className="bkg-page bkg-state"><h1>Provider Schedule – Agency View</h1><p>Không tìm thấy Provider đã xác minh này.</p><Link href="/explore">Về Explore</Link><style>{styles}</style></main>
   }
   if (entry === 'denied') {
-    return <main className="bkg-page bkg-state"><h1>Provider Schedule – Agency View</h1><p>Chỉ Tour Agency mới xem được lịch trống của Provider.</p><Link href="/login">Chọn tài khoản demo</Link><style>{styles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Provider Schedule – Agency View</h1><p>Chỉ Tour Agency mới xem được lịch trống của Provider.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
   }
 
   const base = `/explore/providers/${params.id}/schedule`

@@ -13,7 +13,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
   const session = agencyPageSession(params.agencyId)
   const styles = bookingDetailStyles + historyStyles
   if (!session) {
-    return <main className="bkg-page bkg-state"><h1>Booking History</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch sử Booking.</p><Link href="/login">Chọn tài khoản demo</Link><style>{styles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Booking History</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch sử Booking.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
   }
   const base = `/agency/${params.agencyId}/bookings`
   const query = { status: searchParams.status ?? '', village_id: searchParams.village_id ?? '', date_from: searchParams.date_from ?? '', date_to: searchParams.date_to ?? '' }

@@ -1,0 +1,37 @@
+'use client'
+import { useEffect, useState } from 'react'
+type Review = { id: string; kind: string; name: string; status: string; submitted: string; fields: Record<string, unknown>; account: { email: string; status: string; name: string; created_at: string; last_login: string } | null; history: { review_id: string; decision: string; comments: string; decided_at: string }[]; documents: { type: string; name: string; available: boolean }[] }
+const labels: Record<string,string> = { company_name:'Tên công ty hiện tại', tax_id:'Mã số thuế hiện tại', proposed_company_name:'Tên công ty đề nghị', proposed_tax_id:'Mã số thuế đề nghị', full_name:'Người đại diện', company_type:'Loại công ty', location:'Địa chỉ', contact_information:'Liên hệ', team_size:'Quy mô', tour_types:'Loại tour', submitted_at:'Ngày nộp', version_no:'Phiên bản' }
+function readable(value: unknown): string {
+  if (typeof value === 'string') { try { const parsed = JSON.parse(value); if (typeof parsed === 'object') return readable(parsed) } catch {} return value || 'Không thay đổi / chưa có' }
+  if (Array.isArray(value)) return value.map(readable).join(', ')
+  if (value && typeof value === 'object') return Object.values(value).map(readable).join(' · ')
+  return String(value ?? '')
+}
+export default function AgencyReviews() {
+  const [items, setItems] = useState<Review[]>([])
+  const [selected, setSelected] = useState<Review | null>(null)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [all, setAll] = useState(false)
+  const [decision, setDecision] = useState('Approve')
+  const [comment, setComment] = useState('')
+  async function load() { try { const response = await fetch('/api/auth/agency-reviews'); const body = await response.json(); if (!response.ok) throw new Error(body.error); setItems(body.data) } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể tải.') } finally { setLoading(false) } }
+  useEffect(() => { void load() }, [])
+  async function submit(event: React.FormEvent) {
+    event.preventDefault(); if (!selected) return
+    setBusy(true); setError(''); setNotice('')
+    try { const response = await fetch('/api/auth/agency-reviews', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id:selected.id, kind:selected.kind, decision, comment }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setSelected(null); setNotice('Đã lưu quyết định và thông báo trong ứng dụng. Email chưa được gửi vì chưa cấu hình dịch vụ.'); await load() }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể lưu.') } finally { setBusy(false) }
+  }
+  return <main className="review-page"><p>QUẢN TRỊ HDT</p><h1>Thẩm định Agency</h1><p>Đăng ký mới và thay đổi thông tin pháp lý được xử lý riêng. Dữ liệu đã duyệt vẫn có hiệu lực khi chờ thẩm định thay đổi.</p>{error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
+    <label><input type="checkbox" checked={all} onChange={e => setAll(e.target.checked)}/> Hiển thị cả hồ sơ đã xử lý</label>
+    {loading ? <p>Đang tải…</p> : <div className="review-grid">{items.filter(item => all || ['Pending Approval','Pending Review'].includes(item.status)).map(item => <button className="review-card" key={item.id} onClick={() => { setSelected(item); setComment(''); setDecision('Approve'); setError('') }}><small>{item.kind === 'change' ? 'THAY ĐỔI PHÁP LÝ' : 'ĐĂNG KÝ MỚI'}</small><strong>{item.name}</strong><span>{item.status}</span><span>{item.submitted}</span></button>)}</div>}
+    {!loading && !items.some(item => all || ['Pending Approval','Pending Review'].includes(item.status)) && <p>Không có hồ sơ chờ thẩm định.</p>}
+    {selected && <section className="review-detail"><h2>{selected.name}</h2><p>{selected.status}</p><h3>Thông tin tài khoản</h3>{selected.account ? <dl>{Object.entries(selected.account).map(([key,value]) => <div key={key}><dt>{({email:'Email',status:'Trạng thái',name:'Họ tên',created_at:'Ngày tạo',last_login:'Đăng nhập gần nhất'} as Record<string,string>)[key]}</dt><dd>{value || 'Chưa có'}</dd></div>)}</dl> : <p>Chưa có tài khoản liên kết.</p>}<h3>Nội dung đề nghị</h3><dl>{Object.entries(selected.fields).map(([key,value]) => <div key={key}><dt>{labels[key] || key}</dt><dd>{readable(value)}</dd></div>)}</dl><h3>Tài liệu</h3>{selected.documents.length ? selected.documents.map((document,index) => <p key={index}>{document.name} · {document.type} — chưa có file gốc để tải</p>) : <p>Không có tài liệu kèm theo.</p>}<h3>Lịch sử</h3>{selected.history.map(row => <p key={row.review_id}>{row.decided_at} · {row.decision} · {row.comments}</p>)}
+      {['Pending Approval','Pending Review'].includes(selected.status) && <form onSubmit={submit}><label>Quyết định<select value={decision} onChange={e => setDecision(e.target.value)} disabled={busy}><option value="Approve">Duyệt</option><option value="Request More Information">Yêu cầu bổ sung</option><option value="Reject">Từ chối</option></select></label><label>Nhận xét{decision !== 'Approve' ? ' (bắt buộc)' : ''}<textarea value={comment} onChange={e => setComment(e.target.value)} required={decision !== 'Approve'} disabled={busy}/></label><button disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu quyết định'}</button></form>}<button disabled={busy} onClick={() => setSelected(null)}>Đóng</button></section>}
+    <style jsx>{`.review-page{max-width:1180px;margin:auto;padding:32px 24px;color:#203229}.review-page h1{font:700 38px Georgia,serif;margin:12px 0}.review-page>p{margin-bottom:18px}.review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin:24px 0}.review-card{display:grid;gap:12px;text-align:left;padding:22px;background:#fffdf8;border:1px solid #ded8cb;border-radius:16px;color:#203229;cursor:pointer}.review-card strong{font-size:18px}.review-detail{padding:24px;border:1px solid #ded8cb;border-radius:16px;background:#fffdf8;margin-top:24px}.review-detail h3{margin:20px 0 12px}dl>div{display:grid;grid-template-columns:200px 1fr;gap:16px;border-bottom:1px solid #eee;padding:10px 0}dd{overflow-wrap:anywhere}label{display:grid;gap:8px;margin:12px 0}select,textarea,button{font:inherit;padding:12px;border:1px solid #bec9bd;border-radius:8px}textarea{min-height:100px}button{cursor:pointer;margin:8px 8px 8px 0}button:disabled{opacity:.5}[role=alert]{color:#a51f30}[role=status]{color:#355b46}@media(max-width:650px){dl>div{grid-template-columns:1fr}}`}</style>
+  </main>
+}

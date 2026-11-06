@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
-import { setCurrentRole, getAuthHeaders } from '@/lib/prf/client-session'
+import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 
 export default function EditExperiencePage({
@@ -65,12 +65,6 @@ export default function EditExperiencePage({
     window.addEventListener('hab_role_changed', onRoleChanged)
     return () => { alive = false; window.removeEventListener('hab_role_changed', onRoleChanged) }
   }, [])
-
-  const handleRoleSwitchToProvider = async () => {
-    await setCurrentRole('LocalProvider')
-    const session = await readSessionContext()
-    setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
-  }
 
   const handleAiRefine = async () => {
     setAiRefining(true)
@@ -164,7 +158,7 @@ export default function EditExperiencePage({
       {/* Header */}
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">MÃ MÀN HÌNH: EXP070 · EDIT EXPERIENCE</span>
+          <span className="prf-spec-code">CHỈNH SỬA TRẢI NGHIỆM</span>
           <h1 className="prf-spec-title">Chỉnh sửa Hoạt động Trải nghiệm</h1>
           <p className="prf-spec-subtitle">
             Cập nhật nội dung mô tả, bộ sưu tập hình ảnh và điều kiện đón tiếp
@@ -205,14 +199,13 @@ export default function EditExperiencePage({
               Tài khoản hiện tại không sở hữu Provider này. Chỉ Local Provider đúng tổ chức mới có quyền chỉnh sửa trải nghiệm của xưởng.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleRoleSwitchToProvider}
+          <Link
+            href={`/login?next=/provider/${params.providerId}/experiences/${params.experienceId}/edit`}
             className="prf-btn prf-btn-primary"
             style={{ fontSize: '0.8rem' }}
           >
-            🏺 Chuyển sang tài khoản Local Provider
-          </button>
+            Đăng nhập Local Provider
+          </Link>
         </div>
       )}
 
@@ -274,8 +267,8 @@ export default function EditExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Tên hoạt động trải nghiệm</label>
-                <input
+                <label className="prf-label" htmlFor="experience-field-1">Tên hoạt động trải nghiệm</label>
+                <input id="experience-field-1"
                   type="text"
                   required
                   value={formData.name}
@@ -286,8 +279,8 @@ export default function EditExperiencePage({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="prf-field-group">
-                  <label className="prf-label">Phân loại hoạt động</label>
-                  <select
+                  <label className="prf-label" htmlFor="experience-field-2">Phân loại hoạt động</label>
+                  <select id="experience-field-2"
                     value={formData.category}
                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                     className="prf-select"
@@ -300,14 +293,15 @@ export default function EditExperiencePage({
                 </div>
 
                 <div className="prf-field-group">
-                  <label className="prf-label">
+                  <label className="prf-label" htmlFor="experience-field-3">
                     Thời lượng (phút)
-                    {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>LOCKED</span>}
+                    {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>Đang khóa</span>}
                   </label>
-                  <input
+                  <input id="experience-field-3"
                     type="number"
                     disabled={hasActiveBookings}
                     value={formData.duration_minutes}
+                    onChange={e => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
                     className="prf-input prf-input-locked"
                   />
                 </div>
@@ -410,34 +404,36 @@ export default function EditExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">
+                <label className="prf-label" htmlFor="experience-field-4">
                   Giá niêm yết (VND)
-                  {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>LOCKED</span>}
+                  {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>Đang khóa</span>}
                 </label>
-                <input
+                <input id="experience-field-4"
                   type="number"
                   disabled={hasActiveBookings}
                   value={formData.price_per_person}
+                  onChange={e => setFormData({ ...formData, price_per_person: Number(e.target.value) })}
                   className="prf-input prf-input-locked"
                 />
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">
+                <label className="prf-label" htmlFor="experience-field-5">
                   Sức chứa tối đa (người)
-                  {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>LOCKED</span>}
+                  {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>Đang khóa</span>}
                 </label>
-                <input
+                <input id="experience-field-5"
                   type="number"
                   disabled={hasActiveBookings}
                   value={formData.max_participants}
+                  onChange={e => setFormData({ ...formData, max_participants: Number(e.target.value) })}
                   className="prf-input prf-input-locked"
                 />
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Thời gian báo trước (giờ)</label>
-                <input
+                <label className="prf-label" htmlFor="experience-field-6">Thời gian báo trước (giờ)</label>
+                <input id="experience-field-6"
                   type="number"
                   required
                   min={0}
@@ -448,8 +444,8 @@ export default function EditExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Chính sách hủy dịch vụ</label>
-                <textarea
+                <label className="prf-label" htmlFor="experience-field-7">Chính sách hủy dịch vụ</label>
+                <textarea id="experience-field-7"
                   rows={3}
                   value={formData.cancellation_rules_text}
                   onChange={e => setFormData({ ...formData, cancellation_rules_text: e.target.value })}

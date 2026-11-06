@@ -3,15 +3,13 @@ import { notFound } from 'next/navigation';
 import { resolveViewer } from '../../../../lib/explore/catalog';
 import { getProviderDetail } from '../../../../lib/explore/details';
 import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
-import ExploreHeader from '../../ExploreHeader';
 import ExploreTracker from '../../ExploreTracker';
-import { cookies } from 'next/headers';
-import { DEMO_SESSION_COOKIE, demoSessionContextFor } from '../../../../lib/auth/session';
+import { currentServerSession } from '../../../../lib/auth/server-session';
 import ProviderChatAction from '../../ProviderChatAction';
 
 export default function ProviderPage({ params }: { params: { id: string } }) {
   const seed = loadExploreRuntime();
-  const session = demoSessionContextFor(cookies().get(DEMO_SESSION_COOKIE)?.value);
+  const session = currentServerSession();
   const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   const detail = getProviderDetail(seed, params.id, viewer);
   if (!detail) notFound();
@@ -19,7 +17,6 @@ export default function ProviderPage({ params }: { params: { id: string } }) {
 
   return <div className="explore-module">
     <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
-    <ExploreHeader viewer={viewer.kind} agencyId={isAgency ? viewer.agencyId : undefined} />
 
     <main className="explore-surface detail-page provider-page">
       <nav className="detail-breadcrumb" aria-label="Breadcrumb"><Link href="/explore">Explore</Link><span>/</span><span>{detail.village_name}</span><span>/</span><strong>{detail.provider_name}</strong></nav>

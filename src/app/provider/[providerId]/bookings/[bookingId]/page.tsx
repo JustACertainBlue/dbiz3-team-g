@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export default async function ProviderBookingDetailPage({ params }: { params: { providerId: string; bookingId: string } }) {
   const detail = await loadProviderBooking(params.providerId, params.bookingId)
   if (!detail) {
-    return <main className="bkg-page bkg-state"><h1>Booking Detail</h1><p>Chỉ Local Provider sở hữu Booking này mới xem được trang này.</p><Link href="/login">Chọn tài khoản demo</Link><style>{bookingDetailStyles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Booking Detail</h1><p>Chỉ Local Provider sở hữu Booking này mới xem được trang này.</p><Link href="/login">Đăng nhập</Link><style>{bookingDetailStyles}</style></main>
   }
   return <main className="bkg-page">
     <header><p>HANOI ARTISAN BRIDGE · BKG135</p><h1>Booking Detail</h1></header>

@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { cookies } from 'next/headers'
-import { DEMO_SESSION_COOKIE, demoSessionContextFor, sessionDisplayName } from '@/lib/auth/session'
+import { sessionDisplayName } from '@/lib/auth/session'
+import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { bookingConditionsFromExperience, canOpenCreateBooking } from '@/lib/booking/create-booking'
 import CreateBookingForm, { type AgencyOption, type ExperienceOption } from './CreateBookingForm'
@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic'
 
 // Screen BKG134 Create Booking (F-SCHED-03).
 export default function CreateBookingPage({ params }: { params: { providerId: string } }) {
-  const session = demoSessionContextFor(cookies().get(DEMO_SESSION_COOKIE)?.value)
+  const session = currentServerSession()
   if (!canOpenCreateBooking(session, params.providerId)) {
-    return <main className="bkg-state"><h1>Create Booking</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới tạo được Booking.</p><Link href="/login">Chọn tài khoản demo</Link><style>{bookingStyles}</style></main>
+    return <main className="bkg-state"><h1>Create Booking</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới tạo được Booking.</p><Link href="/login">Đăng nhập</Link><style>{bookingStyles}</style></main>
   }
 
   const repository = demoRepository()

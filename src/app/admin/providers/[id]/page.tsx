@@ -1,14 +1,13 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { cookies } from 'next/headers'
-import { DEMO_SESSION_COOKIE, demoSessionContextFor } from '@/lib/auth/session'
+import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/demo/json-repository'
 import ReviewActions from './ReviewActions'
 
 export const dynamic = 'force-dynamic'
 
 export default function AdminProviderDetail({ params }: { params: { id: string } }) {
-  const session = demoSessionContextFor(cookies().get(DEMO_SESSION_COOKIE)?.value)
+  const session = currentServerSession()
   const repository = demoRepository()
   const provider = repository.find('provider_profiles', row => row.provider_id === params.id)
   if (!provider) notFound()

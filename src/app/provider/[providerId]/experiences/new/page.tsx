@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../ExperienceImagesField'
 import { missingCategories } from '@/lib/prf/experience-images'
-import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { setCurrentRole, getAuthHeaders } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
 
 export default function AddExperiencePage({
   params,
@@ -13,7 +14,7 @@ export default function AddExperiencePage({
   params: { providerId: string }
 }) {
   const router = useRouter()
-  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [authorized, setAuthorized] = useState(false)
   const [sessionReady, setSessionReady] = useState(false)
   const [saving, setSaving] = useState(false)
   const [aiRefining, setAiRefining] = useState(false)
@@ -35,9 +36,13 @@ export default function AddExperiencePage({
   const [images, setImages] = useState<ExperienceImageItem[]>([])
 
   useEffect(() => {
-    refreshDemoSession().then(session => setRole(session.role)).finally(() => setSessionReady(true))
+    const applySession = async () => {
+      const session = await readSessionContext()
+      setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
+    }
+    applySession().finally(() => setSessionReady(true))
     const onRoleChanged = () => {
-      setRole(getCurrentRole())
+      applySession().catch(() => setAuthorized(false))
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
     return () => window.removeEventListener('hab_role_changed', onRoleChanged)
@@ -45,7 +50,8 @@ export default function AddExperiencePage({
 
   const handleRoleSwitchToProvider = async () => {
     await setCurrentRole('LocalProvider')
-    setRole('LocalProvider')
+    const session = await readSessionContext()
+    setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
   }
 
   const handleAiRefine = async () => {
@@ -77,7 +83,7 @@ export default function AddExperiencePage({
     setSaving(true)
     setError(null)
 
-    if (role !== 'LocalProvider') {
+    if (!authorized) {
       setError('Lỗi phân quyền: Chỉ tài khoản Local Provider mới có quyền tạo mới trải nghiệm (BR-001). Vui lòng chuyển vai trò.')
       setSaving(false)
       return
@@ -129,7 +135,7 @@ export default function AddExperiencePage({
   }
 
   if (!sessionReady) return <div className="prf-container" style={{ padding: '3rem' }}>Đang tải phiên demo…</div>
-  const isLocalProvider = role === 'LocalProvider'
+  const isLocalProvider = authorized
 
   return (
     <div className="prf-container" style={{ paddingBottom: '7rem' }}>
@@ -174,7 +180,7 @@ export default function AddExperiencePage({
               ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER (BR-001)
             </strong>
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#78350f' }}>
-              Bạn đang ở vai trò <strong>{role}</strong>. Chỉ tài khoản Local Provider mới có quyền thêm mới trải nghiệm cho xưởng.
+              Tài khoản hiện tại không sở hữu Provider này. Chỉ Local Provider đúng tổ chức mới có quyền thêm mới trải nghiệm cho xưởng.
             </p>
           </div>
           <button

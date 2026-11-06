@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { setCurrentRole, getAuthHeaders } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
+import type { AuthRole, SessionContext } from '@/lib/auth/session'
 
 interface AgencyFormData {
   company_name: string
@@ -27,7 +29,8 @@ export default function EditAgencyProfilePage({
   params: { agencyId: string }
 }) {
   const router = useRouter()
-  const [role, setRole] = useState<CurrentUserRole>('LocalProvider')
+  const [role, setRole] = useState<AuthRole | null>(null)
+  const [authorized, setAuthorized] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [sessionReady, setSessionReady] = useState(false)
   const [profileReady, setProfileReady] = useState(false)
@@ -52,10 +55,17 @@ export default function EditAgencyProfilePage({
 
   useEffect(() => {
     setMounted(true)
-    refreshDemoSession().then(session => setRole(session.role)).finally(() => setSessionReady(true))
+    const applySession = (session: SessionContext) => {
+      setRole(session.role)
+      setAuthorized(session.role === 'Tour_Agency' && session.agencyId === params.agencyId)
+    }
+    readSessionContext().then(applySession).finally(() => setSessionReady(true))
 
     const onRoleChanged = () => {
-      setRole(getCurrentRole())
+      readSessionContext().then(applySession).catch(() => {
+        setRole(null)
+        setAuthorized(false)
+      })
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
 
@@ -95,7 +105,7 @@ export default function EditAgencyProfilePage({
   }
 
   // HARD PERMISSION GUARD: Local Provider (or any non-Agency role) is strictly FORBIDDEN
-  if (mounted && role !== 'TourAgency') {
+  if (mounted && !authorized) {
     return (
       <div className="spec-portal" style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <div
@@ -118,16 +128,18 @@ export default function EditAgencyProfilePage({
             Quyền Truy Cập Bị Từ Chối
           </h1>
           <p style={{ fontSize: '0.85rem', color: '#4b5563', lineHeight: 1.6, margin: '0 0 1.5rem 0' }}>
-            Tài khoản <strong>{role === 'LocalProvider' ? 'Local Provider (Chủ xưởng)' : role}</strong> không có quyền truy cập vào màn hình chỉnh sửa hồ sơ của Công ty Lữ hành (Tour Agency). Theo quy định an toàn hệ thống, chỉ chủ sở hữu tài khoản Agency mới có quyền quản lý hồ sơ này.
+            Tài khoản <strong>{role === 'Local_Provider' ? 'Local Provider (Chủ xưởng)' : role || 'Guest'}</strong> không có quyền truy cập vào màn hình chỉnh sửa hồ sơ của Công ty Lữ hành (Tour Agency). Theo quy định an toàn hệ thống, chỉ chủ sở hữu tài khoản Agency mới có quyền quản lý hồ sơ này.
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/provider/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374" className="spec-btn-black">
               ← Về Hồ sơ Xưởng của tôi (PRF127)
             </Link>
             <button
-              onClick={() => {
-                setCurrentRole('TourAgency')
-                setRole('TourAgency')
+              onClick={async () => {
+                await setCurrentRole('TourAgency')
+                const session = await readSessionContext()
+                setRole(session.role)
+                setAuthorized(session.role === 'Tour_Agency' && session.agencyId === params.agencyId)
               }}
               className="spec-btn-white"
             >

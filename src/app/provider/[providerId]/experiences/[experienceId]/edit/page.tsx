@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
-import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { setCurrentRole, getAuthHeaders } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
 
 export default function EditExperiencePage({
   params,
@@ -12,7 +13,7 @@ export default function EditExperiencePage({
   params: { providerId: string; experienceId: string }
 }) {
   const router = useRouter()
-  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [authorized, setAuthorized] = useState(false)
   const [sessionReady, setSessionReady] = useState(false)
   const [saving, setSaving] = useState(false)
   const [aiRefining, setAiRefining] = useState(false)
@@ -37,8 +38,8 @@ export default function EditExperiencePage({
 
   useEffect(() => {
     let alive = true
-    refreshDemoSession().then(session => {
-      if (alive) setRole(session.role)
+    readSessionContext().then(session => {
+      if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
       return fetch(`/api/prf/experience/${params.experienceId}`)
     }).then(response => response.ok ? response.json() : Promise.reject(new Error('Experience not found')))
       .then(data => {
@@ -57,7 +58,9 @@ export default function EditExperiencePage({
         setImages((data.images || []) as ExperienceImageItem[])
       }).finally(() => { if (alive) setSessionReady(true) })
     const onRoleChanged = () => {
-      setRole(getCurrentRole())
+      readSessionContext()
+        .then(session => { if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId) })
+        .catch(() => { if (alive) setAuthorized(false) })
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
     return () => { alive = false; window.removeEventListener('hab_role_changed', onRoleChanged) }
@@ -65,7 +68,8 @@ export default function EditExperiencePage({
 
   const handleRoleSwitchToProvider = async () => {
     await setCurrentRole('LocalProvider')
-    setRole('LocalProvider')
+    const session = await readSessionContext()
+    setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
   }
 
   const handleAiRefine = async () => {
@@ -97,7 +101,7 @@ export default function EditExperiencePage({
     setSaving(true)
     setFeedback(null)
 
-    if (role !== 'LocalProvider') {
+    if (!authorized) {
       setFeedback({
         type: 'error',
         message: 'Lỗi phân quyền (403): Chỉ tài khoản Local Provider mới có quyền cập nhật trải nghiệm (BR-001).',
@@ -153,7 +157,7 @@ export default function EditExperiencePage({
   }
 
   if (!sessionReady) return <div className="prf-container" style={{ padding: '3rem' }}>Đang tải Experience…</div>
-  const isLocalProvider = role === 'LocalProvider'
+  const isLocalProvider = authorized
 
   return (
     <div className="prf-container" style={{ paddingBottom: '7rem' }}>
@@ -198,7 +202,7 @@ export default function EditExperiencePage({
               ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER (BR-001)
             </strong>
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#78350f' }}>
-              Bạn đang ở vai trò <strong>{role}</strong>. Chỉ tài khoản Local Provider mới có quyền chỉnh sửa trải nghiệm của xưởng.
+              Tài khoản hiện tại không sở hữu Provider này. Chỉ Local Provider đúng tổ chức mới có quyền chỉnh sửa trải nghiệm của xưởng.
             </p>
           </div>
           <button

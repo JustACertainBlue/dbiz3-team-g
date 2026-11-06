@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { refreshDemoSession, setCurrentRole } from '@/lib/prf/client-session'
+import { setCurrentRole } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, noMatchView, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 
@@ -32,9 +33,9 @@ export default function AiMatchingScreen() {
   const sessionInitializationRef = useRef(false)
 
   useEffect(() => {
-    refreshDemoSession()
+    readSessionContext()
       .then(session => {
-        if (session.role === 'TourAgency' && session.agencyId) {
+        if (session.role === 'Tour_Agency' && session.agencyId) {
           setAgencyId(session.agencyId)
           setRole('Agency')
         } else {
@@ -121,7 +122,7 @@ export default function AiMatchingScreen() {
               id="switch-to-agency-btn"
               onClick={async () => {
                 await setCurrentRole('TourAgency')
-                const session = await refreshDemoSession()
+                const session = await readSessionContext()
                 setAgencyId(session.agencyId || '')
                 setRole('Agency')
               }}
@@ -319,7 +320,7 @@ export default function AiMatchingScreen() {
               id="role-agency-btn"
               onClick={async () => {
                 await setCurrentRole('TourAgency')
-                const session = await refreshDemoSession()
+                const session = await readSessionContext()
                 setAgencyId(session.agencyId || '')
                 setRole('Agency')
               }}

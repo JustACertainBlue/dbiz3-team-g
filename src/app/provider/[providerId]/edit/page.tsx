@@ -6,7 +6,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { refreshDemoSession } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
 import { providerBkgLinks } from '@/lib/booking/nav-links'
 import {
   PROVIDER_CRAFT_TYPES,
@@ -38,8 +38,8 @@ export default function EditProviderProfilePage({
   useEffect(() => {
     async function load() {
       try {
-        const session = await refreshDemoSession()
-        const canEdit = session.role === 'LocalProvider' && session.providerId === params.providerId
+        const session = await readSessionContext()
+        const canEdit = session.role === 'Local_Provider' && session.providerId === params.providerId
         setAuthorized(canEdit)
         if (!canEdit) return
         const [profileRes, scheduleRes] = await Promise.all([

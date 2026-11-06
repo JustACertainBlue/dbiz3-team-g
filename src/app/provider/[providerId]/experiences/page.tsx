@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCurrentRole, refreshDemoSession, type CurrentUserRole } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
 
 interface ExperienceItem {
   experience_id: string
@@ -20,33 +20,36 @@ export default function ExperienceManagementPage({
 }: {
   params: { providerId: string }
 }) {
-  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [authorized, setAuthorized] = useState(false)
   const [experiences, setExperiences] = useState<ExperienceItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let alive = true
-    refreshDemoSession().then(session => {
+    const applySession = async () => {
+      const session = await readSessionContext()
       if (!alive) return
-      setRole(session.role)
-      if (session.role !== 'LocalProvider' || session.providerId !== params.providerId) {
+      const canManage = session.role === 'Local_Provider' && session.providerId === params.providerId
+      setAuthorized(canManage)
+      if (!canManage) {
         setLoading(false)
         return
       }
-      fetch(`/api/prf/experience?provider_id=${encodeURIComponent(params.providerId)}`)
+      await fetch(`/api/prf/experience?provider_id=${encodeURIComponent(params.providerId)}`)
         .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load experiences')))
         .then(data => { if (alive) setExperiences(data.experiences || []) })
         .finally(() => { if (alive) setLoading(false) })
-    }).catch(() => { if (alive) setLoading(false) })
+    }
+    applySession().catch(() => { if (alive) setLoading(false) })
     const onRoleChanged = () => {
-      setRole(getCurrentRole())
+      applySession().catch(() => { if (alive) setAuthorized(false) })
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
 
     return () => { alive = false; window.removeEventListener('hab_role_changed', onRoleChanged) }
   }, [params.providerId])
 
-  const isLocalProvider = role === 'LocalProvider'
+  const isLocalProvider = authorized
 
   return (
     <div className="prf-container" style={{ paddingBottom: '5rem' }}>
@@ -90,7 +93,7 @@ export default function ExperienceManagementPage({
             color: '#92400e',
           }}
         >
-          ℹ️ Bạn đang xem màn hình này với vai trò <strong>{role}</strong>. Chỉ tài khoản <strong>Local Provider</strong> (Chủ xưởng) mới có quyền tạo mới, chỉnh sửa giá và điều kiện đặt trải nghiệm.
+          ℹ️ Tài khoản hiện tại không sở hữu Provider này. Chỉ <strong>Local Provider</strong> (Chủ xưởng) đúng tổ chức mới có quyền tạo mới, chỉnh sửa giá và điều kiện đặt trải nghiệm.
         </div>
       )}
 

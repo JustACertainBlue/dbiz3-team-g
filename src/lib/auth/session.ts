@@ -63,6 +63,14 @@ export function toSessionContext(session: SessionLike): SessionContext {
   return 'permissions' in session ? session : sessionContextFor(session)
 }
 
+/** Presentation helper for demo pages; identity and authorization stay in SessionContext. */
+export function sessionDisplayName(session: SessionLike): string {
+  const actor = toSessionContext(session)
+  if (!actor.authenticated || !actor.userId) return 'Khách xem công khai'
+  return demoRepository().find('user_accounts', row => row.user_id === actor.userId)?.full_name
+    || (actor.role === 'Tour_Agency' ? 'Tour Agency' : actor.role === 'Local_Provider' ? 'Local Provider' : `${actor.adminType ?? ''} Admin`.trim())
+}
+
 export function demoSessionContextFor(key: string | null | undefined): SessionContext {
   return sessionContextFor(demoSessionFor(key))
 }

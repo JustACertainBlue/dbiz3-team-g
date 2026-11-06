@@ -4,6 +4,7 @@ import { BookingError } from '@/lib/booking/create-booking'
 import { BOOKING_STATUSES } from '@/lib/booking/list-bookings'
 import { bookingDetailStyles, formatVnd, hanoiTime } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
 import { agencyPageSession, ownVillages } from '../agency-booking-gate'
+import { sessionDisplayName } from '@/lib/auth/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
   }
 
   return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · BKG137</p><h1>Booking History</h1><span>{session.displayName} · chỉ xem, sắp theo giờ bắt đầu</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · BKG137</p><h1>Booking History</h1><span>{sessionDisplayName(session)} · chỉ xem, sắp theo giờ bắt đầu</span></header>
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái
         <select name="status" defaultValue={query.status}>

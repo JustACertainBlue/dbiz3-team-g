@@ -53,6 +53,7 @@ function LoginForm() {
         {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
       </form>
+      <a href="/register">Đăng ký tài khoản Agency</a>
       <aside>
         <strong>Tài khoản thử nghiệm</strong>
         <p>Chọn một email mẫu bên dưới. Ở prototype hiện tại, nhập bất kỳ mật khẩu không rỗng.</p>

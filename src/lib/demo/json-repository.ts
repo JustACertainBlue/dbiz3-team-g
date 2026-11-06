@@ -91,6 +91,15 @@ export class JsonDemoRepository implements DemoRepository {
     return this.table(table).map(row => ({ ...row }))
   }
 
+  /** Synchronous read/check/write transaction under the same cross-process lock. */
+  transaction<T>(work: (tables: Record<string, DemoRow[]>) => T): T {
+    return this.mutate(() => {
+      const result = work(this.database.tables)
+      this.persist()
+      return result
+    })
+  }
+
   find(table: string, predicate: (row: DemoRow) => boolean): DemoRow | undefined {
     this.refresh()
     const row = this.table(table).find(predicate)

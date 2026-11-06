@@ -29,3 +29,16 @@ Source head: `07d60b0e306518f23a75536af6e9f3335be146c8` (linh-daotruc).
 - Resolve the PR branch against current main, run full regression/build and browser role-flow checks, then update and merge the PR. No merge or GitHub update has happened at this checkpoint.
 
 The PR source remains intact on its original branch. This checkpoint is an integration in progress, not completion of AUT or approval of PR #11.
+
+## Registration integration update
+
+- Reused the member's registration, OTP and status screens with scoped green/cream styling. Fixed the form/API field naming mismatch and optional blank business email validation.
+- Added JSON-backed registration and OTP services, plus register/verify/resend endpoints. No account is created before successful server-side OTP verification. Account/profile creation and OTP consumption are atomic and replay-safe.
+- Added a repository transaction that serializes the full synchronous read/check/write operation across local processes. Duplicate email/tax checks and OTP attempt updates run inside it.
+- OTP codes use cryptographic randomness and bcrypt verifiers; expire after 10 minutes; reject at five failed attempts; resend invalidates the earlier challenge and is limited to three within 15 minutes.
+- Added private PDF/JPEG/PNG document storage and an HDT-only download endpoint. Missing seed binaries stay explicitly unavailable. Files are limited to five, 5 MB each, with signature checks and server-generated storage names.
+- Delivery defaults to unavailable (503). For local tests only, explicitly set `HAB_EMAIL_MODE=dev-outbox`; codes are written to ignored `.demo-data/otp-outbox/`. No code is returned by an API or logged. This is not real email delivery.
+- Integration tests passed for registration → OTP → Pending Approval → HDT approval → password login, replay, five-attempt lock, failed-delivery rollback, resend invalidation, expiry and duplicate submissions.
+- Regression at that point: 161 files / 993 tests passed. Additional document/delivery guard tests: six passed; Agency review tests: three passed. Build passed before the latest document-download route and cosmetic text changes; TypeScript passed with the document route.
+
+Still outstanding: secure revise/resubmit workflow, the rest of account-creation/management differences, credential recovery/change/issuance integration, the full latest browser audit, PR conflict resolution, GitHub update and merge. The registration implementation above replaces the first registration TODO; it does not mark those other areas complete.

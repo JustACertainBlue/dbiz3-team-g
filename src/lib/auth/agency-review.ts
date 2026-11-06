@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import type { SessionContext } from './session'
 import { demoRepository } from '../demo/json-repository'
 import type { BatchOperation } from '../demo/types'
@@ -11,7 +13,7 @@ export function agencyReviews(session: SessionContext) {
   const repo = demoRepository()
   const registrations = repo.all('agency_registration_requests').map(row => {
     const version = repo.find('registration_submission_versions', item => item.registration_request_id === row.registration_request_id && item.version_no === row.current_version_no)
-    return { id: row.registration_request_id, kind: 'registration', name: version?.company_name || row.email, status: row.current_status, submitted: version?.submitted_at || row.created_at, fields: version ? Object.fromEntries(Object.entries(version).filter(([key]) => !['submitted_by','registration_request_id'].includes(key))) : {}, account: repo.find('user_accounts', item => item.user_id === row.agency_user_id), history: repo.all('agency_review_records').filter(item => item.registration_request_id === row.registration_request_id), documents: repo.all('registration_documents').filter(item => item.registration_request_id === row.registration_request_id && item.version_no === row.current_version_no).map(item => { const file = repo.find('stored_files', file => file.file_id === item.file_id); return { type: item.document_type, name: file?.file_name || 'Tài liệu chưa có file', available: false } }) }
+    return { id: row.registration_request_id, kind: 'registration', name: version?.company_name || row.email, status: row.current_status, submitted: version?.submitted_at || row.created_at, fields: version ? Object.fromEntries(Object.entries(version).filter(([key]) => !['submitted_by','registration_request_id'].includes(key))) : {}, account: repo.find('user_accounts', item => item.user_id === row.agency_user_id), history: repo.all('agency_review_records').filter(item => item.registration_request_id === row.registration_request_id), documents: repo.all('registration_documents').filter(item => item.registration_request_id === row.registration_request_id && item.version_no === row.current_version_no).map(item => { const file = repo.find('stored_files', file => file.file_id === item.file_id); return { type: item.document_type, name: file?.file_name || 'Tài liệu chưa có file', available: Boolean(file && /^[0-9a-f-]{36}$/i.test(file.file_id) && file.storage_key === 'registration-documents/' + file.file_id && existsSync(join(process.cwd(), '.demo-data', 'registration-documents', file.file_id))), href: file ? '/api/auth/agency-reviews/documents/' + file.file_id : null } }) }
   })
   const changes = repo.all('agency_major_change_requests').map(row => {
     const profile = repo.find('agency_profiles', item => item.agency_id === row.agency_id)

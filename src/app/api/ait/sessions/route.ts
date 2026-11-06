@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createMatchingSession } from '@/lib/matching/session-service'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 
 export async function POST(request: Request) {
   try {
-    const session = demoSessionFromRequest(request)
+    const session = sessionContextFromRequest(request)
     if (!session.authenticated) {
       return NextResponse.json({ error: 'Unauthorized', redirectTo: '/login' }, { status: 401 })
     }
-    if (session.role !== 'TourAgency' || !session.agencyId) {
+    if (session.role !== 'Tour_Agency' || !session.agencyId) {
       return NextResponse.json({ error: 'AI Matching is only available to Tour Agencies' }, { status: 403 })
     }
     const matchingSession = await createMatchingSession({ agencyId: session.agencyId })

@@ -13,12 +13,15 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { NextRequest } from 'next/server'
 import { POST as handoff } from '@/app/api/demo/handoff/route'
 import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor } from '@/lib/auth/session'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { createQuoteHandoff, hasQuoteRequest } from '@/lib/demo/commercial-handoff-service'
 import { demoRuntime } from '@/lib/explore/demo-runtime'
 
 const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69'
 const TRANG_AN = DEMO_IDENTITIES.agency.agencyId!
+const AGENCY = demoSessionContextFor('agency')
+const GUEST = demoSessionContextFor('guest')
 
 function agencyExploreSession(): string {
   return demoRuntime().startSession({ kind: 'agency', agencyId: TRANG_AN }, true).session_id
@@ -85,9 +88,9 @@ describe('Slice C | FR-011 Request Quote hidden after use (Q8)', () => {
   beforeEach(() => demoRepository().reset())
 
   it('hasQuoteRequest is false before and true after this Agency asked for this Experience', async () => {
-    expect(hasQuoteRequest(DEMO_IDENTITIES.agency, EXPERIENCE)).toBe(false)
-    await createQuoteHandoff(DEMO_IDENTITIES.agency, EXPERIENCE)
-    expect(hasQuoteRequest(DEMO_IDENTITIES.agency, EXPERIENCE)).toBe(true)
-    expect(hasQuoteRequest(DEMO_IDENTITIES.guest, EXPERIENCE)).toBe(false)
+    expect(hasQuoteRequest(AGENCY, EXPERIENCE)).toBe(false)
+    await createQuoteHandoff(AGENCY, EXPERIENCE)
+    expect(hasQuoteRequest(AGENCY, EXPERIENCE)).toBe(true)
+    expect(hasQuoteRequest(GUEST, EXPERIENCE)).toBe(false)
   })
 })

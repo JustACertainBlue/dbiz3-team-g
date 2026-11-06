@@ -6,7 +6,7 @@ import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
 import ExploreHeader from '../../ExploreHeader';
 import ExploreTracker from '../../ExploreTracker';
 import { cookies } from 'next/headers';
-import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../../../lib/auth/demo-session';
+import { DEMO_SESSION_COOKIE, demoSessionContextFor } from '../../../../lib/auth/session';
 import ExperienceActions from '../../ExperienceActions';
 import { hasQuoteRequest } from '../../../../lib/demo/commercial-handoff-service';
 
@@ -16,8 +16,8 @@ function slotLabel(value: string) {
 
 export default function ExperienceEntry({ params }: { params: { id: string } }) {
   const seed = loadExploreRuntime();
-  const session = demoSessionFor(cookies().get(DEMO_SESSION_COOKIE)?.value);
-  const viewer = resolveViewer(seed, session.role === 'TourAgency' ? session.agencyId : null, true);
+  const session = demoSessionContextFor(cookies().get(DEMO_SESSION_COOKIE)?.value);
+  const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   const detail = getExperienceDetail(seed, params.id, viewer);
   if (!detail) notFound();
   const { card } = detail;

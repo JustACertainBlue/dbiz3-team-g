@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { createChatHandoff, createQuoteHandoff, HandoffError, SOURCE_CONTEXTS, type SourceContext } from '@/lib/demo/commercial-handoff-service'
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (body.chat_source !== undefined && body.chat_source !== 'Explore' && body.chat_source !== 'Provider Profile') {
       return NextResponse.json({ error: { code: 'INVALID_HANDOFF', message: 'chat_source must be Explore or Provider Profile' } }, { status: 400 })
     }
-    const session = demoSessionFromRequest(request)
+    const session = sessionContextFromRequest(request)
     // FR-007 (spec-EXP #29): the strong action is logged in the Agency's current Explore session.
     const signal = body.source_context
       ? { exploreSessionId: request.cookies.get('explore_session')?.value, sourceContext: body.source_context as SourceContext }

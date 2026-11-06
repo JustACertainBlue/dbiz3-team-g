@@ -20,8 +20,8 @@ describe('functional demo foundation', () => {
   it('creates one Quote, reuses the pair Chat, keeps Experience context, and never creates a Booking', async () => {
     const repository = demoRepository()
     const bookingsBefore = repository.all('bookings').length
-    const first = await createQuoteHandoff(DEMO_IDENTITIES.agency, experienceId)
-    const second = await createQuoteHandoff(DEMO_IDENTITIES.agency, experienceId)
+    const first = await createQuoteHandoff(agencyAuth, experienceId)
+    const second = await createQuoteHandoff(agencyAuth, experienceId)
 
     expect(first.is_new_request).toBe(true)
     expect(second).toMatchObject({ quote_request_id: first.quote_request_id, chat_session_id: first.chat_session_id, is_new_request: false })
@@ -36,7 +36,7 @@ describe('functional demo foundation', () => {
   it('opens direct Chat without creating a Quote and persists a reply for both participants', async () => {
     const repository = demoRepository()
     const quotesBefore = repository.all('quote_requests').length
-    const handoff = await createChatHandoff(DEMO_IDENTITIES.agency, experienceId)
+    const handoff = await createChatHandoff(agencyAuth, experienceId)
     await sendMessage(providerAuth, handoff.chat_session_id, 'Xưởng đã nhận được yêu cầu.')
 
     expect(repository.all('quote_requests')).toHaveLength(quotesBefore)

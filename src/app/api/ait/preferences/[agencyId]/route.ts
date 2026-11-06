@@ -5,14 +5,14 @@ import {
   rerankExploreForAgency,
 } from '@/lib/preferences/preference-service'
 import { loadExperiences } from '@/lib/db/seed-loader'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 
 // AIT BR-001 / BR-015 (checklist §3 #46): only the authenticated Tour Agency itself reads or writes its
 // preference profile. Guest → 401, other roles and other Agencies → 403 (as the other AIT routes).
 function denied(request: Request, agencyId: string): NextResponse | null {
-  const session = demoSessionFromRequest(request)
+  const session = sessionContextFromRequest(request)
   if (!session.authenticated) return NextResponse.json({ error: 'Unauthorized', redirectTo: '/login' }, { status: 401 })
-  if (session.role !== 'TourAgency' || session.agencyId !== agencyId) {
+  if (session.role !== 'Tour_Agency' || session.agencyId !== agencyId) {
     return NextResponse.json({ error: 'Only the Tour Agency itself can access its preference profile' }, { status: 403 })
   }
   return null

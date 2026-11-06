@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { closeChat, getChatHistory, listChats, openChat, sendMessage } from '@/lib/iac/chat-service'
 import { createChatHandoff } from '@/lib/demo/commercial-handoff-service'
-import { AGENCY, AGENCY_BOOKING, AGENCY_CHAT, AGENCY_ID, DEMO_AGENCY, EXPERIENCE, PROVIDER, PROVIDER_CHAT, PROVIDER_ID, activePairChats, repo } from './iac-fixtures'
+import { AGENCY, AGENCY_BOOKING, AGENCY_CHAT, AGENCY_ID, EXPERIENCE, PROVIDER, PROVIDER_CHAT, PROVIDER_ID, activePairChats, repo } from './iac-fixtures'
 
 const chatRow = (id: string) => repo().find('chat_sessions', r => r.chat_session_id === id)!
 
@@ -37,10 +37,10 @@ describe('T004 | after close', () => {
   })
 
   it('after close, an Explore handoff opens a new Active Chat and the Closed row is unchanged (AC-IAC-CLOSED, #35)', async () => {
-    const first = await createChatHandoff(DEMO_AGENCY, EXPERIENCE)
+    const first = await createChatHandoff(AGENCY, EXPERIENCE)
     await closeChat(PROVIDER, first.chat_session_id, {})
     const closedRow = JSON.stringify(chatRow(first.chat_session_id))
-    const second = await createChatHandoff(DEMO_AGENCY, EXPERIENCE)
+    const second = await createChatHandoff(AGENCY, EXPERIENCE)
     expect(second).toMatchObject({ is_new_session: true, chat_status: 'Active' })
     expect(second.chat_session_id).not.toBe(first.chat_session_id)
     expect(JSON.stringify(chatRow(first.chat_session_id))).toBe(closedRow)

@@ -1,10 +1,11 @@
 import type { NextRequest } from 'next/server'
-import { demoSessionFor, demoSessionFromRequest, type ActorSession, type DemoAccountKey } from './demo-session'
+import { DEMO_SESSION_COOKIE, demoSessionFor, demoSessionFromRequest, type ActorSession } from './demo-session'
 import { demoRepository } from '../demo/json-repository'
 
 export type AuthRole = 'ADMIN' | 'Tour_Agency' | 'Local_Provider'
 export type AdminType = 'HDT' | 'UBND'
 export type DataScope = 'Platform-wide' | 'Assigned village' | 'Own organization'
+export { DEMO_SESSION_COOKIE }
 
 /** The authentication contract consumed by business modules, independently of the auth adapter. */
 export interface SessionContext {
@@ -55,7 +56,7 @@ export function sessionContextFor(session: ActorSession): SessionContext {
   }
 }
 
-export function demoSessionContextFor(key: DemoAccountKey): SessionContext {
+export function demoSessionContextFor(key: string | null | undefined): SessionContext {
   return sessionContextFor(demoSessionFor(key))
 }
 

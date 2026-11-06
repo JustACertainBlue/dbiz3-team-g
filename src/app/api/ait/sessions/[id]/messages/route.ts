@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
 
 async function authorize(request: Request, sessionId: string) {
-  const actor = demoSessionFromRequest(request)
+  const actor = sessionContextFromRequest(request)
   const matchingSession = await getMatchingSession(sessionId)
   if (!actor.authenticated) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
-  if (actor.role !== 'TourAgency' || !actor.agencyId || matchingSession?.agency_id !== actor.agencyId) {
+  if (actor.role !== 'Tour_Agency' || !actor.agencyId || matchingSession?.agency_id !== actor.agencyId) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
   return { actor, matchingSession }

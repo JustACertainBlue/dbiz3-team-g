@@ -5,7 +5,7 @@ import { demoRuntime } from '../../lib/explore/demo-runtime';
 import { loadExploreRuntime } from '../../lib/explore/seed-repository';
 import ExploreTracker from './ExploreTracker';
 import ExploreHeader from './ExploreHeader';
-import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../lib/auth/demo-session';
+import { DEMO_SESSION_COOKIE, demoSessionContextFor } from '../../lib/auth/session';
 
 type Params = { page?: string; category?: string };
 
@@ -13,8 +13,8 @@ export default function ExplorePage({ searchParams }: { searchParams: Params }) 
   const seed = loadExploreRuntime();
   const requestedPage = Number(searchParams.page ?? 1);
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const session = demoSessionFor(cookies().get(DEMO_SESSION_COOKIE)?.value);
-  const viewer = resolveViewer(seed, session.role === 'TourAgency' ? session.agencyId : null, true);
+  const session = demoSessionContextFor(cookies().get(DEMO_SESSION_COOKIE)?.value);
+  const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   const tracked = process.env.NODE_ENV !== 'production' ? demoRuntime().sessionFor(cookies().get('explore_session')?.value ?? '') : undefined;
   const rankOrder = tracked && tracked.agency_id === (viewer.kind === 'agency' ? viewer.agencyId : null)
     ? demoRuntime().resultsFor(tracked.session_id).map(row => row.experience_id) : undefined;

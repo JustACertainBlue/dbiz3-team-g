@@ -20,6 +20,9 @@ export interface SessionContext {
   dataScope: DataScope | null
 }
 
+/** Transitional input used while older module pages/tests are migrated one slice at a time. */
+export type SessionLike = SessionContext | ActorSession
+
 function canonicalRole(session: ActorSession): AuthRole | null {
   if (!session.authenticated || session.role === 'Guest') return null
   if (session.role === 'TourAgency') return 'Tour_Agency'
@@ -54,6 +57,10 @@ export function sessionContextFor(session: ActorSession): SessionContext {
     permissions: permissionSet(role, adminType),
     dataScope,
   }
+}
+
+export function toSessionContext(session: SessionLike): SessionContext {
+  return 'permissions' in session ? session : sessionContextFor(session)
 }
 
 export function demoSessionContextFor(key: string | null | undefined): SessionContext {

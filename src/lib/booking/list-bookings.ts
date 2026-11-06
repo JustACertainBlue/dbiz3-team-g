@@ -1,4 +1,4 @@
-import type { ActorSession } from '../auth/demo-session'
+import type { SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import { bookingActions } from './booking-actions'
 import { authorizeProviderList } from './booking-access'
@@ -76,7 +76,7 @@ function validateQuery(query: ListQuery): ValidQuery {
   }
 }
 
-export async function listProviderBookings(session: ActorSession, query: ListQuery, options: { now?: Clock } = {}): Promise<BookingList> {
+export async function listProviderBookings(session: SessionLike, query: ListQuery, options: { now?: Clock } = {}): Promise<BookingList> {
   // Order is mandatory (#64, #67): authorize, validate, expire, read. A rejected request writes nothing.
   const providerId = authorizeProviderList(session, present(query.provider_id) ? query.provider_id : null)
   const valid = validateQuery(query)
@@ -121,7 +121,7 @@ export async function listProviderBookings(session: ActorSession, query: ListQue
 }
 
 // Every page of a query, MAX_PAGE_SIZE at a time (#63 caps one page).
-async function allPages(session: ActorSession, query: ListQuery, options: { now?: Clock }): Promise<{ rows: ListedBooking[]; status_counts: StatusCounts }> {
+async function allPages(session: SessionLike, query: ListQuery, options: { now?: Clock }): Promise<{ rows: ListedBooking[]; status_counts: StatusCounts }> {
   const rows: ListedBooking[] = []
   let page = 1
   for (;;) {
@@ -133,13 +133,13 @@ async function allPages(session: ActorSession, query: ListQuery, options: { now?
 }
 
 // DSH018 "Own booking action summary" over all of the Provider's Bookings (#65).
-export async function providerBookingSummary(session: ActorSession, options: { now?: Clock } = {}): Promise<{ status_counts: StatusCounts; requires_action_count: number }> {
+export async function providerBookingSummary(session: SessionLike, options: { now?: Clock } = {}): Promise<{ status_counts: StatusCounts; requires_action_count: number }> {
   const { rows, status_counts } = await allPages(session, {}, options)
   return { status_counts, requires_action_count: rows.filter(row => row.requires_action).length }
 }
 
 // BKG133: Bookings that need action but are hidden by the current filter (analyze H2).
-export async function countActionsOutsideFilter(session: ActorSession, query: ListQuery, options: { now?: Clock } = {}): Promise<number> {
+export async function countActionsOutsideFilter(session: SessionLike, query: ListQuery, options: { now?: Clock } = {}): Promise<number> {
   const { requires_action_count } = await providerBookingSummary(session, options)
   const { page: _page, page_size: _pageSize, ...filter } = query
   const { rows } = await allPages(session, filter, options)

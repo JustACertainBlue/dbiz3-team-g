@@ -1,4 +1,4 @@
-import type { ActorSession } from '../auth/demo-session'
+import type { SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import type { DemoRow } from '../demo/types'
 import { bookingActions, type BookingActions } from './booking-actions'
@@ -63,7 +63,7 @@ export function toBookingDetail(booking: DemoRow, view: BookingView, now: Date):
   return detail
 }
 
-export async function getBookingDetail(session: ActorSession, bookingId: string, options: { now?: Clock } = {}): Promise<BookingDetail> {
+export async function getBookingDetail(session: SessionLike, bookingId: string, options: { now?: Clock } = {}): Promise<BookingDetail> {
   const now = (options.now ?? systemClock)()
   // Authorize first, so a denied read writes nothing; then expiry (#50) and a fresh read.
   loadBookingForActor(session, bookingId)

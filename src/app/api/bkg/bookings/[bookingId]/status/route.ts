@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { changeBookingStatus } from '@/lib/booking/change-status'
 import { BookingError } from '@/lib/booking/create-booking'
 import { startExpiryTimer } from '@/lib/booking/expire-holds'
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'Body must be a JSON object' } }, { status: 400 })
   }
   try {
-    const data = await changeBookingStatus(demoSessionFromRequest(request), params.bookingId, body as Record<string, unknown>)
+    const data = await changeBookingStatus(sessionContextFromRequest(request), params.bookingId, body as Record<string, unknown>)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {

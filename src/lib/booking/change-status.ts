@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ActorSession } from '../auth/demo-session'
+import type { SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import { bookingUpdateOperations } from './agency-sync'
 import { loadBookingForActor } from './booking-access'
@@ -30,7 +30,7 @@ export interface ChangeStatusResult {
 const ALLOWED: Record<string, readonly string[]> = { 'On hold': ['Booked', 'Cancelled'], Booked: ['Cancelled'] }
 
 export async function changeBookingStatus(
-  session: ActorSession,
+  session: SessionLike,
   bookingId: string,
   input: Record<string, unknown>,
   options: { now?: Clock } = {},

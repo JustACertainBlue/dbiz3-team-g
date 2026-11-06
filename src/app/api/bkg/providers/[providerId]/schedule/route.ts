@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { BookingError } from '@/lib/booking/create-booking'
 import { getProviderSchedule } from '@/lib/booking/provider-schedule'
 
@@ -9,7 +9,7 @@ type Context = { params: { providerId: string } }
 export async function GET(request: NextRequest, { params }: Context) {
   const search = new URL(request.url).searchParams
   try {
-    const data = await getProviderSchedule(demoSessionFromRequest(request), params.providerId, {
+    const data = await getProviderSchedule(sessionContextFromRequest(request), params.providerId, {
       date_from: search.get('date_from') ?? undefined,
       date_to: search.get('date_to') ?? undefined,
     })

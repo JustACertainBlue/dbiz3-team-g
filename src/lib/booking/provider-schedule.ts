@@ -1,4 +1,4 @@
-import type { ActorSession } from '../auth/demo-session'
+import { toSessionContext, type SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import { buildCalendarBlocks, calculateAvailability, type CalendarBlock } from './availability'
 import { authorizeProviderSchedule } from './booking-access'
@@ -29,7 +29,7 @@ function validRange(query: { date_from?: unknown; date_to?: unknown }, now: Date
 }
 
 export async function getProviderSchedule(
-  session: ActorSession,
+  session: SessionLike,
   providerId: string,
   query: { date_from?: unknown; date_to?: unknown },
   options: { now?: Clock } = {},
@@ -62,7 +62,7 @@ export async function getProviderSchedule(
 // SCH140 entry (#74, #82; analyze M3).
 export type ScheduleEntry = 'redirect-owner' | 'public' | 'not-found' | 'denied'
 
-export function scheduleEntryFor(session: ActorSession, providerId: string): ScheduleEntry {
+export function scheduleEntryFor(session: SessionLike, providerId: string): ScheduleEntry {
   try {
     return authorizeProviderSchedule(session, providerId) === 'owner' ? 'redirect-owner' : 'public'
   } catch (error) {
@@ -72,6 +72,7 @@ export function scheduleEntryFor(session: ActorSession, providerId: string): Sch
 }
 
 // The Explore Provider page shows "Xem lịch trống" only to an authenticated Tour Agency (#82).
-export function showScheduleLink(session: ActorSession): boolean {
-  return session.authenticated && session.role === 'TourAgency'
+export function showScheduleLink(session: SessionLike): boolean {
+  const actor = toSessionContext(session)
+  return actor.authenticated && actor.role === 'Tour_Agency'
 }

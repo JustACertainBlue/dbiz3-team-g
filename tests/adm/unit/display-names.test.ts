@@ -25,7 +25,7 @@ describe('T057 | A8 names from data', () => {
   })
 
   it('AdminSidebar shows the given displayName, not a hard-coded admin name', () => {
-    const html = renderToStaticMarkup(React.createElement(AdminSidebar, { currentRole: 'UBND', displayName: 'UBND Admin · Hạ Thái' } as never))
+    const html = renderToStaticMarkup(React.createElement(AdminSidebar, { adminType: 'UBND', displayName: 'UBND Admin · Hạ Thái' }))
     expect(html).toContain('UBND Admin · Hạ Thái')
     expect(html).not.toMatch(INVENTED)
   })

@@ -176,6 +176,22 @@ export default function RoleSwitcher() {
               Hồ sơ Xưởng (PRF127)
             </Link>
             <span style={{ color: '#475569' }}>·</span>
+            <Link href={`/provider/${providerId}/dashboard`} style={{ color: '#34d399', textDecoration: 'none', fontWeight: 700 }}>
+              Dashboard
+            </Link>
+            <span style={{ color: '#475569' }}>·</span>
+            <Link href={`/provider/${providerId}/experiences`} style={{ color: '#fde68a', textDecoration: 'none', fontWeight: 700 }}>
+              Experiences
+            </Link>
+            <span style={{ color: '#475569' }}>·</span>
+            <Link href={`/provider/${providerId}/bookings`} style={{ color: '#93c5fd', textDecoration: 'none', fontWeight: 700 }}>
+              Bookings
+            </Link>
+            <span style={{ color: '#475569' }}>·</span>
+            <Link href={`/provider/${providerId}/schedule`} style={{ color: '#c4b5fd', textDecoration: 'none', fontWeight: 700 }}>
+              Schedule
+            </Link>
+            <span style={{ color: '#475569' }}>·</span>
             <Link href={`/provider/${providerId}/edit`} style={{ color: '#fdba74', textDecoration: 'none', fontWeight: 700 }}>
               ✏️ Sửa Xưởng (PRF128)
             </Link>
@@ -196,6 +212,14 @@ export default function RoleSwitcher() {
             <span style={{ color: '#38bdf8', fontWeight: 800, fontSize: '0.7rem' }}>LUỒNG AGENCY:</span>
             <Link href="/explore" style={{ color: '#34d399', textDecoration: 'none', fontWeight: 800, background: '#064e3b', padding: '2px 7px', borderRadius: '3px' }}>
               🔍 KHÁM PHÁ (EXPLORE)
+            </Link>
+            <span style={{ color: '#475569' }}>·</span>
+            <Link href="/ai-matching" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 800 }}>
+              ✦ AI Matching
+            </Link>
+            <span style={{ color: '#475569' }}>·</span>
+            <Link href={`/agency/${agencyId}/bookings`} style={{ color: '#93c5fd', textDecoration: 'none', fontWeight: 700 }}>
+              Bookings
             </Link>
             <span style={{ color: '#475569' }}>·</span>
             <Link href={`/agency/${agencyId}`} style={{ color: '#ffffff', textDecoration: 'none', fontWeight: 700 }}>

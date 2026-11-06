@@ -6,7 +6,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCurrentSession, refreshDemoSession } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
+import type { SessionContext } from '@/lib/auth/session'
 import { providerPageView } from '@/lib/prf/provider-page-view'
 import { providerBkgLinks } from '@/lib/booking/nav-links'
 
@@ -47,7 +48,7 @@ export default function ProviderProfilePage({
   params: { providerId: string }
 }) {
   const [provider, setProvider] = useState<ProviderData | null>(null)
-  const [session, setSession] = useState(getCurrentSession)
+  const [session, setSession] = useState<SessionContext | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,7 +67,7 @@ export default function ProviderProfilePage({
   useEffect(() => {
     async function load() {
       try {
-        const [viewer] = await Promise.all([refreshDemoSession(), loadProfile()])
+        const [viewer] = await Promise.all([readSessionContext(), loadProfile()])
         setSession(viewer)
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Lỗi kết nối')
@@ -105,7 +106,7 @@ export default function ProviderProfilePage({
     )
   }
 
-  if (error || !provider) {
+  if (error || !provider || !session) {
     return (
       <div className="spec-portal" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
         <h2 style={{ color: '#be123c', marginBottom: '1rem' }}>Hồ sơ Làng nghề Không tồn tại</h2>

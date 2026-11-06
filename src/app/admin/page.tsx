@@ -7,7 +7,8 @@ import {
   VillagesResponse,
   CollaborationSortBy,
 } from '@/lib/adm/types'
-import { getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { getAuthHeaders } from '@/lib/prf/client-session'
+import type { AdminType, AuthRole } from '@/lib/auth/session'
 import { startAdminRoleSync } from './admin-role-sync'
 import { adminPageAccess } from './admin-page-access'
 import { nextVillageFilter } from './village-filter-state'
@@ -21,7 +22,8 @@ import { BookingTable } from '@/app/components/admin/BookingTable'
 import { TopPairsList } from '@/app/components/admin/TopPairsList'
 
 export default function AdminDashboardPage() {
-  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [role, setRole] = useState<AuthRole | null>(null)
+  const [adminType, setAdminType] = useState<AdminType | null>(null)
   const [displayName, setDisplayName] = useState('')
   const [access, setAccess] = useState<'allow' | 'restricted' | null>(null)
   const villageLockedRef = useRef(false)
@@ -51,7 +53,8 @@ export default function AdminDashboardPage() {
     setMounted(true)
     return startAdminRoleSync(session => {
       setRole(session.role)
-      setDisplayName(session.displayName)
+      setAdminType(session.adminType)
+      setDisplayName(`${session.adminType ?? ''} Admin`.trim())
       setAccess(adminPageAccess(session))
     })
   }, [])
@@ -155,7 +158,7 @@ export default function AdminDashboardPage() {
     >
       {/* 1. Fixed Dark Left Sidebar matching ADM079.png */}
       <AdminSidebar
-        currentRole={role}
+        adminType={adminType}
         displayName={displayName}
         activeTab="dashboard"
         onOpenNotice={msg => setModalNotice(msg)}

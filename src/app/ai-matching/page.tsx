@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { setCurrentRole } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, noMatchView, type ApiResult } from './matching-view'
@@ -540,7 +541,19 @@ export default function AiMatchingScreen() {
                           • Max Cap: <strong style={{ color: '#F8FAFC' }}>{rec.max_participants} pax</strong>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          <Link
+                            href={`/explore/experiences/${rec.experience_id}`}
+                            style={{ color: '#F8FAFC', border: '1px solid #475569', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
+                          >
+                            View Experience
+                          </Link>
+                          <Link
+                            href={`/explore/providers/${rec.provider_id}`}
+                            style={{ color: '#CBD5E1', border: '1px solid #334155', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
+                          >
+                            Provider
+                          </Link>
                           <button
                             id={`quote-btn-${rec.experience_id}`}
                             onClick={() => handleRequestQuote(rec.experience_id)}

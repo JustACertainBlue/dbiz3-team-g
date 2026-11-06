@@ -1,4 +1,4 @@
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { createExperience, ExperienceError, listProviderExperiences } from '@/lib/prf/experience-service'
 import { ZodError } from 'zod'
 
@@ -6,7 +6,7 @@ export async function GET(req: Request): Promise<Response> {
   try {
     const providerId = new URL(req.url).searchParams.get('provider_id')
     if (!providerId) return new Response(JSON.stringify({ error: 'provider_id is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
-    const result = await listProviderExperiences(providerId, demoSessionFromRequest(req))
+    const result = await listProviderExperiences(providerId, sessionContextFromRequest(req))
     return new Response(JSON.stringify({ experiences: result }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   } catch (error: unknown) {
     const status = error instanceof ExperienceError ? error.statusCode : 500
@@ -16,7 +16,7 @@ export async function GET(req: Request): Promise<Response> {
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    const session = demoSessionFromRequest(req)
+    const session = sessionContextFromRequest(req)
 
     const body = await req.json()
     const result = await createExperience(session, body)

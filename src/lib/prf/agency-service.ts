@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ActorSession } from '@/lib/auth/demo-session'
-import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor, toSessionContext, type SessionLike } from '@/lib/auth/session'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { filterAgencyFields, type AgencyProfileInput } from './visibility'
 import { AgencyProfilePatchSchema } from './validators'
@@ -22,9 +21,9 @@ export class AgencyError extends Error {
 
 export async function getAgencyProfile(
   agencyId: string,
-  actorSession?: ActorSession,
+  actorSession?: SessionLike,
 ): Promise<Partial<AgencyProfileInput>> {
-  const session = actorSession || DEMO_IDENTITIES.guest
+  const session = actorSession ? toSessionContext(actorSession) : demoSessionContextFor('guest')
   const repository = demoRepository()
   const agency = repository.find('agency_profiles', row => row.agency_id === agencyId)
   if (!agency) throw new AgencyError('Agency profile not found', 404)
@@ -52,7 +51,7 @@ export async function getAgencyProfile(
 
 export async function updateAgencyProfile(
   agencyId: string,
-  actorSession: ActorSession,
+  actorSession: SessionLike,
   input: unknown,
 ): Promise<{
   success: boolean
@@ -60,11 +59,11 @@ export async function updateAgencyProfile(
   requires_hdt_rereview: boolean
   account_status: string
 }> {
+  const actor = toSessionContext(actorSession)
   if (
-    !actorSession ||
-    !actorSession.authenticated ||
-    actorSession.role !== 'TourAgency' ||
-    actorSession.agencyId !== agencyId
+    !actor.authenticated ||
+    actor.role !== 'Tour_Agency' ||
+    actor.agencyId !== agencyId
   ) {
     throw new AgencyError('Forbidden: Only agency owner can edit agency profile (BR-001)', 403)
   }
@@ -122,7 +121,7 @@ export async function updateAgencyProfile(
   repository.update('agency_profiles', row => row.agency_id === agencyId, changes)
 
   recordAuditLog(
-    actorSession.userId || 'unknown-user',
+    actor.userId || 'unknown-user',
     'UPDATE_AGENCY_PROFILE',
     'AgencyProfile',
     agencyId,

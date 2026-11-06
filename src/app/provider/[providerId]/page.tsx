@@ -6,7 +6,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { refreshDemoSession } from '@/lib/prf/client-session'
+import { getCurrentSession, refreshDemoSession } from '@/lib/prf/client-session'
 import { providerPageView } from '@/lib/prf/provider-page-view'
 import { providerBkgLinks } from '@/lib/booking/nav-links'
 
@@ -39,12 +39,6 @@ interface ProviderData {
   experiences?: ProviderExperience[]
 }
 
-interface ViewerSession {
-  role: string
-  providerId?: string | null
-  adminType?: string | null
-}
-
 const vnd = (value?: number) => (value ?? 0).toLocaleString('vi-VN')
 
 export default function ProviderProfilePage({
@@ -53,7 +47,7 @@ export default function ProviderProfilePage({
   params: { providerId: string }
 }) {
   const [provider, setProvider] = useState<ProviderData | null>(null)
-  const [session, setSession] = useState<ViewerSession>({ role: 'Guest' })
+  const [session, setSession] = useState(getCurrentSession)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

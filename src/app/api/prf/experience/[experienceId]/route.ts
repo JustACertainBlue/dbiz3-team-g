@@ -1,4 +1,4 @@
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import {
   getExperienceById,
   updateExperience,
@@ -25,7 +25,7 @@ export async function PATCH(
 ): Promise<Response> {
   try {
     const resolved = await Promise.resolve(params)
-    const session = demoSessionFromRequest(req)
+    const session = sessionContextFromRequest(req)
 
     const body = await req.json()
     const result = await updateExperience(resolved.experienceId, session, body)
@@ -53,7 +53,7 @@ export async function DELETE(
 ): Promise<Response> {
   try {
     const resolved = await Promise.resolve(params)
-    const session = demoSessionFromRequest(req)
+    const session = sessionContextFromRequest(req)
 
     const result = await deleteExperience(resolved.experienceId, session)
     return new Response(JSON.stringify(result), {

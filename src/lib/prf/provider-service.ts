@@ -1,5 +1,4 @@
-import type { ActorSession } from '@/lib/auth/demo-session'
-import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor, toSessionContext, type SessionLike } from '@/lib/auth/session'
 import {
   loadProviderProfiles,
   loadExperiences,
@@ -61,9 +60,9 @@ function reviewStatus(
 
 export async function getProviderProfile(
   providerId: string,
-  actorSession?: ActorSession,
+  actorSession?: SessionLike,
 ): Promise<Partial<ProviderProfileInput> | null> {
-  const session = actorSession || DEMO_IDENTITIES.guest
+  const session = actorSession ? toSessionContext(actorSession) : demoSessionContextFor('guest')
   const providers = await loadProviderProfiles()
   const provider = providers.find(p => p.provider_id === providerId)
 
@@ -71,9 +70,9 @@ export async function getProviderProfile(
     throw new ProviderNotFoundError(`Provider with id ${providerId} not found`)
   }
 
-  const isOwner = session.role === 'LocalProvider' && session.providerId === providerId
-  const isUBND = session.role === 'UBND' || session.adminType === 'UBND'
-  const isHDT = session.role === 'HDT' || session.adminType === 'HDT'
+  const isOwner = session.role === 'Local_Provider' && session.providerId === providerId
+  const isUBND = session.role === 'ADMIN' && session.adminType === 'UBND'
+  const isHDT = session.role === 'ADMIN' && session.adminType === 'HDT'
 
   // BR-007: Draft / Unverified providers are not visible publicly to Guests or Tour Agencies
   if (!provider.published_version_no && provider.verification_status !== 'Verified' && !isOwner && !isUBND && !isHDT) {
@@ -167,7 +166,7 @@ export async function getProviderProfile(
  */
 export async function updateProviderProfile(
   providerId: string,
-  actorSession: ActorSession,
+  actorSession: SessionLike,
   input: unknown,
 ): Promise<{
   success: boolean
@@ -177,11 +176,11 @@ export async function updateProviderProfile(
   published_version_intact: boolean
   operating_hours_updated: boolean
 }> {
+  const actor = toSessionContext(actorSession)
   if (
-    !actorSession ||
-    !actorSession.authenticated ||
-    actorSession.role !== 'LocalProvider' ||
-    actorSession.providerId !== providerId
+    !actor.authenticated ||
+    actor.role !== 'Local_Provider' ||
+    actor.providerId !== providerId
   ) {
     throw new ForbiddenError()
   }
@@ -240,7 +239,7 @@ export async function updateProviderProfile(
   const createRevision = new_version_pending && !revisionOpen
 
   recordAuditLog(
-    actorSession.userId || 'unknown-user',
+    actor.userId || 'unknown-user',
     'UPDATE_PROVIDER_PROFILE',
     'ProviderProfile',
     providerId,
@@ -315,7 +314,7 @@ export async function updateProviderProfile(
  */
 export async function reviewProvider(
   providerId: string,
-  actorSession: ActorSession,
+  actorSession: SessionLike,
   decision: string,
   revisionComments?: string,
 ): Promise<{
@@ -325,10 +324,11 @@ export async function reviewProvider(
   published_version_no?: number
   revision_comments?: string
 }> {
+  const actor = toSessionContext(actorSession)
   if (
-    !actorSession ||
-    !actorSession.authenticated ||
-    (actorSession.role !== 'UBND' && actorSession.adminType !== 'UBND')
+    !actor.authenticated ||
+    actor.role !== 'ADMIN' ||
+    actor.adminType !== 'UBND'
   ) {
     throw new ForbiddenError('Forbidden: only UBND admin can review provider profiles')
   }
@@ -341,9 +341,9 @@ export async function reviewProvider(
 
   // BR-005: Village scope assignment check
   if (
-    actorSession.villageId &&
+    actor.assignedVillageId &&
     provider.village_id &&
-    actorSession.villageId !== provider.village_id
+    actor.assignedVillageId !== provider.village_id
   ) {
     throw new ForbiddenError(
       'Forbidden: UBND admin is not assigned to this provider village (BR-005)',
@@ -367,7 +367,7 @@ export async function reviewProvider(
       throw err
     }
     recordAuditLog(
-      actorSession.userId || 'unknown-user',
+      actor.userId || 'unknown-user',
       'REVIEW_PROVIDER_PROFILE_REVISION',
       'ProviderProfile',
       providerId,
@@ -378,7 +378,7 @@ export async function reviewProvider(
     demoRepository().insert('provider_verification_reviews', {
       review_id: randomUUID(), provider_id: providerId,
       version_no: reviewedVersionNo,
-      reviewer_user_id: actorSession.userId || '', decision, revision_comments: revisionComments, reviewed_at: now,
+      reviewer_user_id: actor.userId || '', decision, revision_comments: revisionComments, reviewed_at: now,
     })
     if (provider.published_version_no && reviewedVersionNo !== String(provider.published_version_no)) {
       // BR-007: only the revision needs changes; the published version stays public.
@@ -400,7 +400,7 @@ export async function reviewProvider(
       provider.current_version_no || provider.published_version_no || 1,
     )
     recordAuditLog(
-      actorSession.userId || 'unknown-user',
+      actor.userId || 'unknown-user',
       'REVIEW_PROVIDER_PROFILE_APPROVE',
       'ProviderProfile',
       providerId,
@@ -409,7 +409,7 @@ export async function reviewProvider(
     const now = new Date().toISOString()
     demoRepository().insert('provider_verification_reviews', {
       review_id: randomUUID(), provider_id: providerId, version_no: String(nextPublishedVersion),
-      reviewer_user_id: actorSession.userId || '', decision, revision_comments: '', reviewed_at: now,
+      reviewer_user_id: actor.userId || '', decision, revision_comments: '', reviewed_at: now,
     })
     const previousPublished = provider.published_version_no ? String(provider.published_version_no) : ''
     if (previousPublished && previousPublished !== String(nextPublishedVersion)) {

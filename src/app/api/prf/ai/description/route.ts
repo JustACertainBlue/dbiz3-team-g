@@ -1,10 +1,10 @@
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { generateDescriptionDraft, AIError } from '@/lib/prf/ai-service'
 import { ZodError } from 'zod'
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    const session = demoSessionFromRequest(req)
+    const session = sessionContextFromRequest(req)
 
     let body: any
     try {

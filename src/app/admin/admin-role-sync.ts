@@ -1,17 +1,18 @@
-import { getCurrentSession, refreshDemoSession } from '@/lib/prf/client-session'
-import type { DemoSession } from '@/lib/auth/demo-session'
+import { readSessionContext } from '@/lib/auth/client-session'
+import type { SessionContext } from '@/lib/auth/session'
 
 /**
- * Keeps ADM079 in step with the demo session. refreshDemoSession() dispatches `hab_role_changed`, so the
- * event handler must only read the current session; refreshing there loops forever (demo C6, 2026-11-04).
+ * Keeps ADM079 in step with the canonical session. Reading `/api/auth/session` does not emit
+ * `hab_role_changed`, so one read per event cannot recurse (demo C6, 2026-11-04).
  */
-export function startAdminRoleSync(apply: (session: DemoSession) => void, target: EventTarget = window): () => void {
+export function startAdminRoleSync(apply: (session: SessionContext) => void, target: EventTarget = window): () => void {
   let active = true
-  refreshDemoSession()
+  const refresh = () => readSessionContext()
     .then(session => { if (active) apply(session) })
-    .catch(() => { if (active) apply(getCurrentSession()) })
+    .catch(() => undefined)
 
-  const onRoleChanged = () => apply(getCurrentSession())
+  void refresh()
+  const onRoleChanged = () => { void refresh() }
   target.addEventListener('hab_role_changed', onRoleChanged)
   return () => {
     active = false

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { loadVillages } from '@/lib/db/seed-loader'
-import { SessionLike } from '@/lib/adm/scope-guard'
 import { adminSessionFromRequest } from '@/lib/adm/admin-session'
 import { VillagesResponse } from '@/lib/adm/types'
 
@@ -15,11 +14,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const role = session.role ?? ''
-  const adminType = session.adminType ?? (role === 'HDT' ? 'HDT' : role === 'UBND' ? 'UBND' : null)
-  const isAuthorizedAdmin = (role === 'ADMIN' || role === 'HDT' || role === 'UBND') && (adminType === 'HDT' || adminType === 'UBND')
-
-  if (!isAuthorizedAdmin) {
+  if (session.role !== 'ADMIN' || !session.adminType) {
     return NextResponse.json(
       { error: 'Forbidden: Admin privileges required.' },
       { status: 403 }
@@ -28,8 +23,8 @@ export async function GET(req: NextRequest) {
 
   const allVillages = await loadVillages()
 
-  if (adminType === 'UBND') {
-    const assignedId = session.villageId || ''
+  if (session.adminType === 'UBND') {
+    const assignedId = session.assignedVillageId || ''
     const assigned = allVillages.filter(v => v.village_id === assignedId)
     const response: VillagesResponse = {
       isLocked: true,

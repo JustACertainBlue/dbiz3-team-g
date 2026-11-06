@@ -10,7 +10,7 @@
  * Body: { session_id?: string, tour_preference_profile: TourPreferenceProfile }
  */
 import { NextResponse } from 'next/server'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { getMatchingSession } from '@/lib/matching/session-service'
 import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
 import { applyHardConstraints } from '@/lib/matching/constraint-engine'
@@ -25,9 +25,9 @@ import { loadExperiences } from '@/lib/db/seed-loader'
 export async function POST(request: Request) {
   try {
     // Authorize before reading the body (contract: authorize → validate → read/write).
-    const actor = demoSessionFromRequest(request)
+    const actor = sessionContextFromRequest(request)
     if (!actor.authenticated) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (actor.role !== 'TourAgency' || !actor.agencyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (actor.role !== 'Tour_Agency' || !actor.agencyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const body = await request.json().catch(() => null)
     if (!body) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     if (body.session_id) {

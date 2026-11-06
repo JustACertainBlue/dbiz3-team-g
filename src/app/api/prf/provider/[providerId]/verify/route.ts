@@ -1,4 +1,4 @@
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import {
   reviewProvider,
   ProviderNotFoundError,
@@ -15,7 +15,7 @@ export async function POST(
     const resolvedParams = await Promise.resolve(params)
     const providerId = resolvedParams.providerId
 
-    const session = demoSessionFromRequest(req)
+    const session = sessionContextFromRequest(req)
 
     let body: unknown = {}
     try {

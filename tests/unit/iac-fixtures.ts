@@ -1,9 +1,12 @@
 // Shared fixtures for the IAC 014 tests (tasks.md "Shared test fixtures"). Values are from data/seed/.
 import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { sessionContextFor } from '@/lib/auth/session'
 import { demoRepository } from '@/lib/demo/json-repository'
 
-export const AGENCY = DEMO_IDENTITIES.agency
-export const PROVIDER = DEMO_IDENTITIES.provider
+export const DEMO_AGENCY = DEMO_IDENTITIES.agency
+export const DEMO_PROVIDER = DEMO_IDENTITIES.provider
+export const AGENCY = sessionContextFor(DEMO_AGENCY)
+export const PROVIDER = sessionContextFor(DEMO_PROVIDER)
 export const AGENCY_ID = AGENCY.agencyId!          // 02e568d8… Công ty Du lịch Tràng An
 export const AGENCY_USER = AGENCY.userId!          // ac233721… Lý Gia Hân
 export const PROVIDER_ID = PROVIDER.providerId!    // 50f2c8fc… Bát Tràng

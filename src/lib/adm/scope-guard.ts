@@ -4,14 +4,9 @@
  */
 
 import { AdminScope } from './types'
+import { toSessionContext, type SessionLike } from '@/lib/auth/session'
 
-export interface SessionLike {
-  role?: string
-  adminType?: string | null
-  villageId?: string | null
-  userId?: string | null
-  authenticated?: boolean
-}
+export type { SessionLike } from '@/lib/auth/session'
 
 /**
  * Resolves the effective administrative scope for the current actor.
@@ -23,11 +18,16 @@ export function resolveAdminScope(
   session: SessionLike | null | undefined,
   requestedVillageId: string | null = null
 ): AdminScope {
-  if (!session || !session.authenticated || !['ADMIN', 'HDT', 'UBND'].includes(session.role ?? '')) {
+  if (!session) {
     throw new Error('Forbidden: Administrator privileges required.')
   }
 
-  const adminType = session.adminType || (session.role === 'HDT' ? 'HDT' : session.role === 'UBND' ? 'UBND' : null)
+  const actor = toSessionContext(session)
+  if (!actor.authenticated || actor.role !== 'ADMIN') {
+    throw new Error('Forbidden: Administrator privileges required.')
+  }
+
+  const adminType = actor.adminType
 
   if (adminType === 'HDT') {
     return {
@@ -40,7 +40,7 @@ export function resolveAdminScope(
   }
 
   if (adminType === 'UBND') {
-    const assignedVillage = session.villageId || null
+    const assignedVillage = actor.assignedVillageId
     if (!assignedVillage) {
       throw new Error('Forbidden: UBND Admin requires an assigned village.')
     }

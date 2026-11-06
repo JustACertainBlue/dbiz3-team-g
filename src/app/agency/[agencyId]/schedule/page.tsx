@@ -6,6 +6,7 @@ import { BOOKING_STATUSES } from '@/lib/booking/list-bookings'
 import CalendarGrid, { calendarStyles } from '@/app/schedule-calendar/CalendarGrid'
 import { bookingDetailStyles } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
 import { agencyPageSession } from '../agency-booking-gate'
+import { sessionDisplayName } from '@/lib/auth/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,7 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
   const session = agencyPageSession(params.agencyId)
   const styles = bookingDetailStyles + calendarStyles + scheduleStyles
   if (!session) {
-    return <main className="bkg-page bkg-state"><h1>Agency Schedule</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch này.</p><Link href="/login">Chọn tài khoản demo</Link><style>{styles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Agency Schedule</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch này.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
   }
   const base = `/agency/${params.agencyId}/schedule`
   const dateFrom = searchParams.date_from || hanoiDate(Date.now())
@@ -33,7 +34,7 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
   const blocks = rows.map(row => ({ start_at: row.start_at, end_at: row.end_at, status: row.status, booking_id: row.booking_id }))
 
   return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · SCH141</p><h1>Agency Schedule</h1><span>{session.displayName} · Booking của chính Agency, chỉ xem</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · SCH141</p><h1>Agency Schedule</h1><span>{sessionDisplayName(session)} · Booking của chính Agency, chỉ xem</span></header>
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái
         <select name="status" defaultValue={status}>

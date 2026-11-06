@@ -1,4 +1,4 @@
-import type { ActorSession } from '@/lib/auth/demo-session'
+import { toSessionContext, type SessionLike } from '@/lib/auth/session'
 import { AIDescriptionSchema } from './validators'
 
 /**
@@ -31,9 +31,10 @@ export class AIError extends Error {
 
 export async function generateDescriptionDraft(
   input: AIDescriptionInput,
-  actorSession: ActorSession,
+  actorSession: SessionLike,
 ): Promise<AIDescriptionDraftResult> {
-  if (!actorSession || !actorSession.authenticated || actorSession.role !== 'LocalProvider') {
+  const actor = toSessionContext(actorSession)
+  if (!actor.authenticated || actor.role !== 'Local_Provider') {
     throw new AIError('Forbidden: only authenticated local providers can refine descriptions', 403)
   }
 

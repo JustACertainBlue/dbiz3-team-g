@@ -3,10 +3,8 @@ import { notFound } from 'next/navigation';
 import { resolveViewer } from '../../../../lib/explore/catalog';
 import { getExperienceDetail } from '../../../../lib/explore/details';
 import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
-import ExploreHeader from '../../ExploreHeader';
 import ExploreTracker from '../../ExploreTracker';
-import { cookies } from 'next/headers';
-import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../../../lib/auth/demo-session';
+import { currentServerSession } from '../../../../lib/auth/server-session';
 import ExperienceActions from '../../ExperienceActions';
 import { hasQuoteRequest } from '../../../../lib/demo/commercial-handoff-service';
 
@@ -16,8 +14,8 @@ function slotLabel(value: string) {
 
 export default function ExperienceEntry({ params }: { params: { id: string } }) {
   const seed = loadExploreRuntime();
-  const session = demoSessionFor(cookies().get(DEMO_SESSION_COOKIE)?.value);
-  const viewer = resolveViewer(seed, session.role === 'TourAgency' ? session.agencyId : null, true);
+  const session = currentServerSession();
+  const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   const detail = getExperienceDetail(seed, params.id, viewer);
   if (!detail) notFound();
   const { card } = detail;
@@ -26,7 +24,6 @@ export default function ExperienceEntry({ params }: { params: { id: string } }) 
 
   return <div className="explore-module">
     <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} detailExperienceId={card.id} />
-    <ExploreHeader viewer={viewer.kind} agencyId={isAgency ? viewer.agencyId : undefined} />
 
     <main className="explore-surface detail-page">
       <nav className="detail-breadcrumb" aria-label="Breadcrumb">

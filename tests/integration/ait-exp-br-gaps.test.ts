@@ -15,6 +15,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor } from '@/lib/auth/session'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { createChatHandoff, createQuoteHandoff } from '@/lib/demo/commercial-handoff-service'
 import { retrieveCandidates } from '@/lib/matching/candidate-repo'
@@ -24,6 +25,7 @@ import * as sessionsRoute from '@/app/api/ait/sessions/route'
 
 const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69' // Bát Tràng
 const TRANG_AN = DEMO_IDENTITIES.agency.agencyId!
+const AGENCY = demoSessionContextFor('agency')
 const WRITE_TABLES = ['quote_requests', 'chat_sessions', 'chat_messages', 'bookings']
 const snapshot = () => JSON.stringify(WRITE_TABLES.map(table => demoRepository().all(table)))
 
@@ -68,18 +70,18 @@ describe('G3 audit | AIT BR-018 / BR-019 Quote reuse and Closed Chat', () => {
   beforeEach(() => demoRepository().reset())
 
   it('reuses the Quote Request after a Booking for the pair was cancelled', async () => {
-    const first = await createQuoteHandoff(DEMO_IDENTITIES.agency, EXPERIENCE)
+    const first = await createQuoteHandoff(AGENCY, EXPERIENCE)
     demoRepository().update('bookings', row => row.agency_id === TRANG_AN, { status: 'Cancelled' })
     demoRepository().insert('bookings', { booking_id: 'g3-cancelled', agency_id: TRANG_AN, provider_id: '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374', experience_id: EXPERIENCE, status: 'Cancelled' })
-    const again = await createQuoteHandoff(DEMO_IDENTITIES.agency, EXPERIENCE)
+    const again = await createQuoteHandoff(AGENCY, EXPERIENCE)
     expect(again.quote_request_id).toBe(first.quote_request_id)
     expect(again.is_new_request).toBe(false)
   })
 
   it('does not reopen a Closed Chat; a new Chat is opened and the old one stays Closed', async () => {
-    const first = await createChatHandoff(DEMO_IDENTITIES.agency, EXPERIENCE)
+    const first = await createChatHandoff(AGENCY, EXPERIENCE)
     demoRepository().update('chat_sessions', row => row.chat_session_id === first.chat_session_id, { status: 'Closed' })
-    const second = await createChatHandoff(DEMO_IDENTITIES.agency, EXPERIENCE)
+    const second = await createChatHandoff(AGENCY, EXPERIENCE)
     expect(second.chat_session_id).not.toBe(first.chat_session_id)
     expect(demoRepository().find('chat_sessions', row => row.chat_session_id === first.chat_session_id)?.status).toBe('Closed')
   })
@@ -91,15 +93,15 @@ describe('G3 audit | EXP BR-002 / BR-009 / BR-010 on the live handoff', () => {
   for (const account of ['guest', 'provider', 'ubnd', 'hdt'] as const) {
     it(`${account}: Quote and Chat are refused with 403 and nothing is written`, async () => {
       const before = snapshot()
-      await expect(createQuoteHandoff(DEMO_IDENTITIES[account], EXPERIENCE)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }))
-      await expect(createChatHandoff(DEMO_IDENTITIES[account], EXPERIENCE)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }))
+      await expect(createQuoteHandoff(demoSessionContextFor(account), EXPERIENCE)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }))
+      await expect(createChatHandoff(demoSessionContextFor(account), EXPERIENCE)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }))
       expect(snapshot()).toBe(before)
     })
   }
 
   it('Chat creates no Booking (BR-010)', async () => {
     const bookings = demoRepository().all('bookings').length
-    await createChatHandoff(DEMO_IDENTITIES.agency, EXPERIENCE)
+    await createChatHandoff(AGENCY, EXPERIENCE)
     expect(demoRepository().all('bookings')).toHaveLength(bookings)
   })
 })

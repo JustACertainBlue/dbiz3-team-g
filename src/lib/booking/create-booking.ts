@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ActorSession } from '../auth/demo-session'
+import { toSessionContext, type SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import type { DemoRow } from '../demo/types'
 import { bookingUpdateOperations } from './agency-sync'
@@ -80,8 +80,9 @@ export function invalid(message: string): never {
 }
 
 // Only an authenticated Local Provider may open BKG134, and only for its own Provider (BR-001).
-export function canOpenCreateBooking(session: ActorSession, providerId: string): boolean {
-  return session.authenticated && session.role === 'LocalProvider' && !!session.providerId && session.providerId === providerId
+export function canOpenCreateBooking(session: SessionLike, providerId: string): boolean {
+  const actor = toSessionContext(session)
+  return actor.authenticated && actor.role === 'Local_Provider' && !!actor.providerId && actor.providerId === providerId
 }
 
 // Booking conditions prefilled as a snapshot of the Experience (BR-020, OQ #9).
@@ -127,17 +128,18 @@ function validateInput(input: Record<string, unknown>): ValidInput {
 }
 
 export async function createBooking(
-  session: ActorSession,
+  session: SessionLike,
   input: Record<string, unknown>,
   // afterConflictCheck is a test-only seam: an async pause between the check and the write
   // (tests/unit/bkg-race-pause.test.ts).
   options: { now?: Clock; afterConflictCheck?: () => Promise<void> } = {},
 ): Promise<CreateBookingResult> {
   // BR-001: only a Local Provider controls the Booking lifecycle.
-  if (!session.authenticated || session.role !== 'LocalProvider' || !session.providerId || !session.userId) {
+  const actor = toSessionContext(session)
+  if (!actor.authenticated || actor.role !== 'Local_Provider' || !actor.providerId || !actor.userId) {
     throw new BookingError('FORBIDDEN', 'Only a Local Provider can create a Booking')
   }
-  const { providerId, userId } = session
+  const { providerId, userId } = actor
   const request = validateInput(input)
   const repository = demoRepository()
 

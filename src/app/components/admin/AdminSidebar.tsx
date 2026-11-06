@@ -2,10 +2,10 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { CurrentUserRole } from '@/lib/prf/client-session'
+import type { AdminType } from '@/lib/auth/session'
 
 interface AdminSidebarProps {
-  currentRole: CurrentUserRole
+  adminType: AdminType | null
   displayName?: string
   activeTab?: 'dashboard' | 'users'
   onSelectTab?: (tab: 'dashboard') => void
@@ -13,7 +13,7 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({
-  currentRole,
+  adminType,
   displayName = '',
   activeTab = 'dashboard',
   onSelectTab,
@@ -21,8 +21,8 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   // A8: the demo identity's displayName (src/lib/auth/demo-session.ts), not an invented person
   const adminName = displayName
-  const adminInitials = currentRole === 'UBND' ? 'UB' : 'HD'
-  const adminSub = currentRole === 'UBND' ? 'UBND ADMIN' : 'ADMIN'
+  const adminInitials = adminType === 'UBND' ? 'UB' : 'HD'
+  const adminSub = adminType === 'UBND' ? 'UBND ADMIN' : 'HDT ADMIN'
 
   return (
     <aside

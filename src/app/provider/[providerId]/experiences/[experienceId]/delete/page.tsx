@@ -33,41 +33,42 @@ export default function DeleteExperiencePage({
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-stone-200 p-6 space-y-4">
-        <h1 className="text-lg font-bold text-red-600">Xác nhận xóa trải nghiệm</h1>
-        <p className="text-stone-600 text-sm">
+    <div className="delete-page">
+      <div className="delete-part">
+        <h1 className="delete-part">Xóa hoặc lưu trữ trải nghiệm</h1>
+        <p className="delete-part">
           Bạn có chắc chắn muốn xóa trải nghiệm này?
         </p>
-        <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-xs text-amber-900 space-y-1">
-          <p className="font-semibold">Quy tắc quản lý lịch sử (BR-019):</p>
+        <div className="delete-part">
+          <p className="delete-part">Điều gì sẽ xảy ra?</p>
           <p>• Nếu đang có lượt đặt tour: Thao tác sẽ bị chặn để bảo vệ quyền lợi du khách.</p>
           <p>• Nếu có lượt đặt trong quá khứ: Trải nghiệm sẽ được lưu trữ (archive), không xóa hoàn toàn.</p>
           <p>• Nếu chưa từng có lượt đặt: Trải nghiệm sẽ được xóa vĩnh viễn.</p>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 text-xs rounded-lg border border-red-200">
+          <div className="delete-part">
             {error}
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="delete-part">
           <Link
             href={`/provider/${params.providerId}/experiences`}
-            className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-lg text-sm font-medium"
+            className="delete-part"
           >
             Hủy bỏ
           </Link>
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+            className="delete-part"
           >
             {deleting ? 'Đang xử lý...' : 'Xác nhận xóa'}
           </button>
         </div>
       </div>
+      <style jsx>{`.delete-page{max-width:620px;margin:40px auto;padding:30px;background:#fffdf8;border:1px solid #ded8cb;border-radius:18px;color:#203229}.delete-page h1{font:700 30px Georgia,serif;margin-bottom:18px}.delete-page p{margin:12px 0;line-height:1.7}.delete-page button{padding:12px 18px;border:0;border-radius:9px;background:#9d3126;color:white;font:inherit;cursor:pointer}.delete-page button:disabled{opacity:.5}.delete-page a{margin-right:18px;color:#203229}.delete-page [role=alert]{color:#a51f30}@media(max-width:660px){.delete-page{margin:20px 14px;padding:22px}}`}</style>
     </div>
   )
 }

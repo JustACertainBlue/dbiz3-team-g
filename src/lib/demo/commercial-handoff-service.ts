@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ActorSession } from '../auth/demo-session'
+import type { SessionContext } from '../auth/session'
 import { demoRepository } from './json-repository'
 import type { BatchOperation, DemoRow } from './types'
 import { demoRuntime } from '../explore/demo-runtime'
@@ -41,8 +41,8 @@ export class HandoffError extends Error {
   }
 }
 
-function requireAgency(session: ActorSession): asserts session is ActorSession & { agencyId: string; userId: string } {
-  if (!session.authenticated || session.role !== 'TourAgency' || !session.agencyId || !session.userId) {
+function requireAgency(session: SessionContext): asserts session is SessionContext & { agencyId: string; userId: string } {
+  if (!session.authenticated || session.role !== 'Tour_Agency' || !session.agencyId || !session.userId) {
     throw new HandoffError('Only an authenticated Tour Agency can contact a Provider', 403)
   }
 }
@@ -85,7 +85,7 @@ function contextMessage(chatId: string, senderUserId: string, experience: DemoRo
   }
 }
 
-export async function createQuoteHandoff(session: ActorSession, experienceId: string, context: HandoffContext = {}) {
+export async function createQuoteHandoff(session: SessionContext, experienceId: string, context: HandoffContext = {}) {
   requireAgency(session)
   const { experience, provider, providerUserId } = experienceContext(experienceId)
   const chatSource = chatContext(context)
@@ -122,7 +122,7 @@ export async function createQuoteHandoff(session: ActorSession, experienceId: st
   return { ...result, action_signal_log_id: actionSignalLogId }
 }
 
-export async function createChatHandoff(session: ActorSession, experienceId: string, context: HandoffContext = {}) {
+export async function createChatHandoff(session: SessionContext, experienceId: string, context: HandoffContext = {}) {
   requireAgency(session)
   const { experience, provider, providerUserId } = experienceContext(experienceId)
   const chatSource = chatContext(context)
@@ -141,7 +141,7 @@ export async function createChatHandoff(session: ActorSession, experienceId: str
 }
 
 /** FR-011: the Agency already sent a Quote Request for this Experience (Request Quote is hidden). */
-export function hasQuoteRequest(session: ActorSession, experienceId: string): boolean {
-  if (!session.authenticated || session.role !== 'TourAgency' || !session.agencyId) return false
+export function hasQuoteRequest(session: SessionContext, experienceId: string): boolean {
+  if (!session.authenticated || session.role !== 'Tour_Agency' || !session.agencyId) return false
   return Boolean(demoRepository().find('quote_requests', row => row.agency_id === session.agencyId && row.experience_id === experienceId))
 }

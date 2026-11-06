@@ -1,6 +1,6 @@
 // T002, T003: F-CHAT-04 close (FR-004, BR-019, BR-020, BR-021, SC-011, SC-012, SC-013, #29–#32, #37).
 import { beforeEach, describe, expect, it } from 'vitest'
-import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor } from '@/lib/auth/session'
 import { closeChat } from '@/lib/iac/chat-service'
 import { AGENCY, AGENCY_CHAT, AGENCY_USER, PROVIDER, PROVIDER_CHAT, PROVIDER_USER, repo } from './iac-fixtures'
 
@@ -70,9 +70,9 @@ describe('T003 | closeChat refused, nothing written (BR-021, SC-012, #29, #31, l
   const denied: Array<[string, () => Promise<unknown>]> = [
     ['a non-participant Agency', () => closeChat(AGENCY, PROVIDER_CHAT, {})],
     ['an unknown Chat id', () => closeChat(PROVIDER, 'no-such-chat', {})],
-    ['Guest', () => closeChat(DEMO_IDENTITIES.guest, PROVIDER_CHAT, {})],
-    ['UBND', () => closeChat(DEMO_IDENTITIES.ubnd, PROVIDER_CHAT, {})],
-    ['HDT', () => closeChat(DEMO_IDENTITIES.hdt, PROVIDER_CHAT, {})],
+    ['Guest', () => closeChat(demoSessionContextFor('guest'), PROVIDER_CHAT, {})],
+    ['UBND', () => closeChat(demoSessionContextFor('ubnd'), PROVIDER_CHAT, {})],
+    ['HDT', () => closeChat(demoSessionContextFor('hdt'), PROVIDER_CHAT, {})],
   ]
   for (const [name, run] of denied) {
     it(`${name} → 403 FORBIDDEN`, async () => {

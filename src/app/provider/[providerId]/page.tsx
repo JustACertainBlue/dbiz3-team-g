@@ -6,7 +6,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { refreshDemoSession } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
+import type { SessionContext } from '@/lib/auth/session'
 import { providerPageView } from '@/lib/prf/provider-page-view'
 import { providerBkgLinks } from '@/lib/booking/nav-links'
 
@@ -39,12 +40,6 @@ interface ProviderData {
   experiences?: ProviderExperience[]
 }
 
-interface ViewerSession {
-  role: string
-  providerId?: string | null
-  adminType?: string | null
-}
-
 const vnd = (value?: number) => (value ?? 0).toLocaleString('vi-VN')
 
 export default function ProviderProfilePage({
@@ -53,7 +48,7 @@ export default function ProviderProfilePage({
   params: { providerId: string }
 }) {
   const [provider, setProvider] = useState<ProviderData | null>(null)
-  const [session, setSession] = useState<ViewerSession>({ role: 'Guest' })
+  const [session, setSession] = useState<SessionContext | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -72,7 +67,7 @@ export default function ProviderProfilePage({
   useEffect(() => {
     async function load() {
       try {
-        const [viewer] = await Promise.all([refreshDemoSession(), loadProfile()])
+        const [viewer] = await Promise.all([readSessionContext(), loadProfile()])
         setSession(viewer)
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Lỗi kết nối')
@@ -106,12 +101,12 @@ export default function ProviderProfilePage({
   if (loading) {
     return (
       <div className="spec-portal" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <p style={{ fontWeight: 700, color: '#4b5563' }}>LOADING PROVIDER PROFILE (PRF127)...</p>
+        <p style={{ fontWeight: 700, color: '#4b5563' }}>Đang tải hồ sơ xưởng…</p>
       </div>
     )
   }
 
-  if (error || !provider) {
+  if (error || !provider || !session) {
     return (
       <div className="spec-portal" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
         <h2 style={{ color: '#be123c', marginBottom: '1rem' }}>Hồ sơ Làng nghề Không tồn tại</h2>
@@ -129,31 +124,16 @@ export default function ProviderProfilePage({
 
   return (
     <div className="spec-portal">
-      <header className="spec-header">
-        <div>
-          <div className="spec-brand-title">HANOI ARTISAN BRIDGE</div>
-          <div className="spec-brand-sub">PROVIDER PROFILE (PRF127)</div>
-        </div>
-        {view.canEdit && (
-          <nav className="spec-nav">
-            <Link href={providerBkgLinks(params.providerId).dashboard}>Dashboard</Link>
-            <Link href={`/provider/${params.providerId}/experiences`}>Experience Management</Link>
-            <Link href={providerBkgLinks(params.providerId).bookings}>Bookings</Link>
-            <Link href={providerBkgLinks(params.providerId).schedule}>Schedule</Link>
-            <Link href="/messages">Messages</Link>
-          </nav>
-        )}
-      </header>
 
       <div className="spec-content-wrap">
         {(view.canEdit || view.canCreateBooking) && (
           <div className="spec-action-bar">
-            <div className="spec-action-label">Provider Administration</div>
+            <div className="spec-action-label">Quản lý xưởng</div>
             {view.canEdit && (
-              <Link href={`/provider/${params.providerId}/edit`} className="spec-btn-black">✏ EDIT PROVIDER PROFILE</Link>
+              <Link href={`/provider/${params.providerId}/edit`} className="spec-btn-black">Chỉnh sửa hồ sơ</Link>
             )}
             {view.canCreateBooking && (
-              <Link href={`/provider/${params.providerId}/bookings/new`} className="spec-btn-black">+ CREATE BOOKING</Link>
+              <Link href={`/provider/${params.providerId}/bookings/new`} className="spec-btn-black">+ Tạo booking</Link>
             )}
           </div>
         )}
@@ -186,7 +166,7 @@ export default function ProviderProfilePage({
             <p style={{ fontSize: '0.95rem', color: '#374151', lineHeight: 1.6 }}>{provider.general_description}</p>
             {provider.business_registration_number && (
               <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.75rem' }}>
-                Business registration: <strong>{provider.business_registration_number}</strong>
+                Mã đăng ký kinh doanh: <strong>{provider.business_registration_number}</strong>
               </div>
             )}
           </div>
@@ -194,7 +174,7 @@ export default function ProviderProfilePage({
 
         {provider.experiences && (
           <>
-            <h2 className="spec-section-title">Experiences</h2>
+            <h2 className="spec-section-title">Trải nghiệm</h2>
             {provider.experiences.length === 0 && <p style={{ color: '#6b7280' }}>Chưa có trải nghiệm.</p>}
             <div className="spec-exp-grid">
               {provider.experiences.map(exp => (
@@ -207,7 +187,7 @@ export default function ProviderProfilePage({
                       <span className="spec-exp-b2b-rate">{vnd(exp.price_per_person)} ₫ <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>/ khách</span></span>
                     </div>
                     <div className="spec-exp-actions">
-                      <Link href={experienceHref(exp.experience_id)} style={{ fontSize: '0.78rem', color: '#111827', fontWeight: 700 }}>View Details</Link>
+                      <Link href={experienceHref(exp.experience_id)} style={{ fontSize: '0.78rem', color: '#111827', fontWeight: 700 }}>Xem chi tiết</Link>
                     </div>
                   </div>
                 </div>
@@ -221,21 +201,21 @@ export default function ProviderProfilePage({
             <div className="spec-dispatch-grid">
               {provider.contact && (
                 <div className="spec-dispatch-col">
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Contact</div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Liên hệ</div>
                   {provider.contact.phone_number && <div style={{ fontWeight: 800 }}>{provider.contact.phone_number}</div>}
                   {provider.contact.business_email && <div style={{ fontSize: '0.85rem' }}>{provider.contact.business_email}</div>}
                 </div>
               )}
               {provider.availability !== undefined && (
                 <div className="spec-dispatch-col">
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Operating hours</div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Giờ hoạt động</div>
                   {view.operatingHours.length === 0 && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Chưa có giờ mở cửa.</div>}
                   {view.operatingHours.map(line => <div key={line} style={{ fontSize: '0.85rem' }}>{line}</div>)}
                 </div>
               )}
               {provider.booking_conditions !== undefined && (
                 <div className="spec-dispatch-col">
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Booking conditions</div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Điều kiện đón đoàn</div>
                   {view.bookingConditions.length === 0 && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>—</div>}
                   {view.bookingConditions.map(line => <div key={line} style={{ fontSize: '0.85rem' }}>{line}</div>)}
                 </div>

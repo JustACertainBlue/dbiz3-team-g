@@ -1,12 +1,12 @@
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 
 export async function POST(
   req: Request,
   { params }: { params: { agencyId: string } | Promise<{ agencyId: string }> },
 ): Promise<Response> {
   const resolved = await Promise.resolve(params)
-  const session = demoSessionFromRequest(req)
-  if (!session.authenticated || session.role !== 'TourAgency' || session.agencyId !== resolved.agencyId) {
+  const session = sessionContextFromRequest(req)
+  if (!session.authenticated || session.role !== 'Tour_Agency' || session.agencyId !== resolved.agencyId) {
     return new Response(JSON.stringify({ error: 'Forbidden' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },

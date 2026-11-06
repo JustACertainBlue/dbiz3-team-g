@@ -5,39 +5,34 @@
  * session when the event fires.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor } from '@/lib/auth/session'
 
 const target = new EventTarget()
-const session = DEMO_IDENTITIES.ubnd
+const session = demoSessionContextFor('ubnd')
 
-vi.mock('@/lib/prf/client-session', () => ({
-  // Like main: refreshing the session announces a role change.
-  refreshDemoSession: vi.fn(async () => {
-    setTimeout(() => target.dispatchEvent(new Event('hab_role_changed')), 0)
-    return session
-  }),
-  getCurrentSession: vi.fn(() => session),
+vi.mock('@/lib/auth/client-session', () => ({
+  readSessionContext: vi.fn(async () => session),
 }))
 
-import { refreshDemoSession } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
 import { startAdminRoleSync } from '@/app/admin/admin-role-sync'
 
 const settle = () => new Promise(resolve => setTimeout(resolve, 30))
 
 describe('admin role sync does not loop', () => {
-  beforeEach(() => vi.mocked(refreshDemoSession).mockClear())
+  beforeEach(() => vi.mocked(readSessionContext).mockClear())
 
-  it('refreshes once on load; the role-change event only reads the current session', async () => {
+  it('reads once on load and once per role-change event without recursion', async () => {
     const apply = vi.fn()
     const stop = startAdminRoleSync(apply, target)
     await settle()
-    expect(refreshDemoSession).toHaveBeenCalledTimes(1)
+    expect(readSessionContext).toHaveBeenCalledTimes(1)
     expect(apply).toHaveBeenCalledWith(session)
 
     const before = apply.mock.calls.length
     target.dispatchEvent(new Event('hab_role_changed'))
     await settle()
-    expect(refreshDemoSession).toHaveBeenCalledTimes(1)
+    expect(readSessionContext).toHaveBeenCalledTimes(2)
     expect(apply.mock.calls.length).toBe(before + 1)
 
     stop()

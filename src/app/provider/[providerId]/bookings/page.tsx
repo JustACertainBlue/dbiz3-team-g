@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { cookies } from 'next/headers'
-import { DEMO_SESSION_COOKIE, demoSessionFor } from '@/lib/auth/demo-session'
+import { sessionDisplayName } from '@/lib/auth/session'
+import { currentServerSession } from '@/lib/auth/server-session'
 import { hanoiDate } from '@/lib/booking/clock'
 import { BookingError, canOpenCreateBooking } from '@/lib/booking/create-booking'
 import { BOOKING_STATUSES, countActionsOutsideFilter, listProviderBookings, type ListQuery } from '@/lib/booking/list-bookings'
@@ -14,9 +14,9 @@ type SearchParams = Record<string, string | undefined>
 // Screen BKG133 Booking Management (F-SCHED-10, Local Provider). Same gate as BKG134: the owning
 // Provider on its own URL (analyze L2).
 export default async function BookingManagementPage({ params, searchParams }: { params: { providerId: string }; searchParams: SearchParams }) {
-  const session = demoSessionFor(cookies().get(DEMO_SESSION_COOKIE)?.value)
+  const session = currentServerSession()
   if (!canOpenCreateBooking(session, params.providerId)) {
-    return <main className="bkg-page bkg-state"><h1>Booking Management</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được danh sách Booking.</p><Link href="/login">Chọn tài khoản demo</Link><style>{bookingDetailStyles + listStyles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Booking Management</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được danh sách Booking.</p><Link href="/login">Đăng nhập</Link><style>{bookingDetailStyles + listStyles}</style></main>
   }
 
   // UI choice (plan.md): date_from defaults to today in Asia/Ho_Chi_Minh; an empty value means no filter.
@@ -49,7 +49,7 @@ export default async function BookingManagementPage({ params, searchParams }: { 
   const rows = list.bookings.map(row => bookingListRowView(row, params.providerId))
 
   return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · BKG133</p><h1>Booking Management</h1><span>{session.displayName} · sắp theo giờ bắt đầu</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · BKG133</p><h1>Booking Management</h1><span>{sessionDisplayName(session)} · sắp theo giờ bắt đầu</span></header>
 
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái

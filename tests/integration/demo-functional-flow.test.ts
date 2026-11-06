@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor } from '@/lib/auth/session'
 import { createChatHandoff, createQuoteHandoff } from '@/lib/demo/commercial-handoff-service'
 import { getChatHistory, listChats, sendMessage } from '@/lib/iac/chat-service'
 import { demoRepository } from '@/lib/demo/json-repository'
@@ -10,6 +11,8 @@ import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 
 const experienceId = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69'
 const pendingProviderId = '3a5d2ffc-79fa-5b75-a1e6-82beea3bed59'
+const agencyAuth = demoSessionContextFor('agency')
+const providerAuth = demoSessionContextFor('provider')
 
 describe('functional demo foundation', () => {
   beforeEach(() => demoRepository().reset())
@@ -17,28 +20,28 @@ describe('functional demo foundation', () => {
   it('creates one Quote, reuses the pair Chat, keeps Experience context, and never creates a Booking', async () => {
     const repository = demoRepository()
     const bookingsBefore = repository.all('bookings').length
-    const first = await createQuoteHandoff(DEMO_IDENTITIES.agency, experienceId)
-    const second = await createQuoteHandoff(DEMO_IDENTITIES.agency, experienceId)
+    const first = await createQuoteHandoff(agencyAuth, experienceId)
+    const second = await createQuoteHandoff(agencyAuth, experienceId)
 
     expect(first.is_new_request).toBe(true)
     expect(second).toMatchObject({ quote_request_id: first.quote_request_id, chat_session_id: first.chat_session_id, is_new_request: false })
     expect(repository.all('bookings')).toHaveLength(bookingsBefore)
-    expect(listChats(DEMO_IDENTITIES.agency).some(row => row.chat_session_id === first.chat_session_id)).toBe(true)
+    expect(listChats(agencyAuth).some(row => row.chat_session_id === first.chat_session_id)).toBe(true)
     const conversation = repository.find('chat_sessions', row => row.chat_session_id === first.chat_session_id)
     expect(conversation).toMatchObject({ experience_id: experienceId, quote_request_id: first.quote_request_id })
-    const history = await getChatHistory(DEMO_IDENTITIES.agency, first.chat_session_id)
+    const history = await getChatHistory(agencyAuth, first.chat_session_id)
     expect(history.message_history[0].text).toContain('Nặn gốm thủ công')
   })
 
   it('opens direct Chat without creating a Quote and persists a reply for both participants', async () => {
     const repository = demoRepository()
     const quotesBefore = repository.all('quote_requests').length
-    const handoff = await createChatHandoff(DEMO_IDENTITIES.agency, experienceId)
-    await sendMessage(DEMO_IDENTITIES.provider, handoff.chat_session_id, 'Xưởng đã nhận được yêu cầu.')
+    const handoff = await createChatHandoff(agencyAuth, experienceId)
+    await sendMessage(providerAuth, handoff.chat_session_id, 'Xưởng đã nhận được yêu cầu.')
 
     expect(repository.all('quote_requests')).toHaveLength(quotesBefore)
-    const agencyView = await getChatHistory(DEMO_IDENTITIES.agency, handoff.chat_session_id)
-    const providerView = await getChatHistory(DEMO_IDENTITIES.provider, handoff.chat_session_id)
+    const agencyView = await getChatHistory(agencyAuth, handoff.chat_session_id)
+    const providerView = await getChatHistory(providerAuth, handoff.chat_session_id)
     expect(agencyView.message_history.at(-1)?.text).toBe('Xưởng đã nhận được yêu cầu.')
     expect(providerView.message_history.at(-1)?.text).toBe('Xưởng đã nhận được yêu cầu.')
     expect(repository.find('chat_sessions', row => row.chat_session_id === handoff.chat_session_id)?.experience_id).toBe(experienceId)

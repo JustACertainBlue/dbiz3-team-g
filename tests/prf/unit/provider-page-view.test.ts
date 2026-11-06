@@ -6,19 +6,20 @@
  */
 import { describe, expect, it } from 'vitest'
 import { providerPageView } from '@/lib/prf/provider-page-view'
+import { sessionContextFor } from '@/lib/auth/session'
 import { agencyOwnerSession, guestSession, hdtSession, providerSession, ubndSession, SEED_IDS } from '../helpers/mockSession'
 
 const BAT_TRANG = SEED_IDS.provider1Verified
-const owner = providerSession(BAT_TRANG, SEED_IDS.provider1VerifiedUserId)
-const ubnd = ubndSession(SEED_IDS.village1)
-const agency = agencyOwnerSession()
+const owner = sessionContextFor(providerSession(BAT_TRANG, SEED_IDS.provider1VerifiedUserId))
+const ubnd = sessionContextFor(ubndSession(SEED_IDS.village1))
+const agency = sessionContextFor(agencyOwnerSession())
 
 describe('A2 | #40 PRF127 view rules (providerPageView)', () => {
   const profile = { provider_id: BAT_TRANG, verification_status: 'Verified' }
 
   it('shows Edit and Create Booking only to the owning Local Provider', () => {
     expect(providerPageView(profile, owner)).toMatchObject({ canEdit: true, canCreateBooking: true })
-    for (const viewer of [agency, ubnd, hdtSession(), guestSession(), providerSession(SEED_IDS.providerDraft, SEED_IDS.providerDraftUserId)]) {
+    for (const viewer of [agency, ubnd, sessionContextFor(hdtSession()), sessionContextFor(guestSession()), sessionContextFor(providerSession(SEED_IDS.providerDraft, SEED_IDS.providerDraftUserId))]) {
       expect(providerPageView(profile, viewer)).toMatchObject({ canEdit: false, canCreateBooking: false })
     }
   })
@@ -26,7 +27,7 @@ describe('A2 | #40 PRF127 view rules (providerPageView)', () => {
   it('shows the UBND review panel only to UBND and only while a version is Pending Verification', () => {
     expect(providerPageView({ ...profile, verification_status: 'Pending Verification' }, ubnd).canReview).toBe(true)
     expect(providerPageView(profile, ubnd).canReview).toBe(false)
-    expect(providerPageView({ ...profile, verification_status: 'Pending Verification' }, hdtSession()).canReview).toBe(false)
+    expect(providerPageView({ ...profile, verification_status: 'Pending Verification' }, sessionContextFor(hdtSession())).canReview).toBe(false)
     expect(providerPageView({ ...profile, verification_status: 'Pending Verification' }, owner).canReview).toBe(false)
   })
 

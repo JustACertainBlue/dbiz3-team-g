@@ -3,31 +3,27 @@ import { notFound } from 'next/navigation';
 import { resolveViewer } from '../../../../lib/explore/catalog';
 import { getProviderDetail } from '../../../../lib/explore/details';
 import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
-import ExploreHeader from '../../ExploreHeader';
 import ExploreTracker from '../../ExploreTracker';
-import { cookies } from 'next/headers';
-import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../../../lib/auth/demo-session';
+import { currentServerSession } from '../../../../lib/auth/server-session';
 import ProviderChatAction from '../../ProviderChatAction';
-import { showScheduleLink } from '../../../../lib/booking/provider-schedule';
 
 export default function ProviderPage({ params }: { params: { id: string } }) {
   const seed = loadExploreRuntime();
-  const session = demoSessionFor(cookies().get(DEMO_SESSION_COOKIE)?.value);
-  const viewer = resolveViewer(seed, session.role === 'TourAgency' ? session.agencyId : null, true);
+  const session = currentServerSession();
+  const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   const detail = getProviderDetail(seed, params.id, viewer);
   if (!detail) notFound();
   const isAgency = viewer.kind === 'agency';
 
   return <div className="explore-module">
     <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
-    <ExploreHeader viewer={viewer.kind} agencyId={isAgency ? viewer.agencyId : undefined} />
 
     <main className="explore-surface detail-page provider-page">
       <nav className="detail-breadcrumb" aria-label="Breadcrumb"><Link href="/explore">Explore</Link><span>/</span><span>{detail.village_name}</span><span>/</span><strong>{detail.provider_name}</strong></nav>
 
       <section className="provider-hero">
         <div className="provider-hero__copy"><span className="verified-provider">✓ Verified heritage provider</span><p className="eyebrow">{detail.village_name} · {detail.craft_type}</p><h1>{detail.provider_name}</h1><p className="hero-lead">{detail.public_bio}</p>
-          <div className="provider-hero__actions">{isAgency ? <><ProviderChatAction experienceId={detail.experiences[0]?.id} />{showScheduleLink(session) && <Link className="button button--secondary" href={`/explore/providers/${params.id}/schedule`}>Xem lịch trống</Link>}</> : <Link className="button" href="/login">Đăng nhập để hợp tác</Link>}<a className="button button--secondary" href="#experiences">Xem trải nghiệm</a></div></div>
+          <div className="provider-hero__actions">{isAgency ? <><ProviderChatAction experienceId={detail.experiences[0]?.id} /><Link className="button button--secondary" href={`/explore/providers/${params.id}/schedule`}>Xem lịch trống</Link></> : <Link className="button" href="/login">Đăng nhập để hợp tác</Link>}<a className="button button--secondary" href="#experiences">Xem trải nghiệm</a></div></div>
         <div className="provider-portrait" role="img" aria-label={`Minh họa ${detail.provider_name}`}><div className="portrait-seal"><span>Est.</span><strong>HN</strong></div><p>Artisan workshop</p><small>{detail.craft_type}</small></div>
       </section>
 

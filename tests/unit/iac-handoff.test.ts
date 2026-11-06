@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createChatHandoff, createQuoteHandoff } from '@/lib/demo/commercial-handoff-service'
 import { createBooking } from '@/lib/booking/create-booking'
 import { SEED_NOW } from '@/lib/booking/clock'
-import { AGENCY, AGENCY_ID, AGENCY_USER, EXPERIENCE, PROVIDER, PROVIDER_ID, PROVIDER_USER, activePairChats, participant, repo } from './iac-fixtures'
+import { AGENCY, AGENCY_ID, AGENCY_USER, DEMO_PROVIDER, EXPERIENCE, PROVIDER_ID, PROVIDER_USER, activePairChats, participant, repo } from './iac-fixtures'
 
 const MATCHING = 'fb8dee73-96ba-56c1-b6d1-17041b6ed031'
 const chatRow = (id: string) => repo().find('chat_sessions', row => row.chat_session_id === id)!
@@ -62,7 +62,7 @@ describe('T029 | handoffs on the shared chat service', () => {
   })
 
   it('reuses an Active Chat that a Booking created for the pair', async () => {
-    await createBooking(PROVIDER, {
+    await createBooking(DEMO_PROVIDER, {
       experience_id: EXPERIENCE, agency_id: AGENCY_ID, start_at: '2026-10-12T09:00:00+07:00', duration: 60, group_size: 10,
       agreed_price: 2000000, booking_conditions: { notice_period: 24, cancellation_policy: { before_hours: 24, refund_percent: 80 } },
     }, { now: () => new Date(SEED_NOW) })

@@ -7,11 +7,11 @@ import {
   VillagesResponse,
   CollaborationSortBy,
 } from '@/lib/adm/types'
-import { getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { getAuthHeaders } from '@/lib/prf/client-session'
+import type { AdminType, AuthRole } from '@/lib/auth/session'
 import { startAdminRoleSync } from './admin-role-sync'
 import { adminPageAccess } from './admin-page-access'
 import { nextVillageFilter } from './village-filter-state'
-import { AdminSidebar } from '@/app/components/admin/AdminSidebar'
 import { FilterPanel } from '@/app/components/admin/FilterPanel'
 import { MetricCards } from '@/app/components/admin/MetricCards'
 import { PendingVerificationPanel } from '@/app/components/admin/PendingVerificationPanel'
@@ -21,7 +21,8 @@ import { BookingTable } from '@/app/components/admin/BookingTable'
 import { TopPairsList } from '@/app/components/admin/TopPairsList'
 
 export default function AdminDashboardPage() {
-  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [role, setRole] = useState<AuthRole | null>(null)
+  const [adminType, setAdminType] = useState<AdminType | null>(null)
   const [displayName, setDisplayName] = useState('')
   const [access, setAccess] = useState<'allow' | 'restricted' | null>(null)
   const villageLockedRef = useRef(false)
@@ -51,7 +52,8 @@ export default function AdminDashboardPage() {
     setMounted(true)
     return startAdminRoleSync(session => {
       setRole(session.role)
-      setDisplayName(session.displayName)
+      setAdminType(session.adminType)
+      setDisplayName(`${session.adminType ?? ''} Admin`.trim())
       setAccess(adminPageAccess(session))
     })
   }, [])
@@ -137,8 +139,8 @@ export default function AdminDashboardPage() {
     return (
       <main className="admin-state">
         <h1>Admin Dashboard</h1>
-        <p>Chọn tài khoản UBND Admin hoặc HDT Admin để truy cập.</p>
-        <a href="/login">Chọn tài khoản demo</a>
+        <p>Đăng nhập bằng tài khoản UBND Admin hoặc HDT Admin để truy cập.</p>
+        <a href="/login">Đăng nhập</a>
       </main>
     )
   }
@@ -148,18 +150,12 @@ export default function AdminDashboardPage() {
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: '#f4f4f5',
+        background: '#f8f6f0',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
         color: '#09090b',
       }}
     >
       {/* 1. Fixed Dark Left Sidebar matching ADM079.png */}
-      <AdminSidebar
-        currentRole={role}
-        displayName={displayName}
-        activeTab="dashboard"
-        onOpenNotice={msg => setModalNotice(msg)}
-      />
 
       {/* Main Content Area */}
       <main

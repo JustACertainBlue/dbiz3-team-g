@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../ExperienceImagesField'
 import { missingCategories } from '@/lib/prf/experience-images'
-import { getCurrentRole, refreshDemoSession, setCurrentRole, getAuthHeaders, type CurrentUserRole } from '@/lib/prf/client-session'
+import { getAuthHeaders } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
 
 export default function AddExperiencePage({
   params,
@@ -13,7 +14,7 @@ export default function AddExperiencePage({
   params: { providerId: string }
 }) {
   const router = useRouter()
-  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [authorized, setAuthorized] = useState(false)
   const [sessionReady, setSessionReady] = useState(false)
   const [saving, setSaving] = useState(false)
   const [aiRefining, setAiRefining] = useState(false)
@@ -35,18 +36,17 @@ export default function AddExperiencePage({
   const [images, setImages] = useState<ExperienceImageItem[]>([])
 
   useEffect(() => {
-    refreshDemoSession().then(session => setRole(session.role)).finally(() => setSessionReady(true))
+    const applySession = async () => {
+      const session = await readSessionContext()
+      setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
+    }
+    applySession().finally(() => setSessionReady(true))
     const onRoleChanged = () => {
-      setRole(getCurrentRole())
+      applySession().catch(() => setAuthorized(false))
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
     return () => window.removeEventListener('hab_role_changed', onRoleChanged)
   }, [])
-
-  const handleRoleSwitchToProvider = async () => {
-    await setCurrentRole('LocalProvider')
-    setRole('LocalProvider')
-  }
 
   const handleAiRefine = async () => {
     setAiRefining(true)
@@ -77,7 +77,7 @@ export default function AddExperiencePage({
     setSaving(true)
     setError(null)
 
-    if (role !== 'LocalProvider') {
+    if (!authorized) {
       setError('Lỗi phân quyền: Chỉ tài khoản Local Provider mới có quyền tạo mới trải nghiệm (BR-001). Vui lòng chuyển vai trò.')
       setSaving(false)
       return
@@ -129,14 +129,14 @@ export default function AddExperiencePage({
   }
 
   if (!sessionReady) return <div className="prf-container" style={{ padding: '3rem' }}>Đang tải phiên demo…</div>
-  const isLocalProvider = role === 'LocalProvider'
+  const isLocalProvider = authorized
 
   return (
     <div className="prf-container" style={{ paddingBottom: '7rem' }}>
       {/* Header */}
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">MÃ MÀN HÌNH: EXP069 · ADD EXPERIENCE</span>
+          <span className="prf-spec-code">THÊM TRẢI NGHIỆM</span>
           <h1 className="prf-spec-title">Tạo mới Hoạt động Trải nghiệm Làng nghề</h1>
           <p className="prf-spec-subtitle">
             Thiết lập biểu phí B2B, quy mô đoàn khách, thời lượng thực hành và 3 danh mục hình ảnh quy chuẩn (BR-009)
@@ -174,17 +174,16 @@ export default function AddExperiencePage({
               ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER (BR-001)
             </strong>
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#78350f' }}>
-              Bạn đang ở vai trò <strong>{role}</strong>. Chỉ tài khoản Local Provider mới có quyền thêm mới trải nghiệm cho xưởng.
+              Tài khoản hiện tại không sở hữu Provider này. Chỉ Local Provider đúng tổ chức mới có quyền thêm mới trải nghiệm cho xưởng.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleRoleSwitchToProvider}
+          <Link
+            href={`/login?next=/provider/${params.providerId}/experiences/new`}
             className="prf-btn prf-btn-primary"
             style={{ fontSize: '0.8rem' }}
           >
-            🏺 Chuyển sang tài khoản Local Provider
-          </button>
+            Đăng nhập Local Provider
+          </Link>
         </div>
       )}
 
@@ -224,8 +223,8 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Tên hoạt động trải nghiệm *</label>
-                <input
+                <label className="prf-label" htmlFor="experience-field-1">Tên hoạt động trải nghiệm *</label>
+                <input id="experience-field-1"
                   type="text"
                   required
                   value={formData.name}
@@ -237,8 +236,8 @@ export default function AddExperiencePage({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="prf-field-group">
-                  <label className="prf-label">Phân loại hoạt động *</label>
-                  <select
+                  <label className="prf-label" htmlFor="experience-field-2">Phân loại hoạt động *</label>
+                  <select id="experience-field-2"
                     value={formData.category}
                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                     className="prf-select"
@@ -251,8 +250,8 @@ export default function AddExperiencePage({
                 </div>
 
                 <div className="prf-field-group">
-                  <label className="prf-label">Thời lượng (phút) *</label>
-                  <input
+                  <label className="prf-label" htmlFor="experience-field-3">Thời lượng (phút) *</label>
+                  <input id="experience-field-3"
                     type="number"
                     required
                     min={15}
@@ -264,8 +263,8 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Địa điểm diễn ra trải nghiệm *</label>
-                <input
+                <label className="prf-label" htmlFor="experience-field-4">Địa điểm diễn ra trải nghiệm *</label>
+                <input id="experience-field-4"
                   type="text"
                   required
                   value={formData.experience_location_address}
@@ -381,8 +380,8 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Giá niêm yết / khách (VND) *</label>
-                <input
+                <label className="prf-label" htmlFor="experience-field-5">Giá niêm yết / khách (VND) *</label>
+                <input id="experience-field-5"
                   type="number"
                   required
                   min={1000}
@@ -394,8 +393,8 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Số khách tối đa / lượt (max_participants) *</label>
-                <input
+                <label className="prf-label" htmlFor="experience-field-6">Số khách tối đa / lượt  *</label>
+                <input id="experience-field-6"
                   type="number"
                   required
                   min={1}
@@ -406,8 +405,8 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Thời gian báo trước (giờ) *</label>
-                <input
+                <label className="prf-label" htmlFor="experience-field-7">Thời gian báo trước (giờ) *</label>
+                <input id="experience-field-7"
                   type="number"
                   required
                   min={0}
@@ -419,8 +418,8 @@ export default function AddExperiencePage({
               </div>
 
               <div className="prf-field-group">
-                <label className="prf-label">Chính sách hủy dịch vụ</label>
-                <textarea
+                <label className="prf-label" htmlFor="experience-field-8">Chính sách hủy dịch vụ</label>
+                <textarea id="experience-field-8"
                   rows={3}
                   value={formData.cancellation_rules_text}
                   onChange={e => setFormData({ ...formData, cancellation_rules_text: e.target.value })}

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { chatErrorResponse } from '@/lib/iac/chat-http'
 import { closeChat } from '@/lib/iac/chat-service'
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const body = await request.json().catch(() => null) as { close_reason?: unknown } | null
-    return NextResponse.json({ data: await closeChat(demoSessionFromRequest(request), params.id, { closeReason: body?.close_reason }) })
+    return NextResponse.json({ data: await closeChat(sessionContextFromRequest(request), params.id, { closeReason: body?.close_reason }) })
   } catch (error) {
     return chatErrorResponse(error)
   }

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ActorSession } from '../auth/demo-session'
+import type { SessionContext } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import type { BatchOperation, DemoRow } from '../demo/types'
 import { ChatError, isParticipant, requireChatActor, requireParticipant, type ChatActor } from './chat-access'
@@ -41,12 +41,12 @@ export function resolveOpenTarget(actor: ChatActor, input: OpenChatInput): Omit<
     if (!input.bookingId) throw new ChatError('VALIDATION_ERROR', 'booking_id is required when source = Booking')
     const booking = repository.find('bookings', row => row.booking_id === input.bookingId)
     if (!booking) throw new ChatError('NOT_FOUND', 'Booking not found')
-    const own = actor.role === 'TourAgency' ? booking.agency_id === actor.agencyId : booking.provider_id === actor.providerId
+    const own = actor.role === 'Tour_Agency' ? booking.agency_id === actor.agencyId : booking.provider_id === actor.providerId
     if (!own) throw new ChatError('FORBIDDEN', 'The Booking belongs to another participant')
     return { agencyId: booking.agency_id, providerId: booking.provider_id, source: 'Booking', bookingId: booking.booking_id, experienceId: booking.experience_id }
   }
   // FR-001, Q5: a Local Provider starts a Chat only from its own Booking in this slice.
-  if (actor.role !== 'TourAgency') throw new ChatError('FORBIDDEN', 'A Local Provider can open a Chat only from its own Booking')
+  if (actor.role !== 'Tour_Agency') throw new ChatError('FORBIDDEN', 'A Local Provider can open a Chat only from its own Booking')
   if (input.source === 'Quote Request') throw new ChatError('VALIDATION_ERROR', 'source Quote Request is not supported yet')
   if (!input.experienceId) throw new ChatError('VALIDATION_ERROR', 'experience_id is required')
   if (input.source === 'AI Matching' && !input.matchingSessionId) throw new ChatError('VALIDATION_ERROR', 'matching_session_id is required when source = AI Matching')
@@ -62,7 +62,7 @@ export function resolveOpenTarget(actor: ChatActor, input: OpenChatInput): Omit<
 
 /** F-CHAT-01: open the pair's Active Chat or create it (FR-001, BR-004, BR-021, spec-IAC #19, #21, #24). */
 export async function openChat(
-  session: ActorSession,
+  session: SessionContext,
   input: OpenChatInput,
   // afterPairCheck is a test-only seam: an async pause between the pair check and the write (lesson #13).
   options: { now?: Clock; afterPairCheck?: () => Promise<void> } = {},
@@ -90,7 +90,7 @@ function recipientOf(chat: DemoRow, senderUserId: string): string {
 
 /** F-CHAT-02: send a text message (FR-002, BR-006, BR-017, BR-021, spec-IAC #25, #26). */
 export async function sendMessage(
-  session: ActorSession,
+  session: SessionContext,
   chatSessionId: string,
   text: unknown,
   // afterStatusCheck is a test-only seam between the Active check and the write (spec-IAC #38, lesson #13).
@@ -130,7 +130,7 @@ function fullName(userId: string): string {
 // spec-IAC #22: counterpart user's full_name and organization.
 function counterpart(actor: ChatActor, chat: DemoRow): { participant_name: string; organization: string } {
   const repository = demoRepository()
-  if (actor.role === 'TourAgency') {
+  if (actor.role === 'Tour_Agency') {
     const provider = repository.find('provider_profiles', row => row.provider_id === chat.provider_id)
     const version = provider && repository.find('provider_profile_versions', row => row.provider_id === provider.provider_id && row.version_no === provider.published_version_no)
     return { participant_name: fullName(provider?.user_id ?? ''), organization: version?.business_name ?? '' }
@@ -150,7 +150,7 @@ export interface ChatListEntry {
 }
 
 /** F-CHAT-03 Chat list (FR-003, BR-002, BR-013, BR-016). */
-export function listChats(session: ActorSession): ChatListEntry[] {
+export function listChats(session: SessionContext): ChatListEntry[] {
   const actor = requireChatActor(session)
   const repository = demoRepository()
   const activity = (chat: DemoRow) => Date.parse(chat.last_message_at || chat.started_at)
@@ -205,7 +205,7 @@ function historyItem(message: DemoRow) {
  * F-CHAT-03 history (BR-014, BR-015, Q6): 50 messages oldest → newest, older pages by before_cursor.
  * The first page resets the reader's unread count (BR-017, spec-IAC #23).
  */
-export async function getChatHistory(session: ActorSession, chatSessionId: string, query: { beforeCursor?: string } = {}): Promise<ChatHistory> {
+export async function getChatHistory(session: SessionContext, chatSessionId: string, query: { beforeCursor?: string } = {}): Promise<ChatHistory> {
   const chat = requireParticipant(session, chatSessionId)
   const userId = session.userId!
   const messages = orderedMessages(chatSessionId)
@@ -258,7 +258,7 @@ export const CLOSE_SUCCESS_MESSAGE = 'Đã đóng hội thoại. Lịch sử v�
  * no unread change. closed_at is never earlier than the latest message (schema chat_message_not_closed).
  */
 export async function closeChat(
-  session: ActorSession,
+  session: SessionContext,
   chatSessionId: string,
   input: { closeReason?: unknown },
   // afterStatusCheck is a test-only seam between the Active check and the write (lesson #13).
@@ -313,7 +313,7 @@ export interface AttachmentOutput {
  * written removes them, so a refused or failed action leaves nothing (#46).
  */
 export async function sendAttachments(
-  session: ActorSession,
+  session: SessionContext,
   chatSessionId: string,
   files: readonly IncomingFile[],
   // Test-only seams (lesson #13): afterFilesWritten pauses between the file write and the lock;
@@ -372,7 +372,7 @@ export async function sendAttachments(
  * F-CHAT-05 download (BR-011, BR-020, spec-IAC #40): participants only, Active or Closed Chat; an
  * attachment outside this Chat answers like an unknown one (403, #27); no stored content → 404.
  */
-export async function readAttachment(session: ActorSession, chatSessionId: string, attachmentId: string) {
+export async function readAttachment(session: SessionContext, chatSessionId: string, attachmentId: string) {
   requireParticipant(session, chatSessionId)
   const repository = demoRepository()
   const link = repository.find('chat_attachments', row => row.attachment_id === attachmentId)

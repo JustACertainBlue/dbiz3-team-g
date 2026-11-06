@@ -1,6 +1,6 @@
 // T004, T005: F-CHAT-05 send attachments (FR-005, BR-003, BR-008, BR-011, BR-021, SC-005, AC-IAC-FILE, #41, #44, #45, #47).
 import { beforeEach, describe, expect, it } from 'vitest'
-import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor } from '@/lib/auth/session'
 import { chatFileStore } from '@/lib/iac/chat-files'
 import { closeChat, getChatHistory, sendAttachments, sendMessage } from '@/lib/iac/chat-service'
 import { AGENCY, AGENCY_CHAT, AGENCY_USER, PROVIDER, PROVIDER_CHAT, PROVIDER_USER, participant, repo } from './iac-fixtures'
@@ -62,7 +62,7 @@ describe('T004 | sendAttachments', () => {
     const result = await sendAttachments(AGENCY, AGENCY_CHAT, [file('lich-trinh.xlsx')])
     const text = await sendMessage(AGENCY, AGENCY_CHAT, 'Đã gửi lịch trình')
     expect(Date.parse(text.sent_at)).toBeGreaterThan(Date.parse(result.sent_at))
-    const history = await getChatHistory(DEMO_IDENTITIES.agency, AGENCY_CHAT)
+    const history = await getChatHistory(AGENCY, AGENCY_CHAT)
     const item = history.message_history.find(m => m.message_id === result.message_id)!
     expect(item.attachments).toEqual(result.attachments)
     expect(item.message_kind).toBe('Attachment')
@@ -73,9 +73,9 @@ describe('T005 | refused requests store nothing', () => {
   beforeEach(resetAll)
 
   it.each([
-    ['guest', DEMO_IDENTITIES.guest, AGENCY_CHAT],
-    ['ubnd', DEMO_IDENTITIES.ubnd, AGENCY_CHAT],
-    ['hdt', DEMO_IDENTITIES.hdt, AGENCY_CHAT],
+    ['guest', demoSessionContextFor('guest'), AGENCY_CHAT],
+    ['ubnd', demoSessionContextFor('ubnd'), AGENCY_CHAT],
+    ['hdt', demoSessionContextFor('hdt'), AGENCY_CHAT],
     ['non-participant Provider', PROVIDER, AGENCY_CHAT],
     ['non-participant Agency', AGENCY, PROVIDER_CHAT],
     ['unknown Chat', AGENCY, '00000000-0000-0000-0000-000000000000'],

@@ -328,10 +328,7 @@ export default function AgencyProfilePage({
           HANOI ARTISAN BRIDGE © 2025 · B2B Cultural Heritage Operations
         </div>
         <div>
-          <Link href="/terms">Operator Terms</Link>
-          <Link href="/privacy">Artisan Privacy Protocol</Link>
-          <Link href="/standards">Compliance & Heritage Standards</Link>
-          <Link href="/support">Support Desk</Link>
+          <span>Hanoi Artisan Bridge · Kết nối trải nghiệm làng nghề</span>
         </div>
       </footer>
     </div>

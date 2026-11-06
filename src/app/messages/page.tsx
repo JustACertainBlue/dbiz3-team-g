@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import type { DemoSession } from '@/lib/auth/demo-session'
+import type { SessionContext } from '@/lib/auth/session'
+import { readSessionContext } from '@/lib/auth/client-session'
 import { renderChatMarkdown } from '@/lib/iac/markdown-utils'
 import { composerState } from './composer-state'
 import { closedNotice, closeReasonState } from './close-chat'
@@ -31,7 +32,7 @@ export default function MessagesPage() {
 function MessagesContent() {
   const searchParams = useSearchParams()
   const requestedId = searchParams.get('chat_session_id')
-  const [session, setSession] = useState<DemoSession | null>(null)
+  const [session, setSession] = useState<SessionContext | null>(null)
   const [chats, setChats] = useState<ChatEntry[]>([])
   const [selectedId, setSelectedId] = useState(requestedId || '')
   const [history, setHistory] = useState<History | null>(null)
@@ -47,11 +48,11 @@ function MessagesContent() {
   const [attaching, setAttaching] = useState(false)
 
   const loadList = useCallback(async () => {
-    const [sessionResponse, listResponse] = await Promise.all([
-      fetch('/api/demo/session', { cache: 'no-store' }),
+    const [sessionContext, listResponse] = await Promise.all([
+      readSessionContext(),
       fetch('/api/iac/chats', { cache: 'no-store' }),
     ])
-    setSession((await sessionResponse.json()).session)
+    setSession(sessionContext)
     const body = await listResponse.json()
     if (!listResponse.ok) {
       if (listResponse.status !== 403) setError(body.error?.message || 'Không thể tải hội thoại')
@@ -161,13 +162,13 @@ function MessagesContent() {
   }
 
   if (!session) return <main className="messages-state"><p>Đang tải phiên demo…</p></main>
-  if (!session.authenticated || (session.role !== 'TourAgency' && session.role !== 'LocalProvider')) {
-    return <main className="messages-state"><h1>Hộp thư B2B</h1><p>Hãy chọn tài khoản Agency hoặc Provider trên thanh demo để xem hội thoại.</p><Link href="/login">Chọn tài khoản demo</Link></main>
+  if (!session.authenticated || (session.role !== 'Tour_Agency' && session.role !== 'Local_Provider')) {
+    return <main className="messages-state"><h1>Hộp thư B2B</h1><p>Đăng nhập bằng tài khoản Agency hoặc Provider để xem hội thoại.</p><Link href="/login">Đăng nhập</Link></main>
   }
-  const isAgency = session.role === 'TourAgency'
+  const isAgency = session.role === 'Tour_Agency'
 
   return <main className="messages-shell">
-    <header className="messages-header"><div><p>HANOI ARTISAN BRIDGE · {isAgency ? 'COM048' : 'COM065'}</p><h1>Chat</h1></div><div><strong>{session.displayName}</strong><small>{isAgency ? 'Tour Agency' : 'Local Provider'}</small></div></header>
+    <header className="messages-header"><div><p>HANOI ARTISAN BRIDGE · {isAgency ? 'COM048' : 'COM065'}</p><h1>Chat</h1></div><div><strong>{isAgency ? 'Tour Agency demo' : 'Local Provider demo'}</strong><small>{isAgency ? 'Tour Agency' : 'Local Provider'}</small></div></header>
     {error && <p className="messages-error" role="alert">{error}</p>}
     {notice && <p className="messages-notice" role="status">{notice}</p>}
     <div className="messages-layout">

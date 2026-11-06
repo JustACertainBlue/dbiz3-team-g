@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ActorSession } from '../auth/demo-session'
+import { toSessionContext, type SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import { ExperienceCreateSchema, ExperienceImageSchema, KeptImageSchema } from './validators'
 import { missingCategories, type ExperienceImageCategory } from './experience-images'
@@ -75,7 +75,7 @@ function parseUpdateImages(images: unknown[]): Array<ExperienceImageInput | Kept
 
 /** T026: Create Experience */
 export async function createExperience(
-  actorSession: ActorSession,
+  actorSession: SessionLike,
   input: ExperienceInput,
 ): Promise<{
   experience_id: string
@@ -85,7 +85,8 @@ export async function createExperience(
   max_participants: number
   created_at: string
 }> {
-  if (!actorSession || !actorSession.authenticated || actorSession.role !== 'LocalProvider') {
+  const actor = toSessionContext(actorSession)
+  if (!actor.authenticated || actor.role !== 'Local_Provider') {
     throw new ExperienceError('Forbidden: Only local providers can create experiences', 403)
   }
 
@@ -109,7 +110,7 @@ export async function createExperience(
   const repository = demoRepository()
   const expId = randomUUID()
   const now = new Date().toISOString()
-  const providerId = actorSession.providerId || DEFAULT_OWNER_ID
+  const providerId = actor.providerId || DEFAULT_OWNER_ID
   repository.insert('experiences', {
     experience_id: expId,
     provider_id: providerId,
@@ -127,14 +128,14 @@ export async function createExperience(
     updated_at: now,
   })
   parsed.images.forEach((image, index) => {
-    const fileId = insertStoredFile(image, actorSession.userId || '', now)
+    const fileId = insertStoredFile(image, actor.userId || '', now)
     repository.insert('profile_media', {
       profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: providerId,
       experience_id: expId, category: image.category, display_order: String(index + 1),
     })
   })
   recordAuditLog(
-    actorSession.userId || 'unknown-user',
+    actor.userId || 'unknown-user',
     'CREATE_EXPERIENCE',
     'Experience',
     expId,
@@ -154,14 +155,15 @@ export async function createExperience(
 /** T027: Update Experience */
 export async function updateExperience(
   experienceId: string,
-  actorSession: ActorSession,
+  actorSession: SessionLike,
   input: Partial<ExperienceInput>,
 ): Promise<{
   updated: boolean
   provider_verification_status: string
   reverification_triggered: boolean
 }> {
-  if (!actorSession || !actorSession.authenticated || actorSession.role !== 'LocalProvider') {
+  const actor = toSessionContext(actorSession)
+  if (!actor.authenticated || actor.role !== 'Local_Provider') {
     throw new ExperienceError('Forbidden: Only local providers can update experiences', 403)
   }
 
@@ -169,7 +171,7 @@ export async function updateExperience(
   const stored = repository.find('experiences', row => row.experience_id === experienceId)
 
   // BR-002: Ownership check. Special fixture IDs stay supported by the unit tests.
-  if ((stored && actorSession.providerId !== stored.provider_id) || (!stored && actorSession.providerId && actorSession.providerId !== DEFAULT_OWNER_ID)) {
+  if ((stored && actor.providerId !== stored.provider_id) || (!stored && actor.providerId && actor.providerId !== DEFAULT_OWNER_ID)) {
     throw new ExperienceError('Forbidden: Only owning provider can update experience (BR-002)', 403)
   }
 
@@ -192,7 +194,7 @@ export async function updateExperience(
   if (input.images && stored) planImageUpdate(experienceId, input.images as unknown[])
 
   recordAuditLog(
-    actorSession.userId || 'unknown-user',
+    actor.userId || 'unknown-user',
     'UPDATE_EXPERIENCE',
     'Experience',
     experienceId,
@@ -211,7 +213,7 @@ export async function updateExperience(
     if (input.experience_location_address !== undefined) changes.experience_location_address = input.experience_location_address
     if (input.cancellation_policy !== undefined) changes.cancellation_policy = JSON.stringify(input.cancellation_policy)
     repository.update('experiences', row => row.experience_id === experienceId, changes)
-    if (input.images) applyImageUpdate(experienceId, stored.provider_id, input.images as unknown[], actorSession.userId || '')
+    if (input.images) applyImageUpdate(experienceId, stored.provider_id, input.images as unknown[], actor.userId || '')
   }
 
   // BR-020: Experience edit does NOT trigger provider re-verification
@@ -266,18 +268,19 @@ function applyImageUpdate(experienceId: string, providerId: string, images: unkn
 /** T028: Delete Experience */
 export async function deleteExperience(
   experienceId: string,
-  actorSession: ActorSession,
+  actorSession: SessionLike,
 ): Promise<{
   action: 'archived' | 'deleted'
   archived_at?: string
 }> {
-  if (!actorSession || !actorSession.authenticated || actorSession.role !== 'LocalProvider') {
+  const actor = toSessionContext(actorSession)
+  if (!actor.authenticated || actor.role !== 'Local_Provider') {
     throw new ExperienceError('Forbidden: Only local providers can delete experiences', 403)
   }
 
   const repository = demoRepository()
   const stored = repository.find('experiences', row => row.experience_id === experienceId)
-  if ((stored && actorSession.providerId !== stored.provider_id) || (!stored && actorSession.providerId && actorSession.providerId !== DEFAULT_OWNER_ID)) {
+  if ((stored && actor.providerId !== stored.provider_id) || (!stored && actor.providerId && actor.providerId !== DEFAULT_OWNER_ID)) {
     throw new ExperienceError('Forbidden: Only owning provider can delete experience (BR-002)', 403)
   }
 
@@ -293,7 +296,7 @@ export async function deleteExperience(
     const archivedAt = new Date().toISOString()
     if (stored) repository.update('experiences', row => row.experience_id === experienceId, { archived_at: archivedAt, updated_at: archivedAt })
     recordAuditLog(
-      actorSession.userId || 'unknown-user',
+      actor.userId || 'unknown-user',
       'ARCHIVE_EXPERIENCE',
       'Experience',
       experienceId,
@@ -307,7 +310,7 @@ export async function deleteExperience(
 
   // Zero bookings hard-delete
   recordAuditLog(
-    actorSession.userId || 'unknown-user',
+    actor.userId || 'unknown-user',
     'DELETE_EXPERIENCE',
     'Experience',
     experienceId,
@@ -351,8 +354,9 @@ export async function getExperienceById(experienceId: string): Promise<unknown> 
   }
 }
 
-export async function listProviderExperiences(providerId: string, actorSession: ActorSession) {
-  if (!actorSession.authenticated || actorSession.role !== 'LocalProvider' || actorSession.providerId !== providerId) {
+export async function listProviderExperiences(providerId: string, actorSession: SessionLike) {
+  const actor = toSessionContext(actorSession)
+  if (!actor.authenticated || actor.role !== 'Local_Provider' || actor.providerId !== providerId) {
     throw new ExperienceError('Forbidden: Only the owning provider can manage experiences', 403)
   }
   const repository = demoRepository()

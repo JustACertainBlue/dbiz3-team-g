@@ -1,11 +1,11 @@
-import { cookies } from 'next/headers'
-import { DEMO_SESSION_COOKIE, demoSessionFor, type DemoSession } from '@/lib/auth/demo-session'
+import { type SessionContext } from '@/lib/auth/session'
+import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/demo/json-repository'
 
 // Gate for BKG137 and SCH141: a Tour Agency on its own agencyId (BR-002, BR-008, #33).
-export function agencyPageSession(agencyId: string): DemoSession | null {
-  const session = demoSessionFor(cookies().get(DEMO_SESSION_COOKIE)?.value)
-  return session.authenticated && session.role === 'TourAgency' && session.agencyId === agencyId ? session : null
+export function agencyPageSession(agencyId: string): SessionContext | null {
+  const session = currentServerSession()
+  return session.authenticated && session.role === 'Tour_Agency' && session.agencyId === agencyId ? session : null
 }
 
 // Analyze L1: village filter options are the villages of the Agency's own Bookings.

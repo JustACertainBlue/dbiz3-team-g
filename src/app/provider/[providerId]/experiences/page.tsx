@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCurrentRole, refreshDemoSession, type CurrentUserRole } from '@/lib/prf/client-session'
+import { readSessionContext } from '@/lib/auth/client-session'
 
 interface ExperienceItem {
   experience_id: string
@@ -20,40 +20,45 @@ export default function ExperienceManagementPage({
 }: {
   params: { providerId: string }
 }) {
-  const [role, setRole] = useState<CurrentUserRole>('Guest')
+  const [authorized, setAuthorized] = useState(false)
   const [experiences, setExperiences] = useState<ExperienceItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     let alive = true
-    refreshDemoSession().then(session => {
+    const applySession = async () => {
+      const session = await readSessionContext()
       if (!alive) return
-      setRole(session.role)
-      if (session.role !== 'LocalProvider' || session.providerId !== params.providerId) {
+      const canManage = session.role === 'Local_Provider' && session.providerId === params.providerId
+      setAuthorized(canManage)
+      if (!canManage) {
         setLoading(false)
         return
       }
-      fetch(`/api/prf/experience?provider_id=${encodeURIComponent(params.providerId)}`)
+      setLoadError(false)
+      await fetch(`/api/prf/experience?provider_id=${encodeURIComponent(params.providerId)}`)
         .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load experiences')))
         .then(data => { if (alive) setExperiences(data.experiences || []) })
         .finally(() => { if (alive) setLoading(false) })
-    }).catch(() => { if (alive) setLoading(false) })
+    }
+    applySession().catch(() => { if (alive) { setLoadError(true); setLoading(false) } })
     const onRoleChanged = () => {
-      setRole(getCurrentRole())
+      applySession().catch(() => { if (alive) setAuthorized(false) })
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
 
     return () => { alive = false; window.removeEventListener('hab_role_changed', onRoleChanged) }
   }, [params.providerId])
 
-  const isLocalProvider = role === 'LocalProvider'
+  const isLocalProvider = authorized
 
   return (
     <div className="prf-container" style={{ paddingBottom: '5rem' }}>
       {/* Header */}
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">MÃ MÀN HÌNH: EXP067 · EXPERIENCE MANAGEMENT</span>
+          <span className="prf-spec-code">QUẢN LÝ TRẢI NGHIỆM</span>
           <h1 className="prf-spec-title">Quản lý Hoạt động Trải nghiệm Làng nghề</h1>
           <p className="prf-spec-subtitle">
             Danh mục các hoạt động văn hóa, nặn gốm và tham quan do xưởng trực tiếp cung cấp cho du khách và tour B2B
@@ -65,14 +70,14 @@ export default function ExperienceManagementPage({
             className="prf-btn prf-btn-outline"
             style={{ fontSize: '0.8rem' }}
           >
-            ← Hồ sơ Xưởng (PRF127)
+            ← Hồ sơ xưởng
           </Link>
           <Link
             href={`/provider/${params.providerId}/experiences/new`}
             className="prf-btn prf-btn-primary"
             style={{ fontSize: '0.8rem' }}
           >
-            + Thêm Trải Nghiệm Mới (EXP069)
+            + Thêm trải nghiệm mới
           </Link>
         </div>
       </div>
@@ -90,7 +95,7 @@ export default function ExperienceManagementPage({
             color: '#92400e',
           }}
         >
-          ℹ️ Bạn đang xem màn hình này với vai trò <strong>{role}</strong>. Chỉ tài khoản <strong>Local Provider</strong> (Chủ xưởng) mới có quyền tạo mới, chỉnh sửa giá và điều kiện đặt trải nghiệm.
+          ℹ️ Tài khoản hiện tại không sở hữu Provider này. Chỉ <strong>Local Provider</strong> (Chủ xưởng) đúng tổ chức mới có quyền tạo mới, chỉnh sửa giá và điều kiện đặt trải nghiệm.
         </div>
       )}
 
@@ -112,28 +117,13 @@ export default function ExperienceManagementPage({
           </div>
         </div>
 
-        <div className="prf-section-card" style={{ padding: '1rem 1.25rem' }}>
-          <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-            Tiêu chuẩn hình ảnh (BR-009)
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#059669', marginTop: '0.25rem' }}>
-            100% ĐẠT CHUẨN
-          </div>
-          <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>Đủ 3 ảnh theo 3 danh mục bắt buộc</div>
-        </div>
-
-        <div className="prf-section-card" style={{ padding: '1rem 1.25rem' }}>
-          <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-            Đặt tour đang hoạt động
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#b84c24', marginTop: '0.25rem' }}>
-            1 đơn B2B giữ chỗ
-          </div>
-        </div>
       </div>
 
       {/* Experiences List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {loading && <p>Đang tải trải nghiệm…</p>}
+        {loadError && <p role="alert">Không thể tải trải nghiệm. Vui lòng tải lại trang.</p>}
+        {!loading && !loadError && authorized && experiences.length === 0 && <p>Chưa có trải nghiệm nào. Hãy thêm trải nghiệm đầu tiên.</p>}
         {experiences.map(exp => (
           <div
             key={exp.experience_id}
@@ -155,7 +145,7 @@ export default function ExperienceManagementPage({
                 </span>
                 {exp.has_active_bookings && (
                   <span className="prf-badge prf-badge-warning">
-                    LOCKED FIELDS: ACTIVE BOOKINGS (SR-003)
+                    Một số thông tin bị khóa do có booking đang hoạt động
                   </span>
                 )}
               </div>
@@ -181,12 +171,13 @@ export default function ExperienceManagementPage({
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <Link href={`/provider/${params.providerId}/experiences/${exp.experience_id}`} className="prf-btn prf-btn-outline" style={{ fontSize: '0.78rem' }}>Xem chi tiết</Link>
               <Link
                 href={`/provider/${params.providerId}/experiences/${exp.experience_id}/edit`}
                 className="prf-btn prf-btn-primary"
                 style={{ fontSize: '0.78rem' }}
               >
-                ✏️ Chỉnh Sửa Trải Nghiệm (EXP070)
+                Chỉnh sửa
               </Link>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { BookingError } from '@/lib/booking/create-booking'
 import { startExpiryTimer } from '@/lib/booking/expire-holds'
 import { markGroupArrival } from '@/lib/booking/mark-arrival'
@@ -12,7 +12,7 @@ type Context = { params: { bookingId: string } }
 
 export async function POST(request: NextRequest, { params }: Context) {
   try {
-    const data = await markGroupArrival(demoSessionFromRequest(request), params.bookingId)
+    const data = await markGroupArrival(sessionContextFromRequest(request), params.bookingId)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {

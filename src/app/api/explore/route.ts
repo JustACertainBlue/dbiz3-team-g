@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildExplorePage, resolveViewer } from '../../../lib/explore/catalog';
 import { loadExploreRuntime } from '../../../lib/explore/seed-repository';
-import { DEMO_SESSION_COOKIE, demoSessionFor } from '../../../lib/auth/demo-session';
+import { sessionContextFromRequest } from '../../../lib/auth/session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid page or page_size (1–50)' }, { status: 400 });
   }
   const seed = loadExploreRuntime();
-  const session = demoSessionFor(request.cookies.get(DEMO_SESSION_COOKIE)?.value);
-  const viewer = resolveViewer(seed, session.role === 'TourAgency' ? session.agencyId : null, true);
+  const session = sessionContextFromRequest(request);
+  const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   return NextResponse.json(buildExplorePage(seed, { page, pageSize, viewer, category: request.nextUrl.searchParams.get('category') ?? undefined }));
 }

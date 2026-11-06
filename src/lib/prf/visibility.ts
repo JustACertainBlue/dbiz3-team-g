@@ -1,4 +1,4 @@
-import type { ActorSession } from '@/lib/auth/demo-session'
+import { toSessionContext, type SessionLike } from '@/lib/auth/session'
 
 export interface AgencyLocation {
   street?: string
@@ -61,11 +61,12 @@ export interface ProviderProfileInput {
  * Filter agency fields based on actor role and ownership per BR-004.
  */
 export function filterAgencyFields(
-  actor: ActorSession,
+  actorInput: SessionLike,
   profile: AgencyProfileInput,
 ): Partial<AgencyProfileInput> {
-  const isHDT = actor.role === 'HDT' || actor.adminType === 'HDT'
-  const isOwner = actor.role === 'TourAgency' && actor.agencyId === profile.agency_id
+  const actor = toSessionContext(actorInput)
+  const isHDT = actor.role === 'ADMIN' && actor.adminType === 'HDT'
+  const isOwner = actor.role === 'Tour_Agency' && actor.agencyId === profile.agency_id
 
   if (isHDT || isOwner) {
     return { ...profile }
@@ -83,10 +84,9 @@ export function filterAgencyFields(
 
   // Local Provider, UBND, or other Tour Agency have collaboration access (contact)
   const isCollaborator =
-    actor.role === 'LocalProvider' ||
-    actor.role === 'UBND' ||
-    actor.adminType === 'UBND' ||
-    actor.role === 'TourAgency'
+    actor.role === 'Local_Provider' ||
+    (actor.role === 'ADMIN' && actor.adminType === 'UBND') ||
+    actor.role === 'Tour_Agency'
 
   if (isCollaborator) {
     base.contact = profile.contact
@@ -99,13 +99,14 @@ export function filterAgencyFields(
  * Filter provider fields based on actor role and ownership per BR-004.
  */
 export function filterProviderFields(
-  actor: ActorSession,
+  actorInput: SessionLike,
   profile: ProviderProfileInput,
 ): Partial<ProviderProfileInput> {
-  const isHDT = actor.role === 'HDT' || actor.adminType === 'HDT'
-  const isOwner = actor.role === 'LocalProvider' && actor.providerId === profile.provider_id
-  const isUBND = actor.role === 'UBND' || actor.adminType === 'UBND'
-  const isAgency = actor.role === 'TourAgency'
+  const actor = toSessionContext(actorInput)
+  const isHDT = actor.role === 'ADMIN' && actor.adminType === 'HDT'
+  const isOwner = actor.role === 'Local_Provider' && actor.providerId === profile.provider_id
+  const isUBND = actor.role === 'ADMIN' && actor.adminType === 'UBND'
+  const isAgency = actor.role === 'Tour_Agency'
 
   // HDT gets full monitoring access including quality_metrics
   if (isHDT) {

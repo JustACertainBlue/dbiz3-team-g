@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import { getBookingDetail } from '@/lib/booking/booking-detail'
 import { BookingError } from '@/lib/booking/create-booking'
 import { startExpiryTimer } from '@/lib/booking/expire-holds'
@@ -12,7 +12,7 @@ type Context = { params: { bookingId: string } }
 
 export async function GET(request: NextRequest, { params }: Context) {
   try {
-    const data = await getBookingDetail(demoSessionFromRequest(request), params.bookingId)
+    const data = await getBookingDetail(sessionContextFromRequest(request), params.bookingId)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {
@@ -33,7 +33,7 @@ export async function PATCH(request: NextRequest, { params }: Context) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'Body must be a JSON object' } }, { status: 400 })
   }
   try {
-    const data = await updateBooking(demoSessionFromRequest(request), params.bookingId, body as Record<string, unknown>)
+    const data = await updateBooking(sessionContextFromRequest(request), params.bookingId, body as Record<string, unknown>)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {

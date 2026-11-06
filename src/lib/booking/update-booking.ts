@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ActorSession } from '../auth/demo-session'
+import type { SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import type { BatchOperation, DemoRow } from '../demo/types'
 import { bookingUpdateOperations } from './agency-sync'
@@ -47,7 +47,7 @@ function validateFields(input: Record<string, unknown>): void {
 }
 
 export async function updateBooking(
-  session: ActorSession,
+  session: SessionLike,
   bookingId: string,
   input: Record<string, unknown>,
   // afterConflictCheck is a test-only seam (tests/unit/bkg-race-pause.test.ts).

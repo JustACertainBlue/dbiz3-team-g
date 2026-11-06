@@ -1,11 +1,6 @@
 // PRF127 Provider profile page: what to show to whom (slice A2, checklist §3 #40).
 import { WEEKDAY_LABELS, operatingHoursToRows, type OperatingHoursByWeekday } from './provider-edit-form'
-
-interface ViewerSession {
-  role: string
-  providerId?: string | null
-  adminType?: string | null
-}
+import type { SessionContext } from '@/lib/auth/session'
 
 interface ProfileForView {
   provider_id: string
@@ -30,9 +25,9 @@ export interface ProviderPageView {
   capacityLine: string | null
 }
 
-export function providerPageView(profile: ProfileForView, session: ViewerSession): ProviderPageView {
-  const isOwner = session.role === 'LocalProvider' && session.providerId === profile.provider_id
-  const isUbnd = session.role === 'UBND' || session.adminType === 'UBND'
+export function providerPageView(profile: ProfileForView, session: SessionContext): ProviderPageView {
+  const isOwner = session.role === 'Local_Provider' && session.providerId === profile.provider_id
+  const isUbnd = session.role === 'ADMIN' && session.adminType === 'UBND'
   const hours = (profile.availability as { operating_hours?: OperatingHoursByWeekday } | undefined)?.operating_hours
   const conditions = profile.booking_conditions && typeof profile.booking_conditions === 'object'
     ? Object.entries(profile.booking_conditions as Record<string, unknown>)

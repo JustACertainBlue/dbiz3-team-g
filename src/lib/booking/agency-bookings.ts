@@ -1,4 +1,4 @@
-import type { ActorSession } from '../auth/demo-session'
+import type { SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import { authorizeAgencyList } from './booking-access'
 import { hanoiDate, isQueryDate, systemClock, type Clock } from './clock'
@@ -39,7 +39,7 @@ function validate(query: AgencyQuery) {
   return { status, village_id: present(query.village_id) ? query.village_id : undefined, date_from, date_to }
 }
 
-export async function listAgencyBookings(session: ActorSession, query: AgencyQuery, options: { now?: Clock } = {}): Promise<{ bookings: AgencyBooking[] }> {
+export async function listAgencyBookings(session: SessionLike, query: AgencyQuery, options: { now?: Clock } = {}): Promise<{ bookings: AgencyBooking[] }> {
   // #80: authorize, validate, expire, read — a denied or invalid request writes nothing.
   const agencyId = authorizeAgencyList(session)
   const valid = validate(query)

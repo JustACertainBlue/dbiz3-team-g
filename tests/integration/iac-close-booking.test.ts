@@ -4,7 +4,7 @@ import { closeChat } from '@/lib/iac/chat-service'
 import { createChatHandoff } from '@/lib/demo/commercial-handoff-service'
 import { createBooking } from '@/lib/booking/create-booking'
 import { SEED_NOW } from '@/lib/booking/clock'
-import { AGENCY, AGENCY_ID, AGENCY_USER, EXPERIENCE, PROVIDER, PROVIDER_ID, PROVIDER_USER, activePairChats, repo } from '../unit/iac-fixtures'
+import { AGENCY, AGENCY_ID, AGENCY_USER, DEMO_PROVIDER, EXPERIENCE, PROVIDER, PROVIDER_ID, PROVIDER_USER, activePairChats, repo } from '../unit/iac-fixtures'
 
 const body = (sourceChat: string) => ({
   experience_id: EXPERIENCE, agency_id: AGENCY_ID, start_at: '2026-10-12T09:00:00+07:00', duration: 60, group_size: 10,
@@ -21,7 +21,7 @@ describe('T006 | Close then Booking (C8)', () => {
     const closedRow = JSON.stringify(repo().find('chat_sessions', c => c.chat_session_id === handoff.chat_session_id))
     const closedMessages = JSON.stringify(repo().all('chat_messages').filter(m => m.chat_session_id === handoff.chat_session_id))
 
-    const created = await createBooking(PROVIDER, body(handoff.chat_session_id), { now: () => new Date(SEED_NOW) }) as { booking_id?: string; booking?: { booking_id: string } }
+    const created = await createBooking(DEMO_PROVIDER, body(handoff.chat_session_id), { now: () => new Date(SEED_NOW) }) as { booking_id?: string; booking?: { booking_id: string } }
     const update = repo().all('chat_messages').find(m => m.message_kind === 'Booking Update' && m.chat_session_id !== handoff.chat_session_id && m.experience_id === EXPERIENCE)!
     const [active] = activePairChats(AGENCY_ID, PROVIDER_ID)
     expect(activePairChats(AGENCY_ID, PROVIDER_ID)).toHaveLength(1)

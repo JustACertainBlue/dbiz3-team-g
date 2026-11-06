@@ -9,9 +9,10 @@ export default function ProviderChatAction({ experienceId }: { experienceId?: st
   const [error, setError] = useState('')
 
   async function openChat() {
-    if (!experienceId) return router.push('/messages')
+    if (!experienceId) { setError('Provider chưa có trải nghiệm để mở hội thoại. Vui lòng chọn một trải nghiệm khi danh mục được cập nhật.'); return }
     setBusy(true)
     setError('')
+    try {
     const response = await fetch('/api/demo/handoff', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ action: 'chat', experience_id: experienceId, source_context: 'Detail Page', chat_source: 'Provider Profile' }), // spec-EXP #33, spec-IAC #19
@@ -23,6 +24,11 @@ export default function ProviderChatAction({ experienceId }: { experienceId?: st
       return
     }
     router.push(`/messages?chat_session_id=${encodeURIComponent(body.data.chat_session_id)}`)
+    } catch {
+      setError('Không thể kết nối. Vui lòng thử lại.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return <><button className="button" disabled={busy} onClick={openChat}>{busy ? 'Đang mở Chat…' : 'Chat với Provider'}</button>{error && <small role="alert">{error}</small>}</>

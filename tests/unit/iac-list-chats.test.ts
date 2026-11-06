@@ -1,6 +1,6 @@
 // T015: F-CHAT-03 Chat list (FR-003, BR-002, BR-013, BR-016, SC-006, SC-009, #22).
 import { beforeEach, describe, expect, it } from 'vitest'
-import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor } from '@/lib/auth/session'
 import { listChats, sendMessage } from '@/lib/iac/chat-service'
 import { AGENCY, AGENCY_CHAT, AGENCY_ID, PROVIDER, PROVIDER_CHAT, PROVIDER_ID, PROVIDER_USER, closeChat, repo } from './iac-fixtures'
 
@@ -46,7 +46,7 @@ describe('T015 | listChats', () => {
 
   for (const key of ['guest', 'ubnd', 'hdt'] as const) {
     it(`${key} is refused (BR-001, #27)`, () => {
-      expect(() => listChats(DEMO_IDENTITIES[key])).toThrow(expect.objectContaining({ code: 'FORBIDDEN' }))
+      expect(() => listChats(demoSessionContextFor(key))).toThrow(expect.objectContaining({ code: 'FORBIDDEN' }))
     })
   }
 })

@@ -1,4 +1,4 @@
-import { demoSessionFromRequest } from '@/lib/auth/demo-session'
+import { sessionContextFromRequest } from '@/lib/auth/session'
 import {
   getProviderProfile,
   updateProviderProfile,
@@ -22,7 +22,7 @@ export async function GET(
     const resolvedParams = await Promise.resolve(params)
     const providerId = resolvedParams.providerId
 
-    const session = demoSessionFromRequest(req)
+    const session = sessionContextFromRequest(req)
 
     const profile = await getProviderProfile(providerId, session)
     if (!profile) {
@@ -59,7 +59,7 @@ export async function PATCH(
     const resolvedParams = await Promise.resolve(params)
     const providerId = resolvedParams.providerId
 
-    const session = demoSessionFromRequest(req)
+    const session = sessionContextFromRequest(req)
 
     let body: unknown = {}
     try {

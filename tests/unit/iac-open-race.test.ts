@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { openChat } from '@/lib/iac/chat-service'
 import { createBooking } from '@/lib/booking/create-booking'
 import { SEED_NOW } from '@/lib/booking/clock'
-import { AGENCY, AGENCY_ID, EXPERIENCE, PROVIDER, PROVIDER_ID, activePairChats, repo } from './iac-fixtures'
+import { AGENCY, AGENCY_ID, DEMO_PROVIDER, EXPERIENCE, PROVIDER_ID, activePairChats, repo } from './iac-fixtures'
 
 const pause = () => new Promise<void>(resolve => setTimeout(resolve, 20))
 const bookingBody = {
@@ -29,7 +29,7 @@ describe('T013 | concurrent opens for one pair', () => {
     let booking: Promise<unknown> | undefined
     const opened = await openChat(AGENCY, { source: 'Explore', experienceId: EXPERIENCE }, {
       afterPairCheck: async () => {
-        booking = createBooking(PROVIDER, { ...bookingBody }, { now: () => new Date(SEED_NOW) })
+        booking = createBooking(DEMO_PROVIDER, { ...bookingBody }, { now: () => new Date(SEED_NOW) })
         await pause()
       },
     })

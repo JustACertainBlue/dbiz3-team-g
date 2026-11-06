@@ -1,7 +1,66 @@
+import type { NextRequest } from 'next/server'
+import { demoSessionFor, demoSessionFromRequest, type ActorSession, type DemoAccountKey } from './demo-session'
+import { demoRepository } from '../demo/json-repository'
+
+export type AuthRole = 'ADMIN' | 'Tour_Agency' | 'Local_Provider'
+export type AdminType = 'HDT' | 'UBND'
+export type DataScope = 'Platform-wide' | 'Assigned village' | 'Own organization'
+
+/** The authentication contract consumed by business modules, independently of the auth adapter. */
 export interface SessionContext {
-  role: string
-  accountId: string | null
   authenticated: boolean
+  userId: string | null
+  role: AuthRole | null
+  adminType: AdminType | null
+  agencyId: string | null
+  providerId: string | null
+  assignedVillageId: string | null
+  permissions: string[]
+  dataScope: DataScope | null
+}
+
+function canonicalRole(session: ActorSession): AuthRole | null {
+  if (!session.authenticated || session.role === 'Guest') return null
+  if (session.role === 'TourAgency') return 'Tour_Agency'
+  if (session.role === 'LocalProvider') return 'Local_Provider'
+  return 'ADMIN'
+}
+
+function permissionSet(role: AuthRole | null, adminType: AdminType | null): string[] {
+  if (!role) return []
+  return [...new Set(demoRepository().all('role_permissions')
+    .filter(row => row.role_code === role && (!row.admin_type || row.admin_type === adminType))
+    .map(row => row.permission_code))]
+    .sort()
+}
+
+/** DemoAuthAdapter: translate the legacy demo vocabulary to the canonical AUT contract. */
+export function sessionContextFor(session: ActorSession): SessionContext {
+  const role = canonicalRole(session)
+  const adminType = role === 'ADMIN' ? session.adminType : null
+  const dataScope: DataScope | null = role === 'ADMIN'
+    ? adminType === 'HDT' ? 'Platform-wide' : 'Assigned village'
+    : role ? 'Own organization' : null
+
+  return {
+    authenticated: session.authenticated && role !== null,
+    userId: session.authenticated ? session.userId : null,
+    role,
+    adminType,
+    agencyId: role === 'Tour_Agency' ? session.agencyId : null,
+    providerId: role === 'Local_Provider' ? session.providerId : null,
+    assignedVillageId: role === 'ADMIN' && adminType === 'UBND' ? session.villageId : null,
+    permissions: permissionSet(role, adminType),
+    dataScope,
+  }
+}
+
+export function demoSessionContextFor(key: DemoAccountKey): SessionContext {
+  return sessionContextFor(demoSessionFor(key))
+}
+
+export function sessionContextFromRequest(request: NextRequest | Request): SessionContext {
+  return sessionContextFor(demoSessionFromRequest(request))
 }
 
 export interface AccessCheckResult {
@@ -12,22 +71,7 @@ export interface AccessCheckResult {
 }
 
 export function checkAitAccess(ctx: SessionContext): AccessCheckResult {
-  if (!ctx.authenticated || ctx.role === 'Guest') {
-    return {
-      allowed: false,
-      redirectTo: '/login',
-    }
-  }
-
-  if (ctx.role !== 'Agency') {
-    return {
-      allowed: false,
-      statusCode: 403,
-    }
-  }
-
-  return {
-    allowed: true,
-    agencyId: ctx.accountId || undefined,
-  }
+  if (!ctx.authenticated) return { allowed: false, redirectTo: '/login' }
+  if (ctx.role !== 'Tour_Agency' || !ctx.agencyId) return { allowed: false, statusCode: 403 }
+  return { allowed: true, agencyId: ctx.agencyId }
 }

@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { closeChat, sendMessage } from '@/lib/iac/chat-service'
 import { createChatHandoff } from '@/lib/demo/commercial-handoff-service'
-import { AGENCY, AGENCY_ID, EXPERIENCE, PROVIDER, PROVIDER_CHAT, PROVIDER_ID, activePairChats, repo } from './iac-fixtures'
+import { AGENCY_ID, DEMO_AGENCY, EXPERIENCE, PROVIDER, PROVIDER_CHAT, PROVIDER_ID, activePairChats, repo } from './iac-fixtures'
 
 const pause = () => new Promise<void>(resolve => setTimeout(resolve, 20))
 const messagesOf = (id: string) => repo().all('chat_messages').filter(m => m.chat_session_id === id)
@@ -31,11 +31,11 @@ describe('T005 | close races', () => {
   })
 
   it('(c) an open during a paused close gets a new Active Chat; the Closed Chat gets no message', async () => {
-    const first = await createChatHandoff(AGENCY, EXPERIENCE)
+    const first = await createChatHandoff(DEMO_AGENCY, EXPERIENCE)
     const closedMessages = messagesOf(first.chat_session_id).length
     const [, handoff] = await Promise.all([
       closeChat(PROVIDER, first.chat_session_id, {}, { afterStatusCheck: pause }),
-      createChatHandoff(AGENCY, EXPERIENCE),
+      createChatHandoff(DEMO_AGENCY, EXPERIENCE),
     ])
     expect(handoff.chat_session_id).not.toBe(first.chat_session_id)
     expect(handoff.is_new_session).toBe(true)

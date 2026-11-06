@@ -1,6 +1,6 @@
 // T007: F-CHAT-05 download (BR-011, BR-020, SC-005, spec-IAC #40).
 import { beforeEach, describe, expect, it } from 'vitest'
-import { DEMO_IDENTITIES } from '@/lib/auth/demo-session'
+import { demoSessionContextFor } from '@/lib/auth/session'
 import { closeChat, readAttachment, sendAttachments } from '@/lib/iac/chat-service'
 import { AGENCY, AGENCY_CHAT, PROVIDER, PROVIDER_CHAT } from './iac-fixtures'
 import { SEED_AGENCY_ATTACHMENT, SEED_PROVIDER_ATTACHMENT, file, resetAll, rowsAndFilesSnapshot, seedAttachmentId } from './iac-attach-fixtures'
@@ -34,9 +34,9 @@ describe('T007 | readAttachment', () => {
       [AGENCY, '00000000-0000-0000-0000-000000000000', id],
       [AGENCY, AGENCY_CHAT, id], // AGENCY is a participant of AGENCY_CHAT, but the attachment is not in it
       [AGENCY, AGENCY_CHAT, 'no-such-attachment'],
-      [DEMO_IDENTITIES.guest, PROVIDER_CHAT, id],
-      [DEMO_IDENTITIES.ubnd, PROVIDER_CHAT, id],
-      [DEMO_IDENTITIES.hdt, PROVIDER_CHAT, id],
+      [demoSessionContextFor('guest'), PROVIDER_CHAT, id],
+      [demoSessionContextFor('ubnd'), PROVIDER_CHAT, id],
+      [demoSessionContextFor('hdt'), PROVIDER_CHAT, id],
     ]
     for (const [session, chatId, attachmentId] of cases) {
       await expect(readAttachment(session, chatId, attachmentId)).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })

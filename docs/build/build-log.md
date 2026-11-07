@@ -1033,6 +1033,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 63: 08/11 Claude Code + human — #102 /login demo panel only where the prototype login works (`fix/102-login-demo-panel`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu after the read-only smoke check of https://hanoi-artisan-bridge.onrender.com (issue #102, Medium) |
+| Cause | `src/app/login/page.tsx` rendered the "Tài khoản thử nghiệm … nhập bất kỳ mật khẩu" panel unconditionally, while production refuses that login (`authenticatePrototype`) |
+| Tests first | `tests/unit/login-demo-panel.test.ts` (3, `vi.stubEnv('NODE_ENV')`): production → no panel / seed emails / "any password" text (red before); development → panel with the four identities (green); production → panel hidden and `authenticatePrototype` refuses (red before) |
+| Fix | `src/lib/auth/prototype-login.ts` `prototypeLoginEnabled()` (client-safe); used by the page and by both checks in `product-session.ts` |
+| Mutation (foreground) | 4/4 killed: panel always shown, panel never shown, condition always on, production treated as enabled |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1149 passed, 20 skipped); local production build (`npm run build`, `prod-test` on :3100, built-in browser): `/login` has the password field and no panel, seed emails or "any password" text |
+| Existing tests changed | None |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

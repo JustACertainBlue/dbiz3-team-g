@@ -2,6 +2,7 @@
 
 import { FormEvent, Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { prototypeLoginEnabled } from '@/lib/auth/prototype-login'
 
 const demoAccounts = [
   ['Tour Agency', 'thanhvien13@example.invalid'],
@@ -55,11 +56,11 @@ function LoginForm() {
         <a href="/forgot-password">Quên mật khẩu?</a>
         <a href="/register">Đăng ký tài khoản Agency</a>
       </form>
-      <aside>
+      {prototypeLoginEnabled() && <aside>
         <strong>Tài khoản thử nghiệm</strong>
         <p>Chọn một email mẫu bên dưới. Ở prototype hiện tại, nhập bất kỳ mật khẩu không rỗng.</p>
         <div>{demoAccounts.map(([label, value]) => <button type="button" key={value} onClick={() => setEmail(value)}><span>{label}</span><small>{value}</small></button>)}</div>
-      </aside>
+      </aside>}
     </section>
     <style jsx>{`
       .login-page{min-height:100vh;display:grid;place-items:center;padding:32px;background:#f4f1e8;color:#17251e}.login-card{width:min(980px,100%);display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:40px;border:1px solid #d8d2c3;border-radius:22px;background:#fff;box-shadow:0 18px 55px #17251e1c}.login-intro{grid-column:1/-1}.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-weight:800;color:#a04c2f}.login-intro h1{font:700 48px/1.1 Georgia,serif;margin:8px 0}.login-intro p{color:#5d6a63;max-width:650px;line-height:1.6}form{display:flex;flex-direction:column;gap:18px}label{display:flex;flex-direction:column;gap:8px;font-weight:700}input{padding:13px 14px;border:1px solid #b9c2bc;border-radius:9px;font:inherit}form button{padding:13px;border:0;border-radius:9px;background:#274d3b;color:#fff;font:700 15px inherit;cursor:pointer}form button:disabled{opacity:.6}.error{margin:0;color:#b42318}aside{padding:20px;border-radius:14px;background:#f4f1e8}aside>p{font-size:13px;line-height:1.5;color:#68736d}aside>div{display:grid;gap:8px}aside button{text-align:left;padding:10px 12px;border:1px solid #d8d2c3;border-radius:8px;background:#fff;cursor:pointer}aside button span,aside button small{display:block}aside button span{font-weight:700}aside button small{margin-top:3px;color:#68736d}@media(max-width:720px){.login-card{grid-template-columns:1fr;padding:24px}.login-intro h1{font-size:38px}}

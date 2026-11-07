@@ -5,6 +5,7 @@ import { BOOKING_STATUSES } from '@/lib/booking/list-bookings'
 import { bookingDetailStyles, formatVnd, hanoiTime } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
 import { agencyPageSession, ownVillages } from '../agency-booking-gate'
 import { sessionDisplayName } from '@/lib/auth/session'
+import { hanoiClock } from '@/lib/time/hanoi-time'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +51,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
           <thead><tr><th>Thời gian</th><th>Làng · Provider</th><th>Experience</th><th>Khách</th><th>Giá</th><th>Trạng thái</th><th></th></tr></thead>
           <tbody>
             {rows.map(row => <tr key={row.booking_id}>
-              <td>{hanoiTime(row.start_at)} → {row.end_at.slice(11, 16)}<small>Cập nhật {hanoiTime(row.last_updated_at)}</small></td>
+              <td>{hanoiTime(row.start_at)} → {hanoiClock(row.end_at)}<small>Cập nhật {hanoiTime(row.last_updated_at)}</small></td>
               <td>{row.village_name} · {row.provider_name}</td>
               <td>{row.experience_name}</td>
               <td>{row.group_size}</td>

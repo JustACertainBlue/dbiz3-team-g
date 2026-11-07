@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { hanoiClock, hanoiDate } from '@/lib/time/hanoi-time'
 
 // Shared CSS-grid calendar (#70) for SCH139, SCH140 and SCH141: one row per local day, a 00:00–24:00
 // timeline, each block sized by its duration and labelled with its status text (not colour alone).
@@ -11,7 +12,6 @@ export interface CalendarGridBlock {
 }
 
 const DAY_MS = 86_400_000
-const time = (value: string) => value.slice(11, 16)
 const statusClass = (status: string) => `cal-${status.toLowerCase().replace(/\s+/g, '-')}`
 
 export default function CalendarGrid({ days, blocks, selectedDate, hrefFor }: {
@@ -23,14 +23,14 @@ export default function CalendarGrid({ days, blocks, selectedDate, hrefFor }: {
   return <div className="cal-grid">
     {days.map(day => {
       const dayStart = Date.parse(`${day}T00:00:00+07:00`)
-      const own = blocks.filter(block => block.start_at.slice(0, 10) === day)
+      const own = blocks.filter(block => hanoiDate(block.start_at) === day)
       return <section key={day} className={`cal-row${day === selectedDate ? ' cal-selected' : ''}`} aria-label={day}>
         <h3>{day}</h3>
         <div className="cal-track">
           {own.map(block => {
             const left = ((Date.parse(block.start_at) - dayStart) / DAY_MS) * 100
             const width = ((Date.parse(block.end_at) - Date.parse(block.start_at)) / DAY_MS) * 100
-            const label = `${time(block.start_at)}–${block.end_at.slice(0, 10) === day ? time(block.end_at) : '24:00'} ${block.status}`
+            const label = `${hanoiClock(block.start_at)}–${hanoiDate(block.end_at) === day ? hanoiClock(block.end_at) : '24:00'} ${block.status}`
             const href = hrefFor?.(block)
             const style = { left: `${left}%`, width: `${width}%` }
             return href

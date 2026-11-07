@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { BookingDetail } from '@/lib/booking/booking-detail'
+import { hanoiInputValue } from '@/lib/time/hanoi-time'
 
 type ApiError = { error?: { code: string; message: string } }
 
@@ -11,7 +12,7 @@ type ApiError = { error?: { code: string; message: string } }
 export default function EditBookingForm({ detail, backHref }: { detail: BookingDetail; backHref: string }) {
   const router = useRouter()
   const initial = {
-    start: detail.start_at.slice(0, 16),
+    start: hanoiInputValue(detail.start_at), // read as Hanoi time; saved back with +07:00 (#87)
     duration: Math.round((Date.parse(detail.end_at) - Date.parse(detail.start_at)) / 60_000),
     groupSize: detail.group_size,
     price: detail.agreed_price,

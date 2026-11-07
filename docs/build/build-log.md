@@ -844,6 +844,20 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Deferred configuration | Real email unavailable; explicit local dev-outbox for synthetic testing only; PostgreSQL production deployment not part of this merge |
 | Git strategy | Preserve existing local commits and original PR author history; resolve the PR to the tested shared-runtime tree, then fast-forward its head and use a GitHub merge commit |
 
+### Entry 49: 07/11 Claude Code + human — flaky bcrypt test: hash cost from environment (`linh/fix-bcrypt-test`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (task 1 of 4, 2026-11-07); branch `linh/fix-bcrypt-test` from `main` `34a906c`; the agent pushes the branch and opens the PR, the human merges |
+| Problem | `tests/unit/product-session.test.ts` "authenticates a non-demo Agency using its actual hash and organization" timed out at 5000 ms in 2 of 2 full local runs on macOS (passes alone in ~2 s): one `bcryptjs` hash plus three compares at cost 12 under the parallel suite. The human ruled out raising the test timeout. |
+| Spec check | spec-AUT and the AUT plans name `bcryptjs` / "secure hashing" but no work factor, so the cost is an environment setting, not a business rule. Production and development behaviour is unchanged (cost 12). |
+| What the agent produced | `src/lib/auth/password.ts`: `passwordHashCost(env)` returns 4 (bcrypt minimum) only when `NODE_ENV=test`, else 12; `hashPassword` uses it. No environment override variable, so a deployment cannot lower the cost by configuration. New test `tests/unit/password-cost.test.ts`. |
+| Existing tests changed | None. |
+| Human review | Pending. |
+| Tests | Red: `password-cost.test.ts` 3 failed / 1 passed (`passwordHashCost is not a function` ×2; the hash test received rounds 12, expected 4). Green: full suite `Test Files 168 passed (168)`, `Tests 1034 passed (1034)` three runs in a row; `npm run lint` passed. Mutation (each restored): always 12 → 2 red; always 4 → 1 red. |
+| Demo | Not applicable: no user-visible change; dev/prod cost covered by the unit test with an explicit `NODE_ENV`. |
+| Commit | One commit on `linh/fix-bcrypt-test`; branch pushed by the agent, PR opened, merge left to the human. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

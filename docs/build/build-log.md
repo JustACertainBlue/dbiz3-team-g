@@ -923,6 +923,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Existing tests changed | None |
 | Commit | One commit `feat(AUT): …`; merge left to the human |
 
+### Entry 54: 07/11 Claude Code + human — `npm run db:set-test-passwords`: per-person test accounts (`linh/db-set-test-passwords`, replaces PR #75)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); decided by linhkhanh-vu (2026-11-07: manual one-off, not at start; Agency per person + "[T-Khach]" in the state the spec lets an Agency work; Provider = existing Verified Bát Tràng account, no new workshop; UBND = thanhvien1 only; HDT only declared names; names/passwords from env; no password in logs; no must-change; idempotent; tests never touch a real database; mutations in the foreground); stacked on `linh/email-not-configured-v2`; PR #75 closed as superseded |
+| What the agent produced | `scripts/db/test-accounts.mjs` (`planTestAccounts(env)`, `applyTestAccounts(port, plan, deps)` on a port `{findOne, insert, update, transaction}`): Agency = `user_accounts` Tour_Agency **Approved** + `agency_registration_requests` Approved v1 + `registration_submission_versions` v1 + `agency_profiles` (`[T-<Name>]`, synthetic 10-digit tax id from a hash) + `agency_review_records` Approve by seed HDT `thanhvien9` + `account_status_history` Pending Approval → Approved, i.e. the same records as an approved seed Agency; HDT = `user_accounts` ADMIN/HDT Active; Provider `thanhvien19` and UBND `thanhvien1` = password only. Existing account: unchanged password → no write; changed → new hash, `must_change_password=false`, open sessions revoked. Password rule = AUT rule. `scripts/db/set-test-passwords.mjs` (CLI, `DATABASE_APP_URL`, one transaction per account, bcrypt cost 12, prints the target host/database, exit 2 when something was skipped), `package.json` `db:set-test-passwords`, `.env.example` names, `docs/build/demo-login.md` table |
+| Tests | Red: the new test file failed on the missing module. Green: `tests/unit/set-test-passwords.test.ts` 9/9 on an in-memory fixture adapter; logins are checked with the real `authenticateAccount` under `NODE_ENV=production` inside `withApplicationStore(fixtures)` (Agency → `/explore` with the created `agencyId`, HDT → `/admin`, UBND → `/admin/providers`; "anything" refused). Mutations (foreground, scratch copy + `cmp`): new Agency must-change → 3 red; no HDT approval record → 1 red; always re-hash → 1 red; no session revocation → 1 red; no password rule + password logged → 1 red; no "[T-Khach]" → 3 red |
+| Not verified | The CLI and its SQL adapter were **not** run against any database (the agent cannot read `.env.local` and must not touch a real database). First real run: Linh, on a development database, then production |
+| Existing tests changed | None |
+| Commit | One commit `feat(AUT): …`; merge left to the human |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

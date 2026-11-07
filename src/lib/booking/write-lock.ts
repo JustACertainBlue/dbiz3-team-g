@@ -1,6 +1,6 @@
 import { demoRepository } from '../db/application-store'
-// In-process mutex for Booking writes (AC-BKG-RACE). It serialises "check + write" inside one
-// Node process only; two processes sharing one runtime.json are not protected.
+// Preserve invocation order inside one process; PostgreSQL aggregate transaction locks also
+// serialize the same Booking/Chat writes across independent backend connections.
 declare global {
   // eslint-disable-next-line no-var
   var __habBookingWriteTail: Promise<unknown> | undefined

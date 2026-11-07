@@ -14,7 +14,7 @@ describe('T005 | withBookingWriteLock', () => {
       return name
     })
 
-    const results = await Promise.all([(await section('a')), (await section('b'))])
+    const results = await Promise.all([section('a'), section('b')])
 
     expect(results).toEqual(['a', 'b'])
     expect(events).toEqual(['a:start', 'a:end', 'b:start', 'b:end'])

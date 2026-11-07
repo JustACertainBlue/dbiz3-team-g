@@ -2,13 +2,13 @@
 
 Live application APIs and server pages now use PostgreSQL. JSON is an isolated ordinary-test fixture only; there is no live fallback. Existing role flows and APIs are preserved.
 
-- Ordinary suite: 1,043 pass; 14 hosted cases skip by default.
+- Ordinary suite: 1,052 pass; 14 hosted cases skip by default.
 - Explicit hosted suite: 14 pass, including real-hash Auth, registration/OTP/re-review/approval and account disable, Matching/preferences, durable Explore/dedup/consent, Provider editing, Quote → Chat → Booking → Schedule, access denials, rollback and locks across independent connections. Hosted fixture writes roll back.
 - Verified TLS and restricted hab_app login; 47/47 public tables RLS; no anon/authenticated table grants.
 - 47 CSV seed validation passes.
 - Earlier HTTP smoke: 34 pages / 58 checks across four roles; final repeat recorded below.
 - 21 non-conflicting legacy Provider/Matching records imported; idempotent rerun produces no changes. Conflicting old Chat/Booking history is preserved in the untouched JSON archive. Old login sessions are not restored.
-- No push, merge, real email delivery, Supabase Auth or object-storage migration. File metadata is PostgreSQL-backed; file bytes remain in local ignored directories. Table-filter compatibility reads and coarse aggregate locks should be optimized for high-volume production.
+- No main merge, real email delivery, Supabase Auth or object-storage migration. File metadata is PostgreSQL-backed; file bytes remain in local ignored directories. Table-filter compatibility reads and coarse aggregate locks should be optimized for high-volume production.
 
 ## Changed files and reasons
 
@@ -232,3 +232,7 @@ User-installed skill directories and skill lock were inspected and preserved. Cr
 
 Final verification: production build and TypeScript pass. Fresh localhost smoke passed 34 pages / 58 HTTP checks across all four roles after the final migration/import. GET /login returns 200. Server remains running at http://localhost:3000.
 
+
+## PR review and current-main integration
+
+Reviewed against origin/main 0af0c4b, incorporating 16 newer commits. Resolved the agency-sync conflict by retaining upstream UTC/millisecond monotonic message timestamps and awaiting the shared PostgreSQL service. Preserved upstream bcrypt environment-cost tests and team documentation. Restored true parallel calls in the Booking mutex test; both concurrency and new BKG/IAC ordering tests pass. Post-integration suite: 1,052 pass; hosted: 14 pass; hook tests: 3 pass; seed and RLS audit pass. Secret scan on 202 staged files: no credentials found. User-installed skill folders/junctions and skills-lock.json remain local and are excluded from this application PR.

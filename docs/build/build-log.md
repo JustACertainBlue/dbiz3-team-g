@@ -964,3 +964,8 @@ Human authorized migration of all live APIs while preserving flows, plus missing
 New transaction test was red (`store.transaction is not a function`) before implementation, then green. Hosted tests caught and fixed chat timestamp monotonicity and exact resubmission-token expiry. Physical review subject uniqueness contradicted the existing 0..many ERD and blocked repeat review; a new migration preserves each decision by review_id and indexes its subject. Initial applied migrations were not edited. Imported 21 non-conflicting legacy Provider/Matching records atomically and verified an idempotent rerun. Old sessions are not restored; conflicting Chat/Booking archive is preserved.
 
 Validation and complete per-file change reasons are recorded in supabase-cutover-results.md. Email transport, Supabase Auth and object storage are separate integrations. No GitHub push/merge.
+
+
+## Entry 51 — Review and publish Supabase feature PR (2026-11-07)
+
+Human requested review, commit and a GitHub PR. Reviewed credentials, transaction boundaries, test concurrency and latest origin/main; staged no environment/runtime secrets or user-installed skill junctions. Committed the cutover as 0739ac2, integrated current main 0af0c4b in merge commit 06250da, and kept the upstream BKG message-order fix with async PostgreSQL access. Restored the mutex test concurrency and refreshed deployment status notes. Revalidation: 1,052 ordinary tests, 14 hosted rollback tests, 3 hook tests, seed validation and database audit pass. Production build rechecked before publication. Feature branch push/PR authorized; no merge to main.

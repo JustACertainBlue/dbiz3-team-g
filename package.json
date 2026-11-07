@@ -2,6 +2,9 @@
   "name": "hanoi-artisan-bridge",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "demo:seed": "node scripts/demo-seed.mjs",
     "demo:reset": "node scripts/demo-seed.mjs --reset",

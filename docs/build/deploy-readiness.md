@@ -73,6 +73,9 @@ Environment variables (names only):
 
 ## 5. Decisions for the team before deploying
 
+> Decided 2026-11-07: 1 → (b) test accounts from environment variables; 2 → (b) no email, clear message;
+> data → accept loss on restart; UBND test account `thanhvien1`. See [ADR 0001](../adr/0001-hosting.md).
+
 1. **B1 + B2, how testers log in on the hosted version** (pick one and record it in the ADR):
    - (a) Add a real email adapter (needs an email provider account and secrets in the platform's
      environment settings).

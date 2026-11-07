@@ -885,6 +885,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | AI Use Log | `docs/ai-use-log.md` created with this change; "Checked by" pending |
 | Commit | One commit `fix(BKG): …`; branch pushed by the agent, PR with "Closes #66", merge left to the human |
 
+### Entry 52: 07/11 Claude Code + human — cost-12 password test: precomputed hash, 15 s for that test only (`linh/fix-cost12-test`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested and approved by linhkhanh-vu (2026-11-07: "Đồng ý sửa test cost-12", then "Đồng ý timeout 15000 ms cho RIÊNG test cost-12 này"); branch from `main` `b16c855`; the agent pushes and opens the PR, the human merges |
+| Why an existing test changed | `tests/unit/password-cost.test.ts` › "still verifies hashes created with cost 12" (added in Entry 49) timed out at 5000 ms in the full suite while the laptop was heavily loaded (load average ≈ 38; one cost-12 hash ≈ 2.6 s, one compare ≈ 1.2 s, measured). The failure was timing, not code: `src/` is identical to `main` |
+| Change | (1) The test no longer hashes at cost 12: it uses a precomputed `$2b$12$…` hash of a password named as a test-only fixture. (2) New asserts: prefix `$2[ab]$12$` and `getRounds` = 12; wrong password → `false` (the old test only checked `true`), so the test is stricter, not weaker. (3) `it(…, 15_000)` for this test only, with the reason in a comment: cost-12 bcrypt is slow on purpose (the work factor of existing accounts), unlike product-session where cost-12 hashing in tests was removed (Entry 49). Global Vitest config unchanged |
+| Mutation (foreground, restored from a scratch copy, checked with `cmp`) | `verifyPassword` always `true` → this test red; always `false` → this test red |
+| Agent mistake | One earlier mutation loop exceeded the tool limit and was moved to the background while `password.ts` was mutated; it restored the file itself and `cmp` confirmed it. Rule from the human: mutation checks run in the foreground only |
+| Tests | `git diff main -- src` empty; `npm run lint` passed; full suite `169 files / 1039 tests` passed twice in a row (24–30 s, load ≈ 8) |
+| Commit | One commit `test: …`; branch pushed by the agent, PR opened, merge left to the human |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

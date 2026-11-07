@@ -54,6 +54,7 @@ Environment variables (names only):
 | `NODE_ENV` | Set by `next start` to `production` | Production switches off the prototype login and dev-outbox (§4) |
 | `PORT` | Provided by the platform | `next start` port |
 | `HAB_EMAIL_MODE` | **Do not set** on the hosted version | `dev-outbox` is refused in production anyway (`registration-delivery.ts:8`, `lifecycle.ts:18`) |
+| `HAB_TEST_PASSWORD_AGENCY`, `_PROVIDER`, `_UBND`, `_HDT` | **Yes**, on the platform (secret values) | Hosted test accounts set at every start (ADR 0001; `src/lib/auth/test-accounts.ts`) |
 | `HAB_SMOKE_ORIGIN` | Optional, on a laptop only | Points `node scripts/smoke-auth.mjs` at the hosted URL |
 | `OPENAI_API_KEY`, `GOOGLE_MAPS_API_KEY`, `DATABASE_URL` | **Not used** by any code today | Listed in `.env.example` only. AI Tour Matching is rule-based (no LLM call in `src/`); the PostgreSQL client `src/lib/db/client.ts` is a stub |
 | _future_ email adapter variables | Needed only if a real email service is added (decision B2) | Never in code, only in the platform's environment settings |

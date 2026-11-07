@@ -897,6 +897,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Tests | `git diff main -- src` empty; `npm run lint` passed; full suite `169 files / 1039 tests` passed twice in a row (24–30 s, load ≈ 8) |
 | Commit | One commit `test: …`; branch pushed by the agent, PR opened, merge left to the human |
 
+### Entry 53: 07/11 Claude Code + human — hosted test accounts from environment variables (`linh/hosted-test-accounts`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); decided by linhkhanh-vu (2026-11-07, ADR 0001 decision 1b: one test account per role, UBND = `thanhvien1`; runs at every start, idempotent; password only from env; missing → skip + warning without password; no must-change; "any string" stays off in production; test first, mutations in the foreground); branch stacked on `linh/deploy-adr-env` (PR #71); the agent pushes and opens the PR, the human merges |
+| What the agent produced | `src/lib/auth/test-accounts.ts` (`TEST_ACCOUNTS`, `ensureTestAccounts(env, log)`: for `HAB_TEST_PASSWORD_AGENCY/_PROVIDER/_UBND/_HDT` → `thanhvien13/19/1/9@example.invalid`; checks the AUT password rule via the now exported `passwordInput`; skips missing/invalid variables and accounts not Active/Approved with a warning that never includes a password; keeps the stored hash when the password is unchanged), `src/instrumentation.ts` (`register()` runs it in the Node.js runtime at server start), `next.config.mjs` `experimental.instrumentationHook` (needed by Next 14). Docs: `.env.example` variable names, `docs/build/demo-login.md` "Hosted version", `deploy-readiness.md` §3 |
+| Existing tests changed | None |
+| Tests | Red: `hosted-test-accounts.test.ts` failed on the missing module `@/lib/auth/test-accounts`. Green: 6/6. Mutations (foreground, each restored from a scratch copy and checked with `cmp`): keep `must_change_password` → 2 red; always re-hash (not idempotent) → 1 red; skip the password rule and log the password → 2 red; run outside the Node.js runtime → 1 red (re-run after the instrumentation fix below) |
+| Production check (local) | `npm run build` first **failed** (webpack `UnhandledSchemeError` for `node:crypto`/`node:fs`): an early `return` in `register()` did not remove the import from the edge bundle. Fixed by the documented `if (process.env.NEXT_RUNTIME === 'nodejs') { … }` form; build then passed. `next start` on port 3100 with three test-only variables (UBND left out on purpose): log `HAB_TEST_PASSWORD_UBND is not set …` and `ready: 3 configured, 1 skipped` (no password in the log); login Agency/Provider/HDT with their passwords → 200 (`hab_session` `Secure; HttpOnly`), HDT with "demo" → 401, `thanhvien1` → 401, another seed account with "demo" → 401; after a restart the hashes and `updated_at` were unchanged. Then `npm run demo:reset` |
+| Commit | One commit `feat(AUT): …`; PR based on PR #71's branch; merge left to the human |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

@@ -22,6 +22,24 @@ Synthetic seed identities, listed on `http://localhost:3000/login` under "Tài k
 password. Create it through registration, or through an HDT/UBND password reset with
 `HAB_EMAIL_MODE=dev-outbox`; see `specs/AUT-INTEGRATION.md`.
 
+## Hosted version (production build)
+
+`npm run start` runs with `NODE_ENV=production`, where the "any non-empty password" rule is off. Instead, at
+every start the app gives four synthetic accounts a real password from environment variables (ADR 0001,
+`src/lib/auth/test-accounts.ts`). These are not must-change accounts, because several testers share them:
+
+| Variable | Account |
+|---|---|
+| `HAB_TEST_PASSWORD_AGENCY` | `thanhvien13@example.invalid` (Tour Agency) |
+| `HAB_TEST_PASSWORD_PROVIDER` | `thanhvien19@example.invalid` (Local Provider, Bát Tràng) |
+| `HAB_TEST_PASSWORD_UBND` | `thanhvien1@example.invalid` (UBND Admin, Bát Tràng; not the demo `thanhvien8`) |
+| `HAB_TEST_PASSWORD_HDT` | `thanhvien9@example.invalid` (HDT Admin) |
+
+The passwords are set only in the hosting platform's environment settings and shared with testers privately.
+A missing or invalid variable leaves that account without a password, and the server log says which variable
+(never the password). If you set these variables on a laptop, those four accounts need their real password in
+development too.
+
 ## In the browser
 
 Open `http://localhost:3000/login`, click one of the demo emails, type any password, click **Đăng nhập**.

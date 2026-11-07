@@ -31,7 +31,7 @@ function audit(tables: Record<string, DemoRow[]>, actor: string, action: string,
 function revoke(tables: Record<string, DemoRow[]>, user: string) {
   for (const row of rows(tables, 'sessions')) if (row.user_id === user && !row.revoked_at) row.revoked_at = new Date().toISOString()
 }
-function passwordInput(password: string, confirmation: string) {
+export function passwordInput(password: string, confirmation: string) {
   if (password !== confirmation) fail('Passwords do not match')
   if (password.length < 8 || password.length > 64 || /\s/.test(password) || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) fail('Password must contain 8–64 characters, uppercase, lowercase, number and special character, with no whitespace')
 }

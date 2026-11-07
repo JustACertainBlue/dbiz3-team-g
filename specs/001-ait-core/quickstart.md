@@ -47,8 +47,9 @@ Seed facts used below (Experiences of Verified Providers with a published profil
 | Chuông | Làm nón lá | 15 | 225,000 | Other |
 | Quất Động | Thêu họa tiết | 16 | 250,000 | Silk/Textile |
 
-Demo Agency: cookie `hab_demo_account=agency` (Công ty Du lịch Tràng An,
-`02e568d8-d65e-54b1-a554-b411150d1dcb`). Switch roles with the Role Switcher at the top of each page.
+Demo Agency: log in at `/login` as `thanhvien13@example.invalid` (Công ty Du lịch Tràng An,
+`02e568d8-d65e-54b1-a554-b411150d1dcb`); change role with **Đăng xuất** and a new login. Accounts, password
+and the curl cookie `.demo-data/agency.jar`: [`docs/build/demo-login.md`](../../docs/build/demo-login.md).
 
 ## 2. Demo path (one Matching Session, AIT121)
 
@@ -56,7 +57,7 @@ Demo Agency: cookie `hab_demo_account=agency` (Công ty Du lịch Tràng An,
 > #23–#34). Until T054 is checked, parts of this path (origin follow-up, Budget suggestion, redirect,
 > Retry, opening Messages) do not match `main`.
 
-Open `http://localhost:3000/explore`, choose **Tour Agency**, then **AI Tour Matching**
+Log in as the demo Agency, open `http://localhost:3000/explore`, then **AI Tour Matching**
 (`http://localhost:3000/ai-matching`). Send each line in the same conversation:
 
 | # | Message | Expected |
@@ -83,17 +84,19 @@ no cards (FR-003, BR-017, #27).
 
 ## 3. Same path with curl (API)
 
+Log in first and save the cookie (`docs/build/demo-login.md`), then:
+
 ```text
-curl -s -X POST http://localhost:3000/api/ait/sessions -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{}"
-curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/messages -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{\"sender\":\"Agency\",\"text\":\"Silk weaving, 10 pax on 2026-11-20 from Hoàn Kiếm\"}"
-curl -s -X POST http://localhost:3000/api/ait/matching -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{\"session_id\":\"<session_id>\",\"tour_preference_profile\":<tour_preference_profile from the previous response>}"
-curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/quote -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{\"experience_id\":\"c8281688-2dc1-5cb1-9ff6-139df04ba562\"}"
-curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/chat -H "Cookie: hab_demo_account=agency" -H "Content-Type: application/json" -d "{\"experience_id\":\"c8281688-2dc1-5cb1-9ff6-139df04ba562\"}"
+curl -s -X POST http://localhost:3000/api/ait/sessions -b .demo-data/agency.jar -H "Content-Type: application/json" -d "{}"
+curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/messages -b .demo-data/agency.jar -H "Content-Type: application/json" -d "{\"sender\":\"Agency\",\"text\":\"Silk weaving, 10 pax on 2026-11-20 from Hoàn Kiếm\"}"
+curl -s -X POST http://localhost:3000/api/ait/matching -b .demo-data/agency.jar -H "Content-Type: application/json" -d "{\"session_id\":\"<session_id>\",\"tour_preference_profile\":<tour_preference_profile from the previous response>}"
+curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/quote -b .demo-data/agency.jar -H "Content-Type: application/json" -d "{\"experience_id\":\"c8281688-2dc1-5cb1-9ff6-139df04ba562\"}"
+curl -s -X POST http://localhost:3000/api/ait/sessions/<session_id>/chat -b .demo-data/agency.jar -H "Content-Type: application/json" -d "{\"experience_id\":\"c8281688-2dc1-5cb1-9ff6-139df04ba562\"}"
 ```
 
 Expected: session `201` with `session_id`; the messages response has `extraction.is_complete =
 true` and a `tour_preference_profile`; matching returns `top_matches` with Vạn Phúc #1; running quote or
-chat twice returns the same `quote_request_id` / `chat_session_id`. With cookie `guest` every AIT route
-returns `401`.
+chat twice returns the same `quote_request_id` / `chat_session_id`. Without `-b` (Guest) every AIT route
+returns `401`; with `.demo-data/provider.jar` it returns `403`.
 
 Afterwards: stop the dev server; `npm run demo:reset` restores the seed.

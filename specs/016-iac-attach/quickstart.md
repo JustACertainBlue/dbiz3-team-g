@@ -21,7 +21,7 @@ npm run dev
 
 `npm run demo:reset` also removes `.demo-data/chat-files` (#39). Stop the dev server before a reset.
 
-Seed facts: demo Agency (cookie `agency`) has Active Chat `a0b57355-8142-5b47-be08-6130aa21c021` with
+Seed facts: demo Agency (cookie `.demo-data/agency.jar` (log in first: [`docs/build/demo-login.md`](../../docs/build/demo-login.md))) has Active Chat `a0b57355-8142-5b47-be08-6130aa21c021` with
 Xưởng thủ công Phú Vinh; it holds seed attachment `e64a4f0b…` (metadata only). Demo Provider (cookie
 `provider`) has Active Chat `35ed4094-fa5a-55a6-ba1d-c03e56adfe79` with Công ty Du lịch Sông Hồng.
 
@@ -33,14 +33,14 @@ Windows PowerShell: `Set-Content bao-gia.pdf demo -NoNewline` and `Set-Content n
 1. Send. Expect `HTTP 201`, one attachment with `file_type` `application/pdf`, `file_size` 4.
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/iac/chats/a0b57355-8142-5b47-be08-6130aa21c021/attachments" -H "Cookie: hab_demo_account=agency" -F "files=@bao-gia.pdf" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/iac/chats/a0b57355-8142-5b47-be08-6130aa21c021/attachments" -b .demo-data/agency.jar -F "files=@bao-gia.pdf" -w "\nHTTP %{http_code}\n"
 ```
 
 2. History shows the new message with `attachments`; the Chat list preview is "Tệp đính kèm: bao-gia.pdf".
 3. Download with the `attachment_id` from step 1. Expect `HTTP 200`, `content-disposition: attachment…`, body `demo`.
 
 ```bash
-curl -s -D - "http://localhost:3000/api/iac/chats/a0b57355-8142-5b47-be08-6130aa21c021/attachments/<attachment_id>" -H "Cookie: hab_demo_account=agency"
+curl -s -D - "http://localhost:3000/api/iac/chats/a0b57355-8142-5b47-be08-6130aa21c021/attachments/<attachment_id>" -b .demo-data/agency.jar
 ```
 
 4. Errors, nothing stored: `note.txt` → 400 `file_errors` `UNSUPPORTED_FORMAT`; six files → 400; as

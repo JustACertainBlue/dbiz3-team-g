@@ -33,7 +33,7 @@ npm run dev
 ```
 
 Run **only one** dev server. The first BKG request cancels the expired seed On hold `54d7a276…`
-(another Provider) — expected. Demo Provider `50f2c8fc…` (cookie `provider`) starts with two Booked
+(another Provider) — expected. Demo Provider `50f2c8fc…` (cookie `.demo-data/provider.jar` (log in first: [`docs/build/demo-login.md`](../../docs/build/demo-login.md))) starts with two Booked
 Bookings in the past (2026-10-05 `4bf17b30…`, 2026-10-10 `5782011c…`), both needing arrival.
 
 ## 4. API path
@@ -44,46 +44,46 @@ Each command prints the JSON body and then `HTTP <status>`. On Windows PowerShel
    both `requires_action` = `true`; `group_size` a number; `status_counts` with four keys; `total_count` 2.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/bookings" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/bookings" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 2. Status filter. Expect `HTTP 200`, `bookings` = `[]`, `total_count` 0, `status_counts` still shows `"Booked": 2`.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/bookings?status=Cancelled" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/bookings?status=Cancelled" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 3. Date range covering only 2026-10-05. Expect one row `4bf17b30…`, `status_counts` `"Booked": 1`.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/bookings?date_from=2026-10-05&date_to=2026-10-05" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/bookings?date_from=2026-10-05&date_to=2026-10-05" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 4. Reversed range. Expect `HTTP 400` `VALIDATION_ERROR`.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/bookings?date_from=2026-10-06&date_to=2026-10-05" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/bookings?date_from=2026-10-06&date_to=2026-10-05" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 5. Page size 101. Expect `HTTP 400`. Page 5. Expect `HTTP 200`, `bookings` = `[]`, `total_count` 2.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/bookings?page_size=101" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/bookings?page_size=101" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 ```bash
-curl -s "http://localhost:3000/api/bkg/bookings?page=5" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/bookings?page=5" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 6. Another Provider's id. Expect `HTTP 403 FORBIDDEN`.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/bookings?provider_id=70efa801-a908-5e16-8510-fd094fbdc020" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/bookings?provider_id=70efa801-a908-5e16-8510-fd094fbdc020" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 7. Agency, UBND, HDT, Guest. Expect `HTTP 403` each.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/bookings" -H "Cookie: hab_demo_account=agency" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/bookings" -b .demo-data/agency.jar -w "\nHTTP %{http_code}\n"
 ```
 (repeat with `ubnd`, `hdt`, `guest`)
 

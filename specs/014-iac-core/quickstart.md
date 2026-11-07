@@ -22,7 +22,7 @@ npm run dev
 `npm run demo:reset` is required once: it removes rows that older code wrote with `Open` / `Text` /
 `Experience Context` (Q2). Stop the dev server before any later reset and run only one server (lesson #19).
 
-Seed facts used below: demo Agency (cookie `agency`, user Lý Gia Hân, Công ty Du lịch Tràng An) has one
+Seed facts used below: demo Agency (cookie `.demo-data/agency.jar` (log in first: [`docs/build/demo-login.md`](../../docs/build/demo-login.md)), user Lý Gia Hân, Công ty Du lịch Tràng An) has one
 Active Chat `a0b57355-8142-5b47-be08-6130aa21c021` with Xưởng thủ công Phú Vinh (user Quách Minh Tâm) and a
 Completed Booking `0971a1b6-32e2-5581-a02d-d9636e22e1b6` with the same Provider. Demo Provider (cookie
 `provider`, user Kiều Anh Thư, Bát Tràng) has Active Chat `35ed4094-fa5a-55a6-ba1d-c03e56adfe79` with Công ty
@@ -35,19 +35,19 @@ Du lịch Sông Hồng (user Chu Nhật Minh) and 5 unread messages there. Exper
    `organization` "Công ty Du lịch Sông Hồng", `unread_count` 5.
 
 ```bash
-curl -s "http://localhost:3000/api/iac/chats" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/iac/chats" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 2. Open that history. Expect `HTTP 200`, one message, `has_more_messages` false; repeat step 1: `unread_count` 0.
 
 ```bash
-curl -s "http://localhost:3000/api/iac/chats/35ed4094-fa5a-55a6-ba1d-c03e56adfe79/messages" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/iac/chats/35ed4094-fa5a-55a6-ba1d-c03e56adfe79/messages" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 3. Send. Expect `HTTP 201` with `message_id`, `sent_at`, `last_message_timestamp`; the Chat moves to the top of step 1.
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/iac/chats/35ed4094-fa5a-55a6-ba1d-c03e56adfe79/messages" -H "Cookie: hab_demo_account=provider" -H "content-type: application/json" -d "{\"message_text\":\"Xưởng xác nhận **15 khách** vào *sáng thứ Bảy*.\"}" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/iac/chats/35ed4094-fa5a-55a6-ba1d-c03e56adfe79/messages" -b .demo-data/provider.jar -H "content-type: application/json" -d "{\"message_text\":\"Xưởng xác nhận **15 khách** vào *sáng thứ Bảy*.\"}" -w "\nHTTP %{http_code}\n"
 ```
 
 4. Errors (nothing written): `message_text` `"   "` → `400`; 4001 characters → `400`; the same history
@@ -55,7 +55,7 @@ curl -s -X POST "http://localhost:3000/api/iac/chats/35ed4094-fa5a-55a6-ba1d-c03
 5. Agency opens from its Booking. Expect `HTTP 200`, `chat_session_id` `a0b57355…`, `is_new_session` false.
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/iac/chats" -H "Cookie: hab_demo_account=agency" -H "content-type: application/json" -d "{\"source\":\"Booking\",\"booking_id\":\"0971a1b6-32e2-5581-a02d-d9636e22e1b6\"}" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/iac/chats" -b .demo-data/agency.jar -H "content-type: application/json" -d "{\"source\":\"Booking\",\"booking_id\":\"0971a1b6-32e2-5581-a02d-d9636e22e1b6\"}" -w "\nHTTP %{http_code}\n"
 ```
 
 6. Same Booking as `provider` (not its Booking) → `403`.

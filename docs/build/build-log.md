@@ -946,6 +946,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Existing tests changed | Names only (3 describe strings) |
 | Commit | One commit `test: …`; merge left to the human |
 
+### Entry 57: 07/11 Claude Code + human — #88 Experience category is the spec enum (`fix/88-experience-category-enum`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu after round 0 on the DEV Supabase project (issue #88, Medium). Entry 56 is #87 (PR #89) |
+| Cause | `ExperienceCreateSchema.category` was `z.string()`, and Update wrote `category` without a check; PostgreSQL `experience_category_chk` then failed, so the API answered 500. spec-PRF FR-006 §5.1 and §10 Q19: Enum[Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo] |
+| Tests first | `tests/prf/unit/experience-category.test.ts` (8): each of the 5 values accepted on Create/Update; near misses (`Workshop`, other case, empty, `Ceramics`) rejected; POST and PATCH with `Ceramics` → 400 with `Invalid category: use one of …`. Red before the fix: 3 (201/200 instead of 400, schema accepted `Workshop`); a 4th assert (exact message) was added and shown red before the message fix |
+| Fix | `EXPERIENCE_CATEGORIES` + `z.enum` in `validators.ts`; Update checks `category`; Create maps a category ZodError to the one clear message |
+| Existing tests changed | Input value only, approved by the human: `category` → `'Workshop/Hands-on'` in `validators.test.ts:79`, `experience-service.test.ts:25`, `experience-routes.test.ts:44,66`, `demo-functional-flow.test.ts:52`, `profile-media.test.ts:40,88`. Their old values (`Ceramics`, `Workshop`, `Pottery`) break the spec enum; no assertion or logic changed |
+| Mutation (foreground) | Required by the human: forged-URL check removed from `createExperience` → "rejects a forged image URL" red, so it still tests the URL path after the change. #88: schema back to string, Update check removed, extra enum value, default Zod message, clear-message branch removed → all red (the default-message mutant survived at first; a message assert was added to the new test) |
+| Checks | `npm run lint` OK; `npm test` 180 files passed, 4 skipped (1090 passed, 20 skipped); DEV dev server: POST and PATCH with `Ceramics` → 400 with the message, data unchanged |
 ### Entry 56: 07/11 Claude Code + human — #87 Booking times in Asia/Ho_Chi_Minh on PostgreSQL (`fix/87-hanoi-time-display`)
 
 | Field | Value |

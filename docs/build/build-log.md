@@ -982,6 +982,20 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 182 files passed, 4 skipped (1102 passed, 20 skipped); DEV dev server, HDT (clicked): page loads 20 rows, filter 2026-11-07 → 2026-11-07 shows only the [T-round0] account |
 | Existing tests changed | None |
 
+### Entry 59: 07/11 Claude Code + human — Session 10 contract tests: PRF → EXP, EXP → IAC, AIT → IAC/EXP (`test/contract-prf-exp-ait`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (contract tests for the remaining interfaces, 1 normal + 2 boundary + 1 error each, 2–3 interfaces per PR, straight into main) |
+| Contract doc | `linh/integration-contract` was fully merged by #85; `docs/test/integration-contract.md` already had all 9 interfaces. Updated: new tests in §4–§6, #87 note in §3, category disagreement (#88, fixed) in §4 |
+| PRF → EXP | `tests/contract/prf-exp-catalog.test.ts` (4): Experience saved by the PRF route listed by the Explore route with the published name and no Guest price, and in AIT candidates; archive removes it from both; a pending revision keeps the published name; a non-enum category is refused and never listed |
+| EXP → IAC | `tests/contract/exp-iac-handoff.test.ts` (4): Quote + pair Chat + Agency context message, no Booking; second Quote reused, no message; Chat about another Experience reuses the pair Chat; Guest/Provider 403, archived 404, nothing written |
+| AIT → IAC/EXP | `tests/contract/ait-iac-exp-handoff.test.ts` (4): Matching source + session link; reuse of an Explore Chat with the new Quote context; unverified Provider leaves candidates and is refused (409); another Agency's session 403, Guest 401, missing field 400, nothing written |
+| Mutation (foreground) | 12 mutants, 11 killed. Survivor: AIT `candidate-repo.ts` filter removed — equivalent, because `seed-loader.ts` already keeps only Verified Providers (removing that layer is killed). First run gave empty results because zsh did not split `$T` (lesson: use an array) |
+| Defects | None found: every case matches the current spec; the documented disagreements (e.g. §4 #2 three predicates) are spec-silent or code-vs-code and were not filed |
+| Checks | `npm run lint` OK; `npm test` 186 files passed, 4 skipped (1122 passed, 20 skipped) |
+| Existing tests changed | None |
+
 ### Entry 60: 07/11 Claude Code + human — Session 10 contract tests: BKG → ADM, PRF → ADM, AUT ↔ PRF (`test/contract-bkg-prf-adm-aut`)
 
 | Field | Value |

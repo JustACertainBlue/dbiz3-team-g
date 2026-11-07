@@ -81,57 +81,50 @@ Details, arguments to paste, and the MVP Alpha gates G1–G8: `docs/build/claude
 - Deadline: tag `mvp-alpha` on `main` with `docs/build/mvp-alpha-checklist.md` filled in. The tag
   `mvp-alpha` already exists (created by Ng Thu on `1004f50`): keep it, do not move it; a new tag
   (e.g. `alpha-r2`) only if the human asks.
-State checked on 5 Nov 2026 at `main` = `65f4b5b` (PR #44; details: `03-module-status.md`).
-`npm test` on `main` `65f4b5b`: 137 files, 882 tests pass; lint passes; CI run #18 (windows-latest +
+State checked on 7 Nov 2026 at `main` = `54f3cb1` (PR #49; details: `03-module-status.md`).
+After `npm ci` (PR #11 added `bcryptjs` and `image-size`; without it 116 test files fail on missing
+modules): 167 files, 1030 tests pass; lint passes; hook tests pass; CI run #32 (windows-latest +
 macos-latest) green.
 - **MVP Alpha checklist** on `main`: G1, G2, G4, G5, G7, G8 ticked; **G3 open** (EXP BR-014 by
   decision; PRF BR-013 UI-only; partial BRs; P1 acceptance scenarios not re-audited) and **G6 open by
   decision** (no merged PR had a non-author review). Full BR→test table: `docs/build/g3-br-audit.md`.
+  The checklist still describes AUT as not merged (line 26, §3 #31) and every module on the demo
+  cookie (§3 #9, #21, #25): stale since PR #11, not yet updated.
   The human works alone ("tự làm hết, không nhờ nhóm"): no messages to the team unless asked.
-- **Since 4 Nov**: CI (PR #36, #37); PRF slices A, A2, B (#38–#40); EXP slice C (#41); G3 audit (#42);
-  br-fixes (#43: AIT BR-015, PRF BR-017, PRF BR-014, PRF019 link; checklist §3 #44–#46, #48 closed);
-  IAC round 1 (#44, `specs/014-iac-core`: F-CHAT-01..03, spec-IAC #18–#28). All merged by the human
-  without review. Stop the dev server before `npm run demo:reset`: it keeps the data in memory and
-  writes it back.
+- **Since 5 Nov**: IAC rounds 1–3 (#44, #45/#46, #48); push guard hook (#47, #49) and the agent push
+  rule (CLAUDE.md §3 rule 3, AGENTS.md rule 5); **AUT merged** by JustACertainBlue (PR #11 from
+  linh-daotruc, `06b1fae`, 6 Nov; ported onto the shared JSON runtime and Next 14 / React 18 /
+  Vitest 2, see `specs/AUT-INTEGRATION.md` and `docs/build/pr11-integration.md`); provider UX
+  completion (PR #50 by JustACertainBlue, `a8c5141`). Stop the dev server before `npm run demo:reset`:
+  it keeps the data in memory and writes it back.
 
-- **On `main`**: AIT (`specs/001-ait-core`, PR #6 merged as `3e0e047`), PRF
-  (`specs/002-prf-core`, PR #8 squash-merged as `222216d`), EXP (`specs/001-exp-core`, merged
-  with `ada9e44` "unify functional prototype on JSON runtime"), BKG US-4 (`specs/004-bkg-core`,
-  PR #17 merged as `343e4ce`), BKG US-5 + US-3 (`specs/011-bkg-manage`, PR #20 merged as
-  `5cae545` and PR #22 merged as `7057d5c`), BKG US-6 (`specs/012-bkg-list`, PR #25 as `c3f0c64`),
-  BKG US-1 + US-2 (`specs/013-bkg-schedule`, PR #28 as `fa4d9d2`), BKG spec #57–#82 (PR #21, #24,
-  #26, #27), AIT round 3 (PR #33 as `5d0131a`; spec-AIT #23–#37), ADM (`specs/003-adm-core`, ported
-  in PR #34 as `7c1fde6`; spec-ADM #21–#22; User Management moved to AUT), fix(auth) (PR #35 as
-  `deaf3ab`: `demoSessionFromRequest` reads only the cookie), PRF/EXP slices A–C (PR #38–#41),
-  G3 audit (PR #42), br-fixes (PR #43 as `f7d2a54`), IAC round 1 (PR #44 as `65f4b5b`).
-  PR #33–#44 were merged without a GitHub review.
-- **Not merged**: AUT (`001-aut-registration`, PR #11; stack drift Next 16 / React 19 / Vitest 5 /
-  `pg`), `member/spec-consistency`, `ngthu/update-specs` (leftovers that would overwrite spec-BKG and
-  the seed). PR #16 (`003-iac-core`, mizaki311) was closed unmerged on 5 Nov as superseded by #44;
-  the branch is kept.
-- **BKG**: owned by the human running this session. **Code complete on `main` `fa4d9d2`**: all six
-  stories US-1..US-6 (F-SCHED-01..10) in four rounds — `specs/004-bkg-core` (US-4, PR #17),
-  `specs/011-bkg-manage` (US-5 + US-3, PR #20, #22), `specs/012-bkg-list` (US-6, PR #25),
-  `specs/013-bkg-schedule` (US-1 + US-2, PR #28); 503 tests + lint pass; spec decisions #26–#82 on
-  `main`; summary in build-log Entry 31. Still missing: the Windows run (G1) for 004, 011, 012, 013,
-  and post-merge non-author reviews of PR #17, #22, #25, #28 (all merged without a GitHub review;
-  AIT/PRF/EXP owners: `applyBatch` in `src/lib/demo/json-repository.ts`; PRF owner: Provider/Agency
-  navigation links; EXP owner: the "Xem lịch trống" link on the Explore Provider page). Read `docs/build/claude-context/04-bkg-brief.md` and
-  `specs/011-bkg-manage/tasks.md` before doing anything on BKG.
-- **IAC**: round 1 on `main` (`specs/014-iac-core`, PR #44): one shared chat service `src/lib/iac/*`
-  used by Explore, AIT (`commercial-handoff-service.ts`) and BKG (`agency-sync.ts`) — at most one
-  Active Chat per Agency–Provider pair, Chat writes share `withBookingWriteLock`; routes
-  `/api/iac/chats…`; `/messages` = COM048 / COM065. Round 2 F-CHAT-04 Close on `main` (`015-iac-close`,
-  PR #45/#46); round 3 F-CHAT-05 attachments on `016-iac-attach` (files in `.demo-data/chat-files/`,
-  spec-IAC #39–#50). Not built: Provider start from a Quote Request (checklist §3 #50–#52, #56).
-- **Auth**: the server-side demo session comes only from the `hab_demo_account` cookie. PR #35
-  (`linh/auth-no-header`, merged as `deaf3ab`) removed the last fallback that trusted a client `x-mock-session` header
-  (checklist §3 #30); never add client-supplied identity headers again.
-- **Runtime**: all modules on `main` share one JSON runtime
-  (`src/lib/demo/json-repository.ts`): the CSV seed is copied once to `.demo-data/runtime.json`
-  (git-ignored) and every write rewrites that file; tests use a volatile in-memory copy.
-  PostgreSQL is the target schema but `src/lib/db/client.ts` is still a stub. Login is a demo
-  session, not AUT.
+- **On `main` — all seven modules**: AIT (`specs/001-ait-core`; round 3 PR #33), PRF
+  (`specs/002-prf-core`; slices A–B PR #38–#40), EXP (`specs/001-exp-core`; slice C PR #41), BKG
+  (`specs/004-bkg-core`, `011-bkg-manage`, `012-bkg-list`, `013-bkg-schedule`; PR #17–#28), ADM
+  (`specs/003-adm-core`, PR #34), IAC (`specs/014-iac-core`, `015-iac-close`, `016-iac-attach`; PR #44,
+  #45/#46, #48), AUT (`specs/001-aut-registration` … `010-aut-manage-accounts` + `specs/AUT-INTEGRATION.md`,
+  PR #11). Most PRs since #33 were merged without a GitHub review.
+- **Not merged**: `member/spec-consistency`, `ngthu/update-specs` (leftovers that would overwrite
+  spec-BKG and the seed). PR #16 (`003-iac-core`, mizaki311) closed unmerged as superseded by #44.
+- **BKG**: owned by the human running this session; code complete (US-1..US-6, F-SCHED-01..10,
+  build-log Entry 31). Still missing: post-merge non-author reviews of PR #17, #22, #25, #28. Read
+  `docs/build/claude-context/04-bkg-brief.md` before doing anything on BKG.
+- **IAC**: complete (F-CHAT-01..05, spec-IAC #18–#50, build-log Entries 45–47): one shared chat
+  service `src/lib/iac/*` used by Explore, AIT and BKG — at most one Active Chat per Agency–Provider
+  pair, Chat writes share `withBookingWriteLock`; routes `/api/iac/chats…` (`/messages`, `/close`,
+  `/attachments`); `/messages` = COM048 / COM065 with the COM125 / COM126 attach dialog; files in
+  `.demo-data/chat-files/`. Not built: Provider start from a Quote Request (checklist §3 #51); limits
+  §3 #50, #52, #56.
+- **Auth** (since PR #11, read in `src/lib/auth/session.ts`): `sessionContextFromRequest` uses the
+  product session cookie `hab_session` from `/login` (`/api/auth/login`; bcrypt; `must_change_password`
+  gate). The `hab_demo_account` cookie works **only under `NODE_ENV=test`**; in `npm run dev` it is
+  ignored (Guest). So the curl steps in older quickstarts (`-H "Cookie: hab_demo_account=…"`) no longer
+  work against the dev server: log in first and send `hab_session`. Never add client-supplied identity
+  headers (PR #35, checklist §3 #30).
+- **Runtime**: all modules share one JSON runtime (`src/lib/demo/json-repository.ts`): the CSV seed is
+  copied once to `.demo-data/runtime.json` (git-ignored) and every write rewrites that file; tests use
+  a volatile in-memory copy. PostgreSQL is the target schema but `src/lib/db/client.ts` is still a stub.
+  Email is not configured (`HAB_EMAIL_MODE=dev-outbox` writes to `.demo-data/*-outbox/`).
 - **Known drift**: `specs/002-prf-core/plan.md` lists Next.js 15, Drizzle, Cloudinary and msw,
   while `package.json` has Next.js 14 and none of those (checklist §3 #36). Point this out to the PRF
   owner; do not silently ignore either file.
@@ -158,8 +151,9 @@ Project slash commands: `/team-status`, `/bkg-start`, `/verify-module <MOD>`.
   `npm test` (Vitest), `npm run lint` (`tsc --noEmit`), `npm run dev`.
 - Demo data: `npm run demo:seed` (create `.demo-data/runtime.json` from `data/seed/*.csv`),
   `npm run demo:reset` (overwrite it from the seed again).
-- Demo login: cookie `hab_demo_account` (guest | agency | provider | ubnd | hdt, see
-  `src/lib/auth/demo-session.ts`), switched with the `RoleSwitcher` component.
+- Login: `/login` sets the product session cookie `hab_session` (demo identities are offered in
+  development only). The test-only cookie `hab_demo_account` (guest | agency | provider | ubnd | hdt,
+  `src/lib/auth/demo-session.ts`) works only when `NODE_ENV=test`.
 - `tsconfig.tsbuildinfo` is git-ignored since PR #30; `npm run lint` no longer dirties the tree.
 - Use `git --no-pager ...` for log/grep/diff so output is not trapped in a pager.
 - `.claude/skills/speckit-*` is a verbatim copy of `.agents/skills/speckit-*` (Spec Kit 1.0.1,

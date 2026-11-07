@@ -122,7 +122,7 @@ export default function EditAgencyProfilePage({
         >
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
           <div className="spec-badge-pill" style={{ background: '#fef2f2', color: '#991b1b', borderColor: '#fca5a5', marginBottom: '1rem' }}>
-            403 FORBIDDEN · ACCESS DENIED (BR-001)
+            Không có quyền chỉnh sửa hồ sơ này
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', margin: '0 0 0.75rem 0' }}>
             Quyền Truy Cập Bị Từ Chối
@@ -201,7 +201,7 @@ export default function EditAgencyProfilePage({
       if (data.requires_hdt_rereview) {
         setMessage({
           type: 'warning',
-          text: '✓ Thay đổi trường trọng yếu (Tên doanh nghiệp / MST) đã gửi yêu cầu thẩm định lại đến Hội đồng Thẩm định (HDT - BR-017). Tài khoản vẫn duy trì hoạt động.',
+          text: '✓ Thay đổi trường trọng yếu (Tên doanh nghiệp / MST) đã gửi yêu cầu thẩm định lại đến Hội đồng Thẩm định (HDT). Tài khoản vẫn duy trì hoạt động.',
         })
       } else {
         setMessage({
@@ -315,7 +315,7 @@ export default function EditAgencyProfilePage({
             <div className="spec-form-section-header">
               <div className="spec-section-num">01 Core Legal Identity & Enterprise Details</div>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#6b7280', textTransform: 'uppercase' }}>
-                LEGAL CREDENTIALS & HDT REGISTRY (BR-017)
+                Thông tin pháp lý và thẩm định
               </div>
             </div>
 
@@ -325,7 +325,7 @@ export default function EditAgencyProfilePage({
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <label className="spec-form-label">COMPANY LEGAL ENTERPRISE NAME</label>
                     <span style={{ fontSize: '0.68rem', color: '#b45309', fontWeight: 700 }}>
-                      ⚠️ HDT RE-REVIEW ON CHANGE (BR-017)
+                      Thay đổi cần được thẩm định lại
                     </span>
                   </div>
                   <input
@@ -341,7 +341,7 @@ export default function EditAgencyProfilePage({
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label className="spec-form-label">TAX IDENTIFICATION (MST)</label>
-                      <span style={{ fontSize: '0.68rem', color: '#b45309', fontWeight: 700 }}>BR-017</span>
+                      <span style={{ fontSize: '0.68rem', color: '#b45309', fontWeight: 700 }}>Cần thẩm định</span>
                     </div>
                     <input
                       type="text"
@@ -553,7 +553,7 @@ export default function EditAgencyProfilePage({
                   ACTIVE REGULATORY APPROVAL
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                  Major changes (Company Name, Tax ID) flag HDT review automatically (BR-017).
+                  Thay đổi tên doanh nghiệp hoặc mã số thuế sẽ được gửi thẩm định lại.
                 </span>
               </div>
 

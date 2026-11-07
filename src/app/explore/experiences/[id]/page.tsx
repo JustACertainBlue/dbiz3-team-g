@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import MediaImage from '@/app/components/MediaImage';
+import { cancellationLines } from '@/lib/prf/experience-terms';
 import { notFound } from 'next/navigation';
 import { resolveViewer } from '../../../../lib/explore/catalog';
 import { getExperienceDetail } from '../../../../lib/explore/details';
@@ -31,31 +33,27 @@ export default function ExperienceEntry({ params }: { params: { id: string } }) 
       </nav>
 
       <section className="detail-titlebar">
-        <div><p className="eyebrow">{card.type} · Verified experience</p><h1>{card.name}</h1>
+        <div><p className="eyebrow">{card.type} · Trải nghiệm đã xác minh</p><h1>{card.name}</h1>
           <div className="detail-meta"><span>⌖ {card.location.village_name}</span><span>◷ {card.duration_minutes} phút</span><span>Nhóm 1–{card.capacity.max_pax} khách</span></div></div>
-        <span className={`mode-badge ${isAgency ? 'mode-badge--agency' : ''}`}>{isAgency ? 'Agency view' : 'Public view'}</span>
+        <span className={`mode-badge ${isAgency ? 'mode-badge--agency' : ''}`}>{isAgency ? 'Công ty du lịch' : 'Thông tin công khai'}</span>
       </section>
 
       <section className="experience-hero-grid">
-        <div className="detail-visual detail-visual--main" role="img" aria-label={`Minh họa ${card.name}`}>
-          <span className="detail-visual__index">01</span><div className="detail-visual__craft">{card.type}</div><small>Artisan experience · Hanoi</small>
-        </div>
+        <div className="detail-visual detail-visual--main"><MediaImage src={detail.gallery[0]} alt={card.name} large/></div>
         <aside className="access-card">
-          <p className="access-card__label">{isAgency ? 'B2B wholesale access' : 'Pricing & access'}</p>
+          <p className="access-card__label">{isAgency ? 'Giá hợp tác' : 'Giá và quyền truy cập'}</p>
           {isAgency && detail.pricing_breakdown
             ? <><div className="access-price">{detail.pricing_breakdown.price_per_person.toLocaleString('vi-VN')} ₫ <small>/ khách</small></div><p>Giá dành cho doanh nghiệp du lịch đã được xác minh.</p></>
             : <><div className="locked-rate"><span>◇</span><strong>Giá B2B được bảo vệ</strong></div><p>Đăng nhập bằng tài khoản Agency để xem giá hợp đồng và điều kiện hợp tác.</p></>}
           <div className="access-facts"><span><small>Sức chứa</small><strong>Tối đa {card.capacity.max_pax} khách</strong></span><span><small>Thời lượng</small><strong>{card.duration_minutes} phút</strong></span></div>
           {isAgency
             ? <ExperienceActions experienceId={card.id} quoteSent={hasQuoteRequest(session, card.id)} />
-            : <div className="stack-actions"><Link className="button" href="/login">Đăng nhập để liên hệ</Link><Link className="button button--secondary" href="/login">Đăng ký Agency</Link></div>}
+            : <div className="stack-actions"><Link className="button" href="/login">Đăng nhập để liên hệ</Link><Link className="button button--secondary" href="/register">Đăng ký Agency</Link></div>}
         </aside>
       </section>
 
-      <section className="thumbnail-row" aria-label="Bộ sưu tập hình ảnh">
-        {[1, 2, 3].map(number => <div key={number} className={`detail-visual detail-visual--thumb detail-visual--tone-${number}`}><span>0{number + 1}</span><small>{number === 1 ? 'Không gian xưởng' : number === 2 ? 'Kỹ thuật thủ công' : 'Thành phẩm'}</small></div>)}
-      </section>
-
+      {detail.gallery.length>1&&<section className="media-gallery-grid" aria-label="Ảnh trải nghiệm">{detail.gallery.slice(1).map((url,index)=><MediaImage key={`${url}-${index}`} src={url} alt={`${card.name} — ảnh ${index+2}`}/>)}</section>}
+      {isAgency&&detail.operational_booking_info&&<section className="content-panel"><h2>Điều kiện đặt và hủy</h2><p>Báo trước tối thiểu {detail.operational_booking_info.booking_lead_time} giờ.</p>{cancellationLines(detail.operational_booking_info.cancellation_policy).map((line,index)=><p key={index}>{line}</p>)}{detail.pricing_breakdown?.group_discounts.map((rule,index)=><p key={index}>Từ {rule.pax_threshold} khách: giảm {rule.discount_percentage}%.</p>)}</section>}
       <div className="detail-content-grid">
         <div>
           <section className="story-panel"><p className="section-number">01 · Câu chuyện trải nghiệm</p><h2>Nơi kỹ nghệ truyền thống được sống lại</h2><p className="story-lead">{card.description}</p><p>{detail.provider_public_bio || 'Thông tin giới thiệu đang được đơn vị cung cấp cập nhật.'}</p></section>
@@ -70,7 +68,7 @@ export default function ExperienceEntry({ params }: { params: { id: string } }) 
 
         <aside>
           <section className="provider-summary"><p className="section-number">Đơn vị tổ chức</p><div className="provider-monogram">{card.provider_name.slice(0, 2).toUpperCase()}</div><h2>{card.provider_name}</h2><p>{detail.provider_public_bio || 'Đơn vị trải nghiệm làng nghề đã được xác minh.'}</p>
-            <Link className="button button--secondary" href={`/explore/providers/${detail.provider_id}`}>Xem hồ sơ Provider →</Link></section>
+            <Link className="button button--secondary" href={`/explore/providers/${detail.provider_id}`}>Xem hồ sơ xưởng →</Link></section>
           {detail.provider_private_contact && <section className="contact-panel"><p className="section-number">Liên hệ hợp tác</p><p>{detail.provider_private_contact.phone}</p><p>{detail.provider_private_contact.email}</p></section>}
         </aside>
       </div>

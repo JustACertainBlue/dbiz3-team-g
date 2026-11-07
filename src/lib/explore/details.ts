@@ -1,5 +1,6 @@
 import { eligibleRows, findExperienceCard, resolveViewer, type ExploreSeed, type ExperienceCard, type Viewer } from './catalog';
 import { calculateAvailability, defaultAvailabilityPeriod } from './availability';
+import { mediaUrl } from '../prf/media-urls';
 
 type PublicBlock = { start_at: string; end_at: string; status: string };
 type Contact = { phone?: string; email?: string };
@@ -17,7 +18,7 @@ function mediaKeys(seed: ExploreSeed, fileIds: string[]): string[] {
   const files = new Map(seed.stored_files.map(file => [file.file_id, file]));
   return fileIds.flatMap(id => {
     const file = files.get(id);
-    return file?.media_type.startsWith('image/') ? [file.storage_key] : [];
+    return file?.media_type.startsWith('image/') ? [mediaUrl(file.storage_key)] : [];
   });
 }
 
@@ -31,6 +32,7 @@ export interface ProviderDetail {
   provider_name: string;
   craft_type: string;
   village_name: string;
+  village_id: string;
   location_address: string;
   public_bio: string;
   public_images: string[];
@@ -41,8 +43,11 @@ export interface ProviderDetail {
 
 export function getProviderDetail(seed: ExploreSeed, providerId: string, viewer: Viewer): ProviderDetail | null {
   const rows = eligibleRows(seed).filter(row => row.provider.provider_id === providerId);
-  if (rows.length === 0) return null;
-  const { version, village } = rows[0];
+  const provider=seed.provider_profiles.find(row=>row.provider_id===providerId && row.verification_status==='Verified' && row.published_version_no);
+  const version=provider && seed.provider_profile_versions.find(row=>row.provider_id===providerId && row.version_no===provider.published_version_no && row.version_status==='Verified');
+  const village=provider && seed.villages.find(row=>row.village_id===provider.village_id && row.is_active==='true');
+  const account=provider && seed.user_accounts.find(row=>row.user_id===provider.user_id && row.account_status==='Active');
+  if (!version || !village || !account) return null;
   const permitted = approvedViewer(seed, viewer).kind === 'agency';
   const media = (seed.provider_version_media ?? [])
     .filter(row => row.provider_id === providerId && row.version_no === version.version_no)
@@ -52,6 +57,7 @@ export function getProviderDetail(seed: ExploreSeed, providerId: string, viewer:
     provider_name: version.business_name,
     craft_type: version.craft_type,
     village_name: village.name,
+    village_id: village.village_id,
     location_address: version.location_address,
     public_bio: version.description ?? '',
     public_images: mediaKeys(seed, media.map(row => row.file_id)),

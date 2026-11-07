@@ -239,7 +239,10 @@ describe('T019 | updateProviderProfile – US-4 (Manage Provider Profile)', () =
   })
 
   it('transitions Draft to Pending Verification on first complete submission (BR-006)', async () => {
+    const certificate='5e3ce8c4-7dce-49db-a77a-4b5acb92fa1e'
+    demoRepository().insert('stored_files',{file_id:certificate,storage_key:'fixture/certificate.pdf',file_name:'certificate.pdf',media_type:'application/pdf',uploaded_by:SEED_IDS.providerDraftUserId})
     const completeDraftPayload = {
+      certificate_file_id:certificate,
       business_name: 'Xưởng thủ công Hạ Thái Mới',
       craft_type: 'Lacquer',
       business_registration: 'HKD-HN-20269999',

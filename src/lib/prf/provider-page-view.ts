@@ -39,6 +39,6 @@ export function providerPageView(profile: ProfileForView, session: SessionContex
     operatingHours: operatingHoursToRows(hours).map(row => `${WEEKDAY_LABELS[row.weekday]} ${row.local_start}–${row.local_end}`),
     pricingLine: typeof profile.pricing === 'number' ? `từ ${profile.pricing.toLocaleString('vi-VN')} ₫/khách` : null,
     capacityLine: typeof profile.capacity === 'number' ? `Tối đa ${profile.capacity} khách` : null,
-    bookingConditions: conditions.map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`),
+    bookingConditions: conditions.map(([key, value]) => `${({cancellation_notice_hours:'Báo trước khi hủy (giờ)',deposit_percentage:'Đặt cọc (%)',notice_hours:'Báo trước (giờ)',notes:'Ghi chú'} as Record<string,string>)[key] || key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`),
   }
 }

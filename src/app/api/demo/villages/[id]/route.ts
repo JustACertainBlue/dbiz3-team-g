@@ -7,7 +7,7 @@ export function GET(_request: Request, { params }: { params: { id: string } }) {
   if (!village) return NextResponse.json({ error: 'Village not found' }, { status: 404 })
 
   const providers = repository.all('provider_profiles')
-    .filter(row => row.village_id === village.village_id && row.verification_status === 'Verified')
+    .filter(row => village.is_active==='true' && row.village_id === village.village_id && row.verification_status === 'Verified' && Boolean(row.published_version_no) && repository.find('provider_profile_versions',version=>version.provider_id===row.provider_id && version.version_no===row.published_version_no)?.version_status==='Verified' && repository.find('user_accounts',user=>user.user_id===row.user_id)?.account_status==='Active')
     .map(provider => {
       const version = repository.find('provider_profile_versions', row =>
         row.provider_id === provider.provider_id && row.version_no === provider.published_version_no)
@@ -33,5 +33,6 @@ export function GET(_request: Request, { params }: { params: { id: string } }) {
       is_active: village.is_active === 'true',
     },
     providers,
+    featured_experiences:repository.all('experiences').filter(row=>!row.archived_at && providers.some(provider=>provider.provider_id===row.provider_id)).sort((a,b)=>a.name.localeCompare(b.name,'vi')).slice(0,6).map(row=>({experience_id:row.experience_id,name:row.name,category:row.category,duration_minutes:Number(row.duration_minutes),max_participants:Number(row.max_participants)})),
   })
 }

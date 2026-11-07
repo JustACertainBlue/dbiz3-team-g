@@ -161,14 +161,14 @@ function MessagesContent() {
     }
   }
 
-  if (!session) return <main className="messages-state"><p>Đang tải phiên demo…</p></main>
+  if (!session) return <main className="messages-state"><p>Đang tải hộp thư…</p></main>
   if (!session.authenticated || (session.role !== 'Tour_Agency' && session.role !== 'Local_Provider')) {
     return <main className="messages-state"><h1>Hộp thư B2B</h1><p>Đăng nhập bằng tài khoản Agency hoặc Provider để xem hội thoại.</p><Link href="/login">Đăng nhập</Link></main>
   }
   const isAgency = session.role === 'Tour_Agency'
 
   return <main className="messages-shell">
-    <header className="messages-header"><div><p>HANOI ARTISAN BRIDGE · {isAgency ? 'COM048' : 'COM065'}</p><h1>Chat</h1></div><div><strong>{isAgency ? 'Tour Agency demo' : 'Local Provider demo'}</strong><small>{isAgency ? 'Tour Agency' : 'Local Provider'}</small></div></header>
+    <header className="messages-header"><div><p>HANOI ARTISAN BRIDGE</p><h1>Chat</h1></div><div><strong>{isAgency ? 'Không gian công ty du lịch' : 'Không gian chủ xưởng'}</strong><small>{isAgency ? 'Công ty du lịch' : 'Chủ xưởng'}</small></div></header>
     {error && <p className="messages-error" role="alert">{error}</p>}
     {notice && <p className="messages-notice" role="status">{notice}</p>}
     <div className="messages-layout">

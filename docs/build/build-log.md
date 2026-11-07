@@ -18,6 +18,19 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 48: 07/11 Codex — Provider/Explore UX completion (`codex/provider-ux-completion`)
+
+| Field | Value |
+|---|---|
+| Path and agent | Codex; local implementation and CLI/API verification. No Computer Use. |
+| Scope | Fix the still-valid audit items in priority order while preserving shared Auth, Quote → Chat → Booking/Schedule and the JSON runtime. |
+| Human decision | Certificate linkage changes allowed if necessary. Inspection found the existing `provider_version_documents` relation already provides the requested per-version FK; reused it without adding redundant columns or modifying `data/`/`docs/spec/`. Real email remains pending configuration. |
+| What changed | Preserve cancellation policy on unrelated edits; structured terms/discount editors; real private media upload/read with owner and village access; versioned certificate/gallery; explicit Provider AI preview; detailed deletion outcome; profile completion/review feedback; correct registration/Chat/Village links and media; clearer green/cream Provider layout/navigation. File-by-file rationale: `docs/build/provider-ux-completion.md`. |
+| Tests | 1,030/1,030 tests across 167 files; build and TypeScript pass; seed validation passes 47 CSVs; existing localhost smoke 58 checks/34 page responses plus 14 focused checks = 72 HTTP checks. `git diff --check` passes. New regression tests were added during implementation; no claim of completing a test-first workflow. |
+| Preserved limitations | Email configuration unavailable; seed media metadata has no original binaries and shows an honest missing-file state; JSON remains prototype storage; no pixel-level/manual UI verification or independent member sign-off claimed. |
+| Commit / remote | Uncommitted local changes; no push or merge in this run. |
+
+
 ### Entry 1: 12/10 Group G
 
 | Field | Value |

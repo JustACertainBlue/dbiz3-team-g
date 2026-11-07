@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { toSessionContext, type SessionLike } from '../auth/session'
 import { demoRepository } from '../demo/json-repository'
 import { ExperienceCreateSchema, ExperienceImageSchema, KeptImageSchema } from './validators'
+import type { DiscountRule } from './experience-terms'
+import { mediaUrl } from './media-urls'
 import { missingCategories, type ExperienceImageCategory } from './experience-images'
 import { ZodError } from 'zod'
 import { recordAuditLog } from './audit-logger'
@@ -32,6 +34,8 @@ export interface ExperienceInput {
   notice_period_hours: number
   experience_location_address?: string
   cancellation_policy?: unknown
+  group_discounts?: DiscountRule[]
+  special_rates?: DiscountRule[]
   images: ExperienceImageInput[]
 }
 
@@ -46,8 +50,22 @@ export class ExperienceError extends Error {
 
 const DEFAULT_OWNER_ID = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
 
+function assertUploadedImage(image: ExperienceImageInput, uploadedBy: string) {
+  const id=image.url.match(/^\/api\/prf\/media\/([0-9a-f-]{36})$/i)?.[1]
+  if (!id) return
+  const file=demoRepository().find('stored_files',row=>row.file_id===id && row.uploaded_by===uploadedBy && row.storage_key===`prf-media/${id}`)
+  if (!file) throw new ExperienceError('Image does not belong to this account',403)
+  if (!ExperienceImageSchema.safeParse({...image,media_type:file.media_type,file_size_bytes:Number(file.file_size_bytes),width_px:Number(file.width_px),height_px:Number(file.height_px)}).success) throw new ExperienceError('Uploaded image metadata is invalid',400)
+}
+
 /** BR-008: a stored_files row with the uploaded metadata (data/schema.sql: size and dimensions > 0). */
 function insertStoredFile(image: ExperienceImageInput, uploadedBy: string, now: string): string {
+  const uploaded = image.url.match(/^\/api\/prf\/media\/([0-9a-f-]{36})$/i)?.[1]
+  if (uploaded) {
+    const file = demoRepository().find('stored_files',row=>row.file_id===uploaded && row.uploaded_by===uploadedBy && row.storage_key===`prf-media/${uploaded}`)
+    if (!file) throw new ExperienceError('Image does not belong to this account',403)
+    return uploaded
+  }
   const fileId = randomUUID()
   demoRepository().insert('stored_files', {
     file_id: fileId,
@@ -107,6 +125,8 @@ export async function createExperience(
     throw new ExperienceError(`Required Image Category Missing: ${missing.join(', ')} (BR-009)`, 400)
   }
 
+  parsed.images.forEach(image=>assertUploadedImage(image,actor.userId || ''))
+  for (const rules of [parsed.group_discounts,parsed.special_rates]) if (rules && new Set(rules.map(rule=>rule.pax_threshold)).size!==rules.length) throw new ExperienceError('Discount thresholds must be unique',400)
   const repository = demoRepository()
   const expId = randomUUID()
   const now = new Date().toISOString()
@@ -130,10 +150,11 @@ export async function createExperience(
   parsed.images.forEach((image, index) => {
     const fileId = insertStoredFile(image, actor.userId || '', now)
     repository.insert('profile_media', {
-      profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: providerId,
+      profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: '',
       experience_id: expId, category: image.category, display_order: String(index + 1),
     })
   })
+  saveDiscounts(expId, parsed)
   recordAuditLog(
     actor.userId || 'unknown-user',
     'CREATE_EXPERIENCE',
@@ -166,6 +187,11 @@ export async function updateExperience(
   if (!actor.authenticated || actor.role !== 'Local_Provider') {
     throw new ExperienceError('Forbidden: Only local providers can update experiences', 403)
   }
+  for (const field of ['group_discounts', 'special_rates'] as const) {
+    if (input[field] !== undefined && !ExperienceCreateSchema.shape[field].safeParse(input[field]).success) throw new ExperienceError('Invalid discount rules', 400)
+    if (input[field] && new Set(input[field]!.map(rule=>rule.pax_threshold)).size !== input[field]!.length) throw new ExperienceError('Discount thresholds must be unique',400)
+  }
+  if (input.cancellation_policy!==undefined && !ExperienceCreateSchema.shape.cancellation_policy.safeParse(input.cancellation_policy).success)throw new ExperienceError('Invalid cancellation policy',400)
 
   const repository = demoRepository()
   const stored = repository.find('experiences', row => row.experience_id === experienceId)
@@ -191,7 +217,7 @@ export async function updateExperience(
     }
   }
 
-  if (input.images && stored) planImageUpdate(experienceId, input.images as unknown[])
+  if (input.images && stored) { planImageUpdate(experienceId, input.images as unknown[]); parseUpdateImages(input.images).forEach(image=>{if ('url' in image) assertUploadedImage(image,actor.userId || '')}) }
 
   recordAuditLog(
     actor.userId || 'unknown-user',
@@ -214,6 +240,7 @@ export async function updateExperience(
     if (input.cancellation_policy !== undefined) changes.cancellation_policy = JSON.stringify(input.cancellation_policy)
     repository.update('experiences', row => row.experience_id === experienceId, changes)
     if (input.images) applyImageUpdate(experienceId, stored.provider_id, input.images as unknown[], actor.userId || '')
+    saveDiscounts(experienceId, input)
   }
 
   // BR-020: Experience edit does NOT trigger provider re-verification
@@ -221,6 +248,16 @@ export async function updateExperience(
     updated: true,
     provider_verification_status: 'Verified',
     reverification_triggered: false,
+  }
+}
+
+function saveDiscounts(experienceId: string, input: Partial<ExperienceInput>) {
+  const repo = demoRepository()
+  for (const [field, kind] of [['group_discounts','Group Discount'], ['special_rates','Special Rate']] as const) {
+    const values = input[field]
+    if (values === undefined) continue
+    repo.remove('experience_discount_rules', row => row.experience_id === experienceId && row.rule_kind === kind)
+    for (const rule of values) repo.insert('experience_discount_rules', { rule_id: randomUUID(), experience_id: experienceId, rule_kind: kind, pax_threshold: String(rule.pax_threshold), discount_percentage: String(rule.discount_percentage) })
   }
 }
 
@@ -251,15 +288,13 @@ function planImageUpdate(experienceId: string, images: unknown[]) {
 function applyImageUpdate(experienceId: string, providerId: string, images: unknown[], uploadedBy: string) {
   const repository = demoRepository()
   const resolved = planImageUpdate(experienceId, images)
-  const keptIds = new Set(resolved.flatMap(item => item.kept ? [item.kept] : []))
-  const previousIds = repository.all('profile_media').filter(row => row.experience_id === experienceId).map(row => row.file_id)
   const now = new Date().toISOString()
   repository.remove('profile_media', row => row.experience_id === experienceId)
-  repository.remove('stored_files', row => previousIds.includes(row.file_id) && !keptIds.has(row.file_id))
+  // Retain file metadata: other profile/version links may still reference it.
   resolved.forEach((item, index) => {
     const fileId = item.kept ?? insertStoredFile(item.upload!, uploadedBy, now)
     repository.insert('profile_media', {
-      profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: providerId,
+      profile_media_id: randomUUID(), file_id: fileId, agency_id: '', provider_id: '',
       experience_id: experienceId, category: item.category, display_order: String(index + 1),
     })
   })
@@ -317,10 +352,8 @@ export async function deleteExperience(
     { action: 'hard_delete' },
   )
   if (stored) {
-    const media = repository.all('profile_media').filter(row => row.experience_id === experienceId)
-    const fileIds = new Set(media.map(row => row.file_id))
     repository.remove('profile_media', row => row.experience_id === experienceId)
-    repository.remove('stored_files', row => fileIds.has(row.file_id))
+    repository.remove('experience_discount_rules', row => row.experience_id === experienceId)
     repository.remove('experiences', row => row.experience_id === experienceId)
   }
   return {
@@ -338,7 +371,7 @@ export async function getExperienceById(experienceId: string): Promise<unknown> 
     .flatMap(item => {
       const file = repository.find('stored_files', stored => stored.file_id === item.file_id)
       return file ? [{
-        file_id: item.file_id, category: item.category, url: file.storage_key, file_name: file.file_name,
+        file_id: item.file_id, category: item.category, url: mediaUrl(file.storage_key), file_name: file.file_name,
         media_type: file.media_type, file_size_bytes: Number(file.file_size_bytes),
         width_px: Number(file.width_px), height_px: Number(file.height_px),
       }] : []
@@ -350,11 +383,14 @@ export async function getExperienceById(experienceId: string): Promise<unknown> 
     max_participants: Number(row.max_participants),
     notice_period_hours: Number(row.notice_period_hours),
     has_active_bookings: bookings.some(booking => booking.status === 'On hold' || booking.status === 'Booked'),
+    deletion_outcome: bookings.some(booking => ['On hold','Booked'].includes(booking.status)) ? 'blocked' : bookings.length ? 'archive' : 'delete',
+    group_discounts: repository.all('experience_discount_rules').filter(item => item.experience_id === experienceId && item.rule_kind === 'Group Discount').map(item => ({ pax_threshold: Number(item.pax_threshold), discount_percentage: Number(item.discount_percentage) })),
+    special_rates: repository.all('experience_discount_rules').filter(item => item.experience_id === experienceId && item.rule_kind === 'Special Rate').map(item => ({ pax_threshold: Number(item.pax_threshold), discount_percentage: Number(item.discount_percentage) })),
     images: media,
   }
 }
 
-export async function listProviderExperiences(providerId: string, actorSession: SessionLike) {
+export async function listProviderExperiences(providerId: string, actorSession: SessionLike, includeArchived = false) {
   const actor = toSessionContext(actorSession)
   if (!actor.authenticated || actor.role !== 'Local_Provider' || actor.providerId !== providerId) {
     throw new ExperienceError('Forbidden: Only the owning provider can manage experiences', 403)
@@ -362,7 +398,7 @@ export async function listProviderExperiences(providerId: string, actorSession: 
   const repository = demoRepository()
   const bookings = repository.all('bookings')
   return repository.all('experiences')
-    .filter(row => row.provider_id === providerId && !row.archived_at)
+    .filter(row => row.provider_id === providerId && (includeArchived || !row.archived_at))
     .map(row => ({
       ...row,
       duration_minutes: Number(row.duration_minutes),

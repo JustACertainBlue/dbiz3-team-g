@@ -1,74 +1,11 @@
 'use client'
-
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect,useState } from 'react'
 import Link from 'next/link'
-
-export default function DeleteExperiencePage({
-  params,
-}: {
-  params: { providerId: string; experienceId: string }
-}) {
-  const router = useRouter()
-  const [deleting, setDeleting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleDelete = async () => {
-    setDeleting(true)
-    setError(null)
-    try {
-      const res = await fetch(`/api/prf/experience/${params.experienceId}`, {
-        method: 'DELETE',
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data.error || 'Lỗi khi xóa trải nghiệm')
-      }
-      router.push(`/provider/${params.providerId}/experiences`)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra')
-    } finally {
-      setDeleting(false)
-    }
-  }
-
-  return (
-    <div className="delete-page">
-      <div className="delete-part">
-        <h1 className="delete-part">Xóa hoặc lưu trữ trải nghiệm</h1>
-        <p className="delete-part">
-          Bạn có chắc chắn muốn xóa trải nghiệm này?
-        </p>
-        <div className="delete-part">
-          <p className="delete-part">Điều gì sẽ xảy ra?</p>
-          <p>• Nếu đang có lượt đặt tour: Thao tác sẽ bị chặn để bảo vệ quyền lợi du khách.</p>
-          <p>• Nếu có lượt đặt trong quá khứ: Trải nghiệm sẽ được lưu trữ (archive), không xóa hoàn toàn.</p>
-          <p>• Nếu chưa từng có lượt đặt: Trải nghiệm sẽ được xóa vĩnh viễn.</p>
-        </div>
-
-        {error && (
-          <div className="delete-part">
-            {error}
-          </div>
-        )}
-
-        <div className="delete-part">
-          <Link
-            href={`/provider/${params.providerId}/experiences`}
-            className="delete-part"
-          >
-            Hủy bỏ
-          </Link>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="delete-part"
-          >
-            {deleting ? 'Đang xử lý...' : 'Xác nhận xóa'}
-          </button>
-        </div>
-      </div>
-      <style jsx>{`.delete-page{max-width:620px;margin:40px auto;padding:30px;background:#fffdf8;border:1px solid #ded8cb;border-radius:18px;color:#203229}.delete-page h1{font:700 30px Georgia,serif;margin-bottom:18px}.delete-page p{margin:12px 0;line-height:1.7}.delete-page button{padding:12px 18px;border:0;border-radius:9px;background:#9d3126;color:white;font:inherit;cursor:pointer}.delete-page button:disabled{opacity:.5}.delete-page a{margin-right:18px;color:#203229}.delete-page [role=alert]{color:#a51f30}@media(max-width:660px){.delete-page{margin:20px 14px;padding:22px}}`}</style>
-    </div>
-  )
+import { useRouter } from 'next/navigation'
+type Preview={name:string;provider_id:string;deletion_outcome:'blocked'|'archive'|'delete';price_per_person:number;duration_minutes:number;max_participants:number}
+export default function DeleteExperiencePage({params}:{params:{providerId:string;experienceId:string}}){
+  const router=useRouter(),[preview,setPreview]=useState<Preview|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+  useEffect(()=>{fetch(`/api/prf/experience/${params.experienceId}`).then(async response=>{const data=await response.json();if(!response.ok||data.provider_id!==params.providerId)throw new Error('Không tìm thấy trải nghiệm của xưởng.');setPreview(data)}).catch(error=>setError(error.message))},[params.experienceId,params.providerId])
+  async function confirm(){setBusy(true);setError('');try{const response=await fetch(`/api/prf/experience/${params.experienceId}`,{method:'DELETE'});const data=await response.json();if(!response.ok)throw new Error(data.error);router.push(`/provider/${params.providerId}/experiences?result=${data.action}`)}catch(error){setError(error instanceof Error?error.message:'Không thể xử lý.');setBusy(false)}}
+  return <main className="auth-panel"><Link href={`/provider/${params.providerId}/experiences`}>← Danh sách trải nghiệm</Link><h1>{preview?.deletion_outcome==='archive'?'Lưu trữ trải nghiệm':'Xóa trải nghiệm'}</h1>{error&&<p role="alert">{error}</p>}{!preview&&!error&&<p>Đang kiểm tra lịch sử booking…</p>}{preview&&<><h2>{preview.name}</h2><p>{preview.duration_minutes} phút · tối đa {preview.max_participants} khách · {Number(preview.price_per_person).toLocaleString('vi-VN')} ₫/khách</p><p>{preview.deletion_outcome==='blocked'?'Đang có booking giữ chỗ hoặc đã chốt: không thể xóa/lưu trữ. Hãy xử lý booking trước.':preview.deletion_outcome==='archive'?'Trải nghiệm có lịch sử booking. Thao tác sẽ lưu trữ và ẩn khỏi danh mục; lịch sử booking được giữ nguyên.':'Trải nghiệm chưa có booking. Thao tác sẽ xóa khỏi danh mục và không thể hoàn tác.'}</p><button disabled={busy||preview.deletion_outcome==='blocked'} onClick={confirm}>{busy?'Đang xử lý…':preview.deletion_outcome==='archive'?'Xác nhận lưu trữ':preview.deletion_outcome==='blocked'?'Đang bị chặn':'Xác nhận xóa'}</button><Link href={`/provider/${params.providerId}/experiences/${params.experienceId}`}>Hủy và xem chi tiết</Link></>}</main>
 }

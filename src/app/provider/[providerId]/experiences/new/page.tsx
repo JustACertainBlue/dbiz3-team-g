@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ExperienceTermsField from '../ExperienceTermsField'
+import { readCancellationPolicy, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../ExperienceImagesField'
 import { missingCategories } from '@/lib/prf/experience-images'
 import { getAuthHeaders } from '@/lib/prf/client-session'
@@ -13,10 +15,14 @@ export default function AddExperiencePage({
 }: {
   params: { providerId: string }
 }) {
+  const [policy, setPolicy] = useState<CancellationPolicy>({ rules: [] })
+  const [group, setGroup] = useState<DiscountRule[]>([])
+  const [special, setSpecial] = useState<DiscountRule[]>([])
   const router = useRouter()
   const [authorized, setAuthorized] = useState(false)
   const [sessionReady, setSessionReady] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploading,setUploading]=useState(false)
   const [aiRefining, setAiRefining] = useState(false)
   const [aiDraft, setAiDraft] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -100,10 +106,8 @@ export default function AddExperiencePage({
         max_participants: Number(formData.max_participants),
         notice_period_hours: Number(formData.notice_period_hours),
         experience_location_address: formData.experience_location_address,
-        cancellation_policy: {
-          rules: [{ threshold_hours: 24, fee_percentage: 50 }],
-          notes: formData.cancellation_rules_text,
-        },
+        cancellation_policy: policy,
+        group_discounts: group, special_rates: special,
         images: toImagesPayload(images),
       }
 
@@ -360,7 +364,7 @@ export default function AddExperiencePage({
                 </div>
               </div>
 
-              <ExperienceImagesField images={images} onChange={setImages} />
+              <ExperienceImagesField images={images} onChange={setImages} onBusyChange={setUploading} />
             </div>
           </div>
 
@@ -417,15 +421,7 @@ export default function AddExperiencePage({
                 <span className="prf-field-helper">Thời gian tối thiểu agency phải chốt đoàn để xưởng chuẩn bị đất sét & bàn xoay.</span>
               </div>
 
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-8">Chính sách hủy dịch vụ</label>
-                <textarea id="experience-field-8"
-                  rows={3}
-                  value={formData.cancellation_rules_text}
-                  onChange={e => setFormData({ ...formData, cancellation_rules_text: e.target.value })}
-                  className="prf-textarea"
-                />
-              </div>
+              <ExperienceTermsField policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}/>
             </div>
           </div>
         </div>
@@ -446,7 +442,7 @@ export default function AddExperiencePage({
               </Link>
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || uploading}
                 className="prf-btn prf-btn-primary"
                 style={{ padding: '0.55rem 1.75rem' }}
               >

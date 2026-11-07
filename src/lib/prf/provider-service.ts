@@ -12,6 +12,11 @@ import { ProviderProfilePatchSchema } from './validators'
 import { recordAuditLog } from './audit-logger'
 import { demoRepository } from '../demo/json-repository'
 import { randomUUID } from 'node:crypto'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { mediaUrl } from './media-urls'
+import { providerCompletion } from './provider-completion'
+import { imageMetadataError } from './experience-images'
 
 export class ProviderNotFoundError extends Error {
   statusCode = 404
@@ -71,8 +76,16 @@ export async function getProviderProfile(
   }
 
   const isOwner = session.role === 'Local_Provider' && session.providerId === providerId
-  const isUBND = session.role === 'ADMIN' && session.adminType === 'UBND'
+  const isUBND = session.role === 'ADMIN' && session.adminType === 'UBND' && session.assignedVillageId === provider.village_id
   const isHDT = session.role === 'ADMIN' && session.adminType === 'HDT'
+
+  if (!isOwner && !isUBND && !isHDT) {
+    const repo=demoRepository()
+    const published=repo.find('provider_profile_versions',row=>row.provider_id===providerId && row.version_no===String(provider.published_version_no) && row.version_status==='Verified')
+    const activeAccount=repo.find('user_accounts',row=>row.user_id===provider.user_id && row.account_status==='Active')
+    const activeVillage=repo.find('villages',row=>row.village_id===provider.village_id && row.is_active==='true')
+    if (provider.verification_status!=='Verified' || !published || !activeAccount || !activeVillage) return null
+  }
 
   // BR-007: Draft / Unverified providers are not visible publicly to Guests or Tour Agencies
   if (!provider.published_version_no && provider.verification_status !== 'Verified' && !isOwner && !isUBND && !isHDT) {
@@ -136,7 +149,9 @@ export async function getProviderProfile(
     // #32: the owner, UBND and HDT see the status of the revision under review; others see the
     // status of the published profile.
     verification_status: (isOwner || isUBND || isHDT) ? reviewStatus(provider, version) : provider.verification_status,
-    public_images: [],
+    public_images: demoRepository().all('provider_version_media').filter(row=>row.provider_id===providerId && row.version_no===String(targetVersionNo)).flatMap(row=>{const file=demoRepository().find('stored_files',item=>item.file_id===row.file_id);return file?[mediaUrl(file.storage_key)]:[]}),
+    profile_images: demoRepository().all('provider_version_media').filter(row=>row.provider_id===providerId && row.version_no===String(targetVersionNo)).map(row=>({file_id:row.file_id,category:row.category})),
+    business_registration_certificate: (()=>{const doc=demoRepository().find('provider_version_documents',row=>row.provider_id===providerId && row.version_no===String(targetVersionNo) && row.document_type==='Business Registration Certificate');const file=doc && demoRepository().find('stored_files',row=>row.file_id===doc.file_id);return file?{file_id:file.file_id,file_name:file.file_name,url:mediaUrl(file.storage_key),available:file.storage_key===`prf-media/${file.file_id}` && existsSync(join(process.cwd(),'.demo-data','prf-media',file.file_id))}:null})(),
     pricing,
     capacity,
     contact,
@@ -198,6 +213,25 @@ export async function updateProviderProfile(
   const currentVersion = versions.find(version => version.provider_id === providerId && version.version_no === Number(provider.current_version_no || provider.published_version_no || 1))
     || versions.find(version => version.provider_id === providerId)
   if (!currentVersion) throw new ProviderNotFoundError('Provider profile version not found')
+  const oldCertificate = repository.find('provider_version_documents',row=>row.provider_id===providerId && row.version_no===String(currentVersion.version_no) && row.document_type==='Business Registration Certificate')
+  const certificateChanged = Boolean(data.certificate_file_id && data.certificate_file_id !== oldCertificate?.file_id)
+  for (const id of [...(data.certificate_file_id?[data.certificate_file_id]:[]),...(data.profile_images||[]).map(image=>image.file_id)]) {
+    const file=repository.find('stored_files',row=>row.file_id===id)
+    const previouslyLinked=repository.find('provider_version_media',row=>row.provider_id===providerId && row.file_id===id) || repository.find('provider_version_documents',row=>row.provider_id===providerId && row.file_id===id)
+    if(!file || (!previouslyLinked && file.uploaded_by!==actor.userId))throw new ForbiddenError('File does not belong to this Provider')
+  }
+
+  if (data.certificate_file_id) {
+    const file=repository.find('stored_files',row=>row.file_id===data.certificate_file_id)!
+    if (!['application/pdf','image/jpeg','image/png'].includes(file.media_type)) throw new ForbiddenError('Invalid certificate type')
+  }
+  if (data.profile_images) {
+    if (new Set(data.profile_images.map(image=>image.file_id)).size !== data.profile_images.length) throw new ForbiddenError('Duplicate profile image')
+    for (const image of data.profile_images) {
+      const file=repository.find('stored_files',row=>row.file_id===image.file_id)!
+      if (imageMetadataError({media_type:file.media_type,file_size_bytes:Number(file.file_size_bytes),width_px:Number(file.width_px),height_px:Number(file.height_px)})) throw new ForbiddenError('Invalid gallery image metadata')
+    }
+  }
 
   // BR-007 (decision Q2, 2026-11-04): once a version is published, the review state of a later
   // revision lives on provider_profile_versions.version_status; provider_profiles.verification_status
@@ -208,7 +242,7 @@ export async function updateProviderProfile(
   const hasMajorChange =
     (data.business_name !== undefined && data.business_name !== currentVersion.business_name) ||
     (data.craft_type !== undefined && data.craft_type !== currentVersion.craft_type) ||
-    (data.business_registration !== undefined && data.business_registration !== currentVersion.business_registration_number)
+    (data.business_registration !== undefined && data.business_registration !== currentVersion.business_registration_number) || certificateChanged
 
   let verification_status = provider.verification_status
   let new_version_pending = false
@@ -220,15 +254,7 @@ export async function updateProviderProfile(
     new_version_pending = true
     published_version_intact = true
   } else if (verification_status === 'Draft') {
-    const isComplete = Boolean(
-      data.business_name &&
-        data.craft_type &&
-        data.business_registration &&
-        data.location_address &&
-        data.general_description &&
-        data.phone_number &&
-        data.business_email,
-    )
+    const isComplete = providerCompletion({ ...currentVersion, business_name:data.business_name??currentVersion.business_name, craft_type:data.craft_type??currentVersion.craft_type, business_registration_number:data.business_registration??currentVersion.business_registration_number, location_address:data.location_address??currentVersion.location_address, contact_information:JSON.stringify({...parseJsonObject(currentVersion.contact_information),...(data.phone_number!==undefined?{phone_number:data.phone_number}:{}),...(data.business_email!==undefined?{business_email:data.business_email}:{})}) },Boolean(oldCertificate || data.certificate_file_id)).complete
     if (isComplete) {
       verification_status = 'Pending Verification'
     }
@@ -236,6 +262,7 @@ export async function updateProviderProfile(
     new_version_pending = true
     published_version_intact = true
   }
+  if (verification_status==='Revision Required') verification_status='Pending Verification'
   const createRevision = new_version_pending && !revisionOpen
 
   recordAuditLog(
@@ -264,8 +291,11 @@ export async function updateProviderProfile(
     return changes
   }
   const versionChanges = buildChanges()
+  if (verification_status==='Pending Verification') { versionChanges.version_status='Pending Verification'; versionChanges.submitted_at=now }
+  let targetVersion = String(currentVersion.version_no)
   if (createRevision) {
     const nextVersion = Math.max(...versions.filter(version => version.provider_id === providerId).map(version => version.version_no), 0) + 1
+    targetVersion = String(nextVersion)
     repository.insert('provider_profile_versions', {
       provider_id: providerId, version_no: String(nextVersion), version_status: 'Pending Verification',
       business_registration_number: versionChanges.business_registration_number ?? currentVersion.business_registration_number,
@@ -289,6 +319,17 @@ export async function updateProviderProfile(
     } else {
       repository.update('provider_profiles', row => row.provider_id === providerId, { verification_status, updated_at: now })
     }
+  }
+  if (createRevision) {
+    for (const table of ['provider_version_media','provider_version_documents']) for (const row of repository.all(table).filter(row=>row.provider_id===providerId && row.version_no===String(currentVersion.version_no))) repository.insert(table,{...row,version_no:targetVersion})
+  }
+  if (data.certificate_file_id) {
+    repository.remove('provider_version_documents',row=>row.provider_id===providerId && row.version_no===targetVersion && row.document_type==='Business Registration Certificate')
+    repository.insert('provider_version_documents',{provider_id:providerId,version_no:targetVersion,file_id:data.certificate_file_id,document_type:'Business Registration Certificate'})
+  }
+  if (data.profile_images) {
+    repository.remove('provider_version_media',row=>row.provider_id===providerId && row.version_no===targetVersion)
+    data.profile_images.forEach((image,index)=>repository.insert('provider_version_media',{provider_id:providerId,version_no:targetVersion,file_id:image.file_id,category:image.category,display_order:String(index)}))
   }
   if (data.operating_hours) {
     repository.remove('provider_operating_hours', row => row.provider_id === providerId)

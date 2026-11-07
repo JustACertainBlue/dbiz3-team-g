@@ -6,6 +6,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import MediaImage from '@/app/components/MediaImage'
 import { readSessionContext } from '@/lib/auth/client-session'
 import type { SessionContext } from '@/lib/auth/session'
 import { providerPageView } from '@/lib/prf/provider-page-view'
@@ -36,6 +37,7 @@ interface ProviderData {
   pricing?: number
   capacity?: number
   availability?: unknown
+  public_images?: string[]
   booking_conditions?: unknown
   experiences?: ProviderExperience[]
 }
@@ -125,7 +127,7 @@ export default function ProviderProfilePage({
   return (
     <div className="spec-portal">
 
-      <div className="spec-content-wrap">
+      <div className="spec-content-wrap"><section className="prf-section-card"><h2>Hình ảnh xưởng</h2><div className="provider-media-grid">{provider.public_images?.length?provider.public_images.map((url,index)=><MediaImage key={url} src={url} alt={`Ảnh xưởng ${index+1}`}/>):<p>Xưởng chưa có ảnh công khai.</p>}</div></section>
         {(view.canEdit || view.canCreateBooking) && (
           <div className="spec-action-bar">
             <div className="spec-action-label">Quản lý xưởng</div>

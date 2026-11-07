@@ -38,7 +38,7 @@ describe('A2 | #40 PRF127 view rules (providerPageView)', () => {
       booking_conditions: { notice_hours: 24 },
     }, agency)
     expect(view.operatingHours).toEqual(['Thứ Hai 08:00–17:00', 'Chủ nhật 09:00–12:00'])
-    expect(view.bookingConditions).toEqual(['notice_hours: 24'])
+    expect(view.bookingConditions).toEqual(['Báo trước (giờ): 24'])
   })
 })
 

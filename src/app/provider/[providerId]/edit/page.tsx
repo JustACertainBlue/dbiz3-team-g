@@ -2,10 +2,11 @@
 
 // PRF128 Chỉnh sửa hồ sơ xưởng (US-4, FR-004). Every field comes from the API; Save sends only the
 // changed fields (decision Q1 2026-11-04: no hard-coded demo values, only FR-004 inputs).
-// Image and registration-certificate uploads (BR-008) are not on this page yet: see checklist §3.
+// Files are uploaded privately and attached to the editable Provider version on Save.
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import MediaImage from '@/app/components/MediaImage'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { providerBkgLinks } from '@/lib/booking/nav-links'
 import {
@@ -32,6 +33,14 @@ export default function EditProviderProfilePage({
   const [status, setStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [aiDraft,setAiDraft]=useState<string|null>(null)
+  const [certificate,setCertificate]=useState<{file_id:string;file_name:string;url:string;available?:boolean}|null>(null)
+  const [initialCertificate,setInitialCertificate]=useState('')
+  const [media,setMedia]=useState<Array<{file_id:string;category:string;url?:string}>>([])
+  const [initialMedia,setInitialMedia]=useState('[]')
+  const [conditions,setConditions]=useState<Record<string,unknown>>({})
+  const [initialConditions,setInitialConditions]=useState('{}')
+  const [uploading,setUploading]=useState(false)
   const [refining, setRefining] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -53,6 +62,9 @@ export default function EditProviderProfilePage({
         const profile = await profileRes.json()
         const schedule = scheduleRes.ok ? await scheduleRes.json() : null
         const form = profileToForm(profile, schedule?.data?.operating_hours)
+        setCertificate(profile.business_registration_certificate || null); setInitialCertificate(profile.business_registration_certificate?.file_id || '')
+        const mediaItems=(profile.profile_images||[]).map((item:{file_id:string;category:string})=>({...item,url:`/api/prf/media/${item.file_id}`}));setMedia(mediaItems);setInitialMedia(JSON.stringify(mediaItems))
+        setConditions(profile.booking_conditions||{});setInitialConditions(JSON.stringify(profile.booking_conditions||{}))
         setInitial(form)
         setFormData(form)
         setStatus(profile.verification_status || '')
@@ -95,14 +107,7 @@ export default function EditProviderProfilePage({
       })
       if (res.ok) {
         const data = await res.json()
-        setFormData(prev => ({
-          ...prev,
-          general_description: data.refined_description_draft || prev.general_description,
-        }))
-        setMessage({
-          type: 'success',
-          text: '✨ Đã tạo bản nháp AI trong ô mô tả. Bản nháp chưa được lưu; bấm Save để chấp nhận.',
-        })
+        setAiDraft(data.refined_description_draft || null)
       } else {
         setMessage({ type: 'error', text: 'Dịch vụ AI không khả dụng.' })
       }
@@ -113,9 +118,17 @@ export default function EditProviderProfilePage({
     }
   }
 
+  async function upload(file:File|undefined,isCertificate:boolean) {
+    if(!file)return
+    setUploading(true);setMessage(null)
+    try{const body=new FormData();body.set('file',file);body.set('provider_id',params.providerId);if(isCertificate)body.set('purpose','certificate');const response=await fetch('/api/prf/media',{method:'POST',body});const result=await response.json();if(!response.ok)throw new Error(result.error);if(isCertificate)setCertificate({...result,available:true});else setMedia(current=>[...current,{file_id:result.file_id,category:'Activity',url:result.url}])}catch(cause){setMessage({type:'error',text:cause instanceof Error?cause.message:'Không thể tải file.'})}finally{setUploading(false)}
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const patch = buildProviderPatch(initial, formData)
+    if(certificate && certificate.file_id!==initialCertificate)patch.certificate_file_id=certificate.file_id
+    if(JSON.stringify(media)!==initialMedia)patch.profile_images=media.map(({file_id,category})=>({file_id,category}))
+    if(JSON.stringify(conditions)!==initialConditions)patch.booking_conditions=conditions
     if (Object.keys(patch).length === 0) {
       setMessage({ type: 'success', text: 'Không có thay đổi nào để lưu.' })
       return
@@ -130,7 +143,7 @@ export default function EditProviderProfilePage({
       })
       const data = await res.json()
       if (res.ok) {
-        setInitial(formData)
+        setInitial(formData);setInitialCertificate(certificate?.file_id || '');setInitialMedia(JSON.stringify(media));setInitialConditions(JSON.stringify(conditions))
         if (data.new_version_pending) {
           setMessage({
             type: 'success',
@@ -153,7 +166,7 @@ export default function EditProviderProfilePage({
   if (loading) {
     return (
       <div className="spec-portal" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <p style={{ fontWeight: 700, color: '#4b5563' }}>LOADING EDIT FORM (PRF128)...</p>
+        <p style={{ fontWeight: 700, color: '#4b5563' }}>Đang tải hồ sơ…</p>
       </div>
     )
   }
@@ -177,10 +190,10 @@ export default function EditProviderProfilePage({
 
       <div className="spec-subheader">
         <div>
-          PROVIDER PORTAL / <span style={{ color: '#111827' }}>EDIT PROVIDER PROFILE (PRF128)</span>
+          Hồ sơ xưởng / <span style={{ color: '#111827' }}>Chỉnh sửa thông tin</span>
         </div>
         <div>
-          VERIFICATION STATUS: <span style={{ color: '#111827' }}>{status}</span>
+          Trạng thái thẩm định: <span style={{ color: '#111827' }}>{status}</span>
         </div>
       </div>
 
@@ -191,16 +204,16 @@ export default function EditProviderProfilePage({
               Chỉnh sửa hồ sơ xưởng
             </h1>
             <p style={{ color: '#6b7280', fontSize: '0.9rem', maxWidth: '800px', margin: 0 }}>
-              Business Name, Craft Type và Business Registration là trường trọng yếu: khi hồ sơ đã được xác minh, thay đổi chúng tạo một bản sửa đổi chờ UBND thẩm định, còn phiên bản đã xác minh vẫn hiển thị công khai.
+              Tên xưởng, nhóm nghề và số đăng ký kinh doanh là trường trọng yếu: khi hồ sơ đã được xác minh, thay đổi chúng tạo một bản sửa đổi chờ UBND thẩm định, còn phiên bản đã xác minh vẫn hiển thị công khai.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <Link href={`/provider/${params.providerId}`} className="spec-btn-white">
-              CANCEL / DISCARD
+              Hủy thay đổi
             </Link>
-            <button onClick={handleSubmit} disabled={saving} className="spec-btn-black">
-              {saving ? 'SAVING...' : '✔ SAVE CHANGES'}
+            <button onClick={handleSubmit} disabled={saving || uploading} className="spec-btn-black">
+              {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
             </button>
           </div>
         </div>
@@ -211,6 +224,7 @@ export default function EditProviderProfilePage({
           </div>
         )}
 
+        {aiDraft!==null&&<section className="spec-form-section" aria-label="Xem trước mô tả AI"><h2>Bản nháp AI — chưa thay đổi mô tả</h2><label>Sửa bản nháp<textarea value={aiDraft} maxLength={1000} onChange={event=>setAiDraft(event.target.value)}/></label><button type="button" onClick={()=>{setFormData(current=>({...current,general_description:aiDraft}));setAiDraft(null)}}>Chấp nhận bản nháp</button><button type="button" disabled={refining} onClick={handleAIRefine}>Tạo lại</button><button type="button" onClick={()=>setAiDraft(null)}>Bỏ bản nháp</button></section>}
         <form onSubmit={handleSubmit}>
           <div className="spec-form-section">
             <div className="spec-form-section-header">
@@ -218,7 +232,7 @@ export default function EditProviderProfilePage({
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
               <div>
-                {field('BUSINESS NAME (major field)', 'business_name')}
+                {field('Tên xưởng (thay đổi cần thẩm định lại)', 'business_name')}
                 <div style={{ marginBottom: '1.25rem' }}>
                   <label className="spec-form-label" htmlFor="prf128-craft_type">Nhóm nghề — thay đổi cần thẩm định</label>
                   <select
@@ -233,11 +247,11 @@ export default function EditProviderProfilePage({
                     {PROVIDER_CRAFT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
-                {field('BUSINESS REGISTRATION NUMBER (major field)', 'business_registration')}
+                {field('Số đăng ký kinh doanh (thay đổi cần thẩm định lại)', 'business_registration')}
               </div>
               <div>
-                {field('LOCATION ADDRESS', 'location_address')}
-                {field('ARTISAN NAMES', 'artisan_names', 'Phân cách bằng dấu phẩy.')}
+                {field('Địa chỉ xưởng', 'location_address')}
+                {field('Tên nghệ nhân', 'artisan_names', 'Phân cách bằng dấu phẩy.')}
               </div>
             </div>
             <div>
@@ -269,16 +283,18 @@ export default function EditProviderProfilePage({
               <div className="spec-section-num">02 Liên hệ</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-              {field('PHONE NUMBER', 'phone_number')}
-              {field('BUSINESS EMAIL', 'business_email')}
+              {field('Số điện thoại', 'phone_number')}
+              {field('Email liên hệ', 'business_email')}
             </div>
           </div>
 
+          <section className="spec-form-section"><h2>Tài liệu và hình ảnh</h2><p>File mới chỉ được gắn vào hồ sơ sau khi lưu. Tài liệu đăng ký kinh doanh không hiển thị công khai.</p>{certificate&&<p>{certificate.available===false?<span>{certificate.file_name} — chưa có file gốc</span>:<a href={certificate.url}>{certificate.file_name}</a>}</p>}<label>Giấy đăng ký kinh doanh (PDF/JPEG/PNG, tối đa 10 MB)<input type="file" disabled={uploading} accept=".pdf,.jpg,.jpeg,.png" onChange={event=>{void upload(event.target.files?.[0],true);event.target.value=''}}/></label><label>Ảnh xưởng (JPEG/PNG/WEBP, tối thiểu 1280×720)<input type="file" disabled={uploading} accept="image/jpeg,image/png,image/webp" onChange={event=>{void upload(event.target.files?.[0],false);event.target.value=''}}/></label>{uploading&&<p role="status">Đang tải file…</p>}<div className="provider-media-grid">{media.map((image,index)=><article key={image.file_id}><MediaImage src={image.url} alt={`Ảnh xưởng ${index+1}`}/><label>Nhóm ảnh<select value={image.category} onChange={event=>setMedia(current=>current.map((row,i)=>i===index?{...row,category:event.target.value}:row))}>{[['Activity','Hoạt động'],['Space','Không gian'],['Product','Sản phẩm']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><button type="button" onClick={()=>setMedia(current=>current.filter((_,i)=>i!==index))}>Gỡ khỏi hồ sơ</button></article>)}</div></section>
+          <section className="spec-form-section"><h2>Điều kiện đặt đoàn</h2><label>Báo trước khi hủy (giờ)<input type="number" min={0} value={String(conditions.cancellation_notice_hours ?? '')} onChange={event=>setConditions({...conditions,cancellation_notice_hours:event.target.value===''?undefined:Number(event.target.value)})}/></label><label>Đặt cọc (%)<input type="number" min={0} max={100} value={String(conditions.deposit_percentage ?? '')} onChange={event=>setConditions({...conditions,deposit_percentage:event.target.value===''?undefined:Number(event.target.value)})}/></label></section>
           <div className="spec-form-section">
             <div className="spec-form-section-header">
               <div className="spec-section-num">03 Giờ hoạt động hằng tuần</div>
               <button type="button" className="spec-btn-white" style={{ fontSize: '0.72rem' }} onClick={addHour}>
-                + ADD TIME RANGE
+                + Thêm khung giờ
               </button>
             </div>
             {formData.operating_hours.length === 0 && (
@@ -301,7 +317,7 @@ export default function EditProviderProfilePage({
                   <input id={`prf128-hours-${index}-end`} type="time" className="spec-form-input" value={row.local_end} onChange={e => setHour(index, 'local_end', e.target.value)} />
                 </div>
                 <button type="button" className="spec-btn-white" style={{ fontSize: '0.72rem' }} onClick={() => removeHour(index)}>
-                  REMOVE
+                  Gỡ
                 </button>
               </div>
             ))}
@@ -309,10 +325,10 @@ export default function EditProviderProfilePage({
 
           <div style={{ background: '#ffffff', borderTop: '1px solid #e5e7eb', padding: '1rem 2.5rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem' }}>
             <Link href={`/provider/${params.providerId}`} className="spec-btn-white">
-              DISCARD CHANGES
+              Hủy thay đổi
             </Link>
-            <button type="submit" disabled={saving} className="spec-btn-black">
-              {saving ? 'SAVING...' : '✔ SAVE PROVIDER PROFILE'}
+            <button type="submit" disabled={saving || uploading} className="spec-btn-black">
+              {saving ? 'Đang lưu…' : 'Lưu hồ sơ xưởng'}
             </button>
           </div>
         </form>

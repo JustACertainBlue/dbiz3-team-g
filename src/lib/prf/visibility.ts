@@ -105,7 +105,7 @@ export function filterProviderFields(
   const actor = toSessionContext(actorInput)
   const isHDT = actor.role === 'ADMIN' && actor.adminType === 'HDT'
   const isOwner = actor.role === 'Local_Provider' && actor.providerId === profile.provider_id
-  const isUBND = actor.role === 'ADMIN' && actor.adminType === 'UBND'
+  const isUBND = actor.role === 'ADMIN' && actor.adminType === 'UBND' && actor.assignedVillageId === profile.village_id
   const isAgency = actor.role === 'Tour_Agency'
 
   // HDT gets full monitoring access including quality_metrics

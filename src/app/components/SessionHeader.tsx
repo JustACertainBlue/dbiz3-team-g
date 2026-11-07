@@ -17,30 +17,30 @@ function moduleLinks(session: SessionContext): Array<{ href: string; label: stri
   if (session.role === 'Local_Provider' && session.providerId) {
     const base = `/provider/${session.providerId}`
     return [
-      { href: `${base}/dashboard`, label: 'Dashboard' },
+      { href: `${base}/dashboard`, label: 'Tổng quan' },
       { href: base, label: 'Hồ sơ xưởng' },
-      { href: `${base}/experiences`, label: 'Experiences' },
-      { href: `${base}/bookings`, label: 'Bookings' },
-      { href: `${base}/schedule`, label: 'Schedule' },
-      { href: '/messages', label: 'Messages' },
+      { href: `${base}/experiences`, label: 'Trải nghiệm' },
+      { href: `${base}/bookings`, label: 'Đặt đoàn' },
+      { href: `${base}/schedule`, label: 'Lịch hoạt động' },
+      { href: '/messages', label: 'Hộp thư' },
     ]
   }
   if (session.role === 'Tour_Agency' && session.agencyId) {
     return [
       { href: '/explore', label: 'Explore' },
       { href: '/ai-matching', label: 'AI Matching' },
-      { href: `/agency/${session.agencyId}/bookings`, label: 'Bookings' },
-      { href: `/agency/${session.agencyId}/schedule`, label: 'Schedule' },
-      { href: '/messages', label: 'Messages' },
-      { href: `/agency/${session.agencyId}`, label: 'Hồ sơ Agency' },
+      { href: `/agency/${session.agencyId}/bookings`, label: 'Đặt đoàn' },
+      { href: `/agency/${session.agencyId}/schedule`, label: 'Lịch hoạt động' },
+      { href: '/messages', label: 'Hộp thư' },
+      { href: `/agency/${session.agencyId}`, label: 'Hồ sơ công ty' },
     ]
   }
   if (session.role === 'ADMIN') {
     return [
-      { href: '/admin', label: 'Dashboard' },
-      { href: '/admin/providers', label: 'Provider review' },
+      { href: '/admin', label: 'Tổng quan' },
+      { href: '/admin/providers', label: 'Thẩm định xưởng' },
       { href: '/admin/users', label: 'Quản lý tài khoản' },
-      ...(session.adminType === 'HDT' ? [{ href: '/admin/agencies', label: 'Thẩm định Agency' }] : []),
+      ...(session.adminType === 'HDT' ? [{ href: '/admin/agencies', label: 'Thẩm định công ty' }] : []),
     ]
   }
   return []

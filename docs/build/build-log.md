@@ -1033,6 +1033,19 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 66: 08/11 Claude Code + human — #55 login failure error_message per account status (`fix/55-login-error-message`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan for #55–#63: #55 after #59) |
+| Cause | `POST /api/auth/login` returned one `ACCOUNT_INACTIVE` / "Tài khoản hiện không hoạt động." for Pending Approval, Rejected and Disabled, and no `error_message` (spec-AUT FR-007 §5.1) |
+| Interpretation | Pending Approval and Rejected → "Account not approved" (Rejected is not approved; FR-007 lists both under "deny with message"); Disabled → "Account disabled"; bad password or unknown email → "Invalid credentials", also for inactive accounts, so the status is told only after the password matched |
+| Tests first | `tests/unit/aut-login-error-message.test.ts` (6): 5 red before (no `error_message`), the success case green |
+| Fix | `inactiveLoginMessage(email)` in `product-session.ts`; the login route adds `error_message` and a Vietnamese message per case. `error.code` and `authenticateAccount`'s result are unchanged, so existing clients and tests (incl. #59) keep working |
+| Mutation (foreground) | 5/5 killed: Disabled reported as not approved, everything as disabled, status revealed on a wrong password, not-approved text lost, `error_message` dropped |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1152 passed, 20 skipped). Not clicked in the UI: the page shows `error.message`, which the tests check |
+| Existing tests changed | None |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

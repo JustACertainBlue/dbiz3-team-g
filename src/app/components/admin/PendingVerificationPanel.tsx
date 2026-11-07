@@ -2,6 +2,7 @@
 
 import React from 'react'
 import type { PendingVerificationItem } from '@/lib/adm/pending-service'
+import { hanoiDate } from '@/lib/time/hanoi-time'
 
 interface PendingVerificationPanelProps {
   items: PendingVerificationItem[]
@@ -47,7 +48,7 @@ export function PendingVerificationPanel({ items }: PendingVerificationPanelProp
                   {item.kind}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#71717a', fontFamily: 'monospace, sans-serif' }}>
-                  {item.submittedAt.slice(0, 10)}
+                  {hanoiDate(item.submittedAt)}
                 </span>
               </span>
             </div>

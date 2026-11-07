@@ -1,8 +1,9 @@
 import type { BookingDetail } from '@/lib/booking/booking-detail'
+import { hanoiDateTime } from '@/lib/time/hanoi-time'
 
 // Read-only F-SCHED-07 panels shared by BKG135 (Provider), BKG144, BKG136 and BKG138 (Agency).
-// Stored times are already Asia/Ho_Chi_Minh (+07:00), so they are shown as written.
-export const hanoiTime = (value: string) => value.slice(0, 16).replace('T', ' ')
+// Times are shown in Asia/Ho_Chi_Minh whatever form they arrive in (UTC from PostgreSQL or +07:00), #87.
+export const hanoiTime = (value: string) => hanoiDateTime(value)
 export const formatVnd = (value: number) => `${value.toLocaleString('vi-VN')} VND`
 
 export function contactText(contact: BookingDetail['agency_contact']): string {

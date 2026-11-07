@@ -1033,6 +1033,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 65: 08/11 Claude Code + human — #59 test: HDT, UBND and Local Provider log in only when Active (`test/59-disabled-staff-login`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan for #55–#63: #59 first) |
+| Gap | spec-AUT BR-004 / US-2 AS-3 had no regression test (found in AUT Step 7 verify, PR #54) |
+| Tests | `tests/unit/aut-staff-login-active.test.ts` (10) through `POST /api/auth/login` with a real bcrypt hash for HDT, UBND and Local Provider: Active → 200 + session; Disabled → 403 `ACCOUNT_INACTIVE`, no session, no cookie; "Approved" (Agency status) → 403; plus the development prototype path (seeded Provider, any password) refused once Disabled. Green at once: the behaviour was already correct |
+| Mutation (foreground) | 4/4 killed: BR-004 guard removed, staff accepted when Approved, prototype status check removed, inactive reported as bad credentials |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1156 passed, 20 skipped) |
+| Product code changed | None |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

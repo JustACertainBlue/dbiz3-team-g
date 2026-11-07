@@ -74,7 +74,7 @@ export default async function ExperienceEntry({ params }: { params: { id: string
       </div>
 
       <section className="related-section"><div className="section-heading"><div><p className="eyebrow">Tiếp tục khám phá</p><h2>Trải nghiệm liên quan</h2></div><Link href={back}>Xem tất cả →</Link></div>
-        {detail.related_experiences.length ? <div className="related-grid">{detail.related_experiences.slice(0, 3).map((related, index) => <Link className="related-card" key={related.id} href={`/explore/experiences/${related.id}`}><div className={`related-card__art related-card__art--${index}`}><span>{related.type}</span></div><div><small>{related.location.village_name}</small><strong>{related.name}</strong><span>{related.duration_minutes} phút · tối đa {related.capacity.max_pax} khách</span></div></Link>)}</div> : <p>Chưa có trải nghiệm liên quan.</p>}
+        {detail.related_experiences.length ? <div className="related-grid">{detail.related_experiences.slice(0, 3).map((related, index) => <Link className="related-card" key={related.id} href={`/explore/experiences/${related.id}`}><div className={`related-card__art related-card__art--${index}`}><MediaImage src={related.images[0]?.storage_key} alt={related.name}/><span>{related.type}</span></div><div><small>{related.location.village_name}</small><strong>{related.name}</strong><span>{related.duration_minutes} phút · tối đa {related.capacity.max_pax} khách</span></div></Link>)}</div> : <p>Chưa có trải nghiệm liên quan.</p>}
       </section>
     </main>
     <footer className="explore-footer"><div><strong>Hanoi Artisan Bridge</strong><p>Nơi di sản trở thành hành trình đáng nhớ.</p></div><Link href={back}>Quay lại Explore</Link></footer>

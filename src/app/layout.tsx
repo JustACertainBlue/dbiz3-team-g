@@ -28,6 +28,7 @@ export default function RootLayout({
       <body>
         <SessionHeader />
         <div id="page-content">{children}</div>
+        <footer style={{padding:"24px",textAlign:"center",fontSize:12,color:"#526456"}}><a href="/image-credits">Nguồn ảnh · Ảnh minh họa cho dữ liệu mẫu</a></footer>
       </body>
     </html>
   )

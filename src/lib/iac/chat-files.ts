@@ -1,5 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { writeObject,readObject,removeObject } from '../storage/object-store'
 import { ChatError } from './chat-access'
 import { CHAT_FILES_PER_ACTION, fileError, type FileError } from './chat-file-rules'
 
@@ -26,37 +25,11 @@ export function validateBatch(files: readonly { name: string; size: number }[]):
 }
 
 export interface ChatFileStore {
-  write(fileId: string, bytes: Uint8Array): void
-  read(fileId: string): Uint8Array | null
-  remove(fileId: string): void
+  write(fileId: string, bytes: Uint8Array): void | Promise<void>
+  read(fileId: string): Uint8Array | null | Promise<Uint8Array|null>
+  remove(fileId: string): void | Promise<void>
   ids(): string[]
   clear(): void
-}
-
-/** #39: private files under .demo-data/chat-files/<file_id>; the file id is a UUID, never the user's file name. */
-class DiskChatFileStore implements ChatFileStore {
-  constructor(private readonly directory: string) {}
-  private path(fileId: string) {
-    if (!/^[0-9a-f-]{36}$/i.test(fileId)) throw new Error('Invalid file id')
-    return join(this.directory, fileId)
-  }
-  write(fileId: string, bytes: Uint8Array) {
-    mkdirSync(this.directory, { recursive: true })
-    writeFileSync(this.path(fileId), bytes)
-  }
-  read(fileId: string) {
-    const path = this.path(fileId)
-    return existsSync(path) ? new Uint8Array(readFileSync(path)) : null
-  }
-  remove(fileId: string) {
-    rmSync(this.path(fileId), { force: true })
-  }
-  ids() {
-    return existsSync(this.directory) ? readdirSync(this.directory) : []
-  }
-  clear() {
-    rmSync(this.directory, { recursive: true, force: true })
-  }
 }
 
 /** Tests keep files in memory, like the volatile repository. */
@@ -69,15 +42,23 @@ class MemoryChatFileStore implements ChatFileStore {
   clear() { this.files.clear() }
 }
 
+class SupabaseChatFileStore implements ChatFileStore {
+  async write(id:string,bytes:Uint8Array){await writeObject(storageKeyOf(id),bytes,'application/octet-stream')}
+  async read(id:string){return readObject(storageKeyOf(id))}
+  async remove(id:string){await removeObject(storageKeyOf(id))}
+  ids():string[]{throw new Error('Remote storage enumeration is an administrative operation')}
+  clear():void{throw new Error('Remote storage cannot be cleared by the application')}
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var __habChatFileStore: ChatFileStore | undefined
 }
 
 export function chatFileStore(): ChatFileStore {
-  return globalThis.__habChatFileStore ??= process.env.NODE_ENV === 'test'
+  return globalThis.__habChatFileStore ??= process.env.NODE_ENV === 'test' && process.env.HAB_TEST_STORAGE !== '1'
     ? new MemoryChatFileStore()
-    : new DiskChatFileStore(join(process.cwd(), '.demo-data', 'chat-files'))
+    : new SupabaseChatFileStore()
 }
 
 export const storageKeyOf = (fileId: string) => `chat-files/${fileId}`

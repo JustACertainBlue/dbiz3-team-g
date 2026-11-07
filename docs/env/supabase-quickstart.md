@@ -4,7 +4,7 @@
 
 The initial import contains 47 business tables and 481 synthetic seed rows. Live Next.js APIs and server pages now use PostgreSQL through the shared asynchronous application store. Ordinary tests alone use isolated JSON fixtures. Missing database configuration or a database error never triggers a JSON fallback. Auth sessions, Matching, preferences, Explore tracking, profiles, Quote/Chat, Booking/Schedule and Admin reads share PostgreSQL.
 
-Storage, Supabase Auth, real email, production deployment and scheduled workers are separate work.
+Live file bytes now use private Supabase Storage; follow [Storage setup](supabase-storage.md) after database setup. Supabase Auth, real email, production deployment and scheduled workers are separate work.
 
 ## Local environment
 
@@ -102,4 +102,4 @@ After environment setup, run `npm run dev` and open http://localhost:3000/login.
 
 The old `.demo-data/runtime.json` is preserved as a comparison archive, not an active database. A guarded three-way importer (`node scripts/db/import-legacy.mjs`) is read-only by default; `--apply --tables=...` refuses conflicts and never imports deletions or old login sessions. In this cutover, 21 non-conflicting Provider/Matching records were imported. Old Chat/Booking demo history with conflicting state was preserved in JSON rather than overwritten into PostgreSQL.
 
-Database transactions keep related writes on one checked-out connection; nested service calls join it. Aggregate advisory locks cover empty-table races across backend connections. Some compatibility queries still load/filter a table in the service; replace hot paths with indexed SQL criteria and pagination before high-volume production use. File bytes remain in local ignored upload directories; their metadata is now PostgreSQL-backed. Move bytes to durable object storage before hosted production deployment. Real email/OTP delivery remains unavailable without service configuration.
+Database transactions keep related writes on one checked-out connection; nested service calls join it. Aggregate advisory locks cover empty-table races across backend connections. Some compatibility queries still load/filter a table in the service; replace hot paths with indexed SQL criteria and pagination before high-volume production use. File metadata lives in PostgreSQL and live bytes in a private Supabase Storage bucket. Originals in local ignored upload directories remain an archive; they are not a live fallback. Real email/OTP delivery remains unavailable without service configuration.

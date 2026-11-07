@@ -1,3 +1,4 @@
+import { objectExists } from '@/lib/storage/object-store'
 import { demoSessionContextFor, toSessionContext, type SessionLike } from '@/lib/auth/session'
 import {
   loadProviderProfiles,
@@ -12,8 +13,6 @@ import { ProviderProfilePatchSchema } from './validators'
 import { recordAuditLog } from './audit-logger'
 import { demoRepository } from '../db/application-store'
 import { randomUUID } from 'node:crypto'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { mediaUrl } from './media-urls'
 import { providerCompletion } from './provider-completion'
 import { imageMetadataError } from './experience-images'
@@ -151,7 +150,7 @@ export async function getProviderProfile(
     verification_status: (isOwner || isUBND || isHDT) ? reviewStatus(provider, version) : provider.verification_status,
     public_images: (await Promise.all((await demoRepository().all('provider_version_media')).filter(row=>row.provider_id===providerId && row.version_no===String(targetVersionNo)).map(async row=>{const file=(await demoRepository().find('stored_files',item=>item.file_id===row.file_id));return file?[mediaUrl(file.storage_key)]:[]}))).flat(),
     profile_images: (await demoRepository().all('provider_version_media')).filter(row=>row.provider_id===providerId && row.version_no===String(targetVersionNo)).map(row=>({file_id:row.file_id,category:row.category})),
-    business_registration_certificate: (await (async ()=>{const doc=(await demoRepository().find('provider_version_documents',row=>row.provider_id===providerId && row.version_no===String(targetVersionNo) && row.document_type==='Business Registration Certificate'));const file=doc && (await demoRepository().find('stored_files',row=>row.file_id===doc.file_id));return file?{file_id:file.file_id,file_name:file.file_name,url:mediaUrl(file.storage_key),available:file.storage_key===`prf-media/${file.file_id}` && existsSync(join(process.cwd(),'.demo-data','prf-media',file.file_id))}:null})()),
+    business_registration_certificate: (await (async ()=>{const doc=(await demoRepository().find('provider_version_documents',row=>row.provider_id===providerId && row.version_no===String(targetVersionNo) && row.document_type==='Business Registration Certificate'));const file=doc && (await demoRepository().find('stored_files',row=>row.file_id===doc.file_id));return file?{file_id:file.file_id,file_name:file.file_name,url:mediaUrl(file.storage_key),available:file.storage_key===`prf-media/${file.file_id}` && (await objectExists(file.storage_key))}:null})()),
     pricing,
     capacity,
     contact,

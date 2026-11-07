@@ -28,7 +28,7 @@ provider's current documentation or prices, which Session 11 says change often.
 | Deliverable | Level | Status | Work needed |
 |---|---|---|---|
 | Public link: another team opens it on a phone over mobile data and runs one Must-have flow | Required | **Missing** (blocked by §4 B1) | Deploy (§3), then test from a phone outside the classroom Wi-Fi |
-| Spec with ≥ 1 new EARS line for a failure found when testing from outside | Required | **Missing**: no EARS lines in `docs/spec/` yet | After the outside test, the spec owner (nguyenthu) adds `IF …, THEN THE SYSTEM SHALL …` lines (agents do not edit `docs/spec/`) |
+| Spec with ≥ 1 new EARS line for a failure found when testing from outside | Required | **Started**: one EARS line in spec-AUT edge cases for "no email service" (2026-11-07, from the hosting decision, not yet from an outside test) | After the outside test, the spec owner (nguyenthu) adds `IF …, THEN THE SYSTEM SHALL …` lines (agents do not edit `docs/spec/`) |
 | ADR on the hosting option | Recommended | **Missing** | `docs/adr/0001-hosting.md`: choice, reason, accepted trade-off (§3 and §4) |
 | Notes "local versus internet" | Recommended | **Missing** | Errors met during deployment and their fixes |
 | Extension task (server-side LLM / minimal sign-in / API for another team), with one EARS line first | Encouraged | **Partly there**: AUT sign-in already blocks pages, but must run on the hosted version (§4 B1) | Choose one after the deploy works |

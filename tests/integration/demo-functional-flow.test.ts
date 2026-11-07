@@ -49,7 +49,7 @@ describe('functional demo foundation', () => {
 
   it('persists Provider Experience CRUD and Explore reads the same records', async () => {
     const created = await createExperience(DEMO_IDENTITIES.provider, {
-      name: 'Trải nghiệm demo liên module', description: 'Dữ liệu do Provider tạo và Agency nhìn thấy.', category: 'Ceramics',
+      name: 'Trải nghiệm demo liên module', description: 'Dữ liệu do Provider tạo và Agency nhìn thấy.', category: 'Workshop/Hands-on',
       duration_minutes: 90, price_per_person: 220000, max_participants: 18, notice_period_hours: 24,
       images: [
         { url: 'https://example.invalid/demo/artisan.jpg', category: 'Activity', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },

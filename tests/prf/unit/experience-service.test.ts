@@ -22,7 +22,7 @@ describe('T024 | Experience Service Unit Tests (US-5)', () => {
   const validNewExperience: ExperienceInput = {
     name: 'Nặn gốm vuốt tay nâng cao',
     description: 'Trải nghiệm kỹ thuật vuốt gốm thủ công với nghệ nhân ưu tú.',
-    category: 'Ceramics',
+    category: 'Workshop/Hands-on',
     duration_minutes: 120,
     price_per_person: 250000,
     max_participants: 10,

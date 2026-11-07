@@ -37,7 +37,7 @@ describe('Private Provider media storage and access',()=>{
   it('persists real image bytes, links them to an Experience and serves the same gallery to Explore',async()=>{
     const file=png(),uploaded=await uploadProfileMedia(owner,owner.providerId!,file)
     expect(uploaded).toMatchObject({width_px:1280,height_px:720,media_type:'image/png'})
-    const {experience_id}=await createExperience(owner,{name:'Synthetic gallery experience',description:'Synthetic description',category:'Pottery',duration_minutes:60,price_per_person:100000,max_participants:10,notice_period_hours:24,images:(['Activity','Space','Product'] as const).map(category=>({...uploaded,category}))})
+    const {experience_id}=await createExperience(owner,{name:'Synthetic gallery experience',description:'Synthetic description',category:'Workshop/Hands-on',duration_minutes:60,price_per_person:100000,max_participants:10,notice_period_hours:24,images:(['Activity','Space','Product'] as const).map(category=>({...uploaded,category}))})
     const detail=getExperienceDetail((await loadExploreRuntime()),experience_id,{kind:'guest'})
     expect(detail?.gallery).toEqual([uploaded.url,uploaded.url,uploaded.url])
     expect((await readProfileMedia((await toSessionContext(guestSession())),uploaded.file_id)).bytes).toEqual(Buffer.from(await file.arrayBuffer()))
@@ -85,7 +85,7 @@ describe('Private Provider media storage and access',()=>{
     const result=await uploadProfileMedia(owner,owner.providerId!,pdf(),true)
     const before=repo.all('experiences').length
     const metadata={url:result.url,media_type:'image/png',file_size_bytes:100,width_px:1280,height_px:720}
-    await expect(createExperience(owner,{name:'Synthetic experience',description:'Synthetic description',category:'Pottery',duration_minutes:60,price_per_person:100000,max_participants:10,notice_period_hours:24,images:[{...metadata,category:'Activity'},{...metadata,category:'Space'},{...metadata,category:'Product'}]})).rejects.toMatchObject({statusCode:400})
+    await expect(createExperience(owner,{name:'Synthetic experience',description:'Synthetic description',category:'Workshop/Hands-on',duration_minutes:60,price_per_person:100000,max_participants:10,notice_period_hours:24,images:[{...metadata,category:'Activity'},{...metadata,category:'Space'},{...metadata,category:'Product'}]})).rejects.toMatchObject({statusCode:400})
     expect(repo.all('experiences')).toHaveLength(before)
   })
 })

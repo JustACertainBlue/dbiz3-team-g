@@ -6,7 +6,7 @@ import { TimePreset, CollaborationSortBy } from '@/lib/adm/types'
 const getSessionFromRequest = adminSessionFromRequest
 
 export async function GET(req: NextRequest) {
-  const session = getSessionFromRequest(req)
+  const session = (await getSessionFromRequest(req))
   if (!session || !session.authenticated) {
     return NextResponse.json(
       { error: 'Authentication required. Please provide a valid session.' },

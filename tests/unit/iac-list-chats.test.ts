@@ -7,8 +7,8 @@ import { AGENCY, AGENCY_CHAT, AGENCY_ID, PROVIDER, PROVIDER_CHAT, PROVIDER_ID, P
 describe('T015 | listChats', () => {
   beforeEach(() => repo().reset())
 
-  it('Provider sees exactly its two Chats with name, organization and numeric unread (#22)', () => {
-    const list = listChats(PROVIDER)
+  it('Provider sees exactly its two Chats with name, organization and numeric unread (#22)', async () => {
+    const list = (await listChats(PROVIDER))
     expect(list.map(c => c.chat_session_id)).toEqual(['233b012e-4734-5689-86ee-2f4b50300ed3', PROVIDER_CHAT])
     expect(list[1]).toEqual({
       chat_session_id: PROVIDER_CHAT, chat_status: 'Active', participant_name: 'Chu Nhật Minh',
@@ -17,21 +17,21 @@ describe('T015 | listChats', () => {
     })
   })
 
-  it('Agency sees its Provider Chat with the published business name (#22)', () => {
-    expect(listChats(AGENCY)).toEqual([expect.objectContaining({
+  it('Agency sees its Provider Chat with the published business name (#22)', async () => {
+    expect((await listChats(AGENCY))).toEqual([expect.objectContaining({
       chat_session_id: AGENCY_CHAT, participant_name: 'Quách Minh Tâm', organization: 'Xưởng thủ công Phú Vinh', unread_count: 0,
     })])
   })
 
   it('orders by latest activity, newest first; a send moves the Chat to the top (BR-013, SC-006)', async () => {
     await sendMessage(PROVIDER, PROVIDER_CHAT, 'Mới nhất')
-    expect(listChats(PROVIDER)[0]).toMatchObject({ chat_session_id: PROVIDER_CHAT, last_message_preview: 'Mới nhất' })
+    expect((await listChats(PROVIDER))[0]).toMatchObject({ chat_session_id: PROVIDER_CHAT, last_message_preview: 'Mới nhất' })
   })
 
-  it('only lists Chats of the actor and of its role pair (BR-002, BR-016, SC-009)', () => {
+  it('only lists Chats of the actor and of its role pair (BR-002, BR-016, SC-009)', async () => {
     const chats = repo().all('chat_sessions')
-    const agencyIds = listChats(AGENCY).map(c => c.chat_session_id)
-    const providerIds = listChats(PROVIDER).map(c => c.chat_session_id)
+    const agencyIds = (await listChats(AGENCY)).map(c => c.chat_session_id)
+    const providerIds = (await listChats(PROVIDER)).map(c => c.chat_session_id)
     expect(agencyIds.every(id => chats.find(c => c.chat_session_id === id)!.agency_id === AGENCY_ID)).toBe(true)
     expect(providerIds.every(id => chats.find(c => c.chat_session_id === id)!.provider_id === PROVIDER_ID)).toBe(true)
   })
@@ -39,14 +39,14 @@ describe('T015 | listChats', () => {
   it('cuts the preview to 120 characters and lists a Closed Chat as Closed', async () => {
     await sendMessage(PROVIDER, PROVIDER_CHAT, 'x'.repeat(300))
     closeChat(PROVIDER_CHAT, PROVIDER_USER)
-    const row = listChats(PROVIDER).find(c => c.chat_session_id === PROVIDER_CHAT)!
+    const row = (await listChats(PROVIDER)).find(c => c.chat_session_id === PROVIDER_CHAT)!
     expect([...row.last_message_preview!].length).toBe(120)
     expect(row.chat_status).toBe('Closed')
   })
 
   for (const key of ['guest', 'ubnd', 'hdt'] as const) {
-    it(`${key} is refused (BR-001, #27)`, () => {
-      expect(() => listChats(demoSessionContextFor(key))).toThrow(expect.objectContaining({ code: 'FORBIDDEN' }))
+    it(`${key} is refused (BR-001, #27)`, async () => {
+      ;(await expect(async () => (await listChats((await demoSessionContextFor(key))))).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' })))
     })
   }
 })

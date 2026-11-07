@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'csv-parse/sync';
 import type { CsvRow, ExploreSeed } from './catalog';
-import { demoRepository } from '../demo/json-repository';
+import { demoRepository } from '../db/application-store';
 
 const tables = [
   'experiences', 'provider_profiles', 'provider_profile_versions', 'villages',
@@ -20,6 +20,6 @@ export function loadExploreSeed(root = process.cwd()): ExploreSeed {
   return result as ExploreSeed;
 }
 
-export function loadExploreRuntime(): ExploreSeed {
-  return demoRepository().snapshot(tables) as unknown as ExploreSeed;
+export async function loadExploreRuntime(): Promise<ExploreSeed> {
+  return (await demoRepository().snapshot(tables)) as unknown as ExploreSeed;
 }

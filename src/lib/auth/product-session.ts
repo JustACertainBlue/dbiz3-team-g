@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import type { NextRequest } from 'next/server'
 import { DEMO_IDENTITIES, type DemoSession } from './demo-session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import { verifyPassword } from './password'
 
 export const PRODUCT_SESSION_COOKIE = 'hab_session'
@@ -16,25 +16,25 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
-function identityForUser(userId: string): DemoSession | undefined {
+async function identityForUser(userId: string): Promise<DemoSession | undefined> {
   const repo = demoRepository()
-  const account = repo.find('user_accounts', row => row.user_id === userId)
+  const account = (await repo.find('user_accounts', row => row.user_id === userId))
   if (!account) return undefined
   const role = account.role_code
   if (role === 'Tour_Agency' && account.account_status !== 'Approved') return undefined
   if (role !== 'Tour_Agency' && account.account_status !== 'Active') return undefined
   const base = { authenticated: true, userId, displayName: account.full_name, agencyId: null, providerId: null, villageId: null, adminType: null }
   if (role === 'Tour_Agency') {
-    const profile = repo.find('agency_profiles', row => row.user_id === userId)
+    const profile = (await repo.find('agency_profiles', row => row.user_id === userId))
     return profile ? { ...base, accountKey: 'agency', role: 'TourAgency', agencyId: profile.agency_id } : undefined
   }
   if (role === 'Local_Provider') {
-    const profile = repo.find('provider_profiles', row => row.user_id === userId)
+    const profile = (await repo.find('provider_profiles', row => row.user_id === userId))
     return profile ? { ...base, accountKey: 'provider', role: 'LocalProvider', providerId: profile.provider_id, villageId: profile.village_id } : undefined
   }
   if (role === 'ADMIN' && account.admin_type === 'HDT') return { ...base, accountKey: 'hdt', role: 'HDT', adminType: 'HDT' }
   if (role === 'ADMIN' && account.admin_type === 'UBND') {
-    const assignment = repo.find('ubnd_village_assignments', row => row.ubnd_user_id === userId)
+    const assignment = (await repo.find('ubnd_village_assignments', row => row.ubnd_user_id === userId))
     return assignment ? { ...base, accountKey: 'ubnd', role: 'UBND', adminType: 'UBND', villageId: assignment.village_id } : undefined
   }
   return undefined
@@ -52,69 +52,69 @@ function cookieValue(request: NextRequest | Request, name: string): string | nul
  * has a production identity provider, a seeded email plus any non-empty password enters the demo.
  * Role and organization IDs always come from stored account data, never client input.
  */
-export function authenticatePrototype(email: string, password: string): LoginResult {
+export async function authenticatePrototype(email: string, password: string): Promise<LoginResult> {
   if (process.env.NODE_ENV === 'production') return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const normalizedEmail = email.trim().toLowerCase()
   if (!normalizedEmail || !password) return { ok: false, reason: 'INVALID_CREDENTIALS' }
 
-  const account = demoRepository().find('user_accounts', row => row.email.toLowerCase() === normalizedEmail)
+  const account = (await demoRepository().find('user_accounts', row => row.email.toLowerCase() === normalizedEmail))
   if (!account) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   // Compatibility is limited to the original four fixture identities and unusable seed hashes.
   if (!Object.values(DEMO_IDENTITIES).some(item => item.userId === account.user_id)
     || !account.password_hash.includes('seedhash')) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   if (!['Active', 'Approved'].includes(account.account_status)) return { ok: false, reason: 'ACCOUNT_INACTIVE' }
 
-  const identity = identityForUser(account.user_id)
+  const identity = (await identityForUser(account.user_id))
   if (!identity) return { ok: false, reason: 'INVALID_CREDENTIALS' }
 
-  return createSession(identity)
+  return (await createSession(identity))
 }
 
-function createSession(identity: DemoSession): LoginResult {
+async function createSession(identity: DemoSession): Promise<LoginResult> {
   const token = randomBytes(32).toString('base64url')
   const now = new Date()
-  demoRepository().insert('sessions', {
+  ;(await demoRepository().insert('sessions', {
     session_id: randomUUID(), user_id: identity.userId!, role_context: identity.role === 'TourAgency' ? 'Tour_Agency' : identity.role === 'LocalProvider' ? 'Local_Provider' : 'ADMIN',
     token_hash: hashToken(token),
     expires_at: new Date(now.getTime() + PRODUCT_SESSION_TTL_SECONDS * 1000).toISOString(),
     revoked_at: '', created_at: now.toISOString(),
-  })
+  }))
   return { ok: true, token, identity }
 }
 
 /** Password verification reused from PR #11, adapted to the shared repository and session. */
 export async function authenticateAccount(email: string, password: string): Promise<LoginResult> {
   if (!email.trim() || !password.trim()) return { ok: false, reason: 'INVALID_CREDENTIALS' }
-  const account = demoRepository().find('user_accounts', row => row.email.toLowerCase() === email.trim().toLowerCase())
+  const account = (await demoRepository().find('user_accounts', row => row.email.toLowerCase() === email.trim().toLowerCase()))
   if (!account) return { ok: false, reason: 'INVALID_CREDENTIALS' }
-  if (process.env.NODE_ENV !== 'production' && account.password_hash.includes('seedhash')) return authenticatePrototype(email, password)
+  if (process.env.NODE_ENV !== 'production' && account.password_hash.includes('seedhash')) return (await authenticatePrototype(email, password))
   if (!await verifyPassword(password, account.password_hash)) return { ok: false, reason: 'INVALID_CREDENTIALS' }
-  const identity = identityForUser(account.user_id)
+  const identity = (await identityForUser(account.user_id))
   if (!identity) return { ok: false, reason: 'ACCOUNT_INACTIVE' }
-  return createSession(identity)
+  return (await createSession(identity))
 }
 
-export function productSessionFromRequest(request: NextRequest | Request): DemoSession | null {
+export async function productSessionFromRequest(request: NextRequest | Request): Promise<DemoSession | null> {
   const token = cookieValue(request, PRODUCT_SESSION_COOKIE)
   if (!token) return null
-  const session = demoRepository().find('sessions', row => row.token_hash === hashToken(token)
-    && !row.revoked_at && Date.parse(row.expires_at) > Date.now())
+  const session = (await demoRepository().find('sessions', row => row.token_hash === hashToken(token)
+    && !row.revoked_at && Date.parse(row.expires_at) > Date.now()))
   if (!session) return null
-  const account = demoRepository().find('user_accounts', row => row.user_id === session.user_id)
+  const account = (await demoRepository().find('user_accounts', row => row.user_id === session.user_id))
   if (!account || !['Active', 'Approved'].includes(account.account_status)) return null
   if (session.role_context !== account.role_code) return null
-  return identityForUser(session.user_id) ?? null
+  return (await identityForUser(session.user_id)) ?? null
 }
 
-export function revokeProductSession(request: NextRequest | Request): boolean {
+export async function revokeProductSession(request: NextRequest | Request): Promise<boolean> {
   const token = cookieValue(request, PRODUCT_SESSION_COOKIE)
   if (!token) return false
-  return Boolean(demoRepository().update('sessions', row => row.token_hash === hashToken(token) && !row.revoked_at,
-    { revoked_at: new Date().toISOString() }))
+  return Boolean((await demoRepository().update('sessions', row => row.token_hash === hashToken(token) && !row.revoked_at,
+    { revoked_at: new Date().toISOString() })))
 }
 
-export function workspacePath(identity: DemoSession): string {
-  if (accountNeedsPasswordChange(identity.userId)) return '/account/change-password'
+export async function workspacePath(identity: DemoSession): Promise<string> {
+  if ((await accountNeedsPasswordChange(identity.userId))) return '/account/change-password'
   if (identity.role === 'TourAgency') return '/explore'
   if (identity.role === 'LocalProvider') return `/provider/${identity.providerId}/dashboard`
   if (identity.role === 'UBND') return '/admin/providers'
@@ -122,7 +122,7 @@ export function workspacePath(identity: DemoSession): string {
   return '/explore'
 }
 
-export function accountNeedsPasswordChange(userId: string | null): boolean {
-  const row = userId && demoRepository().find('user_accounts', item => item.user_id === userId)
+export async function accountNeedsPasswordChange(userId: string | null): Promise<boolean> {
+  const row = userId && (await demoRepository().find('user_accounts', item => item.user_id === userId))
   return Boolean(row && row.must_change_password === 'true' && !row.password_hash.includes('seedhash'))
 }

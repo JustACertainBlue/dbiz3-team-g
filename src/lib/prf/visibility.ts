@@ -60,11 +60,11 @@ export interface ProviderProfileInput {
 /**
  * Filter agency fields based on actor role and ownership per BR-004.
  */
-export function filterAgencyFields(
+export async function filterAgencyFields(
   actorInput: SessionLike,
   profile: AgencyProfileInput,
-): Partial<AgencyProfileInput> {
-  const actor = toSessionContext(actorInput)
+): Promise<Partial<AgencyProfileInput>> {
+  const actor = (await toSessionContext(actorInput))
   const isHDT = actor.role === 'ADMIN' && actor.adminType === 'HDT'
   const isOwner = actor.role === 'Tour_Agency' && actor.agencyId === profile.agency_id
 
@@ -98,11 +98,11 @@ export function filterAgencyFields(
 /**
  * Filter provider fields based on actor role and ownership per BR-004.
  */
-export function filterProviderFields(
+export async function filterProviderFields(
   actorInput: SessionLike,
   profile: ProviderProfileInput,
-): Partial<ProviderProfileInput> {
-  const actor = toSessionContext(actorInput)
+): Promise<Partial<ProviderProfileInput>> {
+  const actor = (await toSessionContext(actorInput))
   const isHDT = actor.role === 'ADMIN' && actor.adminType === 'HDT'
   const isOwner = actor.role === 'Local_Provider' && actor.providerId === profile.provider_id
   const isUBND = actor.role === 'ADMIN' && actor.adminType === 'UBND' && actor.assignedVillageId === profile.village_id

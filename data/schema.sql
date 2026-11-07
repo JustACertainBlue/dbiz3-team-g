@@ -278,9 +278,7 @@ CREATE TABLE agency_review_records (
     CONSTRAINT agency_review_decision_chk CHECK (decision IN ('Approve', 'Request More Information', 'Reject')),
     CONSTRAINT agency_review_comment_chk CHECK (decision = 'Approve' OR comments IS NOT NULL),
     FOREIGN KEY (registration_request_id, registration_version_no)
-        REFERENCES registration_submission_versions(registration_request_id, version_no) ON DELETE RESTRICT,
-    -- B12: at most one review per submitted subject
-    CONSTRAINT agency_review_reg_subject_uq UNIQUE (registration_request_id, registration_version_no)
+        REFERENCES registration_submission_versions(registration_request_id, version_no) ON DELETE RESTRICT
 );
 
 CREATE TABLE provider_profiles (
@@ -367,9 +365,7 @@ CREATE TABLE provider_verification_reviews (
     reviewed_at timestamptz NOT NULL,
     FOREIGN KEY (provider_id, version_no) REFERENCES provider_profile_versions(provider_id, version_no) ON DELETE RESTRICT,
     CONSTRAINT provider_review_decision_chk CHECK (decision IN ('Approve', 'Request Revision')),
-    CONSTRAINT provider_review_comment_chk CHECK (decision = 'Approve' OR revision_comments IS NOT NULL),
-    -- B12: at most one review per (provider, version)
-    CONSTRAINT provider_review_subject_uq UNIQUE (provider_id, version_no)
+    CONSTRAINT provider_review_comment_chk CHECK (decision = 'Approve' OR revision_comments IS NOT NULL)
 );
 
 -- A3: supporting documents (e.g. business registration certificate) for a Provider version
@@ -855,5 +851,38 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER booking_group_within_capacity_trg
     BEFORE INSERT OR UPDATE ON bookings
     FOR EACH ROW EXECUTE FUNCTION booking_group_within_capacity();
+
+-- Human-approved persisted runtime state; see runtime-persistence.md.
+-- Persist only state already used by the existing application. No new business lifecycle.
+ALTER TABLE public.matching_sessions ADD COLUMN status varchar(10) NOT NULL DEFAULT 'active'
+  CHECK (status IN ('active','closed'));
+ALTER TABLE public.explore_interactions
+  ADD COLUMN client_event_id varchar(128);
+CREATE UNIQUE INDEX explore_event_idempotency ON public.explore_interactions(session_id,client_event_id)
+  WHERE client_event_id IS NOT NULL;
+ALTER TABLE public.agency_preference_profiles
+  ADD COLUMN matching_context jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN affinity_tags jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN baseline_preference_weights jsonb;
+UPDATE public.agency_preference_profiles SET baseline_preference_weights=preference_weights;
+
+CREATE SCHEMA hab_runtime;
+CREATE TABLE hab_runtime.auth_rate_limits (
+  runtime_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  key varchar(64) NOT NULL,
+  at bigint NOT NULL
+);
+CREATE INDEX auth_rate_limits_key_at ON hab_runtime.auth_rate_limits(key,at);
+ALTER TABLE hab_runtime.auth_rate_limits ENABLE ROW LEVEL SECURITY;
+
+
+DO $ DECLARE item record; BEGIN
+  FOR item IN SELECT conrelid::regclass AS relation,conname FROM pg_constraint
+    WHERE contype='f' AND connamespace='public'::regnamespace
+  LOOP EXECUTE format('ALTER TABLE %s ALTER CONSTRAINT %I DEFERRABLE INITIALLY IMMEDIATE',item.relation,item.conname); END LOOP;
+END $;
+
+CREATE INDEX agency_review_subject_history_idx ON agency_review_records(registration_request_id,registration_version_no,decided_at DESC);
+CREATE INDEX provider_review_subject_history_idx ON provider_verification_reviews(provider_id,version_no,reviewed_at DESC);
 
 COMMIT;

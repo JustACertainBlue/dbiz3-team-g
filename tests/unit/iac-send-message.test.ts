@@ -42,7 +42,7 @@ describe('T014 | sendMessage', () => {
     it(`${name} → ${status} ${code}, nothing written (lesson #15)`, async () => {
       arrange()
       const before = writeSnapshot()
-      await expect(run()).rejects.toMatchObject({ code, statusCode: status })
+      await expect(((run()))).rejects.toMatchObject({ code, statusCode: status })
       expect(writeSnapshot()).toBe(before)
     })
   }

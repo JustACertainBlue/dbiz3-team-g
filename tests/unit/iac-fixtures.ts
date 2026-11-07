@@ -5,8 +5,8 @@ import { demoRepository } from '@/lib/demo/json-repository'
 
 export const DEMO_AGENCY = DEMO_IDENTITIES.agency
 export const DEMO_PROVIDER = DEMO_IDENTITIES.provider
-export const AGENCY = sessionContextFor(DEMO_AGENCY)
-export const PROVIDER = sessionContextFor(DEMO_PROVIDER)
+export const AGENCY = (await sessionContextFor(DEMO_AGENCY))
+export const PROVIDER = (await sessionContextFor(DEMO_PROVIDER))
 export const AGENCY_ID = AGENCY.agencyId!          // 02e568d8… Công ty Du lịch Tràng An
 export const AGENCY_USER = AGENCY.userId!          // ac233721… Lý Gia Hân
 export const PROVIDER_ID = PROVIDER.providerId!    // 50f2c8fc… Bát Tràng

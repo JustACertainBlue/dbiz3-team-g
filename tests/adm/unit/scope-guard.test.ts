@@ -20,9 +20,9 @@ import {
 
 describe('T006: Server-side Administrative Scope Guard (BR-001..BR-004, AC-ADM-SCOPE)', () => {
   describe('HDT Admin Scope (BR-001, BR-004)', () => {
-    it('grants platform-wide view when no village filter is requested (BR-001)', () => {
+    it('grants platform-wide view when no village filter is requested (BR-001)', async () => {
       const session = createHdtSession()
-      const scope = resolveAdminScope(session, null)
+      const scope = (await resolveAdminScope(session, null))
 
       expect(scope.role).toBe('ADMIN')
       expect(scope.adminType).toBe('HDT')
@@ -31,10 +31,10 @@ describe('T006: Server-side Administrative Scope Guard (BR-001..BR-004, AC-ADM-S
       expect(scope.isVillageFilterLocked).toBe(false)
     })
 
-    it('allows HDT to select a specific village filter (BR-004)', () => {
+    it('allows HDT to select a specific village filter (BR-004)', async () => {
       const session = createHdtSession()
       const requestedVillage = SEED_ADMIN_IDS.batTrangVillageId
-      const scope = resolveAdminScope(session, requestedVillage)
+      const scope = (await resolveAdminScope(session, requestedVillage))
 
       expect(scope.effectiveVillageId).toBe(requestedVillage)
       expect(scope.isVillageFilterLocked).toBe(false)
@@ -42,10 +42,10 @@ describe('T006: Server-side Administrative Scope Guard (BR-001..BR-004, AC-ADM-S
   })
 
   describe('UBND Admin Scope (BR-002, BR-003, AC-ADM-SCOPE)', () => {
-    it('restricts UBND to assigned village and locks filter (BR-002, BR-003)', () => {
+    it('restricts UBND to assigned village and locks filter (BR-002, BR-003)', async () => {
       const assignedVillage = SEED_ADMIN_IDS.batTrangVillageId
       const session = createUbndSession(assignedVillage)
-      const scope = resolveAdminScope(session, null)
+      const scope = (await resolveAdminScope(session, null))
 
       expect(scope.role).toBe('ADMIN')
       expect(scope.adminType).toBe('UBND')
@@ -54,13 +54,13 @@ describe('T006: Server-side Administrative Scope Guard (BR-001..BR-004, AC-ADM-S
       expect(scope.isVillageFilterLocked).toBe(true)
     })
 
-    it('forces assigned village when client attempts cross-village filter (AC-ADM-SCOPE)', () => {
+    it('forces assigned village when client attempts cross-village filter (AC-ADM-SCOPE)', async () => {
       const assignedVillage = SEED_ADMIN_IDS.batTrangVillageId
       const tamperedVillage = SEED_ADMIN_IDS.vanPhucVillageId
       const session = createUbndSession(assignedVillage)
 
       // UBND attempts to query Vạn Phúc instead of Bát Tràng
-      const scope = resolveAdminScope(session, tamperedVillage)
+      const scope = (await resolveAdminScope(session, tamperedVillage))
 
       // Server MUST force the assigned village; never permit tampered scope
       expect(scope.effectiveVillageId).toBe(assignedVillage)
@@ -70,12 +70,12 @@ describe('T006: Server-side Administrative Scope Guard (BR-001..BR-004, AC-ADM-S
   })
 
   describe('Role-Based Access Enforcement', () => {
-    it('rejects unauthenticated or non-admin sessions', () => {
+    it('rejects unauthenticated or non-admin sessions', async () => {
       const unauthorized = createUnauthorizedSession()
-      expect(() => resolveAdminScope(unauthorized, null)).toThrow(/Forbidden|Unauthorized/i)
+      ;(await expect(async () => (await resolveAdminScope(unauthorized, null))).rejects.toThrow(/Forbidden|Unauthorized/i))
 
       const guest = createGuestSession()
-      expect(() => resolveAdminScope(guest, null)).toThrow(/Forbidden|Unauthorized/i)
+      ;(await expect(async () => (await resolveAdminScope(guest, null))).rejects.toThrow(/Forbidden|Unauthorized/i))
     })
   })
 })

@@ -9,7 +9,7 @@ type Context = { params: { providerId: string } }
 export async function GET(request: NextRequest, { params }: Context) {
   const search = new URL(request.url).searchParams
   try {
-    const data = await getProviderSchedule(sessionContextFromRequest(request), params.providerId, {
+    const data = await getProviderSchedule((await sessionContextFromRequest(request)), params.providerId, {
       date_from: search.get('date_from') ?? undefined,
       date_to: search.get('date_to') ?? undefined,
     })

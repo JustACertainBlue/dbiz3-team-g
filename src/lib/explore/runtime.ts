@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { DemoRow } from '../demo/types';
 import { eligibleRows, resolveViewer, type ExploreSeed, type Viewer } from './catalog';
 import { analyzeSession, rankCatalog, updatePreferenceWeights, type ExploreAction, type ExploreEvent, type RankingVersion } from './learning';
 
@@ -33,7 +34,7 @@ export class ExploreRuntime {
   private activeVersion: RankingVersion;
   private historicalQuality: Record<string, number>;
 
-  constructor(private seed: ExploreSeed) {
+  constructor(private seed: ExploreSeed, hydrate = false) {
     const activeVersions = seed.ranking_parameter_versions?.filter(row => row.version_status === 'Active') ?? [];
     if (activeVersions.length !== 1) throw new Error('Explore requires exactly one Active ranking version');
     const version = activeVersions[0];
@@ -50,6 +51,45 @@ export class ExploreRuntime {
     }
     const maximum = Math.max(1, ...totals.values());
     this.historicalQuality = Object.fromEntries([...totals].map(([id, points]) => [id, points / maximum]));
+    if (hydrate) {
+      for (const row of seed.explore_sessions ?? []) {
+        if (row.ended_at) continue;
+        const session:RuntimeSession={session_id:row.session_id,agency_id:row.agency_id||null,
+          tracking_scope:row.tracking_scope as TrackingScope,analytics_consent:row.analytics_consent==='true',
+          ranking_version_id:row.ranking_version_id||null,ranked_results:JSON.parse(row.ranked_results||'[]'),started_at:row.started_at};
+        this.sessions.set(session.session_id,session);this.events.set(session.session_id,[]);this.seenEventIds.set(session.session_id,new Set());
+      }
+      for(const row of seed.explore_interactions??[]) {
+        if(!this.sessions.has(row.session_id))continue;
+        const event:RecordedEvent={event_id:row.client_event_id||row.interaction_id,interaction_id:row.interaction_id,
+          action_type:row.action_type as ExploreAction,occurred_at:row.occurred_at,experience_id:row.experience_id||undefined,
+          provider_id:row.provider_id||undefined,filter_values:row.filter_values?JSON.parse(row.filter_values):undefined,
+          duration_seconds:row.duration_on_previous_screen?Number(row.duration_on_previous_screen):undefined};
+        this.events.get(row.session_id)!.push(event);this.seenEventIds.get(row.session_id)!.add(event.event_id);
+      }
+    }
+  }
+
+  /** Called inside the store's atomic aggregate transaction, never a process-global cache. */
+  persistInto(tables:Record<string,DemoRow[]>) {
+    for(const session of this.sessions.values()){
+      const row=tables.explore_sessions.find(row=>row.session_id===session.session_id);
+      const values={session_id:session.session_id,agency_id:session.agency_id||'',anonymous_session_ref:session.agency_id?'':`anon-${session.session_id}`,
+        analytics_consent:String(session.analytics_consent),tracking_scope:session.tracking_scope,started_at:session.started_at,ended_at:'',
+        ranking_version_id:session.ranking_version_id||'',ranked_results:session.tracking_scope==='No Non-essential Tracking'?'':JSON.stringify(session.ranked_results)};
+      if(row)Object.assign(row,values);else tables.explore_sessions.push(values);
+      for(const event of this.events.get(session.session_id)??[]){
+        if(tables.explore_interactions.some(row=>row.interaction_id===event.interaction_id))continue;
+        tables.explore_interactions.push({interaction_id:event.interaction_id,session_id:session.session_id,client_event_id:event.event_id,
+          experience_id:event.experience_id||'',provider_id:event.provider_id||'',action_type:event.action_type,occurred_at:event.occurred_at,
+          duration_on_previous_screen:event.duration_seconds===undefined?'':String(event.duration_seconds),filter_values:event.filter_values?JSON.stringify(event.filter_values):''});
+      }
+    }
+    for(const [agency_id,weights] of this.agencyWeights){
+      const row=tables.agency_preference_profiles.find(row=>row.agency_id===agency_id),encoded=JSON.stringify(weights);
+      if(row){if(row.preference_weights!==encoded){row.preference_weights=encoded;row.updated_at=new Date().toISOString()}}
+      else tables.agency_preference_profiles.push({agency_id,preference_weights:encoded,baseline_preference_weights:'{}',updated_at:new Date().toISOString()});
+    }
   }
 
   private catalog() {
@@ -113,7 +153,7 @@ export class ExploreRuntime {
       if (patterns.some(pattern => pattern.signals.length)) {
         // Recalculate from the shared initial profile plus all Agency sessions, avoiding duplicate event application.
         const initial = this.seed.agency_preference_profiles.find(row => row.agency_id === session.agency_id);
-        const baseline = parseObject(initial?.preference_weights);
+        const baseline = parseObject(initial?.baseline_preference_weights || initial?.preference_weights);
         const next = updatePreferenceWeights(baseline, patterns.flatMap(pattern => pattern.signals));
         if (JSON.stringify(next) !== JSON.stringify(this.agencyWeights.get(session.agency_id) ?? {})) {
           this.agencyWeights.set(session.agency_id, next);

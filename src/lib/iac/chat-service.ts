@@ -1,6 +1,7 @@
+import { filterAsync } from '@/lib/db/async-collections'
 import { randomUUID } from 'node:crypto'
 import type { SessionContext } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import type { BatchOperation, DemoRow } from '../demo/types'
 import { ChatError, isParticipant, requireChatActor, requireParticipant, type ChatActor } from './chat-access'
 import { chatFileStore, classifyFile, storageKeyOf, validateBatch, type IncomingFile } from './chat-files'
@@ -35,11 +36,11 @@ export interface OpenChatResult {
 }
 
 /** The Agency–Provider pair and context of an open request, after authorization and validation. */
-export function resolveOpenTarget(actor: ChatActor, input: OpenChatInput): Omit<PairContext, 'at'> {
+export async function resolveOpenTarget(actor: ChatActor, input: OpenChatInput): Promise<Omit<PairContext, 'at'>> {
   const repository = demoRepository()
   if (input.source === 'Booking') {
     if (!input.bookingId) throw new ChatError('VALIDATION_ERROR', 'booking_id is required when source = Booking')
-    const booking = repository.find('bookings', row => row.booking_id === input.bookingId)
+    const booking = (await repository.find('bookings', row => row.booking_id === input.bookingId))
     if (!booking) throw new ChatError('NOT_FOUND', 'Booking not found')
     const own = actor.role === 'Tour_Agency' ? booking.agency_id === actor.agencyId : booking.provider_id === actor.providerId
     if (!own) throw new ChatError('FORBIDDEN', 'The Booking belongs to another participant')
@@ -50,9 +51,9 @@ export function resolveOpenTarget(actor: ChatActor, input: OpenChatInput): Omit<
   if (input.source === 'Quote Request') throw new ChatError('VALIDATION_ERROR', 'source Quote Request is not supported yet')
   if (!input.experienceId) throw new ChatError('VALIDATION_ERROR', 'experience_id is required')
   if (input.source === 'AI Matching' && !input.matchingSessionId) throw new ChatError('VALIDATION_ERROR', 'matching_session_id is required when source = AI Matching')
-  const experience = repository.find('experiences', row => row.experience_id === input.experienceId && !row.archived_at)
+  const experience = (await repository.find('experiences', row => row.experience_id === input.experienceId && !row.archived_at))
   if (!experience) throw new ChatError('NOT_FOUND', 'Experience not found')
-  const provider = repository.find('provider_profiles', row => row.provider_id === experience.provider_id)
+  const provider = (await repository.find('provider_profiles', row => row.provider_id === experience.provider_id))
   if (!provider || provider.verification_status !== 'Verified') throw new ChatError('PROVIDER_UNAVAILABLE', 'Provider is not available')
   return {
     agencyId: actor.agencyId, providerId: provider.provider_id, source: input.source,
@@ -68,14 +69,14 @@ export async function openChat(
   options: { now?: Clock; afterPairCheck?: () => Promise<void> } = {},
 ): Promise<OpenChatResult> {
   const actor = requireChatActor(session)
-  const target = resolveOpenTarget(actor, input)
+  const target = (await resolveOpenTarget(actor, input))
   const at = (options.now ?? systemClock)().toISOString()
-  return withChatWriteLock(async () => {
-    const plan = pairChatPlan({ ...target, at })
-    if (options.afterPairCheck) await options.afterPairCheck()
-    demoRepository().applyBatch(plan.operations)
+  return (await withChatWriteLock(async () => {
+    const plan = (await pairChatPlan({ ...target, at }))
+    if (options.afterPairCheck) await (await options.afterPairCheck())
+    ;(await demoRepository().applyBatch(plan.operations))
     return { chat_session_id: plan.chat.chat_session_id, chat_status: 'Active' as const, is_new_session: plan.isNew }
-  })
+  }))
 }
 
 function codePoints(text: string): number {
@@ -83,8 +84,8 @@ function codePoints(text: string): number {
 }
 
 /** The other participant of the pair (recipient of the sender's message). */
-function recipientOf(chat: DemoRow, senderUserId: string): string {
-  const { agencyUserId, providerUserId } = pairUserIds(chat.agency_id, chat.provider_id)
+async function recipientOf(chat: DemoRow, senderUserId: string): Promise<string> {
+  const { agencyUserId, providerUserId } = (await pairUserIds(chat.agency_id, chat.provider_id))
   return senderUserId === agencyUserId ? providerUserId : agencyUserId
 }
 
@@ -96,47 +97,49 @@ export async function sendMessage(
   // afterStatusCheck is a test-only seam between the Active check and the write (spec-IAC #38, lesson #13).
   options: { now?: Clock; afterStatusCheck?: () => Promise<void> } = {},
 ) {
-  const chat = requireParticipant(session, chatSessionId)
+  return withChatWriteLock(async()=>{
+  const chat = await requireParticipant(session, chatSessionId)
   const senderUserId = session.userId!
   const trimmed = typeof text === 'string' ? text.trim() : ''
   if (!trimmed) throw new ChatError('VALIDATION_ERROR', 'Message cannot be empty')
   if (codePoints(trimmed) > MESSAGE_MAX_CODE_POINTS) throw new ChatError('VALIDATION_ERROR', `Message is longer than ${MESSAGE_MAX_CODE_POINTS} characters`)
-  return withChatWriteLock(async () => {
-    const current = demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId)!
+  {
+    const current = (await demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId))!
     if (current.status !== 'Active') throw new ChatError('CHAT_CLOSED', 'This Chat is closed; start a new Chat to continue')
     if (options.afterStatusCheck) await options.afterStatusCheck()
-    const sentAt = nextSentAt(chatSessionId, (options.now ?? systemClock)().toISOString())
+    const sentAt = (await nextSentAt(chatSessionId, (options.now ?? systemClock)().toISOString()))
     const message: DemoRow = {
       message_id: randomUUID(), chat_session_id: chatSessionId, sender_user_id: senderUserId, text: trimmed,
       message_kind: 'User Text', experience_id: current.experience_id, quote_request_id: current.quote_request_id,
       booking_id: current.booking_id, sent_at: sentAt,
     }
-    demoRepository().applyBatch(messageOperations(chatSessionId, message, recipientOf(chat, senderUserId)))
+    ;(await demoRepository().applyBatch((await messageOperations(chatSessionId, message, (await recipientOf(chat, senderUserId))))))
     return { message_id: message.message_id, sent_at: sentAt, last_message_timestamp: sentAt }
+  }
   })
 }
 
 /** Messages of a Chat in history order: sent_at, then message_id (Q6). */
-function orderedMessages(chatSessionId: string): DemoRow[] {
-  return demoRepository().all('chat_messages')
+async function orderedMessages(chatSessionId: string): Promise<DemoRow[]> {
+  return (await demoRepository().all('chat_messages'))
     .filter(row => row.chat_session_id === chatSessionId)
     .sort((a, b) => (Date.parse(a.sent_at) - Date.parse(b.sent_at)) || a.message_id.localeCompare(b.message_id))
 }
 
-function fullName(userId: string): string {
-  return demoRepository().find('user_accounts', row => row.user_id === userId)?.full_name ?? ''
+async function fullName(userId: string): Promise<string> {
+  return (await demoRepository().find('user_accounts', row => row.user_id === userId))?.full_name ?? ''
 }
 
 // spec-IAC #22: counterpart user's full_name and organization.
-function counterpart(actor: ChatActor, chat: DemoRow): { participant_name: string; organization: string } {
+async function counterpart(actor: ChatActor, chat: DemoRow): Promise<{ participant_name: string; organization: string }> {
   const repository = demoRepository()
   if (actor.role === 'Tour_Agency') {
-    const provider = repository.find('provider_profiles', row => row.provider_id === chat.provider_id)
-    const version = provider && repository.find('provider_profile_versions', row => row.provider_id === provider.provider_id && row.version_no === provider.published_version_no)
-    return { participant_name: fullName(provider?.user_id ?? ''), organization: version?.business_name ?? '' }
+    const provider = (await repository.find('provider_profiles', row => row.provider_id === chat.provider_id))
+    const version = provider && (await repository.find('provider_profile_versions', row => row.provider_id === provider.provider_id && row.version_no === provider.published_version_no))
+    return { participant_name: (await fullName(provider?.user_id ?? '')), organization: version?.business_name ?? '' }
   }
-  const agency = repository.find('agency_profiles', row => row.agency_id === chat.agency_id)
-  return { participant_name: fullName(agency?.user_id ?? ''), organization: agency?.company_name ?? '' }
+  const agency = (await repository.find('agency_profiles', row => row.agency_id === chat.agency_id))
+  return { participant_name: (await fullName(agency?.user_id ?? '')), organization: agency?.company_name ?? '' }
 }
 
 export interface ChatListEntry {
@@ -150,54 +153,53 @@ export interface ChatListEntry {
 }
 
 /** F-CHAT-03 Chat list (FR-003, BR-002, BR-013, BR-016). */
-export function listChats(session: SessionContext): ChatListEntry[] {
+export async function listChats(session: SessionContext): Promise<ChatListEntry[]> {
   const actor = requireChatActor(session)
   const repository = demoRepository()
   const activity = (chat: DemoRow) => Date.parse(chat.last_message_at || chat.started_at)
-  return repository.all('chat_sessions')
-    .filter(chat => isParticipant(actor, chat))
+  return (await Promise.all((await filterAsync((await repository.all('chat_sessions')),async chat => (await isParticipant(actor, chat))))
     .sort((a, b) => (activity(b) - activity(a)) || a.chat_session_id.localeCompare(b.chat_session_id))
-    .map(chat => {
-      const latest = orderedMessages(chat.chat_session_id).at(-1)
-      const own = repository.find('chat_participants', row => row.chat_session_id === chat.chat_session_id && row.user_id === actor.userId)
+    .map(async chat => {
+      const latest = (await orderedMessages(chat.chat_session_id)).at(-1)
+      const own = (await repository.find('chat_participants', row => row.chat_session_id === chat.chat_session_id && row.user_id === actor.userId))
       const entry: ChatListEntry = {
         chat_session_id: chat.chat_session_id,
         chat_status: chat.status as 'Active' | 'Closed',
-        ...counterpart(actor, chat),
+        ...(await counterpart(actor, chat)),
         unread_count: Number(own?.unread_count || 0),
       }
-      const preview = latest && previewOf(latest)
+      const preview = latest && (await previewOf(latest))
       if (preview) entry.last_message_preview = [...preview].slice(0, PREVIEW_CODE_POINTS).join('')
       if (chat.last_message_at) entry.last_message_at = chat.last_message_at
       return entry
-    })
+    })))
 }
 
 // spec-IAC #48: a message without text that has attachments previews as its file names.
-function previewOf(message: DemoRow): string | undefined {
+async function previewOf(message: DemoRow): Promise<string | undefined> {
   if (message.text) return message.text
-  const names = attachmentsOf(message.message_id).map(a => a.file_name)
+  const names = (await attachmentsOf(message.message_id)).map(a => a.file_name)
   return names.length ? `${ATTACHMENT_PREVIEW_PREFIX}${names.join(', ')}` : undefined
 }
 
-function attachmentsOf(messageId: string) {
+async function attachmentsOf(messageId: string) {
   const repository = demoRepository()
-  return repository.all('chat_attachments').filter(row => row.message_id === messageId).map(row => {
-    const file = repository.find('stored_files', f => f.file_id === row.file_id)
+  return (await Promise.all((await repository.all('chat_attachments')).filter(row => row.message_id === messageId).map(async row => {
+    const file = (await repository.find('stored_files', f => f.file_id === row.file_id))
     return { attachment_id: row.attachment_id, file_name: file?.file_name ?? '', file_type: file?.media_type ?? '', file_size: Number(file?.file_size_bytes || 0) }
-  })
+  })))
 }
 
-function historyItem(message: DemoRow) {
+async function historyItem(message: DemoRow) {
   return {
     message_id: message.message_id,
     message_kind: message.message_kind,
     text: message.text,
-    sender_name: message.sender_user_id ? fullName(message.sender_user_id) : SYSTEM_SENDER,
+    sender_name: message.sender_user_id ? (await fullName(message.sender_user_id)) : SYSTEM_SENDER,
     sent_at: message.sent_at,
     experience_id: message.experience_id, // spec-IAC #28
     booking_id: message.booking_id, // spec-IAC #28
-    attachments: attachmentsOf(message.message_id),
+    attachments: (await attachmentsOf(message.message_id)),
   }
 }
 
@@ -206,9 +208,9 @@ function historyItem(message: DemoRow) {
  * The first page resets the reader's unread count (BR-017, spec-IAC #23).
  */
 export async function getChatHistory(session: SessionContext, chatSessionId: string, query: { beforeCursor?: string } = {}): Promise<ChatHistory> {
-  const chat = requireParticipant(session, chatSessionId)
+  const chat = (await requireParticipant(session, chatSessionId))
   const userId = session.userId!
-  const messages = orderedMessages(chatSessionId)
+  const messages = (await orderedMessages(chatSessionId))
   let end = messages.length
   if (query.beforeCursor !== undefined) {
     end = messages.findIndex(row => row.message_id === query.beforeCursor)
@@ -217,25 +219,25 @@ export async function getChatHistory(session: SessionContext, chatSessionId: str
   const start = Math.max(0, end - HISTORY_PAGE_SIZE)
   const page = messages.slice(start, end)
   if (query.beforeCursor === undefined) {
-    await withChatWriteLock(() => {
-      const newest = orderedMessages(chatSessionId).at(-1)
-      demoRepository().applyBatch([{
+    await withChatWriteLock(async () => {
+      const newest = (await orderedMessages(chatSessionId)).at(-1)
+      ;(await demoRepository().applyBatch([{
         table: 'chat_participants',
         match: row => row.chat_session_id === chatSessionId && row.user_id === userId,
         changes: { unread_count: '0', last_read_message_id: newest?.message_id ?? '' },
-      }])
+      }]))
     })
   }
   const result: ChatHistory = {
     chat_session_id: chat.chat_session_id,
     chat_status: chat.status as 'Active' | 'Closed',
-    message_history: page.map(historyItem),
+    message_history: await Promise.all(page.map(historyItem)),
     has_more_messages: start > 0,
   }
   // spec-IAC #34: who closed a Closed Chat and when.
   if (chat.status === 'Closed') {
     result.closed_at = chat.closed_at
-    result.closed_by_name = fullName(chat.closed_by)
+    result.closed_by_name = (await fullName(chat.closed_by))
   }
   return result
 }
@@ -243,7 +245,7 @@ export async function getChatHistory(session: SessionContext, chatSessionId: str
 export interface ChatHistory {
   chat_session_id: string
   chat_status: 'Active' | 'Closed'
-  message_history: ReturnType<typeof historyItem>[]
+  message_history: Awaited<ReturnType<typeof historyItem>>[]
   has_more_messages: boolean
   closed_at?: string
   closed_by_name?: string
@@ -264,7 +266,8 @@ export async function closeChat(
   // afterStatusCheck is a test-only seam between the Active check and the write (lesson #13).
   options: { now?: Clock; afterStatusCheck?: () => Promise<void> } = {},
 ) {
-  requireParticipant(session, chatSessionId)
+  return withChatWriteLock(async()=>{
+  await requireParticipant(session, chatSessionId)
   const userId = session.userId!
   if (input.closeReason !== undefined && input.closeReason !== null && typeof input.closeReason !== 'string') {
     throw new ChatError('VALIDATION_ERROR', 'close_reason must be text')
@@ -273,16 +276,16 @@ export async function closeChat(
   if (codePoints(reason) > CLOSE_REASON_MAX_CODE_POINTS) {
     throw new ChatError('VALIDATION_ERROR', `close_reason is longer than ${CLOSE_REASON_MAX_CODE_POINTS} characters`)
   }
-  return withChatWriteLock(async () => {
-    const current = demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId)!
+  {
+    const current = (await demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId))!
     if (current.status !== 'Active') throw new ChatError('CHAT_CLOSED', 'This Chat is already closed')
     if (options.afterStatusCheck) await options.afterStatusCheck()
     const now = (options.now ?? systemClock)().getTime()
-    const latest = orderedMessages(chatSessionId).at(-1)
+    const latest = (await orderedMessages(chatSessionId)).at(-1)
     const closedAt = new Date(Math.max(now, latest ? Date.parse(latest.sent_at) : now)).toISOString()
     const change: Record<string, string> = { from: 'Active', to: 'Closed' }
     if (reason) change.close_reason = reason
-    demoRepository().applyBatch([
+    ;(await demoRepository().applyBatch([
       { table: 'chat_sessions', match: row => row.chat_session_id === chatSessionId, changes: { status: 'Closed', closed_at: closedAt, closed_by: userId } },
       {
         table: 'audit_logs',
@@ -291,11 +294,12 @@ export async function closeChat(
           target_id: chatSessionId, occurred_at: closedAt, change_or_result: JSON.stringify(change),
         },
       },
-    ])
+    ]))
     return {
       chat_session_id: chatSessionId, chat_status: 'Closed' as const, closed_at: closedAt, closed_by: userId,
       success_message: CLOSE_SUCCESS_MESSAGE,
     }
+  }
   })
 }
 
@@ -320,7 +324,7 @@ export async function sendAttachments(
   // failRecords runs inside the lock right before the record write.
   options: { now?: Clock; afterFilesWritten?: () => Promise<void>; failRecords?: () => void } = {},
 ): Promise<{ message_id: string; attachments: AttachmentOutput[]; sent_at: string }> {
-  const chat = requireParticipant(session, chatSessionId)
+  const chat = (await requireParticipant(session, chatSessionId))
   const senderUserId = session.userId!
   validateBatch(files)
   const store = chatFileStore()
@@ -333,9 +337,9 @@ export async function sendAttachments(
     }
     if (options.afterFilesWritten) await options.afterFilesWritten()
     return await withChatWriteLock(async () => {
-      const current = demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId)!
+      const current = (await demoRepository().find('chat_sessions', row => row.chat_session_id === chatSessionId))!
       if (current.status !== 'Active') throw new ChatError('CHAT_CLOSED', 'This Chat is closed; start a new Chat to continue')
-      const sentAt = nextSentAt(chatSessionId, (options.now ?? systemClock)().toISOString())
+      const sentAt = (await nextSentAt(chatSessionId, (options.now ?? systemClock)().toISOString()))
       const message: DemoRow = {
         message_id: randomUUID(), chat_session_id: chatSessionId, sender_user_id: senderUserId, text: '',
         message_kind: 'Attachment', experience_id: current.experience_id, quote_request_id: current.quote_request_id,
@@ -355,7 +359,7 @@ export async function sendAttachments(
         },
       ])
       if (options.failRecords) options.failRecords()
-      demoRepository().applyBatch([...messageOperations(chatSessionId, message, recipientOf(chat, senderUserId)), ...rows])
+      ;(await demoRepository().applyBatch([...(await messageOperations(chatSessionId, message, (await recipientOf(chat, senderUserId)))), ...rows]))
       return {
         message_id: message.message_id,
         attachments: planned.map(item => ({ attachment_id: item.attachmentId, file_name: item.file.name, file_type: item.fileType, file_size: item.file.size })),
@@ -373,12 +377,12 @@ export async function sendAttachments(
  * attachment outside this Chat answers like an unknown one (403, #27); no stored content → 404.
  */
 export async function readAttachment(session: SessionContext, chatSessionId: string, attachmentId: string) {
-  requireParticipant(session, chatSessionId)
+  ;(await requireParticipant(session, chatSessionId))
   const repository = demoRepository()
-  const link = repository.find('chat_attachments', row => row.attachment_id === attachmentId)
-  const message = link && repository.find('chat_messages', row => row.message_id === link.message_id)
+  const link = (await repository.find('chat_attachments', row => row.attachment_id === attachmentId))
+  const message = link && (await repository.find('chat_messages', row => row.message_id === link.message_id))
   if (!link || !message || message.chat_session_id !== chatSessionId) throw new ChatError('FORBIDDEN', 'Chat access denied')
-  const stored = repository.find('stored_files', row => row.file_id === link.file_id)
+  const stored = (await repository.find('stored_files', row => row.file_id === link.file_id))
   const bytes = stored ? chatFileStore().read(stored.file_id) : null
   if (!stored || !bytes) throw new ChatError('NOT_FOUND', SEED_FILE_MISSING)
   return { file_name: stored.file_name, file_type: stored.media_type, bytes }

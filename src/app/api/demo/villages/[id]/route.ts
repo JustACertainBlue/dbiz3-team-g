@@ -1,17 +1,17 @@
+import { filterAsync } from '@/lib/db/async-collections'
 import { NextResponse } from 'next/server'
-import { demoRepository } from '@/lib/demo/json-repository'
+import { demoRepository } from '@/lib/db/application-store'
 
-export function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const repository = demoRepository()
-  const village = repository.find('villages', row => row.village_id === params.id)
+  const village = (await repository.find('villages', row => row.village_id === params.id))
   if (!village) return NextResponse.json({ error: 'Village not found' }, { status: 404 })
 
-  const providers = repository.all('provider_profiles')
-    .filter(row => village.is_active==='true' && row.village_id === village.village_id && row.verification_status === 'Verified' && Boolean(row.published_version_no) && repository.find('provider_profile_versions',version=>version.provider_id===row.provider_id && version.version_no===row.published_version_no)?.version_status==='Verified' && repository.find('user_accounts',user=>user.user_id===row.user_id)?.account_status==='Active')
-    .map(provider => {
-      const version = repository.find('provider_profile_versions', row =>
-        row.provider_id === provider.provider_id && row.version_no === provider.published_version_no)
-      const experienceCount = repository.all('experiences')
+  const providers = (await Promise.all((await filterAsync((await repository.all('provider_profiles')),async row => village.is_active==='true' && row.village_id === village.village_id && row.verification_status === 'Verified' && Boolean(row.published_version_no) && (await repository.find('provider_profile_versions',version=>version.provider_id===row.provider_id && version.version_no===row.published_version_no))?.version_status==='Verified' && (await repository.find('user_accounts',user=>user.user_id===row.user_id))?.account_status==='Active'))
+    .map(async provider => {
+      const version = (await repository.find('provider_profile_versions', row =>
+        row.provider_id === provider.provider_id && row.version_no === provider.published_version_no))
+      const experienceCount = (await repository.all('experiences'))
         .filter(row => row.provider_id === provider.provider_id && !row.archived_at).length
       return {
         provider_id: provider.provider_id,
@@ -21,7 +21,7 @@ export function GET(_request: Request, { params }: { params: { id: string } }) {
         location_address: version?.location_address || '',
         experience_count: experienceCount,
       }
-    })
+    })))
 
   return NextResponse.json({
     village: {
@@ -33,6 +33,6 @@ export function GET(_request: Request, { params }: { params: { id: string } }) {
       is_active: village.is_active === 'true',
     },
     providers,
-    featured_experiences:repository.all('experiences').filter(row=>!row.archived_at && providers.some(provider=>provider.provider_id===row.provider_id)).sort((a,b)=>a.name.localeCompare(b.name,'vi')).slice(0,6).map(row=>({experience_id:row.experience_id,name:row.name,category:row.category,duration_minutes:Number(row.duration_minutes),max_participants:Number(row.max_participants)})),
+    featured_experiences:(await repository.all('experiences')).filter(row=>!row.archived_at && providers.some(provider=>provider.provider_id===row.provider_id)).sort((a,b)=>a.name.localeCompare(b.name,'vi')).slice(0,6).map(row=>({experience_id:row.experience_id,name:row.name,category:row.category,duration_minutes:Number(row.duration_minutes),max_participants:Number(row.max_participants)})),
   })
 }

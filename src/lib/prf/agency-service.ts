@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { demoSessionContextFor, toSessionContext, type SessionLike } from '@/lib/auth/session'
-import { demoRepository } from '@/lib/demo/json-repository'
+import { demoRepository } from '@/lib/db/application-store'
 import { filterAgencyFields, type AgencyProfileInput } from './visibility'
 import { AgencyProfilePatchSchema } from './validators'
 import { recordAuditLog } from './audit-logger'
@@ -23,11 +23,11 @@ export async function getAgencyProfile(
   agencyId: string,
   actorSession?: SessionLike,
 ): Promise<Partial<AgencyProfileInput>> {
-  const session = actorSession ? toSessionContext(actorSession) : demoSessionContextFor('guest')
+  const session = actorSession ? (await toSessionContext(actorSession)) : (await demoSessionContextFor('guest'))
   const repository = demoRepository()
-  const agency = repository.find('agency_profiles', row => row.agency_id === agencyId)
+  const agency = (await repository.find('agency_profiles', row => row.agency_id === agencyId))
   if (!agency) throw new AgencyError('Agency profile not found', 404)
-  const account = repository.find('user_accounts', row => row.user_id === agency.user_id)
+  const account = (await repository.find('user_accounts', row => row.user_id === agency.user_id))
 
   const parseObject = <T>(value: string, fallback: T): T => {
     try { return value ? JSON.parse(value) as T : fallback } catch { return fallback }
@@ -46,7 +46,7 @@ export async function getAgencyProfile(
     account_status: account?.account_status || 'Unknown',
   }
 
-  return filterAgencyFields(session, fullAgency)
+  return (await filterAgencyFields(session, fullAgency))
 }
 
 export async function updateAgencyProfile(
@@ -59,7 +59,9 @@ export async function updateAgencyProfile(
   requires_hdt_rereview: boolean
   account_status: string
 }> {
-  const actor = toSessionContext(actorSession)
+  return demoRepository().atomic(["agency_profiles","agency_major_change_requests","audit_logs"],async()=>{
+
+  const actor = (await toSessionContext(actorSession))
   if (
     !actor.authenticated ||
     actor.role !== 'Tour_Agency' ||
@@ -69,7 +71,7 @@ export async function updateAgencyProfile(
   }
 
   const repository = demoRepository()
-  const existing = repository.find('agency_profiles', row => row.agency_id === agencyId)
+  const existing = (await repository.find('agency_profiles', row => row.agency_id === agencyId))
   if (!existing) throw new AgencyError('Agency profile not found', 404)
   const raw = input && typeof input === 'object' ? input as Record<string, unknown> : {}
   const location = raw.location && typeof raw.location === 'object' ? raw.location as Record<string, unknown> : {}
@@ -102,11 +104,11 @@ export async function updateAgencyProfile(
   const proposedCompanyName = parsed.company_name !== undefined && parsed.company_name !== existing.company_name ? parsed.company_name : ''
   const proposedTaxId = parsed.tax_id !== undefined && parsed.tax_id !== existing.tax_id ? parsed.tax_id : ''
   if (proposedCompanyName || proposedTaxId) {
-    repository.insert('agency_major_change_requests', {
+    ;(await repository.insert('agency_major_change_requests', {
       major_change_id: randomUUID(), agency_id: agencyId,
       proposed_company_name: proposedCompanyName, proposed_tax_id: proposedTaxId,
       review_status: 'Pending Review', submitted_at: now, reviewed_at: '',
-    })
+    }))
   }
   if (parsed.company_type !== undefined) changes.company_type = parsed.company_type
   if (parsed.description !== undefined) changes.description = parsed.description
@@ -118,20 +120,22 @@ export async function updateAgencyProfile(
   if (['contact_person_name', 'phone_number', 'business_email'].some(key => parsed[key as keyof typeof parsed] !== undefined)) {
     changes.contact_info = JSON.stringify(nextContact)
   }
-  repository.update('agency_profiles', row => row.agency_id === agencyId, changes)
+  ;(await repository.update('agency_profiles', row => row.agency_id === agencyId, changes))
 
-  recordAuditLog(
+  ;(await recordAuditLog(
     actor.userId || 'unknown-user',
     'UPDATE_AGENCY_PROFILE',
     'AgencyProfile',
     agencyId,
     { hasMajorChange, updatedFields: Object.keys(parsed) },
-  )
+  ))
 
   return {
     success: true,
     agency_id: agencyId,
     requires_hdt_rereview: hasMajorChange,
-    account_status: repository.find('user_accounts', row => row.user_id === existing.user_id)?.account_status || 'Unknown',
+    account_status: (await repository.find('user_accounts', row => row.user_id === existing.user_id))?.account_status || 'Unknown',
   }
+
+  })
 }

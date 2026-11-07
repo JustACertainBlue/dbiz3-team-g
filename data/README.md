@@ -8,9 +8,7 @@ specs). Booking status enum is **On hold / Booked / Completed / Cancelled** ("Bo
 No real person's or business's records belong in seed data.
 
 This revision applies the review punch-list (see `CHANGELOG_SUMMARY.md`): **47 tables/entities**.
-The previous schema/seed revision was reported as loaded on PostgreSQL 16. The current revision passes
-`python data/scripts/validate_seed.py`; rerun a live PostgreSQL load and negative tests after
-these changes before claiming engine validation of the current version.
+The Supabase development deployment uses PostgreSQL 17, guarded migrations and the restricted server login. Live rollback integration tests cover Auth, Matching, Explore, Provider editing and Quote/Chat/Booking/Schedule. See [runtime-persistence.md](runtime-persistence.md) for approved runtime additions, and [Supabase quickstart](../docs/env/supabase-quickstart.md) for deployment commands.
 
 ## Read in order
 
@@ -37,7 +35,7 @@ From the repository root, run `python data/scripts/generate_seed.py` followed by
 PostgreSQL database and run `psql -X -v ON_ERROR_STOP=1 -d <validation_database> -f data/schema.sql`,
 then `psql -X -v ON_ERROR_STOP=1 -d <validation_database> -f data/seed/load_seed.sql` from the
 repository root. Supply your normal connection options or interactive password; do not save credentials
-in this repository. The current revision has passed the Python check but still needs this fresh live run.
+in this repository. For the shared Supabase development project, use the guarded migration/seed commands in the quickstart instead of loading this DDL over an existing schema.
 
 ## The `.mmd` / `.md` split (deliberate)
 

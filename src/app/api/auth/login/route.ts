@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: { code: result.reason, message: inactive ? 'Tài khoản hiện không hoạt động.' : 'Email hoặc mật khẩu không hợp lệ.' } }, { status: inactive ? 403 : 401 })
   }
 
-  const response = NextResponse.json({ data: { session: sessionContextFor(result.identity), redirectTo: workspacePath(result.identity) } })
+  const response = NextResponse.json({ data: { session: (await sessionContextFor(result.identity)), redirectTo: (await workspacePath(result.identity)) } })
   response.cookies.set(PRODUCT_SESSION_COOKIE, result.token, {
     httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: PRODUCT_SESSION_TTL_SECONDS,
   })

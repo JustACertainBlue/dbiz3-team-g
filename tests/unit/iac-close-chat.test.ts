@@ -70,14 +70,14 @@ describe('T003 | closeChat refused, nothing written (BR-021, SC-012, #29, #31, l
   const denied: Array<[string, () => Promise<unknown>]> = [
     ['a non-participant Agency', () => closeChat(AGENCY, PROVIDER_CHAT, {})],
     ['an unknown Chat id', () => closeChat(PROVIDER, 'no-such-chat', {})],
-    ['Guest', () => closeChat(demoSessionContextFor('guest'), PROVIDER_CHAT, {})],
-    ['UBND', () => closeChat(demoSessionContextFor('ubnd'), PROVIDER_CHAT, {})],
-    ['HDT', () => closeChat(demoSessionContextFor('hdt'), PROVIDER_CHAT, {})],
+    ['Guest', async () => closeChat((await demoSessionContextFor('guest')), PROVIDER_CHAT, {})],
+    ['UBND', async () => closeChat((await demoSessionContextFor('ubnd')), PROVIDER_CHAT, {})],
+    ['HDT', async () => closeChat((await demoSessionContextFor('hdt')), PROVIDER_CHAT, {})],
   ]
   for (const [name, run] of denied) {
     it(`${name} → 403 FORBIDDEN`, async () => {
       const before = snapshot()
-      await expect(run()).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })
+      await expect(((run()))).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })
       expect(snapshot()).toBe(before)
     })
   }

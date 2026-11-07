@@ -23,7 +23,7 @@ const owner = providerSession(BAT_TRANG, SEED_IDS.provider1VerifiedUserId)
 const ubnd = ubndSession(SEED_IDS.village1)
 const agency = agencyOwnerSession()
 const profileRow = () => demoRepository().all('provider_profiles').find(row => row.provider_id === BAT_TRANG)!
-const inExplore = () => eligibleRows(loadExploreRuntime()).some(row => row.provider.provider_id === BAT_TRANG)
+const inExplore = async () => eligibleRows((await loadExploreRuntime())).some(row => row.provider.provider_id === BAT_TRANG)
 
 describe('A2 | #39 Request Revision only on a Pending Verification version (spec-PRF #33, BR-007)', () => {
   beforeEach(() => demoRepository().reset())
@@ -34,7 +34,7 @@ describe('A2 | #39 Request Revision only on a Pending Verification version (spec
       .rejects.toMatchObject({ statusCode: 409 })
     expect(profileRow().verification_status).toBe('Verified')
     expect(demoRepository().all('provider_verification_reviews')).toHaveLength(reviewsBefore)
-    expect(inExplore()).toBe(true)
+    expect((await inExplore())).toBe(true)
   })
 
   it('accepts Request Revision on the pending revision of a Verified Provider', async () => {

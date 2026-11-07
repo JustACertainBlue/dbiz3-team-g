@@ -11,8 +11,8 @@ import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 
 const experienceId = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69'
 const pendingProviderId = '3a5d2ffc-79fa-5b75-a1e6-82beea3bed59'
-const agencyAuth = demoSessionContextFor('agency')
-const providerAuth = demoSessionContextFor('provider')
+const agencyAuth = (await demoSessionContextFor('agency'))
+const providerAuth = (await demoSessionContextFor('provider'))
 
 describe('functional demo foundation', () => {
   beforeEach(() => demoRepository().reset())
@@ -26,7 +26,7 @@ describe('functional demo foundation', () => {
     expect(first.is_new_request).toBe(true)
     expect(second).toMatchObject({ quote_request_id: first.quote_request_id, chat_session_id: first.chat_session_id, is_new_request: false })
     expect(repository.all('bookings')).toHaveLength(bookingsBefore)
-    expect(listChats(agencyAuth).some(row => row.chat_session_id === first.chat_session_id)).toBe(true)
+    expect((await listChats(agencyAuth)).some(row => row.chat_session_id === first.chat_session_id)).toBe(true)
     const conversation = repository.find('chat_sessions', row => row.chat_session_id === first.chat_session_id)
     expect(conversation).toMatchObject({ experience_id: experienceId, quote_request_id: first.quote_request_id })
     const history = await getChatHistory(agencyAuth, first.chat_session_id)
@@ -57,7 +57,7 @@ describe('functional demo foundation', () => {
         { url: 'https://example.invalid/demo/product.jpg', category: 'Product', media_type: 'image/jpeg', file_size_bytes: 1000000, width_px: 1920, height_px: 1080 },
       ],
     })
-    const catalog = buildExplorePage(loadExploreRuntime(), { viewer: { kind: 'agency', agencyId: DEMO_IDENTITIES.agency.agencyId! }, pageSize: 50 })
+    const catalog = buildExplorePage((await loadExploreRuntime()), { viewer: { kind: 'agency', agencyId: DEMO_IDENTITIES.agency.agencyId! }, pageSize: 50 })
     expect(catalog.experience_cards.some(card => card.id === created.experience_id)).toBe(true)
     await deleteExperience(created.experience_id, DEMO_IDENTITIES.provider)
     expect(demoRepository().find('experiences', row => row.experience_id === created.experience_id)).toBeUndefined()

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { SessionLike } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import { bookingUpdateOperations } from './agency-sync'
 import { loadBookingForActor } from './booking-access'
 import { hanoiTimestamp, systemClock, type Clock } from './clock'
@@ -42,12 +42,12 @@ export async function changeBookingStatus(
   const now = (options.now ?? systemClock)().getTime()
   const repository = demoRepository()
 
-  return withBookingWriteLock(() => {
+  return (await withBookingWriteLock(async () => {
     // BR-001 first: a denied request writes nothing. Then expiry, so a confirm at or after
     // hold_expires_at finds the Booking already Cancelled (#45, #50), and a fresh read.
-    if (loadBookingForActor(session, bookingId).view !== 'provider') throw new BookingError('FORBIDDEN', 'Only the Local Provider of this Booking can change its status')
-    expireDueHoldsLocked(new Date(now))
-    const { booking } = loadBookingForActor(session, bookingId)
+    if ((await loadBookingForActor(session, bookingId)).view !== 'provider') throw new BookingError('FORBIDDEN', 'Only the Local Provider of this Booking can change its status')
+    ;(await expireDueHoldsLocked(new Date(now)))
+    const { booking } = (await loadBookingForActor(session, bookingId))
     if (booking.status === 'Completed' || booking.status === 'Cancelled') {
       throw new BookingError('BOOKING_TERMINAL', `A ${booking.status} Booking cannot change status`) // BR-011
     }
@@ -60,13 +60,13 @@ export async function changeBookingStatus(
       from_status: booking.status, to_status: target, changed_by: session.userId ?? '', changed_at: at,
       reason: target === 'Cancelled' ? reason : '',
     }
-    const sync = bookingUpdateOperations({ ...booking, status: target, updated_at: at }, at)
+    const sync = (await bookingUpdateOperations({ ...booking, status: target, updated_at: at }, at))
     // BR-019, #44: status, history and message in one persist.
-    repository.applyBatch([
+    ;(await repository.applyBatch([
       { table: 'bookings', match: row => row.booking_id === booking.booking_id && row.status === booking.status, changes: { status: target, updated_at: at } },
       { table: 'booking_status_history', row: { history_id: randomUUID(), booking_id: booking.booking_id, ...entry } },
       ...sync.operations,
-    ])
+    ]))
     return { booking_status: target, status_history_entry: entry, schedules_synced: true, agency_notification_message_id: sync.messageId }
-  })
+  }))
 }

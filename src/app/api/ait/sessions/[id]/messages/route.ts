@@ -4,7 +4,7 @@ import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/sess
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
 
 async function authorize(request: Request, sessionId: string) {
-  const actor = sessionContextFromRequest(request)
+  const actor = (await sessionContextFromRequest(request))
   const matchingSession = await getMatchingSession(sessionId)
   if (!actor.authenticated) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   if (actor.role !== 'Tour_Agency' || !actor.agencyId || matchingSession?.agency_id !== actor.agencyId) {

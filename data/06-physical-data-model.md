@@ -45,3 +45,8 @@ The current [System Configuration](../docs/spec/docs/architecture/system%20confi
 ## Traceability
 
 The schema comments and [Data Dictionary](07-data-dictionary.md) cite the owning Function IDs. The complete Function-to-entity relation remains [CRUD Matrix](02-crud-matrix.md). Any schema change that cannot cite a Function/BR or approved Q decision returns to [Review](05-review.md).
+
+
+## Supabase runtime persistence addendum (2026-11-07)
+
+See [runtime-persistence.md](runtime-persistence.md) for the approved Matching status, Explore retry ID, preference-profile attributes and private Auth request-limit table, including types, constraints and rationale. The business entity count stays 47; the technical rate-limit table starts empty. Live services now use PostgreSQL through the shared async application store.

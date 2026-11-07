@@ -14,9 +14,9 @@ export const dynamic = 'force-dynamic'
 // Screen SCH139 Provider Schedule (F-SCHED-01 owner view on F-SCHED-09). Owner gate reused from
 // BKG134 (analyze L2): the owning Local Provider on its own URL.
 export default async function ProviderSchedulePage({ params, searchParams }: { params: { providerId: string }; searchParams: Record<string, string | undefined> }) {
-  const session = currentServerSession()
+  const session = (await currentServerSession())
   const styles = bookingDetailStyles + calendarStyles
-  if (!canOpenCreateBooking(session, params.providerId)) {
+  if (!(await canOpenCreateBooking(session, params.providerId))) {
     return <main className="bkg-page bkg-state"><h1>Provider Schedule</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được lịch này.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
   }
   const base = `/provider/${params.providerId}/schedule`
@@ -36,7 +36,7 @@ export default async function ProviderSchedulePage({ params, searchParams }: { p
     : null
 
   return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · SCH139</p><h1>Provider Schedule</h1><span>{sessionDisplayName(session)} · lịch tính từ giờ mở cửa và các Booking On hold / Booked</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · SCH139</p><h1>Provider Schedule</h1><span>{(await sessionDisplayName(session))} · lịch tính từ giờ mở cửa và các Booking On hold / Booked</span></header>
     <p className="bkg-actions">
       <Link href={`${base}?date_from=${addDays(dateFrom, -30)}`}>← 30 ngày trước</Link>
       <span>{dateFrom} → {addDays(dateFrom, 29)}</span>

@@ -4,7 +4,7 @@ import { sessionContextFromRequest } from '@/lib/auth/session'
 
 export async function POST(request: Request) {
   try {
-    const session = sessionContextFromRequest(request)
+    const session = (await sessionContextFromRequest(request))
     if (!session.authenticated) {
       return NextResponse.json({ error: 'Unauthorized', redirectTo: '/login' }, { status: 401 })
     }

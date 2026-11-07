@@ -2,7 +2,7 @@ import { imageSize } from 'image-size'
 import { randomUUID } from 'node:crypto'
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import type { SessionContext } from '../auth/session'
 import { imageMetadataError } from './experience-images'
 export class MediaError extends Error { constructor(message: string, public status = 400) { super(message) } }
@@ -20,28 +20,28 @@ export async function uploadProfileMedia(session: SessionContext, providerId: st
   }
   const id = randomUUID(), directory = join(process.cwd(), '.demo-data', 'prf-media')
   mkdirSync(directory,{recursive:true}); writeFileSync(join(directory,id),bytes,{mode:0o600})
-  demoRepository().insert('stored_files',{file_id:id,storage_key:`prf-media/${id}`,file_name:file.name,media_type,file_size_bytes:String(bytes.length),width_px:width ? String(width) : '',height_px:height ? String(height) : '',uploaded_by:session.userId!,created_at:new Date().toISOString()})
+  ;(await demoRepository().insert('stored_files',{file_id:id,storage_key:`prf-media/${id}`,file_name:file.name,media_type,file_size_bytes:String(bytes.length),width_px:width ? String(width) : '',height_px:height ? String(height) : '',uploaded_by:session.userId!,created_at:new Date().toISOString()}))
   return {file_id:id,url:`/api/prf/media/${id}`,file_name:file.name,media_type,file_size_bytes:bytes.length,width_px:width,height_px:height}
 }
-export function readProfileMedia(session: SessionContext, id: string) {
+export async function readProfileMedia(session: SessionContext, id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw new MediaError('Không tìm thấy file.',404)
-  const repo=demoRepository(), file=repo.find('stored_files',row=>row.file_id===id)
+  const repo=demoRepository(), file=(await repo.find('stored_files',row=>row.file_id===id))
   if (!file || file.storage_key !== `prf-media/${id}`) throw new MediaError('File gốc chưa được tải lên.',404)
   let allowed=session.authenticated && file.uploaded_by===session.userId
-  const canManage=(providerId:string)=>{
-    const provider=repo.find('provider_profiles',row=>row.provider_id===providerId)
+  const canManage=async (providerId:string)=>{
+    const provider=(await repo.find('provider_profiles',row=>row.provider_id===providerId))
     return Boolean(provider && session.authenticated && (session.providerId===providerId || (session.role==='ADMIN' && (session.adminType==='HDT' || session.adminType==='UBND' && session.assignedVillageId===provider.village_id))))
   }
-  const isPublicProvider=(provider:ReturnType<typeof repo.find>)=>Boolean(provider && provider.verification_status==='Verified' && provider.published_version_no && repo.find('provider_profile_versions',row=>row.provider_id===provider.provider_id && row.version_no===provider.published_version_no && row.version_status==='Verified') && repo.find('user_accounts',row=>row.user_id===provider.user_id && row.account_status==='Active') && repo.find('villages',row=>row.village_id===provider.village_id && row.is_active==='true'))
-  for (const version of repo.all('provider_version_documents').filter(row=>row.file_id===id)) if(canManage(version.provider_id))allowed=true
-  for(const media of repo.all('provider_version_media').filter(row=>row.file_id===id)) {
-    const provider=repo.find('provider_profiles',row=>row.provider_id===media.provider_id)
-    if(canManage(media.provider_id) || isPublicProvider(provider) && provider!.published_version_no===media.version_no)allowed=true
+  const isPublicProvider=async (provider:Awaited<ReturnType<typeof repo.find>>)=>Boolean(provider && provider.verification_status==='Verified' && provider.published_version_no && (await repo.find('provider_profile_versions',row=>row.provider_id===provider.provider_id && row.version_no===provider.published_version_no && row.version_status==='Verified')) && (await repo.find('user_accounts',row=>row.user_id===provider.user_id && row.account_status==='Active')) && (await repo.find('villages',row=>row.village_id===provider.village_id && row.is_active==='true')))
+  for (const version of (await repo.all('provider_version_documents')).filter(row=>row.file_id===id)) if((await canManage(version.provider_id)))allowed=true
+  for(const media of (await repo.all('provider_version_media')).filter(row=>row.file_id===id)) {
+    const provider=(await repo.find('provider_profiles',row=>row.provider_id===media.provider_id))
+    if((await canManage(media.provider_id)) || (await isPublicProvider(provider)) && provider!.published_version_no===media.version_no)allowed=true
   }
-  for(const media of repo.all('profile_media').filter(row=>row.file_id===id && row.experience_id)) {
-    const exp=repo.find('experiences',row=>row.experience_id===media.experience_id)
-    const provider=exp && repo.find('provider_profiles',row=>row.provider_id===exp.provider_id)
-    if(exp && (canManage(exp.provider_id) || !exp.archived_at && isPublicProvider(provider)))allowed=true
+  for(const media of (await repo.all('profile_media')).filter(row=>row.file_id===id && row.experience_id)) {
+    const exp=(await repo.find('experiences',row=>row.experience_id===media.experience_id))
+    const provider=exp && (await repo.find('provider_profiles',row=>row.provider_id===exp.provider_id))
+    if(exp && ((await canManage(exp.provider_id)) || !exp.archived_at && (await isPublicProvider(provider))))allowed=true
   }
   if(!allowed)throw new MediaError('Không có quyền xem tài liệu.',403)
   try{return {file,bytes:readFileSync(join(process.cwd(),'.demo-data','prf-media',id))}}catch{throw new MediaError('File gốc không còn trên máy chủ.',404)}

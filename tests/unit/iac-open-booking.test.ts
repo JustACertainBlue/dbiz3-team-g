@@ -24,7 +24,7 @@ describe('T012 | openChat with source Booking', () => {
   for (const [name, run, code] of denied) {
     it(`${name} → ${code}, nothing written (lesson #15)`, async () => {
       const before = writeSnapshot()
-      await expect(run()).rejects.toMatchObject({ code })
+      await expect(((run()))).rejects.toMatchObject({ code })
       expect(writeSnapshot()).toBe(before)
     })
   }

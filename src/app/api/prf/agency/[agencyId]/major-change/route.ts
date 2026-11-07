@@ -5,7 +5,7 @@ export async function POST(
   { params }: { params: { agencyId: string } | Promise<{ agencyId: string }> },
 ): Promise<Response> {
   const resolved = await Promise.resolve(params)
-  const session = sessionContextFromRequest(req)
+  const session = (await sessionContextFromRequest(req))
   if (!session.authenticated || session.role !== 'Tour_Agency' || session.agencyId !== resolved.agencyId) {
     return new Response(JSON.stringify({ error: 'Forbidden' }), {
       status: 403,

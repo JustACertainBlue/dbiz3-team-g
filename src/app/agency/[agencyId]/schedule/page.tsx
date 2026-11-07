@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 // Screen SCH141 Agency Schedule (F-SCHED-02 calendar, #68): own Bookings in all canonical statuses,
 // date range (default today .. +29, UI choice #71) and status filter (analyze M1).
 export default async function AgencySchedulePage({ params, searchParams }: { params: { agencyId: string }; searchParams: Record<string, string | undefined> }) {
-  const session = agencyPageSession(params.agencyId)
+  const session = (await agencyPageSession(params.agencyId))
   const styles = bookingDetailStyles + calendarStyles + scheduleStyles
   if (!session) {
     return <main className="bkg-page bkg-state"><h1>Agency Schedule</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch này.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
@@ -34,7 +34,7 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
   const blocks = rows.map(row => ({ start_at: row.start_at, end_at: row.end_at, status: row.status, booking_id: row.booking_id }))
 
   return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · SCH141</p><h1>Agency Schedule</h1><span>{sessionDisplayName(session)} · Booking của chính Agency, chỉ xem</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · SCH141</p><h1>Agency Schedule</h1><span>{(await sessionDisplayName(session))} · Booking của chính Agency, chỉ xem</span></header>
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái
         <select name="status" defaultValue={status}>

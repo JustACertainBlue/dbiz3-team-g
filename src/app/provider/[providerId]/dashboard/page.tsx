@@ -5,30 +5,30 @@ import { currentServerSession } from '@/lib/auth/server-session'
 import { canOpenCreateBooking } from '@/lib/booking/create-booking'
 import { BOOKING_STATUSES, providerBookingSummary } from '@/lib/booking/list-bookings'
 import { bookingDetailStyles } from '../bookings/[bookingId]/BookingDetailView'
-import { demoRepository } from '@/lib/demo/json-repository'
+import { demoRepository } from '@/lib/db/application-store'
 
 export const dynamic = 'force-dynamic'
 
 // Screen DSH018 Local Provider Dashboard — only the "Own booking action summary" panel in this
 // slice (#65). The profile, schedule and conversation panels come with their own modules.
 export default async function ProviderDashboardPage({ params }: { params: { providerId: string } }) {
-  const session = currentServerSession()
-  if (!canOpenCreateBooking(session, params.providerId)) {
+  const session = (await currentServerSession())
+  if (!(await canOpenCreateBooking(session, params.providerId))) {
     return <main className="bkg-page bkg-state"><h1>Local Provider Dashboard</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được Dashboard.</p><Link href="/login">Đăng nhập</Link><style>{bookingDetailStyles}</style></main>
   }
   const summary = await providerBookingSummary(session)
   const repository = demoRepository()
-  const profile = repository.find('provider_profiles', row => row.provider_id === params.providerId)
-  const version=profile && repository.find('provider_profile_versions',row=>row.provider_id===params.providerId && row.version_no===profile.current_version_no)
-  const certificate=repository.find('provider_version_documents',row=>row.provider_id===params.providerId && row.version_no===profile?.current_version_no && row.document_type==='Business Registration Certificate')
+  const profile = (await repository.find('provider_profiles', row => row.provider_id === params.providerId))
+  const version=profile && (await repository.find('provider_profile_versions',row=>row.provider_id===params.providerId && row.version_no===profile.current_version_no))
+  const certificate=(await repository.find('provider_version_documents',row=>row.provider_id===params.providerId && row.version_no===profile?.current_version_no && row.document_type==='Business Registration Certificate'))
   const completion=providerCompletion(version,Boolean(certificate))
-  const review=repository.all('provider_verification_reviews').filter(row=>row.provider_id===params.providerId && row.version_no===profile?.current_version_no).sort((a,b)=>b.reviewed_at.localeCompare(a.reviewed_at))[0]
+  const review=(await repository.all('provider_verification_reviews')).filter(row=>row.provider_id===params.providerId && row.version_no===profile?.current_version_no).sort((a,b)=>b.reviewed_at.localeCompare(a.reviewed_at))[0]
   const currentStatus=profile?.published_version_no && profile.current_version_no!==profile.published_version_no?version?.version_status:profile?.verification_status
-  const upcoming = repository.all('bookings').filter(row => row.provider_id === params.providerId && ['On hold', 'Booked'].includes(row.status) && Date.parse(row.start_at) >= Date.now()).sort((a, b) => a.start_at.localeCompare(b.start_at)).slice(0, 3)
-  const participants = repository.all('chat_participants').filter(row => row.user_id === session.userId)
-  const chats = repository.all('chat_sessions').filter(row => row.provider_id === params.providerId && participants.some(participant => participant.chat_session_id === row.chat_session_id)).sort((a, b) => b.last_message_at.localeCompare(a.last_message_at)).slice(0, 3)
+  const upcoming = (await repository.all('bookings')).filter(row => row.provider_id === params.providerId && ['On hold', 'Booked'].includes(row.status) && Date.parse(row.start_at) >= Date.now()).sort((a, b) => a.start_at.localeCompare(b.start_at)).slice(0, 3)
+  const participants = (await repository.all('chat_participants')).filter(row => row.user_id === session.userId)
+  const chats = (await repository.all('chat_sessions')).filter(row => row.provider_id === params.providerId && participants.some(participant => participant.chat_session_id === row.chat_session_id)).sort((a, b) => b.last_message_at.localeCompare(a.last_message_at)).slice(0, 3)
   return <main className="bkg-page provider-dashboard">
-    <header><p>HANOI ARTISAN BRIDGE</p><h1>Tổng quan hoạt động</h1><span>{sessionDisplayName(session)}</span></header>
+    <header><p>HANOI ARTISAN BRIDGE</p><h1>Tổng quan hoạt động</h1><span>{(await sessionDisplayName(session))}</span></header>
     <section className="bkg-panel" style={{ marginTop: 24 }}><h2>Hồ sơ xưởng</h2><p>Trạng thái thẩm định: <strong>{currentStatus || 'Chưa có hồ sơ'}</strong></p><p>Hoàn thiện hồ sơ: <strong>{completion.percentage}%</strong></p><progress aria-label="Mức độ hoàn thiện hồ sơ" value={completion.percentage} max={100}/>{completion.missing.length>0&&<p>Cần bổ sung: {completion.missing.join(", ")}.</p>}{review?.revision_comments&&<p><strong>Yêu cầu từ UBND:</strong> {review.revision_comments}</p>}{profile?.published_version_no && profile.current_version_no!==profile.published_version_no && <p>Phiên bản đã xác minh vẫn hiển thị công khai trong khi chờ duyệt bản sửa.</p>}<Link href={`/provider/${params.providerId}/edit`}>Cập nhật hồ sơ →</Link></section>
     <section className="bkg-panel" style={{ marginTop: 24 }}>
       <h2>Tổng quan booking</h2>
@@ -39,7 +39,7 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
       <p className="bkg-actions"><Link className="bkg-link-btn" href={`/provider/${params.providerId}/bookings?date_from=&status=&date_to=&page=1`}>Xem tất cả booking</Link></p>
     </section>
     <section className="bkg-panel" style={{ marginTop: 24 }}><h2>Lịch đón đoàn sắp tới</h2>{upcoming.length ? upcoming.map(booking => <p key={booking.booking_id}><Link href={`/provider/${params.providerId}/bookings/${booking.booking_id}`}>{new Date(booking.start_at).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} · {booking.group_size} khách · {booking.status}</Link></p>) : <p>Chưa có đoàn sắp tới. <Link href={`/provider/${params.providerId}/schedule`}>Xem lịch hoạt động</Link></p>}</section>
-    <section className="bkg-panel" style={{ marginTop: 24 }}><h2>Hội thoại gần đây</h2>{chats.length ? chats.map(chat => <p key={chat.chat_session_id}><Link href={`/messages?chat_session_id=${encodeURIComponent(chat.chat_session_id)}`}>{repository.find('agency_profiles', row => row.agency_id === chat.agency_id)?.company_name || 'Agency'} · {chat.status === 'Open' ? 'Đang trao đổi' : chat.status === 'Active' ? 'Đang trao đổi' : 'Đã đóng'} · {participants.find(row => row.chat_session_id === chat.chat_session_id)?.unread_count || '0'} tin chưa đọc</Link></p>) : <p>Chưa có hội thoại.</p>}</section>
+    <section className="bkg-panel" style={{ marginTop: 24 }}><h2>Hội thoại gần đây</h2>{chats.length ? (await Promise.all(chats.map(async chat => <p key={chat.chat_session_id}><Link href={`/messages?chat_session_id=${encodeURIComponent(chat.chat_session_id)}`}>{(await repository.find('agency_profiles', row => row.agency_id === chat.agency_id))?.company_name || 'Agency'} · {chat.status === 'Open' ? 'Đang trao đổi' : chat.status === 'Active' ? 'Đang trao đổi' : 'Đã đóng'} · {participants.find(row => row.chat_session_id === chat.chat_session_id)?.unread_count || '0'} tin chưa đọc</Link></p>))) : <p>Chưa có hội thoại.</p>}</section>
     <section className="provider-modules" aria-labelledby="provider-modules-title">
       <h2 id="provider-modules-title">Quản lý hoạt động của xưởng</h2>
       <div className="provider-module-grid">

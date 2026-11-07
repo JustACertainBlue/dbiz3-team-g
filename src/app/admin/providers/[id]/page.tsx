@@ -5,29 +5,29 @@ import MediaImage from '@/app/components/MediaImage'
 import { mediaUrl } from '@/lib/prf/media-urls'
 import { notFound } from 'next/navigation'
 import { currentServerSession } from '@/lib/auth/server-session'
-import { demoRepository } from '@/lib/demo/json-repository'
+import { demoRepository } from '@/lib/db/application-store'
 import ReviewActions from './ReviewActions'
 
 export const dynamic = 'force-dynamic'
 
-export default function AdminProviderDetail({ params }: { params: { id: string } }) {
-  const session = currentServerSession()
+export default async function AdminProviderDetail({ params }: { params: { id: string } }) {
+  const session = (await currentServerSession())
   const repository = demoRepository()
-  const provider = repository.find('provider_profiles', row => row.provider_id === params.id)
+  const provider = (await repository.find('provider_profiles', row => row.provider_id === params.id))
   if (!provider) notFound()
   const allowed = session.role === 'ADMIN' && (
     session.adminType === 'HDT'
     || (session.adminType === 'UBND' && session.assignedVillageId === provider.village_id)
   )
   if (!allowed) return <main className="admin-detail"><h1>Không có quyền xem hồ sơ này</h1><Link href="/admin/providers">Quay lại danh sách</Link></main>
-  const version = repository.find('provider_profile_versions', row => row.provider_id === params.id && row.version_no === provider.current_version_no)
-  const village = repository.find('villages', row => row.village_id === provider.village_id)
-  const reviews = repository.all('provider_verification_reviews').filter(row => row.provider_id === params.id).sort((a, b) => b.reviewed_at.localeCompare(a.reviewed_at))
+  const version = (await repository.find('provider_profile_versions', row => row.provider_id === params.id && row.version_no === provider.current_version_no))
+  const village = (await repository.find('villages', row => row.village_id === provider.village_id))
+  const reviews = (await repository.all('provider_verification_reviews')).filter(row => row.provider_id === params.id).sort((a, b) => b.reviewed_at.localeCompare(a.reviewed_at))
 
-  const certificateLink=repository.find('provider_version_documents',row=>row.provider_id===params.id && row.version_no===version?.version_no && row.document_type==='Business Registration Certificate')
-  const certificate=certificateLink && repository.find('stored_files',row=>row.file_id===certificateLink.file_id)
+  const certificateLink=(await repository.find('provider_version_documents',row=>row.provider_id===params.id && row.version_no===version?.version_no && row.document_type==='Business Registration Certificate'))
+  const certificate=certificateLink && (await repository.find('stored_files',row=>row.file_id===certificateLink.file_id))
   const certificateAvailable=certificate && certificate.storage_key===`prf-media/${certificate.file_id}` && existsSync(join(process.cwd(),'.demo-data','prf-media',certificate.file_id))
-  const images=repository.all('provider_version_media').filter(row=>row.provider_id===params.id && row.version_no===version?.version_no).sort((a,b)=>Number(a.display_order)-Number(b.display_order)).flatMap(row=>{const file=repository.find('stored_files',item=>item.file_id===row.file_id);return file?[file]:[]})
+  const images=(await Promise.all((await repository.all('provider_version_media')).filter(row=>row.provider_id===params.id && row.version_no===version?.version_no).sort((a,b)=>Number(a.display_order)-Number(b.display_order)).map(async row=>{const file=(await repository.find('stored_files',item=>item.file_id===row.file_id));return file?[file]:[]}))).flat()
   const currentStatus=provider.published_version_no && provider.current_version_no!==provider.published_version_no?version?.version_status:provider.verification_status
   let contact:Record<string,unknown>={};try{contact=JSON.parse(version?.contact_information||'{}')}catch{}
   let artisans:string[]=[];try{artisans=JSON.parse(version?.artisan_names||'[]')}catch{}

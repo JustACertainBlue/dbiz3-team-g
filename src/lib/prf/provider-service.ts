@@ -10,7 +10,7 @@ import {
 import { filterProviderFields, type ProviderProfileInput } from './visibility'
 import { ProviderProfilePatchSchema } from './validators'
 import { recordAuditLog } from './audit-logger'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -44,10 +44,10 @@ function parseJsonObject(value: string | null | undefined): Record<string, unkno
 }
 
 /** spec-BKG #78 shape: the seven ISO weekdays, each with its HH:MM windows. */
-function weeklyOperatingHours(providerId: string): Record<string, Array<{ local_start: string; local_end: string }>> {
+async function weeklyOperatingHours(providerId: string): Promise<Record<string, Array<{ local_start: string; local_end: string }>>> {
   const hours: Record<string, Array<{ local_start: string; local_end: string }>> =
     Object.fromEntries(['1', '2', '3', '4', '5', '6', '7'].map(day => [day, []]))
-  for (const row of demoRepository().all('provider_operating_hours').filter(item => item.provider_id === providerId)) {
+  for (const row of (await demoRepository().all('provider_operating_hours')).filter(item => item.provider_id === providerId)) {
     hours[String(Number(row.weekday))]?.push({ local_start: row.local_start.slice(0, 5), local_end: row.local_end.slice(0, 5) })
   }
   return hours
@@ -67,7 +67,7 @@ export async function getProviderProfile(
   providerId: string,
   actorSession?: SessionLike,
 ): Promise<Partial<ProviderProfileInput> | null> {
-  const session = actorSession ? toSessionContext(actorSession) : demoSessionContextFor('guest')
+  const session = actorSession ? (await toSessionContext(actorSession)) : (await demoSessionContextFor('guest'))
   const providers = await loadProviderProfiles()
   const provider = providers.find(p => p.provider_id === providerId)
 
@@ -81,9 +81,9 @@ export async function getProviderProfile(
 
   if (!isOwner && !isUBND && !isHDT) {
     const repo=demoRepository()
-    const published=repo.find('provider_profile_versions',row=>row.provider_id===providerId && row.version_no===String(provider.published_version_no) && row.version_status==='Verified')
-    const activeAccount=repo.find('user_accounts',row=>row.user_id===provider.user_id && row.account_status==='Active')
-    const activeVillage=repo.find('villages',row=>row.village_id===provider.village_id && row.is_active==='true')
+    const published=(await repo.find('provider_profile_versions',row=>row.provider_id===providerId && row.version_no===String(provider.published_version_no) && row.version_status==='Verified'))
+    const activeAccount=(await repo.find('user_accounts',row=>row.user_id===provider.user_id && row.account_status==='Active'))
+    const activeVillage=(await repo.find('villages',row=>row.village_id===provider.village_id && row.is_active==='true'))
     if (provider.verification_status!=='Verified' || !published || !activeAccount || !activeVillage) return null
   }
 
@@ -149,29 +149,29 @@ export async function getProviderProfile(
     // #32: the owner, UBND and HDT see the status of the revision under review; others see the
     // status of the published profile.
     verification_status: (isOwner || isUBND || isHDT) ? reviewStatus(provider, version) : provider.verification_status,
-    public_images: demoRepository().all('provider_version_media').filter(row=>row.provider_id===providerId && row.version_no===String(targetVersionNo)).flatMap(row=>{const file=demoRepository().find('stored_files',item=>item.file_id===row.file_id);return file?[mediaUrl(file.storage_key)]:[]}),
-    profile_images: demoRepository().all('provider_version_media').filter(row=>row.provider_id===providerId && row.version_no===String(targetVersionNo)).map(row=>({file_id:row.file_id,category:row.category})),
-    business_registration_certificate: (()=>{const doc=demoRepository().find('provider_version_documents',row=>row.provider_id===providerId && row.version_no===String(targetVersionNo) && row.document_type==='Business Registration Certificate');const file=doc && demoRepository().find('stored_files',row=>row.file_id===doc.file_id);return file?{file_id:file.file_id,file_name:file.file_name,url:mediaUrl(file.storage_key),available:file.storage_key===`prf-media/${file.file_id}` && existsSync(join(process.cwd(),'.demo-data','prf-media',file.file_id))}:null})(),
+    public_images: (await Promise.all((await demoRepository().all('provider_version_media')).filter(row=>row.provider_id===providerId && row.version_no===String(targetVersionNo)).map(async row=>{const file=(await demoRepository().find('stored_files',item=>item.file_id===row.file_id));return file?[mediaUrl(file.storage_key)]:[]}))).flat(),
+    profile_images: (await demoRepository().all('provider_version_media')).filter(row=>row.provider_id===providerId && row.version_no===String(targetVersionNo)).map(row=>({file_id:row.file_id,category:row.category})),
+    business_registration_certificate: (await (async ()=>{const doc=(await demoRepository().find('provider_version_documents',row=>row.provider_id===providerId && row.version_no===String(targetVersionNo) && row.document_type==='Business Registration Certificate'));const file=doc && (await demoRepository().find('stored_files',row=>row.file_id===doc.file_id));return file?{file_id:file.file_id,file_name:file.file_name,url:mediaUrl(file.storage_key),available:file.storage_key===`prf-media/${file.file_id}` && existsSync(join(process.cwd(),'.demo-data','prf-media',file.file_id))}:null})()),
     pricing,
     capacity,
     contact,
     // FR-003 (#40): booking conditions of the shown version and the real weekly operating hours.
     booking_conditions: parseJsonObject(version?.booking_conditions),
-    availability: { operating_hours: weeklyOperatingHours(providerId) },
+    availability: { operating_hours: (await weeklyOperatingHours(providerId)) },
     experiences: activeExperiences
       .map(exp => ({
         experience_id: exp.experience_id, name: exp.name, category: exp.category,
         duration_minutes: exp.duration_minutes, max_participants: exp.max_participants, price_per_person: exp.price_per_person,
       })),
     quality_metrics: {
-      total_bookings: demoRepository().all('bookings').filter(row => experiences.some(exp => exp.experience_id === row.experience_id)).length,
+      total_bookings: (await demoRepository().all('bookings')).filter(row => experiences.some(exp => exp.experience_id === row.experience_id)).length,
       average_booking_value: 0,
       cancellation_rate: 0,
       profile_completeness_score: version ? 1 : 0,
     },
   }
 
-  return filterProviderFields(session, fullProfile)
+  return (await filterProviderFields(session, fullProfile))
 }
 
 /**
@@ -191,7 +191,9 @@ export async function updateProviderProfile(
   published_version_intact: boolean
   operating_hours_updated: boolean
 }> {
-  const actor = toSessionContext(actorSession)
+  return demoRepository().atomic(["provider_profiles","provider_profile_versions","provider_verification_reviews","provider_version_documents","provider_version_media","provider_operating_hours","profile_media","stored_files","audit_logs","experiences","bookings"],async()=>{
+
+  const actor = (await toSessionContext(actorSession))
   if (
     !actor.authenticated ||
     actor.role !== 'Local_Provider' ||
@@ -213,22 +215,22 @@ export async function updateProviderProfile(
   const currentVersion = versions.find(version => version.provider_id === providerId && version.version_no === Number(provider.current_version_no || provider.published_version_no || 1))
     || versions.find(version => version.provider_id === providerId)
   if (!currentVersion) throw new ProviderNotFoundError('Provider profile version not found')
-  const oldCertificate = repository.find('provider_version_documents',row=>row.provider_id===providerId && row.version_no===String(currentVersion.version_no) && row.document_type==='Business Registration Certificate')
+  const oldCertificate = (await repository.find('provider_version_documents',row=>row.provider_id===providerId && row.version_no===String(currentVersion.version_no) && row.document_type==='Business Registration Certificate'))
   const certificateChanged = Boolean(data.certificate_file_id && data.certificate_file_id !== oldCertificate?.file_id)
   for (const id of [...(data.certificate_file_id?[data.certificate_file_id]:[]),...(data.profile_images||[]).map(image=>image.file_id)]) {
-    const file=repository.find('stored_files',row=>row.file_id===id)
-    const previouslyLinked=repository.find('provider_version_media',row=>row.provider_id===providerId && row.file_id===id) || repository.find('provider_version_documents',row=>row.provider_id===providerId && row.file_id===id)
+    const file=(await repository.find('stored_files',row=>row.file_id===id))
+    const previouslyLinked=(await repository.find('provider_version_media',row=>row.provider_id===providerId && row.file_id===id)) || (await repository.find('provider_version_documents',row=>row.provider_id===providerId && row.file_id===id))
     if(!file || (!previouslyLinked && file.uploaded_by!==actor.userId))throw new ForbiddenError('File does not belong to this Provider')
   }
 
   if (data.certificate_file_id) {
-    const file=repository.find('stored_files',row=>row.file_id===data.certificate_file_id)!
+    const file=(await repository.find('stored_files',row=>row.file_id===data.certificate_file_id))!
     if (!['application/pdf','image/jpeg','image/png'].includes(file.media_type)) throw new ForbiddenError('Invalid certificate type')
   }
   if (data.profile_images) {
     if (new Set(data.profile_images.map(image=>image.file_id)).size !== data.profile_images.length) throw new ForbiddenError('Duplicate profile image')
     for (const image of data.profile_images) {
-      const file=repository.find('stored_files',row=>row.file_id===image.file_id)!
+      const file=(await repository.find('stored_files',row=>row.file_id===image.file_id))!
       if (imageMetadataError({media_type:file.media_type,file_size_bytes:Number(file.file_size_bytes),width_px:Number(file.width_px),height_px:Number(file.height_px)})) throw new ForbiddenError('Invalid gallery image metadata')
     }
   }
@@ -265,13 +267,13 @@ export async function updateProviderProfile(
   if (verification_status==='Revision Required') verification_status='Pending Verification'
   const createRevision = new_version_pending && !revisionOpen
 
-  recordAuditLog(
+  ;(await recordAuditLog(
     actor.userId || 'unknown-user',
     'UPDATE_PROVIDER_PROFILE',
     'ProviderProfile',
     providerId,
     { verification_status, new_version_pending, published_version_intact },
-  )
+  ))
 
   const now = new Date().toISOString()
   const parseObject = (value: string) => { try { return value ? JSON.parse(value) as Record<string, unknown> : {} } catch { return {} } }
@@ -296,7 +298,7 @@ export async function updateProviderProfile(
   if (createRevision) {
     const nextVersion = Math.max(...versions.filter(version => version.provider_id === providerId).map(version => version.version_no), 0) + 1
     targetVersion = String(nextVersion)
-    repository.insert('provider_profile_versions', {
+    ;(await repository.insert('provider_profile_versions', {
       provider_id: providerId, version_no: String(nextVersion), version_status: 'Pending Verification',
       business_registration_number: versionChanges.business_registration_number ?? currentVersion.business_registration_number,
       business_name: versionChanges.business_name ?? currentVersion.business_name,
@@ -307,36 +309,36 @@ export async function updateProviderProfile(
       contact_information: versionChanges.contact_information ?? currentVersion.contact_information,
       booking_conditions: versionChanges.booking_conditions ?? currentVersion.booking_conditions,
       submitted_at: now, published_at: '',
-    })
-    repository.update('provider_profiles', row => row.provider_id === providerId, {
+    }))
+    ;(await repository.update('provider_profiles', row => row.provider_id === providerId, {
       current_version_no: String(nextVersion), updated_at: now,
-    })
+    }))
     verification_status = 'Pending Verification'
   } else {
-    repository.update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === String(currentVersion.version_no), versionChanges)
+    ;(await repository.update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === String(currentVersion.version_no), versionChanges))
     if (revisionOpen) {
-      repository.update('provider_profiles', row => row.provider_id === providerId, { updated_at: now })
+      ;(await repository.update('provider_profiles', row => row.provider_id === providerId, { updated_at: now }))
     } else {
-      repository.update('provider_profiles', row => row.provider_id === providerId, { verification_status, updated_at: now })
+      ;(await repository.update('provider_profiles', row => row.provider_id === providerId, { verification_status, updated_at: now }))
     }
   }
   if (createRevision) {
-    for (const table of ['provider_version_media','provider_version_documents']) for (const row of repository.all(table).filter(row=>row.provider_id===providerId && row.version_no===String(currentVersion.version_no))) repository.insert(table,{...row,version_no:targetVersion})
+    for (const table of ['provider_version_media','provider_version_documents']) for (const row of (await repository.all(table)).filter(row=>row.provider_id===providerId && row.version_no===String(currentVersion.version_no))) (await repository.insert(table,{...row,version_no:targetVersion}))
   }
   if (data.certificate_file_id) {
-    repository.remove('provider_version_documents',row=>row.provider_id===providerId && row.version_no===targetVersion && row.document_type==='Business Registration Certificate')
-    repository.insert('provider_version_documents',{provider_id:providerId,version_no:targetVersion,file_id:data.certificate_file_id,document_type:'Business Registration Certificate'})
+    ;(await repository.remove('provider_version_documents',row=>row.provider_id===providerId && row.version_no===targetVersion && row.document_type==='Business Registration Certificate'))
+    ;(await repository.insert('provider_version_documents',{provider_id:providerId,version_no:targetVersion,file_id:data.certificate_file_id,document_type:'Business Registration Certificate'}))
   }
   if (data.profile_images) {
-    repository.remove('provider_version_media',row=>row.provider_id===providerId && row.version_no===targetVersion)
-    data.profile_images.forEach((image,index)=>repository.insert('provider_version_media',{provider_id:providerId,version_no:targetVersion,file_id:image.file_id,category:image.category,display_order:String(index)}))
+    ;(await repository.remove('provider_version_media',row=>row.provider_id===providerId && row.version_no===targetVersion))
+    ;(await Promise.all(data.profile_images.map(async (image,index)=>(await repository.insert('provider_version_media',{provider_id:providerId,version_no:targetVersion,file_id:image.file_id,category:image.category,display_order:String(index)})))))
   }
   if (data.operating_hours) {
-    repository.remove('provider_operating_hours', row => row.provider_id === providerId)
-    data.operating_hours.filter(period => !period.is_closed).forEach(period => repository.insert('provider_operating_hours', {
+    ;(await repository.remove('provider_operating_hours', row => row.provider_id === providerId))
+    ;(await Promise.all(data.operating_hours.filter(period => !period.is_closed).map(async period => (await repository.insert('provider_operating_hours', {
       operating_hour_id: randomUUID(), provider_id: providerId, weekday: String(period.weekday),
       local_start: period.local_start, local_end: period.local_end,
-    }))
+    })))))
   }
 
   return {
@@ -347,6 +349,8 @@ export async function updateProviderProfile(
     published_version_intact,
     operating_hours_updated: Boolean(data.operating_hours && data.operating_hours.length > 0),
   }
+
+  })
 }
 
 /**
@@ -365,7 +369,9 @@ export async function reviewProvider(
   published_version_no?: number
   revision_comments?: string
 }> {
-  const actor = toSessionContext(actorSession)
+  return demoRepository().atomic(["provider_profiles","provider_profile_versions","provider_verification_reviews","provider_version_documents","provider_version_media","provider_operating_hours","profile_media","stored_files","audit_logs","experiences","bookings"],async()=>{
+
+  const actor = (await toSessionContext(actorSession))
   if (
     !actor.authenticated ||
     actor.role !== 'ADMIN' ||
@@ -407,26 +413,26 @@ export async function reviewProvider(
       ;(err as unknown as { statusCode: number }).statusCode = 409
       throw err
     }
-    recordAuditLog(
+    ;(await recordAuditLog(
       actor.userId || 'unknown-user',
       'REVIEW_PROVIDER_PROFILE_REVISION',
       'ProviderProfile',
       providerId,
       { decision, revisionComments },
-    )
+    ))
     const now = new Date().toISOString()
     const reviewedVersionNo = String(provider.current_version_no || provider.published_version_no || 1)
-    demoRepository().insert('provider_verification_reviews', {
+    ;(await demoRepository().insert('provider_verification_reviews', {
       review_id: randomUUID(), provider_id: providerId,
       version_no: reviewedVersionNo,
       reviewer_user_id: actor.userId || '', decision, revision_comments: revisionComments, reviewed_at: now,
-    })
+    }))
     if (provider.published_version_no && reviewedVersionNo !== String(provider.published_version_no)) {
       // BR-007: only the revision needs changes; the published version stays public.
-      demoRepository().update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === reviewedVersionNo, { version_status: 'Revision Required' })
-      demoRepository().update('provider_profiles', row => row.provider_id === providerId, { updated_at: now })
+      ;(await demoRepository().update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === reviewedVersionNo, { version_status: 'Revision Required' }))
+      ;(await demoRepository().update('provider_profiles', row => row.provider_id === providerId, { updated_at: now }))
     } else {
-      demoRepository().update('provider_profiles', row => row.provider_id === providerId, { verification_status: 'Revision Required', updated_at: now })
+      ;(await demoRepository().update('provider_profiles', row => row.provider_id === providerId, { verification_status: 'Revision Required', updated_at: now }))
     }
     return {
       success: true,
@@ -440,29 +446,29 @@ export async function reviewProvider(
     const nextPublishedVersion = Number(
       provider.current_version_no || provider.published_version_no || 1,
     )
-    recordAuditLog(
+    ;(await recordAuditLog(
       actor.userId || 'unknown-user',
       'REVIEW_PROVIDER_PROFILE_APPROVE',
       'ProviderProfile',
       providerId,
       { decision, published_version_no: nextPublishedVersion },
-    )
+    ))
     const now = new Date().toISOString()
-    demoRepository().insert('provider_verification_reviews', {
+    ;(await demoRepository().insert('provider_verification_reviews', {
       review_id: randomUUID(), provider_id: providerId, version_no: String(nextPublishedVersion),
       reviewer_user_id: actor.userId || '', decision, revision_comments: '', reviewed_at: now,
-    })
+    }))
     const previousPublished = provider.published_version_no ? String(provider.published_version_no) : ''
     if (previousPublished && previousPublished !== String(nextPublishedVersion)) {
       // US-6 AC2 / BR-007: the approved revision replaces the previously published version.
-      demoRepository().update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === previousPublished, { version_status: 'Superseded' })
+      ;(await demoRepository().update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === previousPublished, { version_status: 'Superseded' }))
     }
-    demoRepository().update('provider_profiles', row => row.provider_id === providerId, {
+    ;(await demoRepository().update('provider_profiles', row => row.provider_id === providerId, {
       verification_status: 'Verified', published_version_no: String(nextPublishedVersion), updated_at: now,
-    })
-    demoRepository().update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === String(nextPublishedVersion), {
+    }))
+    ;(await demoRepository().update('provider_profile_versions', row => row.provider_id === providerId && row.version_no === String(nextPublishedVersion), {
       version_status: 'Verified', published_at: now,
-    })
+    }))
     return {
       success: true,
       provider_id: providerId,
@@ -474,4 +480,6 @@ export async function reviewProvider(
   const err = new Error(`Invalid decision: ${decision}`)
   ;(err as unknown as { statusCode: number }).statusCode = 400
   throw err
+
+  })
 }

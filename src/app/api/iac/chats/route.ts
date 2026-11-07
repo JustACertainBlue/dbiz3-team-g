@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 // F-CHAT-03 Chat list (contracts/chat-api.md).
 export async function GET(request: Request) {
   try {
-    return NextResponse.json({ data: { chat_list: listChats(sessionContextFromRequest(request)) } })
+    return NextResponse.json({ data: { chat_list: (await listChats((await sessionContextFromRequest(request)))) } })
   } catch (error) {
     return chatErrorResponse(error)
   }
@@ -18,11 +18,11 @@ export async function GET(request: Request) {
 // F-CHAT-01 from a Booking (BKG135 / BKG138). Explore and AIT open through their handoff routes.
 export async function POST(request: Request) {
   try {
-    const session = sessionContextFromRequest(request)
+    const session = (await sessionContextFromRequest(request))
     const body = await request.json().catch(() => null) as { source?: unknown; booking_id?: unknown } | null
     if (body?.source !== 'Booking') {
       // Authorize first: a denied actor gets 403 whatever the body says (#27).
-      listChats(session)
+      ;(await listChats(session))
       throw new ChatError('VALIDATION_ERROR', 'Only source Booking can be opened here')
     }
     const bookingId = typeof body.booking_id === 'string' ? body.booking_id : undefined

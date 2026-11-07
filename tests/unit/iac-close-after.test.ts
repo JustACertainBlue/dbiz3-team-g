@@ -27,11 +27,11 @@ describe('T004 | after close', () => {
 
   it('the Closed Chat stays in the list as Closed (#35)', async () => {
     await closeChat(PROVIDER, PROVIDER_CHAT, {})
-    expect(listChats(PROVIDER).find(c => c.chat_session_id === PROVIDER_CHAT)?.chat_status).toBe('Closed')
+    expect((await listChats(PROVIDER)).find(c => c.chat_session_id === PROVIDER_CHAT)?.chat_status).toBe('Closed')
   })
 
   it('list and history reads never close an Active Chat (AC-IAC-NAV)', async () => {
-    listChats(PROVIDER)
+    ;(await listChats(PROVIDER))
     await getChatHistory(PROVIDER, PROVIDER_CHAT)
     expect(chatRow(PROVIDER_CHAT).status).toBe('Active')
   })

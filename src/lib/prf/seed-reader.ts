@@ -1,4 +1,4 @@
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 
 export interface SeedProviderProfile {
   provider_id: string
@@ -39,7 +39,7 @@ export interface SeedOperatingHours {
 }
 
 export async function loadProviderProfiles(): Promise<SeedProviderProfile[]> {
-  const records = demoRepository().all('provider_profiles')
+  const records = (await demoRepository().all('provider_profiles'))
 
   return records.map(r => ({
     ...r,
@@ -55,7 +55,7 @@ export async function loadProviderProfiles(): Promise<SeedProviderProfile[]> {
 }
 
 export async function loadExperiences(): Promise<SeedExperience[]> {
-  const records = demoRepository().all('experiences')
+  const records = (await demoRepository().all('experiences'))
 
   return records.map(r => ({
     ...r,
@@ -73,7 +73,7 @@ export async function loadExperiences(): Promise<SeedExperience[]> {
 }
 
 export async function loadOperatingHours(): Promise<SeedOperatingHours[]> {
-  const records = demoRepository().all('provider_operating_hours')
+  const records = (await demoRepository().all('provider_operating_hours'))
 
   return records.map(r => ({
     ...r,
@@ -104,7 +104,7 @@ export interface SeedProviderProfileVersion {
 }
 
 export async function loadProviderProfileVersions(): Promise<SeedProviderProfileVersion[]> {
-  const records = demoRepository().all('provider_profile_versions')
+  const records = (await demoRepository().all('provider_profile_versions'))
 
   return records.map(r => ({
     ...r,
@@ -134,7 +134,7 @@ export interface SeedVillage {
 }
 
 export async function loadVillages(): Promise<SeedVillage[]> {
-  const records = demoRepository().all('villages')
+  const records = (await demoRepository().all('villages'))
 
   return records.map(r => ({
     village_id: r.village_id,

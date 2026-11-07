@@ -20,11 +20,11 @@ import { demoRuntime } from '@/lib/explore/demo-runtime'
 
 const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69'
 const TRANG_AN = DEMO_IDENTITIES.agency.agencyId!
-const AGENCY = demoSessionContextFor('agency')
-const GUEST = demoSessionContextFor('guest')
+const AGENCY = (await demoSessionContextFor('agency'))
+const GUEST = (await demoSessionContextFor('guest'))
 
-function agencyExploreSession(): string {
-  return demoRuntime().startSession({ kind: 'agency', agencyId: TRANG_AN }, true).session_id
+async function agencyExploreSession(): Promise<string> {
+  return (await (await demoRuntime()).startSession({ kind: 'agency', agencyId: TRANG_AN }, true)).session_id
 }
 
 function post(body: unknown, exploreSession?: string) {
@@ -34,47 +34,47 @@ function post(body: unknown, exploreSession?: string) {
   }))
 }
 
-const strongEvents = (sessionId: string) => demoRuntime().eventsFor(sessionId)
+const strongEvents = async (sessionId: string) => (await (await demoRuntime()).eventsFor(sessionId))
   .filter(event => event.action_type === 'request_quote' || event.action_type === 'open_chat')
 
 describe('Slice C | FR-007 signal from the live handoff (spec-EXP #29, #32, #33)', () => {
   beforeEach(() => demoRepository().reset())
 
   it('Request Quote from the detail page logs one request_quote with source_context in filter_values', async () => {
-    const session = agencyExploreSession()
+    const session = (await agencyExploreSession())
     const res = await post({ action: 'quote', experience_id: EXPERIENCE, source_context: 'Detail Page' }, session)
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.data.action_signal_log_id).toEqual(expect.any(String))
-    expect(strongEvents(session)).toEqual([expect.objectContaining({
+    expect((await strongEvents(session))).toEqual([expect.objectContaining({
       action_type: 'request_quote', experience_id: EXPERIENCE, filter_values: { source_context: 'Detail Page' },
       interaction_id: body.data.action_signal_log_id,
     })])
   })
 
   it('a reused Quote logs nothing more (#32)', async () => {
-    const session = agencyExploreSession()
+    const session = (await agencyExploreSession())
     await post({ action: 'quote', experience_id: EXPERIENCE, source_context: 'Detail Page' }, session)
     const again = await (await post({ action: 'quote', experience_id: EXPERIENCE, source_context: 'Detail Page' }, session)).json()
     expect(again.data.is_new_request).toBe(false)
     expect(again.data.action_signal_log_id).toBeNull()
-    expect(strongEvents(session)).toHaveLength(1)
+    expect((await strongEvents(session))).toHaveLength(1)
   })
 
   it('Chat logs open_chat with its source_context (#33: Provider page = Detail Page)', async () => {
-    const session = agencyExploreSession()
+    const session = (await agencyExploreSession())
     const res = await post({ action: 'chat', experience_id: EXPERIENCE, source_context: 'Detail Page' }, session)
     expect(res.status).toBe(200)
-    expect(strongEvents(session)).toEqual([expect.objectContaining({ action_type: 'open_chat', filter_values: { source_context: 'Detail Page' } })])
+    expect((await strongEvents(session))).toEqual([expect.objectContaining({ action_type: 'open_chat', filter_values: { source_context: 'Detail Page' } })])
   })
 
   it('rejects a source_context outside Card / Detail Page and writes nothing', async () => {
-    const session = agencyExploreSession()
+    const session = (await agencyExploreSession())
     const quotes = demoRepository().all('quote_requests').length
     const res = await post({ action: 'quote', experience_id: EXPERIENCE, source_context: 'Search result' }, session)
     expect(res.status).toBe(400)
     expect(demoRepository().all('quote_requests')).toHaveLength(quotes)
-    expect(strongEvents(session)).toHaveLength(0)
+    expect((await strongEvents(session))).toHaveLength(0)
   })
 
   it('without an Explore session the handoff still works and logs nothing', async () => {
@@ -88,9 +88,9 @@ describe('Slice C | FR-011 Request Quote hidden after use (Q8)', () => {
   beforeEach(() => demoRepository().reset())
 
   it('hasQuoteRequest is false before and true after this Agency asked for this Experience', async () => {
-    expect(hasQuoteRequest(AGENCY, EXPERIENCE)).toBe(false)
+    expect((await hasQuoteRequest(AGENCY, EXPERIENCE))).toBe(false)
     await createQuoteHandoff(AGENCY, EXPERIENCE)
-    expect(hasQuoteRequest(AGENCY, EXPERIENCE)).toBe(true)
-    expect(hasQuoteRequest(GUEST, EXPERIENCE)).toBe(false)
+    expect((await hasQuoteRequest(AGENCY, EXPERIENCE))).toBe(true)
+    expect((await hasQuoteRequest(GUEST, EXPERIENCE))).toBe(false)
   })
 })

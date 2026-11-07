@@ -66,3 +66,10 @@ erDiagram
     quote_requests ||--o{ chat_sessions : primary_context
     bookings ||--o{ chat_sessions : primary_context
     stored_files ||--o| user_accounts : avatar_of
+
+    %% Private operational state, intentionally outside the 47 business entities.
+    hab_runtime_auth_rate_limits {
+        uuid runtime_id PK
+        varchar key "hashed email; not a UserAccount FK"
+        bigint at "epoch milliseconds"
+    }

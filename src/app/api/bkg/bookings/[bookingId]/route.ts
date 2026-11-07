@@ -12,7 +12,7 @@ type Context = { params: { bookingId: string } }
 
 export async function GET(request: NextRequest, { params }: Context) {
   try {
-    const data = await getBookingDetail(sessionContextFromRequest(request), params.bookingId)
+    const data = await getBookingDetail((await sessionContextFromRequest(request)), params.bookingId)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {
@@ -33,7 +33,7 @@ export async function PATCH(request: NextRequest, { params }: Context) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'Body must be a JSON object' } }, { status: 400 })
   }
   try {
-    const data = await updateBooking(sessionContextFromRequest(request), params.bookingId, body as Record<string, unknown>)
+    const data = await updateBooking((await sessionContextFromRequest(request)), params.bookingId, body as Record<string, unknown>)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {

@@ -15,27 +15,27 @@ const hongHa = { ...DEMO_IDENTITIES.agency, agencyId: HONG_HA }
 describe('T030 | canManageBooking / canViewAgencyBooking', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('Provider: own Booking on own URL only', () => {
-    expect(canManageBooking(DEMO_IDENTITIES.provider, OWN_PROVIDER, own())).toBe(true)
-    expect(canManageBooking(DEMO_IDENTITIES.provider, OTHER_PROVIDER, own())).toBe(false)
-    expect(canManageBooking(DEMO_IDENTITIES.provider, OWN_PROVIDER, othersBooking())).toBe(false)
+  it('Provider: own Booking on own URL only', async () => {
+    expect((await canManageBooking(DEMO_IDENTITIES.provider, OWN_PROVIDER, own()))).toBe(true)
+    expect((await canManageBooking(DEMO_IDENTITIES.provider, OTHER_PROVIDER, own()))).toBe(false)
+    expect((await canManageBooking(DEMO_IDENTITIES.provider, OWN_PROVIDER, othersBooking()))).toBe(false)
   })
 
-  it('Agency: own Booking on own URL only', () => {
-    expect(canViewAgencyBooking(hongHa, HONG_HA, own())).toBe(true)
-    expect(canViewAgencyBooking(DEMO_IDENTITIES.agency, DEMO_IDENTITIES.agency.agencyId!, own())).toBe(false)
-    expect(canViewAgencyBooking(DEMO_IDENTITIES.agency, HONG_HA, own())).toBe(false)
+  it('Agency: own Booking on own URL only', async () => {
+    expect((await canViewAgencyBooking(hongHa, HONG_HA, own()))).toBe(true)
+    expect((await canViewAgencyBooking(DEMO_IDENTITIES.agency, DEMO_IDENTITIES.agency.agencyId!, own()))).toBe(false)
+    expect((await canViewAgencyBooking(DEMO_IDENTITIES.agency, HONG_HA, own()))).toBe(false)
   })
 
-  it('an Agency cannot open the Provider screens, a Provider cannot open BKG138', () => {
-    expect(canManageBooking(hongHa, OWN_PROVIDER, own())).toBe(false)
-    expect(canViewAgencyBooking(DEMO_IDENTITIES.provider, HONG_HA, own())).toBe(false)
+  it('an Agency cannot open the Provider screens, a Provider cannot open BKG138', async () => {
+    expect((await canManageBooking(hongHa, OWN_PROVIDER, own()))).toBe(false)
+    expect((await canViewAgencyBooking(DEMO_IDENTITIES.provider, HONG_HA, own()))).toBe(false)
   })
 
-  it('UBND, HDT, Guest → false on both gates', () => {
+  it('UBND, HDT, Guest → false on both gates', async () => {
     for (const key of ['ubnd', 'hdt', 'guest'] as const) {
-      expect(canManageBooking(DEMO_IDENTITIES[key], OWN_PROVIDER, own())).toBe(false)
-      expect(canViewAgencyBooking(DEMO_IDENTITIES[key], HONG_HA, own())).toBe(false)
+      expect((await canManageBooking(DEMO_IDENTITIES[key], OWN_PROVIDER, own()))).toBe(false)
+      expect((await canViewAgencyBooking(DEMO_IDENTITIES[key], HONG_HA, own()))).toBe(false)
     }
   })
 })

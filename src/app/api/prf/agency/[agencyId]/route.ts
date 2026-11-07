@@ -12,7 +12,7 @@ export async function GET(
 ): Promise<Response> {
   try {
     const resolved = await Promise.resolve(params)
-    const session = sessionContextFromRequest(req)
+    const session = (await sessionContextFromRequest(req))
     const profile = await getAgencyProfile(resolved.agencyId, session)
     return new Response(JSON.stringify(profile), {
       status: 200,
@@ -33,7 +33,7 @@ export async function PATCH(
 ): Promise<Response> {
   try {
     const resolved = await Promise.resolve(params)
-    const session = sessionContextFromRequest(req)
+    const session = (await sessionContextFromRequest(req))
 
     const body = await req.json()
     const result = await updateAgencyProfile(resolved.agencyId, session, body)

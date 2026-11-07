@@ -25,7 +25,7 @@ import { loadExperiences } from '@/lib/db/seed-loader'
 export async function POST(request: Request) {
   try {
     // Authorize before reading the body (contract: authorize → validate → read/write).
-    const actor = sessionContextFromRequest(request)
+    const actor = (await sessionContextFromRequest(request))
     if (!actor.authenticated) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (actor.role !== 'Tour_Agency' || !actor.agencyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const body = await request.json().catch(() => null)

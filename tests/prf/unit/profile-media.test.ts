@@ -19,7 +19,7 @@ vi.mock('node:fs',async importOriginal=>{
     readFileSync:vi.fn((path,...args)=>isMedia(path)?blobs.get(String(path))??(()=>{throw new Error('Missing test media')})():fs.readFileSync(path,...args)),
   }
 })
-const repo=demoRepository(), owner=toSessionContext(providerSession())
+const repo=demoRepository(), owner=(await toSessionContext(providerSession()))
 beforeEach(()=>{repo.reset();blobs.clear()})
 
 function pdf(){return new File(['%PDF-1.4\nSynthetic certificate fixture'],'fixture.pdf',{type:'application/pdf'})}
@@ -38,9 +38,9 @@ describe('Private Provider media storage and access',()=>{
     const file=png(),uploaded=await uploadProfileMedia(owner,owner.providerId!,file)
     expect(uploaded).toMatchObject({width_px:1280,height_px:720,media_type:'image/png'})
     const {experience_id}=await createExperience(owner,{name:'Synthetic gallery experience',description:'Synthetic description',category:'Pottery',duration_minutes:60,price_per_person:100000,max_participants:10,notice_period_hours:24,images:(['Activity','Space','Product'] as const).map(category=>({...uploaded,category}))})
-    const detail=getExperienceDetail(loadExploreRuntime(),experience_id,{kind:'guest'})
+    const detail=getExperienceDetail((await loadExploreRuntime()),experience_id,{kind:'guest'})
     expect(detail?.gallery).toEqual([uploaded.url,uploaded.url,uploaded.url])
-    expect(readProfileMedia(toSessionContext(guestSession()),uploaded.file_id).bytes).toEqual(Buffer.from(await file.arrayBuffer()))
+    expect((await readProfileMedia((await toSessionContext(guestSession())),uploaded.file_id)).bytes).toEqual(Buffer.from(await file.arrayBuffer()))
     for(const link of repo.all('profile_media').filter(row=>row.experience_id===experience_id)) {
       expect(link.provider_id).toBe('')
       expect(link.experience_id).toBe(experience_id)
@@ -49,16 +49,16 @@ describe('Private Provider media storage and access',()=>{
   it('round-trips uploaded certificate bytes for the owner and denies Guest/unrelated users',async()=>{
     const file=pdf()
     const result=await uploadProfileMedia(owner,owner.providerId!,file,true)
-    expect(readProfileMedia(owner,result.file_id).bytes).toEqual(Buffer.from(await file.arrayBuffer()))
-    expect(()=>readProfileMedia(toSessionContext(guestSession()),result.file_id)).toThrow('Không có quyền')
-    expect(()=>readProfileMedia(toSessionContext(ubndSession()),result.file_id)).toThrow('Không có quyền')
+    expect((await readProfileMedia(owner,result.file_id)).bytes).toEqual(Buffer.from(await file.arrayBuffer()))
+    ;(await expect(async ()=>(await readProfileMedia((await toSessionContext(guestSession())),result.file_id))).rejects.toThrow('Không có quyền'))
+    ;(await expect(async ()=>(await readProfileMedia((await toSessionContext(ubndSession())),result.file_id))).rejects.toThrow('Không có quyền'))
     repo.insert('provider_version_documents',{provider_id:owner.providerId!,version_no:'1',file_id:result.file_id,document_type:'Business Registration Certificate'})
-    expect(readProfileMedia(toSessionContext(ubndSession()),result.file_id).file.file_id).toBe(result.file_id)
-    expect(()=>readProfileMedia(toSessionContext(ubndSession(SEED_IDS.village2)),result.file_id)).toThrow('Không có quyền')
-    expect(()=>readProfileMedia(toSessionContext(guestSession()),result.file_id)).toThrow('Không có quyền')
+    expect((await readProfileMedia((await toSessionContext(ubndSession())),result.file_id)).file.file_id).toBe(result.file_id)
+    ;(await expect(async ()=>(await readProfileMedia((await toSessionContext(ubndSession(SEED_IDS.village2))),result.file_id))).rejects.toThrow('Không có quyền'))
+    ;(await expect(async ()=>(await readProfileMedia((await toSessionContext(guestSession())),result.file_id))).rejects.toThrow('Không có quyền'))
   })
   it('rejects non-owner uploads, empty files, disguised SVG and undersized images',async()=>{
-    await expect(uploadProfileMedia(toSessionContext(guestSession()),owner.providerId!,pdf(),true)).rejects.toMatchObject({status:403})
+    await expect(uploadProfileMedia((await toSessionContext(guestSession())),owner.providerId!,pdf(),true)).rejects.toMatchObject({status:403})
     await expect(uploadProfileMedia(owner,SEED_IDS.providerDraft,pdf(),true)).rejects.toMatchObject({status:403})
     await expect(uploadProfileMedia(owner,owner.providerId!,new File([],'empty.png'))).rejects.toMatchObject({status:400})
     await expect(uploadProfileMedia(owner,owner.providerId!,new File(['<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"/>'],'fake.png',{type:'image/png'}))).rejects.toMatchObject({status:400})
@@ -70,16 +70,16 @@ describe('Private Provider media storage and access',()=>{
     // Access-policy fixture only; image decoding is covered by upload validation above.
     repo.update('stored_files',row=>row.file_id===result.file_id,{media_type:'image/png'})
     repo.insert('provider_version_media',{provider_id:owner.providerId!,version_no:'999',file_id:result.file_id,category:'Space'})
-    const guest=toSessionContext(guestSession())
-    expect(()=>readProfileMedia(guest,result.file_id)).toThrow('Không có quyền')
+    const guest=(await toSessionContext(guestSession()))
+    ;(await expect(async ()=>(await readProfileMedia(guest,result.file_id))).rejects.toThrow('Không có quyền'))
     const provider=repo.find('provider_profiles',row=>row.provider_id===owner.providerId)!
     repo.update('provider_version_media',row=>row.file_id===result.file_id,{version_no:provider.published_version_no})
-    expect(readProfileMedia(guest,result.file_id).file.file_id).toBe(result.file_id)
+    expect((await readProfileMedia(guest,result.file_id)).file.file_id).toBe(result.file_id)
     repo.update('user_accounts',row=>row.user_id===owner.userId,{account_status:'Suspended'})
-    expect(()=>readProfileMedia(guest,result.file_id)).toThrow('Không có quyền')
+    ;(await expect(async ()=>(await readProfileMedia(guest,result.file_id))).rejects.toThrow('Không có quyền'))
     repo.update('user_accounts',row=>row.user_id===owner.userId,{account_status:'Active'})
     repo.update('villages',row=>row.village_id===provider.village_id,{is_active:'false'})
-    expect(()=>readProfileMedia(guest,result.file_id)).toThrow('Không có quyền')
+    ;(await expect(async ()=>(await readProfileMedia(guest,result.file_id))).rejects.toThrow('Không có quyền'))
   })
   it('rejects a forged image URL before an Experience is inserted',async()=>{
     const result=await uploadProfileMedia(owner,owner.providerId!,pdf(),true)

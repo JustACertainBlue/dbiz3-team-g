@@ -1,6 +1,6 @@
 import { MessageTextSchema } from '@/lib/matching/types'
 import { randomUUID } from 'node:crypto'
-import { demoRepository } from '@/lib/demo/json-repository'
+import { demoRepository } from '@/lib/db/application-store'
 
 export interface MatchingSession {
   matching_session_id: string
@@ -35,20 +35,20 @@ export async function createMatchingSession(
     status: 'active',
   }
 
-  demoRepository().insert('matching_sessions', {
+  ;(await demoRepository().insert('matching_sessions', {
     matching_session_id: id,
     agency_id: agencyId,
     conversation_context: '{}',
     started_at: now.toISOString(),
     last_activity_at: now.toISOString(),
     status: 'active',
-  })
+  }))
 
   return session
 }
 
 export async function getMatchingSession(sessionId: string): Promise<MatchingSession | null> {
-  const row = demoRepository().find('matching_sessions', item => item.matching_session_id === sessionId)
+  const row = (await demoRepository().find('matching_sessions', item => item.matching_session_id === sessionId))
   if (!row) return null
   return {
     matching_session_id: row.matching_session_id,
@@ -65,16 +65,18 @@ export async function addMessage(
   sender: string,
   text: string
 ): Promise<ConversationMessage> {
+  return demoRepository().atomic(["matching_sessions","matching_messages"],async()=>{
+
   const parseResult = MessageTextSchema.safeParse(text)
   if (!parseResult.success) {
     throw new Error('Message text invalid: must be between 1 and 2000 characters.')
   }
 
   const repository = demoRepository()
-  const session = repository.find('matching_sessions', row => row.matching_session_id === sessionId)
+  const session = (await repository.find('matching_sessions', row => row.matching_session_id === sessionId))
   if (!session) throw new Error('Matching session not found')
   const now = new Date().toISOString()
-  repository.update('matching_sessions', row => row.matching_session_id === sessionId, { last_activity_at: now })
+  ;(await repository.update('matching_sessions', row => row.matching_session_id === sessionId, { last_activity_at: now }))
 
   const message: ConversationMessage = {
     message_id: randomUUID(),
@@ -83,19 +85,21 @@ export async function addMessage(
     text,
     sent_at: now,
   }
-  repository.insert('matching_messages', {
+  ;(await repository.insert('matching_messages', {
     message_id: message.message_id,
     matching_session_id: sessionId,
     sender,
     text,
     sent_at: now,
-  })
+  }))
 
   return message
+
+  })
 }
 
 export async function getMessages(sessionId: string): Promise<ConversationMessage[]> {
-  return demoRepository().all('matching_messages')
+  return (await demoRepository().all('matching_messages'))
     .filter(row => row.matching_session_id === sessionId)
     .sort((a, b) => a.sent_at.localeCompare(b.sent_at))
     .map(row => ({

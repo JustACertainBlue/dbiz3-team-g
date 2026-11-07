@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { SessionLike } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import { bookingUpdateOperations } from './agency-sync'
 import { loadBookingForActor } from './booking-access'
 import { hanoiTimestamp, systemClock, type Clock } from './clock'
@@ -37,11 +37,11 @@ export async function markGroupArrival(
   const now = (options.now ?? systemClock)().getTime()
   const repository = demoRepository()
 
-  return withBookingWriteLock(() => {
+  return (await withBookingWriteLock(async () => {
     // BR-001 first: a denied request writes nothing. Then expiry (#50, analyze H1) and a fresh read.
-    if (loadBookingForActor(session, bookingId).view !== 'provider') throw new BookingError('FORBIDDEN', 'Only the Local Provider of this Booking can mark arrival')
-    expireDueHoldsLocked(new Date(now))
-    const { booking } = loadBookingForActor(session, bookingId)
+    if ((await loadBookingForActor(session, bookingId)).view !== 'provider') throw new BookingError('FORBIDDEN', 'Only the Local Provider of this Booking can mark arrival')
+    ;(await expireDueHoldsLocked(new Date(now)))
+    const { booking } = (await loadBookingForActor(session, bookingId))
 
     const rejected = (validation_error: 'Booking Not Booked' | 'Tour Start Time Not Reached'): MarkArrivalResult => ({
       transition_applied: false, booking_status: booking.status, validation_error, private_schedule_synced: false, availability_released: false,
@@ -51,16 +51,16 @@ export async function markGroupArrival(
 
     const at = hanoiTimestamp(now)
     const entry: StatusHistoryEntry = { from_status: 'Booked', to_status: 'Completed', changed_by: session.userId ?? '', changed_at: at, reason: '' }
-    const sync = bookingUpdateOperations({ ...booking, status: 'Completed', arrival_at: at, updated_at: at }, at)
+    const sync = (await bookingUpdateOperations({ ...booking, status: 'Completed', arrival_at: at, updated_at: at }, at))
     // BR-016: the whole Booking completes; BR-019, #44: one persist.
-    repository.applyBatch([
+    ;(await repository.applyBatch([
       { table: 'bookings', match: row => row.booking_id === booking.booking_id && row.status === 'Booked', changes: { status: 'Completed', arrival_at: at, updated_at: at } },
       { table: 'booking_status_history', row: { history_id: randomUUID(), booking_id: booking.booking_id, ...entry } },
       ...sync.operations,
-    ])
+    ]))
     return {
       transition_applied: true, booking_status: 'Completed', arrived_at: at, status_history_entry: entry,
       private_schedule_synced: true, availability_released: true,
     }
-  })
+  }))
 }

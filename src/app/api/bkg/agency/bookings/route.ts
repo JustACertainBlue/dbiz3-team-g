@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const params = new URL(request.url).searchParams
   const query = Object.fromEntries(['status', 'village_id', 'date_from', 'date_to'].map(name => [name, params.get(name) ?? undefined]))
   try {
-    const data = await listAgencyBookings(sessionContextFromRequest(request), query)
+    const data = await listAgencyBookings((await sessionContextFromRequest(request)), query)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {

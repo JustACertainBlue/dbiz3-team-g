@@ -12,7 +12,7 @@ type Context = { params: { bookingId: string } }
 
 export async function POST(request: NextRequest, { params }: Context) {
   try {
-    const data = await markGroupArrival(sessionContextFromRequest(request), params.bookingId)
+    const data = await markGroupArrival((await sessionContextFromRequest(request)), params.bookingId)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {

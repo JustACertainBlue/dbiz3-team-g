@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { DEMO_SESSION_COOKIE, demoSessionFor, demoSessionFromRequest, type ActorSession } from './demo-session'
 import { productSessionFromRequest, accountNeedsPasswordChange } from './product-session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 
 export type AuthRole = 'ADMIN' | 'Tour_Agency' | 'Local_Provider'
 export type AdminType = 'HDT' | 'UBND'
@@ -32,16 +32,16 @@ function canonicalRole(session: ActorSession): AuthRole | null {
   return 'ADMIN'
 }
 
-function permissionSet(role: AuthRole | null, adminType: AdminType | null): string[] {
+async function permissionSet(role: AuthRole | null, adminType: AdminType | null): Promise<string[]> {
   if (!role) return []
-  return [...new Set(demoRepository().all('role_permissions')
+  return [...new Set((await demoRepository().all('role_permissions'))
     .filter(row => row.role_code === role && (!row.admin_type || row.admin_type === adminType))
     .map(row => row.permission_code))]
     .sort()
 }
 
 /** DemoAuthAdapter: translate the legacy demo vocabulary to the canonical AUT contract. */
-export function sessionContextFor(session: ActorSession): SessionContext {
+export async function sessionContextFor(session: ActorSession): Promise<SessionContext> {
   const role = canonicalRole(session)
   const adminType = role === 'ADMIN' ? session.adminType : null
   const dataScope: DataScope | null = role === 'ADMIN'
@@ -56,38 +56,38 @@ export function sessionContextFor(session: ActorSession): SessionContext {
     agencyId: role === 'Tour_Agency' ? session.agencyId : null,
     providerId: role === 'Local_Provider' ? session.providerId : null,
     assignedVillageId: role === 'ADMIN' && adminType === 'UBND' ? session.villageId : null,
-    permissions: permissionSet(role, adminType),
+    permissions: (await permissionSet(role, adminType)),
     dataScope,
   }
 }
 
-export function toSessionContext(session: SessionLike): SessionContext {
-  return 'permissions' in session ? session : sessionContextFor(session)
+export async function toSessionContext(session: SessionLike): Promise<SessionContext> {
+  return 'permissions' in session ? session : (await sessionContextFor(session))
 }
 
 /** Presentation helper for demo pages; identity and authorization stay in SessionContext. */
-export function sessionDisplayName(session: SessionLike): string {
-  const actor = toSessionContext(session)
+export async function sessionDisplayName(session: SessionLike): Promise<string> {
+  const actor = (await toSessionContext(session))
   if (!actor.authenticated || !actor.userId) return 'Khách xem công khai'
-  return demoRepository().find('user_accounts', row => row.user_id === actor.userId)?.full_name
+  return (await demoRepository().find('user_accounts', row => row.user_id === actor.userId))?.full_name
     || (actor.role === 'Tour_Agency' ? 'Tour Agency' : actor.role === 'Local_Provider' ? 'Local Provider' : `${actor.adminType ?? ''} Admin`.trim())
 }
 
-export function demoSessionContextFor(key: string | null | undefined): SessionContext {
-  return sessionContextFor(demoSessionFor(key))
+export async function demoSessionContextFor(key: string | null | undefined): Promise<SessionContext> {
+  return (await sessionContextFor(demoSessionFor(key)))
 }
 
-export function sessionContextFromRequest(request: NextRequest | Request): SessionContext {
-  const productSession = productSessionFromRequest(request)
+export async function sessionContextFromRequest(request: NextRequest | Request): Promise<SessionContext> {
+  const productSession = (await productSessionFromRequest(request))
   if (productSession) {
-    const mustChangePassword = accountNeedsPasswordChange(productSession.userId)
+    const mustChangePassword = (await accountNeedsPasswordChange(productSession.userId))
     const path = new URL(request.url).pathname
-    if (mustChangePassword && !['/api/auth/change-password', '/api/auth/session', '/api/auth/logout'].includes(path)) return sessionContextFor(demoSessionFor('guest'))
-    return { ...sessionContextFor(productSession), mustChangePassword }
+    if (mustChangePassword && !['/api/auth/change-password', '/api/auth/session', '/api/auth/logout'].includes(path)) return (await sessionContextFor(demoSessionFor('guest')))
+    return { ...(await sessionContextFor(productSession)), mustChangePassword }
   }
   // Legacy demo cookies remain available only to the existing automated regression suite.
   // Development and production must authenticate through the opaque product session.
-  return sessionContextFor(process.env.NODE_ENV === 'test' ? demoSessionFromRequest(request) : demoSessionFor('guest'))
+  return (await sessionContextFor(process.env.NODE_ENV === 'test' ? demoSessionFromRequest(request) : demoSessionFor('guest')))
 }
 
 export interface AccessCheckResult {

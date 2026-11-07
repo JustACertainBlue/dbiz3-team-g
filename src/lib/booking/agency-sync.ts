@@ -42,19 +42,26 @@ export async function bookingUpdateOperations(
   const agencyUserId = (await repository.find('agency_profiles', row => row.agency_id === booking.agency_id))?.user_id ?? ''
   const operations: BatchOperation[] = []
 
-  let chat = (await resolveChat(booking))
-  const sentAt=chat?await nextSentAt(chat.chat_session_id,at):at
+  // Issue #66: the message uses the IAC sent_at format (ISO UTC, milliseconds) and is strictly later than
+  // the Chat's latest message (spec-IAC #47), even when two Booking events fall in the same second.
+  // The Booking's own timestamps keep the BKG +07:00 format; only the Chat message time changes.
+  const instant = new Date(Date.parse(at)).toISOString()
+  let chat = await resolveChat(booking)
+  let sentAt: string
   if (!chat) {
-    const created = (await newPairChatOperations({
+    sentAt = instant
+    const created = await newPairChatOperations({
       agencyId: booking.agency_id, providerId: booking.provider_id, source: 'Booking', at,
       experienceId: booking.experience_id, bookingId: booking.booking_id, unread: { agency: 1 },
-    }))
-    chat = { ...created.chat, last_message_at: at }
+    })
+    chat = { ...created.chat, last_message_at: sentAt }
     operations.push({ ...created.operations[0], row: chat } as BatchOperation, ...created.operations.slice(1))
   } else {
     const chatId = chat.chat_session_id
+    sentAt = await nextSentAt(chatId, instant)
     operations.push({ table: 'chat_sessions', match: row => row.chat_session_id === chatId, changes: { last_message_at: sentAt } })
-    const participant = (await repository.find('chat_participants', row => row.chat_session_id === chatId && row.user_id === agencyUserId))
+    const participant = await repository.find('chat_participants', row => row.chat_session_id === chatId && row.user_id === agencyUserId)
+
     operations.push(participant
       ? { table: 'chat_participants', match: row => row.chat_session_id === chatId && row.user_id === agencyUserId, changes: { unread_count: String(Number(participant.unread_count || 0) + 1) } }
       : { table: 'chat_participants', row: { chat_session_id: chatId, user_id: agencyUserId, last_read_message_id: '', unread_count: '1' } })

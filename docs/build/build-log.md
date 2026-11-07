@@ -859,6 +859,59 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Deferred configuration | Real email unavailable; explicit local dev-outbox for synthetic testing only; PostgreSQL production deployment not part of this merge |
 | Git strategy | Preserve existing local commits and original PR author history; resolve the PR to the tested shared-runtime tree, then fast-forward its head and use a GitHub merge commit |
 
+### Entry 49: 07/11 Claude Code + human — flaky bcrypt test: hash cost from environment (`linh/fix-bcrypt-test`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (task 1 of 4, 2026-11-07); branch `linh/fix-bcrypt-test` from `main` `34a906c`; the agent pushes the branch and opens the PR, the human merges |
+| Problem | `tests/unit/product-session.test.ts` "authenticates a non-demo Agency using its actual hash and organization" timed out at 5000 ms in 2 of 2 full local runs on macOS (passes alone in ~2 s): one `bcryptjs` hash plus three compares at cost 12 under the parallel suite. The human ruled out raising the test timeout. |
+| Spec check | spec-AUT and the AUT plans name `bcryptjs` / "secure hashing" but no work factor, so the cost is an environment setting, not a business rule. Production and development behaviour is unchanged (cost 12). |
+| What the agent produced | `src/lib/auth/password.ts`: `passwordHashCost(env)` returns 4 (bcrypt minimum) only when `NODE_ENV=test`, else 12; `hashPassword` uses it. No environment override variable, so a deployment cannot lower the cost by configuration. New test `tests/unit/password-cost.test.ts`. |
+| Existing tests changed | None. |
+| Human review | Pending. |
+| Tests | Red: `password-cost.test.ts` 3 failed / 1 passed (`passwordHashCost is not a function` ×2; the hash test received rounds 12, expected 4). Green: full suite `Test Files 168 passed (168)`, `Tests 1034 passed (1034)` three runs in a row; `npm run lint` passed. Mutation (each restored): always 12 → 2 red; always 4 → 1 red. |
+| Demo | Not applicable: no user-visible change; dev/prod cost covered by the unit test with an explicit `NODE_ENV`. |
+| Commit | One commit on `linh/fix-bcrypt-test`; branch pushed by the agent, PR opened, merge left to the human. |
+
+### Entry 50: 07/11 Claude Code + human — regression after hab_session; quickstarts use real login (`linh/quickstarts-real-login`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (task 3, 2026-11-07); branch from `main` `83027e5`; the agent pushes and opens the PR, the human merges |
+| Regression (real login, `npm run demo:reset`, one `npm run dev`) | Curl with `hab_session` cookies from `POST /api/auth/login` for the four demo identities. AIT quickstart §3: 5 matches, Vạn Phúc #1 (89.4), quote/chat twice return the same ids, Provider 403. BKG 011 §4 all steps match (create → update → Booked → arrival → Completed, cancel, 400/403/409). 012 all steps match on fresh data. 013 schedule 200, public blocks only `start_at`/`end_at`/`status`. IAC 014/015/016 every step and error case matches (send, close, attach, download, 400/403/404/409). ADM API: HDT 200, Guest 401, Agency 403, UBND locked to Hạ Thái despite `villageId` / forged `x-mock-session`. Browser, clicked: Agency "Yêu cầu báo giá" opens `/messages` on the Bát Tràng Chat; "Chat với Provider" reopens the same Chat (still 3 Chats); Agency edits its street address → saved (runtime checked); Provider Experiences page; UBND dashboard 🔒 Hạ Thái; HDT dashboard all villages. PRF API: `price_per_person` 0 → 400, Guest → 403, UBND of another village → 403 (BR-005) |
+| Defect found | Issue #66: BKG Booking Update messages get a local, second-precision `sent_at`, so two updates in one second appear in the wrong order in the Chat. Pre-existing, not caused by `hab_session` |
+| Agent mistake | The first AIT run returned 401 because the agent put `-b <jar>` in a zsh variable (zsh does not split it), so curl sent no cookie; noted in `demo-login.md` |
+| What changed | New `docs/build/demo-login.md` (demo accounts, where the password rule comes from, cookie jars in `.demo-data/`, macOS and PowerShell login loops). Quickstarts 001-ait, 001-exp, 002-prf, 003-adm, 011–016: `-H "Cookie: hab_demo_account=…"` → `-b .demo-data/<name>.jar`, Role Switcher / mock-session text → `/login` + Đăng xuất. `docs/UI_VERIFICATION_GUIDE.md` §1 and its three role steps. Plans, tasks and contracts are left as history |
+| Existing tests changed | None (docs only) |
+| Verified | The bash login loop run verbatim (4 × HTTP 200) and sample updated commands from 012/014 and ADM (HTTP 200). The PowerShell loop is **not verified** (no PowerShell on this Mac) |
+| Commit | One docs commit; branch pushed by the agent, PR opened, merge left to the human |
+
+### Entry 51: 07/11 Claude Code + human — issue #66: BKG Booking Update sent_at in the IAC format (`linh/fix-bkg-chat-order`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (2026-11-07, Session 10 debugging procedure); branch from `main` `83027e5`; the agent pushes and opens the PR, the human merges |
+| Root cause | `bookingUpdateOperations` (`src/lib/booking/agency-sync.ts`) wrote the Chat message with the BKG clock string (`hanoiTimestamp`: `+07:00`, seconds only) instead of IAC's `nextSentAt`. Two Booking events of one Chat in the same second got equal `sent_at`, and the history tie-break on random `message_id` showed them in the wrong order (integration-defect origins #2 and #5) |
+| Fix | The message `sent_at` and the Chat `last_message_at` = `nextSentAt(chat, ISO UTC of at)`: ISO UTC with milliseconds, at least 1 ms after the Chat's latest message (spec-IAC #47); a new Booking Chat uses the ISO UTC instant. Booking fields keep the BKG `+07:00` format. History sorting already compares `Date.parse` (instants, not strings) and is unchanged |
+| Tests | New `tests/unit/bkg-iac-message-order.test.ts` (5, named with spec-BKG FR-008 / spec-IAC BR-014, #47): normal; same second; same millisecond; refused status change; legacy `+07:00` rows. Red before the fix: 5 failed (`expected '2026-09-30T00:00:00+07:00' to match …`, `expected 1790701200000 to be greater than 1790701200000`, `expected 1 to be 2`, wrong order). Green after. Mutations (restored from a scratch copy): `sent_at: at` → 5 red; no `nextSentAt` → 4 red; string sort in `getChatHistory` → 1 red. Full suite `169 files / 1039 tests` three runs in a row; `npm run lint` passed |
+| Existing tests changed | None |
+| Demo | Curl on the dev server with real login: Provider creates a Booking and cancels it; the Agency's history shows On hold (`…:43.000Z`) then Cancelled (`…:44.000Z`) |
+| Open question | Rows written **before** the fix with the same second in `+07:00` still tie and are ordered by `message_id` (plan 014 R8 / Q6, asserted by T016 in `tests/unit/iac-chat-history.test.ts:44`). Ordering ties by storage order would need that existing test changed, so it is left to the human |
+| AI Use Log | `docs/ai-use-log.md` created with this change; "Checked by" pending |
+| Commit | One commit `fix(BKG): …`; branch pushed by the agent, PR with "Closes #66", merge left to the human |
+
+### Entry 52: 07/11 Claude Code + human — cost-12 password test: precomputed hash, 15 s for that test only (`linh/fix-cost12-test`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested and approved by linhkhanh-vu (2026-11-07: "Đồng ý sửa test cost-12", then "Đồng ý timeout 15000 ms cho RIÊNG test cost-12 này"); branch from `main` `b16c855`; the agent pushes and opens the PR, the human merges |
+| Why an existing test changed | `tests/unit/password-cost.test.ts` › "still verifies hashes created with cost 12" (added in Entry 49) timed out at 5000 ms in the full suite while the laptop was heavily loaded (load average ≈ 38; one cost-12 hash ≈ 2.6 s, one compare ≈ 1.2 s, measured). The failure was timing, not code: `src/` is identical to `main` |
+| Change | (1) The test no longer hashes at cost 12: it uses a precomputed `$2b$12$…` hash of a password named as a test-only fixture. (2) New asserts: prefix `$2[ab]$12$` and `getRounds` = 12; wrong password → `false` (the old test only checked `true`), so the test is stricter, not weaker. (3) `it(…, 15_000)` for this test only, with the reason in a comment: cost-12 bcrypt is slow on purpose (the work factor of existing accounts), unlike product-session where cost-12 hashing in tests was removed (Entry 49). Global Vitest config unchanged |
+| Mutation (foreground, restored from a scratch copy, checked with `cmp`) | `verifyPassword` always `true` → this test red; always `false` → this test red |
+| Agent mistake | One earlier mutation loop exceeded the tool limit and was moved to the background while `password.ts` was mutated; it restored the file itself and `cmp` confirmed it. Rule from the human: mutation checks run in the foreground only |
+| Tests | `git diff main -- src` empty; `npm run lint` passed; full suite `169 files / 1039 tests` passed twice in a row (24–30 s, load ≈ 8) |
+| Commit | One commit `test: …`; branch pushed by the agent, PR opened, merge left to the human |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

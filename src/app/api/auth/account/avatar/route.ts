@@ -1,12 +1,10 @@
+import { readObject,writeObject,removeObject } from '@/lib/storage/object-store'
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { demoRepository } from '@/lib/db/application-store'
 
 export const dynamic = 'force-dynamic'
-const directory = () => join(process.cwd(), '.demo-data', 'account-avatars')
 export async function GET(request: Request) {
   const session = (await sessionContextFromRequest(request))
   if (!session.authenticated) return new NextResponse(null, { status: 401 })
@@ -14,9 +12,9 @@ export async function GET(request: Request) {
   const account = (await repo.find('user_accounts', row => row.user_id === session.userId))
   const file = (await repo.find('stored_files', row => row.file_id === account?.avatar_file_id && row.uploaded_by === session.userId))
   if (!file || !/^[0-9a-f-]{36}$/i.test(file.file_id) || !['image/png','image/jpeg'].includes(file.media_type)) return new NextResponse(null, { status: 404 })
-  const path = join(directory(), file.file_id)
-  if (!existsSync(path)) return new NextResponse(null, { status: 404 })
-  return new NextResponse(readFileSync(path), { headers: { 'Content-Type': file.media_type, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } })
+  const bytes=await readObject(file.storage_key)
+  if(!bytes)return new NextResponse(null,{status:404})
+  return new NextResponse(new Uint8Array(bytes), { headers: { 'Content-Type': file.media_type, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } })
 }
 export async function POST(request: Request) {
   const session = (await sessionContextFromRequest(request))
@@ -30,12 +28,14 @@ export async function POST(request: Request) {
     const jpeg = bytes.length >= 4 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 && bytes[bytes.length-2] === 255 && bytes[bytes.length-1] === 217
     if (!png && !jpeg) throw new Error('INVALID')
     const id = randomUUID()
-    mkdirSync(directory(), { recursive: true }); writeFileSync(join(directory(), id), bytes)
+    await writeObject(`account-avatars/${id}`,bytes,png?'image/png':'image/jpeg')
+    try {
     const now = new Date().toISOString()
     ;(await demoRepository().applyBatch([
       { table: 'stored_files', row: { file_id: id, storage_key: `account-avatars/${id}`, file_name: file.name.slice(0,255), media_type: png ? 'image/png' : 'image/jpeg', file_size_bytes: String(bytes.length), width_px: '', height_px: '', uploaded_by: session.userId!, created_at: now } },
       { table: 'user_accounts', match: row => row.user_id === session.userId, changes: { avatar_file_id: id, updated_at: now } },
     ]))
+    }catch(error){await removeObject(`account-avatars/${id}`);throw error}
     return NextResponse.json({ success: true })
   } catch { return NextResponse.json({ error: 'Chọn ảnh JPG/PNG hợp lệ, tối đa 2 MB.' }, { status: 400 }) }
 }

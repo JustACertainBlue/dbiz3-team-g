@@ -32,7 +32,7 @@ describe('T004 | sendAttachments', () => {
       uploaded_by: AGENCY_USER,
     })
     expect(Number(stored.file_size_bytes)).toBe(8)
-    expect(new TextDecoder().decode(chatFileStore().read(link.file_id)!)).toBe('noi dung')
+    expect(new TextDecoder().decode((await chatFileStore().read(link.file_id))!)).toBe('noi dung')
   })
 
   it('the Provider sends five files in one message; PNG stored without dimensions (BR-010, #41, #44)', async () => {

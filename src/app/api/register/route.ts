@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { saveRegistrationFiles } from '@/lib/auth/registration-files'
+import { saveRegistrationFiles,discardRegistrationFiles } from '@/lib/auth/registration-files'
 import { registrationDelivery } from '@/lib/auth/registration-delivery'
 import { RegistrationError, submitRegistration } from '@/lib/auth/registration-service'
 import { registrationSchema } from '@/lib/auth/registration-validation'
@@ -16,7 +16,8 @@ export async function POST(request: Request) {
     const parsed = registrationSchema.safeParse(input)
     if (!parsed.success) return NextResponse.json({ is_valid: false, validation_errors: parsed.error.issues.map(issue => ({ field: issue.path.join('.'), message: issue.message })) }, { status: 422 })
     const metadata = await saveRegistrationFiles(files)
-    return NextResponse.json(await submitRegistration(parsed.data, metadata, deliver), { status: 201 })
+    try{return NextResponse.json(await submitRegistration(parsed.data, metadata, deliver), { status: 201 })}
+    catch(error){await discardRegistrationFiles(metadata);throw error}
   } catch (error) {
     return NextResponse.json({ is_valid: false, message: error instanceof RegistrationError ? error.message : 'Registration could not be completed.' }, { status: error instanceof RegistrationError ? error.status : 500 })
   }

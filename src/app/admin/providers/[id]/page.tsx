@@ -1,6 +1,5 @@
+import { objectExists } from '@/lib/storage/object-store'
 import Link from 'next/link'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import MediaImage from '@/app/components/MediaImage'
 import { mediaUrl } from '@/lib/prf/media-urls'
 import { notFound } from 'next/navigation'
@@ -26,7 +25,7 @@ export default async function AdminProviderDetail({ params }: { params: { id: st
 
   const certificateLink=(await repository.find('provider_version_documents',row=>row.provider_id===params.id && row.version_no===version?.version_no && row.document_type==='Business Registration Certificate'))
   const certificate=certificateLink && (await repository.find('stored_files',row=>row.file_id===certificateLink.file_id))
-  const certificateAvailable=certificate && certificate.storage_key===`prf-media/${certificate.file_id}` && existsSync(join(process.cwd(),'.demo-data','prf-media',certificate.file_id))
+  const certificateAvailable=certificate && certificate.storage_key===`prf-media/${certificate.file_id}` && (await objectExists(certificate.storage_key))
   const images=(await Promise.all((await repository.all('provider_version_media')).filter(row=>row.provider_id===params.id && row.version_no===version?.version_no).sort((a,b)=>Number(a.display_order)-Number(b.display_order)).map(async row=>{const file=(await repository.find('stored_files',item=>item.file_id===row.file_id));return file?[file]:[]}))).flat()
   const currentStatus=provider.published_version_no && provider.current_version_no!==provider.published_version_no?version?.version_status:provider.verification_status
   let contact:Record<string,unknown>={};try{contact=JSON.parse(version?.contact_information||'{}')}catch{}

@@ -1,5 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { writeObject,removeObject } from '../storage/object-store'
 import { randomUUID } from 'node:crypto'
 import { RegistrationError } from './registration-service'
 export async function saveRegistrationFiles(files: File[]) {
@@ -12,11 +11,15 @@ export async function saveRegistrationFiles(files: File[]) {
     if (!(pdf || png || jpeg)) throw new RegistrationError('Documents must be PDF, JPEG or PNG.')
     return { bytes, name: file.name, type: pdf ? 'application/pdf' : png ? 'image/png' : 'image/jpeg' }
   }))
-  const directory = join(process.cwd(), '.demo-data', 'registration-documents')
-  mkdirSync(directory, { recursive: true })
-  return buffers.map(file => {
-    const id = randomUUID()
-    writeFileSync(join(directory, id), file.bytes, { mode: 0o600 })
-    return { file_id: id, storage_key: `registration-documents/${id}`, file_name: file.name, media_type: file.type, file_size_bytes: String(file.bytes.length), width_px: '', height_px: '', uploaded_by: '', created_at: new Date().toISOString() }
-  })
+  const saved:Array<Record<string,string>&{storage_key:string}>=[]
+  try {
+    for(const file of buffers){
+      const id=randomUUID(),storage_key=`registration-documents/${id}`
+      await writeObject(storage_key,file.bytes,file.type)
+      saved.push({file_id:id,storage_key,file_name:file.name,media_type:file.type,file_size_bytes:String(file.bytes.length),width_px:'',height_px:'',uploaded_by:'',created_at:new Date().toISOString()})
+    }
+    return saved
+  }catch(error){for(const file of saved)await removeObject(file.storage_key);throw error}
 }
+
+export async function discardRegistrationFiles(files:ReadonlyArray<{storage_key:string}>){for(const file of files)await removeObject(file.storage_key)}

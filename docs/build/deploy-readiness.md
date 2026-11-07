@@ -75,6 +75,9 @@ Environment variables (names only):
 
 ## 5. Decisions for the team before deploying
 
+> Decided 2026-11-07 after the Supabase cutover: see [ADR 0001](../adr/0001-hosting.md) (Render + Supabase, one
+> instance, separate dev/production databases, test accounts via `db:set-test-passwords`, no email).
+
 1. **B1 + B2, how testers log in on the hosted version** (pick one and record it in the ADR):
    - (a) Add a real email adapter (needs an email provider account and secrets in the platform's
      environment settings).

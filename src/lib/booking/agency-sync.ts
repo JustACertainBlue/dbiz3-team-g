@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { demoRepository } from '../demo/json-repository'
 import type { BatchOperation, DemoRow } from '../demo/types'
-import { findActivePairChat, newPairChatOperations } from '../iac/chat-pairs'
+import { findActivePairChat, newPairChatOperations, nextSentAt } from '../iac/chat-pairs'
 
 // F-SCHED-08: every Booking event sends one 'Booking Update' message to the Agency (spec #49, #55).
 // The caller adds the returned operations to its own applyBatch call (one persist per event, #44)
@@ -42,17 +42,24 @@ export function bookingUpdateOperations(
   const agencyUserId = repository.find('agency_profiles', row => row.agency_id === booking.agency_id)?.user_id ?? ''
   const operations: BatchOperation[] = []
 
+  // Issue #66: the message uses the IAC sent_at format (ISO UTC, milliseconds) and is strictly later than
+  // the Chat's latest message (spec-IAC #47), even when two Booking events fall in the same second.
+  // The Booking's own timestamps keep the BKG +07:00 format; only the Chat message time changes.
+  const instant = new Date(Date.parse(at)).toISOString()
   let chat = resolveChat(booking)
+  let sentAt: string
   if (!chat) {
+    sentAt = instant
     const created = newPairChatOperations({
       agencyId: booking.agency_id, providerId: booking.provider_id, source: 'Booking', at,
       experienceId: booking.experience_id, bookingId: booking.booking_id, unread: { agency: 1 },
     })
-    chat = { ...created.chat, last_message_at: at }
+    chat = { ...created.chat, last_message_at: sentAt }
     operations.push({ ...created.operations[0], row: chat } as BatchOperation, ...created.operations.slice(1))
   } else {
     const chatId = chat.chat_session_id
-    operations.push({ table: 'chat_sessions', match: row => row.chat_session_id === chatId, changes: { last_message_at: at } })
+    sentAt = nextSentAt(chatId, instant)
+    operations.push({ table: 'chat_sessions', match: row => row.chat_session_id === chatId, changes: { last_message_at: sentAt } })
     const participant = repository.find('chat_participants', row => row.chat_session_id === chatId && row.user_id === agencyUserId)
     operations.push(participant
       ? { table: 'chat_participants', match: row => row.chat_session_id === chatId && row.user_id === agencyUserId, changes: { unread_count: String(Number(participant.unread_count || 0) + 1) } }
@@ -65,7 +72,7 @@ export function bookingUpdateOperations(
     row: {
       message_id: messageId, chat_session_id: chat.chat_session_id, sender_user_id: '',
       text: messageText(booking, experience?.name ?? '', changedFields), message_kind: 'Booking Update',
-      experience_id: booking.experience_id, quote_request_id: '', booking_id: booking.booking_id, sent_at: at,
+      experience_id: booking.experience_id, quote_request_id: '', booking_id: booking.booking_id, sent_at: sentAt,
     },
   })
   return { operations, messageId }

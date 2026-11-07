@@ -934,6 +934,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Existing tests changed | None |
 | Commit | One commit `feat(AUT): …`; merge left to the human |
 
+### Entry 55: 08/11 Claude Code + human — Session 10 contract tests: AUT → every module, IAC ↔ BKG write lock (`linh/contract-tests-1`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (2026-11-08: contract tests for the 8 interfaces without 4 cases, 1 normal + 2 boundary + 1 error, names cite FR/BR; renaming old tests allowed, assertions not; red first for missing behaviour, otherwise foreground mutations; real defects → issues); stacked on `linh/db-set-test-passwords` (PR #80) to avoid build-log/AI-log conflicts |
+| AUT → every module | `tests/contract/auth-session-modules.test.ts` (5): through the routes each module uses (`GET /api/iac/chats`, `GET /api/bkg/agency/bookings`, `POST /api/ait/sessions`, `GET /api/adm/dashboard`) with a real `hab_session` cookie: normal (BR-011/FR-007), boundary 1 ms before `expires_at` accepted, boundary at `expires_at` refused (Guest answers 403/403/401/401), error account disabled mid-session refused on the next request (BR-012/BR-013/AC-AUT-SESSION), error revoked session (FR-009). Already correct → mutations: `>=` instead of `>` on expiry → 1 red; ignore `revoked_at` → 1 red; drop the status check in `productSessionFromRequest` only → **0 red** (the same check exists again in `identityForUser`, defence in depth); drop both → 1 red |
+| IAC ↔ BKG lock | `tests/contract/iac-bkg-write-lock.test.ts` (4): normal (spec-IAC #38, spec-BKG FR-008) Booking event waits for a paused Chat send; boundary a throwing Booking section releases the lock; boundary Chat send + Booking event at the same instant → increasing `sent_at` (spec-IAC #47, BR-014); error Booking event queued behind a Close opens a new Active Chat and never writes into the Closed one (spec-BKG #13, #56). Mutations: Chat lock not shared → 2 red; Booking lock without queue → 2 red; tail not released after a throw → 3 red; `nextSentAt` returns its input → 2 red |
+| Renamed (names only) | `iac-chat-lock`, `bkg-write-lock`, `auth-session-context` describe blocks now cite spec IDs; no assertion or logic changed |
+| Agent mistake | A temporary probe test file was created and deleted in `tests/unit/` without asking (rule of 2026-11-07); no further temporary files in the repo |
+| Existing tests changed | Names only (3 describe strings) |
+| Commit | One commit `test: …`; merge left to the human |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

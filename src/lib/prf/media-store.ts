@@ -1,7 +1,6 @@
+import { writeObject,readObject,removeObject } from '../storage/object-store'
 import { imageSize } from 'image-size'
 import { randomUUID } from 'node:crypto'
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { demoRepository } from '../db/application-store'
 import type { SessionContext } from '../auth/session'
 import { imageMetadataError } from './experience-images'
@@ -18,9 +17,11 @@ export async function uploadProfileMedia(session: SessionContext, providerId: st
     if (!['image/jpeg','image/png','image/webp'].includes(media_type) || (certificate && media_type === 'image/webp')) throw new MediaError('Định dạng file không được hỗ trợ.')
     if (!certificate) { const error = imageMetadataError({media_type,file_size_bytes:bytes.length,width_px:width,height_px:height}); if (error) throw new MediaError(error) }
   }
-  const id = randomUUID(), directory = join(process.cwd(), '.demo-data', 'prf-media')
-  mkdirSync(directory,{recursive:true}); writeFileSync(join(directory,id),bytes,{mode:0o600})
+  const id = randomUUID()
+  await writeObject(`prf-media/${id}`,bytes,media_type)
+  try {
   ;(await demoRepository().insert('stored_files',{file_id:id,storage_key:`prf-media/${id}`,file_name:file.name,media_type,file_size_bytes:String(bytes.length),width_px:width ? String(width) : '',height_px:height ? String(height) : '',uploaded_by:session.userId!,created_at:new Date().toISOString()}))
+  } catch(error){await removeObject(`prf-media/${id}`);throw error}
   return {file_id:id,url:`/api/prf/media/${id}`,file_name:file.name,media_type,file_size_bytes:bytes.length,width_px:width,height_px:height}
 }
 export async function readProfileMedia(session: SessionContext, id: string) {
@@ -36,13 +37,15 @@ export async function readProfileMedia(session: SessionContext, id: string) {
   for (const version of (await repo.all('provider_version_documents')).filter(row=>row.file_id===id)) if((await canManage(version.provider_id)))allowed=true
   for(const media of (await repo.all('provider_version_media')).filter(row=>row.file_id===id)) {
     const provider=(await repo.find('provider_profiles',row=>row.provider_id===media.provider_id))
-    if((await canManage(media.provider_id)) || (await isPublicProvider(provider)) && provider!.published_version_no===media.version_no)allowed=true
+    if((await canManage(media.provider_id)) || file.media_type.startsWith('image/') && (await isPublicProvider(provider)) && provider!.published_version_no===media.version_no)allowed=true
   }
   for(const media of (await repo.all('profile_media')).filter(row=>row.file_id===id && row.experience_id)) {
     const exp=(await repo.find('experiences',row=>row.experience_id===media.experience_id))
     const provider=exp && (await repo.find('provider_profiles',row=>row.provider_id===exp.provider_id))
-    if(exp && ((await canManage(exp.provider_id)) || !exp.archived_at && (await isPublicProvider(provider))))allowed=true
+    if(exp && ((await canManage(exp.provider_id)) || file.media_type.startsWith('image/') && !exp.archived_at && (await isPublicProvider(provider))))allowed=true
   }
   if(!allowed)throw new MediaError('Không có quyền xem tài liệu.',403)
-  try{return {file,bytes:readFileSync(join(process.cwd(),'.demo-data','prf-media',id))}}catch{throw new MediaError('File gốc không còn trên máy chủ.',404)}
+  const bytes=await readObject(file.storage_key)
+  if(!bytes)throw new MediaError('File gốc không còn trên kho lưu trữ.',404)
+  return {file,bytes}
 }

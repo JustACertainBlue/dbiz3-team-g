@@ -1,6 +1,5 @@
+import { readObject } from '@/lib/storage/object-store'
 import { NextResponse } from 'next/server'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { demoRepository } from '@/lib/db/application-store'
 export const dynamic = 'force-dynamic'
@@ -13,7 +12,8 @@ export async function GET(request: Request, { params }: { params: { fileId: stri
   const file = (await repo.find('stored_files', row => row.file_id === id))
   if (!file || file.storage_key !== `registration-documents/${id}` || !(await repo.find('registration_documents', row => row.file_id === id))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   try {
-    const data = readFileSync(join(process.cwd(), '.demo-data', 'registration-documents', id))
-    return new NextResponse(data, { headers: { 'Content-Type': file.media_type, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(file.file_name)}`, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } })
+    const data = await readObject(file.storage_key)
+    if(!data)return NextResponse.json({error:'Original file is unavailable'},{status:404})
+    return new NextResponse(new Uint8Array(data), { headers: { 'Content-Type': file.media_type, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(file.file_name)}`, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } })
   } catch { return NextResponse.json({ error: 'Original file is unavailable' }, { status: 404 }) }
 }

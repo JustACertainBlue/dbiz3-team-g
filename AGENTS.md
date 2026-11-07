@@ -7,7 +7,7 @@ short, factual and current.
 ## 1. Project
 
 - Product: `Hanoi Artisan Bridge`, team `G`, course DBIZ3, VJCBI College, Foreign Trade University.
-- Current step of the course process: module integration. AIT, PRF, EXP, ADM, BKG and IAC share one functional prototype. AUT PR #11 is integrated with that runtime; its adoption map and quickstart are in `specs/AUT-INTEGRATION.md`. Real email, durable file storage and production deployment remain separate integrations.
+- Current step of the course process: module integration. AIT, PRF, EXP, ADM, BKG and IAC share one functional prototype. AUT PR #11 is integrated with that runtime; its adoption map and quickstart are in `specs/AUT-INTEGRATION.md`. Real email and production deployment remain separate integrations.
 - Source of truth for MVP scope: `docs/prd.md`; source of truth for detailed function contracts: `docs/spec/`.
 - Source of truth for data: `data/` (data model and seed package from Session 5).
 
@@ -15,7 +15,7 @@ short, factual and current.
 
 - Language/Runtime: TypeScript 5.x / Node.js >= 22.0.0
 - Web framework: Next.js 14 (App Router) and React 18.
-- Database: Supabase PostgreSQL 17 in development. All live APIs/server pages use `src/lib/db/application-store.ts`, verified TLS and the restricted DATABASE_APP_URL login. No live JSON fallback. Ordinary tests use isolated JSON fixtures; hosted tests opt in with npm run test:postgres. Migration history is the guarded private ledger (npm run db:migrate), not Supabase CLI db push. See docs/env/supabase-quickstart.md. File bytes still use local ignored upload directories.
+- Database: Supabase PostgreSQL 17 in development. All live APIs/server pages use `src/lib/db/application-store.ts`, verified TLS and the restricted DATABASE_APP_URL login. No live JSON fallback. Ordinary tests use isolated JSON fixtures; hosted tests opt in with npm run test:postgres. Migration history is the guarded private ledger (npm run db:migrate), not Supabase CLI db push. See docs/env/supabase-quickstart.md. Live file bytes use private Supabase Storage through `src/lib/storage/object-store.ts`; no live disk fallback. See docs/env/supabase-storage.md. Storage tests opt in with npm run test:storage.
 - Login: AUT bcrypt verification and opaque cookie `hab_session`; role, organization and scope load from the shared repository. Four synthetic seed identities retain fixture-password login in development only; production rejects it. Legacy `hab_demo_account` cookies are accepted only by automated tests. Email-dependent flows report unavailable unless the explicitly local `HAB_EMAIL_MODE=dev-outbox` adapter is enabled; never claim it sends real email.
 - Test runner: Vitest 2.
 - From the repository root: `npm ci`, `python data/scripts/validate_seed.py`, `npm test`, `npm run lint`, then configure the database as in the Supabase quickstart and run `npm run dev`.

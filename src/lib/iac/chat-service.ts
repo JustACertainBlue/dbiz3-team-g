@@ -332,7 +332,7 @@ export async function sendAttachments(
   const written: string[] = []
   try {
     for (const item of planned) {
-      store.write(item.fileId, item.file.bytes)
+      await store.write(item.fileId, item.file.bytes)
       written.push(item.fileId)
     }
     if (options.afterFilesWritten) await options.afterFilesWritten()
@@ -367,7 +367,7 @@ export async function sendAttachments(
       }
     })
   } catch (error) {
-    for (const fileId of written) store.remove(fileId)
+    for (const fileId of written) await store.remove(fileId)
     throw error
   }
 }
@@ -383,7 +383,7 @@ export async function readAttachment(session: SessionContext, chatSessionId: str
   const message = link && (await repository.find('chat_messages', row => row.message_id === link.message_id))
   if (!link || !message || message.chat_session_id !== chatSessionId) throw new ChatError('FORBIDDEN', 'Chat access denied')
   const stored = (await repository.find('stored_files', row => row.file_id === link.file_id))
-  const bytes = stored ? chatFileStore().read(stored.file_id) : null
+  const bytes = stored ? await chatFileStore().read(stored.file_id) : null
   if (!stored || !bytes) throw new ChatError('NOT_FOUND', SEED_FILE_MISSING)
   return { file_name: stored.file_name, file_type: stored.media_type, bytes }
 }

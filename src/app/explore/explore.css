@@ -175,9 +175,10 @@
 .related-section { margin-top: 43px; }
 .related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
 .related-card { overflow: hidden; border: 1px solid #ddd6ca; border-radius: 14px; background: var(--exp-paper); text-decoration: none; }
-.related-card__art { height: 135px; display: flex; align-items: flex-end; padding: 14px; color: #fff; background: #6f806e; }
+.related-card__art { height: 135px; position: relative; overflow: hidden; color: #fff; background: #6f806e; }
+.related-card__art > img { height: 100%; object-fit: cover; border-radius: 0 !important; }
 .related-card__art--1 { background: #9b674d; }.related-card__art--2 { background: #5b7078; }
-.related-card__art span { font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.related-card__art span { position: absolute; left: 12px; bottom: 12px; padding: 5px 8px; border-radius: 6px; background: rgba(24,44,34,.8); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .related-card > div:last-child { padding: 15px; display: grid; gap: 5px; }
 .related-card small, .related-card > div:last-child > span { color: var(--exp-muted); font-size: 9px; }
 .related-card strong { min-height: 42px; font-family: var(--font-serif); font-size: 16px; }

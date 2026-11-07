@@ -22,6 +22,25 @@ Synthetic seed identities, listed on `http://localhost:3000/login` under "Tài k
 password. Create it through registration, or through an HDT/UBND password reset with
 `HAB_EMAIL_MODE=dev-outbox`; see `specs/AUT-INTEGRATION.md`.
 
+## Hosted version: personal test accounts
+
+On the production build (`NODE_ENV=production`) the "any non-empty password" rule is off. Test accounts get
+real passwords from the manual one-off command `npm run db:set-test-passwords` (`scripts/db/set-test-passwords.mjs`,
+ADR 0001), run by Linh from a laptop whose `DATABASE_APP_URL` points at the hosted database. It prints the
+target database first; check it.
+
+| Who | Account | Variables |
+|---|---|---|
+| Each team member (Agency) | `t-<name>-agency@example.invalid`, company `[T-<Name>] …`, Approved | `HAB_TEST_AGENCY_NAMES`, `HAB_TEST_PASSWORD_AGENCY_<NAME>` |
+| Outside testers (Agency) | `t-khach-agency@example.invalid`, company `[T-Khach] …` (always created) | `HAB_TEST_PASSWORD_AGENCY_KHACH` |
+| HDT (declared names only) | `t-<name>-hdt@example.invalid` | `HAB_TEST_HDT_NAMES`, `HAB_TEST_PASSWORD_HDT_<NAME>` |
+| Provider (existing, no new workshop) | `thanhvien19@example.invalid`, Xưởng thủ công Bát Tràng | `HAB_TEST_PASSWORD_PROVIDER` |
+| UBND (existing, no new UBND) | `thanhvien1@example.invalid`, Bát Tràng | `HAB_TEST_PASSWORD_UBND` |
+
+Rerunning with the same variables changes nothing; a changed password replaces the old one and logs out that
+account's open sessions. A missing or invalid password skips that account with a warning (never the password).
+Share each password privately with its owner.
+
 ## In the browser
 
 Open `http://localhost:3000/login`, click one of the demo emails, type any password, click **Đăng nhập**.

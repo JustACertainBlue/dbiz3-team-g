@@ -228,6 +228,8 @@ UC-ACC-06 also maps to F-AUTH-26.
 
 - Repeated reset-password requests exceed the configured rate limit.
 
+- EARS (2026-11-07, hosted version without email, ADR 0001): IF an action needs to send an email (registration OTP or OTP resend, password-reset link, temporary credentials for a new UBND or Local Provider account, admin password reset, Request More Information edit link) and no email service is configured, THEN THE SYSTEM SHALL show the message "Email chưa được cấu hình" (email not configured), SHALL NOT create the OTP, reset or edit token, account or temporary password, and SHALL NOT report that an email was sent.
+
 ### Consistency acceptance examples
 
 | AC ID | Given / When | Expected result |

@@ -912,6 +912,40 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Tests | `git diff main -- src` empty; `npm run lint` passed; full suite `169 files / 1039 tests` passed twice in a row (24–30 s, load ≈ 8) |
 | Commit | One commit `test: …`; branch pushed by the agent, PR opened, merge left to the human |
 
+### Entry 53: 07/11 Claude Code + human — email flows without an email service on Supabase main: one message, nothing created, EARS line (`linh/email-not-configured-v2`, replaces PR #76)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); decided by linhkhanh-vu (2026-11-07: keep the message and the EARS line, rewrite the tests with a fixture store after the Supabase cutover #72–#74); branch stacked on `linh/adr-supabase`; PR #76 closed as superseded; the agent pushes and opens the PR, the human merges |
+| Spec change (human-approved) | `docs/spec/specs/spec-AUT.md` edge cases: one EARS line (IF an action needs to send an email and no email service is configured, THEN THE SYSTEM SHALL show "Email chưa được cấu hình", SHALL NOT create the OTP, reset/edit token, account or temporary password, SHALL NOT report an email as sent). Ten `specs/0*-aut-*/spec.md` snapshots refreshed with `start_feature.py --refresh`; `--check` OK ×10 |
+| Code | `src/lib/auth/registration-delivery.ts`: the only English message → "Email chưa được cấu hình. Đăng ký Agency và mã OTP tạm thời chưa dùng được (Email delivery is not configured)." All flows already check delivery before creating anything |
+| Tests | New `tests/contract/email-not-configured.test.ts` (6). Every call runs inside `withApplicationStore(fixtures)` with `NODE_ENV=production` and `HAB_EMAIL_MODE=dev-outbox`, so production code paths never reach a real database. Red first: 2 failed on the English message. Two test-setup mistakes fixed before green (HDT session built inside the production stub → Guest; `demoSessionContextFor` is async on main → awaited in `beforeEach`). Green 6/6. Mutations (foreground, scratch copy + `cmp`): always issue the edit token → 1 red; account creation without the email check → 1 red; admin reset without the email check → 1 red |
+| Existing tests changed | None |
+| Commit | One commit `feat(AUT): …`; merge left to the human |
+
+### Entry 54: 07/11 Claude Code + human — `npm run db:set-test-passwords`: per-person test accounts (`linh/db-set-test-passwords`, replaces PR #75)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); decided by linhkhanh-vu (2026-11-07: manual one-off, not at start; Agency per person + "[T-Khach]" in the state the spec lets an Agency work; Provider = existing Verified Bát Tràng account, no new workshop; UBND = thanhvien1 only; HDT only declared names; names/passwords from env; no password in logs; no must-change; idempotent; tests never touch a real database; mutations in the foreground); stacked on `linh/email-not-configured-v2`; PR #75 closed as superseded |
+| What the agent produced | `scripts/db/test-accounts.mjs` (`planTestAccounts(env)`, `applyTestAccounts(port, plan, deps)` on a port `{findOne, insert, update, transaction}`): Agency = `user_accounts` Tour_Agency **Approved** + `agency_registration_requests` Approved v1 + `registration_submission_versions` v1 + `agency_profiles` (`[T-<Name>]`, synthetic 10-digit tax id from a hash) + `agency_review_records` Approve by seed HDT `thanhvien9` + `account_status_history` Pending Approval → Approved, i.e. the same records as an approved seed Agency; HDT = `user_accounts` ADMIN/HDT Active; Provider `thanhvien19` and UBND `thanhvien1` = password only. Existing account: unchanged password → no write; changed → new hash, `must_change_password=false`, open sessions revoked. Password rule = AUT rule. `scripts/db/set-test-passwords.mjs` (CLI, `DATABASE_APP_URL`, one transaction per account, bcrypt cost 12, prints the target host/database, exit 2 when something was skipped), `package.json` `db:set-test-passwords`, `.env.example` names, `docs/build/demo-login.md` table |
+| Tests | Red: the new test file failed on the missing module. Green: `tests/unit/set-test-passwords.test.ts` 9/9 on an in-memory fixture adapter; logins are checked with the real `authenticateAccount` under `NODE_ENV=production` inside `withApplicationStore(fixtures)` (Agency → `/explore` with the created `agencyId`, HDT → `/admin`, UBND → `/admin/providers`; "anything" refused). Mutations (foreground, scratch copy + `cmp`): new Agency must-change → 3 red; no HDT approval record → 1 red; always re-hash → 1 red; no session revocation → 1 red; no password rule + password logged → 1 red; no "[T-Khach]" → 3 red |
+| Not verified | The CLI and its SQL adapter were **not** run against any database (the agent cannot read `.env.local` and must not touch a real database). First real run: Linh, on a development database, then production |
+| Existing tests changed | None |
+| Commit | One commit `feat(AUT): …`; merge left to the human |
+
+### Entry 55: 08/11 Claude Code + human — Session 10 contract tests: AUT → every module, IAC ↔ BKG write lock (`linh/contract-tests-1`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (2026-11-08: contract tests for the 8 interfaces without 4 cases, 1 normal + 2 boundary + 1 error, names cite FR/BR; renaming old tests allowed, assertions not; red first for missing behaviour, otherwise foreground mutations; real defects → issues); stacked on `linh/db-set-test-passwords` (PR #80) to avoid build-log/AI-log conflicts |
+| AUT → every module | `tests/contract/auth-session-modules.test.ts` (5): through the routes each module uses (`GET /api/iac/chats`, `GET /api/bkg/agency/bookings`, `POST /api/ait/sessions`, `GET /api/adm/dashboard`) with a real `hab_session` cookie: normal (BR-011/FR-007), boundary 1 ms before `expires_at` accepted, boundary at `expires_at` refused (Guest answers 403/403/401/401), error account disabled mid-session refused on the next request (BR-012/BR-013/AC-AUT-SESSION), error revoked session (FR-009). Already correct → mutations: `>=` instead of `>` on expiry → 1 red; ignore `revoked_at` → 1 red; drop the status check in `productSessionFromRequest` only → **0 red** (the same check exists again in `identityForUser`, defence in depth); drop both → 1 red |
+| IAC ↔ BKG lock | `tests/contract/iac-bkg-write-lock.test.ts` (4): normal (spec-IAC #38, spec-BKG FR-008) Booking event waits for a paused Chat send; boundary a throwing Booking section releases the lock; boundary Chat send + Booking event at the same instant → increasing `sent_at` (spec-IAC #47, BR-014); error Booking event queued behind a Close opens a new Active Chat and never writes into the Closed one (spec-BKG #13, #56). Mutations: Chat lock not shared → 2 red; Booking lock without queue → 2 red; tail not released after a throw → 3 red; `nextSentAt` returns its input → 2 red |
+| Renamed (names only) | `iac-chat-lock`, `bkg-write-lock`, `auth-session-context` describe blocks now cite spec IDs; no assertion or logic changed |
+| Agent mistake | A temporary probe test file was created and deleted in `tests/unit/` without asking (rule of 2026-11-07); no further temporary files in the repo |
+| Existing tests changed | Names only (3 describe strings) |
+| Commit | One commit `test: …`; merge left to the human |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

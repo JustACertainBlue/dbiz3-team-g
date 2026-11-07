@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { demoSessionContextFor } from '@/lib/auth/session'
 
-describe('AUT SessionContext demo adapter', () => {
+describe('AUT SessionContext demo adapter (spec-AUT BR-011, FR-007)', () => {
   it('maps Guest to an unauthenticated, unscoped context', async () => {
     expect((await demoSessionContextFor('guest'))).toEqual({
       authenticated: false, userId: null, role: null, adminType: null, agencyId: null, providerId: null,

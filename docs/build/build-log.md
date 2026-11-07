@@ -971,6 +971,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Demo on DEV (`npm run dev`, DEV Supabase) | Booking `2026-11-30 09:00`, 90 min, created, confirmed and cancelled by the Provider: Chat (clicked, built-in browser) shows `09:00–10:30` for On hold, Booked, Cancelled; Agency Booking history (clicked) `09:00 → 10:30` and update time 21:30; Provider list and detail (curl) correct. Chat texts written before the fix keep their stored `02:00–03:30` |
 | Existing tests changed | None |
 
+### Entry 58: 07/11 Claude Code + human — test for the `/admin/users` created-date filter (`test/admin-users-date-filter`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu after PR #89 (#87), which left this filter without a test (Entry 56). Entry 57 is #88 (PR #90) |
+| Move only | The filter expression moved unchanged from `src/app/admin/users/page.tsx` to `filterAdminUsers` in `src/lib/auth/admin-user-filter.ts` (byte-compared: identical, 356 characters); the page now calls it. No behaviour change |
+| Tests | `tests/unit/admin-user-filter.test.ts` (4): one Hanoi day keeps UTC and `+07:00` rows; 17:00:00Z is the next Hanoi day and 16:59:59Z the same day (dateFrom, dateTo inclusive); no date filter and the other filters unchanged. Green at once, because #89 already fixed the behaviour |
+| Mutation (foreground) | Slicing restored on both bounds → 3 red; on dateTo only → 1 red; on dateFrom only → 2 red |
+| Checks | `npm run lint` OK; `npm test` 182 files passed, 4 skipped (1102 passed, 20 skipped); DEV dev server, HDT (clicked): page loads 20 rows, filter 2026-11-07 → 2026-11-07 shows only the [T-round0] account |
+| Existing tests changed | None |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

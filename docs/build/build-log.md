@@ -858,6 +858,20 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Demo | Not applicable: no user-visible change; dev/prod cost covered by the unit test with an explicit `NODE_ENV`. |
 | Commit | One commit on `linh/fix-bcrypt-test`; branch pushed by the agent, PR opened, merge left to the human. |
 
+### Entry 51: 07/11 Claude Code + human — issue #66: BKG Booking Update sent_at in the IAC format (`linh/fix-bkg-chat-order`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (2026-11-07, Session 10 debugging procedure); branch from `main` `83027e5`; the agent pushes and opens the PR, the human merges |
+| Root cause | `bookingUpdateOperations` (`src/lib/booking/agency-sync.ts`) wrote the Chat message with the BKG clock string (`hanoiTimestamp`: `+07:00`, seconds only) instead of IAC's `nextSentAt`. Two Booking events of one Chat in the same second got equal `sent_at`, and the history tie-break on random `message_id` showed them in the wrong order (integration-defect origins #2 and #5) |
+| Fix | The message `sent_at` and the Chat `last_message_at` = `nextSentAt(chat, ISO UTC of at)`: ISO UTC with milliseconds, at least 1 ms after the Chat's latest message (spec-IAC #47); a new Booking Chat uses the ISO UTC instant. Booking fields keep the BKG `+07:00` format. History sorting already compares `Date.parse` (instants, not strings) and is unchanged |
+| Tests | New `tests/unit/bkg-iac-message-order.test.ts` (5, named with spec-BKG FR-008 / spec-IAC BR-014, #47): normal; same second; same millisecond; refused status change; legacy `+07:00` rows. Red before the fix: 5 failed (`expected '2026-09-30T00:00:00+07:00' to match …`, `expected 1790701200000 to be greater than 1790701200000`, `expected 1 to be 2`, wrong order). Green after. Mutations (restored from a scratch copy): `sent_at: at` → 5 red; no `nextSentAt` → 4 red; string sort in `getChatHistory` → 1 red. Full suite `169 files / 1039 tests` three runs in a row; `npm run lint` passed |
+| Existing tests changed | None |
+| Demo | Curl on the dev server with real login: Provider creates a Booking and cancels it; the Agency's history shows On hold (`…:43.000Z`) then Cancelled (`…:44.000Z`) |
+| Open question | Rows written **before** the fix with the same second in `+07:00` still tie and are ordered by `message_id` (plan 014 R8 / Q6, asserted by T016 in `tests/unit/iac-chat-history.test.ts:44`). Ordering ties by storage order would need that existing test changed, so it is left to the human |
+| AI Use Log | `docs/ai-use-log.md` created with this change; "Checked by" pending |
+| Commit | One commit `fix(BKG): …`; branch pushed by the agent, PR with "Closes #66", merge left to the human |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

@@ -76,7 +76,7 @@ describe('T057 | Boundary-value tests for Zod schemas', () => {
     const validExperience = {
       name: 'Làm gốm cùng nghệ nhân',
       description: 'Trải nghiệm làm gốm Bát Tràng truyền thống cùng nghệ nhân ưu tú.',
-      category: 'Workshop',
+      category: 'Workshop/Hands-on',
       duration_minutes: 120,
       price_per_person: 250000,
       max_participants: 15,

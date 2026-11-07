@@ -41,7 +41,7 @@ describe('T025 | Experience Routes Integration Tests (US-5)', () => {
       const payload = {
         name: 'Trải nghiệm nặn gốm mới',
         description: 'Tự tay nhào đất và tạo hình chiếc bình gốm đầu tiên.',
-        category: 'Ceramics',
+        category: 'Workshop/Hands-on',
         duration_minutes: 90,
         price_per_person: 180000,
         max_participants: 8,
@@ -63,7 +63,7 @@ describe('T025 | Experience Routes Integration Tests (US-5)', () => {
       const payload = {
         name: 'Trải nghiệm giá 0 đồng',
         description: 'Mô tả hợp lệ cho trải nghiệm kiểm thử.',
-        category: 'Ceramics',
+        category: 'Workshop/Hands-on',
         duration_minutes: 60,
         price_per_person: 0,
         max_participants: 5,

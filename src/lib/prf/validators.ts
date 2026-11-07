@@ -67,10 +67,14 @@ export const ExperienceImageSchema = z.object({
 /** On update an existing image is kept by its stored file id (BR-015). */
 export const KeptImageSchema = z.object({ file_id: z.string().min(1) })
 
+// spec-PRF FR-006 §5.1 / §10 Q19 (#88): the only Experience categories; PostgreSQL experience_category_chk matches.
+export const EXPERIENCE_CATEGORIES = ['Workshop/Hands-on', 'Sightseeing', 'Culinary/Tasting', 'Cultural Show', 'Combo'] as const
+export const INVALID_CATEGORY_MESSAGE = `Invalid category: use one of ${EXPERIENCE_CATEGORIES.join(', ')}`
+
 export const ExperienceCreateSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().min(10).max(3000),
-  category: z.string().min(1).max(100),
+  category: z.enum(EXPERIENCE_CATEGORIES, { errorMap: () => ({ message: INVALID_CATEGORY_MESSAGE }) }),
   duration_minutes: z.number().int().positive(),
   price_per_person: z.number().positive(),
   max_participants: z.number().int().positive(),

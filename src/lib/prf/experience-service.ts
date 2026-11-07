@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { toSessionContext, type SessionLike } from '../auth/session'
 import { demoRepository } from '../db/application-store'
-import { ExperienceCreateSchema, ExperienceImageSchema, KeptImageSchema } from './validators'
+import { ExperienceCreateSchema, ExperienceImageSchema, INVALID_CATEGORY_MESSAGE, KeptImageSchema } from './validators'
 import type { DiscountRule } from './experience-terms'
 import { mediaUrl } from './media-urls'
 import { missingCategories, type ExperienceImageCategory } from './experience-images'
@@ -116,6 +116,7 @@ export async function createExperience(
     parsed = ExperienceCreateSchema.parse(input) as ExperienceInput
   } catch (err) {
     if (err instanceof ZodError) {
+      if (err.issues.some(issue => issue.path[0] === 'category')) throw new ExperienceError(INVALID_CATEGORY_MESSAGE, 400) // #88
       throw new ExperienceError(err.message, 400)
     }
     throw err
@@ -197,6 +198,7 @@ export async function updateExperience(
     if (input[field] !== undefined && !ExperienceCreateSchema.shape[field].safeParse(input[field]).success) throw new ExperienceError('Invalid discount rules', 400)
     if (input[field] && new Set(input[field]!.map(rule=>rule.pax_threshold)).size !== input[field]!.length) throw new ExperienceError('Discount thresholds must be unique',400)
   }
+  if (input.category !== undefined && !ExperienceCreateSchema.shape.category.safeParse(input.category).success) throw new ExperienceError(INVALID_CATEGORY_MESSAGE, 400) // #88
   if (input.cancellation_policy!==undefined && !ExperienceCreateSchema.shape.cancellation_policy.safeParse(input.cancellation_policy).success)throw new ExperienceError('Invalid cancellation policy',400)
 
   const repository = demoRepository()

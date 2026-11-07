@@ -912,6 +912,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Tests | `git diff main -- src` empty; `npm run lint` passed; full suite `169 files / 1039 tests` passed twice in a row (24–30 s, load ≈ 8) |
 | Commit | One commit `test: …`; branch pushed by the agent, PR opened, merge left to the human |
 
+### Entry 53: 07/11 Claude Code + human — email flows without an email service on Supabase main: one message, nothing created, EARS line (`linh/email-not-configured-v2`, replaces PR #76)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); decided by linhkhanh-vu (2026-11-07: keep the message and the EARS line, rewrite the tests with a fixture store after the Supabase cutover #72–#74); branch stacked on `linh/adr-supabase`; PR #76 closed as superseded; the agent pushes and opens the PR, the human merges |
+| Spec change (human-approved) | `docs/spec/specs/spec-AUT.md` edge cases: one EARS line (IF an action needs to send an email and no email service is configured, THEN THE SYSTEM SHALL show "Email chưa được cấu hình", SHALL NOT create the OTP, reset/edit token, account or temporary password, SHALL NOT report an email as sent). Ten `specs/0*-aut-*/spec.md` snapshots refreshed with `start_feature.py --refresh`; `--check` OK ×10 |
+| Code | `src/lib/auth/registration-delivery.ts`: the only English message → "Email chưa được cấu hình. Đăng ký Agency và mã OTP tạm thời chưa dùng được (Email delivery is not configured)." All flows already check delivery before creating anything |
+| Tests | New `tests/contract/email-not-configured.test.ts` (6). Every call runs inside `withApplicationStore(fixtures)` with `NODE_ENV=production` and `HAB_EMAIL_MODE=dev-outbox`, so production code paths never reach a real database. Red first: 2 failed on the English message. Two test-setup mistakes fixed before green (HDT session built inside the production stub → Guest; `demoSessionContextFor` is async on main → awaited in `beforeEach`). Green 6/6. Mutations (foreground, scratch copy + `cmp`): always issue the edit token → 1 red; account creation without the email check → 1 red; admin reset without the email check → 1 red |
+| Existing tests changed | None |
+| Commit | One commit `feat(AUT): …`; merge left to the human |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

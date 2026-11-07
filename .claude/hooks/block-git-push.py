@@ -61,6 +61,9 @@ SAFE_LONG_FLAGS = {
     "--progress", "--no-progress", "--no-verify", "--porcelain",
 }
 REMOTE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+# Shell redirections (`2>&1`, `>&2`, `&>log`, `> log`, `>>log`, `2>/dev/null`, `< in`) are not push
+# arguments; they are removed before the arguments are split at shell operators.
+REDIRECT = re.compile(r"""(?:\d*|&)(?:>>?|<)(?:&\d+|\s*(?:"[^"]*"|'[^']*'|[^\s;&|]+))""")
 
 
 class Unsafe(Exception):
@@ -73,6 +76,7 @@ def _segment(command, match):
     quote = match.group("lead")
     if quote in ("'", '"') and quote in rest:
         rest = rest[: rest.index(quote)]
+    rest = REDIRECT.sub(" ", rest)
     rest = re.split(r"[;&|\n]", rest, maxsplit=1)[0]
     if "$" in rest or "`" in rest:
         raise Unsafe("command substitution or variable in push arguments")

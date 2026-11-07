@@ -37,8 +37,12 @@ BLOCKED = [
     "git push origin feat/x main",
     WRAP + "git push -u origin main",
     'sh -c "git push origin main"',
+    "git push origin main 2>&1 | tail -3",
+    "git push 2>&1 origin main",
+    "git push origin feat/x > out.log main",
     # force
     "git push --force origin feat/x",
+    "git push --force origin feat/x 2>&1",
     "git push -f origin feat/x",
     "git push -uf origin feat/x",
     "git push --force-with-lease origin feat/x",
@@ -89,6 +93,14 @@ ALLOWED = [
     WRAP + "git push -u origin 016-iac-attach",
     'sh -c "git push -u origin feat/x"',
     "npm test && git push -u origin feat/x",
+    # shell redirections are not push arguments (found on 016-iac-attach)
+    "git push -u origin feat/x 2>&1 | tail -3",
+    WRAP + "git push -u origin feat/x 2>&1 | tail -3",
+    "git push origin feat/x 2>/dev/null",
+    "git push origin feat/x > push.log",
+    "git push origin feat/x >>push.log 2>&1",
+    "git push origin feat/x &>push.log",
+    "git push origin feat/x < /dev/null",
     # unrelated commands
     "git pull",
     WRAP + "git pull",

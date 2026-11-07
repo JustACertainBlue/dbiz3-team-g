@@ -139,6 +139,7 @@ macos-latest) green.
 | `docs/build/claude-context/04-bkg-brief.md` | any BKG work |
 | `docs/build/claude-context/05-review-playbook.md` | Step 7 verify / reviewing a teammate's PR |
 | `docs/build/claude-context/06-lessons-learned.md` | before your first run in a session |
+| `docs/build/claude-context/07-session10-11-requirements.md` | integration, deployment, MVP RC (Session 10–11 deliverables, PR review criteria) |
 
 Project slash commands: `/team-status`, `/bkg-start`, `/verify-module <MOD>`.
 

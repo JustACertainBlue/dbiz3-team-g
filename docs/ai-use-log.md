@@ -6,6 +6,60 @@ by the person who actually checked the change; an agent never fills it in for a 
 
 | Date | PR / branch | Part | AI tool | What the AI did | Checked by | How it was checked |
 |---|---|---|---|---|---|---|
+| 2026-10-14 | #6 `001-ait-core` | `src/lib/matching/*`, `src/lib/ai/extractor.ts`, `src/app/api/ait/*`, `specs/001-ait-core`, `tests/unit`, `tests/integration` | Antigravity agent (Gemini 3.8 Flash) | AIT core: matching pipeline, API, review fixes | linhkhanh-vu (CHANGES_REQUESTED, CHANGES_REQUESTED) | PR review by linhkhanh-vu |
+| 2026-10-17 | #8 `002-prf-core` | `src/lib/prf/*`, `src/app/api/*`, `src/app/provider/*`, `specs/002-prf-core`, `tests/prf/*` | Antigravity agent (Gemini 3.8 Flash); GitHub Copilot (merge only) | PRF core: plan, tasks, tests, provider/agency services; Copilot resolved merge conflicts |  |  |
+| 2026-10-29 | #13 `linh/claude-code-context` | `.claude/skills`, `.claude/commands`, `docs/build/claude-context`, `CLAUDE.md`, `AGENTS.md` | Claude Code (Claude Opus 5.5) | Claude Code context pack and Spec Kit skills |  |  |
+| 2026-10-29 | #14 `linh/bkg-clarifications` | `docs/spec/specs/spec-BKG.md` | Claude Code (Claude Opus 5.5) | BKG clarifications #28–#31, open questions #26–#35 |  |  |
+| 2026-10-29 | #15 `linh/bkg-oq-36-43` | `docs/spec/specs/spec-BKG.md` | Claude Code (Claude Opus 5.5) | BKG open questions #36–#43 |  |  |
+| 2026-10-30 | #17 `004-bkg-core` | `src/lib/booking/*`, `src/app/provider/*`, `specs/004-bkg-core`, `tests/unit/bkg-*` | Claude Code (Claude Opus 5.5) | BKG US-4 Create Booking (plan, tests first, code) |  |  |
+| 2026-10-30 | #18 `linh/bkg-oq-us5` | `docs/spec/specs/spec-BKG.md` | Claude Code (Claude Opus 5.5) | BKG clarifications #26, #27, #44–#49 |  |  |
+| 2026-10-30 | #19 `linh/bkg-oq-50-56` | `docs/spec/specs/spec-BKG.md` | Claude Code (Claude Opus 5.5) | BKG clarifications #50–#56 |  |  |
+| 2026-10-30 | #20 `011-bkg-manage` | `src/lib/booking/*`, `src/app/api/*`, `specs/011-bkg-manage`, `tests/unit` | Claude Code (Claude Opus 5.5) | BKG US-5 Manage Booking |  |  |
+| 2026-10-30 | #21 `linh/bkg-oq-57` | `docs/spec/specs/spec-BKG.md` | Claude Code (Claude Opus 5.5) | BKG clarification #57 |  |  |
+| 2026-10-30 | #22 `011-bkg-manage` | `src/app/provider/*`, `src/lib/booking/*`, `specs/011-bkg-manage`, `tests/unit` | Claude Code (Claude Opus 5.5) | BKG US-3 View Bookings + US-5 follow-ups |  |  |
+| 2026-10-30 | #23 `linh/docs-bkg-status` | `CLAUDE.md`, `docs/build/claude-context` | Claude Code (Claude Opus 5.5) | Docs: BKG round 2 status |  |  |
+| 2026-10-30 | #24 `linh/bkg-oq-58-67` | `docs/spec/specs/spec-BKG.md` | Claude Code (Claude Opus 5.5) | BKG clarifications #58–#67 |  |  |
+| 2026-10-30 | #25 `012-bkg-list` | `src/lib/booking/*`, `src/app/provider/*`, `specs/012-bkg-list`, `tests/unit` | Claude Code (Claude Opus 5.5) | BKG US-6 List Bookings |  |  |
+| 2026-10-30 | #26 `linh/bkg-oq-68-81` | `docs/spec/specs/spec-BKG.md` | Claude Code (Claude Opus 5.5) | BKG clarifications #32, #33, #68–#81 |  |  |
+| 2026-10-30 | #27 `linh/bkg-oq-82` | `docs/spec/specs/spec-BKG.md` | Claude Code (Claude Opus 5.5) | BKG clarification #82 |  |  |
+| 2026-10-30 | #28 `013-bkg-schedule` | `src/lib/booking/*`, `src/app/agency/*`, `src/app/provider/*`, `specs/013-bkg-schedule`, `tests/unit` | Claude Code (Claude Opus 5.5) | BKG US-1 View Schedule + US-2 Availability |  |  |
+| 2026-10-30 | #29 `linh/docs-bkg-complete` | `CLAUDE.md`, `docs/build` | Claude Code (Claude Opus 5.5) | Docs: BKG module complete |  |  |
+| 2026-10-30 | #30 `linh/chore-tsbuildinfo-audit` | `tsconfig.tsbuildinfo`, `docs/build` | Claude Code (Claude Opus 5.5) | Untrack tsbuildinfo, record npm audit |  |  |
+| 2026-10-30 | #31 `linh/docs-bkg-lessons` | `CLAUDE.md`, `docs/build/claude-context` | Claude Code (Claude Opus 5.5) | Docs: BKG lessons learned |  |  |
+| 2026-10-30 | #32 `linh/ait-oq` | `docs/spec/specs/spec-AIT.md` | Claude Code (Claude Opus 5.5) | AIT clarifications #23–#31 |  |  |
+| 2026-11-04 | #33 `linh/ait-fixes` | `src/app/ai-matching`, `src/app/api/ait/*`, `src/lib/matching/*`, `specs/001-ait-core`, `tests/*` | Claude Code (Claude Opus 5.5) | AIT round 3 fixes D1–D11 |  |  |
+| 2026-11-04 | #34 `linh/adm-fixes` | `src/lib/adm/*`, `src/app/admin/*`, `src/app/components/*`, `specs/003-adm-core`, `tests/adm/*` | Claude Code (Claude Opus 5.5) | Port ADM onto main + review fixes A1–A14 |  |  |
+| 2026-11-04 | #35 `linh/auth-no-header` | `src/lib/auth/*`, `src/lib/adm/*`, `tests/prf/integration` | Claude Code (Claude Opus 5.5) | Auth: stop trusting x-mock-session header |  |  |
+| 2026-11-04 | #36 `linh/ci-windows` | `.github/workflows`, `specs/*/quickstart`, `docs/build` | Claude Code (Claude Opus 5.5) | CI on Windows/macOS |  |  |
+| 2026-11-04 | #37 `linh/g1-tick` | `docs/build/mvp-alpha-checklist.md` | Claude Code (Claude Opus 5.5) | Checklist G1 ticked |  |  |
+| 2026-11-04 | #38 `linh/prf-fixes` | `src/lib/prf/*`, `tests/prf/unit`, `specs/002-prf-core` | Claude Code (Claude Opus 5.5) | PRF slice A fixes |  |  |
+| 2026-11-04 | #39 `linh/prf-fixes-2` | `src/lib/prf/*`, `tests/prf/unit`, `specs/002-prf-core` | Claude Code (Claude Opus 5.5) | PRF slice A2 fixes |  |  |
+| 2026-11-04 | #40 `linh/prf-fixes-3` | `src/lib/prf/*`, `src/app/provider/*`, `tests/prf/*` | Claude Code (Claude Opus 5.5) | PRF slice B fixes (BR-003, -008, -009/-015, -016) |  |  |
+| 2026-11-05 | #41 `linh/exp-fixes` | `src/app/explore/*`, `specs/001-exp-core` | Claude Code (Claude Opus 5.5) | EXP slice C fixes |  |  |
+| 2026-11-05 | #42 `linh/g3-audit` | `docs/build`, `tests/unit` (BKG screens) | Claude Code (Claude Opus 5.5) | G3 BR audit of five modules + BKG screen tests |  |  |
+| 2026-11-05 | #43 `linh/br-fixes` | `src/lib/prf/*`, `src/app/agency/*`, `tests/*` | Claude Code (Claude Opus 5.5) | BR fixes: AIT BR-015, PRF BR-017/BR-014 |  |  |
+| 2026-11-05 | #44 `014-iac-core` | `src/lib/iac/*`, `src/app/api/iac/*`, `src/app/messages/*`, `specs/014-iac-core`, `tests/*` | Claude Code (Claude Opus 5.5) | IAC round 1: shared chat service F-CHAT-01..03 |  |  |
+| 2026-11-05 | #45 `015-iac-close` | `specs/015-iac-close`, `src/app/messages/*`, `tests/*` | Claude Code (Claude Opus 5.5) | IAC F-CHAT-04 Close Chat |  |  |
+| 2026-11-05 | #46 `015-iac-close` | `docs/build/build-log.md` | Claude Code (Claude Opus 5.5) | Build log §4: agent pushed branch |  |  |
+| 2026-11-05 | #47 `linh/block-push-hook` | `.claude/hooks/*`, `.claude/settings.json`, `.github/workflows`, `tests/hooks` | Claude Code (Claude Opus 5.5) | Push guard hook |  |  |
+| 2026-11-05 | #48 `016-iac-attach` | `src/lib/iac/*`, `src/app/api/iac/*`, `specs/016-iac-attach`, `tests/*` | Claude Code (Claude Opus 5.5) | IAC F-CHAT-05 attachments |  |  |
+| 2026-11-06 | #11 `001-aut-registration` | AUT: `specs/001-aut-registration`…`010-*`, `src/lib/auth/*`, AUT routes/pages, `specs/AUT-INTEGRATION.md` | Antigravity agent (Gemini 3.8 Flash / Claude Sonnet) — original; Codex — integration | AUT account lifecycle; Codex ported it onto shared sessions/JSON runtime and resolved conflicts |  |  |
+| 2026-11-07 | #49 `linh/hook-redirects` | `.claude/hooks/*`, `tests/hooks` | Claude Code (Claude Opus 5.5) | Hook ignores shell redirections |  |  |
+| 2026-11-07 | #50 `codex/provider-ux-completion` | `src/app/provider/*`, `src/lib/prf/*`, `src/app/explore/*`, `src/app/api/*`, `tests/prf/unit` | Codex | Provider media, terms and integrated UX flows |  |  |
+| 2026-11-07 | #51 `linh/docs-state-rule5` | `CLAUDE.md`, `AGENTS.md` | Claude Code (Claude Opus 5.5) | Docs: state at 54f3cb1; agent push rule |  |  |
+| 2026-11-07 | #52 `linh/fix-bcrypt-test` | `src/lib/auth/*`, `tests/unit` | Claude Code (Claude Opus 5.5) | bcrypt cost from environment (flaky test) |  |  |
+| 2026-11-07 | #53 `linh/docs-session10-11` | `docs/build/claude-context`, `CLAUDE.md` | Claude Code (Claude Opus 5.5) | Session 10–11 requirements; lesson 23 |  |  |
+| 2026-11-07 | #54 `linh/aut-verify` | `docs/build` | Claude Code (Claude Opus 5.5) | AUT Step 7 verify report (post-merge review of #11) |  |  |
+| 2026-11-07 | #67 `linh/quickstarts-real-login` | `specs/*/quickstart.md`, `docs/UI_VERIFICATION_GUIDE.md`, `docs/build` | Claude Code (Claude Opus 5.5) | Quickstarts use real login (hab_session) |  |  |
+| 2026-11-07 | #69 `linh/deploy-readiness` | `docs/build` | Claude Code (Claude Opus 5.5) | Deploy readiness doc |  |  |
+| 2026-11-07 | #72 `codex/supabase-foundation` | `src/app/api/*`, `scripts/db/*`, server pages, `docs/build` | Codex | Migrate live modules to Supabase PostgreSQL |  |  |
+| 2026-11-07 | #73 `codex/supabase-storage` | `scripts/storage/*`, `assets/demo-media/*`, `src/app/api/*`, `docs/env` | Codex | Private Supabase Storage + illustrated catalog |  |  |
+| 2026-11-07 | #74 `codex/provider-publication-fix` | `scripts/storage/*`, `assets/demo-media/*`, `src/app/api/*`, Provider publication fix | Codex | Publish Provider revisions; bring private Storage into main |  |  |
+| 2026-11-07 | #77 `linh/test-plan` | `docs/test/test-plan.md`, `.github/ISSUE_TEMPLATE/defect.md` | Claude Code (Claude Opus 5.5) | Session 10 test plan by role (groups A–D, cases per story, test data and defect process) and the defect issue template, drafted from the specs at the human's request |  |  |
+| 2026-11-07 | #78 `linh/adr-supabase` | `docs/adr/0001-hosting.md`, `.env.example`, `package.json` (`engines.node`) | Claude Code (Claude Opus 5.5) | ADR 0001 (Render + Supabase, separate dev/prod databases, no email, manual test accounts) written from the human's decisions; `.env.example` notes; Node engine >= 22 |  |  |
+| 2026-11-07 | #81 `linh/deploy-runbook` | `docs/build/deploy-runbook.md` | Claude Code (Claude Opus 5.5) | Deploy runbook for Render + Supabase production from ADR 0001 and the repo scripts; no service was created or connected |  |  |
+| 2026-11-07 | #85 `linh/integration-contract` | `docs/test/integration-contract.md` | Claude Code (Claude Opus 5.5) | Integration contract for 9 interfaces (sender, receiver, fields, errors, FR/BR, tests) with 23 disagreements marked, drafted from specs, schema and code |  |  |
+| 2026-11-07 | #86 `linh/bring-79-80-82` | No new content: brings the commits of #79, #80 and #82 into `main` | Claude Code (Claude Opus 5.5) | Found that the stacked PRs had merged into their bases, opened the catch-up PR, ran lint and the full suite |  |  |
 | 2026-11-07 | `linh/fix-bkg-chat-order` (issue #66) | `src/lib/booking/agency-sync.ts` (Booking Update `sent_at`), `tests/unit/bkg-iac-message-order.test.ts` | Claude Code (Claude Opus 5.5) | Wrote 5 interface tests first (red: format, same second, same millisecond, refused action, legacy `+07:00` rows), then the fix: `sent_at` = ISO UTC with ms via IAC `nextSentAt`; mutation checks; full suite ×3 | _pending: linhkhanh-vu_ | Agent evidence in build-log Entry 51; human review pending |
 | 2026-11-07 | `linh/fix-cost12-test` | `tests/unit/password-cost.test.ts` (cost-12 test only) | Claude Code (Claude Opus 5.5) | Replaced `bcrypt.hashSync(…, 12)` in the test by a precomputed test-only cost-12 hash; added prefix/rounds asserts and a wrong-password `false` check; 15 s timeout for this one test (approved by the human); mutation checks on `verifyPassword` | _pending: linhkhanh-vu_ | Agent evidence in build-log Entry 52; human review pending |
 | 2026-11-07 | `linh/email-not-configured-v2` (replaces #76) | `tests/contract/email-not-configured.test.ts`, `src/lib/auth/registration-delivery.ts` (message), EARS line for `docs/spec/specs/spec-AUT.md` (edit approved by the human), AUT spec snapshots refreshed with `start_feature.py --refresh` | Claude Code (Claude Opus 5.5) | Six production-mode tests on an isolated fixture store first (2 red on the English message), one-line message fix, 3 mutations in the foreground | _pending: linhkhanh-vu_ | Agent evidence in build-log Entry 53; human review pending |

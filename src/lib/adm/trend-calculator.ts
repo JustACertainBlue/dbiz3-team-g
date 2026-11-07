@@ -74,6 +74,18 @@ export function calculateTrendPercentage(
   return { trendPct, trendDirection }
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * spec-ADM FR-004 / issue #93: a Custom `YYYY-MM-DD` is a calendar day in Asia/Ho_Chi_Minh (UTC+7, no DST,
+ * consistency-contract.md:58); start_date begins at 00:00 and end_date is included to 23:59:59.999.
+ * A full timestamp with an offset is kept as given.
+ */
+function hanoiDayBound(value: string, edge: 'start' | 'end'): number {
+  if (!DATE_ONLY.test(value)) return new Date(value).getTime()
+  return Date.parse(`${value}T${edge === 'start' ? '00:00:00.000' : '23:59:59.999'}+07:00`)
+}
+
 /**
  * Resolves date range bounds from preset or custom parameters (FR-004).
  */
@@ -101,8 +113,8 @@ export function resolveDateRange(
       break
     case 'Custom':
       if (customStart && customEnd) {
-        start = new Date(customStart)
-        end.setTime(new Date(customEnd).getTime())
+        start = new Date(hanoiDayBound(customStart, 'start'))
+        end.setTime(hanoiDayBound(customEnd, 'end'))
       } else {
         start.setDate(end.getDate() - 30)
       }

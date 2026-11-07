@@ -38,7 +38,7 @@ short, factual and current.
 2. Never invent requirements. If the spec is silent or ambiguous, stop and list the question.
 3. Never put real personal data in the repository. Seed data is synthetic only.
 4. Never write secrets (API keys, passwords, tokens) into any file. Secrets live in `.env`, which is git-ignored.
-5. Never run `git push`, `git reset --hard`, `git clean` or delete files without asking first.
+5. An agent may push feature branches and open pull requests. It never pushes to `main`, never force-pushes, never deletes remote branches or tags, never pushes tags, and never merges (the human merges). This deviates from constitution principle V, which is unchanged (build log §4 row 46); Claude Code enforces it with `.claude/hooks/block-git-push.py`. Never run `git reset --hard`, `git clean` or delete files without asking first.
 6. After any change, show the list of changed files and a one-line reason for each.
 7. Change only the files the current task needs. Never reformat, rename or reorder files you were not asked to touch.
 

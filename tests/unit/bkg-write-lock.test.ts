@@ -4,7 +4,7 @@ import { withBookingWriteLock } from '@/lib/booking/write-lock'
 // T005 (AC-BKG-RACE support): critical sections never interleave.
 const tick = () => new Promise(resolve => setTimeout(resolve, 5))
 
-describe('T005 | withBookingWriteLock', () => {
+describe('T005 | withBookingWriteLock (spec-IAC #38, spec-BKG FR-003 to FR-006)', () => {
   it('runs a second section only after the first has finished', async () => {
     const events: string[] = []
     const section = (name: string) => withBookingWriteLock(async () => {

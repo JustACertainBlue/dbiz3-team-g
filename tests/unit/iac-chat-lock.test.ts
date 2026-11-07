@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { withChatWriteLock } from '@/lib/iac/chat-lock'
 import { withBookingWriteLock } from '@/lib/booking/write-lock'
 
-describe('T006 | shared write lock', () => {
+describe('T006 | shared write lock (spec-IAC #38, spec-BKG FR-008)', () => {
   it('a paused Chat write delays a later Booking write until it resumes', async () => {
     const order: string[] = []
     let release!: () => void

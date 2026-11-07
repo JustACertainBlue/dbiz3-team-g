@@ -23,7 +23,7 @@ code (AI Use Log); human check pending.
 | 4 | Catalog eligibility | PRF | EXP (and AIT, handoff) | PRF BR-007, BR-018, #32; EXP FR-001, BR-001; AIT BR-003, FR-005 | 3 |
 | 5 | Quote / Chat handoff from Explore | EXP | IAC | EXP FR-011, FR-012, BR-009, BR-010; IAC FR-001, #7, #18, #19, #21; AIT BR-018 | 2 |
 | 6 | AI matching results to Quote / Chat | AIT | IAC (via shared handoff), EXP catalog data | AIT BR-003, BR-009, BR-010, BR-018, BR-019, FR-005, FR-006, FR-011 | 3 |
-| 7 | Dashboard booking metrics | BKG | ADM | ADM FR-002, FR-003, FR-009, FR-010, BR-007, BR-010, BR-014, BR-017, BR-018, BR-019 | 2 |
+| 7 | Dashboard booking metrics | BKG | ADM | ADM FR-002, FR-003, FR-009, FR-010, BR-007, BR-010, BR-014, BR-017, BR-018, BR-019 | 3 |
 | 8 | Pending verification list | PRF (and AUT registrations) | ADM | ADM FR-008; PRF BR-006, BR-007, #32 (no FR for the list) | 2 |
 | 9 | Agency major legal change review | PRF | AUT (HDT review) | PRF FR-002, BR-017; AUT FR-018 | 5 |
 
@@ -421,7 +421,9 @@ without a comparable period (BR-011, spec-ADM.md:220).
 
 **FR/BR:** ADM FR-002, FR-003, FR-004, FR-005, FR-006, FR-009, FR-010, BR-002, BR-003, BR-007, BR-010, BR-011, BR-013, BR-014, BR-017, BR-018, BR-019, AC-ADM-SCOPE, AC-ADM-PAIR, AC-ADM-FILTER.
 
-**Tests:** `tests/adm/unit/booking-metrics.test.ts`, `tests/adm/unit/booking-table.test.ts`,
+**Tests:** `tests/contract/bkg-adm-metrics.test.ts` (Session 10 contract: Booking created and confirmed through
+BKG routes in the ADM counts and table; created_at basis; UBND village lock; non-admin refused; Custom start
+date in Hanoi time as `it.fails`, issue #93), `tests/adm/unit/booking-metrics.test.ts`, `tests/adm/unit/booking-table.test.ts`,
 `tests/adm/unit/collaboration-metrics.test.ts`, `tests/adm/unit/metric-cards.test.ts`,
 `tests/adm/unit/trend-calculator.test.ts`, `tests/adm/unit/filter-metrics.test.ts`,
 `tests/adm/unit/adm-br-gaps.test.ts`, `tests/adm/unit/scope-guard.test.ts`,
@@ -438,6 +440,10 @@ without a comparable period (BR-011, spec-ADM.md:220).
 2. **Number of summary cards.** spec-ADM FR-001 "summary cards (agency count, provider count,
    booking count)" (spec-ADM.md:180) vs FR-003 four cards incl. Active Collaborations
    (spec-ADM.md:182) and consistency-contract.md:108 "four cards".
+3. **Custom period read as UTC (code vs contract, issue #93).** consistency-contract.md:58 "stored
+   instant, displayed/interpreted in Asia/Ho_Chi_Minh" vs `trend-calculator.ts:102-105`
+   (`new Date('YYYY-MM-DD')` = midnight UTC = 07:00 Hanoi), so records created 00:00–06:59 Hanoi on the
+   start day are left out. Spec silent on whether `end_date` (spec-ADM FR-004) includes the whole day.
 
 ---
 
@@ -469,7 +475,9 @@ actions/buttons (ADM BR-012, spec-ADM.md:221).
 
 **FR/BR:** ADM FR-008, BR-002, BR-009, BR-012; PRF BR-005, BR-006, BR-007, BR-018, #32; screen ADM079 (screen-spec-ADM079.md:97).
 
-**Tests:** `tests/adm/unit/pending-verification.test.ts` (:17, :24, :44).
+**Tests:** `tests/contract/prf-adm-pending.test.ts` (Session 10 contract: Pending Provider listed for HDT and its
+village UBND; leaves the list after Approve or Request Revision through PRF; Agency registrations for HDT only;
+another village's UBND neither sees nor reviews it), `tests/adm/unit/pending-verification.test.ts` (:17, :24, :44).
 
 ### Disagreements
 
@@ -526,7 +534,9 @@ approved values (AUT FR-018 "rejected changes are discarded", spec-AUT.md:374).
 
 **FR/BR:** PRF FR-002, BR-001, BR-017, #6; AUT FR-018, BR-010, BR-014; consistency-contract.md:22.
 
-**Tests:** `tests/unit/agency-review.test.ts` (:11, :24), `tests/prf/unit/agency-service.test.ts`,
+**Tests:** `tests/contract/aut-prf-major-change.test.ts` (Session 10 contract: Company Name change waits for HDT
+then Approve applies it; minor or unchanged values need no review; Reject discards and cannot be decided twice;
+only HDT, comment required, duplicate Tax ID refused), `tests/unit/agency-review.test.ts` (:11, :24), `tests/prf/unit/agency-service.test.ts`,
 `tests/prf/integration/agency-routes.test.ts`.
 
 ### Disagreements

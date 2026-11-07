@@ -12,6 +12,7 @@ override `docs/prd.md`, `docs/spec/`, `data/`, `AGENTS.md` or the constitution.
 | `04-bkg-brief.md` | BKG lifecycle, BR → test map, spec↔schema mapping, seed findings, slicing, stack |
 | `05-review-playbook.md` | Step 7 verify procedure and PR report template |
 | `06-lessons-learned.md` | Agent mistakes so far and how to prevent them |
+| `07-session10-11-requirements.md` | Session 10–11 deliverables and review criteria; read for integration, deployment and MVP RC work |
 
 Maintenance: update `03-module-status.md` and CLAUDE.md §5 whenever a PR is merged or a review
 round ends. Changes to this folder go through a pull request like any other change.

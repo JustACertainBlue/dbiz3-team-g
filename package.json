@@ -20,6 +20,7 @@
     "db:migrate": "node scripts/db/migrate.mjs",
     "db:seed": "node scripts/db/seed.mjs",
     "db:provision-app": "node scripts/db/provision-app.mjs",
+    "db:set-test-passwords": "node scripts/db/set-test-passwords.mjs",
     "test:postgres": "node scripts/db/test.mjs",
     "db:audit": "node scripts/db/audit.mjs",
     "storage:setup": "node scripts/storage/setup.mjs",

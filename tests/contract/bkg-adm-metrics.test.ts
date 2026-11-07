@@ -73,12 +73,24 @@ describe('Contract BKG → ADM | dashboard booking metrics (integration-contract
     }
   })
 
-  // Known defect, issue #93: the Custom period is read as UTC midnight (trend-calculator.ts:102-105). This test
-  // documents the expected behaviour; when #93 is fixed it fails here — then change `it.fails` to `it`.
-  it.fails('consistency-contract.md:58 Asia/Ho_Chi_Minh (boundary, start date, issue #93): a Booking created at 06:00 Hanoi on 2026-11-07 is inside a Custom period that starts 2026-11-07', async () => {
+  // Issue #93 (fixed): spec-ADM FR-004 Custom start_date / end_date are whole Hanoi calendar days.
+  it('consistency-contract.md:58 Asia/Ho_Chi_Minh (boundary, start date, issue #93): a Booking created at 06:00 Hanoi on 2026-11-07 is inside a Custom period that starts 2026-11-07', async () => {
     vi.setSystemTime(new Date('2026-11-07T06:00:00+07:00'))
     const id = await createBooking()
     vi.setSystemTime(new Date('2026-11-07T10:00:00+07:00'))
     expect(hasRow((await metrics('hdt', CUSTOM('2026-11-07', '2026-11-08'))).body, id)).toBe(true)
+  })
+
+  it('spec-ADM FR-004 end_date includes the whole Hanoi day (boundary, issue #93): created 23:30 Hanoi on the end date counts, the next day does not', async () => {
+    vi.setSystemTime(new Date('2026-11-07T23:30:00+07:00'))
+    const lateOnEndDay = await createBooking()
+    vi.setSystemTime(new Date('2026-11-08T00:00:00+07:00'))
+    const nextDay = (await createBookingRoute(json('/api/bkg/bookings', 'provider', 'POST', { ...BOOKING, start_at: '2026-11-16T09:00:00+07:00' }) as never))
+    expect(nextDay.status).toBe(201)
+    const nextDayId = (await nextDay.json()).data.booking_id
+    vi.setSystemTime(new Date('2026-11-08T10:00:00+07:00'))
+    const body = (await metrics('hdt', CUSTOM('2026-11-01', '2026-11-07'))).body
+    expect(hasRow(body, lateOnEndDay)).toBe(true)
+    expect(hasRow(body, nextDayId)).toBe(false)
   })
 })

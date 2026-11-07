@@ -25,7 +25,7 @@ issues #87 (PR #89) and #88 (PR #90), and the open defect #93 (§7). Line refere
 | 4 | Catalog eligibility | PRF | EXP (and AIT, handoff) | PRF BR-007, BR-018, #32; EXP FR-001, BR-001; AIT BR-003, FR-005 | 4 (1 fixed) |
 | 5 | Quote / Chat handoff from Explore | EXP | IAC | EXP FR-011, FR-012, BR-009, BR-010; IAC FR-001, #7, #18, #19, #21; AIT BR-018 | 2 |
 | 6 | AI matching results to Quote / Chat | AIT | IAC (via shared handoff), EXP catalog data | AIT BR-003, BR-009, BR-010, BR-018, BR-019, FR-005, FR-006, FR-011 | 3 |
-| 7 | Dashboard booking metrics | BKG | ADM | ADM FR-002, FR-003, FR-009, FR-010, BR-007, BR-010, BR-014, BR-017, BR-018, BR-019 | 3 |
+| 7 | Dashboard booking metrics | BKG | ADM | ADM FR-002, FR-003, FR-009, FR-010, BR-007, BR-010, BR-014, BR-017, BR-018, BR-019 |3 (1 fixed) |
 | 8 | Pending verification list | PRF (and AUT registrations) | ADM | ADM FR-008; PRF BR-006, BR-007, #32 (no FR for the list) | 2 |
 | 9 | Agency major legal change review | PRF | AUT (HDT review) | PRF FR-002, BR-017; AUT FR-018 | 5 |
 
@@ -439,7 +439,7 @@ without a comparable period (BR-011, spec-ADM.md:220).
 
 **Tests:** `tests/contract/bkg-adm-metrics.test.ts` (Session 10 contract: Booking created and confirmed through
 BKG routes in the ADM counts and table; created_at basis; UBND village lock; non-admin refused; Custom start
-date in Hanoi time as `it.fails`, issue #93), `tests/adm/unit/booking-metrics.test.ts`, `tests/adm/unit/booking-table.test.ts`,
+and end dates as whole Hanoi days, issue #93), `tests/adm/unit/custom-period-hanoi.test.ts`, `tests/adm/unit/booking-metrics.test.ts`, `tests/adm/unit/booking-table.test.ts`,
 `tests/adm/unit/collaboration-metrics.test.ts`, `tests/adm/unit/metric-cards.test.ts`,
 `tests/adm/unit/trend-calculator.test.ts`, `tests/adm/unit/filter-metrics.test.ts`,
 `tests/adm/unit/adm-br-gaps.test.ts`, `tests/adm/unit/scope-guard.test.ts`,
@@ -456,10 +456,11 @@ date in Hanoi time as `it.fails`, issue #93), `tests/adm/unit/booking-metrics.te
 2. **Number of summary cards.** spec-ADM FR-001 "summary cards (agency count, provider count,
    booking count)" (spec-ADM.md:180) vs FR-003 four cards incl. Active Collaborations
    (spec-ADM.md:182) and consistency-contract.md:108 "four cards".
-3. **Custom period read as UTC (code vs contract, issue #93).** consistency-contract.md:58 "stored
-   instant, displayed/interpreted in Asia/Ho_Chi_Minh" vs `trend-calculator.ts:102-105`
-   (`new Date('YYYY-MM-DD')` = midnight UTC = 07:00 Hanoi), so records created 00:00–06:59 Hanoi on the
-   start day are left out. Spec silent on whether `end_date` (spec-ADM FR-004) includes the whole day.
+3. **Custom period read as UTC (fixed, issue #93).** consistency-contract.md:58 "stored
+   instant, displayed/interpreted in Asia/Ho_Chi_Minh" vs `trend-calculator.ts` (`new Date('YYYY-MM-DD')`
+   = midnight UTC = 07:00 Hanoi), so records created 00:00–06:59 Hanoi on the start day were left out.
+   Fixed by the #93 PR: spec-ADM FR-004 now states that start_date and end_date are Hanoi calendar days, both
+   included; `hanoiDayBound` in `trend-calculator.ts`.
 
 ---
 

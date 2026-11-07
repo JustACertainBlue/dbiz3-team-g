@@ -1021,6 +1021,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Mutation (foreground) | 5 mutants, 5 killed: old behaviour, never throw, existing lock not contention, EACCES unhandled, just-deleted lock not retried |
 | Checks | `npm run lint` OK; `npm test` 187 files passed, 4 skipped (1129 passed, 20 skipped) on macOS; Windows checked by CI on the PR |
 
+### Entry 62: 07/11 Claude Code + human — #93 ADM Custom period as whole Hanoi days (`fix/93-adm-custom-period-hanoi`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu with the decision: end_date includes the whole last day in Hanoi time, one clarifying line in spec-ADM FR-004 |
+| Spec change (approved in the prompt) | `docs/spec/specs/spec-ADM.md` FR-004: "Custom range: start_date and end_date are calendar days in Asia/Ho_Chi_Minh and both are included — from 00:00 of start_date to the end of end_date (issue #93)"; snapshot `specs/003-adm-core/spec.md` refreshed with `start_feature.py --refresh` (active feature set back to `specs/010-aut-manage-accounts` afterwards) |
+| Tests first | `tests/adm/unit/custom-period-hanoi.test.ts` (4) and in `tests/contract/bkg-adm-metrics.test.ts` the `it.fails` became `it` plus one end-of-day test: 5 red before the fix (period started at `…T00:00Z`, i.e. 07:00 Hanoi); the full-timestamp case stayed green |
+| Fix | `hanoiDayBound` in `src/lib/adm/trend-calculator.ts`: a `YYYY-MM-DD` start is 00:00:00.000 +07:00, an end is 23:59:59.999 +07:00; a full timestamp with an offset is kept as given (existing tests pass it) |
+| Mutation (foreground) | 6 mutants, 6 killed: bounds in UTC, end at its own midnight (old behaviour), end at next midnight, start at 07:00, full timestamps forced to day bounds, end using start-of-day |
+| Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
+| Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

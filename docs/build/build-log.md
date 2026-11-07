@@ -1033,6 +1033,15 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 64: 08/11 Claude Code + human — EARS lines for the defects found on the hosted version (`docs/ears-hosted-defects`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); the human allowed editing exactly these lines in `docs/spec/` (2026-11-08) |
+| Lines added | One "IF … THEN THE SYSTEM SHALL …" line in the Edge cases of: spec-AUT (#102, no prototype-login panel where that login is unavailable), spec-BKG (#87, Booking times in Asia/Ho_Chi_Minh), spec-PRF (#88, category outside the enum rejected with a validation error), spec-ADM (#93, Custom range = whole Hanoi days, both included) |
+| Snapshots | 16 snapshots refreshed with `start_feature.py --use … --refresh`, each `--check` OK (AUT 001–010, BKG 004/011/012/013, PRF 002, ADM 003); active feature set back to `specs/010-aut-manage-accounts` |
+| Code / tests | None changed |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

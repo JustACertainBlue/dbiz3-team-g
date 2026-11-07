@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-BKG.md sha256=ca0ac014f7a69bc4acd9898573d084022f2fcd5ac2b4487eeb59dace6ef7d632 taken=2026-10-30T09:08Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-BKG.md sha256=c6668d1c8001659635adcaea944fbf03028d4af1888dd0399abc5b3ec412a9b8 taken=2026-11-07T17:11Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-BKG.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -231,6 +231,8 @@ UC-BOOK-06 maps to F-SCHED-10.
 - A Booking expires automatically while the Booking Detail screen is open.
 
 - A schedule sync succeeds for Provider but fails for Agency view.
+
+- EARS (2026-11-08, hosted version, issue #87): IF a Booking date or time is shown to a user (Booking list, Booking detail, schedule, edit form or Chat Booking Update message), THEN THE SYSTEM SHALL show it in Asia/Ho_Chi_Minh local time (#31), whatever offset the stored timestamptz value is returned with.
 
 ### Consistency acceptance examples
 

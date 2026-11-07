@@ -129,6 +129,8 @@ UC-ADM-01 maps to all F-ADMIN functions.
 
 - Booking/account status values change while aggregated metrics are being calculated.
 
+- EARS (2026-11-08, hosted version, issue #93): IF an Admin applies a Custom date range, THEN THE SYSTEM SHALL count records from 00:00 of start_date to the end of end_date in Asia/Ho_Chi_Minh, both days included (FR-004).
+
 ### Consistency acceptance examples
 
 | AC ID | Given / When | Expected result |

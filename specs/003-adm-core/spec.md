@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-ADM.md sha256=8a0dbc7de7e22b5d02e2792fcbedde9be10f798ac1f52e391d9712572d3d6704 taken=2026-11-07T15:38Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-ADM.md sha256=5e5cb82b90b3a77b112fb7507ec5ab2ed61b4c29c728a53b42f025415eca261a taken=2026-11-07T17:11Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-ADM.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -132,6 +132,8 @@ UC-ADM-01 maps to all F-ADMIN functions.
 - An Admin's village assignment changes while the Dashboard is open.
 
 - Booking/account status values change while aggregated metrics are being calculated.
+
+- EARS (2026-11-08, hosted version, issue #93): IF an Admin applies a Custom date range, THEN THE SYSTEM SHALL count records from 00:00 of start_date to the end of end_date in Asia/Ho_Chi_Minh, both days included (FR-004).
 
 ### Consistency acceptance examples
 

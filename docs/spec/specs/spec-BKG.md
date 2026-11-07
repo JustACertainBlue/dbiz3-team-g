@@ -228,6 +228,8 @@ UC-BOOK-06 maps to F-SCHED-10.
 
 - A schedule sync succeeds for Provider but fails for Agency view.
 
+- EARS (2026-11-08, hosted version, issue #87): IF a Booking date or time is shown to a user (Booking list, Booking detail, schedule, edit form or Chat Booking Update message), THEN THE SYSTEM SHALL show it in Asia/Ho_Chi_Minh local time (#31), whatever offset the stored timestamptz value is returned with.
+
 ### Consistency acceptance examples
 
 | AC ID | Given / When | Expected result |

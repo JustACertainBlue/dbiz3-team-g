@@ -20,7 +20,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'Body must be a JSON object' } }, { status: 400 })
   }
   try {
-    const data = await changeBookingStatus(sessionContextFromRequest(request), params.bookingId, body as Record<string, unknown>)
+    const data = await changeBookingStatus((await sessionContextFromRequest(request)), params.bookingId, body as Record<string, unknown>)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {

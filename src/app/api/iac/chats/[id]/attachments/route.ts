@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic'
 // F-CHAT-05 send attachments: multipart/form-data, one `files` part per file (spec-IAC #39).
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
-    const session = sessionContextFromRequest(request)
-    requireParticipant(session, params.id) // 403 before the body is read (#47)
+    const session = (await sessionContextFromRequest(request))
+    ;(await requireParticipant(session, params.id)) // 403 before the body is read (#47)
     const form = await request.formData().catch(() => null)
     if (!form) throw new ChatError('VALIDATION_ERROR', 'Send the files as multipart/form-data')
     const files: IncomingFile[] = []

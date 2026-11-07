@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 // Screen BKG137 Booking History (F-SCHED-02, Tour Agency, #68): own Bookings only, read-only.
 export default async function AgencyBookingHistoryPage({ params, searchParams }: { params: { agencyId: string }; searchParams: Record<string, string | undefined> }) {
-  const session = agencyPageSession(params.agencyId)
+  const session = (await agencyPageSession(params.agencyId))
   const styles = bookingDetailStyles + historyStyles
   if (!session) {
     return <main className="bkg-page bkg-state"><h1>Booking History</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch sử Booking.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
@@ -26,7 +26,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
   }
 
   return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · BKG137</p><h1>Booking History</h1><span>{sessionDisplayName(session)} · chỉ xem, sắp theo giờ bắt đầu</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · BKG137</p><h1>Booking History</h1><span>{(await sessionDisplayName(session))} · chỉ xem, sắp theo giờ bắt đầu</span></header>
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái
         <select name="status" defaultValue={query.status}>
@@ -37,7 +37,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
       <label>Làng nghề
         <select name="village_id" defaultValue={query.village_id}>
           <option value="">Tất cả</option>
-          {ownVillages(params.agencyId).map(village => <option key={village.village_id} value={village.village_id}>{village.name}</option>)}
+          {(await ownVillages(params.agencyId)).map(village => <option key={village.village_id} value={village.village_id}>{village.name}</option>)}
         </select>
       </label>
       <label>Từ ngày<input type="date" name="date_from" defaultValue={query.date_from} /></label>

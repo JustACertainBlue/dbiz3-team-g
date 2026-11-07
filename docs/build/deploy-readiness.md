@@ -8,6 +8,8 @@ external service has been created or connected.
 Evidence key: **verified** = command or file read on 2026-11-07; **to re-check** = depends on a hosting
 provider's current documentation or prices, which Session 11 says change often.
 
+> Supabase cutover update: this document records the earlier main baseline. Live storage is now PostgreSQL; see [Supabase quickstart](../env/supabase-quickstart.md) and [cutover verification](supabase-cutover-results.md). Hosting, email and durable file bytes remain separate work.
+
 ## 1. Session 10 — Module Integration and Testing
 
 | Deliverable | Status | Evidence | Work needed |

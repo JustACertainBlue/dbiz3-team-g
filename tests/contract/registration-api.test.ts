@@ -10,12 +10,12 @@ describe('registration delivery and document access boundaries', () => {
     expect(response.status).toBe(503)
     expect((await response.json()).message).toContain('not configured')
   })
-  it.each(['', 'agency', 'provider', 'ubnd'])('denies document download to %s', account => {
+  it.each(['', 'agency', 'provider', 'ubnd'])('denies document download to %s', async account => {
     const request = new Request('http://localhost/api/auth/agency-reviews/documents/none', { headers: account ? { cookie: `hab_demo_account=${account}` } : {} })
-    expect(document(request, { params: { fileId: 'none' } }).status).toBe(403)
+    expect((await document(request, { params: { fileId: 'none' } })).status).toBe(403)
   })
-  it('does not allow HDT to use a path as a document ID', () => {
+  it('does not allow HDT to use a path as a document ID', async () => {
     const request = new Request('http://localhost/api/auth/agency-reviews/documents/none', { headers: { cookie: 'hab_demo_account=hdt' } })
-    expect(document(request, { params: { fileId: '../../runtime.json' } }).status).toBe(404)
+    expect((await document(request, { params: { fileId: '../../runtime.json' } })).status).toBe(404)
   })
 })

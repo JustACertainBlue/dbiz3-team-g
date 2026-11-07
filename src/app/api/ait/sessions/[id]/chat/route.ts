@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     // Authorize → validate → write (BR-001, BR-002, lesson #15): a denied request writes nothing.
-    const actor = sessionContextFromRequest(request)
+    const actor = (await sessionContextFromRequest(request))
     if (!actor.authenticated) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (actor.role !== 'Tour_Agency' || !actor.agencyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const matchingSession = await getMatchingSession(params.id)

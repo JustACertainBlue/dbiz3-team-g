@@ -16,12 +16,12 @@ describe('AUT registration integrated with shared review and login', () => {
     const submitted = await submitRegistration(input, files, deliver)
     const repo = demoRepository()
     expect(repo.find('user_accounts', row => row.email === input.email)).toBeUndefined()
-    const result = verifyRegistration(submitted.registration_request_id, otp)
+    const result = (await verifyRegistration(submitted.registration_request_id, otp))
     expect(result.account_status).toBe('Pending Approval')
-    expect(() => verifyRegistration(submitted.registration_request_id, otp)).toThrow('Verification Failed')
+    ;(await expect(async () => (await verifyRegistration(submitted.registration_request_id, otp))).rejects.toThrow('Verification Failed'))
     expect(repo.all('user_accounts').filter(row => row.email === input.email)).toHaveLength(1)
     expect(await authenticateAccount(input.email, input.password)).toEqual({ ok: false, reason: 'ACCOUNT_INACTIVE' })
-    reviewAgency(demoSessionContextFor('hdt'), submitted.registration_request_id, 'registration', 'Approve', '')
+    ;(await reviewAgency((await demoSessionContextFor('hdt')), submitted.registration_request_id, 'registration', 'Approve', ''))
     const login = await authenticateAccount(input.email, input.password)
     expect(login.ok).toBe(true)
     if (login.ok) expect(login.identity.agencyId).toBe(result.agency_account_id)
@@ -30,8 +30,8 @@ describe('AUT registration integrated with shared review and login', () => {
     let code = ''
     const { registration_request_id: id } = await submitRegistration(input, files, message => { code = message.otp })
     const wrong = code === '100000' ? '100001' : '100000'
-    for (let attempt = 1; attempt <= 5; attempt++) expect(() => verifyRegistration(id, wrong)).toThrow(attempt === 5 ? 'Maximum Attempts Exceeded' : 'Invalid OTP')
-    expect(() => verifyRegistration(id, code)).toThrow('Maximum Attempts Exceeded')
+    for (let attempt = 1; attempt <= 5; attempt++) (await expect(async () => (await verifyRegistration(id, wrong))).rejects.toThrow(attempt === 5 ? 'Maximum Attempts Exceeded' : 'Invalid OTP'))
+    ;(await expect(async () => (await verifyRegistration(id, code))).rejects.toThrow('Maximum Attempts Exceeded'))
     expect(demoRepository().find('registration_otp_challenges', row => row.registration_request_id === id)?.attempt_count).toBe('5')
   }, 15000)
   it('rolls back a failed delivery and invalidates the previous code on resend', async () => {
@@ -44,7 +44,7 @@ describe('AUT registration integrated with shared review and login', () => {
     const challenges = demoRepository().all('registration_otp_challenges').filter(row => row.registration_request_id === id)
     expect(challenges.filter(row => !row.invalidated_at)).toHaveLength(1)
     expect(challenges.find(row => row.resend_sequence === '0')?.invalidated_at).toBeTruthy()
-    expect(verifyRegistration(id, latest).otp_verified).toBe(true)
+    expect((await verifyRegistration(id, latest)).otp_verified).toBe(true)
   }, 15000)
   it('rejects expired OTP and duplicate pending submissions without creating another request', async () => {
     let code = ''
@@ -53,7 +53,7 @@ describe('AUT registration integrated with shared review and login', () => {
     await expect(submitRegistration(input, files, deliver)).rejects.toThrow('Email already exists')
     const repo = demoRepository()
     repo.update('registration_otp_challenges', row => row.registration_request_id === id, { expires_at: new Date(Date.now() - 1).toISOString() })
-    expect(() => verifyRegistration(id, code)).toThrow('Expired OTP')
+    ;(await expect(async () => (await verifyRegistration(id, code))).rejects.toThrow('Expired OTP'))
     expect(repo.all('agency_registration_requests').filter(row => row.email === input.email)).toHaveLength(1)
     expect(repo.find('user_accounts', row => row.email === input.email)).toBeUndefined()
   }, 15000)

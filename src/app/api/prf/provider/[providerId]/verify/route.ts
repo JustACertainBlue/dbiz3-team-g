@@ -15,7 +15,7 @@ export async function POST(
     const resolvedParams = await Promise.resolve(params)
     const providerId = resolvedParams.providerId
 
-    const session = sessionContextFromRequest(req)
+    const session = (await sessionContextFromRequest(req))
 
     let body: unknown = {}
     try {

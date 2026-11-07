@@ -14,7 +14,6 @@ export default function ExploreTracker({ demoAgencyId, detailExperienceId }: { d
 
   useEffect(() => { setConsent(localStorage.getItem('explore_analytics_consent') === 'yes'); }, []);
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
     let alive = true;
     fetch('/api/explore/session', { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ analytics_consent: consent }) })
@@ -25,7 +24,7 @@ export default function ExploreTracker({ demoAgencyId, detailExperienceId }: { d
   }, [demoAgencyId, consent, router]);
 
   useEffect(() => {
-    if (!ready || process.env.NODE_ENV === 'production') return;
+    if (!ready) return;
     const reportDetail = detailExperienceId ? createDetailExitReporter(detailExperienceId, enteredAt.current, payload => {
       fetch('/api/explore/events', { method: 'POST', headers: { 'content-type': 'application/json' }, keepalive: true,
         body: JSON.stringify({ event_id: crypto.randomUUID(), ...payload }) }).catch(() => {});

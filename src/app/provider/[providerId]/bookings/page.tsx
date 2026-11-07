@@ -14,8 +14,8 @@ type SearchParams = Record<string, string | undefined>
 // Screen BKG133 Booking Management (F-SCHED-10, Local Provider). Same gate as BKG134: the owning
 // Provider on its own URL (analyze L2).
 export default async function BookingManagementPage({ params, searchParams }: { params: { providerId: string }; searchParams: SearchParams }) {
-  const session = currentServerSession()
-  if (!canOpenCreateBooking(session, params.providerId)) {
+  const session = (await currentServerSession())
+  if (!(await canOpenCreateBooking(session, params.providerId))) {
     return <main className="bkg-page bkg-state"><h1>Booking Management</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được danh sách Booking.</p><Link href="/login">Đăng nhập</Link><style>{bookingDetailStyles + listStyles}</style></main>
   }
 
@@ -49,7 +49,7 @@ export default async function BookingManagementPage({ params, searchParams }: { 
   const rows = list.bookings.map(row => bookingListRowView(row, params.providerId))
 
   return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · BKG133</p><h1>Booking Management</h1><span>{sessionDisplayName(session)} · sắp theo giờ bắt đầu</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · BKG133</p><h1>Booking Management</h1><span>{(await sessionDisplayName(session))} · sắp theo giờ bắt đầu</span></header>
 
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái

@@ -9,15 +9,16 @@ import { currentServerSession } from '../../lib/auth/server-session';
 
 type Params = { page?: string; category?: string };
 
-export default function ExplorePage({ searchParams }: { searchParams: Params }) {
-  const seed = loadExploreRuntime();
+export default async function ExplorePage({ searchParams }: { searchParams: Params }) {
+  const seed = (await loadExploreRuntime());
   const requestedPage = Number(searchParams.page ?? 1);
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const session = currentServerSession();
+  const session = (await currentServerSession());
   const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
-  const tracked = process.env.NODE_ENV !== 'production' ? demoRuntime().sessionFor(cookies().get('explore_session')?.value ?? '') : undefined;
+  const engine=await demoRuntime();
+  const tracked = await engine.sessionFor(cookies().get('explore_session')?.value ?? '');
   const rankOrder = tracked && tracked.agency_id === (viewer.kind === 'agency' ? viewer.agencyId : null)
-    ? demoRuntime().resultsFor(tracked.session_id).map(row => row.experience_id) : undefined;
+    ? (await engine.resultsFor(tracked.session_id)).map(row => row.experience_id) : undefined;
   const catalog = buildExplorePage(seed, { page, viewer, category: searchParams.category, rankOrder });
   const carry = searchParams.category ? `&category=${encodeURIComponent(searchParams.category)}` : '';
   const totalPages = Math.ceil(catalog.pagination.total_count / catalog.pagination.page_size);

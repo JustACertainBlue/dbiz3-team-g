@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const cursor = new URL(request.url).searchParams.get('before_cursor')
-    const data = await getChatHistory(sessionContextFromRequest(request), params.id, cursor === null ? {} : { beforeCursor: cursor })
+    const data = await getChatHistory((await sessionContextFromRequest(request)), params.id, cursor === null ? {} : { beforeCursor: cursor })
     return NextResponse.json({ data })
   } catch (error) {
     return chatErrorResponse(error)
@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const body = await request.json().catch(() => null) as { message_text?: unknown } | null
-    const data = await sendMessage(sessionContextFromRequest(request), params.id, body?.message_text)
+    const data = await sendMessage((await sessionContextFromRequest(request)), params.id, body?.message_text)
     return NextResponse.json({ data }, { status: 201 })
   } catch (error) {
     return chatErrorResponse(error)

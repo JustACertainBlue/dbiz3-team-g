@@ -14,15 +14,15 @@ export type { SessionLike } from '@/lib/auth/session'
  * - UBND Admins are strictly locked to their assigned village; requested village filters are forced to the assigned village.
  * - Non-admin or unauthenticated requests are rejected.
  */
-export function resolveAdminScope(
+export async function resolveAdminScope(
   session: SessionLike | null | undefined,
   requestedVillageId: string | null = null
-): AdminScope {
+): Promise<AdminScope> {
   if (!session) {
     throw new Error('Forbidden: Administrator privileges required.')
   }
 
-  const actor = toSessionContext(session)
+  const actor = (await toSessionContext(session))
   if (!actor.authenticated || actor.role !== 'ADMIN') {
     throw new Error('Forbidden: Administrator privileges required.')
   }

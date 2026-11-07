@@ -1,5 +1,6 @@
+import { filterAsync } from '@/lib/db/async-collections'
 import type { SessionLike } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import { authorizeAgencyList } from './booking-access'
 import { hanoiDate, isQueryDate, systemClock, type Clock } from './clock'
 import { invalid } from './create-booking'
@@ -41,30 +42,29 @@ function validate(query: AgencyQuery) {
 
 export async function listAgencyBookings(session: SessionLike, query: AgencyQuery, options: { now?: Clock } = {}): Promise<{ bookings: AgencyBooking[] }> {
   // #80: authorize, validate, expire, read — a denied or invalid request writes nothing.
-  const agencyId = authorizeAgencyList(session)
+  const agencyId = (await authorizeAgencyList(session))
   const valid = validate(query)
   const now = (options.now ?? systemClock)()
   await expireDueHolds(now)
 
   const repository = demoRepository()
-  const providerOf = (providerId: string) => repository.find('provider_profiles', row => row.provider_id === providerId)
-  const rows = repository.all('bookings')
+  const providerOf = async (providerId: string) => (await repository.find('provider_profiles', row => row.provider_id === providerId))
+  const rows = (await filterAsync((await repository.all('bookings'))
     .filter(row => row.agency_id === agencyId)
-    .filter(row => !valid.status || row.status === valid.status)
-    .filter(row => !valid.village_id || providerOf(row.provider_id)?.village_id === valid.village_id)
+    .filter(row => !valid.status || row.status === valid.status),async row => !valid.village_id || (await providerOf(row.provider_id))?.village_id === valid.village_id))
     .filter(row => {
       const day = hanoiDate(Date.parse(row.start_at))
       return (!valid.date_from || day >= valid.date_from) && (!valid.date_to || day <= valid.date_to)
     })
     .sort((a, b) => Date.parse(a.start_at) - Date.parse(b.start_at) || (a.booking_id < b.booking_id ? -1 : a.booking_id > b.booking_id ? 1 : 0))
 
-  const bookings = rows.map(row => {
-    const provider = providerOf(row.provider_id)
-    const village = provider && repository.find('villages', item => item.village_id === provider.village_id)
+  const bookings = (await Promise.all(rows.map(async row => {
+    const provider = (await providerOf(row.provider_id))
+    const village = provider && (await repository.find('villages', item => item.village_id === provider.village_id))
     // #79: the public name is the published profile version's (build-log §4, Entry 2).
-    const version = provider && repository.find('provider_profile_versions', item =>
-      item.provider_id === row.provider_id && item.version_no === (provider.published_version_no || provider.current_version_no))
-    const experience = repository.find('experiences', item => item.experience_id === row.experience_id)
+    const version = provider && (await repository.find('provider_profile_versions', item =>
+      item.provider_id === row.provider_id && item.version_no === (provider.published_version_no || provider.current_version_no)))
+    const experience = (await repository.find('experiences', item => item.experience_id === row.experience_id))
     const conditions = JSON.parse(row.conditions_snapshot || '{}') as { notice_period_hours?: number; cancellation_policy?: Record<string, unknown> }
     return {
       booking_id: row.booking_id,
@@ -80,6 +80,6 @@ export async function listAgencyBookings(session: SessionLike, query: AgencyQuer
       status: row.status,
       last_updated_at: row.updated_at,
     }
-  })
+  })))
   return { bookings }
 }

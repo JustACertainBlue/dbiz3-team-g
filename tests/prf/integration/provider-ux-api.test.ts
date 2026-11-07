@@ -19,7 +19,7 @@ describe('Provider UX API boundaries',()=>{
   })
   it('links Village featured experiences to eligible Providers without exposing prices',async()=>{
     const provider=repo.find('provider_profiles',row=>row.provider_id===owner.providerId)!
-    const response=getVillage(new Request('http://localhost'),{params:{id:provider.village_id}})
+    const response=(await getVillage(new Request('http://localhost'),{params:{id:provider.village_id}}))
     const body=await response.json()
     expect(body.featured_experiences.length).toBeGreaterThan(0)
     for(const experience of body.featured_experiences) {
@@ -29,9 +29,9 @@ describe('Provider UX API boundaries',()=>{
       expect(row.archived_at).toBeFalsy()
     }
     repo.update('user_accounts',row=>row.user_id===owner.userId,{account_status:'Suspended'})
-    const hidden=await getVillage(new Request('http://localhost'),{params:{id:provider.village_id}}).json()
+    const hidden=await (await getVillage(new Request('http://localhost'),{params:{id:provider.village_id}})).json()
     expect(hidden.providers.map((row:{provider_id:string})=>row.provider_id)).not.toContain(owner.providerId)
     repo.update('villages',row=>row.village_id===provider.village_id,{is_active:'false'})
-    expect(await getVillage(new Request('http://localhost'),{params:{id:provider.village_id}}).json()).toMatchObject({providers:[],featured_experiences:[]})
+    expect(await (await getVillage(new Request('http://localhost'),{params:{id:provider.village_id}})).json()).toMatchObject({providers:[],featured_experiences:[]})
   })
 })

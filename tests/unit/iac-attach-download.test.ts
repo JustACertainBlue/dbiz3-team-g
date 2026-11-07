@@ -34,9 +34,9 @@ describe('T007 | readAttachment', () => {
       [AGENCY, '00000000-0000-0000-0000-000000000000', id],
       [AGENCY, AGENCY_CHAT, id], // AGENCY is a participant of AGENCY_CHAT, but the attachment is not in it
       [AGENCY, AGENCY_CHAT, 'no-such-attachment'],
-      [demoSessionContextFor('guest'), PROVIDER_CHAT, id],
-      [demoSessionContextFor('ubnd'), PROVIDER_CHAT, id],
-      [demoSessionContextFor('hdt'), PROVIDER_CHAT, id],
+      [(await demoSessionContextFor('guest')), PROVIDER_CHAT, id],
+      [(await demoSessionContextFor('ubnd')), PROVIDER_CHAT, id],
+      [(await demoSessionContextFor('hdt')), PROVIDER_CHAT, id],
     ]
     for (const [session, chatId, attachmentId] of cases) {
       await expect(readAttachment(session, chatId, attachmentId)).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })

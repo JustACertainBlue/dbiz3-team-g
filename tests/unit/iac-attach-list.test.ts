@@ -9,7 +9,7 @@ describe('T008 | list preview and seed attachments', () => {
 
   it('the latest attachment message previews as "Tệp đính kèm: <names>" for both participants (#48)', async () => {
     await sendAttachments(PROVIDER, PROVIDER_CHAT, [file('bao-gia.pdf'), file('lich-trinh.xlsx')])
-    const entry = listChats(PROVIDER).find(c => c.chat_session_id === PROVIDER_CHAT)!
+    const entry = (await listChats(PROVIDER)).find(c => c.chat_session_id === PROVIDER_CHAT)!
     expect(entry.last_message_preview).toBe('Tệp đính kèm: bao-gia.pdf, lich-trinh.xlsx')
   })
 

@@ -54,7 +54,7 @@ describe('T014 | Agency sync through Chat (F-SCHED-08)', () => {
     expect(message.chat_session_id).toBe(chats[0].chat_session_id)
     expect(chats[0].last_message_at).toBe(message.sent_at)
     expect(participant(chats[0].chat_session_id, agencyUser(TRANG_AN))?.unread_count).toBe('1')
-    expect(recipientReadStatus(chats[0].chat_session_id, agencyUser(TRANG_AN), message.message_id)).toBe('Unseen')
+    expect((await recipientReadStatus(chats[0].chat_session_id, agencyUser(TRANG_AN), message.message_id))).toBe('Unseen')
   })
 
   it('two events in a row and a second Booking of the same pair never open a second Active Chat', async () => {

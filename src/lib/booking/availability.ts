@@ -1,4 +1,4 @@
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import type { DemoRow } from '../demo/types'
 import { addDays, hanoiTimestamp } from './clock'
 import { isoWeekdayInHanoi } from './operating-hours'
@@ -96,10 +96,10 @@ export interface AvailabilityResult {
 }
 
 // F-SCHED-09 (#77): internal System function, no HTTP route; date_to defaults to date_from.
-export function calculateAvailability(providerId: string, range: { date_from: string; date_to?: string }, now: Date): AvailabilityResult {
+export async function calculateAvailability(providerId: string, range: { date_from: string; date_to?: string }, now: Date): Promise<AvailabilityResult> {
   const repository = demoRepository()
-  const hours = repository.all('provider_operating_hours').filter(row => row.provider_id === providerId)
-  const bookings = repository.all('bookings').filter(row => row.provider_id === providerId)
+  const hours = (await repository.all('provider_operating_hours')).filter(row => row.provider_id === providerId)
+  const bookings = (await repository.all('bookings')).filter(row => row.provider_id === providerId)
   const calendar = buildCalendarBlocks(hours, bookings, range.date_from, range.date_to ?? range.date_from, 'owner')
   return {
     availability_calendar: calendar,

@@ -5,7 +5,7 @@ import { listProviderBookings } from '@/lib/booking/list-bookings'
 
 // F-SCHED-03 Create Booking (screen BKG134). Contract: specs/004-bkg-core/contracts/create-booking-api.md
 export async function POST(request: NextRequest) {
-  const session = sessionContextFromRequest(request)
+  const session = (await sessionContextFromRequest(request))
   let body: unknown
   try {
     body = await request.json()
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   const params = new URL(request.url).searchParams
   const query = Object.fromEntries(['provider_id', 'status', 'date_from', 'date_to', 'page', 'page_size'].map(name => [name, params.get(name) ?? undefined]))
   try {
-    const data = await listProviderBookings(sessionContextFromRequest(request), query)
+    const data = await listProviderBookings((await sessionContextFromRequest(request)), query)
     return NextResponse.json({ data })
   } catch (error) {
     if (error instanceof BookingError) {

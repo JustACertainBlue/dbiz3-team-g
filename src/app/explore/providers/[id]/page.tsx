@@ -8,9 +8,9 @@ import ExploreTracker from '../../ExploreTracker';
 import { currentServerSession } from '../../../../lib/auth/server-session';
 import ProviderChatAction from '../../ProviderChatAction';
 
-export default function ProviderPage({ params }: { params: { id: string } }) {
-  const seed = loadExploreRuntime();
-  const session = currentServerSession();
+export default async function ProviderPage({ params }: { params: { id: string } }) {
+  const seed = (await loadExploreRuntime());
+  const session = (await currentServerSession());
   const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   const detail = getProviderDetail(seed, params.id, viewer);
   if (!detail) notFound();

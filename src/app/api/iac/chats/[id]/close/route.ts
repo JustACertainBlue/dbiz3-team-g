@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const body = await request.json().catch(() => null) as { close_reason?: unknown } | null
-    return NextResponse.json({ data: await closeChat(sessionContextFromRequest(request), params.id, { closeReason: body?.close_reason }) })
+    return NextResponse.json({ data: await closeChat((await sessionContextFromRequest(request)), params.id, { closeReason: body?.close_reason }) })
   } catch (error) {
     return chatErrorResponse(error)
   }

@@ -1,7 +1,7 @@
 // Adapted from linh-daotruc's PR #11 registration/OTP business rules.
 import { randomInt, randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import type { DemoRow } from '../demo/types'
 import { registrationSchema } from './registration-validation'
 import { hashPassword } from './password'
@@ -21,7 +21,7 @@ export async function submitRegistration(input: unknown, files: DemoRow[], deliv
   const otp = String(randomInt(100000, 1000000))
   const otpHash = await hashPassword(otp)
   const id = randomUUID(), now = new Date().toISOString(), expires = new Date(Date.now() + 600000).toISOString()
-  return demoRepository().transaction(tables => {
+  return (await demoRepository().transaction(["user_accounts","agency_profiles","agency_registration_requests","registration_submission_versions","registration_otp_challenges","stored_files","registration_documents","audit_logs"], tables => {
     const email = data.email.trim().toLowerCase()
     if (table(tables, 'user_accounts').some(row => row.email.toLowerCase() === email)
       || table(tables, 'agency_registration_requests').some(row => row.email.toLowerCase() === email)) fail('Email already exists')
@@ -37,13 +37,13 @@ export async function submitRegistration(input: unknown, files: DemoRow[], deliv
     }
     table(tables, 'registration_otp_challenges').push({ challenge_id: randomUUID(), registration_request_id: id, email, otp_verifier: otpHash, issued_at: now, expires_at: expires, used_at: '', invalidated_at: '', attempt_count: '0', resend_sequence: '0' })
     return { registration_request_id: id, is_valid: true }
-  })
+  }))
 }
 
-export function verifyRegistration(id: string, code: string) {
+export async function verifyRegistration(id: string, code: string) {
   if (!/^[0-9]{6}$/.test(code)) fail('Invalid OTP')
   // Return rejected attempts instead of throwing inside the transaction so the counter persists.
-  const result = demoRepository().transaction(tables => {
+  const result = (await demoRepository().transaction(["user_accounts","agency_profiles","agency_registration_requests","registration_submission_versions","registration_otp_challenges","stored_files","registration_documents","audit_logs"], tables => {
     const request = table(tables, 'agency_registration_requests').find(row => row.registration_request_id === id)
     if (!request || request.current_status !== 'Awaiting OTP' || request.agency_user_id) return { error: 'Verification Failed' }
     const challenge = table(tables, 'registration_otp_challenges').find(row => row.registration_request_id === id && !row.used_at && !row.invalidated_at)
@@ -65,14 +65,14 @@ export function verifyRegistration(id: string, code: string) {
     request.current_status = 'Pending Approval'; request.agency_user_id = userId; request.pending_password_hash = ''; request.updated_at = now
     table(tables, 'audit_logs').push({ audit_id: randomUUID(), actor_user_id: userId, action: 'AGENCY_REGISTRATION_COMPLETED', target_type: 'UserAccount', target_id: userId, occurred_at: now, change_or_result: JSON.stringify({ status: 'Pending Approval' }) })
     return { otp_verified: true, account_status: 'Pending Approval', user_id: userId, agency_account_id: agencyId, confirmation_email_status: 'Not configured' }
-  })
+  }))
   if ('error' in result) fail(result.error!)
   return result
 }
 
 export async function resendRegistrationOtp(id: string, deliver: OtpDelivery) {
   const otp = String(randomInt(100000, 1000000)), hash = await hashPassword(otp)
-  return demoRepository().transaction(tables => {
+  return (await demoRepository().transaction(["user_accounts","agency_profiles","agency_registration_requests","registration_submission_versions","registration_otp_challenges","stored_files","registration_documents","audit_logs"], tables => {
     const request = table(tables, 'agency_registration_requests').find(row => row.registration_request_id === id && row.current_status === 'Awaiting OTP')
     if (!request) fail('Verification Failed')
     const challenges = table(tables, 'registration_otp_challenges').filter(row => row.registration_request_id === id)
@@ -84,5 +84,5 @@ export async function resendRegistrationOtp(id: string, deliver: OtpDelivery) {
     for (const row of challenges) if (!row.used_at && !row.invalidated_at) row.invalidated_at = now
     table(tables, 'registration_otp_challenges').push({ challenge_id: randomUUID(), registration_request_id: id, email: request.email, otp_verifier: hash, issued_at: now, expires_at: expires, used_at: '', invalidated_at: '', attempt_count: '0', resend_sequence: String(sequence) })
     return { resent: true }
-  })
+  }))
 }

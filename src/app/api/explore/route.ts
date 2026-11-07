@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
   if (!Number.isInteger(page) || page < 1 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 50) {
     return NextResponse.json({ error: 'Invalid page or page_size (1–50)' }, { status: 400 });
   }
-  const seed = loadExploreRuntime();
-  const session = sessionContextFromRequest(request);
+  const seed = (await loadExploreRuntime());
+  const session = (await sessionContextFromRequest(request));
   const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   return NextResponse.json(buildExplorePage(seed, { page, pageSize, viewer, category: request.nextUrl.searchParams.get('category') ?? undefined }));
 }

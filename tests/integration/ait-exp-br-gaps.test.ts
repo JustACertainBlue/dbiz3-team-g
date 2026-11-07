@@ -25,7 +25,7 @@ import * as sessionsRoute from '@/app/api/ait/sessions/route'
 
 const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69' // Bát Tràng
 const TRANG_AN = DEMO_IDENTITIES.agency.agencyId!
-const AGENCY = demoSessionContextFor('agency')
+const AGENCY = (await demoSessionContextFor('agency'))
 const WRITE_TABLES = ['quote_requests', 'chat_sessions', 'chat_messages', 'bookings']
 const snapshot = () => JSON.stringify(WRITE_TABLES.map(table => demoRepository().all(table)))
 
@@ -93,8 +93,8 @@ describe('G3 audit | EXP BR-002 / BR-009 / BR-010 on the live handoff', () => {
   for (const account of ['guest', 'provider', 'ubnd', 'hdt'] as const) {
     it(`${account}: Quote and Chat are refused with 403 and nothing is written`, async () => {
       const before = snapshot()
-      await expect(createQuoteHandoff(demoSessionContextFor(account), EXPERIENCE)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }))
-      await expect(createChatHandoff(demoSessionContextFor(account), EXPERIENCE)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }))
+      await expect(createQuoteHandoff((await demoSessionContextFor(account)), EXPERIENCE)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }))
+      await expect(createChatHandoff((await demoSessionContextFor(account)), EXPERIENCE)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }))
       expect(snapshot()).toBe(before)
     })
   }

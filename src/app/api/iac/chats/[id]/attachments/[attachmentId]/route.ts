@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 // F-CHAT-05 download (spec-IAC #40): always a download, never rendered inline.
 export async function GET(request: Request, { params }: { params: { id: string; attachmentId: string } }) {
   try {
-    const file = await readAttachment(sessionContextFromRequest(request), params.id, params.attachmentId)
+    const file = await readAttachment((await sessionContextFromRequest(request)), params.id, params.attachmentId)
     return new Response(new Uint8Array(file.bytes), {
       status: 200,
       headers: {

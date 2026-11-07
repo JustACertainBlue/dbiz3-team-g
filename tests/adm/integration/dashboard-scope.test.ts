@@ -17,9 +17,9 @@ import {
 } from '../helpers/mock-session'
 
 describe('T029: Dashboard Role Scoping Acceptance Test (Scenarios 1..3, 11)', () => {
-  it('Scenario 1: HDT Admin loads platform-wide view with all controls enabled', () => {
+  it('Scenario 1: HDT Admin loads platform-wide view with all controls enabled', async () => {
     const session = createHdtSession()
-    const scope = resolveAdminScope(session, null)
+    const scope = (await resolveAdminScope(session, null))
 
     expect(scope.role).toBe('ADMIN')
     expect(scope.adminType).toBe('HDT')
@@ -27,10 +27,10 @@ describe('T029: Dashboard Role Scoping Acceptance Test (Scenarios 1..3, 11)', ()
     expect(scope.isVillageFilterLocked).toBe(false)
   })
 
-  it('Scenario 2 & 3: UBND Admin metrics are restricted to assigned village with locked filter', () => {
+  it('Scenario 2 & 3: UBND Admin metrics are restricted to assigned village with locked filter', async () => {
     const assignedVillage = SEED_ADMIN_IDS.batTrangVillageId
     const session = createUbndSession(assignedVillage)
-    const scope = resolveAdminScope(session, null)
+    const scope = (await resolveAdminScope(session, null))
 
     expect(scope.adminType).toBe('UBND')
     expect(scope.assignedVillageId).toBe(assignedVillage)
@@ -38,10 +38,10 @@ describe('T029: Dashboard Role Scoping Acceptance Test (Scenarios 1..3, 11)', ()
     expect(scope.isVillageFilterLocked).toBe(true)
   })
 
-  it('Scenario 11: Dashboard monitoring does not expose booking lifecycle manipulation', () => {
+  it('Scenario 11: Dashboard monitoring does not expose booking lifecycle manipulation', async () => {
     // Verifies that administrative scope has monitoring-only access
     const session = createHdtSession()
-    const scope = resolveAdminScope(session, null)
+    const scope = (await resolveAdminScope(session, null))
 
     expect(scope).not.toHaveProperty('canCancelBooking')
     expect(scope).not.toHaveProperty('canConfirmBooking')

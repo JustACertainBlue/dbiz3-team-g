@@ -3,7 +3,7 @@ import { GET } from '@/app/api/auth/session/route'
 
 async function session(account?: string) {
   const headers = account ? { cookie: `hab_demo_account=${account}` } : undefined
-  const response = GET(new Request('http://localhost/api/auth/session', { headers }))
+  const response = (await GET(new Request('http://localhost/api/auth/session', { headers })))
   return { status: response.status, body: await response.json() }
 }
 

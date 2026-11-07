@@ -11,9 +11,9 @@ export const dynamic = 'force-dynamic'
 
 // Screen SCH140 Provider Schedule – Agency View (F-SCHED-01 public view; #74, #75, #82).
 export default async function AgencyProviderSchedulePage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
-  const session = currentServerSession()
+  const session = (await currentServerSession())
   const styles = bookingDetailStyles + calendarStyles
-  const entry = scheduleEntryFor(session, params.id)
+  const entry = (await scheduleEntryFor(session, params.id))
   if (entry === 'redirect-owner') redirect(`/provider/${params.id}/schedule`)
   if (entry === 'not-found') {
     return <main className="bkg-page bkg-state"><h1>Provider Schedule – Agency View</h1><p>Không tìm thấy Provider đã xác minh này.</p><Link href="/explore">Về Explore</Link><style>{styles}</style></main>

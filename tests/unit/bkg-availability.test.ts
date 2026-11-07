@@ -74,9 +74,9 @@ describe('T007 | buildCalendarBlocks (#72)', () => {
 describe('T008 | calculateAvailability (#77, SC-003)', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('returns the calendar, the slots and calculated_at; date_to defaults to date_from', () => {
+  it('returns the calendar, the slots and calculated_at; date_to defaults to date_from', async () => {
     const now = new Date(SEED_NOW)
-    const result = calculateAvailability(PROVIDER, { date_from: '2026-10-05' }, now)
+    const result = (await calculateAvailability(PROVIDER, { date_from: '2026-10-05' }, now))
     expect(result.availability_calendar).toEqual(buildCalendarBlocks(hours(), bookings(), '2026-10-05', '2026-10-05', 'owner'))
     expect(result.available_slots).toEqual([
       { start_at: t('2026-10-05', '08:00'), end_at: t('2026-10-05', '09:00') },
@@ -92,7 +92,7 @@ describe('T008 | calculateAvailability (#77, SC-003)', () => {
       start_at: t('2026-10-12', '09:00'), duration: 60, group_size: 10, agreed_price: 2000000,
       booking_conditions: { notice_period: 24, cancellation_policy: { before_hours: 24, refund_percent: 80 } },
     }, seedNow)).booking_id
-    const result = calculateAvailability(PROVIDER, { date_from: '2026-10-12' }, new Date(SEED_NOW))
+    const result = (await calculateAvailability(PROVIDER, { date_from: '2026-10-12' }, new Date(SEED_NOW)))
     expect(result.occupied_slots).toEqual([{ booking_id: id, start_at: t('2026-10-12', '09:00'), end_at: t('2026-10-12', '10:00'), status: 'On hold' }])
   })
 })

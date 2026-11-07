@@ -20,8 +20,8 @@ describe('PR #11 password login through the shared session contract', () => {
     expect(payload.data.session).toMatchObject({ role: 'Tour_Agency', agencyId: 'integration-agency', userId: 'integration-user' })
     const token = response.cookies.get('hab_session')!.value
     const authenticated = new Request('http://localhost/api/auth/session', { headers: { cookie: `hab_session=${token}` } })
-    expect((await session(authenticated).json()).data.session).toMatchObject({ authenticated: true, agencyId: 'integration-agency' })
+    expect((await (await session(authenticated)).json()).data.session).toMatchObject({ authenticated: true, agencyId: 'integration-agency' })
     await logout(authenticated)
-    expect((await session(authenticated).json()).data.session.authenticated).toBe(false)
+    expect((await (await session(authenticated)).json()).data.session.authenticated).toBe(false)
   })
 })

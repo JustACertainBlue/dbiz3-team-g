@@ -1,5 +1,5 @@
 import type { SessionLike } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import { bookingActions } from './booking-actions'
 import { authorizeProviderList } from './booking-access'
 import { hanoiDate, systemClock, type Clock } from './clock'
@@ -78,13 +78,13 @@ function validateQuery(query: ListQuery): ValidQuery {
 
 export async function listProviderBookings(session: SessionLike, query: ListQuery, options: { now?: Clock } = {}): Promise<BookingList> {
   // Order is mandatory (#64, #67): authorize, validate, expire, read. A rejected request writes nothing.
-  const providerId = authorizeProviderList(session, present(query.provider_id) ? query.provider_id : null)
+  const providerId = (await authorizeProviderList(session, present(query.provider_id) ? query.provider_id : null))
   const valid = validateQuery(query)
   const now = (options.now ?? systemClock)()
   await expireDueHolds(now)
 
   const repository = demoRepository()
-  const inRange = repository.all('bookings')
+  const inRange = (await repository.all('bookings'))
     .filter(row => row.provider_id === providerId)
     .filter(row => {
       const day = hanoiDate(Date.parse(row.start_at)) // local date of start_at, inclusive (#62)
@@ -100,9 +100,9 @@ export async function listProviderBookings(session: SessionLike, query: ListQuer
     .sort((a, b) => Date.parse(a.start_at) - Date.parse(b.start_at) || (a.booking_id < b.booking_id ? -1 : a.booking_id > b.booking_id ? 1 : 0)) // #60
   const page = matching.slice((valid.page - 1) * valid.page_size, valid.page * valid.page_size) // #63
 
-  const bookings = page.map(row => {
-    const experience = repository.find('experiences', item => item.experience_id === row.experience_id)
-    const agency = repository.find('agency_profiles', item => item.agency_id === row.agency_id)
+  const bookings = (await Promise.all(page.map(async row => {
+    const experience = (await repository.find('experiences', item => item.experience_id === row.experience_id))
+    const agency = (await repository.find('agency_profiles', item => item.agency_id === row.agency_id))
     const actions = bookingActions(row.status, now, row.start_at, 'provider') // #59: same rule as BKG135
     const listed: ListedBooking = {
       booking_id: row.booking_id,
@@ -116,7 +116,7 @@ export async function listProviderBookings(session: SessionLike, query: ListQuer
     }
     if (row.status === 'On hold') listed.hold_expires_at = row.hold_expires_at
     return listed
-  })
+  })))
   return { bookings, status_counts, total_count: matching.length }
 }
 

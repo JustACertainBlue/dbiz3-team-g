@@ -104,7 +104,7 @@ export async function filterDashboardMetrics(
   session: SessionLike,
   filters: DashboardFilterParams = {}
 ): Promise<DashboardMetricsResponse> {
-  const scope = resolveAdminScope(session, filters.villageId || null)
+  const scope = (await resolveAdminScope(session, filters.villageId || null))
   const effectiveFilters: DashboardFilterParams = {
     ...filters,
     villageId: scope.effectiveVillageId,
@@ -118,12 +118,12 @@ export async function filterDashboardMetrics(
 
   const [metricCards, agencyMetrics, providerMetrics, bookingMetrics, collaborationMetrics, pendingVerification] =
     await Promise.all([
-      calculateMetricCards(session, effectiveFilters),
-      aggregateAgencyMetrics(session, effectiveFilters),
-      aggregateProviderMetrics(session, effectiveFilters),
-      aggregateBookingMetrics(session, effectiveFilters),
-      getTopCollaborationPairs(session, effectiveFilters),
-      listPendingVerification(session, effectiveFilters.villageId || null),
+      (calculateMetricCards(session, effectiveFilters)),
+      (aggregateAgencyMetrics(session, effectiveFilters)),
+      (aggregateProviderMetrics(session, effectiveFilters)),
+      (aggregateBookingMetrics(session, effectiveFilters)),
+      (getTopCollaborationPairs(session, effectiveFilters)),
+      (listPendingVerification(session, effectiveFilters.villageId || null)),
     ])
 
   return {
@@ -147,7 +147,7 @@ export async function calculateMetricCards(
   session: SessionLike,
   filters: DashboardFilterParams = {}
 ): Promise<MetricCard[]> {
-  const scope = resolveAdminScope(session, filters.villageId || null)
+  const scope = (await resolveAdminScope(session, filters.villageId || null))
   const { startDate, endDate } = resolveDateRange(
     filters.preset || 'Last 30 days',
     filters.startDate,
@@ -156,13 +156,13 @@ export async function calculateMetricCards(
   const { prevStartDate, prevEndDate } = calculatePreviousPeriod(startDate, endDate)
 
   const [allBookings, allAgencies, allProviders, allQuotes, allChats, history, experienceProvider] = await Promise.all([
-    loadBookings(),
-    loadAgencies(),
-    loadProviders(),
-    loadQuoteRequests(),
-    loadChatSessions(),
-    loadBookingStatusHistory(),
-    loadExperienceProviderMap(),
+    (loadBookings()),
+    (loadAgencies()),
+    (loadProviders()),
+    (loadQuoteRequests()),
+    (loadChatSessions()),
+    (loadBookingStatusHistory()),
+    (loadExperienceProviderMap()),
   ])
 
   // Scope providers
@@ -250,7 +250,7 @@ export async function aggregateAgencyMetrics(
   session: SessionLike,
   filters: DashboardFilterParams = {}
 ): Promise<AgencyMetrics> {
-  const scope = resolveAdminScope(session, filters.villageId || null)
+  const scope = (await resolveAdminScope(session, filters.villageId || null))
   const { startDate, endDate } = resolveDateRange(
     filters.preset || 'Last 30 days',
     filters.startDate,
@@ -258,12 +258,12 @@ export async function aggregateAgencyMetrics(
   )
 
   const [allAgencies, allBookings, allQuotes, allChats, allProviders, experienceProvider] = await Promise.all([
-    loadAgencies(),
-    loadBookings(),
-    loadQuoteRequests(),
-    loadChatSessions(),
-    loadProviders(),
-    loadExperienceProviderMap(),
+    (loadAgencies()),
+    (loadBookings()),
+    (loadQuoteRequests()),
+    (loadChatSessions()),
+    (loadProviders()),
+    (loadExperienceProviderMap()),
   ])
 
   // Filter agencies by scope (#22: relevant = Booking, Quote Request or Chat with a village Provider; no fallback, A13)
@@ -347,7 +347,7 @@ export async function aggregateProviderMetrics(
   session: SessionLike,
   filters: DashboardFilterParams = {}
 ): Promise<ProviderMetrics> {
-  const scope = resolveAdminScope(session, filters.villageId || null)
+  const scope = (await resolveAdminScope(session, filters.villageId || null))
   const { startDate, endDate } = resolveDateRange(
     filters.preset || 'Last 30 days',
     filters.startDate,
@@ -355,12 +355,12 @@ export async function aggregateProviderMetrics(
   )
 
   const [allProviders, allVillages, allBookings, allQuotes, allChats, experienceProvider] = await Promise.all([
-    loadProviders(),
-    loadVillages(),
-    loadBookings(),
-    loadQuoteRequests(),
-    loadChatSessions(),
-    loadExperienceProviderMap(),
+    (loadProviders()),
+    (loadVillages()),
+    (loadBookings()),
+    (loadQuoteRequests()),
+    (loadChatSessions()),
+    (loadExperienceProviderMap()),
   ])
 
   // Filter providers by scope (BR-009)
@@ -476,7 +476,7 @@ export async function aggregateBookingMetrics(
   session: SessionLike,
   filters: DashboardFilterParams = {}
 ): Promise<BookingMetrics> {
-  const scope = resolveAdminScope(session, filters.villageId || null)
+  const scope = (await resolveAdminScope(session, filters.villageId || null))
   const { startDate, endDate, granularity } = resolveDateRange(
     filters.preset || 'Last 30 days',
     filters.startDate,
@@ -484,10 +484,10 @@ export async function aggregateBookingMetrics(
   )
 
   const [allBookings, allProviders, allAgencies, allExperiences] = await Promise.all([
-    loadBookings(),
-    loadProviders(),
-    loadAgencies(),
-    loadExperiences(),
+    (loadBookings()),
+    (loadProviders()),
+    (loadAgencies()),
+    (loadExperiences()),
   ])
 
   // Scope bookings by village (BR-010)
@@ -579,14 +579,14 @@ export async function filterBookingTable(
   session: SessionLike,
   filters: DashboardFilterParams = {}
 ): Promise<BookingRecord[]> {
-  const scope = resolveAdminScope(session, filters.villageId || null)
+  const scope = (await resolveAdminScope(session, filters.villageId || null))
   const { startDate, endDate } = resolveDateRange(filters.preset || 'Last 30 days', filters.startDate, filters.endDate)
 
   const [allBookings, allProviders, allAgencies, allExperiences] = await Promise.all([
-    loadBookings(),
-    loadProviders(),
-    loadAgencies(),
-    loadExperiences(),
+    (loadBookings()),
+    (loadProviders()),
+    (loadAgencies()),
+    (loadExperiences()),
   ])
 
   const providerMap = new Map(allProviders.map(p => [p.provider_id, p]))
@@ -639,14 +639,14 @@ export async function getTopCollaborationPairs(
   session: SessionLike,
   filters: DashboardFilterParams = {}
 ): Promise<CollaborationMetrics> {
-  const scope = resolveAdminScope(session, filters.villageId || null)
+  const scope = (await resolveAdminScope(session, filters.villageId || null))
   const sortBy = filters.sortBy || 'Frequency'
   const { startDate, endDate } = resolveDateRange(filters.preset || 'Last 30 days', filters.startDate, filters.endDate)
 
   const [allBookings, allAgencies, allProviders] = await Promise.all([
-    loadBookings(),
-    loadAgencies(),
-    loadProviders(),
+    (loadBookings()),
+    (loadAgencies()),
+    (loadProviders()),
   ])
 
   const agencyMap = new Map(allAgencies.map(a => [a.agency_id, a.company_name]))

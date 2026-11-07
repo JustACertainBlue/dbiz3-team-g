@@ -33,7 +33,7 @@ export async function generateDescriptionDraft(
   input: AIDescriptionInput,
   actorSession: SessionLike,
 ): Promise<AIDescriptionDraftResult> {
-  const actor = toSessionContext(actorSession)
+  const actor = (await toSessionContext(actorSession))
   if (!actor.authenticated || actor.role !== 'Local_Provider') {
     throw new AIError('Forbidden: only authenticated local providers can refine descriptions', 403)
   }

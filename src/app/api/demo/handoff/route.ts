@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (body.chat_source !== undefined && body.chat_source !== 'Explore' && body.chat_source !== 'Provider Profile') {
       return NextResponse.json({ error: { code: 'INVALID_HANDOFF', message: 'chat_source must be Explore or Provider Profile' } }, { status: 400 })
     }
-    const session = sessionContextFromRequest(request)
+    const session = (await sessionContextFromRequest(request))
     // FR-007 (spec-EXP #29): the strong action is logged in the Agency's current Explore session.
     const signal = body.source_context
       ? { exploreSessionId: request.cookies.get('explore_session')?.value, sourceContext: body.source_context as SourceContext }

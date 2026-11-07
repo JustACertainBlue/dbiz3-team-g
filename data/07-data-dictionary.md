@@ -590,3 +590,8 @@ definitions are authoritative in `schema.sql`.
 | `target_id` | uuid | ? |  |
 | `occurred_at` | timestamptz | NN |  |
 | `change_or_result` | jsonb | ? |  |
+
+
+## Supabase runtime persistence addendum (2026-11-07)
+
+See [runtime-persistence.md](runtime-persistence.md) for the approved Matching status, Explore retry ID, preference-profile attributes and private Auth request-limit table, including types, constraints and rationale. The business entity count stays 47; the technical rate-limit table starts empty. Live services now use PostgreSQL through the shared async application store.

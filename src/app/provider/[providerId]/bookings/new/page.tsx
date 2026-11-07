@@ -1,21 +1,21 @@
 import Link from 'next/link'
 import { sessionDisplayName } from '@/lib/auth/session'
 import { currentServerSession } from '@/lib/auth/server-session'
-import { demoRepository } from '@/lib/demo/json-repository'
+import { demoRepository } from '@/lib/db/application-store'
 import { bookingConditionsFromExperience, canOpenCreateBooking } from '@/lib/booking/create-booking'
 import CreateBookingForm, { type AgencyOption, type ExperienceOption } from './CreateBookingForm'
 
 export const dynamic = 'force-dynamic'
 
 // Screen BKG134 Create Booking (F-SCHED-03).
-export default function CreateBookingPage({ params }: { params: { providerId: string } }) {
-  const session = currentServerSession()
-  if (!canOpenCreateBooking(session, params.providerId)) {
+export default async function CreateBookingPage({ params }: { params: { providerId: string } }) {
+  const session = (await currentServerSession())
+  if (!(await canOpenCreateBooking(session, params.providerId))) {
     return <main className="bkg-state"><h1>Create Booking</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới tạo được Booking.</p><Link href="/login">Đăng nhập</Link><style>{bookingStyles}</style></main>
   }
 
   const repository = demoRepository()
-  const experiences: ExperienceOption[] = repository.all('experiences')
+  const experiences: ExperienceOption[] = (await repository.all('experiences'))
     .filter(row => row.provider_id === params.providerId && !row.archived_at)
     .map(row => ({
       experience_id: row.experience_id,
@@ -25,14 +25,14 @@ export default function CreateBookingPage({ params }: { params: { providerId: st
       price_per_person: Number(row.price_per_person),
       conditions: bookingConditionsFromExperience(row),
     }))
-  const approvedUsers = new Set(repository.all('user_accounts').filter(row => row.account_status === 'Approved').map(row => row.user_id))
-  const agencies: AgencyOption[] = repository.all('agency_profiles')
+  const approvedUsers = new Set((await repository.all('user_accounts')).filter(row => row.account_status === 'Approved').map(row => row.user_id))
+  const agencies: AgencyOption[] = (await repository.all('agency_profiles'))
     .filter(row => approvedUsers.has(row.user_id))
     .map(row => ({ agency_id: row.agency_id, company_name: row.company_name }))
     .sort((a, b) => a.company_name.localeCompare(b.company_name))
 
   return <main className="bkg-create">
-    <header><p>HANOI ARTISAN BRIDGE · BKG134</p><h1>Create Booking</h1><span>{sessionDisplayName(session)} · Booking mới luôn ở trạng thái On hold trong 72 giờ</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · BKG134</p><h1>Create Booking</h1><span>{(await sessionDisplayName(session))} · Booking mới luôn ở trạng thái On hold trong 72 giờ</span></header>
     <CreateBookingForm providerId={params.providerId} experiences={experiences} agencies={agencies} />
     <style>{bookingStyles}</style>
   </main>

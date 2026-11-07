@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { toSessionContext, type SessionLike } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import type { DemoRow } from '../demo/types'
 import { bookingUpdateOperations } from './agency-sync'
 import { hanoiTimestamp, systemClock, type Clock } from './clock'
@@ -80,8 +80,8 @@ export function invalid(message: string): never {
 }
 
 // Only an authenticated Local Provider may open BKG134, and only for its own Provider (BR-001).
-export function canOpenCreateBooking(session: SessionLike, providerId: string): boolean {
-  const actor = toSessionContext(session)
+export async function canOpenCreateBooking(session: SessionLike, providerId: string): Promise<boolean> {
+  const actor = (await toSessionContext(session))
   return actor.authenticated && actor.role === 'Local_Provider' && !!actor.providerId && actor.providerId === providerId
 }
 
@@ -135,7 +135,7 @@ export async function createBooking(
   options: { now?: Clock; afterConflictCheck?: () => Promise<void> } = {},
 ): Promise<CreateBookingResult> {
   // BR-001: only a Local Provider controls the Booking lifecycle.
-  const actor = toSessionContext(session)
+  const actor = (await toSessionContext(session))
   if (!actor.authenticated || actor.role !== 'Local_Provider' || !actor.providerId || !actor.userId) {
     throw new BookingError('FORBIDDEN', 'Only a Local Provider can create a Booking')
   }
@@ -143,22 +143,22 @@ export async function createBooking(
   const request = validateInput(input)
   const repository = demoRepository()
 
-  const experience = repository.find('experiences', row => row.experience_id === request.experience_id)
+  const experience = (await repository.find('experiences', row => row.experience_id === request.experience_id))
   if (!experience) throw new BookingError('NOT_FOUND', 'Experience not found')
   if (experience.provider_id !== providerId) throw new BookingError('FORBIDDEN', 'The Experience belongs to another Provider')
 
   // BR-018 and #37: active, Verified Provider and an unarchived Experience.
-  const provider = repository.find('provider_profiles', row => row.provider_id === providerId)
-  const providerUser = provider && repository.find('user_accounts', row => row.user_id === provider.user_id)
+  const provider = (await repository.find('provider_profiles', row => row.provider_id === providerId))
+  const providerUser = provider && (await repository.find('user_accounts', row => row.user_id === provider.user_id))
   if (!provider || provider.verification_status !== 'Verified' || providerUser?.account_status !== 'Active') {
     throw new BookingError('PROVIDER_NOT_ELIGIBLE', 'The Provider must be Verified and active')
   }
   if (experience.archived_at) throw new BookingError('PROVIDER_NOT_ELIGIBLE', 'The Experience is archived')
 
   // #39: the selected Agency's account must be Approved.
-  const agency = repository.find('agency_profiles', row => row.agency_id === request.agency_id)
+  const agency = (await repository.find('agency_profiles', row => row.agency_id === request.agency_id))
   if (!agency) throw new BookingError('NOT_FOUND', 'Agency not found')
-  const agencyUser = repository.find('user_accounts', row => row.user_id === agency.user_id)
+  const agencyUser = (await repository.find('user_accounts', row => row.user_id === agency.user_id))
   if (agencyUser?.account_status !== 'Approved') throw new BookingError('AGENCY_NOT_ELIGIBLE', 'The Agency account is not Approved')
 
   // OQ #7: group_size must not exceed the Experience's max_participants.
@@ -170,17 +170,17 @@ export async function createBooking(
 
   // Check + write run inside this lock; tests/unit/bkg-race-pause.test.ts proves it with an
   // async pause between findConflict and applyBatch (AC-BKG-RACE, build-log §4).
-  return withBookingWriteLock(async () => {
+  return (await withBookingWriteLock(async () => {
     // #50, analyze M2: expire due holds first, so an expired hold no longer blocks this slot.
-    expireDueHoldsLocked(new Date(now))
+    ;(await expireDueHoldsLocked(new Date(now)))
     // FR-003: atomic re-check against operating hours and On hold/Booked Bookings (BR-005, AC-BKG-RACE).
-    const hours = repository.all('provider_operating_hours')
+    const hours = (await repository.all('provider_operating_hours'))
       .filter(row => row.provider_id === providerId)
       .map(row => ({ weekday: row.weekday, local_start: row.local_start, local_end: row.local_end }))
     if (!fitsOperatingHours(hours, startAt, endAt)) {
       throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: outside the Provider operating hours')
     }
-    if (findConflict(repository.all('bookings'), providerId, startAt, endAt)) {
+    if (findConflict((await repository.all('bookings')), providerId, startAt, endAt)) {
       throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time overlaps another Booking')
     }
     if (options.afterConflictCheck) await options.afterConflictCheck()
@@ -219,11 +219,11 @@ export async function createBooking(
       reason: '',
     }
     // BR-019: Booking, its initial history and the F-SCHED-08 Booking Update message in one persist.
-    repository.applyBatch([
+    ;(await repository.applyBatch([
       { table: 'bookings', row: booking },
       { table: 'booking_status_history', row: history },
-      ...bookingUpdateOperations(booking, createdAt).operations,
-    ])
+      ...(await bookingUpdateOperations(booking, createdAt)).operations,
+    ]))
 
     return {
       booking_id: bookingId,
@@ -235,5 +235,5 @@ export async function createBooking(
       // #36: the Agency schedule is derived from bookings, so it is current as soon as this persists.
       private_schedule_synced: true,
     }
-  })
+  }))
 }

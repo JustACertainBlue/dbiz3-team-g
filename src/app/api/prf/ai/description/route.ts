@@ -4,7 +4,7 @@ import { ZodError } from 'zod'
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    const session = sessionContextFromRequest(req)
+    const session = (await sessionContextFromRequest(req))
 
     let body: any
     try {

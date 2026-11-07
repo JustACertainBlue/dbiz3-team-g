@@ -16,27 +16,27 @@ const create = (startAt: string) => createBooking(DEMO_IDENTITIES.provider, {
   start_at: startAt, duration: 60, group_size: 10, agreed_price: 2000000,
   booking_conditions: { notice_period: 24, cancellation_policy: { before_hours: 24, refund_percent: 80 } },
 }, seedNow)
-const availability = (date: string) => calculateAvailability(PROVIDER, { date_from: date }, new Date(SEED_NOW))
+const availability = async (date: string) => (await calculateAvailability(PROVIDER, { date_from: date }, new Date(SEED_NOW)))
 
 describe('T009 | F-SCHED-09 agrees with create (#81)', () => {
   beforeEach(() => demoRepository().reset())
 
   it('an Available slot is accepted', async () => {
-    const slot = availability('2026-10-12').available_slots[0]
-    await expect(create(slot.start_at)).resolves.toMatchObject({ status: 'On hold' })
+    const slot = (await availability('2026-10-12')).available_slots[0]
+    await expect(((create(slot.start_at)))).resolves.toMatchObject({ status: 'On hold' })
   })
 
   it('an occupied slot is rejected', async () => {
-    const occupied = availability('2026-10-05').occupied_slots[0]
-    await expect(create(iso(Date.parse(occupied.start_at) + HOUR / 2))).rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })
+    const occupied = (await availability('2026-10-05')).occupied_slots[0]
+    await expect(((create(iso(Date.parse(occupied.start_at) + HOUR / 2))))).rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })
   })
 
   it('an Unavailable slot is rejected, also on a day without hours', async () => {
-    const evening = availability('2026-10-12').availability_calendar.find(block => block.status === 'Unavailable' && block.start_at.endsWith('17:00:00+07:00'))!
-    await expect(create(evening.start_at)).rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })
-    const tuesday = availability('2026-10-13').availability_calendar
+    const evening = (await availability('2026-10-12')).availability_calendar.find(block => block.status === 'Unavailable' && block.start_at.endsWith('17:00:00+07:00'))!
+    await expect(((create(evening.start_at)))).rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })
+    const tuesday = (await availability('2026-10-13')).availability_calendar
     expect(tuesday).toHaveLength(1)
     expect(tuesday[0].status).toBe('Unavailable')
-    await expect(create(iso(Date.parse(tuesday[0].start_at) + 8 * HOUR))).rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })
+    await expect(((create(iso(Date.parse(tuesday[0].start_at) + 8 * HOUR))))).rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })
   })
 })

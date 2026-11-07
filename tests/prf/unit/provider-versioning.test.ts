@@ -29,7 +29,7 @@ const ubnd = ubndSession(SEED_IDS.village1)
 const profileRow = () => demoRepository().all('provider_profiles').find(row => row.provider_id === BAT_TRANG)!
 const versions = () => demoRepository().all('provider_profile_versions').filter(row => row.provider_id === BAT_TRANG)
 const version = (no: number) => versions().find(row => row.version_no === String(no))!
-const inExplore = () => eligibleRows(loadExploreRuntime()).some(row => row.provider.provider_id === BAT_TRANG)
+const inExplore = async () => eligibleRows((await loadExploreRuntime())).some(row => row.provider.provider_id === BAT_TRANG)
 const book = () => createBooking(DEMO_IDENTITIES.provider, {
   experience_id: EXPERIENCE, agency_id: TRANG_AN,
   start_at: '2026-10-12T09:00:00+07:00', duration: 60, group_size: 10, agreed_price: 1500000,
@@ -57,7 +57,7 @@ describe('Slice A | Save without a change on a Verified Provider (FR-004, BR-018
     expect(versions()).toHaveLength(1)
     expect(profileRow().verification_status).toBe('Verified')
     expect(profileRow().current_version_no).toBe('1')
-    expect(inExplore()).toBe(true)
+    expect((await inExplore())).toBe(true)
   })
 })
 
@@ -73,9 +73,9 @@ describe('Slice A | real major change on a Verified Provider (BR-007, BR-018)', 
     expect(version(1).version_status).toBe('Verified')
     expect(profileRow().verification_status).toBe('Verified')
     expect(profileRow().published_version_no).toBe('1')
-    expect(inExplore()).toBe(true)
+    expect((await inExplore())).toBe(true)
     expect((await getProviderProfile(BAT_TRANG, guestSession()))?.provider_name).toBe(version(1).business_name)
-    await expect(book()).resolves.toMatchObject({ status: 'On hold' })
+    await expect(((book()))).resolves.toMatchObject({ status: 'On hold' })
   })
 
   it('a second save of the pending revision edits that revision, it does not add a third version', async () => {
@@ -97,8 +97,8 @@ describe('Slice A | UBND review of a pending revision of a Verified Provider (US
     expect(version(2).version_status).toBe('Revision Required')
     expect(version(1).version_status).toBe('Verified')
     expect(profileRow().verification_status).toBe('Verified')
-    expect(inExplore()).toBe(true)
-    await expect(book()).resolves.toMatchObject({ status: 'On hold' })
+    expect((await inExplore())).toBe(true)
+    await expect(((book()))).resolves.toMatchObject({ status: 'On hold' })
   })
 
   it('Approve publishes the revision and supersedes the previous version (US-6 AC2)', async () => {
@@ -110,6 +110,6 @@ describe('Slice A | UBND review of a pending revision of a Verified Provider (US
     expect(profileRow().published_version_no).toBe('2')
     expect(profileRow().verification_status).toBe('Verified')
     expect((await getProviderProfile(BAT_TRANG, guestSession()))?.provider_name).toBe('Xưởng gốm Bát Tràng Mới')
-    expect(inExplore()).toBe(true)
+    expect((await inExplore())).toBe(true)
   })
 })

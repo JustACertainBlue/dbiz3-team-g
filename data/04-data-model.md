@@ -1172,3 +1172,8 @@ erDiagram
 | Q2 | [NEEDS CLARIFICATION: which function transitions `provider_profile_versions` to `Superseded`?] | No | PRF | On F-PROFILE-05 approve, the prior published version is superseded in the same transaction. | Two published versions collide. |
 | Q3 | [NEEDS CLARIFICATION: object-valued fields (`location`, `contact_information`, snapshots, weight maps) have no primitive decomposition.] | No | all modules | Keep as `object (json)`; decompose at Plan if querying requires it. | Fields needed for filtering are trapped in a blob. |
 | Q4 | [NEEDS CLARIFICATION: should a single chat carry more than one Experience/Quote/Booking context?] | No | IAC | Session keeps one primary context; additional contexts attach per `chat_messages` row. | A conversation spanning several quotes cannot be reconstructed. |
+
+
+## Supabase runtime persistence addendum (2026-11-07)
+
+See [runtime-persistence.md](runtime-persistence.md) for the approved Matching status, Explore retry ID, preference-profile attributes and private Auth request-limit table, including types, constraints and rationale. The business entity count stays 47; the technical rate-limit table starts empty. Live services now use PostgreSQL through the shared async application store.

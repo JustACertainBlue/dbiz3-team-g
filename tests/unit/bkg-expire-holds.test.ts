@@ -80,8 +80,8 @@ describe('T013 | 72-hour expiry', () => {
     expect(row(ON_HOLD).status).toBe('Cancelled')
   })
 
-  it('expireDueHoldsLocked does the same work without taking the lock', () => {
-    const expired = expireDueHoldsLocked(new Date('2026-10-01T08:00:00+07:00'))
+  it('expireDueHoldsLocked does the same work without taking the lock', async () => {
+    const expired = (await expireDueHoldsLocked(new Date('2026-10-01T08:00:00+07:00')))
     expect(expired).toEqual([ON_HOLD])
     expect(row(ON_HOLD).status).toBe('Cancelled')
   })

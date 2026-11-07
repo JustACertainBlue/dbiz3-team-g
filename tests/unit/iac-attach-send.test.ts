@@ -69,13 +69,13 @@ describe('T004 | sendAttachments', () => {
   })
 })
 
-describe('T005 | refused requests store nothing', () => {
+describe('T005 | refused requests store nothing', async () => {
   beforeEach(resetAll)
 
   it.each([
-    ['guest', demoSessionContextFor('guest'), AGENCY_CHAT],
-    ['ubnd', demoSessionContextFor('ubnd'), AGENCY_CHAT],
-    ['hdt', demoSessionContextFor('hdt'), AGENCY_CHAT],
+    ['guest', (await demoSessionContextFor('guest')), AGENCY_CHAT],
+    ['ubnd', (await demoSessionContextFor('ubnd')), AGENCY_CHAT],
+    ['hdt', (await demoSessionContextFor('hdt')), AGENCY_CHAT],
     ['non-participant Provider', PROVIDER, AGENCY_CHAT],
     ['non-participant Agency', AGENCY, PROVIDER_CHAT],
     ['unknown Chat', AGENCY, '00000000-0000-0000-0000-000000000000'],

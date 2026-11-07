@@ -14,9 +14,9 @@ function slotLabel(value: string) {
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
 }
 
-export default function ExperienceEntry({ params }: { params: { id: string } }) {
-  const seed = loadExploreRuntime();
-  const session = currentServerSession();
+export default async function ExperienceEntry({ params }: { params: { id: string } }) {
+  const seed = (await loadExploreRuntime());
+  const session = (await currentServerSession());
   const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   const detail = getExperienceDetail(seed, params.id, viewer);
   if (!detail) notFound();
@@ -47,7 +47,7 @@ export default function ExperienceEntry({ params }: { params: { id: string } }) 
             : <><div className="locked-rate"><span>◇</span><strong>Giá B2B được bảo vệ</strong></div><p>Đăng nhập bằng tài khoản Agency để xem giá hợp đồng và điều kiện hợp tác.</p></>}
           <div className="access-facts"><span><small>Sức chứa</small><strong>Tối đa {card.capacity.max_pax} khách</strong></span><span><small>Thời lượng</small><strong>{card.duration_minutes} phút</strong></span></div>
           {isAgency
-            ? <ExperienceActions experienceId={card.id} quoteSent={hasQuoteRequest(session, card.id)} />
+            ? <ExperienceActions experienceId={card.id} quoteSent={(await hasQuoteRequest(session, card.id))} />
             : <div className="stack-actions"><Link className="button" href="/login">Đăng nhập để liên hệ</Link><Link className="button button--secondary" href="/register">Đăng ký Agency</Link></div>}
         </aside>
       </section>

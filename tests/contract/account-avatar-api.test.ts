@@ -3,9 +3,9 @@ import { GET, POST, DELETE } from '../../src/app/api/auth/account/avatar/route'
 
 describe('private avatar API', () => {
   it('rejects every guest operation', async () => {
-    expect(GET(new Request('http://localhost/api/auth/account/avatar')).status).toBe(401)
+    expect((await GET(new Request('http://localhost/api/auth/account/avatar'))).status).toBe(401)
     expect((await POST(new Request('http://localhost/api/auth/account/avatar', { method: 'POST' }))).status).toBe(401)
-    expect(DELETE(new Request('http://localhost/api/auth/account/avatar', { method: 'DELETE' })).status).toBe(401)
+    expect((await DELETE(new Request('http://localhost/api/auth/account/avatar', { method: 'DELETE' }))).status).toBe(401)
   })
   it('rejects invalid image bytes without claiming success', async () => {
     const body = new FormData()

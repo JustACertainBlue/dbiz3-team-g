@@ -8,7 +8,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { demoSessionContextFor } from '@/lib/auth/session'
 
 const target = new EventTarget()
-const session = demoSessionContextFor('ubnd')
+const session = (await demoSessionContextFor('ubnd'))
 
 vi.mock('@/lib/auth/client-session', () => ({
   readSessionContext: vi.fn(async () => session),

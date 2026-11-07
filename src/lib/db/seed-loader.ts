@@ -1,6 +1,6 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { demoRepository } from '@/lib/demo/json-repository'
+
+
+import { demoRepository } from '@/lib/db/application-store'
 
 export interface Village {
   village_id: string
@@ -36,89 +36,11 @@ export interface Experience {
   provider_quality_rating?: number
 }
 
-function parseCsv(content: string): Array<Record<string, string>> {
-  const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0)
-  if (lines.length === 0) return []
 
-  const parseRow = (row: string): string[] => {
-    const entries: string[] = []
-    let current = ''
-    let insideQuote = false
-
-    for (let i = 0; i < row.length; i++) {
-      const char = row[i]
-      if (char === '"') {
-        if (insideQuote && row[i + 1] === '"') {
-          current += '"'
-          i++
-        } else {
-          insideQuote = !insideQuote
-        }
-      } else if (char === ',' && !insideQuote) {
-        entries.push(current)
-        current = ''
-      } else {
-        current += char
-      }
-    }
-    entries.push(current)
-    return entries
-  }
-
-  const headers = parseRow(lines[0])
-  const results: Array<Record<string, string>> = []
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseRow(lines[i])
-    const row: Record<string, string> = {}
-    headers.forEach((header, index) => {
-      row[header.trim()] = values[index] !== undefined ? values[index].trim() : ''
-    })
-    results.push(row)
-  }
-
-  return results
-}
-
-/** Fallback used only when data/seed/villages.csv is absent (e.g. CI without data package). */
-const CANONICAL_VILLAGES: Village[] = [
-  {
-    village_id: '20896522-6235-5699-aeaf-f48b8150d895',
-    village_name: 'Bát Tràng',
-    name: 'Bát Tràng',
-    district: 'Gia Lâm',
-    city_province: 'Hà Nội',
-    is_active: true,
-  },
-  {
-    village_id: 'c0d0d95f-d59c-5c35-946a-f397e380dd14',
-    village_name: 'Vạn Phúc',
-    name: 'Vạn Phúc',
-    district: 'Hà Đông',
-    city_province: 'Hà Nội',
-    is_active: true,
-  },
-  {
-    village_id: '688d408b-9d98-5b66-bfa7-659a67462108',
-    village_name: 'Chuông',
-    name: 'Chuông',
-    district: 'Thanh Oai',
-    city_province: 'Hà Nội',
-    is_active: true,
-  },
-  {
-    village_id: 'b1017646-ec89-58d1-aaa9-df783b1c2506',
-    village_name: 'Quất Động',
-    name: 'Quất Động',
-    district: 'Thường Tín',
-    city_province: 'Hà Nội',
-    is_active: true,
-  },
-]
 
 export async function loadVillages(): Promise<Village[]> {
-  const rows = demoRepository().all('villages')
-  if (rows.length === 0) return CANONICAL_VILLAGES
+  const rows = (await demoRepository().all('villages'))
+
 
   return rows.map(row => ({
     village_id: row.village_id,
@@ -132,9 +54,9 @@ export async function loadVillages(): Promise<Village[]> {
 
 export async function loadExperiences(): Promise<Experience[]> {
   const repository = demoRepository()
-  const expRows = repository.all('experiences')
-  const providerRows = repository.all('provider_profiles')
-  const providerVersions = repository.all('provider_profile_versions')
+  const expRows = (await repository.all('experiences'))
+  const providerRows = (await repository.all('provider_profiles'))
+  const providerVersions = (await repository.all('provider_profile_versions'))
   const providersMap = new Map(providerRows.map(row => [row.provider_id, row]))
 
   const experiences: Experience[] = []
@@ -229,10 +151,10 @@ export interface SeedChatSession {
   created_at: string
 }
 
-// ADM079 loaders read the shared JSON runtime (seeded from data/seed/*.csv), so Bookings, Quote
+// ADM079 loaders read the shared PostgreSQL store, so Bookings, Quote
 // Requests and Chats written by BKG, AIT and EXP are visible to the dashboard (A1, BR-007).
 export async function loadBookings(): Promise<SeedBooking[]> {
-  return demoRepository().all('bookings').map(r => ({
+  return (await demoRepository().all('bookings')).map(r => ({
     booking_id: r.booking_id,
     agency_id: r.agency_id,
     provider_id: r.provider_id,
@@ -259,7 +181,7 @@ export interface SeedBookingStatusHistory {
 }
 
 export async function loadBookingStatusHistory(): Promise<SeedBookingStatusHistory[]> {
-  return demoRepository().all('booking_status_history').map(r => ({
+  return (await demoRepository().all('booking_status_history')).map(r => ({
     booking_id: r.booking_id,
     from_status: r.from_status,
     to_status: r.to_status,
@@ -267,13 +189,13 @@ export async function loadBookingStatusHistory(): Promise<SeedBookingStatusHisto
   }))
 }
 
-function userStatuses(): Map<string, string> {
-  return new Map(demoRepository().all('user_accounts').map(u => [u.user_id, u.account_status]))
+async function userStatuses(): Promise<Map<string, string>> {
+  return new Map((await demoRepository().all('user_accounts')).map(u => [u.user_id, u.account_status]))
 }
 
 export async function loadAgencies(): Promise<SeedAgency[]> {
-  const statuses = userStatuses()
-  return demoRepository().all('agency_profiles').map(r => ({
+  const statuses = (await userStatuses())
+  return (await demoRepository().all('agency_profiles')).map(r => ({
     agency_id: r.agency_id,
     user_id: r.user_id,
     company_name: r.company_name,
@@ -286,14 +208,14 @@ export async function loadAgencies(): Promise<SeedAgency[]> {
 export async function loadProviders(): Promise<SeedProvider[]> {
   const repository = demoRepository()
   const versionsMap = new Map<string, { business_name: string; craft_type: string }>()
-  for (const v of repository.all('provider_profile_versions')) {
+  for (const v of (await repository.all('provider_profile_versions'))) {
     if (!versionsMap.has(v.provider_id) || v.version_status === 'Verified') {
       versionsMap.set(v.provider_id, { business_name: v.business_name, craft_type: v.craft_type })
     }
   }
-  const statuses = userStatuses()
+  const statuses = (await userStatuses())
 
-  return repository.all('provider_profiles').map(r => {
+  return (await repository.all('provider_profiles')).map(r => {
     const ver = versionsMap.get(r.provider_id)
     return {
       provider_id: r.provider_id,
@@ -310,11 +232,11 @@ export async function loadProviders(): Promise<SeedProvider[]> {
 
 // Quote Request → Provider: a Quote Request belongs to the Provider of its Experience (spec-ADM #22).
 export async function loadExperienceProviderMap(): Promise<Map<string, string>> {
-  return new Map(demoRepository().all('experiences').map(e => [e.experience_id, e.provider_id]))
+  return new Map((await demoRepository().all('experiences')).map(e => [e.experience_id, e.provider_id]))
 }
 
 export async function loadQuoteRequests(): Promise<SeedQuoteRequest[]> {
-  return demoRepository().all('quote_requests').map(r => ({
+  return (await demoRepository().all('quote_requests')).map(r => ({
     quote_request_id: r.quote_request_id,
     agency_id: r.agency_id,
     experience_id: r.experience_id,
@@ -323,7 +245,7 @@ export async function loadQuoteRequests(): Promise<SeedQuoteRequest[]> {
 }
 
 export async function loadChatSessions(): Promise<SeedChatSession[]> {
-  return demoRepository().all('chat_sessions').map(r => ({
+  return (await demoRepository().all('chat_sessions')).map(r => ({
     chat_session_id: r.chat_session_id,
     agency_id: r.agency_id,
     provider_id: r.provider_id,

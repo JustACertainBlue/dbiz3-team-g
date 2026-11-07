@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { SessionLike } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import type { BatchOperation, DemoRow } from '../demo/types'
 import { bookingUpdateOperations } from './agency-sync'
 import { loadBookingForActor } from './booking-access'
@@ -57,11 +57,11 @@ export async function updateBooking(
   const now = (options.now ?? systemClock)().getTime()
   const repository = demoRepository()
 
-  return withBookingWriteLock(async () => {
+  return (await withBookingWriteLock(async () => {
     // BR-001 first: a denied request writes nothing, not even expiry. Then expiry (#50, analyze H1) and a fresh read.
-    if (loadBookingForActor(session, bookingId).view !== 'provider') throw new BookingError('FORBIDDEN', 'Only the Local Provider of this Booking can update it')
-    expireDueHoldsLocked(new Date(now))
-    const { booking } = loadBookingForActor(session, bookingId)
+    if ((await loadBookingForActor(session, bookingId)).view !== 'provider') throw new BookingError('FORBIDDEN', 'Only the Local Provider of this Booking can update it')
+    ;(await expireDueHoldsLocked(new Date(now)))
+    const { booking } = (await loadBookingForActor(session, bookingId))
     if (booking.status !== 'On hold' && booking.status !== 'Booked') {
       throw new BookingError('BOOKING_TERMINAL', `A ${booking.status} Booking cannot be changed`) // BR-011
     }
@@ -78,7 +78,7 @@ export async function updateBooking(
         })()
       : currentConditions
 
-    const experience = repository.find('experiences', row => row.experience_id === booking.experience_id)
+    const experience = (await repository.find('experiences', row => row.experience_id === booking.experience_id))
     if (experience && groupSize > Number(experience.max_participants)) invalid('group_size exceeds max_participants') // #7
 
     const changes: Changes = {}
@@ -91,7 +91,7 @@ export async function updateBooking(
     const changedFields = Object.keys(changes)
     if (changedFields.length === 0) {
       // #52: nothing to write, no message, null ids.
-      return { updated_booking: toBookingDetail(booking, 'provider', new Date(now)), private_schedule_synced: true, public_schedule_updated: false, agency_notification_message_id: null, audit_log_id: null }
+      return { updated_booking: (await toBookingDetail(booking, 'provider', new Date(now))), private_schedule_synced: true, public_schedule_updated: false, agency_notification_message_id: null, audit_log_id: null }
     }
 
     const startAt = hanoiTimestamp(start)
@@ -99,11 +99,11 @@ export async function updateBooking(
     const timeChanged = 'start_at' in changes || 'duration' in changes
     if (timeChanged) {
       // #47: the whole new interval must fit the hours and not overlap another Booking, excluding itself.
-      const hours = repository.all('provider_operating_hours')
+      const hours = (await repository.all('provider_operating_hours'))
         .filter(row => row.provider_id === booking.provider_id)
         .map(row => ({ weekday: row.weekday, local_start: row.local_start, local_end: row.local_end }))
       if (!fitsOperatingHours(hours, startAt, endAt)) throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: outside the Provider operating hours')
-      if (findConflict(repository.all('bookings'), booking.provider_id, startAt, endAt, booking.booking_id)) {
+      if (findConflict((await repository.all('bookings')), booking.provider_id, startAt, endAt, booking.booking_id)) {
         throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time overlaps another Booking')
       }
       if (options.afterConflictCheck) await options.afterConflictCheck()
@@ -121,7 +121,7 @@ export async function updateBooking(
     }
     const updated: DemoRow = { ...booking, ...bookingChanges } as DemoRow
     const auditId = randomUUID()
-    const sync = bookingUpdateOperations(updated, at, changedFields)
+    const sync = (await bookingUpdateOperations(updated, at, changedFields))
     const operations: BatchOperation[] = [
       { table: 'bookings', match: row => row.booking_id === booking.booking_id, changes: bookingChanges },
       {
@@ -133,14 +133,14 @@ export async function updateBooking(
       }, // #27
       ...sync.operations,
     ]
-    repository.applyBatch(operations) // #44: one persist for the whole event
+    ;(await repository.applyBatch(operations)) // #44: one persist for the whole event
 
     return {
-      updated_booking: toBookingDetail(updated, 'provider', new Date(now)),
+      updated_booking: (await toBookingDetail(updated, 'provider', new Date(now))),
       private_schedule_synced: true,
       public_schedule_updated: timeChanged,
       agency_notification_message_id: sync.messageId,
       audit_log_id: auditId,
     }
-  })
+  }))
 }

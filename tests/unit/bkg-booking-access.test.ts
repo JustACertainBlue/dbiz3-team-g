@@ -20,29 +20,29 @@ const otherProvider: ActorSession = {
 describe('T003 | loadBookingForActor', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('gives the owning Local Provider the provider view', () => {
-    const result = loadBookingForActor(DEMO_IDENTITIES.provider, BOOKING)
+  it('gives the owning Local Provider the provider view', async () => {
+    const result = (await loadBookingForActor(DEMO_IDENTITIES.provider, BOOKING))
     expect(result.view).toBe('provider')
     expect(result.booking.booking_id).toBe(BOOKING)
   })
 
-  it('gives the owning Tour Agency the agency view', () => {
-    expect(loadBookingForActor(agencySession(AGENCY_OF_BOOKING), BOOKING).view).toBe('agency')
+  it('gives the owning Tour Agency the agency view', async () => {
+    expect((await loadBookingForActor(agencySession(AGENCY_OF_BOOKING), BOOKING)).view).toBe('agency')
   })
 
-  it('denies another Agency (BR-002, BR-008)', () => {
-    expect(() => loadBookingForActor(DEMO_IDENTITIES.agency, BOOKING)).toThrow(expect.objectContaining({ code: 'FORBIDDEN' }))
+  it('denies another Agency (BR-002, BR-008)', async () => {
+    ;(await expect(async () => (await loadBookingForActor(DEMO_IDENTITIES.agency, BOOKING))).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' })))
   })
 
-  it('denies another Provider (BR-001)', () => {
-    expect(() => loadBookingForActor(otherProvider, BOOKING)).toThrow(expect.objectContaining({ code: 'FORBIDDEN' }))
+  it('denies another Provider (BR-001)', async () => {
+    ;(await expect(async () => (await loadBookingForActor(otherProvider, BOOKING))).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' })))
   })
 
-  it.each(['ubnd', 'hdt', 'guest'] as const)('denies %s (BR-014)', key => {
-    expect(() => loadBookingForActor(DEMO_IDENTITIES[key], BOOKING)).toThrow(expect.objectContaining({ code: 'FORBIDDEN' }))
+  it.each(['ubnd', 'hdt', 'guest'] as const)('denies %s (BR-014)', async key => {
+    ;(await expect(async () => (await loadBookingForActor(DEMO_IDENTITIES[key], BOOKING))).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' })))
   })
 
-  it('reports an unknown Booking as not found', () => {
-    expect(() => loadBookingForActor(DEMO_IDENTITIES.provider, '00000000-0000-4000-8000-000000000000')).toThrow(expect.objectContaining({ code: 'NOT_FOUND' }))
+  it('reports an unknown Booking as not found', async () => {
+    ;(await expect(async () => (await loadBookingForActor(DEMO_IDENTITIES.provider, '00000000-0000-4000-8000-000000000000'))).rejects.toThrow(expect.objectContaining({ code: 'NOT_FOUND' })))
   })
 })

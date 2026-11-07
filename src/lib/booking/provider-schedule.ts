@@ -1,5 +1,5 @@
 import { toSessionContext, type SessionLike } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import { buildCalendarBlocks, calculateAvailability, type CalendarBlock } from './availability'
 import { authorizeProviderSchedule } from './booking-access'
 import { addDays, hanoiDate, isQueryDate, systemClock, type Clock } from './clock'
@@ -35,7 +35,7 @@ export async function getProviderSchedule(
   options: { now?: Clock } = {},
 ): Promise<ProviderSchedule> {
   // #80: authorize, validate, expire, read — a denied or invalid request writes nothing.
-  const view = authorizeProviderSchedule(session, providerId)
+  const view = (await authorizeProviderSchedule(session, providerId))
   const now = (options.now ?? systemClock)()
   const range = validRange(query, now)
   await expireDueHolds(now)
@@ -44,16 +44,16 @@ export async function getProviderSchedule(
   // #72: blocks are per local day in both views; buildCalendarBlocks already merges within a day.
   // #73: the public view is built from an allow-list, never by deleting fields.
   const calendar_blocks = view === 'owner'
-    ? calculateAvailability(providerId, range, now).availability_calendar
+    ? (await calculateAvailability(providerId, range, now)).availability_calendar
     : buildCalendarBlocks(
-        repository.all('provider_operating_hours').filter(row => row.provider_id === providerId),
-        repository.all('bookings').filter(row => row.provider_id === providerId),
+        (await repository.all('provider_operating_hours')).filter(row => row.provider_id === providerId),
+        (await repository.all('bookings')).filter(row => row.provider_id === providerId),
         range.date_from, range.date_to, 'public',
       ).map(({ start_at, end_at, status }) => ({ start_at, end_at, status }))
 
   // #78: the seven ISO weekdays, each with its windows.
   const operating_hours: OperatingHours = Object.fromEntries(['1', '2', '3', '4', '5', '6', '7'].map(day => [day, []]))
-  for (const row of repository.all('provider_operating_hours').filter(item => item.provider_id === providerId)) {
+  for (const row of (await repository.all('provider_operating_hours')).filter(item => item.provider_id === providerId)) {
     operating_hours[String(Number(row.weekday))]?.push({ local_start: row.local_start, local_end: row.local_end })
   }
   return { calendar_blocks, operating_hours }
@@ -62,9 +62,9 @@ export async function getProviderSchedule(
 // SCH140 entry (#74, #82; analyze M3).
 export type ScheduleEntry = 'redirect-owner' | 'public' | 'not-found' | 'denied'
 
-export function scheduleEntryFor(session: SessionLike, providerId: string): ScheduleEntry {
+export async function scheduleEntryFor(session: SessionLike, providerId: string): Promise<ScheduleEntry> {
   try {
-    return authorizeProviderSchedule(session, providerId) === 'owner' ? 'redirect-owner' : 'public'
+    return (await authorizeProviderSchedule(session, providerId)) === 'owner' ? 'redirect-owner' : 'public'
   } catch (error) {
     if (error instanceof BookingError && error.code === 'NOT_FOUND') return 'not-found'
     return 'denied'
@@ -72,7 +72,7 @@ export function scheduleEntryFor(session: SessionLike, providerId: string): Sche
 }
 
 // The Explore Provider page shows "Xem lịch trống" only to an authenticated Tour Agency (#82).
-export function showScheduleLink(session: SessionLike): boolean {
-  const actor = toSessionContext(session)
+export async function showScheduleLink(session: SessionLike): Promise<boolean> {
+  const actor = (await toSessionContext(session))
   return actor.authenticated && actor.role === 'Tour_Agency'
 }

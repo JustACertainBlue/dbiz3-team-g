@@ -1,5 +1,5 @@
 import type { SessionLike } from '../auth/session'
-import { demoRepository } from '../demo/json-repository'
+import { demoRepository } from '../db/application-store'
 import type { DemoRow } from '../demo/types'
 import { bookingActions, type BookingActions } from './booking-actions'
 import { loadBookingForActor, type BookingView } from './booking-access'
@@ -35,9 +35,9 @@ function parseJson(value: string | undefined): unknown {
 
 // #57: the one place a stored Booking row (strings, DB names) becomes the FR-007 shape (spec names,
 // numbers). Used by getBookingDetail and by F-SCHED-04's updated_booking.
-export function toBookingDetail(booking: DemoRow, view: BookingView, now: Date): BookingDetail {
+export async function toBookingDetail(booking: DemoRow, view: BookingView, now: Date): Promise<BookingDetail> {
   const repository = demoRepository()
-  const experience = repository.find('experiences', row => row.experience_id === booking.experience_id)
+  const experience = (await repository.find('experiences', row => row.experience_id === booking.experience_id))
   const conditions = parseJson(booking.conditions_snapshot) as { notice_period_hours: number; cancellation_policy: Record<string, unknown> }
   const detail: BookingDetail = {
     booking_id: booking.booking_id,
@@ -55,7 +55,7 @@ export function toBookingDetail(booking: DemoRow, view: BookingView, now: Date):
   if (booking.status === 'On hold') detail.hold_expires_at = booking.hold_expires_at
   if (view === 'provider') {
     // #53: Agency company name + contact info.
-    const agency = repository.find('agency_profiles', row => row.agency_id === booking.agency_id)
+    const agency = (await repository.find('agency_profiles', row => row.agency_id === booking.agency_id))
     detail.agency_contact = { company_name: agency?.company_name ?? '', contact_info: parseJson(agency?.contact_info) }
   } else {
     detail.provider_profile_link = `/explore/providers/${booking.provider_id}` // #53
@@ -66,8 +66,8 @@ export function toBookingDetail(booking: DemoRow, view: BookingView, now: Date):
 export async function getBookingDetail(session: SessionLike, bookingId: string, options: { now?: Clock } = {}): Promise<BookingDetail> {
   const now = (options.now ?? systemClock)()
   // Authorize first, so a denied read writes nothing; then expiry (#50) and a fresh read.
-  loadBookingForActor(session, bookingId)
+  ;(await loadBookingForActor(session, bookingId))
   await expireDueHolds(now)
-  const { booking, view } = loadBookingForActor(session, bookingId)
-  return toBookingDetail(booking, view, now)
+  const { booking, view } = (await loadBookingForActor(session, bookingId))
+  return (await toBookingDetail(booking, view, now))
 }

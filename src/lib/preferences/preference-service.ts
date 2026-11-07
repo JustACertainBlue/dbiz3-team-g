@@ -1,3 +1,4 @@
+import { demoRepository } from '../db/application-store'
 import type { ReweightedSignal } from '@/lib/decay/time-decay'
 
 export interface AgencyPreferenceProfile {
@@ -18,14 +19,29 @@ export interface ExploreRerankItem {
   [key: string]: any
 }
 
-const agencyProfiles = new Map<string, AgencyPreferenceProfile>()
+function decode(row:Record<string,string>|undefined):AgencyPreferenceProfile|null {
+  if(!row||(!row.matching_context&&!row.affinity_tags))return null
+  const context=JSON.parse(row.matching_context||'{}')
+  return {...context,agency_id:row.agency_id,affinity_tags:JSON.parse(row.affinity_tags||'{}'),updated_at:row.updated_at}
+}
+async function changeProfile<T>(agencyId:string,work:(current:AgencyPreferenceProfile|null)=>{profile:AgencyPreferenceProfile;result:T}):Promise<T>{
+  return demoRepository().transaction(['agency_preference_profiles'],tables=>{
+    const row=tables.agency_preference_profiles.find(row=>row.agency_id===agencyId)
+    const {profile,result}=work(decode(row))
+    const {affinity_tags,agency_id,updated_at,...context}=profile
+    const changes={matching_context:JSON.stringify(context),affinity_tags:JSON.stringify(affinity_tags),updated_at}
+    if(row)Object.assign(row,changes)
+    else tables.agency_preference_profiles.push({agency_id,preference_weights:'{}',baseline_preference_weights:'{}',...changes})
+    return result
+  })
+}
 
 export async function saveAgencyPreferenceProfile(params: {
   agencyId: string
   sessionId?: string
   tourPreferenceProfile: any
 }): Promise<AgencyPreferenceProfile> {
-  const existing = agencyProfiles.get(params.agencyId)
+  return changeProfile(params.agencyId,existing=>{
   const affinityTags: Record<string, number> = existing ? { ...existing.affinity_tags } : {}
 
   // Extract affinities from matching attributes and inferred preferences
@@ -44,28 +60,29 @@ export async function saveAgencyPreferenceProfile(params: {
     updated_at: new Date().toISOString(),
   }
 
-  agencyProfiles.set(params.agencyId, profile)
-  return profile
+  return {profile,result:profile}
+  })
 }
 
 export async function getAgencyPreferenceProfile(
   agencyId: string
 ): Promise<AgencyPreferenceProfile | null> {
-  return agencyProfiles.get(agencyId) || null
+  return decode(await demoRepository().find('agency_preference_profiles',row=>row.agency_id===agencyId))
 }
 
 export async function updateAgencyPreferencesFromSignals(
   agencyId: string,
   signals: ReweightedSignal[]
 ): Promise<AgencyPreferenceProfile> {
-  let profile = agencyProfiles.get(agencyId)
+  return changeProfile(agencyId,current=>{
+  let profile = current
   if (!profile) {
     profile = {
       agency_id: agencyId,
       affinity_tags: {},
       updated_at: new Date().toISOString(),
     }
-    agencyProfiles.set(agencyId, profile)
+
   }
 
   for (const s of signals) {
@@ -75,14 +92,15 @@ export async function updateAgencyPreferencesFromSignals(
   }
 
   profile.updated_at = new Date().toISOString()
-  return profile
+  return {profile,result:profile}
+  })
 }
 
 export async function rerankExploreForAgency(
   agencyId: string,
   catalog: any[]
 ): Promise<ExploreRerankItem[]> {
-  const profile = agencyProfiles.get(agencyId)
+  const profile = await getAgencyPreferenceProfile(agencyId)
   const affinities = profile?.affinity_tags || {}
 
   const scored = catalog.map(item => {

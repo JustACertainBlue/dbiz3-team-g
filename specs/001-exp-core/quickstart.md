@@ -18,10 +18,13 @@ JSON runtime that every module reads and writes. To start again from the seed, *
 
 ## Demo path (`http://localhost:3000/explore`)
 
-1. **Guest** (role bar at the top, `RoleSwitcher` → 👤 Guest): browse the catalog, open a Provider and an
+Roles: log in at `http://localhost:3000/login` with a demo account and log out from the header to change role
+(see [`docs/build/demo-login.md`](../../docs/build/demo-login.md); the old Role Switcher works only in tests).
+
+1. **Guest** (not logged in, or after **Đăng xuất**): browse the catalog, open a Provider and an
    Experience. Prices and contact stay hidden; Quote/Chat lead to Login. Guest analytics need the opt-in
    checkbox; without it browsing works and no non-essential event is recorded.
-2. **Tour Agency** (`RoleSwitcher` → 🏢 Tour Agency; demo cookie `hab_demo_account=agency`, Công ty Du lịch
+2. **Tour Agency** (log in as `thanhvien13@example.invalid`, Lý Gia Hân, Công ty Du lịch
    Tràng An): Agency prices and contact appear; select a category to create an explicit preference signal and
    see Agency-only re-ranking.
 3. On an Experience page, **Yêu cầu báo giá** creates or reuses one Quote Request for this Agency and Experience,

@@ -858,6 +858,19 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Demo | Not applicable: no user-visible change; dev/prod cost covered by the unit test with an explicit `NODE_ENV`. |
 | Commit | One commit on `linh/fix-bcrypt-test`; branch pushed by the agent, PR opened, merge left to the human. |
 
+### Entry 50: 07/11 Claude Code + human — regression after hab_session; quickstarts use real login (`linh/quickstarts-real-login`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (task 3, 2026-11-07); branch from `main` `83027e5`; the agent pushes and opens the PR, the human merges |
+| Regression (real login, `npm run demo:reset`, one `npm run dev`) | Curl with `hab_session` cookies from `POST /api/auth/login` for the four demo identities. AIT quickstart §3: 5 matches, Vạn Phúc #1 (89.4), quote/chat twice return the same ids, Provider 403. BKG 011 §4 all steps match (create → update → Booked → arrival → Completed, cancel, 400/403/409). 012 all steps match on fresh data. 013 schedule 200, public blocks only `start_at`/`end_at`/`status`. IAC 014/015/016 every step and error case matches (send, close, attach, download, 400/403/404/409). ADM API: HDT 200, Guest 401, Agency 403, UBND locked to Hạ Thái despite `villageId` / forged `x-mock-session`. Browser, clicked: Agency "Yêu cầu báo giá" opens `/messages` on the Bát Tràng Chat; "Chat với Provider" reopens the same Chat (still 3 Chats); Agency edits its street address → saved (runtime checked); Provider Experiences page; UBND dashboard 🔒 Hạ Thái; HDT dashboard all villages. PRF API: `price_per_person` 0 → 400, Guest → 403, UBND of another village → 403 (BR-005) |
+| Defect found | Issue #66: BKG Booking Update messages get a local, second-precision `sent_at`, so two updates in one second appear in the wrong order in the Chat. Pre-existing, not caused by `hab_session` |
+| Agent mistake | The first AIT run returned 401 because the agent put `-b <jar>` in a zsh variable (zsh does not split it), so curl sent no cookie; noted in `demo-login.md` |
+| What changed | New `docs/build/demo-login.md` (demo accounts, where the password rule comes from, cookie jars in `.demo-data/`, macOS and PowerShell login loops). Quickstarts 001-ait, 001-exp, 002-prf, 003-adm, 011–016: `-H "Cookie: hab_demo_account=…"` → `-b .demo-data/<name>.jar`, Role Switcher / mock-session text → `/login` + Đăng xuất. `docs/UI_VERIFICATION_GUIDE.md` §1 and its three role steps. Plans, tasks and contracts are left as history |
+| Existing tests changed | None (docs only) |
+| Verified | The bash login loop run verbatim (4 × HTTP 200) and sample updated commands from 012/014 and ADM (HTTP 200). The PowerShell loop is **not verified** (no PowerShell on this Mac) |
+| Commit | One docs commit; branch pushed by the agent, PR opened, merge left to the human |
+
 ### Entry 51: 07/11 Claude Code + human — issue #66: BKG Booking Update sent_at in the IAC format (`linh/fix-bkg-chat-order`)
 
 | Field | Value |

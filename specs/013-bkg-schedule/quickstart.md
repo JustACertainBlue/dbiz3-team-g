@@ -19,9 +19,9 @@ npm run demo:reset
 npm run dev
 ```
 
-Run **only one** dev server. Demo Provider `50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374` (cookie `provider`)
+Run **only one** dev server. Demo Provider `50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374` (cookie `.demo-data/provider.jar` (log in first: [`docs/build/demo-login.md`](../../docs/build/demo-login.md)))
 is open Mondays 08:00–17:00 and has two Booked Bookings (2026-10-05, 2026-10-10 — the latter on a
-Saturday, outside its hours, #32). Demo Agency `02e568d8-d65e-54b1-a554-b411150d1dcb` (cookie `agency`,
+Saturday, outside its hours, #32). Demo Agency `02e568d8-d65e-54b1-a554-b411150d1dcb` (cookie `.demo-data/agency.jar`,
 Tràng An) has one seed Booking: `0971a1b6…`, Completed, at Phú Vinh on 2026-09-26.
 
 ## 2. Phase A — API
@@ -32,13 +32,13 @@ Tràng An) has one seed Booking: `0971a1b6…`, Completed, at Phú Vinh on 2026-
    has keys 1–7 with `"1"` = 08:00–17:00.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374/schedule?date_from=2026-10-01&date_to=2026-10-31" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374/schedule?date_from=2026-10-01&date_to=2026-10-31" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 2. Same as Agency. Expect `HTTP 200`; every block has exactly `start_at`, `end_at`, `status` (no `booking_id`).
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374/schedule?date_from=2026-10-01&date_to=2026-10-31" -H "Cookie: hab_demo_account=agency" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374/schedule?date_from=2026-10-01&date_to=2026-10-31" -b .demo-data/agency.jar -w "\nHTTP %{http_code}\n"
 ```
 
 3. No dates. Expect `HTTP 200`, 30 days from today.
@@ -66,7 +66,7 @@ curl -s "http://localhost:3000/api/bkg/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13
    for `group_size`, `agreed_price`, `notice_period`.
 
 ```bash
-curl -s "http://localhost:3000/api/bkg/agency/bookings" -H "Cookie: hab_demo_account=agency" -w "\nHTTP %{http_code}\n"
+curl -s "http://localhost:3000/api/bkg/agency/bookings" -b .demo-data/agency.jar -w "\nHTTP %{http_code}\n"
 ```
 
 2. `?status=Cancelled` → `[]`. Cookie `provider`, `ubnd`, `hdt`, `guest` → `HTTP 403`.

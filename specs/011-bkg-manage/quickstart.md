@@ -41,20 +41,20 @@ Run these from the repository root while `npm run dev` serves `http://localhost:
 in `specs/011-bkg-manage/demo/*.json`, so the commands are the same on both systems. On Windows
 PowerShell type `curl.exe` (in Windows PowerShell 5.1 `curl` is an alias of `Invoke-WebRequest`).
 Each command prints the JSON body and then `HTTP <status>`.
-Cookie values: `provider` = Xưởng thủ công Bát Tràng (Provider `50f2c8fc…`); `agency` = Công ty Du lịch Tràng An (`02e568d8…`).
+Log in first and save the cookies as in [`docs/build/demo-login.md`](../../docs/build/demo-login.md): `.demo-data/provider.jar` = Xưởng thủ công Bát Tràng (Provider `50f2c8fc…`, `thanhvien19@example.invalid`); `.demo-data/agency.jar` = Công ty Du lịch Tràng An (`02e568d8…`, `thanhvien13@example.invalid`).
 
 1. Create a Booking (US-4; now also sends one Booking Update message). Expect `HTTP 201`; copy `booking_id`.
 
 macOS / Linux:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/bkg/bookings" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/create.json" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/bkg/bookings" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/create.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/create.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/create.json" -w "\nHTTP %{http_code}\n"
 ```
 
 2. Keep the id in a variable for the next commands.
@@ -76,13 +76,13 @@ $BOOKING_ID = "paste-booking_id-from-step-1"
 macOS / Linux:
 
 ```bash
-curl -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
+curl -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
 ```
 
 4. Send the same update again (#52). Expect `HTTP 200`, nothing written, `audit_log_id` and `agency_notification_message_id` = `null`.
@@ -90,13 +90,13 @@ curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Co
 macOS / Linux:
 
 ```bash
-curl -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
+curl -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
 ```
 
 5. Move the start to 16:30, ending after closing time (#47). Expect `HTTP 409` `SLOT_UNAVAILABLE`.
@@ -104,13 +104,13 @@ curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Co
 macOS / Linux:
 
 ```bash
-curl -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/update-time-outside-hours.json" -w "\nHTTP %{http_code}\n"
+curl -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/update-time-outside-hours.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/update-time-outside-hours.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/update-time-outside-hours.json" -w "\nHTTP %{http_code}\n"
 ```
 
 6. Confirm (F-SCHED-05, On hold → Booked). Expect `HTTP 200`, `booking_status` = `Booked`.
@@ -118,13 +118,13 @@ curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Co
 macOS / Linux:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/confirm.json" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/confirm.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/confirm.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/confirm.json" -w "\nHTTP %{http_code}\n"
 ```
 
 7. Mark arrival before the start (F-SCHED-06). Expect `HTTP 200`, `transition_applied` = `false`, `validation_error` = `Tour Start Time Not Reached`.
@@ -132,13 +132,13 @@ curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" 
 macOS / Linux:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/arrival" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/arrival" -H "Content-Type: application/json" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/arrival" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/arrival" -H "Content-Type: application/json" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 8. Mark arrival on seed Booked `4bf17b30…` (started 2026-10-05). Expect `HTTP 200`, `transition_applied` = `true`, `booking_status` = `Completed`.
@@ -146,13 +146,13 @@ curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/arrival"
 macOS / Linux:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/bkg/bookings/4bf17b30-9819-5c47-b745-06be7171087b/arrival" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/bkg/bookings/4bf17b30-9819-5c47-b745-06be7171087b/arrival" -H "Content-Type: application/json" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/4bf17b30-9819-5c47-b745-06be7171087b/arrival" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/4bf17b30-9819-5c47-b745-06be7171087b/arrival" -H "Content-Type: application/json" -b .demo-data/provider.jar -w "\nHTTP %{http_code}\n"
 ```
 
 9. Create a second Booking (11:00) and copy its `booking_id`. Expect `HTTP 201`.
@@ -160,13 +160,13 @@ curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/4bf17b30-9819-5c47-b
 macOS / Linux:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/bkg/bookings" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/create-second.json" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/bkg/bookings" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/create-second.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/create-second.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/create-second.json" -w "\nHTTP %{http_code}\n"
 ```
 
 10. Keep the second id in a variable.
@@ -188,13 +188,13 @@ $SECOND_ID = "paste-booking_id-from-step-9"
 macOS / Linux:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/cancel-without-reason.json" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/cancel-without-reason.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/cancel-without-reason.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/cancel-without-reason.json" -w "\nHTTP %{http_code}\n"
 ```
 
 12. Cancel with a reason. Expect `HTTP 200`, `booking_status` = `Cancelled`.
@@ -202,13 +202,13 @@ curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -
 macOS / Linux:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
 ```
 
 13. Update the cancelled Booking (BR-011). Expect `HTTP 409` `BOOKING_TERMINAL`.
@@ -216,13 +216,13 @@ curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$SECOND_ID/status" -
 macOS / Linux:
 
 ```bash
-curl -s -X PATCH "http://localhost:3000/api/bkg/bookings/$SECOND_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
+curl -s -X PATCH "http://localhost:3000/api/bkg/bookings/$SECOND_ID" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$SECOND_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=provider" --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$SECOND_ID" -H "Content-Type: application/json" -b .demo-data/provider.jar --data-binary "@specs/011-bkg-manage/demo/update-group.json" -w "\nHTTP %{http_code}\n"
 ```
 
 14. Try to cancel as the Agency (BR-001). Expect `HTTP 403` `FORBIDDEN`.
@@ -230,13 +230,13 @@ curl.exe -s -X PATCH "http://localhost:3000/api/bkg/bookings/$SECOND_ID" -H "Con
 macOS / Linux:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=agency" --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -b .demo-data/agency.jar --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=agency" --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X POST "http://localhost:3000/api/bkg/bookings/$BOOKING_ID/status" -H "Content-Type: application/json" -b .demo-data/agency.jar --data-binary "@specs/011-bkg-manage/demo/cancel.json" -w "\nHTTP %{http_code}\n"
 ```
 
 15. Open `/messages` as the Agency (Tràng An): one Booking Update message for each successful step 1, 3, 6, 9 and 12, all in one Chat with Bát Tràng. Rejected or unchanged steps (4, 5, 7, 11, 13, 14) send none. Step 8 goes to the Chat of Agency `ebf4fcfa…`; the first request after `demo:reset` also expires seed `54d7a276…` in the Chat of Agency `14390b41…`.
@@ -266,13 +266,13 @@ npm run dev
 macOS / Linux:
 
 ```bash
-curl -s -X GET "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=agency" -w "\nHTTP %{http_code}\n"
+curl -s -X GET "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -b .demo-data/agency.jar -w "\nHTTP %{http_code}\n"
 ```
 
 Windows PowerShell:
 
 ```powershell
-curl.exe -s -X GET "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -H "Cookie: hab_demo_account=agency" -w "\nHTTP %{http_code}\n"
+curl.exe -s -X GET "http://localhost:3000/api/bkg/bookings/$BOOKING_ID" -H "Content-Type: application/json" -b .demo-data/agency.jar -w "\nHTTP %{http_code}\n"
 ```
 
 Expected values: [contracts/manage-booking-api.md](contracts/manage-booking-api.md), [data-model.md](data-model.md).

@@ -5,13 +5,18 @@ Server phát triển đang chạy trực tiếp tại: **`http://localhost:3000`
 
 ---
 
-## 🧭 1. Thanh Chuyển Đổi Vai Trò & Điều Hướng (Role Switcher)
+## 🧭 1. Đăng nhập theo vai trò (thay cho Role Switcher)
 
-Ở góc trên cùng của mọi trang đều có thanh công cụ cố định:
-- Nút **🏺 Local Provider**: Kích hoạt vai trò Chủ xưởng Hưng Thịnh (Bát Tràng).
-- Nút **🏢 Tour Agency**: Kích hoạt vai trò Công ty Lữ hành Indochina Heritage Voyages.
-- Nút **🏛️ UBND Admin**: Kích hoạt vai trò Quản lý địa phương (chỉ xem profile làng nghề, không có màn quản lý/thẩm định).
-- Nút **👤 Guest**: Kích hoạt vai trò khách vãng lai xem công khai.
+Từ PR #11 (AUT), dev server chỉ nhận phiên đăng nhập thật (cookie `hab_session`); thanh Role Switcher và cookie `hab_demo_account` chỉ còn chạy trong test tự động. Để đổi vai trò: **Đăng xuất** ở header (xác nhận) rồi đăng nhập lại tại [http://localhost:3000/login](http://localhost:3000/login) bằng một email mẫu:
+- **🏢 Tour Agency**: `thanhvien13@example.invalid` (Công ty Du lịch Tràng An).
+- **🏺 Local Provider**: `thanhvien19@example.invalid` (Xưởng thủ công Bát Tràng).
+- **🏛️ UBND Admin**: `thanhvien8@example.invalid` (làng Hạ Thái, đang inactive — issue #65).
+- **🏛️ HDT Admin**: `thanhvien9@example.invalid`.
+- **👤 Guest**: không đăng nhập.
+
+Mật khẩu: ở môi trường development, bốn tài khoản mẫu nhận mật khẩu bất kỳ không rỗng (production từ chối). Chi tiết và cách lấy cookie cho curl: [`docs/build/demo-login.md`](build/demo-login.md).
+
+> Lưu ý: các tên và ID khác trong sổ tay này (ví dụ agency `5fecc699…`, "Indochina Heritage", "Hưng Thịnh") có từ trước seed hiện tại và chưa được kiểm lại; quickstart của từng module trong `specs/*/quickstart.md` là nguồn cập nhật hơn.
 
 ---
 
@@ -51,11 +56,11 @@ Server phát triển đang chạy trực tiếp tại: **`http://localhost:3000`
 ## 🧪 Các bước kiểm tra trọng tâm:
 
 1. **Kiểm tra chặn Local Provider truy cập Sửa Agency**:
-   - Chuyển sang vai trò **🏺 Local Provider** trên thanh RoleSwitcher.
+   - Đăng nhập bằng tài khoản **🏺 Local Provider** (`thanhvien19@example.invalid`).
    - Truy cập trực tiếp link: [http://localhost:3000/agency/5fecc699-71e4-5bf0-ac1b-2090e05c2cd9/edit](http://localhost:3000/agency/5fecc699-71e4-5bf0-ac1b-2090e05c2cd9/edit).
    - 👉 **Kết quả**: Màn hình lập tức hiển thị bảng chặn **403 FORBIDDEN · ACCESS DENIED (BR-001)**, thông báo Local Provider không có quyền truy cập, cùng nút quay về hồ sơ xưởng!
 2. **Kiểm tra UI Màn Edit Agency (PRF021) khi ở vai trò Agency**:
-   - Chuyển sang vai trò **🏢 Tour Agency** trên thanh RoleSwitcher.
+   - Đăng xuất, đăng nhập bằng tài khoản **🏢 Tour Agency** (`thanhvien13@example.invalid`).
    - Mở [Edit Agency (PRF021)](http://localhost:3000/agency/5fecc699-71e4-5bf0-ac1b-2090e05c2cd9/edit).
    - 👉 **Kết quả**: Giao diện hiển thị theo đúng UI wireframe của PRF128 (Section 01 Pháp nhân & HDT, Section 02 Định vị & Quy mô nhân sự, Section 03 Đầu mối B2B, Section 04 Tiêu chí kết nối, Thanh lưu ghim đáy). Bấm lưu thành công không bị lỗi 403!
 3. **Kiểm tra liên kết 2 chiều từ Chat (Vice Versa)**:
@@ -63,5 +68,5 @@ Server phát triển đang chạy trực tiếp tại: **`http://localhost:3000`
    - Khi ở góc nhìn **Tour Agency**: Nút **`🏺 XEM HỒ SƠ XƯỞNG NGHỀ (LOCAL PROVIDER) ↗`** mở ngay [PRF127 Xưởng Hưng Thịnh](http://localhost:3000/provider/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374).
    - Khi ở góc nhìn **Local Provider**: Nút **`🏢 XEM HỒ SƠ CÔNG TY LỮ HÀNH (TOUR AGENCY) ↗`** mở ngay [PRF019 Indochina Heritage](http://localhost:3000/agency/5fecc699-71e4-5bf0-ac1b-2090e05c2cd9).
 4. **Kiểm tra Admin UBND chỉ xem Profile Làng nghề**:
-   - Chọn vai trò **🏛️ UBND Admin** trên RoleSwitcher.
+   - Đăng xuất, đăng nhập bằng tài khoản **🏛️ UBND Admin** (`thanhvien8@example.invalid`).
    - Chỉ hiển thị duy nhất liên kết **`🏛️ Xem Hồ sơ Làng nghề Bát Tràng (VIL030)`**; đã loại bỏ hoàn toàn màn thẩm định và tra cứu.

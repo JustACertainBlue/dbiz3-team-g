@@ -95,13 +95,18 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## 6. Demo path — walk through each user story
 
+Log in at `http://localhost:3000/login` with a demo account and use **Đăng xuất** to change role; accounts
+and password: [`docs/build/demo-login.md`](../../docs/build/demo-login.md). Demo Provider
+`thanhvien19@example.invalid` owns Xưởng thủ công Bát Tràng (`50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374`); demo
+Agency `thanhvien13@example.invalid` owns Công ty Du lịch Tràng An (`02e568d8-d65e-54b1-a554-b411150d1dcb`).
+
 ### US-3: View Local Provider Profile
 1. Navigate to `http://localhost:3000/provider/<any-provider-id-from-seed>`
 2. As an unauthenticated (Guest) user: only public fields visible — no contact, no pricing.
-3. Simulate a Tour Agency session (see test helper `tests/prf/helpers/mockSession.ts`) — full collaboration fields appear.
+3. Log in as the demo Agency and open the same page — full collaboration fields appear.
 
 ### US-4: Manage Provider Profile
-1. Log in as a Local Provider (mock session or seed user).
+1. Log in as the demo Local Provider (`thanhvien19@example.invalid`).
 2. Navigate to `http://localhost:3000/provider/<own-provider-id>/edit`
 3. Submit an incomplete profile → status remains **Draft**.
 4. Fill all required fields, click **Save Changes** → status becomes **Pending Verification**.
@@ -115,14 +120,16 @@ Open [http://localhost:3000](http://localhost:3000).
 5. Delete an Experience with an active booking → blocked with error message.
 
 ### US-6: Verify Provider Profile
-1. Log in as a UBND Admin (mock session).
+1. Log in as an UBND Admin of the Provider's village. The demo UBND `thanhvien8@example.invalid` belongs to
+   Hạ Thái, which is inactive (issue #65); for an active village, use `thanhvien1@example.invalid` (Bát Tràng)
+   after an HDT password reset with `HAB_EMAIL_MODE=dev-outbox` (`specs/AUT-INTEGRATION.md`).
 2. Navigate to `http://localhost:3000/provider/<pending-provider-id>`
 3. Click **Approve** → status becomes **Verified** and the profile is publicly visible.
 4. On a different provider in the same village, click **Request Revision** (provide comments) → status becomes **Revision Required**.
 5. Attempt to verify a provider in a different village → access denied.
 
 ### US-1: Manage Agency Profile
-1. Log in as a Tour Agency Owner.
+1. Log in as the demo Tour Agency (`thanhvien13@example.invalid`).
 2. Navigate to `http://localhost:3000/agency/<own-agency-id>/edit`
 3. Change a non-major field (description) → saved immediately.
 4. Change Company Name → `requires_hdt_rereview: true` in response; old name still shown.

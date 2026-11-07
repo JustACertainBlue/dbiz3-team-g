@@ -19,8 +19,8 @@ npm run demo:reset
 npm run dev
 ```
 
-Seed facts: demo Agency (cookie `agency`, Lý Gia Hân, Tràng An) has Active Chat
-`a0b57355-8142-5b47-be08-6130aa21c021` with Phú Vinh (Quách Minh Tâm). Demo Provider (cookie `provider`,
+Seed facts: demo Agency (cookie `.demo-data/agency.jar` (log in first: [`docs/build/demo-login.md`](../../docs/build/demo-login.md)), Lý Gia Hân, Tràng An) has Active Chat
+`a0b57355-8142-5b47-be08-6130aa21c021` with Phú Vinh (Quách Minh Tâm). Demo Provider (cookie `.demo-data/provider.jar`,
 Kiều Anh Thư, Bát Tràng) has Active Chat `35ed4094-fa5a-55a6-ba1d-c03e56adfe79` with Sông Hồng. The demo
 pair Tràng An – Bát Tràng has no Chat; Experience `c9f9faf7-2987-5ae4-b1ed-95c095fcce69` is Bát Tràng's.
 
@@ -29,7 +29,7 @@ pair Tràng An – Bát Tràng has no Chat; Experience `c9f9faf7-2987-5ae4-b1ed-
 1. Agency closes its Phú Vinh Chat. Expect `HTTP 200`, `chat_status "Closed"`, `closed_by` = Agency user, the #32 message.
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/iac/chats/a0b57355-8142-5b47-be08-6130aa21c021/close" -H "Cookie: hab_demo_account=agency" -H "content-type: application/json" -d "{\"close_reason\":\"Đã chốt lịch\"}" -w "\nHTTP %{http_code}\n"
+curl -s -X POST "http://localhost:3000/api/iac/chats/a0b57355-8142-5b47-be08-6130aa21c021/close" -b .demo-data/agency.jar -H "content-type: application/json" -d "{\"close_reason\":\"Đã chốt lịch\"}" -w "\nHTTP %{http_code}\n"
 ```
 
 2. Same call again → `409 CHAT_CLOSED`. Send into it → `409`. History → `200` with `closed_at`, `closed_by_name "Lý Gia Hân"`.

@@ -12,6 +12,8 @@ Where the specification has no rule, the entry says "spec silent — code does X
 
 **Date / commit.** 2026-11-07, `main` = `51ce772`. Drafted by Claude Code from the specs, schema and
 code (AI Use Log); human check pending.
+Updated 2026-11-07 at `main` = `c6635da`: Session 10 contract tests for §4–§9 (§7–§9 by PR #94), the fixes of
+issues #87 (PR #89) and #88 (PR #90), and the open defect #93 (§7). Line references outside the changed paragraphs are still to `51ce772`.
 
 ## Summary
 
@@ -19,8 +21,8 @@ code (AI Use Log); human check pending.
 |---|---|---|---|---|---|
 | 1 | Session context | AUT | every module | AUT FR-007, FR-015, FR-016, FR-017, FR-022, BR-011, BR-012, BR-013, AC-AUT-SESSION, SC-006 | 2 |
 | 2 | Shared Chat/Booking write lock | IAC, BKG (and EXP/AIT handoff) | JSON runtime / each other | IAC FR-001, BR-004, BR-021, #38, #47, AC-IAC-PAIR; BKG AC-BKG-RACE, AC-BKG-EXPIRY | 0 (2 notes) |
-| 3 | Booking Update message | BKG | IAC | BKG FR-008 (F-SCHED-08), BR-012, #5, #13, #26, #27, #49, #55, #56; IAC FR-001, FR-002, #36 | 4 (1 fixed) |
-| 4 | Catalog eligibility | PRF | EXP (and AIT, handoff) | PRF BR-007, BR-018, #32; EXP FR-001, BR-001; AIT BR-003, FR-005 | 3 |
+| 3 | Booking Update message | BKG | IAC | BKG FR-008 (F-SCHED-08), BR-012, #5, #13, #26, #27, #49, #55, #56; IAC FR-001, FR-002, #36 | 4 (2 fixed) |
+| 4 | Catalog eligibility | PRF | EXP (and AIT, handoff) | PRF BR-007, BR-018, #32; EXP FR-001, BR-001; AIT BR-003, FR-005 | 4 (1 fixed) |
 | 5 | Quote / Chat handoff from Explore | EXP | IAC | EXP FR-011, FR-012, BR-009, BR-010; IAC FR-001, #7, #18, #19, #21; AIT BR-018 | 2 |
 | 6 | AI matching results to Quote / Chat | AIT | IAC (via shared handoff), EXP catalog data | AIT BR-003, BR-009, BR-010, BR-018, BR-019, FR-005, FR-006, FR-011 | 3 |
 | 7 | Dashboard booking metrics | BKG | ADM | ADM FR-002, FR-003, FR-009, FR-010, BR-007, BR-010, BR-014, BR-017, BR-018, BR-019 | 3 |
@@ -216,8 +218,11 @@ spec-IAC FR-001, FR-002, BR-014, #36, #47.
    ordered wrongly) was fixed by PR #68 (`81c1239`, ancestor of `main`): `agency-sync.ts:45-48`
    now writes ISO UTC ms via `nextSentAt`. Booking rows keep `+07:00` (`agency-sync.ts:47`).
    Note: spec silent on the template's date format — code renders `{start}–{end}` as
-   `YYYY-MM-DD HH:MM–HH:MM` from the stored local string and joins changed fields with `"; changed: "`
-   (`agency-sync.ts:17-19`).
+   `YYYY-MM-DD HH:MM–HH:MM` and joins changed fields with `"; changed: "` (`agency-sync.ts:17-19`).
+   Update 2026-11-07: cutting that string was only right for `+07:00` values; on PostgreSQL (UTC)
+   the Booked/Cancelled text showed 02:00 for a 09:00 Booking (issue #87). Fixed by PR #89: the text
+   is formatted in Asia/Ho_Chi_Minh (spec-BKG #31) by `src/lib/time/hanoi-time.ts`; tests
+   `tests/unit/hanoi-time-display.test.ts`, `tests/unit/hanoi-time.test.ts`.
 
 ---
 
@@ -249,7 +254,9 @@ visible: `provider_profiles.verification_status` stays Verified while
 
 **FR/BR:** PRF BR-007, BR-018, BR-019, BR-020, #32, AC-PRF-REVISION; EXP FR-001, FR-002, BR-001, BR-003; AIT BR-003, FR-005.
 
-**Tests:** `tests/unit/explore-catalog.test.ts:30` (BR-001 hides unverified, unpublished, archived,
+**Tests:** `tests/contract/prf-exp-catalog.test.ts` (Session 10 contract: PRF route → Explore route and AIT
+candidates; normal, archive and pending-revision boundaries, refused category),
+`tests/unit/explore-catalog.test.ts:30` (BR-001 hides unverified, unpublished, archived,
 inactive-village, disabled-provider), `tests/storage/provider-publication.test.ts:26`,
 `tests/prf/unit/provider-versioning.test.ts`, `tests/integration/ait-exp-br-gaps.test.ts:33`.
 
@@ -269,6 +276,10 @@ inactive-village, disabled-provider), `tests/storage/provider-publication.test.t
 3. **Published-version states.** consistency-contract.md:53 "Published Provider version | None /
    Verified" vs schema `provider_version_status_chk` including `'Superseded'` (schema.sql:320) and
    PRF #32 "marks the previous published version Superseded" (spec-PRF.md:438).
+4. **Category vocabulary (fixed).** spec-PRF FR-006 / Q19 Enum[Workshop/Hands-on, Sightseeing,
+   Culinary/Tasting, Cultural Show, Combo] and schema `experience_category_chk` vs the PRF schema,
+   which accepted any string, so a bad value reached PostgreSQL as a 500 (issue #88). Fixed by PR #90
+   (`EXPERIENCE_CATEGORIES` in `src/lib/prf/validators.ts`); EXP filters by the same values.
 
 ---
 
@@ -309,7 +320,9 @@ and adds no message (`commercial-handoff-service.ts:115`); EXP FR-011 hides the 
 
 **FR/BR:** EXP FR-011, FR-012, FR-007, BR-005, BR-009, BR-010, AC-EXP-QUOTE; IAC FR-001, BR-004, #7, #18, #19, #21, #24; AIT BR-018, BR-019.
 
-**Tests:** `tests/integration/iac-handoff-routes.test.ts` (:25, :32), `tests/unit/iac-handoff.test.ts`,
+**Tests:** `tests/contract/exp-iac-handoff.test.ts` (Session 10 contract: one Quote and pair Chat, Quote
+reuse, pair reuse across Experiences, refused roles / archived Experience with no write),
+`tests/integration/iac-handoff-routes.test.ts` (:25, :32), `tests/unit/iac-handoff.test.ts`,
 `tests/integration/exp-handoff-signal.test.ts`, `tests/unit/explore-handoff.test.ts` (ports module only).
 Note: `tests/contract/quote-chat-api.test.ts` imports `src/lib/matching/handoff-service.ts`
 (in-memory Maps, lines 29-96), which no route uses; its FR-011/BR-018/BR-019 cases do not exercise
@@ -363,7 +376,10 @@ one of that session's recommendations — code does not check it.
 
 **FR/BR:** AIT BR-001, BR-003, BR-009, BR-010, BR-018, BR-019, FR-005, FR-006, FR-011, AC-AIT-FAIL; IAC FR-001, #19.
 
-**Tests:** `tests/integration/iac-handoff-routes.test.ts:42`, `tests/integration/ait-exp-br-gaps.test.ts`
+**Tests:** `tests/contract/ait-iac-exp-handoff.test.ts` (Session 10 contract: Matching source and session
+link, reuse of an Explore Chat with the new Quote context, unverified Provider leaves candidates and
+is refused, another Agency's session / Guest / missing field with no write),
+`tests/integration/iac-handoff-routes.test.ts:42`, `tests/integration/ait-exp-br-gaps.test.ts`
 (:33 excludes Draft/Revision Required, :72, :81, :94, :102), `tests/integration/ait-flow.test.ts`,
 `tests/integration/ait-matching-api.test.ts`, `tests/integration/matching-scenarios.test.ts`.
 

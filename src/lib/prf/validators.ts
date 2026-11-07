@@ -20,6 +20,8 @@ export const AgencyProfilePatchSchema = z.object({
 })
 
 export const ProviderProfilePatchSchema = z.object({
+  certificate_file_id: z.string().uuid().optional(),
+  profile_images: z.array(z.object({ file_id:z.string().uuid(),category:z.enum(['Activity','Space','Product']) })).optional(),
   business_name: z.string().min(1).max(255).optional(),
   craft_type: z.string().min(1).max(100).optional(),
   business_registration: z.string().max(100).optional(),
@@ -42,13 +44,14 @@ export const ProviderProfilePatchSchema = z.object({
     .object({
       cancellation_notice_hours: z.number().int().nonnegative().optional(),
       deposit_percentage: z.number().min(0).max(100).optional(),
-    })
+    }).passthrough()
     .optional(),
 })
 
 // Slice B: a new image (upload) carries its metadata (BR-008); categories are the data/ values (Q4).
+export const CancellationPolicySchema = z.object({ rules:z.array(z.object({threshold_hours:z.number().int().nonnegative(),fee_percentage:z.number().min(0).max(100)})).optional(),notes:z.string().optional(),before_hours:z.number().nonnegative().optional(),refund_percent:z.number().min(0).max(100).optional() }).passthrough()
 export const ExperienceImageSchema = z.object({
-  url: z.string().url(),
+  url: z.string().refine(value => /^\/api\/prf\/media\/[0-9a-f-]{36}$/i.test(value) || z.string().url().safeParse(value).success,'Invalid image URL'),
   file_name: z.string().min(1).max(255).optional(),
   category: z.enum(['Activity', 'Space', 'Product']),
   media_type: z.string(),
@@ -73,7 +76,9 @@ export const ExperienceCreateSchema = z.object({
   max_participants: z.number().int().positive(),
   notice_period_hours: z.number().int().nonnegative(),
   experience_location_address: z.string().max(500).optional(),
-  cancellation_policy: z.unknown().optional(),
+  cancellation_policy: CancellationPolicySchema.optional(),
+  group_discounts: z.array(z.object({ pax_threshold: z.number().int().positive(), discount_percentage: z.number().min(0).max(100) })).optional(),
+  special_rates: z.array(z.object({ pax_threshold: z.number().int().positive(), discount_percentage: z.number().min(0).max(100) })).optional(),
   images: z.array(ExperienceImageSchema).min(3),
 })
 

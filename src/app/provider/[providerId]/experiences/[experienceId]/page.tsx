@@ -2,14 +2,17 @@
 
 // EXP068 Experience Detail – Owner View. Gallery from the Experience's images (BR-009 categories);
 // BR-016 lightbox: tapping an image opens it full-size with previous / next through the same gallery.
-// Image binaries are not stored yet (checklist §3 #1), so each image shows a labelled placeholder.
+// Uploaded media has durable URLs; metadata-only seed images show an honest empty state.
 
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import MediaImage from '@/app/components/MediaImage'
+import { cancellationLines } from '@/lib/prf/experience-terms'
 import { EXPERIENCE_IMAGE_CATEGORIES } from '@/lib/prf/experience-images'
 import { closeLightbox, nextImage, openLightbox, previousImage, type LightboxState } from '@/lib/prf/lightbox'
 
 interface ExperienceImage {
+  url?: string
   file_id: string
   category: string
   file_name: string
@@ -27,23 +30,16 @@ interface ExperienceDetail {
   max_participants: number
   notice_period_hours?: number
   experience_location_address?: string
+  cancellation_policy?: unknown
+  group_discounts?: Array<{pax_threshold:number;discount_percentage:number}>
+  special_rates?: Array<{pax_threshold:number;discount_percentage:number}>
   images: ExperienceImage[]
 }
 
 const categoryLabel = (value: string) => EXPERIENCE_IMAGE_CATEGORIES.find(c => c.value === value)?.label ?? value
 
 function Placeholder({ image, large = false }: { image: ExperienceImage; large?: boolean }) {
-  return (
-    <div style={{
-      aspectRatio: '16 / 9', background: '#e7e5e4', display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: '0.25rem', color: '#44403c', fontSize: large ? '1rem' : '0.72rem', textAlign: 'center', padding: '0.5rem',
-      width: large ? 'min(90vw, 960px)' : '100%',
-    }}>
-      <strong>{categoryLabel(image.category)}</strong>
-      <span>{image.file_name}</span>
-      <span>{image.width_px}×{image.height_px}</span>
-    </div>
-  )
+  return <MediaImage src={image.url} alt={image.file_name || categoryLabel(image.category)} large={large}/>
 }
 
 export default function ExperienceDetailPage({
@@ -99,6 +95,7 @@ export default function ExperienceDetailPage({
 
       <p style={{ lineHeight: 1.6 }}>{experience.description}</p>
       <section className="prf-section-card" style={{ margin: '22px 0' }}><h2>Thông tin đón đoàn</h2><dl><dt>Địa điểm</dt><dd>{experience.experience_location_address || 'Chưa cập nhật'}</dd><dt>Thời gian báo trước</dt><dd>{experience.notice_period_hours ?? 'Chưa cập nhật'} giờ</dd></dl></section>
+      <section className="prf-section-card"><h2>Điều kiện hủy và giá theo đoàn</h2>{cancellationLines(experience.cancellation_policy).map((line,index)=><p key={index}>{line}</p>)}{!cancellationLines(experience.cancellation_policy).length&&<p>Chưa có quy tắc hủy bổ sung.</p>}{[['Chiết khấu đoàn',experience.group_discounts],['Giá đặc biệt',experience.special_rates]].map(([label,rules])=><div key={String(label)}><h3>{String(label)}</h3>{Array.isArray(rules)&&rules.length?rules.map((rule,index)=><p key={index}>Từ {rule.pax_threshold} khách: giảm {rule.discount_percentage}%</p>):<p>Chưa áp dụng.</p>}</div>)}</section>
       <nav aria-label="Quản lý trải nghiệm" style={{ display: 'flex', gap: 18, margin: '20px 0', flexWrap: 'wrap' }}>
         <Link href={`/provider/${params.providerId}/experiences/${params.experienceId}/edit`}>Chỉnh sửa trải nghiệm</Link>
         <Link href={`/provider/${params.providerId}/experiences/${params.experienceId}/delete`}>Xóa hoặc lưu trữ</Link>
@@ -127,7 +124,7 @@ export default function ExperienceDetailPage({
           onClick={() => setLightbox(closeLightbox)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', zIndex: 50 }}
         >
-          <div onClick={event => event.stopPropagation()}>
+          <div onClick={event => event.stopPropagation()} style={{width:'min(90vw, 960px)'}}>
             <Placeholder image={current} large />
           </div>
           <div onClick={event => event.stopPropagation()} style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: '#ffffff' }}>

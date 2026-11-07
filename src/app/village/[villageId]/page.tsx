@@ -6,6 +6,7 @@ import { refreshDemoSession, type CurrentUserRole } from '@/lib/prf/client-sessi
 
 interface VillageResult {
   village: { village_id: string; source_code: string; name: string; district: string; city_province: string; is_active: boolean }
+  featured_experiences?:Array<{experience_id:string;name:string;category:string;duration_minutes:number;max_participants:number}>
   providers: Array<{ provider_id: string; business_name: string; craft_type: string; description: string; location_address: string; experience_count: number }>
 }
 
@@ -32,7 +33,7 @@ export default function VillageProfilePage({ params }: { params: { villageId: st
     <main className="prf-container" style={{ paddingBottom: '5rem' }}>
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">VIL030 · VILLAGE PROFILE · {village.source_code}</span>
+          <span className="prf-spec-code">HỒ SƠ LÀNG NGHỀ</span>
           <h1 className="prf-spec-title">Làng nghề {village.name}</h1>
           <p className="prf-spec-subtitle">{village.district}, {village.city_province} · {village.is_active ? 'Đang hoạt động' : 'Tạm ngưng'}</p>
         </div>
@@ -48,7 +49,7 @@ export default function VillageProfilePage({ params }: { params: { villageId: st
           </div>
           <div style={{ minWidth: 180, padding: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
             <strong>{providers.length}</strong> Provider đã xác minh<br />
-            <small>Ngữ cảnh hiện tại: {role}</small>
+            <small>Thông tin làng nghề đã được xác minh</small>
           </div>
         </div>
       </section>
@@ -70,6 +71,7 @@ export default function VillageProfilePage({ params }: { params: { villageId: st
           </div>
         )}
       </section>
+      <section className="prf-section-card"><h2>Trải nghiệm nổi bật tại làng nghề</h2><div className="provider-media-grid">{result.featured_experiences?.length?result.featured_experiences.map(item=><article key={item.experience_id}><h3>{item.name}</h3><p>{item.category} · {item.duration_minutes} phút · tối đa {item.max_participants} khách</p><Link href={`/explore/experiences/${item.experience_id}`}>Xem trải nghiệm →</Link></article>):<p>Chưa có trải nghiệm công khai.</p>}</div></section>
     </main>
   )
 }

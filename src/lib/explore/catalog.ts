@@ -73,7 +73,7 @@ function toCard(seed: ExploreSeed, row: ReturnType<typeof eligibleRows>[number],
   const images = seed.profile_media
     .filter(media => media.experience_id === experience.experience_id && files.get(media.file_id)?.media_type.startsWith('image/'))
     .sort((a, b) => Number(a.display_order) - Number(b.display_order))
-    .map(media => ({ storage_key: files.get(media.file_id)!.storage_key }));
+    .map(media => ({ storage_key: files.get(media.file_id)!.storage_key.startsWith('prf-media/') ? `/api/prf/media/${files.get(media.file_id)!.file_id}` : files.get(media.file_id)!.storage_key }));
   const isAgency = viewer.kind === 'agency';
   return {
     id: experience.experience_id,

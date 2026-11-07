@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { readSessionContext } from '@/lib/auth/client-session'
 
 interface ExperienceItem {
+  archived_at?: string
   experience_id: string
   name: string
   category: string
@@ -21,6 +22,7 @@ export default function ExperienceManagementPage({
   params: { providerId: string }
 }) {
   const [authorized, setAuthorized] = useState(false)
+  const [showArchived,setShowArchived]=useState(false)
   const [experiences, setExperiences] = useState<ExperienceItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -37,7 +39,7 @@ export default function ExperienceManagementPage({
         return
       }
       setLoadError(false)
-      await fetch(`/api/prf/experience?provider_id=${encodeURIComponent(params.providerId)}`)
+      await fetch(`/api/prf/experience?provider_id=${encodeURIComponent(params.providerId)}&include_archived=true`)
         .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load experiences')))
         .then(data => { if (alive) setExperiences(data.experiences || []) })
         .finally(() => { if (alive) setLoading(false) })
@@ -113,18 +115,19 @@ export default function ExperienceManagementPage({
             Tổng trải nghiệm hoạt động
           </div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginTop: '0.25rem' }}>
-            {experiences.length} chương trình
+            {experiences.filter(item=>!item.archived_at).length} đang hoạt động · {experiences.filter(item=>item.archived_at).length} đã lưu trữ
           </div>
         </div>
 
       </div>
 
+      <label><input type="checkbox" checked={showArchived} onChange={event=>setShowArchived(event.target.checked)}/> Hiển thị trải nghiệm đã lưu trữ</label>
       {/* Experiences List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {loading && <p>Đang tải trải nghiệm…</p>}
         {loadError && <p role="alert">Không thể tải trải nghiệm. Vui lòng tải lại trang.</p>}
-        {!loading && !loadError && authorized && experiences.length === 0 && <p>Chưa có trải nghiệm nào. Hãy thêm trải nghiệm đầu tiên.</p>}
-        {experiences.map(exp => (
+        {!loading && !loadError && authorized && experiences.filter(exp=>showArchived || !exp.archived_at).length === 0 && <p>Không có trải nghiệm trong danh sách này. Thêm trải nghiệm mới hoặc bật hiển thị trải nghiệm đã lưu trữ.</p>}
+        {experiences.filter(exp=>showArchived || !exp.archived_at).map(exp => (
           <div
             key={exp.experience_id}
             className="prf-section-card"
@@ -151,7 +154,7 @@ export default function ExperienceManagementPage({
               </div>
 
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 0.35rem 0', color: '#111827' }}>
-                {exp.name}
+                {exp.name}{exp.archived_at && <span className="prf-badge"> · Đã lưu trữ</span>}
               </h3>
 
               <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.82rem', color: '#4b5563', flexWrap: 'wrap' }}>

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ExperienceTermsField from '../../ExperienceTermsField'
+import { readCancellationPolicy, cancellationPatch, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
 import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
@@ -12,10 +14,16 @@ export default function EditExperiencePage({
 }: {
   params: { providerId: string; experienceId: string }
 }) {
+  const [initialPolicy, setInitialPolicy] = useState<CancellationPolicy>({ rules: [] })
+  const [policy, setPolicy] = useState<CancellationPolicy>({ rules: [] })
+  const [group, setGroup] = useState<DiscountRule[]>([])
+  const [special, setSpecial] = useState<DiscountRule[]>([])
   const router = useRouter()
   const [authorized, setAuthorized] = useState(false)
   const [sessionReady, setSessionReady] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploading,setUploading]=useState(false)
+  const [loadError,setLoadError]=useState('')
   const [aiRefining, setAiRefining] = useState(false)
   const [aiDraft, setAiDraft] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -44,10 +52,12 @@ export default function EditExperiencePage({
     }).then(response => response.ok ? response.json() : Promise.reject(new Error('Experience not found')))
       .then(data => {
         if (!alive) return
+        if(data.provider_id!==params.providerId)throw new Error('Trải nghiệm không thuộc xưởng này.')
+        setInitialPolicy(readCancellationPolicy(data.cancellation_policy)); setPolicy(readCancellationPolicy(data.cancellation_policy)); setGroup(data.group_discounts || []); setSpecial(data.special_rates || [])
         setFormData({
           name: data.name || '', category: data.category || 'Workshop/Hands-on',
           duration_minutes: Number(data.duration_minutes || 60), price_per_person: Number(data.price_per_person || 0),
-          max_participants: Number(data.max_participants || 1), notice_period_hours: Number(data.notice_period_hours || 24),
+          max_participants: Number(data.max_participants || 1), notice_period_hours: Number(data.notice_period_hours ?? 24),
           experience_location_address: data.experience_location_address || '',
           cancellation_rules_text: (() => {
             try { return JSON.parse(data.cancellation_policy || '{}').notes || '' } catch { return data.cancellation_policy || '' }
@@ -56,7 +66,7 @@ export default function EditExperiencePage({
         })
         setHasActiveBookings(Boolean(data.has_active_bookings))
         setImages((data.images || []) as ExperienceImageItem[])
-      }).finally(() => { if (alive) setSessionReady(true) })
+      }).catch(cause=>{if(alive)setLoadError(cause instanceof Error?cause.message:'Không thể tải trải nghiệm.')}).finally(() => { if (alive) setSessionReady(true) })
     const onRoleChanged = () => {
       readSessionContext()
         .then(session => { if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId) })
@@ -116,10 +126,8 @@ export default function EditExperiencePage({
           price_per_person: Number(formData.price_per_person),
           max_participants: Number(formData.max_participants),
         } : {}),
-        cancellation_policy: {
-          rules: [{ threshold_hours: 24, fee_percentage: 50 }],
-          notes: formData.cancellation_rules_text,
-        },
+        ...cancellationPatch(initialPolicy, policy),
+        group_discounts: group, special_rates: special,
         images: toImagesPayload(images),
       }
 
@@ -136,6 +144,7 @@ export default function EditExperiencePage({
         throw new Error(data.error || 'Lỗi cập nhật trải nghiệm')
       }
 
+      setInitialPolicy(policy)
       setFeedback({
         type: 'success',
         message: 'Trải nghiệm đã được cập nhật thành công!',
@@ -150,6 +159,7 @@ export default function EditExperiencePage({
     }
   }
 
+  if (loadError) return <main className="prf-container"><h1>Không thể mở trang chỉnh sửa</h1><p role="alert">{loadError}</p><Link href={`/provider/${params.providerId}/experiences`}>Quay lại danh sách</Link></main>
   if (!sessionReady) return <div className="prf-container" style={{ padding: '3rem' }}>Đang tải Experience…</div>
   const isLocalProvider = authorized
 
@@ -387,7 +397,7 @@ export default function EditExperiencePage({
                 </div>
               </div>
 
-              <ExperienceImagesField images={images} onChange={setImages} />
+              <ExperienceImagesField images={images} onChange={setImages} onBusyChange={setUploading} />
             </div>
           </div>
 
@@ -443,15 +453,7 @@ export default function EditExperiencePage({
                 />
               </div>
 
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-7">Chính sách hủy dịch vụ</label>
-                <textarea id="experience-field-7"
-                  rows={3}
-                  value={formData.cancellation_rules_text}
-                  onChange={e => setFormData({ ...formData, cancellation_rules_text: e.target.value })}
-                  className="prf-textarea"
-                />
-              </div>
+              <ExperienceTermsField policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}/>
             </div>
           </div>
         </div>
@@ -472,7 +474,7 @@ export default function EditExperiencePage({
               </Link>
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || uploading}
                 className="prf-btn prf-btn-primary"
                 style={{ padding: '0.55rem 1.75rem' }}
               >

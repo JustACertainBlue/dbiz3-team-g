@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import MediaImage from '@/app/components/MediaImage';
 import { cookies } from 'next/headers';
 import { buildExplorePage, eligibleRows, resolveViewer } from '../../lib/explore/catalog';
 import { demoRuntime } from '../../lib/explore/demo-runtime';
@@ -68,9 +69,9 @@ export default function ExplorePage({ searchParams }: { searchParams: Params }) 
     {catalog.experience_cards.length === 0 ? <section className="empty"><h2>Chưa có trải nghiệm để hiển thị</h2><p>Hãy quay lại sau khi danh mục được cập nhật.</p></section> :
       <section className="card-grid" aria-label="Danh sách trải nghiệm">
         {catalog.experience_cards.map((card, index) => <article className="experience-card" key={card.id}>
-          <div className={`media-placeholder media-placeholder--${index % 4}`} role="img" aria-label={`Minh họa cho ${card.name}`}>
-            <span className="verified-tag">✓ Verified experience</span>
-            <div className="craft-symbol">{String(index + 1).padStart(2, '0')}</div>
+          <div className="catalog-media">
+            <MediaImage src={card.images[0]?.storage_key} alt={card.name}/><span className="verified-tag">✓ Đã xác minh</span>
+
             <small>{card.type}</small>
           </div>
           <div className="card-body">

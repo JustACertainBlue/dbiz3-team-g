@@ -996,6 +996,31 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 186 files passed, 4 skipped (1122 passed, 20 skipped) |
 | Existing tests changed | None |
 
+### Entry 60: 07/11 Claude Code + human — Session 10 contract tests: BKG → ADM, PRF → ADM, AUT ↔ PRF (`test/contract-bkg-prf-adm-aut`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (remaining contract tests, 2–3 interfaces per PR, straight into main; Entry 59 / PR #92 has the other three) |
+| BKG → ADM | `tests/contract/bkg-adm-metrics.test.ts` (5): Booking created and confirmed through BKG routes moves On hold → Booked in ADM counts and table; created_at basis (not start_at); UBND village lock against a requested village; Agency/Provider 403, Guest 401; Custom period start in Hanoi time as `it.fails` (issue #93) |
+| PRF → ADM | `tests/contract/prf-adm-pending.test.ts` (4): Pending Provider listed for HDT and its village UBND; leaves after Approve or Request Revision through the PRF verify route; Agency registration listed for HDT only; another village's UBND neither sees nor reviews it (BR-005) |
+| AUT ↔ PRF | `tests/contract/aut-prf-major-change.test.ts` (4): Company Name change waits for HDT, Approve applies it; minor or unchanged value needs no review; Reject discards and the request cannot be decided twice; only HDT, comment required, duplicate Tax ID refused |
+| Defect found | Issue #93 (Medium): `trend-calculator.ts:102-105` reads Custom `startDate`/`endDate` as UTC midnight (07:00 Hanoi) against consistency-contract.md:58; not fixed (human rule) |
+| Mutation (foreground) | 15 mutants, 14 killed. Survivor: dashboard route role check removed — `resolveAdminScope` refuses non-admins too (removing both layers is killed) |
+| Checks | `npm run lint` OK; `npm test` 186 files passed, 4 skipped (1123 passed incl. the `it.fails`, 20 skipped) |
+| Existing tests changed | None |
+
+### Entry 61: 07/11 Claude Code + human — #96 Windows CI: JSON lock mkdir EPERM retried as contention (`fix/96-windows-lock-eperm`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu after windows-latest failed `tests/unit/json-durable-sync.test.ts` |
+| Pre-existing? | Yes, intermittent: `main` red on windows-latest at `c746c50` (#89) and `f3aacb1` (#95, docs only), green at `1b91715`; #92's own CI green. Defect source #6 (environment difference) |
+| Cause | `withLock` (`src/lib/demo/json-repository.ts`) retried only on `EEXIST`; Windows returns `EPERM` while another writer's lock directory is being deleted |
+| Tests first | `tests/unit/json-lock-eperm.test.ts` wraps `mkdirSync` (vi.mock of `node:fs`). Red before the fix: EPERM once with the lock held, EPERM once with the lock just gone. Green before and after: EPERM repeating with no lock → real EPERM thrown in < 1 s; EEXIST contention. Added with the fix: EPERM three times with the lock held; EACCES once |
+| Fix | EPERM/EACCES → contention while the lock directory exists, or once when it has just disappeared; a second denial with no lock directory throws the real error. Same 5 s deadline; no timeout raised, no test skipped, no existing test changed |
+| Mutation (foreground) | 5 mutants, 5 killed: old behaviour, never throw, existing lock not contention, EACCES unhandled, just-deleted lock not retried |
+| Checks | `npm run lint` OK; `npm test` 187 files passed, 4 skipped (1129 passed, 20 skipped) on macOS; Windows checked by CI on the PR |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

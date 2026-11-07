@@ -36,10 +36,19 @@ export class JsonDemoRepository implements DemoRepository {
     mkdirSync(dirname(this.filePath), { recursive: true })
     const lock = `${this.filePath}.lock`
     const deadline = Date.now() + 5000
+    let deniedWithoutLock = false
     while (true) {
       try { mkdirSync(lock); break }
       catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+        const code = (error as NodeJS.ErrnoException).code
+        // Issue #96: on Windows mkdir returns EPERM/EACCES (not EEXIST) while another writer is still
+        // removing its lock directory. That is contention when the directory exists, or once when it has
+        // just disappeared; a denial that repeats with no lock directory is a real error.
+        if (code === 'EPERM' || code === 'EACCES') {
+          if (existsSync(lock)) deniedWithoutLock = false
+          else if (deniedWithoutLock) throw error
+          else deniedWithoutLock = true
+        } else if (code !== 'EEXIST') throw error
         if (Date.now() >= deadline) throw new Error('Demo database is busy. Retry the operation; inspect runtime.json.lock if its writer exited unexpectedly.')
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10)
       }

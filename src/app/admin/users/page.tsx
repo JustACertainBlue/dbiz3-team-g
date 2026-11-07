@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { hanoiDate } from '@/lib/time/hanoi-time'
 type User = { user_id: string; name: string; email: string; organization: string; role: string; admin_type: string; status: string; last_login: string; created_date: string; provider_id?: string; agency_id?: string }
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -30,7 +31,7 @@ export default function UsersPage() {
     try { const response = await fetch('/api/auth/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: selected.user_id, action: selected.status === 'Disabled' ? 'enable' : 'disable' }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setSelected({ ...selected, status: body.data.account_status }); setConfirm(false); await load() }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể lưu.') } finally { setBusy(false) }
   }
-  const filtered = users.filter(user => (!status || user.status === status) && (!role || user.role === role) && (!organization || user.organization === organization) && (!dateFrom || user.created_date.slice(0,10) >= dateFrom) && (!dateTo || user.created_date.slice(0,10) <= dateTo) && `${user.name} ${user.email} ${user.organization}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+  const filtered = users.filter(user => (!status || user.status === status) && (!role || user.role === role) && (!organization || user.organization === organization) && (!dateFrom || hanoiDate(user.created_date) >= dateFrom) && (!dateTo || hanoiDate(user.created_date) <= dateTo) && `${user.name} ${user.email} ${user.organization}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
   const pages = Math.max(1, Math.ceil(filtered.length / 20))
   const rows = filtered.slice((Math.min(page, pages) - 1) * 20, Math.min(page, pages) * 20)
   return <section className="users-page"><p>QUẢN TRỊ</p><h1>Quản lý tài khoản</h1><p><Link href="/admin/create-account">Tạo tài khoản mới →</Link></p><p>Danh sách được giới hạn theo quyền và làng nghề được phân công.</p>

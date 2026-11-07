@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { demoRepository } from '../db/application-store'
 import type { BatchOperation, DemoRow } from '../demo/types'
 import { findActivePairChat, newPairChatOperations, nextSentAt } from '../iac/chat-pairs'
+import { hanoiClock, hanoiDate } from '../time/hanoi-time'
 
 // F-SCHED-08: every Booking event sends one 'Booking Update' message to the Agency (spec #49, #55).
 // The caller adds the returned operations to its own applyBatch call (one persist per event, #44)
@@ -14,7 +15,7 @@ function money(value: string): string {
 
 // #49: "Booking {status}: {experience}, {start}–{end}, {group_size} pax, {agreed_price} VND" (+ changed fields).
 function messageText(booking: DemoRow, experienceName: string, changedFields: readonly string[]): string {
-  const when = `${booking.start_at.slice(0, 10)} ${booking.start_at.slice(11, 16)}–${booking.end_at.slice(11, 16)}`
+  const when = `${hanoiDate(booking.start_at)} ${hanoiClock(booking.start_at)}–${hanoiClock(booking.end_at)}` // spec-BKG #31, #87
   const text = `Booking ${booking.status}: ${experienceName}, ${when}, ${booking.group_size} pax, ${money(booking.agreed_price_total)} VND`
   return changedFields.length ? `${text}; changed: ${changedFields.join(', ')}` : text
 }

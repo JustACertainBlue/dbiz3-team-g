@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { AgencyMetrics, ProviderMetrics, BookingMetrics } from '@/lib/adm/types'
+import { statusLabel } from '@/lib/status-labels'
 
 interface ChartsSectionProps {
   agencyMetrics: AgencyMetrics
@@ -109,7 +110,7 @@ export function ChartsSection({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8px)' }}>
             {agencyMetrics.statusChartData.map(item => (
               <div key={item.status} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--font-size-0p78rem)' }}>
-                <span style={{ color: 'var(--palette-gray-34)', fontWeight: 500 }}>{item.status}</span>
+                <span style={{ color: 'var(--palette-gray-34)', fontWeight: 500 }}>{statusLabel('agency', item.status)}</span>
                 <span style={{ color: 'var(--palette-gray-4)', fontWeight: 600 }}>
                   {item.count} ({item.pct}%)
                 </span>

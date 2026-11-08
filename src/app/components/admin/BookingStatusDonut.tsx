@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { BookingMetrics } from '@/lib/adm/types'
+import { statusLabel } from '@/lib/status-labels'
 
 interface BookingStatusDonutProps {
   bookingMetrics: BookingMetrics
@@ -165,7 +166,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
       {/* Legend Rows matching ADM079.png */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10px)', paddingTop: 'var(--space-8px)' }}>
         {sortedData.map(item => {
-          const displayName = item.status === 'Cancelled' ? 'Canceled' : item.status === 'On hold' ? 'On Hold' : item.status
+          const displayName = statusLabel('booking', item.status)
           return (
             <div
               key={item.status}

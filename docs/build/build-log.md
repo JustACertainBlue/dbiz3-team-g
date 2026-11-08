@@ -1033,6 +1033,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 81: 08/11 Claude Code + human — spec: Vietnamese display labels for Booking statuses (`docs/spec-status-labels-vi`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); lines approved by linhkhanh-vu in the prompt (design wave 2 prerequisite: Design System v9, Figma Status Badge) |
+| Spec change | `docs/spec/specs/spec-BKG.md:450` and `:539` (#49): the chat template uses `{status_label}`, the Vietnamese display label of the canonical status (On hold → Tạm giữ, Booked → Đã đặt, Completed → Hoàn tất, Cancelled → Đã huỷ); stored status stays canonical. `docs/spec/screens/screen-spec-DSH018.md:80`: badges show the canonical statuses through these labels; stored and API values stay canonical |
+| Snapshots | `specs/004-bkg-core`, `011-bkg-manage`, `012-bkg-list`, `013-bkg-schedule` refreshed with `start_feature.py --use` + `--refresh`, each `--check` OK; active feature set back to `specs/010-aut-manage-accounts` (`--check` OK) |
+| Follow-up (approved 08/11) | Screen specs scanned for English status names used as badge/chip display text; three such lines amended the same way: `screen-spec-SCH139.md:80`, `screen-spec-SCH140.md:74`, `screen-spec-PRF127.md:73`. Lines that use status names as business concepts (rules, SR rows, element names) are unchanged. Screen specs are not part of any feature snapshot; `start_feature.py --check` OK |
+| Follow-up 2 (approved 08/11) | Button display labels for BKG135/BKG138 (design wave 4 screen 3): `screen-spec-BKG135.md:31-33, 49-51` (Edit → “Cập nhật”, Mark Group Arrival → “Đánh dấu đoàn đã đến”, Chat → “Nhắn tin”), `screen-spec-BKG138.md:29, 46` (Chat → “Nhắn tin”), `spec-BKG.md:322` FR-007 (Confirm/Book → “Xác nhận”, Update → “Cập nhật”, Cancel → “Huỷ”, Mark Group Arrival, Chat); behaviour and function names unchanged. BKG snapshots refreshed, `--check` OK |
+| Code | None in this PR; the label table, badges and the template change come in the design wave 2 PR |
 ### Entry 70: 08/11 Claude Code + human — Design tokens foundation: src/app/tokens.css (`design/tokens-foundation`)
 
 | Field | Value |

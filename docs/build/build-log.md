@@ -1118,6 +1118,15 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Figma check | After-only screenshots of 6 screens at 1440/390 next to the Figma frames; difference table in the PR: (a) spec 5, (b) data 6, (d) wave 4 1, (c) 0 |
 | Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; browser: Guest menu collapse, focus into panel, Esc returns focus; Agency bar at 1440 |
 
+### Entry 85: 08/11 Claude Code + human — design wave 4 screen 2: Login AUT009 and OTP REG115 (`design/screen-login`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (wave 4, one PR per screen) |
+| Change | `AuthShell` (brand panel + card; phone banner), Login with the Figma alert for `INVALID_CREDENTIALS`, OTP with six digit boxes, "Gửi lại mã" without a countdown and "Đổi email đăng ký" (REG115 #7); no app bar on these two pages; client OTP messages in Vietnamese |
+| Figma check | After-only shots (login default, login error filled by the shot tool, OTP) at 1440/390 next to Figma; difference table in the PR with (c) = 0 |
+| Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; browser: digit auto-advance, Backspace back, submit disabled below 6 digits |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

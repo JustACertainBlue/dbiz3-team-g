@@ -95,6 +95,8 @@ export default function SessionHeader() {
   }
 
   if (!session) return null
+  // AUT009 / REG115 use their own full-screen layout without the app bar (Figma "Màn 1").
+  if (pathname === '/login' || pathname === '/register/otp') return null
   const shell = shellFor(session)
   const items = navItems(session)
   const current = activeHref(items, pathname)

@@ -665,7 +665,8 @@
   /* Organic logo shape of the Explore header mark (same value as before) */
   --radius-brand-mark: var(--radius-50pct) var(--radius-50pct) 46% 54% / 42% 52% 48% 58%;
 
-  --shadow-glow: 0 0 0 var(--focus-ring-width) var(--color-brand-200);
+  /* v9 border.focus (#2E7F52, 4.5:1 on surface.page); brand-200 would be only 1.38:1 */
+  --shadow-glow: 0 0 0 var(--focus-ring-width) var(--color-border-focus);
 
   /* Booking status colours of the admin dashboard chart (ADM079), same values as before */
   --color-status-completed: var(--palette-gray-10);

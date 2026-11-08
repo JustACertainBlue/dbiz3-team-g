@@ -15,9 +15,9 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
     <div
       style={{
         background: 'var(--palette-white)',
-        borderRadius: '10px',
+        borderRadius: 'var(--radius-10)',
         padding: 'var(--space-1p25rem)',
-        border: 'var(--space-1) solid var(--palette-blue-91)',
+        border: 'var(--border-width-1) solid var(--palette-blue-91)',
         boxShadow: '0 var(--space-1) var(--space-3) var(--alpha-black-5)',
       }}
     >
@@ -32,7 +32,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
         </div>
 
         {/* Toggle Frequency vs Recency */}
-        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--palette-gray-96-5)', borderRadius: '6px', padding: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--palette-gray-96-5)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}>
           <button
             type="button"
             onClick={() => onSortChange('Frequency')}
@@ -40,7 +40,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
               background: currentSort === 'Frequency' ? 'var(--palette-white)' : 'transparent',
               color: currentSort === 'Frequency' ? 'var(--palette-blue-25)' : 'var(--palette-blue-47)',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-4)',
               padding: 'var(--space-4) var(--space-10)',
               fontSize: 'var(--space-0p72rem)',
               fontWeight: currentSort === 'Frequency' ? 700 : 500,
@@ -57,7 +57,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
               background: currentSort === 'Recency' ? 'var(--palette-white)' : 'transparent',
               color: currentSort === 'Recency' ? 'var(--palette-blue-25)' : 'var(--palette-blue-47)',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-4)',
               padding: 'var(--space-4) var(--space-10)',
               fontSize: 'var(--space-0p72rem)',
               fontWeight: currentSort === 'Recency' ? 700 : 500,
@@ -80,9 +80,9 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: 'var(--space-0p65rem) var(--space-0p85rem)',
-                borderRadius: 'var(--space-6)',
+                borderRadius: 'var(--radius-sm)',
                 background: idx < 3 ? 'var(--palette-gray-98-2)' : 'var(--palette-white)',
-                border: 'var(--space-1) solid var(--palette-gray-96-5)',
+                border: 'var(--border-width-1) solid var(--palette-gray-96-5)',
                 fontSize: 'var(--space-0p78rem)',
               }}
             >
@@ -94,7 +94,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
                     fontWeight: 800,
                     width: '22px',
                     height: '22px',
-                    borderRadius: '50%',
+                    borderRadius: 'var(--radius-50pct)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

@@ -17,9 +17,9 @@ export function MetricCards({ cards, loading }: MetricCardsProps) {
             key={i}
             style={{
               background: 'var(--palette-white)',
-              borderRadius: '12px',
+              borderRadius: 'var(--radius-md)',
               padding: 'var(--space-24)',
-              border: 'var(--space-1) solid var(--palette-gray-90)',
+              border: 'var(--border-width-1) solid var(--palette-gray-90)',
               minHeight: 'var(--space-110)',
               opacity: 0.6,
             }}
@@ -64,9 +64,9 @@ export function MetricCards({ cards, loading }: MetricCardsProps) {
             key={idx}
             style={{
               background: 'var(--palette-white)',
-              borderRadius: '12px',
+              borderRadius: 'var(--radius-md)',
               padding: 'var(--space-22) var(--space-24)',
-              border: 'var(--space-1) solid var(--palette-gray-90)',
+              border: 'var(--border-width-1) solid var(--palette-gray-90)',
               boxShadow: '0 var(--space-1) var(--space-2) var(--alpha-black-3)',
               display: 'flex',
               flexDirection: 'column',
@@ -108,7 +108,7 @@ export function MetricCards({ cards, loading }: MetricCardsProps) {
                     color: isUp ? 'var(--palette-green-36)' : isDown ? 'var(--palette-red-51)' : 'var(--palette-gray-46)',
                     background: isUp ? 'var(--palette-green-97)' : isDown ? 'var(--palette-red-97)' : 'var(--palette-gray-96)',
                     padding: 'var(--space-2) var(--space-6)',
-                    borderRadius: 'var(--space-4)',
+                    borderRadius: 'var(--radius-4)',
                   }}
                   title={card.subLabel}
                 >

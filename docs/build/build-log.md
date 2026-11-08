@@ -1065,6 +1065,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; `npm run lint:tokens` warn-only (colours) |
 | Human decisions 08/11 | The 1-level green-channel difference on `booking-mobile` is accepted. `RoleSwitcher` font sizes now use `--font-size-0p72rem` / `--font-size-0p75rem` instead of the spacing tokens of the same value (6 places; the component is not imported anywhere, #125, so no screenshot). Then, on request, the remaining 26 `fontSize: 'var(--space-…rem)'` in 7 admin files (`admin/page.tsx`, `FilterPanel`, `TopPairsList`, `BookingTable`, `ChartsSection`, `PendingVerificationPanel`, `AdminSidebar`) became `--font-size-…` of the same value; `/admin` shot before/after (1440 and 390, twice each): identical pixels and computed styles. Empty-state and filter-open states were not shot |
 
+### Entry 78: 08/11 Claude Code + human — design wave 1 PR 1a: spacing primitives become `--space-<n>px` (`design/tokens-space-px`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu after the Design System v9 step-0 review (approved 08/11: PR 1a renames only, PR 1b adds v9 tokens) |
+| Why | v9 §10 names `--space-1 … --space-16` as a 4 px step scale (`--space-8` = 32px); the current value-named primitives use the same names for pixels (`--space-8` = 8px). Keeping both would silently resize about 200 paddings and margins in PR 1b |
+| Change | Every integer spacing primitive renamed `--space-<n>` → `--space-<n>px` (definitions in `src/app/tokens.css` and 608 references in 17 files); rem primitives keep their names; header comment updated |
+| Base | Branch from the design chain tip (`origin/design/tokens-radius-border`, #113–#129); PR targets `main`, merge after #129 |
+| Visual check | Shot tool, dev server on DEV, 7 pages × 1440/390, base twice then branch twice: 14/14 identical (pixels and computed styles) |
+| Checks | `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

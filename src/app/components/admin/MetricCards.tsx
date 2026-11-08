@@ -11,16 +11,16 @@ interface MetricCardsProps {
 export function MetricCards({ cards, loading }: MetricCardsProps) {
   if (loading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-16)', marginBottom: 'var(--space-24)' }}>
         {[1, 2, 3, 4].map(i => (
           <div
             key={i}
             style={{
-              background: '#ffffff',
+              background: 'var(--palette-white)',
               borderRadius: '12px',
-              padding: '24px',
-              border: '1px solid #e4e4e7',
-              minHeight: '110px',
+              padding: 'var(--space-24)',
+              border: 'var(--space-1) solid var(--palette-gray-90)',
+              minHeight: 'var(--space-110)',
               opacity: 0.6,
             }}
           />
@@ -50,8 +50,8 @@ export function MetricCards({ cards, loading }: MetricCardsProps) {
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '16px',
-        marginBottom: '24px',
+        gap: 'var(--space-16)',
+        marginBottom: 'var(--space-24)',
       }}
     >
       {cards.map((card, idx) => {
@@ -63,11 +63,11 @@ export function MetricCards({ cards, loading }: MetricCardsProps) {
           <div
             key={idx}
             style={{
-              background: '#ffffff',
+              background: 'var(--palette-white)',
               borderRadius: '12px',
-              padding: '22px 24px',
-              border: '1px solid #e4e4e7',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+              padding: 'var(--space-22) var(--space-24)',
+              border: 'var(--space-1) solid var(--palette-gray-90)',
+              boxShadow: '0 var(--space-1) var(--space-2) var(--alpha-black-3)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -76,9 +76,9 @@ export function MetricCards({ cards, loading }: MetricCardsProps) {
             {/* Card Label */}
             <div
               style={{
-                fontSize: '0.68rem',
+                fontSize: 'var(--font-size-0p68rem)',
                 fontWeight: 600,
-                color: '#71717a',
+                color: 'var(--palette-gray-46)',
                 letterSpacing: '0.08em',
                 fontFamily: 'monospace, sans-serif',
               }}
@@ -87,12 +87,12 @@ export function MetricCards({ cards, loading }: MetricCardsProps) {
             </div>
 
             {/* Value & Trend */}
-            <div style={{ marginTop: '12px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <div style={{ marginTop: 'var(--space-12)', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
               <span
                 style={{
-                  fontSize: '2.25rem',
+                  fontSize: 'var(--font-size-2p25rem)',
                   fontWeight: 700,
-                  color: '#09090b',
+                  color: 'var(--palette-gray-4)',
                   lineHeight: 1,
                   letterSpacing: '-0.02em',
                 }}
@@ -103,12 +103,12 @@ export function MetricCards({ cards, loading }: MetricCardsProps) {
               {card.trendPct != null && (
                 <span
                   style={{
-                    fontSize: '0.72rem',
+                    fontSize: 'var(--font-size-0p72rem)',
                     fontWeight: 600,
-                    color: isUp ? '#16a34a' : isDown ? '#dc2626' : '#71717a',
-                    background: isUp ? '#f0fdf4' : isDown ? '#fef2f2' : '#f4f4f5',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
+                    color: isUp ? 'var(--palette-green-36)' : isDown ? 'var(--palette-red-51)' : 'var(--palette-gray-46)',
+                    background: isUp ? 'var(--palette-green-97)' : isDown ? 'var(--palette-red-97)' : 'var(--palette-gray-96)',
+                    padding: 'var(--space-2) var(--space-6)',
+                    borderRadius: 'var(--space-4)',
                   }}
                   title={card.subLabel}
                 >

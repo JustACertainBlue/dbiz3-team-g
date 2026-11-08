@@ -161,7 +161,7 @@ export default function AdminDashboardPage() {
       <main
         style={{
           flex: 1,
-          padding: 'var(--space-28) var(--space-36) var(--space-60) var(--space-36)',
+          padding: 'var(--space-28px) var(--space-36px) var(--space-60px) var(--space-36px)',
           overflowY: 'auto',
           minWidth: 0,
         }}
@@ -178,27 +178,27 @@ export default function AdminDashboardPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 100,
-                padding: 'var(--space-20)',
+                padding: 'var(--space-20px)',
               }}
             >
               <div
                 style={{
                   background: 'var(--palette-white)',
                   borderRadius: 'var(--radius-md)',
-                  padding: 'var(--space-24)',
-                  maxWidth: 'var(--space-520)',
+                  padding: 'var(--space-24px)',
+                  maxWidth: 'var(--space-520px)',
                   width: '100%',
-                  boxShadow: '0 var(--space-20) var(--space-25) -5px var(--alpha-black-10)',
+                  boxShadow: '0 var(--space-20px) var(--space-25px) -5px var(--alpha-black-10)',
                   border: 'var(--border-width-1) solid var(--palette-gray-90)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 'var(--space-12)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)', marginBottom: 'var(--space-12px)' }}>
                   <span style={{ fontSize: 'var(--font-size-1p25rem)' }}>ℹ️</span>
                   <h3 style={{ fontSize: 'var(--font-size-1p1rem)', fontWeight: 700, margin: 0, color: 'var(--palette-gray-4)' }}>
                     Information Notice
                   </h3>
                 </div>
-                <p style={{ fontSize: 'var(--font-size-0p88rem)', color: 'var(--palette-gray-34)', lineHeight: 1.5, margin: '0 0 var(--space-20) 0' }}>
+                <p style={{ fontSize: 'var(--font-size-0p88rem)', color: 'var(--palette-gray-34)', lineHeight: 1.5, margin: '0 0 var(--space-20px) 0' }}>
                   {modalNotice}
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -209,7 +209,7 @@ export default function AdminDashboardPage() {
                       background: 'var(--palette-gray-10)',
                       color: 'var(--palette-white)',
                       border: 'none',
-                      padding: 'var(--space-8) var(--space-18)',
+                      padding: 'var(--space-8px) var(--space-18px)',
                       borderRadius: 'var(--radius-sm)',
                       fontSize: 'var(--font-size-0p85rem)',
                       fontWeight: 600,
@@ -230,9 +230,9 @@ export default function AdminDashboardPage() {
                 background: 'var(--palette-red-97)',
                 border: 'var(--border-width-1) solid var(--palette-red-89)',
                 color: 'var(--palette-red-35)',
-                padding: 'var(--space-12) var(--space-18)',
+                padding: 'var(--space-12px) var(--space-18px)',
                 borderRadius: 'var(--radius-8)',
-                marginBottom: 'var(--space-16)',
+                marginBottom: 'var(--space-16px)',
                 fontSize: 'var(--font-size-0p85rem)',
               }}
             >
@@ -260,8 +260,8 @@ export default function AdminDashboardPage() {
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1.5fr 1fr',
-                gap: 'var(--space-20)',
-                marginBottom: 'var(--space-24)',
+                gap: 'var(--space-20px)',
+                marginBottom: 'var(--space-24px)',
                 alignItems: 'stretch',
               }}
             >
@@ -288,7 +288,7 @@ export default function AdminDashboardPage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1.8fr 1.2fr',
-                  gap: 'var(--space-20)',
+                  gap: 'var(--space-20px)',
                   alignItems: 'start',
                 }}
               >

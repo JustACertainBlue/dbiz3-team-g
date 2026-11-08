@@ -18,7 +18,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
         borderRadius: 'var(--radius-10)',
         padding: 'var(--space-1p25rem)',
         border: 'var(--border-width-1) solid var(--palette-blue-91)',
-        boxShadow: '0 var(--space-1) var(--space-3) var(--alpha-black-5)',
+        boxShadow: '0 var(--space-1px) var(--space-3px) var(--alpha-black-5)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-1rem)', flexWrap: 'wrap', gap: 'var(--space-0p5rem)' }}>
@@ -32,7 +32,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
         </div>
 
         {/* Toggle Frequency vs Recency */}
-        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--palette-gray-96-5)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--palette-gray-96-5)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2px)' }}>
           <button
             type="button"
             onClick={() => onSortChange('Frequency')}
@@ -41,11 +41,11 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
               color: currentSort === 'Frequency' ? 'var(--palette-blue-25)' : 'var(--palette-blue-47)',
               border: 'none',
               borderRadius: 'var(--radius-4)',
-              padding: 'var(--space-4) var(--space-10)',
+              padding: 'var(--space-4px) var(--space-10px)',
               fontSize: 'var(--font-size-0p72rem)',
               fontWeight: currentSort === 'Frequency' ? 700 : 500,
               cursor: 'pointer',
-              boxShadow: currentSort === 'Frequency' ? '0 var(--space-1) var(--space-2) var(--alpha-black-10)' : 'none',
+              boxShadow: currentSort === 'Frequency' ? '0 var(--space-1px) var(--space-2px) var(--alpha-black-10)' : 'none',
             }}
           >
             Tần suất
@@ -58,11 +58,11 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
               color: currentSort === 'Recency' ? 'var(--palette-blue-25)' : 'var(--palette-blue-47)',
               border: 'none',
               borderRadius: 'var(--radius-4)',
-              padding: 'var(--space-4) var(--space-10)',
+              padding: 'var(--space-4px) var(--space-10px)',
               fontSize: 'var(--font-size-0p72rem)',
               fontWeight: currentSort === 'Recency' ? 700 : 500,
               cursor: 'pointer',
-              boxShadow: currentSort === 'Recency' ? '0 var(--space-1) var(--space-2) var(--alpha-black-10)' : 'none',
+              boxShadow: currentSort === 'Recency' ? '0 var(--space-1px) var(--space-2px) var(--alpha-black-10)' : 'none',
             }}
           >
             Gần đây nhất
@@ -118,7 +118,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
                 <span style={{ fontWeight: 800, color: 'var(--palette-blue-11)', fontSize: 'var(--font-size-0p9rem)' }}>
                   {pair.bookingCount}
                 </span>
-                <span style={{ fontSize: 'var(--font-size-0p65rem)', color: 'var(--palette-blue-47)', marginLeft: 'var(--space-3)' }}>
+                <span style={{ fontSize: 'var(--font-size-0p65rem)', color: 'var(--palette-blue-47)', marginLeft: 'var(--space-3px)' }}>
                   lần hợp tác
                 </span>
                 <div style={{ fontSize: 'var(--font-size-0p65rem)', color: 'var(--palette-blue-65)' }}>

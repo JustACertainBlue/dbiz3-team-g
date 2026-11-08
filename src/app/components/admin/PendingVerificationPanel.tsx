@@ -18,21 +18,21 @@ export function PendingVerificationPanel({ items }: PendingVerificationPanelProp
         background: 'var(--palette-white)',
         borderRadius: 'var(--radius-md)',
         border: 'var(--border-width-1) solid var(--palette-gray-90)',
-        padding: 'var(--space-24)',
+        padding: 'var(--space-24px)',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 var(--space-1) var(--space-2) var(--alpha-black-3)',
+        boxShadow: '0 var(--space-1px) var(--space-2px) var(--alpha-black-3)',
       }}
     >
       <h3 style={{ fontSize: 'var(--font-size-1p125rem)', fontWeight: 700, color: 'var(--palette-gray-4)', margin: 0, letterSpacing: '-0.01em' }}>
         Pending Verification
       </h3>
-      <p style={{ fontSize: 'var(--font-size-0p78rem)', color: 'var(--palette-gray-46)', fontFamily: 'monospace, sans-serif', margin: 'var(--space-4) 0 var(--space-16) 0' }}>
+      <p style={{ fontSize: 'var(--font-size-0p78rem)', color: 'var(--palette-gray-46)', fontFamily: 'monospace, sans-serif', margin: 'var(--space-4px) 0 var(--space-16px) 0' }}>
         {countText}
       </p>
 
       {items.length === 0 ? (
-        <div style={{ padding: 'var(--space-28) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--font-size-0p82rem)' }}>
+        <div style={{ padding: 'var(--space-28px) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--font-size-0p82rem)' }}>
           No accounts awaiting review
         </div>
       ) : (
@@ -40,11 +40,11 @@ export function PendingVerificationPanel({ items }: PendingVerificationPanelProp
           {items.map(item => (
             <div
               key={`${item.kind}:${item.id}`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-12) 0', borderTop: 'var(--border-width-1) solid var(--palette-gray-96)' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-12px) 0', borderTop: 'var(--border-width-1) solid var(--palette-gray-96)' }}
             >
               <span style={{ fontSize: 'var(--font-size-0p88rem)', fontWeight: 600, color: 'var(--palette-gray-10)' }}>{item.name}</span>
-              <span style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
-                <span style={{ fontSize: 'var(--font-size-0p68rem)', fontWeight: 600, color: 'var(--palette-gray-34)', border: 'var(--border-width-1) solid var(--palette-gray-90)', padding: 'var(--space-2) var(--space-6)', borderRadius: 'var(--radius-4)', textTransform: 'uppercase' }}>
+              <span style={{ display: 'flex', gap: 'var(--space-12px)', alignItems: 'center' }}>
+                <span style={{ fontSize: 'var(--font-size-0p68rem)', fontWeight: 600, color: 'var(--palette-gray-34)', border: 'var(--border-width-1) solid var(--palette-gray-90)', padding: 'var(--space-2px) var(--space-6px)', borderRadius: 'var(--radius-4)', textTransform: 'uppercase' }}>
                   {item.kind}
                 </span>
                 <span style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', fontFamily: 'monospace, sans-serif' }}>

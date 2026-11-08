@@ -1119,6 +1119,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Figma check | After-only screenshots of 6 screens at 1440/390 next to the Figma frames; difference table in the PR: (a) spec 5, (b) data 6, (d) wave 4 1, (c) 0 |
 | Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; browser: Guest menu collapse, focus into panel, Esc returns focus; Agency bar at 1440 |
 
+### Entry 86: 09/11 Claude Code + human — design wave 4 screen 3: Booking Detail BKG135 / BKG138 (`design/screen-booking`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (wave 4); button labels approved after the spec lines were amended in #138 |
+| Change | `BookingDetailScreen` (Figma "Màn 3" layout with FR-007 content only: Trạng thái card with steps, Điều kiện đặt chỗ with agreed price, notice period, cancellation policy; payment and other non-FR-007 blocks removed), actions bar with Vietnamese labels and the FR-006 lock reason, BKG138 read-only note, Provider schedule subtitle in Vietnamese |
+| Tests | `tests/unit/bkg-screens.test.ts:42-46`: spec changed → expectation changed (label words only, approved); it was the only failing test before the change |
+| Figma check | After-only shots of BKG135 (Provider) and BKG138 (Agency) at 1440/390 next to Figma; difference table in the PR with (c) = 0 |
+| Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

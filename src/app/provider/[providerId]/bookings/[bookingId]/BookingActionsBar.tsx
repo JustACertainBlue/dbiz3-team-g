@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import type React from 'react'
-import type { BookingActions } from '@/lib/booking/booking-actions'
+import React from 'react'
+import { arrivalLockReason, type BookingActions } from '@/lib/booking/booking-actions'
 
 // BKG135 buttons from bookingActions (BR-017): disabled buttons stay visible and disabled (SC-007).
 // The server re-checks every action (SR-001); the buttons are only a guide.
@@ -43,8 +43,8 @@ export default function BookingActionsBar({ providerId, bookingId, actions, stat
     }
   }
 
-  // FR-007 matrix; Figma "Màn 3" order and labels. A disabled Mark Group Arrival says why (FR-006: Booked and start reached).
-  const arrivalReason = actions.mark_arrival ? '' : status === 'Booked' ? 'Đánh dấu đoàn đã đến: chưa tới giờ bắt đầu' : status === 'On hold' ? 'Đánh dấu đoàn đã đến: chỉ khi đặt chỗ đã đặt và đã tới giờ bắt đầu' : ''
+  // FR-007 matrix; Figma "Màn 3" order and labels. The lock reason line is a Figma addition (arrivalLockReason).
+  const arrivalReason = status ? arrivalLockReason(status, actions) : ''
   return <>
     <div className="bkg-actions bkg-actions--bar">
       {chat}

@@ -42,7 +42,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
               border: 'none',
               borderRadius: 'var(--radius-4)',
               padding: 'var(--space-4) var(--space-10)',
-              fontSize: 'var(--space-0p72rem)',
+              fontSize: 'var(--font-size-0p72rem)',
               fontWeight: currentSort === 'Frequency' ? 700 : 500,
               cursor: 'pointer',
               boxShadow: currentSort === 'Frequency' ? '0 var(--space-1) var(--space-2) var(--alpha-black-10)' : 'none',
@@ -59,7 +59,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
               border: 'none',
               borderRadius: 'var(--radius-4)',
               padding: 'var(--space-4) var(--space-10)',
-              fontSize: 'var(--space-0p72rem)',
+              fontSize: 'var(--font-size-0p72rem)',
               fontWeight: currentSort === 'Recency' ? 700 : 500,
               cursor: 'pointer',
               boxShadow: currentSort === 'Recency' ? '0 var(--space-1) var(--space-2) var(--alpha-black-10)' : 'none',
@@ -83,7 +83,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
                 borderRadius: 'var(--radius-sm)',
                 background: idx < 3 ? 'var(--palette-gray-98-2)' : 'var(--palette-white)',
                 border: 'var(--border-width-1) solid var(--palette-gray-96-5)',
-                fontSize: 'var(--space-0p78rem)',
+                fontSize: 'var(--font-size-0p78rem)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-0p65rem)' }}>
@@ -128,7 +128,7 @@ export function TopPairsList({ collaboration, onSortChange }: TopPairsListProps)
             </div>
           ))
         ) : (
-          <div style={{ textAlign: 'center', padding: 'var(--space-1p5rem)', color: 'var(--palette-blue-65)', fontSize: 'var(--space-0p75rem)' }}>
+          <div style={{ textAlign: 'center', padding: 'var(--space-1p5rem)', color: 'var(--palette-blue-65)', fontSize: 'var(--font-size-0p75rem)' }}>
             Chưa có lượt hợp tác nào trong phạm vi báo cáo.
           </div>
         )}

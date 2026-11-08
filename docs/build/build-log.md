@@ -1097,6 +1097,19 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run lint` OK; `npm run build` OK (next/font downloads the fonts at build time) |
 | Not in scope | Undefined variables already used by the AUT password pages (`--primary`, `--card-bg`, … with inline fallbacks, from PR #11) |
 
+### Entry 82: 08/11 Claude Code + human — design wave 2: status badges with Lucide icons and Vietnamese labels (`design/status-badges`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (wave 2; `lucide-react` approved; spec lines approved in #138) |
+| Change | `src/lib/status-labels.ts` (one shared label table, 7 families + "Cần xử lý"; DB/API values stay canonical) and `src/app/components/StatusBadge.tsx` (Lucide icon + label, v9 status tokens); used on the Booking pages (Agency/Provider lists, BKG135, arrival, Provider dashboard, filters), the calendar (labels + v9 colours), Admin (booking table, donut legend, Agency breakdown, Agency review, users), chat, Provider profile/edit; chat template per #49 as amended |
+| Tests | New `tests/unit/status-labels.test.ts` (4). Spec changed → expectation changed (status words only): `bkg-agency-sync`, `bkg-expire-holds`, `bkg-iac-message-order` (red before the template change, then green) and `hanoi-time-display.test.ts:102-104` (approved: "phần kiểm giờ #70/#87 không đổi") |
+| Contrast | All 25 status fg/bg pairs pass WCAG AA (4.88–9.94:1, computed) |
+| Screenshots | After only (rule changed by linhkhanh-vu 08/11): BKG135, SCH139 calendar, ADM079 at 1440/390 next to the Figma frames, outside the repo |
+| Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+| Mistake caught | A script inserted the new imports inside a multi-line import in `provider/[providerId]/edit/page.tsx`; `npm run lint` failed, moved, all changed files scanned |
+| Not in scope | `/admin/providers` badge after #135; status-coloured ADM079 chart (wave 4) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

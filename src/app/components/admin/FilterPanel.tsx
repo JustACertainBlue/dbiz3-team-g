@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { DashboardFilterParams, TimePreset, VillageOption, FilterAutocompleteOption } from '@/lib/adm/types'
 import { getAuthHeaders } from '@/lib/prf/client-session'
+import { ChevronDown, Lock } from 'lucide-react'
+import { hanoiDate } from '@/lib/time/hanoi-time'
 
 interface FilterPanelProps {
   filters: DashboardFilterParams
@@ -22,6 +24,16 @@ const PRESETS: TimePreset[] = [
   'Last year',
   'Custom',
 ]
+
+// Design wave 4 (Figma "Màn 5"): Vietnamese display labels; the stored enum values stay in English.
+const PRESET_LABEL: Record<TimePreset, string> = {
+  'Last 7 days': '7 ngày gần nhất',
+  'Last 30 days': '30 ngày gần nhất',
+  'Last 90 days': '90 ngày gần nhất',
+  'Last year': '1 năm gần nhất',
+  Custom: 'Tuỳ chọn',
+}
+const dmy = (date: string) => date ? `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}` : ''
 
 interface SwitchDialogState {
   targetCategory: 'Local Provider' | 'Agency'
@@ -45,9 +57,9 @@ export function FilterPanel({
   const [loadingOptions, setLoadingOptions] = useState(false)
 
   // Combined Filter Popover State
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
-  const [isProviderExpanded, setIsProviderExpanded] = useState(false)
-  const [isAgencyExpanded, setIsAgencyExpanded] = useState(false)
+  const [openBox, setOpenBox] = useState<'Agency' | 'Provider' | null>(null)
+  const isPopoverOpen = openBox !== null
+  const setIsPopoverOpen = (open: boolean) => { if (!open) setOpenBox(null) }
   const [providerSearch, setProviderSearch] = useState('')
   const [agencySearch, setAgencySearch] = useState('')
   const [switchDialog, setSwitchDialog] = useState<SwitchDialogState | null>(null)
@@ -248,731 +260,141 @@ export function FilterPanel({
     a.name.toLowerCase().includes(agencySearch.toLowerCase())
   )
 
-  // Format date range text based on active preset or custom range
+  // Date range under the period, Hanoi dates (same window as before: today minus the preset length).
   const getDateRangeText = () => {
+    if (currentPreset === 'Custom') return filters.startDate && filters.endDate ? `${dmy(filters.startDate)} – ${dmy(filters.endDate)}` : 'Chọn ngày bắt đầu và kết thúc'
     const now = new Date()
-    let pastDays = 30
-    if (currentPreset === 'Last 7 days') pastDays = 7
-    else if (currentPreset === 'Last 90 days') pastDays = 90
-    else if (currentPreset === 'Last year') pastDays = 365
-
-    if (currentPreset === 'Custom' && filters.startDate && filters.endDate) {
-      return `${filters.startDate} — ${filters.endDate}`
-    }
-
+    const pastDays = currentPreset === 'Last 7 days' ? 7 : currentPreset === 'Last 90 days' ? 90 : currentPreset === 'Last year' ? 365 : 30
     const start = new Date(now.getTime() - pastDays * 24 * 60 * 60 * 1000)
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${now.toLocaleDateString('en-US', options)}`
+    return `${dmy(hanoiDate(start))} – ${dmy(hanoiDate(now))}`
   }
 
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-12px)',
-        marginBottom: 'var(--space-20px)',
-      }}
-    >
-      {/* Top Controls Row: Header and Time Period */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 'var(--space-16px)',
-        }}
-      >
-        {/* Screen title (ADM079 #1) and the Manage accounts action (#18); design wave 4, Figma "Màn 5" */}
-        <div className="ad9-title">
-          <h1>{title ?? 'Dashboard'}</h1>
-          {actions}
-        </div>
+  const selectionText = (kind: 'Agency' | 'Provider', ids: string[], options: FilterAutocompleteOption[]) => {
+    if (ids.length === 0) return 'Tất cả'
+    if (ids.length === 1) return options.find(option => option.id === ids[0])?.name || `1 ${kind} đã chọn`
+    return `${ids.length} ${kind} đã chọn`
+  }
 
-        {/* Right Time Period Dropdown matching ADM079.png */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div
-            style={{
-              fontSize: 'var(--font-size-0p68rem)',
-              fontWeight: 600,
-              color: 'var(--palette-gray-46)',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              fontFamily: 'monospace, sans-serif',
-              marginBottom: 'var(--space-6px)',
-            }}
-          >
-            TIME PERIOD
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <select
-              value={currentPreset}
-              onChange={e => onFilterChange({ preset: e.target.value as TimePreset })}
-              style={{
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                background: 'var(--palette-white)',
-                border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                borderRadius: 'var(--radius-8)',
-                padding: 'var(--space-8px) var(--space-36px) var(--space-8px) var(--space-14px)',
-                fontSize: 'var(--font-size-0p85rem)',
-                fontWeight: 500,
-                color: 'var(--palette-gray-4)',
-                cursor: 'pointer',
-                boxShadow: '0 var(--space-1px) var(--space-2px) var(--alpha-black-2)',
-              }}
-            >
-              {PRESETS.map(p => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            {/* Down chevron icon */}
-            <span
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                pointerEvents: 'none',
-                color: 'var(--palette-gray-46)',
-                fontSize: 'var(--font-size-0p75rem)',
-              }}
-            >
-              ▼
-            </span>
-          </div>
-
-          {/* Subtitle Date Range display e.g. Aug 22 - Sep 20, 2026 */}
-          <div
-            style={{
-              fontSize: 'var(--font-size-0p72rem)',
-              color: 'var(--palette-gray-46)',
-              fontFamily: 'monospace, sans-serif',
-              marginTop: 'var(--space-4px)',
-            }}
-          >
-            {getDateRangeText()}
-          </div>
-        </div>
-      </div>
-
-      {/* Custom Date Picker Inputs when Custom is selected */}
-      {currentPreset === 'Custom' && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-12px)',
-            background: 'var(--palette-white)',
-            padding: 'var(--space-10px) var(--space-16px)',
-            borderRadius: 'var(--radius-8)',
-            border: 'var(--border-width-1) solid var(--palette-gray-90)',
-            width: 'fit-content',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)', fontSize: 'var(--font-size-0p8rem)' }}>
-            <label style={{ color: 'var(--palette-gray-46)', fontWeight: 500 }}>From:</label>
-            <input
-              type="date"
-              value={filters.startDate || ''}
-              onChange={e => onFilterChange({ startDate: e.target.value })}
-              style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4px) var(--space-8px)', fontSize: 'var(--font-size-0p8rem)' }}
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)', fontSize: 'var(--font-size-0p8rem)' }}>
-            <label style={{ color: 'var(--palette-gray-46)', fontWeight: 500 }}>To:</label>
-            <input
-              type="date"
-              value={filters.endDate || ''}
-              onChange={e => onFilterChange({ endDate: e.target.value })}
-              style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4px) var(--space-8px)', fontSize: 'var(--font-size-0p8rem)' }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Options Error Banner if option fetch fails */}
-      {optionsError && (
-        <div
-          style={{
-            background: 'var(--palette-red-97)',
-            border: 'var(--border-width-1) solid var(--palette-red-89)',
-            color: 'var(--palette-red-35)',
-            padding: 'var(--space-8px) var(--space-14px)',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--font-size-0p78rem)',
-          }}
-        >
-          ⚠️ Error loading filter options: {optionsError}
-        </div>
-      )}
-
-      {/* Scope and Entity Filter Bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-16px)',
-          flexWrap: 'wrap',
-          background: 'var(--palette-white)',
-          padding: 'var(--space-10px) var(--space-16px)',
-          borderRadius: 'var(--radius-10)',
-          border: 'var(--border-width-1) solid var(--palette-gray-90)',
-          position: 'relative',
-        }}
-      >
-        {/* Village Scope Selector (HDT selectable, UBND locked per BR-003) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)', minWidth: 'var(--space-220px)' }}>
-          <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-gray-46)', letterSpacing: '0.04em' }}>
-            VILLAGE:
-          </span>
-          {isVillageLocked ? (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 'var(--space-6px)',
-                background: 'var(--palette-gray-96)',
-                border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                padding: 'var(--space-5px) var(--space-12px)',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: 'var(--font-size-0p8rem)',
-                fontWeight: 600,
-                color: 'var(--palette-gray-4)',
-              }}
-              title="Assigned administrative village is locked for UBND"
-            >
-              <span>🔒</span>
-              <span>
-                {villageOptions.find(v => v.villageId === assignedVillageId)?.name || 'Assigned Village'}
-              </span>
-            </div>
-          ) : (
-            <select
-              value={filters.villageId || ''}
-              onChange={e => onFilterChange({ villageId: e.target.value || null })}
-              style={{
-                background: 'var(--palette-gray-99-2)',
-                border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                borderRadius: 'var(--radius-sm)',
-                padding: 'var(--space-5px) var(--space-12px)',
-                fontSize: 'var(--font-size-0p8rem)',
-                color: 'var(--palette-gray-4)',
-                cursor: 'pointer',
-              }}
-            >
-              <option value="">All Craft Villages (Platform-Wide)</option>
-              {villageOptions.map(v => (
-                <option key={v.villageId} value={v.villageId}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* PART 2: Combined Filter Box: Local Provider / Agency */}
-        <div ref={popoverRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-8px)' }}>
-          <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-gray-46)', letterSpacing: '0.04em' }}>
-            LOCAL PROVIDER / AGENCY:
-          </span>
-
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              border: 'var(--border-width-1) solid var(--palette-gray-90)',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--palette-gray-99-2)',
-              padding: 'var(--space-2px)',
-            }}
-          >
-            <button
-              type="button"
-              id="combined-filter-trigger"
-              onClick={() => setIsPopoverOpen(prev => !prev)}
-              aria-haspopup="dialog"
-              aria-expanded={isPopoverOpen}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                padding: 'var(--space-4px) var(--space-10px)',
-                fontSize: 'var(--font-size-0p8rem)',
-                fontWeight: (selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) ? 600 : 400,
-                color: (selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) ? 'var(--palette-gray-4)' : 'var(--palette-gray-34)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-8px)',
-                outline: 'none',
-              }}
-            >
-              <span>{getCombinedFilterLabel()}</span>
-              <span style={{ fontSize: 'var(--font-size-0p68rem)', color: 'var(--palette-gray-46)' }}>{isPopoverOpen ? '▲' : '▼'}</span>
-            </button>
-
-            {/* Clear button if any entity is selected */}
-            {(selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) && (
-              <button
-                type="button"
-                onClick={handleClearCombined}
-                title="Clear selections"
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--palette-gray-65)',
-                  padding: 'var(--space-2px) var(--space-6px)',
-                  cursor: 'pointer',
-                  fontSize: 'var(--font-size-0p75rem)',
-                  borderRadius: 'var(--radius-4)',
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Dropdown / Popover Container */}
-          {isPopoverOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 8px)',
-                left: 0,
-                zIndex: 60,
-                background: 'var(--palette-white)',
-                border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                borderRadius: 'var(--radius-10)',
-                padding: 'var(--space-16px)',
-                width: 'var(--space-420px)',
-                boxShadow: '0 var(--space-10px) var(--space-25px) -5px var(--alpha-black-10), 0 var(--space-8px) var(--space-10px) -6px var(--alpha-black-5)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-12px)',
-              }}
-            >
-              {/* Popover Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: 'var(--font-size-0p88rem)', fontWeight: 700, color: 'var(--palette-gray-4)' }}>
-                    Select Provider or Agency
-                  </h4>
-                  <p style={{ margin: 'var(--space-2px) 0 0 0', fontSize: 'var(--font-size-0p72rem)', color: 'var(--palette-gray-46)' }}>
-                    Mutually exclusive: select multiple within one category.
-                  </p>
-                </div>
-
-                {(selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) && (
-                  <button
-                    type="button"
-                    onClick={handleClearCombined}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--palette-red-60)',
-                      fontSize: 'var(--font-size-0p74rem)',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      padding: 'var(--space-2px) var(--space-6px)',
-                    }}
-                  >
-                    Clear All
-                  </button>
-                )}
-              </div>
-
-              {/* Mutual Exclusion Switch Confirmation Warning */}
-              {switchDialog && (
-                <div
-                  style={{
-                    background: 'var(--palette-amber-96)',
-                    border: 'var(--border-width-1) solid var(--palette-amber-77)',
-                    borderRadius: 'var(--radius-8)',
-                    padding: 'var(--space-12px)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--space-8px)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-6px)' }}>
-                    <span style={{ fontSize: 'var(--font-size-0p9rem)' }}>⚠️</span>
-                    <span style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-orange-31)', lineHeight: 1.4 }}>
-                      <strong>Mutually Exclusive Selection:</strong> You currently have {switchDialog.activeCount} {switchDialog.activeCategory} selected. You cannot select {switchDialog.targetCategory} simultaneously.
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-8px)' }}>
-                    <button
-                      type="button"
-                      onClick={() => setSwitchDialog(null)}
-                      style={{
-                        background: 'var(--palette-white)',
-                        border: 'var(--border-width-1) solid var(--palette-gray-84)',
-                        borderRadius: 'var(--radius-4)',
-                        padding: 'var(--space-3px) var(--space-8px)',
-                        fontSize: 'var(--font-size-0p72rem)',
-                        cursor: 'pointer',
-                        color: 'var(--palette-blue-27-2)',
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmSwitch}
-                      style={{
-                        background: 'var(--palette-orange-37)',
-                        color: 'var(--palette-white)',
-                        border: 'none',
-                        borderRadius: 'var(--radius-4)',
-                        padding: 'var(--space-3px) var(--space-10px)',
-                        fontSize: 'var(--font-size-0p72rem)',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Clear & Switch
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Category 1: Local Provider Accordion Row */}
-              <div
-                style={{
-                  border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                  borderRadius: 'var(--radius-8)',
-                  background: selectedProviderIds.length > 0 ? 'var(--palette-green-97)' : 'var(--palette-gray-98)',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Accordion Row Header */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: 'var(--space-10px) var(--space-14px)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)' }}>
-                    <span style={{ fontSize: 'var(--font-size-0p82rem)', fontWeight: 600, color: 'var(--palette-gray-4)' }}>
-                      Local Provider
-                    </span>
-                    {selectedProviderIds.length > 0 && (
-                      <span
-                        style={{
-                          fontSize: 'var(--font-size-0p7rem)',
-                          fontWeight: 600,
-                          background: 'var(--palette-green-93)',
-                          color: 'var(--palette-green-29)',
-                          padding: 'var(--space-1px) var(--space-6px)',
-                          borderRadius: 'var(--radius-10)',
-                        }}
-                      >
-                        {selectedProviderIds.length} active
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Accessible Plus / Minus Expansion Control */}
-                  <button
-                    type="button"
-                    aria-expanded={isProviderExpanded}
-                    aria-label="Toggle Local Provider category"
-                    onClick={() => setIsProviderExpanded(prev => !prev)}
-                    style={{
-                      background: 'var(--palette-white)',
-                      border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                      borderRadius: 'var(--radius-4)',
-                      width: '24px',
-                      height: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 'var(--font-size-0p85rem)',
-                      fontWeight: 700,
-                      color: 'var(--palette-gray-4)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {isProviderExpanded ? '−' : '+'}
-                  </button>
-                </div>
-
-                {/* Expanded Local Provider Checkbox List */}
-                {isProviderExpanded && (
-                  <div
-                    style={{
-                      borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
-                      background: 'var(--palette-white)',
-                      padding: 'var(--space-12px) var(--space-14px)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 'var(--space-8px)',
-                      maxHeight: 'var(--space-200px)',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {/* Search and Clear Sub-bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-8px)' }}>
-                      <input
-                        type="text"
-                        placeholder="Search providers..."
-                        value={providerSearch}
-                        onChange={e => setProviderSearch(e.target.value)}
-                        style={{
-                          flex: 1,
-                          fontSize: 'var(--font-size-0p75rem)',
-                          padding: 'var(--space-4px) var(--space-8px)',
-                          border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                          borderRadius: 'var(--radius-4)',
-                        }}
-                      />
-                      {selectedProviderIds.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleClearProviders}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--palette-gray-46)',
-                            fontSize: 'var(--font-size-0p7rem)',
-                            textDecoration: 'underline',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Providers List */}
-                    {loadingOptions ? (
-                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6px) 0' }}>
-                        Loading providers...
-                      </div>
-                    ) : filteredProviders.length === 0 ? (
-                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6px) 0' }}>
-                        No local providers available in current scope.
-                      </div>
-                    ) : (
-                      filteredProviders.map(p => {
-                        const isChecked = selectedProviderIds.includes(p.id)
-                        return (
-                          <label
-                            key={p.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 'var(--space-8px)',
-                              fontSize: 'var(--font-size-0p78rem)',
-                              color: 'var(--palette-gray-4)',
-                              cursor: 'pointer',
-                              padding: 'var(--space-3px) 0',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleToggleProvider(p.id)}
-                              style={{ cursor: 'pointer' }}
-                            />
-                            <span>{p.name}</span>
-                          </label>
-                        )
-                      })
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Category 2: Tour Agency Accordion Row */}
-              <div
-                style={{
-                  border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                  borderRadius: 'var(--radius-8)',
-                  background: selectedAgencyIds.length > 0 ? 'var(--palette-green-97)' : 'var(--palette-gray-98)',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Accordion Row Header */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: 'var(--space-10px) var(--space-14px)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)' }}>
-                    <span style={{ fontSize: 'var(--font-size-0p82rem)', fontWeight: 600, color: 'var(--palette-gray-4)' }}>
-                      Agency
-                    </span>
-                    {selectedAgencyIds.length > 0 && (
-                      <span
-                        style={{
-                          fontSize: 'var(--font-size-0p7rem)',
-                          fontWeight: 600,
-                          background: 'var(--palette-green-93)',
-                          color: 'var(--palette-green-29)',
-                          padding: 'var(--space-1px) var(--space-6px)',
-                          borderRadius: 'var(--radius-10)',
-                        }}
-                      >
-                        {selectedAgencyIds.length} active
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Accessible Plus / Minus Expansion Control */}
-                  <button
-                    type="button"
-                    aria-expanded={isAgencyExpanded}
-                    aria-label="Toggle Agency category"
-                    onClick={() => setIsAgencyExpanded(prev => !prev)}
-                    style={{
-                      background: 'var(--palette-white)',
-                      border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                      borderRadius: 'var(--radius-4)',
-                      width: '24px',
-                      height: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 'var(--font-size-0p85rem)',
-                      fontWeight: 700,
-                      color: 'var(--palette-gray-4)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {isAgencyExpanded ? '−' : '+'}
-                  </button>
-                </div>
-
-                {/* Expanded Agency Checkbox List */}
-                {isAgencyExpanded && (
-                  <div
-                    style={{
-                      borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
-                      background: 'var(--palette-white)',
-                      padding: 'var(--space-12px) var(--space-14px)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 'var(--space-8px)',
-                      maxHeight: 'var(--space-200px)',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {/* Search and Clear Sub-bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-8px)' }}>
-                      <input
-                        type="text"
-                        placeholder="Search agencies..."
-                        value={agencySearch}
-                        onChange={e => setAgencySearch(e.target.value)}
-                        style={{
-                          flex: 1,
-                          fontSize: 'var(--font-size-0p75rem)',
-                          padding: 'var(--space-4px) var(--space-8px)',
-                          border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                          borderRadius: 'var(--radius-4)',
-                        }}
-                      />
-                      {selectedAgencyIds.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleClearAgencies}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--palette-gray-46)',
-                            fontSize: 'var(--font-size-0p7rem)',
-                            textDecoration: 'underline',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Agencies List */}
-                    {loadingOptions ? (
-                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6px) 0' }}>
-                        Loading agencies...
-                      </div>
-                    ) : filteredAgencies.length === 0 ? (
-                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6px) 0' }}>
-                        No tour agencies available in current scope.
-                      </div>
-                    ) : (
-                      filteredAgencies.map(a => {
-                        const isChecked = selectedAgencyIds.includes(a.id)
-                        return (
-                          <label
-                            key={a.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 'var(--space-8px)',
-                              fontSize: 'var(--font-size-0p78rem)',
-                              color: 'var(--palette-gray-4)',
-                              cursor: 'pointer',
-                              padding: 'var(--space-3px) 0',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleToggleAgency(a.id)}
-                              style={{ cursor: 'pointer' }}
-                            />
-                            <span>{a.name}</span>
-                          </label>
-                        )
-                      })
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Reset Filters action */}
-        {(selectedAgencyIds.length > 0 || selectedProviderIds.length > 0 || (filters.villageId && !isVillageLocked)) && (
-          <button
-            type="button"
-            onClick={() => {
-              onFilterChange({
-                agencyId: null,
-                agencyIds: [],
-                providerId: null,
-                providerIds: [],
-                villageId: isVillageLocked ? assignedVillageId : null,
-              })
-              setSwitchDialog(null)
-            }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--palette-gray-46)',
-              fontSize: 'var(--font-size-0p75rem)',
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              marginLeft: 'auto',
-            }}
-          >
-            Reset Filters
+  // Agency and Provider boxes keep the existing rule: one category at a time, switching asks first.
+  const entityBox = (kind: 'Agency' | 'Provider') => {
+    const isAgency = kind === 'Agency'
+    const ids = isAgency ? selectedAgencyIds : selectedProviderIds
+    const options = isAgency ? agencies : providers
+    const filtered = isAgency ? filteredAgencies : filteredProviders
+    const search = isAgency ? agencySearch : providerSearch
+    const setSearch = isAgency ? setAgencySearch : setProviderSearch
+    const toggle = isAgency ? handleToggleAgency : handleToggleProvider
+    const clear = isAgency ? handleClearAgencies : handleClearProviders
+    const open = openBox === kind
+    const dialogHere = switchDialog && (switchDialog.targetCategory === 'Agency') === isAgency
+    const otherLabel = (category: string) => category === 'Agency' ? 'Agency' : 'Provider'
+    return (
+      <div className="ad9-field">
+        <span className="ad9-field__label" id={`ad9-${kind}-label`}>{kind}</span>
+        <div className="ad9-picker">
+          <button type="button" className={`ad9-input ad9-input--button combined-filter-trigger${ids.length ? ' is-set' : ''}`} aria-haspopup="listbox" aria-expanded={open} aria-labelledby={`ad9-${kind}-label ad9-${kind}-value`}
+            onClick={() => { setOpenBox(open ? null : kind); setSwitchDialog(null) }}>
+            <span id={`ad9-${kind}-value`}>{selectionText(kind, ids, options)}</span>
+            <ChevronDown size={18} aria-hidden="true" />
           </button>
+          {ids.length > 0 && <button type="button" className="ad9-clear" aria-label={`Bỏ chọn ${kind}`} onClick={clear}>✕</button>}
+        </div>
+        {open && (
+          <div className="ad9-pop" role="dialog" aria-label={`Chọn ${kind}`}>
+            {dialogHere && switchDialog && (
+              <div className="ad9-switch" role="alertdialog" aria-label="Đổi nhóm bộ lọc">
+                <p>Mỗi lần chỉ lọc theo một nhóm. Đang chọn {switchDialog.activeCount} {otherLabel(switchDialog.activeCategory)}; chọn {kind} sẽ bỏ các lựa chọn đó.</p>
+                <div>
+                  <button type="button" className="ad9-btn ad9-btn--small" onClick={() => setSwitchDialog(null)}>Giữ lựa chọn</button>
+                  <button type="button" className="ad9-btn ad9-btn--small ad9-btn--primary" onClick={handleConfirmSwitch}>Chuyển sang {kind}</button>
+                </div>
+              </div>
+            )}
+            <input type="search" className="ad9-input ad9-input--search" placeholder={`Tìm ${kind}…`} aria-label={`Tìm ${kind}`} value={search} onChange={event => setSearch(event.target.value)} />
+            {loadingOptions ? <p className="ad9-pop__note">Đang tải…</p>
+              : filtered.length === 0 ? <p className="ad9-pop__note">Không có kết quả</p>
+              : <ul role="listbox" aria-multiselectable="true" aria-label={kind}>{filtered.map(option => (
+                <li key={option.id}><label><input type="checkbox" checked={ids.includes(option.id)} onChange={() => toggle(option.id)} /> {option.name}</label></li>
+              ))}</ul>}
+          </div>
         )}
       </div>
+    )
+  }
+
+  const hasReset = selectedAgencyIds.length > 0 || selectedProviderIds.length > 0 || Boolean(filters.villageId && !isVillageLocked)
+  const lockedName = villageOptions.find(v => v.villageId === assignedVillageId)?.name || 'Làng được giao'
+
+  return (
+    <div className="ad9-filterbar">
+      {/* Screen title (ADM079 #1) and the actions (#17 Apply filters, #18 Manage accounts) */}
+      <div className="ad9-title">
+        <h1>{title ?? 'Dashboard'}</h1>
+        {actions}
+      </div>
+
+      {/* Filters #2–#9: Thời gian · Làng · Agency · Provider (Figma "Màn 5") */}
+      <div className="ad9-filters ad9-glass" ref={popoverRef}>
+        <div className="ad9-field">
+          <label className="ad9-field__label" htmlFor="ad9-period">Thời gian</label>
+          <span className="ad9-select">
+            <select id="ad9-period" className="ad9-input" value={currentPreset} onChange={e => onFilterChange({ preset: e.target.value as TimePreset })}>
+              {PRESETS.map(preset => <option key={preset} value={preset}>{PRESET_LABEL[preset]}</option>)}
+            </select>
+            <ChevronDown size={18} aria-hidden="true" />
+          </span>
+          <span className="ad9-field__hint">{getDateRangeText()}</span>
+          {currentPreset === 'Custom' && (
+            <div className="ad9-dates">
+              <label>Từ ngày<input type="date" className="ad9-input" value={filters.startDate || ''} onChange={e => onFilterChange({ startDate: e.target.value })} /></label>
+              <label>Đến ngày<input type="date" className="ad9-input" value={filters.endDate || ''} onChange={e => onFilterChange({ endDate: e.target.value })} /></label>
+            </div>
+          )}
+        </div>
+
+        <div className="ad9-field">
+          <label className="ad9-field__label" htmlFor="ad9-village">Làng</label>
+          {isVillageLocked ? (
+            <>
+              <span id="ad9-village" className="ad9-input ad9-input--locked" aria-describedby="ad9-village-hint">
+                <span>{lockedName}</span><Lock size={18} aria-hidden="true" />
+              </span>
+              <span className="ad9-field__hint" id="ad9-village-hint">Bị khoá theo tài khoản UBND</span>
+            </>
+          ) : (
+            <span className="ad9-select">
+              <select id="ad9-village" className="ad9-input" value={filters.villageId || ''} onChange={e => onFilterChange({ villageId: e.target.value || null })}>
+                <option value="">Tất cả các làng</option>
+                {villageOptions.map(v => <option key={v.villageId} value={v.villageId}>{v.name}</option>)}
+              </select>
+              <ChevronDown size={18} aria-hidden="true" />
+            </span>
+          )}
+        </div>
+
+        {entityBox('Agency')}
+        {entityBox('Provider')}
+      </div>
+
+      {optionsError && <p className="ad9-alert" role="alert">Không tải được danh sách bộ lọc: {optionsError}</p>}
+      {hasReset && (
+        <button
+          type="button"
+          className="ad9-reset"
+          onClick={() => {
+            onFilterChange({
+              agencyId: null,
+              agencyIds: [],
+              providerId: null,
+              providerIds: [],
+              villageId: isVillageLocked ? assignedVillageId : null,
+            })
+            setSwitchDialog(null)
+          }}
+        >
+          Xoá bộ lọc
+        </button>
+      )}
     </div>
   )
 }

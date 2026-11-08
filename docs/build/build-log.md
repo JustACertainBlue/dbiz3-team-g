@@ -1033,6 +1033,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 74: 08/11 Claude Code + human — #58 HDT review reports the email delivery it actually made (`fix/58-review-email-status`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (item 7, "if time") |
+| Cause | `src/app/admin/agencies/page.tsx` always showed "Email chưa được gửi…" and `reviewAgency` always stored `notifications.email_delivery_status = 'Fail'`, even when the Request More Information edit link was handed to the dev-outbox adapter |
+| Interpretation | spec-AUT FR-018 §5.1 `notification_status.email: Enum[Success, Fail]`; open question #13 says all three decisions are notified by email + in-app. So: `Success` when the delivery adapter took the email, `Fail` otherwise. Approve / Reject send no email today and stay `Fail`. The page shows the API's `email_delivery_status` ("Dev outbox" → written to the test outbox, not real email) |
+| Tests first | `tests/unit/aut-review-email-status.test.ts` (4): RMI with an adapter → result "Dev outbox", notification Success, notice does not say "not sent" (red before, with a helper that returned the old hard-coded text); no email service → "Not configured", Fail, notice says not sent; Approve → Fail; unknown status never claims delivery |
+| Fix | `notifications.email_delivery_status = delivered ? 'Success' : 'Fail'`; new client-safe `src/lib/auth/review-notice.ts` used by the page |
+| Mutation (foreground) | 4/4 killed |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped). Not clicked in the UI (the page only calls `reviewNotice` with the API field) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

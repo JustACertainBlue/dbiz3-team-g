@@ -61,7 +61,7 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
       registration.updated_at = now
     } else throw new Error('INVALID_REVIEW')
     table('agency_review_records').push({ review_id: randomUUID(), registration_request_id: kind === 'registration' ? id : '', registration_version_no: version, major_change_id: kind === 'change' ? id : '', hdt_user_id: session.userId!, decision, comments: comment.trim(), decided_at: now })
-    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: recipient, event_type: 'Registration Reviewed', source_type: kind === 'change' ? 'AgencyMajorChange' : 'AgencyRegistration', source_id: id, payload: JSON.stringify({ decision, comment }), created_at: now, read_at: '', email_delivery_status: 'Fail' })
+    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: recipient, event_type: 'Registration Reviewed', source_type: kind === 'change' ? 'AgencyMajorChange' : 'AgencyRegistration', source_id: id, payload: JSON.stringify({ decision, comment }), created_at: now, read_at: '', email_delivery_status: delivered ? 'Success' : 'Fail' })
     table('audit_logs').push({ audit_id: randomUUID(), actor_user_id: session.userId!, action: 'REVIEW_AGENCY', target_type: kind, target_id: id, occurred_at: now, change_or_result: JSON.stringify({ decision, comment }) })
     return { success: true, email_delivery_status: delivered ? 'Dev outbox' : 'Not configured', in_app_status: 'Success' }
   }))

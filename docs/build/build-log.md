@@ -1033,6 +1033,15 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 81: 08/11 Claude Code + human — spec: Vietnamese display labels for Booking statuses (`docs/spec-status-labels-vi`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); lines approved by linhkhanh-vu in the prompt (design wave 2 prerequisite: Design System v9, Figma Status Badge) |
+| Spec change | `docs/spec/specs/spec-BKG.md:450` and `:539` (#49): the chat template uses `{status_label}`, the Vietnamese display label of the canonical status (On hold → Tạm giữ, Booked → Đã đặt, Completed → Hoàn tất, Cancelled → Đã huỷ); stored status stays canonical. `docs/spec/screens/screen-spec-DSH018.md:80`: badges show the canonical statuses through these labels; stored and API values stay canonical |
+| Snapshots | `specs/004-bkg-core`, `011-bkg-manage`, `012-bkg-list`, `013-bkg-schedule` refreshed with `start_feature.py --use` + `--refresh`, each `--check` OK; active feature set back to `specs/010-aut-manage-accounts` (`--check` OK) |
+| Code | None in this PR; the label table, badges and the template change come in the design wave 2 PR |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

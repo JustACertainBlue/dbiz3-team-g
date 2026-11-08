@@ -1043,6 +1043,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run build` OK; `npm run lint:tokens` warns 1195 colours in 54 files (exit 0) |
 | Existing tests changed | None |
 
+### Entry 71: 08/11 Claude Code + human — Design tokens applied to shared components and five main screens (#114–#117, #119, #120)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (PR 2–n of the design-system preparation, one area per PR, straight into main, not merged during the evening test session) |
+| Method | A scratchpad tool replaces every hard-coded colour, font size and spacing value (CSS files, `<style jsx>` / `*Styles` strings, React style objects) with the `tokens.css` primitive of exactly the same value, looked up in `tokens.css` itself. Colours in SVG `fill=`/`stroke=` attributes are kept (`var()` does not work there). Each branch contains the #113 commit (needs `tokens.css`); merge #113 first |
+| PRs | #114 shared components (RoleSwitcher — imported nowhere, SessionHeader, MediaImage, FilterPanel, AdminSidebar; 290 lines) · #115 `/login` (25 tokens) · #116 `/explore` + Experience detail (`explore.css`, 167 lines; the TSX files had no literals) · #117 BKG135 `bookingDetailStyles` (22 tokens; shared by the other BKG screens) · #119 `/messages` (43 tokens) · #120 admin dashboard (192 lines; 3 SVG attribute colours kept) |
+| Visual check (each PR) | Same procedure as #113: 7 pages × desktop 1440 + mobile 390, `main` and the branch shot twice each back-to-back, images masked; same = a pixel-identical before/after pair and identical computed styles of every element. All six PRs 14/14 identical. Noise handled: one sub-pixel width (242.484 vs 242.5 px) on Explore mobile in #116 and one Explore-mobile pixel run in #119 (page untouched; an interleaved re-shoot was identical) |
+| Checks (each branch) | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run build` OK |
+| Not done (by decision) | Other screens; numeric values that are not colours, font sizes or spacing (widths, radii, borders) stay literal; making `lint:tokens` blocking |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

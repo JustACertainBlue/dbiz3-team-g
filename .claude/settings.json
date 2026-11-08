@@ -3,7 +3,6 @@
     "deny": [
       "Bash(git reset --hard:*)",
       "Bash(git clean:*)",
-      "Bash(git merge:*)",
       "Read(./.env)",
       "Read(./.env.local)"
     ],

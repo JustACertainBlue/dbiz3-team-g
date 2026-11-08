@@ -1086,6 +1086,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Visual check | Shot tool, dev server on DEV, 7 pages × 1440/390, base twice then branch twice: 14/14 identical (pixels and computed styles) |
 | Checks | `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+### Entry 80: 08/11 Claude Code + human — design wave 1 PR 1b: Design System v9 light tokens and fonts (`design/tokens-v9`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (step 0 approved 08/11; PR 1b on top of PR 1a #134) |
+| Change | `src/app/tokens.css`: the v9 §10 light-mode block (224 tokens: brand/neutral/accent, text, surface, border, success/warning/danger/info, 52 business-status tokens, `--space-1…16` 4 px scale, radius, shadow, typography scale, breakpoints, focus ring, motion, icon sizes, glass/hero/mesh, layout); existing semantic tokens now point at v9 (`--color-primary` terracotta → `brand-primary` green, `--font-sans/--font-serif` → `--font-body/--font-heading`, …); the Google Fonts `@import` and `<link>` removed. `src/app/fonts.ts` (new): Lora, Inter, Pacifico through `next/font/google` with the `vietnamese` subset; `layout.tsx` puts their variables on `<html>`. Primitives and the admin donut status tokens unchanged (status colours are wave 2) |
+| Contrast (WCAG AA, computed) | 16 text/UI pairs of the remapped semantic tokens pass (text 4.75–16.4:1, input border 3.54:1); the first focus ring (`brand-200`, 1.38:1) failed and now uses `border.focus` (`brand-500`) |
+| Visual check | Shot tool, 7 pages × 1440/390, PR 1a branch vs this branch: all 14 differ as intended (font Inter/Lora, primary colour); side-by-side page with the Figma frames kept outside the repo. Most screens still use primitive colours, so their look changes in waves 3–4 |
+| Checks | `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run lint` OK; `npm run build` OK (next/font downloads the fonts at build time) |
+| Not in scope | Undefined variables already used by the AUT password pages (`--primary`, `--card-bg`, … with inline fallbacks, from PR #11) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

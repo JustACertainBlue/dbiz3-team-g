@@ -15,6 +15,15 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
+        return 'var(--color-status-completed)' // Black
+      case 'Booked':
+        return 'var(--color-status-booked)' // Dark gray
+      case 'Cancelled':
+      case 'Canceled':
+        return 'var(--color-status-cancelled)' // Medium gray
+      case 'On hold':
+      case 'On Hold':
+        return 'var(--color-status-on-hold)' // Light gray
         return 'var(--palette-gray-10)' // Black
       case 'Booked':
         return 'var(--palette-gray-34)' // Dark gray
@@ -114,7 +123,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
               cy={center}
               r={radius}
               fill="transparent"
-              stroke="#f4f4f5"
+              style={{ stroke: 'var(--color-chart-track)' }}
               strokeWidth={strokeWidth}
             />
 
@@ -127,12 +136,11 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
                   cy={center}
                   r={radius}
                   fill="transparent"
-                  stroke={seg.color}
                   strokeWidth={strokeWidth}
                   strokeDasharray={seg.strokeDasharray}
                   strokeDashoffset={seg.strokeDashoffset}
                   transform={`rotate(-90 ${center} ${center})`}
-                  style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                  style={{ stroke: seg.color, transition: 'stroke-dasharray 0.5s ease' }}
                 />
               ))}
 
@@ -141,7 +149,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
               x={center}
               y={center - 4}
               textAnchor="middle"
-              fill="#71717a"
+              style={{ fill: 'var(--palette-gray-46)' }}
               fontSize="10px"
               fontWeight="600"
               letterSpacing="0.08em"
@@ -152,7 +160,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
               x={center}
               y={center + 18}
               textAnchor="middle"
-              fill="#09090b"
+              style={{ fill: 'var(--palette-gray-4)' }}
               fontSize="20px"
               fontWeight="800"
               letterSpacing="-0.02em"

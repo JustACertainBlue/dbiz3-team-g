@@ -1033,6 +1033,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 67: 08/11 Claude Code + human — #62 test: self-registration is Tour Agency only (`test/62-self-registration-agency-only`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan #55–#63; one PR per issue, not merged during the evening test session) |
+| Tests | `tests/unit/aut-self-registration-agency-only.test.ts` (4) for spec-AUT BR-001 / US-1 AS-3: completed self-registration → Tour_Agency, Pending Approval, Agency profile, no Provider profile; role fields smuggled into the request are ignored; REG003 form has no role choice; a Guest cannot create a Provider account through `POST /api/auth/users/create` (nothing written). Green at once (behaviour correct) |
+| Mutation (foreground) | Killed: registration creates Local_Provider; form offers a Local Provider role; account-creation guard + village check removed together (503 instead of 401/403). Survived as equivalent: role read from the stored request (the version row copies named fields only, so a role can never reach it); account-creation guard alone (the Provider village check still refuses a Guest) |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped) |
+| Product code changed | None |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

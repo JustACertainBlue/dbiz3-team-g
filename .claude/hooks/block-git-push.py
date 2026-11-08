@@ -1,10 +1,20 @@
-"""PreToolUse hook for the Bash tool: the agent may push feature branches, nothing more.
+"""PreToolUse hook for the Bash tool: the agent may push feature branches and bring main into them.
 
 Rule (human decision 2026-11-05; a recorded deviation from constitution V, build log
 section 4 row 46): the agent may push a feature branch to a named remote and open PRs.
 It never pushes to main, never force-pushes, never deletes remote refs, never pushes
-tags, --mirror or --all, and never merges (`gh pr merge`, or the merge API). The human
-merges.
+tags, --mirror or --all, and never merges a pull request (`gh pr merge`, or the merge API).
+The human merges.
+
+Second rule (human decision 2026-11-08, build log section 4 row 78): to resolve conflicts
+between open PRs without force-pushing, the agent may run `git merge origin/main` while a
+feature branch is checked out, then push that branch normally. Any other `git merge` is
+blocked: on main or a detached HEAD, of any other ref, with other options, or inside a
+compound command (`git switch main && git merge ...` would merge into main after the check).
+Allowed form, as the whole command (shell redirections allowed):
+
+  git [-C <dir>] [--no-pager] merge [--no-edit|--no-ff|--ff-only|--stat|--no-stat|-q|-v|...] origin/main
+  git [-C <dir>] [--no-pager] merge --abort | --continue | --quit
 
 A permission prefix rule only sees commands that start with `git push`, so wrappers
 (`perl -e 'alarm 120; exec @ARGV' git push`, `sh -c "..."`, `a && git push`,
@@ -33,7 +43,8 @@ import sys
 MARKER = "Blocked by .claude/hooks/block-git-push.py"
 RULE = (
     "the agent may push only a feature branch to a named remote "
-    "(never main, force, delete, tags, --mirror or --all) and never merges; ask the human"
+    "(never main, force, delete, tags, --mirror or --all), may run only `git merge origin/main` "
+    "as a single command on a feature branch, and never merges a pull request; ask the human"
 )
 PROTECTED_BRANCHES = {"main"}
 
@@ -50,6 +61,10 @@ GIT_PUSH = re.compile(
     rf"""{_LEAD}git(?:\.exe)?["']?(?P<opts>(?:\s+{_OPTION})*)\s+["']?push(?=$|[\s;&|)`"'])""",
     re.IGNORECASE | re.MULTILINE,
 )
+GIT_MERGE = re.compile(
+    rf"""{_LEAD}git(?:\.exe)?["']?(?P<opts>(?:\s+{_OPTION})*)\s+["']?merge(?=$|[\s;&|)`"'])""",
+    re.IGNORECASE | re.MULTILINE,
+)
 GH_MERGE = re.compile(
     rf"""{_LEAD}gh(?:\.exe)?\s+(?:pr\s+merge\b|api\b[^;&|\n]*/merge\b)""",
     re.IGNORECASE | re.MULTILINE,
@@ -60,6 +75,12 @@ SAFE_LONG_FLAGS = {
     "--set-upstream", "--dry-run", "--verbose", "--quiet",
     "--progress", "--no-progress", "--no-verify", "--porcelain",
 }
+MERGE_SOURCE = "origin/main"
+SAFE_MERGE_FLAGS = {
+    "--no-edit", "--no-ff", "--ff", "--ff-only", "--stat", "--no-stat", "--log", "--no-log",
+    "--quiet", "--verbose", "--progress", "--no-progress", "-q", "-v",
+}
+MERGE_CONTROL = {"--abort", "--continue", "--quit"}
 REMOTE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 # Shell redirections (`2>&1`, `>&2`, `&>log`, `> log`, `>>log`, `2>/dev/null`, `< in`) are not push
 # arguments; they are removed before the arguments are split at shell operators.
@@ -167,12 +188,62 @@ def check_push(command, match, base):
         _check_refspec(refspec, directory)
 
 
+def _current_branch(directory):
+    try:
+        result = subprocess.run(
+            ["git", "-C", directory, "symbolic-ref", "--quiet", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        raise Unsafe("cannot run git to read the current branch")
+    if result.returncode != 0:
+        raise Unsafe("merge on a detached HEAD")
+    return result.stdout.strip()
+
+
+def check_merge(command, match, base):
+    # The branch check below reads HEAD before the command runs, so the merge must be the whole
+    # command: anything chained before it (`git switch main && git merge ...`) could move HEAD.
+    if command[: match.start()].strip() or match.group("lead").strip():
+        raise Unsafe("git merge must be the whole command")
+    rest = REDIRECT.sub(" ", command[match.end():])
+    if re.search(r"[;&|\n$`()<>]", rest):
+        raise Unsafe("git merge must be the whole command")
+    directory = _git_dir(match.group("opts"), base)
+    try:
+        words = shlex.split(rest)
+    except ValueError:
+        raise Unsafe("cannot parse merge arguments")
+    flags = [word for word in words if word.startswith("-")]
+    positional = [word for word in words if not word.startswith("-")]
+    control = [flag for flag in flags if flag in MERGE_CONTROL]
+    if control:
+        if len(words) != 1:
+            raise Unsafe(f"merge {control[0]} takes no other argument")
+    else:
+        unknown = [flag for flag in flags if flag not in SAFE_MERGE_FLAGS]
+        if unknown:
+            raise Unsafe(f"merge option {unknown[0]}")
+        if positional != [MERGE_SOURCE]:
+            raise Unsafe(f"merge of {' '.join(positional) or 'nothing'} (only {MERGE_SOURCE})")
+    branch = _current_branch(directory)
+    if branch in PROTECTED_BRANCHES:
+        raise Unsafe(f"merge into {branch}")
+
+
 def blocked_reason(command, base):
     if GH_MERGE.search(command):
         return "merging a pull request"
     for match in GIT_PUSH.finditer(command):
         try:
             check_push(command, match, base)
+        except Unsafe as problem:
+            return str(problem)
+    for match in GIT_MERGE.finditer(command):
+        try:
+            check_merge(command, match, base)
         except Unsafe as problem:
             return str(problem)
     return None

@@ -48,7 +48,7 @@ export default function RoleSwitcher() {
         zIndex: 1000,
         position: 'sticky',
         top: 0,
-        boxShadow: '0 var(--space-2) var(--space-8) var(--alpha-black-30)',
+        boxShadow: '0 var(--space-2px) var(--space-8px) var(--alpha-black-30)',
       }}
     >
       {/* Active Account Pill */}
@@ -67,7 +67,7 @@ export default function RoleSwitcher() {
                 ? 'var(--palette-red-35)'
                 : 'var(--palette-blue-35)',
             color: 'var(--palette-white)',
-            padding: 'var(--space-3) var(--space-10)',
+            padding: 'var(--space-3px) var(--space-10px)',
             borderRadius: 'var(--radius-3)',
             fontWeight: 800,
             textTransform: 'uppercase',
@@ -96,7 +96,7 @@ export default function RoleSwitcher() {
             background: role === 'LocalProvider' ? 'var(--palette-orange-43)' : 'var(--palette-blue-17)',
             color: role === 'LocalProvider' ? 'var(--palette-white)' : 'var(--palette-sky-84)',
             border: role === 'LocalProvider' ? 'var(--border-width-1) solid var(--palette-orange-53)' : 'var(--border-width-1) solid var(--palette-blue-27)',
-            padding: 'var(--space-3) var(--space-9)',
+            padding: 'var(--space-3px) var(--space-9px)',
             borderRadius: 'var(--radius-2)',
             fontSize: 'var(--font-size-0p72rem)',
             cursor: 'pointer',
@@ -113,7 +113,7 @@ export default function RoleSwitcher() {
             background: role === 'TourAgency' ? 'var(--palette-blue-25)' : 'var(--palette-blue-17)',
             color: role === 'TourAgency' ? 'var(--palette-white)' : 'var(--palette-sky-84)',
             border: role === 'TourAgency' ? 'var(--border-width-1) solid var(--palette-sky-60)' : 'var(--border-width-1) solid var(--palette-blue-27)',
-            padding: 'var(--space-3) var(--space-9)',
+            padding: 'var(--space-3px) var(--space-9px)',
             borderRadius: 'var(--radius-2)',
             fontSize: 'var(--font-size-0p72rem)',
             cursor: 'pointer',
@@ -130,7 +130,7 @@ export default function RoleSwitcher() {
             background: role === 'UBND' ? 'var(--palette-red-35)' : 'var(--palette-blue-17)',
             color: role === 'UBND' ? 'var(--palette-white)' : 'var(--palette-sky-84)',
             border: role === 'UBND' ? 'var(--border-width-1) solid var(--palette-red-71)' : 'var(--border-width-1) solid var(--palette-blue-27)',
-            padding: 'var(--space-3) var(--space-9)',
+            padding: 'var(--space-3px) var(--space-9px)',
             borderRadius: 'var(--radius-2)',
             fontSize: 'var(--font-size-0p72rem)',
             cursor: 'pointer',
@@ -143,7 +143,7 @@ export default function RoleSwitcher() {
         <button
           type="button"
           onClick={() => handleSelectRole('HDT')}
-          style={{ background: role === 'HDT' ? 'var(--palette-violet-50)' : 'var(--palette-blue-17)', color: 'var(--palette-white)', border: 'var(--border-width-1) solid var(--palette-violet-58)', padding: 'var(--space-3) var(--space-9)', borderRadius: 'var(--radius-2)', fontSize: 'var(--font-size-0p72rem)', cursor: 'pointer' }}
+          style={{ background: role === 'HDT' ? 'var(--palette-violet-50)' : 'var(--palette-blue-17)', color: 'var(--palette-white)', border: 'var(--border-width-1) solid var(--palette-violet-58)', padding: 'var(--space-3px) var(--space-9px)', borderRadius: 'var(--radius-2)', fontSize: 'var(--font-size-0p72rem)', cursor: 'pointer' }}
         >
           🏛️ HDT Admin
         </button>
@@ -155,7 +155,7 @@ export default function RoleSwitcher() {
             background: role === 'Guest' ? 'var(--palette-blue-35)' : 'var(--palette-blue-17)',
             color: role === 'Guest' ? 'var(--palette-white)' : 'var(--palette-sky-84)',
             border: role === 'Guest' ? 'var(--border-width-1) solid var(--palette-blue-65)' : 'var(--border-width-1) solid var(--palette-blue-27)',
-            padding: 'var(--space-3) var(--space-9)',
+            padding: 'var(--space-3px) var(--space-9px)',
             borderRadius: 'var(--radius-2)',
             fontSize: 'var(--font-size-0p72rem)',
             cursor: 'pointer',
@@ -210,7 +210,7 @@ export default function RoleSwitcher() {
         {role === 'TourAgency' && (
           <>
             <span style={{ color: 'var(--palette-sky-60)', fontWeight: 800, fontSize: 'var(--font-size-0p7rem)' }}>LUỒNG AGENCY:</span>
-            <Link href="/explore" style={{ color: 'var(--palette-teal-52)', textDecoration: 'none', fontWeight: 800, background: 'var(--palette-teal-16)', padding: 'var(--space-2) var(--space-7)', borderRadius: 'var(--radius-3)' }}>
+            <Link href="/explore" style={{ color: 'var(--palette-teal-52)', textDecoration: 'none', fontWeight: 800, background: 'var(--palette-teal-16)', padding: 'var(--space-2px) var(--space-7px)', borderRadius: 'var(--radius-3)' }}>
               🔍 KHÁM PHÁ (EXPLORE)
             </Link>
             <span style={{ color: 'var(--palette-blue-35)' }}>·</span>
@@ -244,7 +244,7 @@ export default function RoleSwitcher() {
         {role === 'UBND' && (
           <>
             <span style={{ color: 'var(--palette-red-71)', fontWeight: 800, fontSize: 'var(--font-size-0p7rem)' }}>LUỒNG ADMIN:</span>
-            <Link href="/admin" style={{ color: 'var(--palette-white)', textDecoration: 'none', fontWeight: 800, background: 'var(--palette-red-35)', padding: 'var(--space-2) var(--space-7)', borderRadius: 'var(--radius-3)' }}>📊 Dashboard (ADM079)</Link>
+            <Link href="/admin" style={{ color: 'var(--palette-white)', textDecoration: 'none', fontWeight: 800, background: 'var(--palette-red-35)', padding: 'var(--space-2px) var(--space-7px)', borderRadius: 'var(--radius-3)' }}>📊 Dashboard (ADM079)</Link>
             <span style={{ color: 'var(--palette-blue-35)' }}>·</span>
             <Link href="/admin/providers" style={{ color: 'var(--palette-white)', textDecoration: 'none', fontWeight: 800 }}>Provider review</Link>
             <span style={{ color: 'var(--palette-blue-35)' }}>·</span>
@@ -255,7 +255,7 @@ export default function RoleSwitcher() {
         )}
 
         {role === 'HDT' && (
-          <><span style={{ color: 'var(--palette-indigo-85)', fontWeight: 800, fontSize: 'var(--font-size-0p7rem)' }}>LUỒNG HDT:</span><Link href="/admin" style={{ color: 'var(--palette-white)', textDecoration: 'none', fontWeight: 800, background: 'var(--palette-violet-50)', padding: 'var(--space-2) var(--space-7)', borderRadius: 'var(--radius-3)' }}>📊 Dashboard (ADM079)</Link><span style={{ color: 'var(--palette-blue-35)' }}> · </span><Link href="/admin/providers" style={{ color: 'var(--palette-white)', textDecoration: 'none', fontWeight: 700 }}>Provider review</Link></>
+          <><span style={{ color: 'var(--palette-indigo-85)', fontWeight: 800, fontSize: 'var(--font-size-0p7rem)' }}>LUỒNG HDT:</span><Link href="/admin" style={{ color: 'var(--palette-white)', textDecoration: 'none', fontWeight: 800, background: 'var(--palette-violet-50)', padding: 'var(--space-2px) var(--space-7px)', borderRadius: 'var(--radius-3)' }}>📊 Dashboard (ADM079)</Link><span style={{ color: 'var(--palette-blue-35)' }}> · </span><Link href="/admin/providers" style={{ color: 'var(--palette-white)', textDecoration: 'none', fontWeight: 700 }}>Provider review</Link></>
         )}
 
         {/* LUỒNG 4: GUEST */}

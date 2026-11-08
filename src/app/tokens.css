@@ -3,7 +3,7 @@
  *
  * Two layers:
  *   1. Primitive: raw values only (palette, alpha colours, font sizes, spacing, corner radii, border widths),
- *      named after the value itself (--palette-<hue>-<HSL lightness %>, --font-size-<px|rem>, --space-<px|rem>,
+ *      named after the value itself (--palette-<hue>-<HSL lightness %>, --font-size-<px|rem>, --space-<n>px / --space-<n>rem,
  *      --radius-<px> / --radius-50pct, --border-width-<px>).
  *   2. Semantic: what components should use (--color-*, --radius-*, --shadow-*, --font-*). They point
  *      at primitives. When the designer delivers the token table, change the values here only.
@@ -301,62 +301,62 @@
   --font-size-2p25rem: 2.25rem;
 
   /* ---- Primitive: spacing (padding, margin, gap) ---- */
-  --space-1: 1px;
-  --space-2: 2px;
-  --space-3: 3px;
-  --space-4: 4px;
-  --space-5: 5px;
-  --space-6: 6px;
-  --space-7: 7px;
-  --space-8: 8px;
-  --space-9: 9px;
-  --space-10: 10px;
-  --space-11: 11px;
-  --space-12: 12px;
-  --space-13: 13px;
-  --space-14: 14px;
-  --space-15: 15px;
-  --space-16: 16px;
-  --space-17: 17px;
-  --space-18: 18px;
-  --space-19: 19px;
-  --space-20: 20px;
-  --space-21: 21px;
-  --space-22: 22px;
-  --space-23: 23px;
-  --space-24: 24px;
-  --space-25: 25px;
-  --space-26: 26px;
-  --space-27: 27px;
-  --space-28: 28px;
-  --space-29: 29px;
-  --space-30: 30px;
-  --space-31: 31px;
-  --space-32: 32px;
-  --space-33: 33px;
-  --space-34: 34px;
-  --space-35: 35px;
-  --space-36: 36px;
-  --space-37: 37px;
-  --space-38: 38px;
-  --space-40: 40px;
-  --space-42: 42px;
-  --space-43: 43px;
-  --space-45: 45px;
-  --space-48: 48px;
-  --space-50: 50px;
-  --space-54: 54px;
-  --space-55: 55px;
-  --space-60: 60px;
-  --space-64: 64px;
-  --space-70: 70px;
-  --space-80: 80px;
-  --space-110: 110px;
-  --space-200: 200px;
-  --space-220: 220px;
-  --space-350: 350px;
-  --space-420: 420px;
-  --space-520: 520px;
+  --space-1px: 1px;
+  --space-2px: 2px;
+  --space-3px: 3px;
+  --space-4px: 4px;
+  --space-5px: 5px;
+  --space-6px: 6px;
+  --space-7px: 7px;
+  --space-8px: 8px;
+  --space-9px: 9px;
+  --space-10px: 10px;
+  --space-11px: 11px;
+  --space-12px: 12px;
+  --space-13px: 13px;
+  --space-14px: 14px;
+  --space-15px: 15px;
+  --space-16px: 16px;
+  --space-17px: 17px;
+  --space-18px: 18px;
+  --space-19px: 19px;
+  --space-20px: 20px;
+  --space-21px: 21px;
+  --space-22px: 22px;
+  --space-23px: 23px;
+  --space-24px: 24px;
+  --space-25px: 25px;
+  --space-26px: 26px;
+  --space-27px: 27px;
+  --space-28px: 28px;
+  --space-29px: 29px;
+  --space-30px: 30px;
+  --space-31px: 31px;
+  --space-32px: 32px;
+  --space-33px: 33px;
+  --space-34px: 34px;
+  --space-35px: 35px;
+  --space-36px: 36px;
+  --space-37px: 37px;
+  --space-38px: 38px;
+  --space-40px: 40px;
+  --space-42px: 42px;
+  --space-43px: 43px;
+  --space-45px: 45px;
+  --space-48px: 48px;
+  --space-50px: 50px;
+  --space-54px: 54px;
+  --space-55px: 55px;
+  --space-60px: 60px;
+  --space-64px: 64px;
+  --space-70px: 70px;
+  --space-80px: 80px;
+  --space-110px: 110px;
+  --space-200px: 200px;
+  --space-220px: 220px;
+  --space-350px: 350px;
+  --space-420px: 420px;
+  --space-520px: 520px;
   --space-0p2rem: 0.2rem;
   --space-0p35rem: 0.35rem;
   --space-0p4rem: 0.4rem;

@@ -74,15 +74,15 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
         background: 'var(--palette-white)',
         borderRadius: 'var(--radius-md)',
         border: 'var(--border-width-1) solid var(--palette-gray-90)',
-        padding: 'var(--space-24)',
+        padding: 'var(--space-24px)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        boxShadow: '0 var(--space-1) var(--space-2) var(--alpha-black-3)',
+        boxShadow: '0 var(--space-1px) var(--space-2px) var(--alpha-black-3)',
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: 'var(--space-16)' }}>
+      <div style={{ marginBottom: 'var(--space-16px)' }}>
         <h3
           style={{
             fontSize: 'var(--font-size-1p125rem)',
@@ -99,7 +99,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
             fontSize: 'var(--font-size-0p78rem)',
             color: 'var(--palette-gray-46)',
             fontFamily: 'monospace, sans-serif',
-            margin: 'var(--space-4) 0 0 0',
+            margin: 'var(--space-4px) 0 0 0',
           }}
         >
           {totalBookings.toLocaleString()} total
@@ -112,7 +112,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 'var(--space-12) 0 var(--space-20) 0',
+          padding: 'var(--space-12px) 0 var(--space-20px) 0',
         }}
       >
         <div style={{ position: 'relative', width: `${size}px`, height: `${size}px` }}>
@@ -172,7 +172,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
       </div>
 
       {/* Legend Rows matching ADM079.png */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)', paddingTop: 'var(--space-8)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10px)', paddingTop: 'var(--space-8px)' }}>
         {sortedData.map(item => {
           const displayName = item.status === 'Cancelled' ? 'Canceled' : item.status === 'On hold' ? 'On Hold' : item.status
           return (
@@ -185,7 +185,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
                 fontSize: 'var(--font-size-0p8rem)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)' }}>
                 <span
                   style={{
                     width: '8px',
@@ -198,7 +198,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
                 <span style={{ color: 'var(--palette-gray-4)', fontWeight: 500 }}>{displayName}</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-16)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-16px)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--palette-gray-4)', minWidth: '40px', textAlign: 'right' }}>
                   {item.count.toLocaleString()}
                 </span>

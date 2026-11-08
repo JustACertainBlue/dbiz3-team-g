@@ -15,17 +15,26 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
-        return '#18181b' // Black
+        return 'var(--color-status-completed)' // Black
       case 'Booked':
-        return '#52525b' // Dark gray
+        return 'var(--color-status-booked)' // Dark gray
       case 'Cancelled':
       case 'Canceled':
-        return '#a1a1aa' // Medium gray
+        return 'var(--color-status-cancelled)' // Medium gray
       case 'On hold':
       case 'On Hold':
-        return '#e4e4e7' // Light gray
+        return 'var(--color-status-on-hold)' // Light gray
+        return 'var(--palette-gray-10)' // Black
+      case 'Booked':
+        return 'var(--palette-gray-34)' // Dark gray
+      case 'Cancelled':
+      case 'Canceled':
+        return 'var(--palette-gray-65)' // Medium gray
+      case 'On hold':
+      case 'On Hold':
+        return 'var(--palette-gray-90)' // Light gray
       default:
-        return '#71717a'
+        return 'var(--palette-gray-46)'
     }
   }
 
@@ -62,23 +71,23 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
   return (
     <div
       style={{
-        background: '#ffffff',
+        background: 'var(--palette-white)',
         borderRadius: '12px',
-        border: '1px solid #e4e4e7',
-        padding: '24px',
+        border: '1px solid var(--palette-gray-90)',
+        padding: 'var(--space-24)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+        boxShadow: '0 var(--space-1) var(--space-2) var(--alpha-black-3)',
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: '16px' }}>
+      <div style={{ marginBottom: 'var(--space-16)' }}>
         <h3
           style={{
-            fontSize: '1.125rem',
+            fontSize: 'var(--font-size-1p125rem)',
             fontWeight: 700,
-            color: '#09090b',
+            color: 'var(--palette-gray-4)',
             margin: 0,
             letterSpacing: '-0.01em',
           }}
@@ -87,10 +96,10 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
         </h3>
         <p
           style={{
-            fontSize: '0.78rem',
-            color: '#71717a',
+            fontSize: 'var(--font-size-0p78rem)',
+            color: 'var(--palette-gray-46)',
             fontFamily: 'monospace, sans-serif',
-            margin: '4px 0 0 0',
+            margin: 'var(--space-4) 0 0 0',
           }}
         >
           {totalBookings.toLocaleString()} total
@@ -103,7 +112,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: '12px 0 20px 0',
+          padding: 'var(--space-12) 0 var(--space-20) 0',
         }}
       >
         <div style={{ position: 'relative', width: `${size}px`, height: `${size}px` }}>
@@ -114,7 +123,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
               cy={center}
               r={radius}
               fill="transparent"
-              stroke="#f4f4f5"
+              style={{ stroke: 'var(--color-chart-track)' }}
               strokeWidth={strokeWidth}
             />
 
@@ -127,12 +136,11 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
                   cy={center}
                   r={radius}
                   fill="transparent"
-                  stroke={seg.color}
                   strokeWidth={strokeWidth}
                   strokeDasharray={seg.strokeDasharray}
                   strokeDashoffset={seg.strokeDashoffset}
                   transform={`rotate(-90 ${center} ${center})`}
-                  style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                  style={{ stroke: seg.color, transition: 'stroke-dasharray 0.5s ease' }}
                 />
               ))}
 
@@ -141,7 +149,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
               x={center}
               y={center - 4}
               textAnchor="middle"
-              fill="#71717a"
+              style={{ fill: 'var(--palette-gray-46)' }}
               fontSize="10px"
               fontWeight="600"
               letterSpacing="0.08em"
@@ -152,7 +160,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
               x={center}
               y={center + 18}
               textAnchor="middle"
-              fill="#09090b"
+              style={{ fill: 'var(--palette-gray-4)' }}
               fontSize="20px"
               fontWeight="800"
               letterSpacing="-0.02em"
@@ -164,7 +172,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
       </div>
 
       {/* Legend Rows matching ADM079.png */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)', paddingTop: 'var(--space-8)' }}>
         {sortedData.map(item => {
           const displayName = item.status === 'Cancelled' ? 'Canceled' : item.status === 'On hold' ? 'On Hold' : item.status
           return (
@@ -174,10 +182,10 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                fontSize: '0.8rem',
+                fontSize: 'var(--font-size-0p8rem)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
                 <span
                   style={{
                     width: '8px',
@@ -187,14 +195,14 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
                     display: 'inline-block',
                   }}
                 />
-                <span style={{ color: '#09090b', fontWeight: 500 }}>{displayName}</span>
+                <span style={{ color: 'var(--palette-gray-4)', fontWeight: 500 }}>{displayName}</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <span style={{ fontWeight: 600, color: '#09090b', minWidth: '40px', textAlign: 'right' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-16)' }}>
+                <span style={{ fontWeight: 600, color: 'var(--palette-gray-4)', minWidth: '40px', textAlign: 'right' }}>
                   {item.count.toLocaleString()}
                 </span>
-                <span style={{ color: '#71717a', fontSize: '0.74rem', minWidth: '32px', textAlign: 'right' }}>
+                <span style={{ color: 'var(--palette-gray-46)', fontSize: 'var(--font-size-0p74rem)', minWidth: '32px', textAlign: 'right' }}>
                   {item.pct}%
                 </span>
               </div>

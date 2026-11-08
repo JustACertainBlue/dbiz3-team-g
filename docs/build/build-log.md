@@ -1109,6 +1109,15 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Mistake caught | A script inserted the new imports inside a multi-line import in `provider/[providerId]/edit/page.tsx`; `npm run lint` failed, moved, all changed files scanned |
 | Not in scope | `/admin/providers` badge after #135; status-coloured ADM079 chart (wave 4) |
 
+### Entry 83: 08/11 Claude Code + human — design wave 3: glass layers, pill navigation, Admin sidebar 264 (`design/glass-nav`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (wave 3, on top of #140) |
+| Change | `src/app/shell.css` (mesh background, glass classes with `@supports not (backdrop-filter)` fallbacks, pill bar 64/20/999 collapsing below 1,100 px, Admin sidebar 264 → 56 px top bar below 1,024 px, phone tab bar, reduced-motion); `nav-model.ts` (navigation per role from the screen specs; Guest without AI); `SessionHeader.tsx` rewritten (menu panel and logout dialog with focus trap/Esc, avatar menu ACC129/PRF019/PRF127/AUT026, unread count from `/api/iac/chats`); shared `.bkg-panel` / `.bkg-form` as glass |
+| Figma check | After-only screenshots of 6 screens at 1440/390 next to the Figma frames; difference table in the PR: (a) spec 5, (b) data 6, (d) wave 4 1, (c) 0 |
+| Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; browser: Guest menu collapse, focus into panel, Esc returns focus; Agency bar at 1440 |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

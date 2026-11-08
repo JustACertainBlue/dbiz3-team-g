@@ -1,58 +1,88 @@
 'use client'
 
+// App shell navigation (design wave 3, Design System v9 §6b/§6d/§6e, Figma "Điều hướng"):
+// - Guest / Agency / Provider: floating glass pill bar (64 px, 20 px from the edges; 56 px and 12 px on mobile),
+//   collapsed into a menu button below 1,100 px, plus a bottom tab bar on phones for signed-in users.
+// - Admin (UBND, HDT): glass sidebar 264 px; on phones a 56 px top bar and a bottom tab bar.
+// Content per role comes from nav-model.ts (screen specs); styles live in src/app/shell.css.
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Building2, CalendarDays, ChevronDown, CircleCheck, ClipboardList, Compass, KeyRound, LayoutGrid, LogOut, Menu,
+  MessageSquare, ShieldCheck, Sparkles, Star, User, Users, X,
+} from 'lucide-react'
 import type { SessionContext } from '@/lib/auth/session'
+import { accountLinks, activeHref, homeHref, initials, navItems, shellFor, tagline, type NavIcon, type NavItem } from './nav/nav-model'
 
-function workspace(session: SessionContext): string {
-  if (session.mustChangePassword) return '/account/change-password'
-  if (session.role === 'Local_Provider' && session.providerId) return `/provider/${session.providerId}/dashboard`
-  if (session.role === 'ADMIN') return session.adminType === 'UBND' ? '/admin/providers' : '/admin'
-  return '/explore'
+const ICONS: Record<NavIcon, typeof Compass> = {
+  compass: Compass, sparkles: Sparkles, clipboard: ClipboardList, calendar: CalendarDays, message: MessageSquare,
+  grid: LayoutGrid, star: Star, building: Building2, check: CircleCheck, users: Users, key: KeyRound,
 }
 
-function moduleLinks(session: SessionContext): Array<{ href: string; label: string }> {
-  if (session.mustChangePassword) return [{ href: '/account/change-password', label: 'Đổi mật khẩu tạm' }]
-  if (session.role === 'Local_Provider' && session.providerId) {
-    const base = `/provider/${session.providerId}`
-    return [
-      { href: `${base}/dashboard`, label: 'Tổng quan' },
-      { href: base, label: 'Hồ sơ xưởng' },
-      { href: `${base}/experiences`, label: 'Trải nghiệm' },
-      { href: `${base}/bookings`, label: 'Đặt đoàn' },
-      { href: `${base}/schedule`, label: 'Lịch hoạt động' },
-      { href: '/messages', label: 'Hộp thư' },
-    ]
-  }
-  if (session.role === 'Tour_Agency' && session.agencyId) {
-    return [
-      { href: '/explore', label: 'Explore' },
-      { href: '/ai-matching', label: 'AI Matching' },
-      { href: `/agency/${session.agencyId}/bookings`, label: 'Đặt đoàn' },
-      { href: `/agency/${session.agencyId}/schedule`, label: 'Lịch hoạt động' },
-      { href: '/messages', label: 'Hộp thư' },
-      { href: `/agency/${session.agencyId}`, label: 'Hồ sơ công ty' },
-    ]
-  }
-  if (session.role === 'ADMIN') {
-    return [
-      { href: '/admin', label: 'Tổng quan' },
-      { href: '/admin/providers', label: 'Thẩm định xưởng' },
-      { href: '/admin/users', label: 'Quản lý tài khoản' },
-      ...(session.adminType === 'HDT' ? [{ href: '/admin/agencies', label: 'Thẩm định công ty' }] : []),
-    ]
-  }
-  return []
+type Account = { full_name?: string; title?: string; organization?: string }
+
+function roleLabel(session: SessionContext): string {
+  if (session.role === 'ADMIN') return 'Quản trị viên'
+  return session.role === 'Tour_Agency' ? 'Tour Agency' : 'Local Provider'
+}
+
+/** Keeps Tab inside `container` and closes on Escape (menu panel and dialogs). */
+function trapKeys(event: React.KeyboardEvent<HTMLElement>, close: () => void) {
+  if (event.key === 'Escape') { event.preventDefault(); close(); return }
+  if (event.key !== 'Tab') return
+  const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('a[href], button:not(:disabled)'))
+  const first = focusable[0], last = focusable[focusable.length - 1]
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+}
+
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return <span className="shell-unread" aria-label={`${count} tin chưa đọc`}>{count > 99 ? '99+' : count}</span>
+}
+
+function NavLink({ item, active, unread, onNavigate, withIcon }: { item: NavItem; active: boolean; unread: number; onNavigate?: () => void; withIcon?: boolean }) {
+  const Icon = ICONS[item.icon]
+  return <Link href={item.href} aria-current={active ? 'page' : undefined} className={active ? 'is-active' : undefined} onClick={onNavigate}>
+    {withIcon && <Icon aria-hidden="true" size={20} />}
+    <span>{item.label}</span>
+    {item.unread && <UnreadBadge count={unread} />}
+  </Link>
 }
 
 export default function SessionHeader() {
   const [session, setSession] = useState<SessionContext | null>(null)
+  const [account, setAccount] = useState<Account>({})
+  const [unread, setUnread] = useState(0)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [logoutError, setLogoutError] = useState('')
+  const menuButton = useRef<HTMLButtonElement>(null)
   const pathname = usePathname()
-  useEffect(() => { fetch('/api/auth/session', { cache: 'no-store' }).then(r => r.json()).then(p => setSession(p.data.session)).catch(() => setSession(null)) }, [pathname])
+
+  useEffect(() => {
+    let alive = true
+    fetch('/api/auth/session', { cache: 'no-store' }).then(r => r.json()).then(p => { if (alive) setSession(p.data.session) }).catch(() => { if (alive) setSession(null) })
+    setMenuOpen(false); setUserMenuOpen(false)
+    return () => { alive = false }
+  }, [pathname])
+
+  useEffect(() => {
+    if (!session?.authenticated) { setAccount({}); setUnread(0); return }
+    let alive = true
+    fetch('/api/auth/account', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(p => { if (alive && p?.data) setAccount(p.data) }).catch(() => {})
+    if (session.role === 'Tour_Agency' || session.role === 'Local_Provider') {
+      fetch('/api/iac/chats', { cache: 'no-store' }).then(r => r.ok ? r.json() : null)
+        .then(p => { if (alive && p?.data?.chat_list) setUnread((p.data.chat_list as Array<{ unread_count?: number }>).reduce((sum, chat) => sum + Number(chat.unread_count || 0), 0)) })
+        .catch(() => {})
+    }
+    return () => { alive = false }
+  }, [session, pathname])
+
+  const closeMenu = useCallback(() => { setMenuOpen(false); menuButton.current?.focus() }, [])
 
   async function logout() {
     setLoggingOut(true); setLogoutError('')
@@ -65,24 +95,79 @@ export default function SessionHeader() {
   }
 
   if (!session) return null
-  const links = moduleLinks(session)
-  const activeHref = links.filter(link => pathname === link.href || pathname.startsWith(`${link.href}/`)).sort((a, b) => b.href.length - a.href.length)[0]?.href
-  return <header className="session-header">
-    <div className="session-header__top">
-      <Link href={session.authenticated ? workspace(session) : '/explore'} className="brand">Hanoi Artisan Bridge</Link>
-      <nav className="account-nav">{session.authenticated ? <>
-        <Link href="/account">Tài khoản của tôi</Link>
-        <span>{session.role === 'ADMIN' ? `${session.adminType} Admin` : session.role === 'Tour_Agency' ? 'Tour Agency' : 'Local Provider'}</span>
-        <button type="button" onClick={() => setConfirmLogout(true)}>Đăng xuất</button>
-      </> : <><Link href="/explore">Khám phá</Link><Link href="/login" className="login-link">Đăng nhập</Link></>}</nav>
+  const shell = shellFor(session)
+  const items = navItems(session)
+  const current = activeHref(items, pathname)
+  const links = accountLinks(session)
+  const orgName = account.organization || (session.role === 'ADMIN' ? (session.adminType === 'HDT' ? 'Sở Du lịch Hà Nội' : 'UBND') : '')
+  const who = session.role === 'Local_Provider' ? (account.full_name || orgName) : (orgName || account.full_name || '')
+  const whoSub = session.role === 'Local_Provider' ? [account.title, orgName].filter(Boolean).join(', ') : (account.full_name && account.full_name !== who ? account.full_name : roleLabel(session))
+  const avatar = initials(who || roleLabel(session))
+  const logoutButton = (className: string, withText: boolean) => <button type="button" className={className} onClick={() => { setMenuOpen(false); setUserMenuOpen(false); setConfirmLogout(true) }} aria-label="Đăng xuất">
+    <LogOut aria-hidden="true" size={20} />{withText && <span>Đăng xuất</span>}
+  </button>
+
+  const menuPanel = menuOpen && <div className="shell-menu glass-menu" role="dialog" aria-modal="true" aria-label="Menu" onKeyDown={event => trapKeys(event, closeMenu)}>
+    <div className="shell-menu__head"><strong>Menu</strong><button type="button" className="shell-icon-button" autoFocus onClick={closeMenu} aria-label="Đóng menu"><X aria-hidden="true" size={22} /></button></div>
+    {session.authenticated && <p className="shell-menu__who">{[who, whoSub].filter(Boolean).join(' · ')}</p>}
+    <nav aria-label="Điều hướng chính">{items.map(item => <NavLink key={item.href} item={item} active={current === item.href} unread={unread} onNavigate={() => setMenuOpen(false)} />)}</nav>
+    {session.authenticated
+      ? <div className="shell-menu__account">{links.map(link => <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>{link.icon === 'user' ? <User aria-hidden="true" size={20} /> : <Building2 aria-hidden="true" size={20} />}<span>{link.label}</span></Link>)}{logoutButton('shell-menu__logout', true)}</div>
+      : <div className="shell-menu__account"><Link href="/login" onClick={() => setMenuOpen(false)}>Đăng nhập</Link><Link href="/register" onClick={() => setMenuOpen(false)}>Đăng ký Agency</Link></div>}
+  </div>
+
+  const bottomBar = session.authenticated && items.length > 1 && <nav className="shell-tabbar" aria-label="Điều hướng nhanh">
+    {items.map(item => { const Icon = ICONS[item.icon]; const active = current === item.href; return <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} className={active ? 'is-active' : undefined}>
+      <span className="shell-tabbar__icon"><Icon aria-hidden="true" size={22} />{item.unread && <UnreadBadge count={unread} />}</span><span>{item.short || item.label}</span>
+    </Link> })}
+  </nav>
+
+  const logoutDialog = confirmLogout && <div className="logout-overlay" onClick={() => { if (!loggingOut) setConfirmLogout(false) }}>
+    <div role="dialog" aria-modal="true" aria-labelledby="logout-title" className="logout-dialog glass-menu" onClick={event => event.stopPropagation()} onKeyDown={event => { if (!loggingOut) trapKeys(event, () => setConfirmLogout(false)) }}>
+      <h2 id="logout-title">Đăng xuất?</h2><p>Bạn sẽ cần đăng nhập lại để tiếp tục.</p>{logoutError && <p role="alert">{logoutError}</p>}
+      <div><button autoFocus type="button" disabled={loggingOut} onClick={() => setConfirmLogout(false)}>Huỷ</button><button type="button" disabled={loggingOut} onClick={logout}>{loggingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}</button></div>
     </div>
-    {session.authenticated && links.length > 0 && <nav className="module-nav" aria-label="Điều hướng không gian làm việc">
-      {links.map(link => <Link key={link.href} href={link.href} aria-current={activeHref === link.href ? 'page' : undefined} className={activeHref === link.href ? 'active' : ''}>{link.label}</Link>)}
-    </nav>}
-    {confirmLogout && <div className="logout-overlay" onClick={() => { if (!loggingOut) setConfirmLogout(false) }}><div role="dialog" aria-modal="true" aria-labelledby="logout-title" className="logout-dialog" onClick={event => event.stopPropagation()} onKeyDown={event => { if (event.key === 'Escape' && !loggingOut) setConfirmLogout(false); if (event.key === 'Tab') { const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')); const first = buttons[0]; const last = buttons[buttons.length - 1]; if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() } } }}><h2 id="logout-title">Đăng xuất?</h2><p>Bạn sẽ cần đăng nhập lại để tiếp tục.</p>{logoutError && <p role="alert">{logoutError}</p>}<div><button autoFocus type="button" disabled={loggingOut} onClick={() => setConfirmLogout(false)}>Hủy</button><button type="button" disabled={loggingOut} onClick={logout}>{loggingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}</button></div></div></div>}
-    <style jsx>{`
-      .logout-overlay{position:fixed;inset:0;background:var(--alpha-black-60);display:grid;place-items:center;padding:var(--space-20px);z-index:1100}.logout-dialog{background:var(--palette-gray-99);color:var(--palette-teal-16-2);border-radius:var(--radius-16);padding:var(--space-26px);width:min(100%,420px);box-shadow:0 16px 50px var(--alpha-black-26p7)}.logout-dialog h2{font:700 26px Georgia,serif}.logout-dialog p{margin:var(--space-12px) 0 var(--space-22px);color:var(--palette-gray-37)}.logout-dialog div{display:flex;justify-content:flex-end;gap:var(--space-10px)}.logout-dialog button{padding:var(--space-10px) var(--space-16px);border:var(--border-width-1) solid var(--palette-gray-74);border-radius:var(--radius-8);background:var(--palette-white);cursor:pointer}.logout-dialog button:last-child{background:var(--palette-teal-16-2);color:var(--palette-white);border-color:var(--palette-teal-16-2)}
-      .session-header{position:relative;z-index:1000;background:var(--palette-teal-12);color:var(--palette-white);border-bottom:var(--border-width-1) solid var(--alpha-white-12p2)}.session-header__top{min-height:52px;padding:var(--space-9px) var(--space-22px);display:flex;align-items:center;justify-content:space-between;gap:var(--space-16px)}.session-header :global(.brand){font:700 17px Georgia,serif;color:var(--palette-white);text-decoration:none}.account-nav,.module-nav{display:flex;align-items:center;gap:var(--space-15px);font-size:var(--font-size-13)}.account-nav :global(a),.module-nav :global(a){color:var(--palette-gray-95);text-decoration:none}.account-nav span{color:var(--palette-gray-82)}.module-nav{padding:0 var(--space-22px) var(--space-10px);gap:var(--space-5px);overflow-x:auto}.module-nav :global(a){white-space:nowrap;padding:var(--space-7px) var(--space-11px);border-radius:var(--radius-7);color:var(--palette-green-87)}.module-nav :global(a:hover),.module-nav :global(a.active){background:var(--alpha-white-14p9);color:var(--palette-white)}.account-nav button,.account-nav :global(.login-link){border:var(--border-width-1) solid var(--alpha-white-29);border-radius:var(--radius-7);padding:var(--space-7px) var(--space-11px);background:transparent;color:var(--palette-white);cursor:pointer;font:inherit}.account-nav :global(.login-link){background:var(--palette-white);color:var(--palette-teal-12);font-weight:700}@media(max-width:620px){.account-nav span{display:none}.session-header__top,.module-nav{padding-inline:var(--space-14px)}}
-    `}</style>
-  </header>
+  </div>
+
+  if (shell === 'admin') {
+    return <>
+      <aside className="shell-sidebar glass-sidebar" aria-label="Điều hướng quản trị">
+        <Link href={homeHref(session)} className="shell-logo"><strong>Hanoi Artisan Bridge</strong><small>{tagline(session)}</small></Link>
+        <nav>{items.map(item => <NavLink key={item.href} item={item} active={current === item.href} unread={0} withIcon />)}</nav>
+        <div className="shell-sidebar__foot">
+          <Link href="/account" className="shell-avatar" aria-label="Tài khoản cá nhân">{avatar}</Link>
+          <span><strong>{who}</strong><small>Quản trị viên</small></span>
+          {logoutButton('shell-round-button', false)}
+        </div>
+      </aside>
+      <header className="shell-topbar glass-nav">
+        <Link href={homeHref(session)} className="shell-logo"><strong>Hanoi Artisan Bridge</strong></Link>
+        <button ref={menuButton} type="button" className="shell-icon-button" aria-expanded={menuOpen} aria-label="Mở menu" onClick={() => setMenuOpen(true)}><Menu aria-hidden="true" size={24} /></button>
+      </header>
+      {menuPanel}{bottomBar}{logoutDialog}
+    </>
+  }
+
+  return <>
+    <header className={`shell-bar glass-nav${shell === 'guest' ? ' shell-bar--guest' : ''}`}>
+      <Link href={homeHref(session)} className="shell-logo"><strong>Hanoi Artisan Bridge</strong>{shell === 'portal' && <small>{tagline(session)}</small>}</Link>
+      <nav className="shell-bar__items" aria-label="Điều hướng chính">{items.map(item => <NavLink key={item.href} item={item} active={current === item.href} unread={unread} />)}</nav>
+      <div className="shell-bar__end">
+        {shell === 'guest'
+          ? <><Link href="/login" className="shell-pill shell-pill--outline">Đăng nhập</Link><Link href="/register" className="shell-pill shell-pill--solid">Đăng ký Agency</Link></>
+          : <div className="shell-user">
+              <button type="button" className="shell-user__button" aria-expanded={userMenuOpen} aria-haspopup="menu" onClick={() => setUserMenuOpen(open => !open)}>
+                <span className="shell-user__text"><strong>{who}{session.role === 'Local_Provider' && <ShieldCheck aria-label="Tài khoản Local Provider" size={16} />}</strong><small>{whoSub}</small></span>
+                <span className="shell-avatar" aria-hidden="true">{avatar}</span><ChevronDown aria-hidden="true" size={18} />
+              </button>
+              {userMenuOpen && <div className="shell-user__menu glass-menu" role="menu" onKeyDown={event => trapKeys(event, () => setUserMenuOpen(false))}>
+                {links.map(link => <Link key={link.href} role="menuitem" href={link.href} onClick={() => setUserMenuOpen(false)}>{link.icon === 'user' ? <User aria-hidden="true" size={18} /> : <Building2 aria-hidden="true" size={18} />}<span>{link.label}</span></Link>)}
+                {logoutButton('shell-user__logout', true)}
+              </div>}
+            </div>}
+        <button ref={menuButton} type="button" className="shell-icon-button shell-bar__menu" aria-expanded={menuOpen} aria-label="Mở menu" onClick={() => setMenuOpen(true)}><Menu aria-hidden="true" size={24} /></button>
+      </div>
+    </header>
+    {menuPanel}{bottomBar}{logoutDialog}
+  </>
 }

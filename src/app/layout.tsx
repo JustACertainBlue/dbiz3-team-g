@@ -2,6 +2,7 @@ import './tokens.css'
 import './globals.css'
 import './screen-specs.css'
 import './product-ui.css'
+import './shell.css'
 import React from 'react'
 import { fontVariables } from './fonts'
 

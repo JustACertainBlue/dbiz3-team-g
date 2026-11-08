@@ -184,12 +184,12 @@ export default function AdminDashboardPage() {
               <div
                 style={{
                   background: 'var(--palette-white)',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--radius-md)',
                   padding: 'var(--space-24)',
                   maxWidth: 'var(--space-520)',
                   width: '100%',
                   boxShadow: '0 var(--space-20) var(--space-25) -5px var(--alpha-black-10)',
-                  border: 'var(--space-1) solid var(--palette-gray-90)',
+                  border: 'var(--border-width-1) solid var(--palette-gray-90)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 'var(--space-12)' }}>
@@ -210,8 +210,8 @@ export default function AdminDashboardPage() {
                       color: 'var(--palette-white)',
                       border: 'none',
                       padding: 'var(--space-8) var(--space-18)',
-                      borderRadius: 'var(--space-6)',
-                      fontSize: 'var(--space-0p85rem)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: 'var(--font-size-0p85rem)',
                       fontWeight: 600,
                       cursor: 'pointer',
                     }}
@@ -228,12 +228,12 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: 'var(--palette-red-97)',
-                border: '1px solid var(--palette-red-89)',
+                border: 'var(--border-width-1) solid var(--palette-red-89)',
                 color: 'var(--palette-red-35)',
                 padding: 'var(--space-12) var(--space-18)',
-                borderRadius: 'var(--space-8)',
+                borderRadius: 'var(--radius-8)',
                 marginBottom: 'var(--space-16)',
-                fontSize: 'var(--space-0p85rem)',
+                fontSize: 'var(--font-size-0p85rem)',
               }}
             >
               {error}

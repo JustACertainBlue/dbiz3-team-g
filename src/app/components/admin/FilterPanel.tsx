@@ -330,10 +330,10 @@ export function FilterPanel({
                 appearance: 'none',
                 WebkitAppearance: 'none',
                 background: 'var(--palette-white)',
-                border: '1px solid var(--palette-gray-90)',
-                borderRadius: '8px',
+                border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                borderRadius: 'var(--radius-8)',
                 padding: 'var(--space-8) var(--space-36) var(--space-8) var(--space-14)',
-                fontSize: 'var(--space-0p85rem)',
+                fontSize: 'var(--font-size-0p85rem)',
                 fontWeight: 500,
                 color: 'var(--palette-gray-4)',
                 cursor: 'pointer',
@@ -385,27 +385,27 @@ export function FilterPanel({
             gap: 'var(--space-12)',
             background: 'var(--palette-white)',
             padding: 'var(--space-10) var(--space-16)',
-            borderRadius: 'var(--space-8)',
-            border: 'var(--space-1) solid var(--palette-gray-90)',
+            borderRadius: 'var(--radius-8)',
+            border: 'var(--border-width-1) solid var(--palette-gray-90)',
             width: 'fit-content',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--space-0p8rem)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}>
             <label style={{ color: 'var(--palette-gray-46)', fontWeight: 500 }}>From:</label>
             <input
               type="date"
               value={filters.startDate || ''}
               onChange={e => onFilterChange({ startDate: e.target.value })}
-              style={{ border: '1px solid var(--palette-gray-90)', borderRadius: '4px', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--space-0p8rem)' }}
+              style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--space-0p8rem)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}>
             <label style={{ color: 'var(--palette-gray-46)', fontWeight: 500 }}>To:</label>
             <input
               type="date"
               value={filters.endDate || ''}
               onChange={e => onFilterChange({ endDate: e.target.value })}
-              style={{ border: '1px solid var(--palette-gray-90)', borderRadius: '4px', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--space-0p8rem)' }}
+              style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}
             />
           </div>
         </div>
@@ -416,11 +416,11 @@ export function FilterPanel({
         <div
           style={{
             background: 'var(--palette-red-97)',
-            border: '1px solid var(--palette-red-89)',
+            border: 'var(--border-width-1) solid var(--palette-red-89)',
             color: 'var(--palette-red-35)',
             padding: 'var(--space-8) var(--space-14)',
-            borderRadius: 'var(--space-6)',
-            fontSize: 'var(--space-0p78rem)',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: 'var(--font-size-0p78rem)',
           }}
         >
           ⚠️ Error loading filter options: {optionsError}
@@ -436,8 +436,8 @@ export function FilterPanel({
           flexWrap: 'wrap',
           background: 'var(--palette-white)',
           padding: 'var(--space-10) var(--space-16)',
-          borderRadius: 'var(--space-10)',
-          border: 'var(--space-1) solid var(--palette-gray-90)',
+          borderRadius: 'var(--radius-10)',
+          border: 'var(--border-width-1) solid var(--palette-gray-90)',
           position: 'relative',
         }}
       >
@@ -453,10 +453,10 @@ export function FilterPanel({
                 alignItems: 'center',
                 gap: 'var(--space-6)',
                 background: 'var(--palette-gray-96)',
-                border: 'var(--space-1) solid var(--palette-gray-90)',
+                border: 'var(--border-width-1) solid var(--palette-gray-90)',
                 padding: 'var(--space-5) var(--space-12)',
-                borderRadius: 'var(--space-6)',
-                fontSize: 'var(--space-0p8rem)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 'var(--font-size-0p8rem)',
                 fontWeight: 600,
                 color: 'var(--palette-gray-4)',
               }}
@@ -473,10 +473,10 @@ export function FilterPanel({
               onChange={e => onFilterChange({ villageId: e.target.value || null })}
               style={{
                 background: 'var(--palette-gray-99-2)',
-                border: '1px solid var(--palette-gray-90)',
-                borderRadius: '6px',
+                border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                borderRadius: 'var(--radius-sm)',
                 padding: 'var(--space-5) var(--space-12)',
-                fontSize: 'var(--space-0p8rem)',
+                fontSize: 'var(--font-size-0p8rem)',
                 color: 'var(--palette-gray-4)',
                 cursor: 'pointer',
               }}
@@ -501,8 +501,8 @@ export function FilterPanel({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              border: '1px solid var(--palette-gray-90)',
-              borderRadius: '6px',
+              border: 'var(--border-width-1) solid var(--palette-gray-90)',
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--palette-gray-99-2)',
               padding: 'var(--space-2)',
             }}
@@ -517,7 +517,7 @@ export function FilterPanel({
                 background: 'transparent',
                 border: 'none',
                 padding: 'var(--space-4) var(--space-10)',
-                fontSize: 'var(--space-0p8rem)',
+                fontSize: 'var(--font-size-0p8rem)',
                 fontWeight: (selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) ? 600 : 400,
                 color: (selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) ? 'var(--palette-gray-4)' : 'var(--palette-gray-34)',
                 cursor: 'pointer',
@@ -543,8 +543,8 @@ export function FilterPanel({
                   color: 'var(--palette-gray-65)',
                   padding: 'var(--space-2) var(--space-6)',
                   cursor: 'pointer',
-                  fontSize: 'var(--space-0p75rem)',
-                  borderRadius: 'var(--space-4)',
+                  fontSize: 'var(--font-size-0p75rem)',
+                  borderRadius: 'var(--radius-4)',
                 }}
               >
                 ✕
@@ -561,8 +561,8 @@ export function FilterPanel({
                 left: 0,
                 zIndex: 60,
                 background: 'var(--palette-white)',
-                border: '1px solid var(--palette-gray-90)',
-                borderRadius: '10px',
+                border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                borderRadius: 'var(--radius-10)',
                 padding: 'var(--space-16)',
                 width: 'var(--space-420)',
                 boxShadow: '0 var(--space-10) var(--space-25) -5px var(--alpha-black-10), 0 var(--space-8) var(--space-10) -6px var(--alpha-black-5)',
@@ -574,10 +574,10 @@ export function FilterPanel({
               {/* Popover Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: 'var(--space-0p88rem)', fontWeight: 700, color: 'var(--palette-gray-4)' }}>
+                  <h4 style={{ margin: 0, fontSize: 'var(--font-size-0p88rem)', fontWeight: 700, color: 'var(--palette-gray-4)' }}>
                     Select Provider or Agency
                   </h4>
-                  <p style={{ margin: 'var(--space-2) 0 0 0', fontSize: 'var(--space-0p72rem)', color: 'var(--palette-gray-46)' }}>
+                  <p style={{ margin: 'var(--space-2) 0 0 0', fontSize: 'var(--font-size-0p72rem)', color: 'var(--palette-gray-46)' }}>
                     Mutually exclusive: select multiple within one category.
                   </p>
                 </div>
@@ -606,8 +606,8 @@ export function FilterPanel({
                 <div
                   style={{
                     background: 'var(--palette-amber-96)',
-                    border: '1px solid var(--palette-amber-77)',
-                    borderRadius: '8px',
+                    border: 'var(--border-width-1) solid var(--palette-amber-77)',
+                    borderRadius: 'var(--radius-8)',
                     padding: 'var(--space-12)',
                     display: 'flex',
                     flexDirection: 'column',
@@ -626,10 +626,10 @@ export function FilterPanel({
                       onClick={() => setSwitchDialog(null)}
                       style={{
                         background: 'var(--palette-white)',
-                        border: '1px solid var(--palette-gray-84)',
-                        borderRadius: '4px',
+                        border: 'var(--border-width-1) solid var(--palette-gray-84)',
+                        borderRadius: 'var(--radius-4)',
                         padding: 'var(--space-3) var(--space-8)',
-                        fontSize: 'var(--space-0p72rem)',
+                        fontSize: 'var(--font-size-0p72rem)',
                         cursor: 'pointer',
                         color: 'var(--palette-blue-27-2)',
                       }}
@@ -643,9 +643,9 @@ export function FilterPanel({
                         background: 'var(--palette-orange-37)',
                         color: 'var(--palette-white)',
                         border: 'none',
-                        borderRadius: '4px',
+                        borderRadius: 'var(--radius-4)',
                         padding: 'var(--space-3) var(--space-10)',
-                        fontSize: 'var(--space-0p72rem)',
+                        fontSize: 'var(--font-size-0p72rem)',
                         fontWeight: 600,
                         cursor: 'pointer',
                       }}
@@ -659,8 +659,8 @@ export function FilterPanel({
               {/* Category 1: Local Provider Accordion Row */}
               <div
                 style={{
-                  border: '1px solid var(--palette-gray-90)',
-                  borderRadius: '8px',
+                  border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                  borderRadius: 'var(--radius-8)',
                   background: selectedProviderIds.length > 0 ? 'var(--palette-green-97)' : 'var(--palette-gray-98)',
                   overflow: 'hidden',
                 }}
@@ -686,7 +686,7 @@ export function FilterPanel({
                           background: 'var(--palette-green-93)',
                           color: 'var(--palette-green-29)',
                           padding: 'var(--space-1) var(--space-6)',
-                          borderRadius: 'var(--space-10)',
+                          borderRadius: 'var(--radius-10)',
                         }}
                       >
                         {selectedProviderIds.length} active
@@ -702,8 +702,8 @@ export function FilterPanel({
                     onClick={() => setIsProviderExpanded(prev => !prev)}
                     style={{
                       background: 'var(--palette-white)',
-                      border: '1px solid var(--palette-gray-90)',
-                      borderRadius: '4px',
+                      border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                      borderRadius: 'var(--radius-4)',
                       width: '24px',
                       height: '24px',
                       display: 'flex',
@@ -723,7 +723,7 @@ export function FilterPanel({
                 {isProviderExpanded && (
                   <div
                     style={{
-                      borderTop: '1px solid var(--palette-gray-90)',
+                      borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
                       background: 'var(--palette-white)',
                       padding: 'var(--space-12) var(--space-14)',
                       display: 'flex',
@@ -744,8 +744,8 @@ export function FilterPanel({
                           flex: 1,
                           fontSize: 'var(--font-size-0p75rem)',
                           padding: 'var(--space-4) var(--space-8)',
-                          border: 'var(--space-1) solid var(--palette-gray-90)',
-                          borderRadius: 'var(--space-4)',
+                          border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                          borderRadius: 'var(--radius-4)',
                         }}
                       />
                       {selectedProviderIds.length > 0 && (
@@ -786,7 +786,7 @@ export function FilterPanel({
                               display: 'flex',
                               alignItems: 'center',
                               gap: 'var(--space-8)',
-                              fontSize: 'var(--space-0p78rem)',
+                              fontSize: 'var(--font-size-0p78rem)',
                               color: 'var(--palette-gray-4)',
                               cursor: 'pointer',
                               padding: 'var(--space-3) 0',
@@ -810,8 +810,8 @@ export function FilterPanel({
               {/* Category 2: Tour Agency Accordion Row */}
               <div
                 style={{
-                  border: '1px solid var(--palette-gray-90)',
-                  borderRadius: '8px',
+                  border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                  borderRadius: 'var(--radius-8)',
                   background: selectedAgencyIds.length > 0 ? 'var(--palette-green-97)' : 'var(--palette-gray-98)',
                   overflow: 'hidden',
                 }}
@@ -837,7 +837,7 @@ export function FilterPanel({
                           background: 'var(--palette-green-93)',
                           color: 'var(--palette-green-29)',
                           padding: 'var(--space-1) var(--space-6)',
-                          borderRadius: 'var(--space-10)',
+                          borderRadius: 'var(--radius-10)',
                         }}
                       >
                         {selectedAgencyIds.length} active
@@ -853,8 +853,8 @@ export function FilterPanel({
                     onClick={() => setIsAgencyExpanded(prev => !prev)}
                     style={{
                       background: 'var(--palette-white)',
-                      border: '1px solid var(--palette-gray-90)',
-                      borderRadius: '4px',
+                      border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                      borderRadius: 'var(--radius-4)',
                       width: '24px',
                       height: '24px',
                       display: 'flex',
@@ -874,7 +874,7 @@ export function FilterPanel({
                 {isAgencyExpanded && (
                   <div
                     style={{
-                      borderTop: '1px solid var(--palette-gray-90)',
+                      borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
                       background: 'var(--palette-white)',
                       padding: 'var(--space-12) var(--space-14)',
                       display: 'flex',
@@ -895,8 +895,8 @@ export function FilterPanel({
                           flex: 1,
                           fontSize: 'var(--font-size-0p75rem)',
                           padding: 'var(--space-4) var(--space-8)',
-                          border: 'var(--space-1) solid var(--palette-gray-90)',
-                          borderRadius: 'var(--space-4)',
+                          border: 'var(--border-width-1) solid var(--palette-gray-90)',
+                          borderRadius: 'var(--radius-4)',
                         }}
                       />
                       {selectedAgencyIds.length > 0 && (
@@ -937,7 +937,7 @@ export function FilterPanel({
                               display: 'flex',
                               alignItems: 'center',
                               gap: 'var(--space-8)',
-                              fontSize: 'var(--space-0p78rem)',
+                              fontSize: 'var(--font-size-0p78rem)',
                               color: 'var(--palette-gray-4)',
                               cursor: 'pointer',
                               padding: 'var(--space-3) 0',

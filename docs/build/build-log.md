@@ -1054,6 +1054,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks (each branch) | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run build` OK |
 | Not done (by decision) | Other screens; numeric values that are not colours, font sizes or spacing (widths, radii, borders) stay literal; making `lint:tokens` blocking |
 
+### Entry 76: 08/11 Claude Code + human — Design PR 9: corner radii and border widths use tokens (`design/tokens-radius-border`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu ("bắt đầu luôn, cùng cách so ảnh 14/14") |
+| Base | Branch from `main` with the commits of #113, #114–#117, #119, #120 and #126 cherry-picked (PR targets `main`, not stacked); its own change is the last commit |
+| Change | `src/app/tokens.css`: primitives `--radius-<px>` (1.5 … 999, 9999), `--radius-50pct`, `--border-width-1/2`; `--radius-sm/md/lg/full` now point at them; semantic `--radius-brand-mark` for the Explore logo shape. 16 files of the shared components and the five main screens: every literal radius / border width (and the spacing tokens that were used as radii or widths) replaced by a token of the same value; `border: 0` / `none` unchanged |
+| Visual check | Shot tool (Playwright, computed styles of every element + pixelmatch at threshold 0), dev server on DEV, 7 pages × 1440/390, `main` twice then the branch twice. PR 9 commit alone vs its base (`2444f7f`): booking 0 px. Branch vs `main`: 13/14 identical; `booking-mobile` differs by 33 258 px with identical computed styles: 1-level changes in the green channel of the background (245/241/231 → 245/240/231), reproducible, and already present on `design/tokens-foundation` (#113) alone vs today's `main`; not caused by this PR, reported to the human |
+| Checks | `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; `npm run lint:tokens` warn-only (colours) |
+| Human decisions 08/11 | The 1-level green-channel difference on `booking-mobile` is accepted. `RoleSwitcher` font sizes now use `--font-size-0p72rem` / `--font-size-0p75rem` instead of the spacing tokens of the same value (6 places; the component is not imported anywhere, #125, so no screenshot). Then, on request, the remaining 26 `fontSize: 'var(--space-…rem)'` in 7 admin files (`admin/page.tsx`, `FilterPanel`, `TopPairsList`, `BookingTable`, `ChartsSection`, `PendingVerificationPanel`, `AdminSidebar`) became `--font-size-…` of the same value; `/admin` shot before/after (1440 and 390, twice each): identical pixels and computed styles. Empty-state and filter-open states were not shot |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

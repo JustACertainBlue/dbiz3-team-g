@@ -1043,7 +1043,7 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Tests first | `tests/unit/aut-major-change-rmi-closes.test.ts` (4), all red before: status stayed Request More Information, no next step in the notification, an open row was left, the Agency's second change was blocked |
 | Fix | `reviewAgency`: a major change is Approved or Rejected with `reviewed_at`; the review record keeps the decision and comment; the in-app notification payload adds `next_step` ("…gửi thay đổi mới từ hồ sơ Agency") |
 | Mutation (foreground) | 7/7 killed: old status, no reviewed_at for RMI (#121 behaviour), no next step, decision recorded as Reject, closed change decidable again, RMI without comment, wrong recipient |
-| Checks | `npm test` 192 files passed, 5 skipped (1150 passed, 22 skipped); `npm run lint` OK. Opt-in hosted test `tests/postgres/agency-major-change.test.ts` (from #121, RMI case rewritten) not run yet: waits for the human's go-ahead on DEV |
+| Checks | `npm test` 192 files passed, 5 skipped (1150 passed, 22 skipped); `npm run lint` OK. Opt-in hosted test `tests/postgres/agency-major-change.test.ts` (from #121, RMI case rewritten): `npm run test:postgres` on DEV (host aws-0-ap-southeast-1.pooler.supabase.com, project jfrpnffknjpgmkyquxql, checked before the run, approved by the human) 3 files, 16/16 passed, all changes rolled back |
 | Not built | The Agency has no screen that lists notifications; the message is stored in-app and email remains not configured |
 
 ## 3. Spec issues found while building

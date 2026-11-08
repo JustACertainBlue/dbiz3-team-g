@@ -1033,6 +1033,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 68: 08/11 Claude Code + human — #60 test: HDT rejects an Agency registration (`test/60-hdt-reject-registration`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan #55–#63; one PR per issue, not merged during the evening test session) |
+| Tests | `tests/unit/aut-hdt-reject-registration.test.ts` (5) through `POST /api/auth/agency-reviews` (kind = registration) on a registration created by submit + OTP: Reject with a reason → registration and account Rejected, reason and HDT reviewer recorded, login refused; empty or blank reason → 409, nothing changes; a rejected registration cannot be decided again; UBND / Agency / Provider → 403. Green at once (behaviour correct) |
+| Mutation (foreground) | 6/6 killed: Reject leaves Pending, account status not updated, reason not required, reason not recorded, decided registration decided again, any signed-in role reviews |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1151 passed, 20 skipped) |
+| Product code changed | None |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

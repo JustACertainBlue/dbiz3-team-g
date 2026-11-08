@@ -19,6 +19,9 @@ import { BookingStatusDonut } from '@/app/components/admin/BookingStatusDonut'
 import { ChartsSection } from '@/app/components/admin/ChartsSection'
 import { BookingTable } from '@/app/components/admin/BookingTable'
 import { TopPairsList } from '@/app/components/admin/TopPairsList'
+import { dashboardTitle } from '@/lib/adm/dashboard-view'
+import { filtersChanged } from './filter-draft'
+import './dashboard-v9.css'
 
 export default function AdminDashboardPage() {
   const [role, setRole] = useState<AuthRole | null>(null)
@@ -40,6 +43,14 @@ export default function AdminDashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardMetricsResponse | null>(null)
 
   const [filters, setFilters] = useState<DashboardFilterParams>({
+    preset: 'Last 30 days',
+    villageId: null,
+    agencyId: null,
+    providerId: null,
+    sortBy: 'Frequency',
+  })
+  // ADM079 #17: the filter controls edit a draft; Apply filters copies it to the applied filters.
+  const [draft, setDraft] = useState<DashboardFilterParams>({
     preset: 'Last 30 days',
     villageId: null,
     agencyId: null,
@@ -70,7 +81,9 @@ export default function AdminDashboardPage() {
         // A7: UBND → assigned village; HDT after a locked village → All Villages; HDT's own choice is kept
         const prevLocked = villageLockedRef.current
         villageLockedRef.current = data.isLocked
-        setFilters(prev => ({ ...prev, villageId: nextVillageFilter({ villageId: prev.villageId ?? null, locked: prevLocked }, data).villageId }))
+        const lockVillage = (prev: DashboardFilterParams) => ({ ...prev, villageId: nextVillageFilter({ villageId: prev.villageId ?? null, locked: prevLocked }, data).villageId })
+        setFilters(lockVillage)
+        setDraft(lockVillage)
       } else {
         const err = await res.json().catch(() => ({}))
         setError(err.error || `Failed to load villages: HTTP ${res.status}`)
@@ -126,18 +139,19 @@ export default function AdminDashboardPage() {
   }, [mounted, access, loadDashboard])
 
   const handleFilterChange = (updated: Partial<DashboardFilterParams>) => {
-    setFilters(prev => ({ ...prev, ...updated }))
+    setDraft(prev => ({ ...prev, ...updated }))
   }
 
   const handleSortChange = (sortBy: CollaborationSortBy) => {
     setFilters(prev => ({ ...prev, sortBy }))
+    setDraft(prev => ({ ...prev, sortBy }))
   }
 
   if (!mounted || access === null) return null
 
   if (access === 'restricted') {
     return (
-      <main className="admin-state">
+      <main className="ad9-state">
         <h1>Admin Dashboard</h1>
         <p>Đăng nhập bằng tài khoản UBND Admin hoặc HDT Admin để truy cập.</p>
         <a href="/login">Đăng nhập</a>
@@ -145,163 +159,57 @@ export default function AdminDashboardPage() {
     )
   }
 
+  // SR-003: UBND is fixed to its village; HDT is city-wide unless a village filter is chosen.
+  const scopeVillageId = villagesData.isLocked ? villagesData.assignedVillageId : filters.villageId // applied, not draft
+  const villageName = villagesData.villages.find(village => village.villageId === scopeVillageId)?.name ?? null
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        minHeight: '100vh',
-        background: 'var(--palette-gray-96-4)',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        color: 'var(--palette-gray-4)',
-      }}
-    >
-      {/* 1. Fixed Dark Left Sidebar matching ADM079.png */}
-
-      {/* Main Content Area */}
-      <main
-        style={{
-          flex: 1,
-          padding: 'var(--space-28px) var(--space-36px) var(--space-60px) var(--space-36px)',
-          overflowY: 'auto',
-          minWidth: 0,
-        }}
-      >
-        <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
-          {/* Read-only Action Info Modal */}
-          {modalNotice && (
-            <div
-              style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'var(--alpha-black-40)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 100,
-                padding: 'var(--space-20px)',
-              }}
-            >
-              <div
-                style={{
-                  background: 'var(--palette-white)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 'var(--space-24px)',
-                  maxWidth: 'var(--space-520px)',
-                  width: '100%',
-                  boxShadow: '0 var(--space-20px) var(--space-25px) -5px var(--alpha-black-10)',
-                  border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)', marginBottom: 'var(--space-12px)' }}>
-                  <span style={{ fontSize: 'var(--font-size-1p25rem)' }}>ℹ️</span>
-                  <h3 style={{ fontSize: 'var(--font-size-1p1rem)', fontWeight: 700, margin: 0, color: 'var(--palette-gray-4)' }}>
-                    Information Notice
-                  </h3>
-                </div>
-                <p style={{ fontSize: 'var(--font-size-0p88rem)', color: 'var(--palette-gray-34)', lineHeight: 1.5, margin: '0 0 var(--space-20px) 0' }}>
-                  {modalNotice}
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="button"
-                    onClick={() => setModalNotice(null)}
-                    style={{
-                      background: 'var(--palette-gray-10)',
-                      color: 'var(--palette-white)',
-                      border: 'none',
-                      padding: 'var(--space-8px) var(--space-18px)',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: 'var(--font-size-0p85rem)',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Understood
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Error Alert */}
-          {error && (
-            <div
-              style={{
-                background: 'var(--palette-red-97)',
-                border: 'var(--border-width-1) solid var(--palette-red-89)',
-                color: 'var(--palette-red-35)',
-                padding: 'var(--space-12px) var(--space-18px)',
-                borderRadius: 'var(--radius-8)',
-                marginBottom: 'var(--space-16px)',
-                fontSize: 'var(--font-size-0p85rem)',
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          {/* 2. Dashboard Header, Time Period Selector & Filter Bar */}
-          <FilterPanel
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            villageOptions={villagesData.villages}
-            isVillageLocked={villagesData.isLocked}
-            assignedVillageId={villagesData.assignedVillageId}
-          />
-
-          {/* 3. Four Summary Metric Cards */}
-          {dashboardData && (
-            <MetricCards cards={dashboardData.metricCards} loading={loading} />
-          )}
-
-          {/* 4 & 5. Primary 2-Panel Row: Pending Verification & Booking Status Donut */}
-          {dashboardData && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1.5fr 1fr',
-                gap: 'var(--space-20px)',
-                marginBottom: 'var(--space-24px)',
-                alignItems: 'stretch',
-              }}
-            >
-              {/* Left Panel: Pending Verification */}
-              <PendingVerificationPanel items={dashboardData.pendingVerification} />
-
-              {/* Right Panel: Booking Status Donut Chart */}
-              <BookingStatusDonut bookingMetrics={dashboardData.bookingMetrics} />
-            </div>
-          )}
-
-          {/* 6. Operational Monitoring Panels Below Primary Row */}
-          {dashboardData && (
-            <>
-              {/* Booking Trend Series Line Chart & Supporting Matrix */}
-              <ChartsSection
-                agencyMetrics={dashboardData.agencyMetrics}
-                providerMetrics={dashboardData.providerMetrics}
-                bookingMetrics={dashboardData.bookingMetrics}
-              />
-
-              {/* Booking Monitoring Table & Top 10 Collaboration Pairs */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1.8fr 1.2fr',
-                  gap: 'var(--space-20px)',
-                  alignItems: 'start',
-                }}
-              >
-                <BookingTable bookings={dashboardData.bookingMetrics.bookingTable} />
-                <TopPairsList
-                  collaboration={dashboardData.collaborationMetrics}
-                  onSortChange={handleSortChange}
-                />
-              </div>
-            </>
-          )}
+    <main className="ad9">
+      {modalNotice && (
+        <div className="ad9-modal" role="dialog" aria-modal="true" aria-labelledby="ad9-modal-title">
+          <div className="ad9-modal__box">
+            <h3 id="ad9-modal-title">Information Notice</h3>
+            <p>{modalNotice}</p>
+            <button type="button" className="ad9-btn ad9-btn--primary" onClick={() => setModalNotice(null)}>Understood</button>
+          </div>
         </div>
-      </main>
-    </div>
+      )}
+
+      {error && <p className="ad9-alert" role="alert">{error}</p>}
+
+      {/* ADM079 #1–#9 and #18: title, filters and Manage accounts (ADM095) */}
+      <FilterPanel
+        filters={draft}
+        onFilterChange={handleFilterChange}
+        villageOptions={villagesData.villages}
+        isVillageLocked={villagesData.isLocked}
+        assignedVillageId={villagesData.assignedVillageId}
+        title={dashboardTitle(villageName)}
+        actions={<div className="ad9-title__actions">
+          <button type="button" className="ad9-btn ad9-btn--primary" disabled={!filtersChanged(draft, filters) || loading} onClick={() => setFilters(prev => ({ ...draft, sortBy: prev.sortBy }))}>Áp dụng bộ lọc</button>
+          <a href="/admin/users" className="ad9-btn">Quản lý tài khoản</a>
+        </div>}
+      />
+
+      {dashboardData && <>
+        {/* #10–#13, #22: the four FR-003 cards */}
+        <MetricCards cards={dashboardData.metricCards} loading={loading} />
+        <div className="ad9-grid-2">
+          <PendingVerificationPanel items={dashboardData.pendingVerification} />
+          {/* #16: status breakdown */}
+          <BookingStatusDonut bookingMetrics={dashboardData.bookingMetrics} />
+        </div>
+        {/* #19 trend, #14 / #15 account and provider status */}
+        <ChartsSection
+          agencyMetrics={dashboardData.agencyMetrics}
+          providerMetrics={dashboardData.providerMetrics}
+          bookingMetrics={dashboardData.bookingMetrics}
+          granularity={dashboardData.period.granularity}
+        />
+        {/* #20 booking table, #21 top 10 pairs */}
+        <BookingTable bookings={dashboardData.bookingMetrics.bookingTable} />
+        <TopPairsList collaboration={dashboardData.collaborationMetrics} onSortChange={handleSortChange} />
+      </>}
+    </main>
   )
 }

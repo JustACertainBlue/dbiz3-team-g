@@ -2,215 +2,33 @@
 
 import React from 'react'
 import { BookingMetrics } from '@/lib/adm/types'
-import { statusLabel } from '@/lib/status-labels'
+import { statusBreakdown } from '@/lib/adm/dashboard-view'
+import StatusBadge from '@/app/components/StatusBadge'
 
 interface BookingStatusDonutProps {
   bookingMetrics: BookingMetrics
 }
 
+// FR-009 (1): status breakdown with counts + percentages as a stacked bar (the spec allows stacked bar or donut).
+// Design wave 4 (Figma "Màn 5" "Booking theo trạng thái"): status badge, bar, count per row.
 export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) {
-  const chartData = bookingMetrics.statusChartData || []
-  const totalBookings = chartData.reduce((acc, curr) => acc + curr.count, 0)
-
-  // Canonical colors matching ADM079.png mockup
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'var(--color-status-completed)' // Black
-      case 'Booked':
-        return 'var(--color-status-booked)' // Dark gray
-      case 'Cancelled':
-      case 'Canceled':
-        return 'var(--color-status-cancelled)' // Medium gray
-      case 'On hold':
-      case 'On Hold':
-        return 'var(--color-status-on-hold)' // Light gray
-        return 'var(--palette-gray-10)' // Black
-      case 'Booked':
-        return 'var(--palette-gray-34)' // Dark gray
-      case 'Cancelled':
-      case 'Canceled':
-        return 'var(--palette-gray-65)' // Medium gray
-      case 'On hold':
-      case 'On Hold':
-        return 'var(--palette-gray-90)' // Light gray
-      default:
-        return 'var(--palette-gray-46)'
-    }
-  }
-
-  // Pre-sort or ensure display order matching mockup: Completed, Booked, Canceled, On Hold
-  const order = ['Completed', 'Booked', 'Cancelled', 'On hold']
-  const sortedData = [...chartData].sort((a, b) => {
-    const ai = order.indexOf(a.status)
-    const bi = order.indexOf(b.status)
-    return (ai >= 0 ? ai : 99) - (bi >= 0 ? bi : 99)
-  })
-
-  // SVG Donut calculation
-  const size = 180
-  const center = size / 2
-  const strokeWidth = 26
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-
-  // Compute stroke dashes for each segment
-  let accumulatedOffset = 0
-  const segments = sortedData.map(item => {
-    const fraction = totalBookings > 0 ? item.count / totalBookings : 0
-    const dashLength = fraction * circumference
-    const offset = accumulatedOffset
-    accumulatedOffset += dashLength
-    return {
-      ...item,
-      color: getStatusColor(item.status),
-      strokeDasharray: `${dashLength} ${circumference - dashLength}`,
-      strokeDashoffset: -offset,
-    }
-  })
-
+  const { total, rows } = statusBreakdown(bookingMetrics.statusChartData || [])
   return (
-    <div
-      style={{
-        background: 'var(--palette-white)',
-        borderRadius: 'var(--radius-md)',
-        border: 'var(--border-width-1) solid var(--palette-gray-90)',
-        padding: 'var(--space-24px)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        boxShadow: '0 var(--space-1px) var(--space-2px) var(--alpha-black-3)',
-      }}
-    >
-      {/* Header */}
-      <div style={{ marginBottom: 'var(--space-16px)' }}>
-        <h3
-          style={{
-            fontSize: 'var(--font-size-1p125rem)',
-            fontWeight: 700,
-            color: 'var(--palette-gray-4)',
-            margin: 0,
-            letterSpacing: '-0.01em',
-          }}
-        >
-          Booking Status
-        </h3>
-        <p
-          style={{
-            fontSize: 'var(--font-size-0p78rem)',
-            color: 'var(--palette-gray-46)',
-            fontFamily: 'monospace, sans-serif',
-            margin: 'var(--space-4px) 0 0 0',
-          }}
-        >
-          {totalBookings.toLocaleString()} total
-        </p>
+    <section className="ad9-panel ad9-glass" aria-labelledby="ad9-status-title">
+      <header className="ad9-panel__head"><h2 id="ad9-status-title">Đặt chỗ theo trạng thái</h2><span>{total.toLocaleString('vi-VN')} đặt chỗ</span></header>
+      <div className="ad9-stack" role="img" aria-label={rows.map(row => `${row.status}: ${row.count} (${row.pct}%)`).join(', ')}>
+        {rows.filter(row => row.share > 0).map(row => <span key={row.status} className={`ad9-stack__seg ad9-seg--${row.status.replace(' ', '').toLowerCase()}`} style={{ width: `${row.share}%` }} />)}
       </div>
-
-      {/* Circular Donut Chart */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 'var(--space-12px) 0 var(--space-20px) 0',
-        }}
-      >
-        <div style={{ position: 'relative', width: `${size}px`, height: `${size}px` }}>
-          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            {/* Background empty track */}
-            <circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="transparent"
-              style={{ stroke: 'var(--color-chart-track)' }}
-              strokeWidth={strokeWidth}
-            />
-
-            {/* Status Segments */}
-            {totalBookings > 0 &&
-              segments.map((seg, idx) => (
-                <circle
-                  key={idx}
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  fill="transparent"
-                  strokeWidth={strokeWidth}
-                  strokeDasharray={seg.strokeDasharray}
-                  strokeDashoffset={seg.strokeDashoffset}
-                  transform={`rotate(-90 ${center} ${center})`}
-                  style={{ stroke: seg.color, transition: 'stroke-dasharray 0.5s ease' }}
-                />
-              ))}
-
-            {/* Center Total Text */}
-            <text
-              x={center}
-              y={center - 4}
-              textAnchor="middle"
-              style={{ fill: 'var(--palette-gray-46)' }}
-              fontSize="10px"
-              fontWeight="600"
-              letterSpacing="0.08em"
-            >
-              TOTAL
-            </text>
-            <text
-              x={center}
-              y={center + 18}
-              textAnchor="middle"
-              style={{ fill: 'var(--palette-gray-4)' }}
-              fontSize="20px"
-              fontWeight="800"
-              letterSpacing="-0.02em"
-            >
-              {totalBookings.toLocaleString()}
-            </text>
-          </svg>
-        </div>
-      </div>
-
-      {/* Legend Rows matching ADM079.png */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10px)', paddingTop: 'var(--space-8px)' }}>
-        {sortedData.map(item => {
-          const displayName = statusLabel('booking', item.status)
-          return (
-            <div
-              key={item.status}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: 'var(--font-size-0p8rem)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)' }}>
-                <span
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: 'var(--radius-50pct)',
-                    background: getStatusColor(item.status),
-                    display: 'inline-block',
-                  }}
-                />
-                <span style={{ color: 'var(--palette-gray-4)', fontWeight: 500 }}>{displayName}</span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-16px)' }}>
-                <span style={{ fontWeight: 600, color: 'var(--palette-gray-4)', minWidth: '40px', textAlign: 'right' }}>
-                  {item.count.toLocaleString()}
-                </span>
-                <span style={{ color: 'var(--palette-gray-46)', fontSize: 'var(--font-size-0p74rem)', minWidth: '32px', textAlign: 'right' }}>
-                  {item.pct}%
-                </span>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+      <ul className="ad9-status-rows">
+        {rows.map(row => (
+          <li key={row.status}>
+            <StatusBadge family="booking" status={row.status} />
+            <span className="ad9-bar" aria-hidden="true"><span className={`ad9-bar__fill ad9-seg--${row.status.replace(' ', '').toLowerCase()}`} style={{ width: `${row.share}%` }} /></span>
+            <strong>{row.count.toLocaleString('vi-VN')}</strong>
+            <span className="ad9-muted">{row.pct}%</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

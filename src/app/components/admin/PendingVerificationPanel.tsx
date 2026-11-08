@@ -9,52 +9,21 @@ interface PendingVerificationPanelProps {
 }
 
 // A6: read-only list of accounts awaiting review, from the shared runtime (no View/Verify actions, BR-012).
+// Design wave 4: glass panel, Vietnamese labels (approved by linhkhanh-vu 09/11).
 export function PendingVerificationPanel({ items }: PendingVerificationPanelProps) {
-  const countText = `${items.length} ${items.length === 1 ? 'account' : 'accounts'} awaiting review`
-
+  const countText = `${items.length} tài khoản chờ duyệt`
   return (
-    <div
-      style={{
-        background: 'var(--palette-white)',
-        borderRadius: 'var(--radius-md)',
-        border: 'var(--border-width-1) solid var(--palette-gray-90)',
-        padding: 'var(--space-24px)',
-        display: 'flex',
-        flexDirection: 'column',
-        boxShadow: '0 var(--space-1px) var(--space-2px) var(--alpha-black-3)',
-      }}
-    >
-      <h3 style={{ fontSize: 'var(--font-size-1p125rem)', fontWeight: 700, color: 'var(--palette-gray-4)', margin: 0, letterSpacing: '-0.01em' }}>
-        Pending Verification
-      </h3>
-      <p style={{ fontSize: 'var(--font-size-0p78rem)', color: 'var(--palette-gray-46)', fontFamily: 'monospace, sans-serif', margin: 'var(--space-4px) 0 var(--space-16px) 0' }}>
-        {countText}
-      </p>
-
-      {items.length === 0 ? (
-        <div style={{ padding: 'var(--space-28px) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--font-size-0p82rem)' }}>
-          No accounts awaiting review
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {items.map(item => (
-            <div
-              key={`${item.kind}:${item.id}`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-12px) 0', borderTop: 'var(--border-width-1) solid var(--palette-gray-96)' }}
-            >
-              <span style={{ fontSize: 'var(--font-size-0p88rem)', fontWeight: 600, color: 'var(--palette-gray-10)' }}>{item.name}</span>
-              <span style={{ display: 'flex', gap: 'var(--space-12px)', alignItems: 'center' }}>
-                <span style={{ fontSize: 'var(--font-size-0p68rem)', fontWeight: 600, color: 'var(--palette-gray-34)', border: 'var(--border-width-1) solid var(--palette-gray-90)', padding: 'var(--space-2px) var(--space-6px)', borderRadius: 'var(--radius-4)', textTransform: 'uppercase' }}>
-                  {item.kind}
-                </span>
-                <span style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', fontFamily: 'monospace, sans-serif' }}>
-                  {hanoiDate(item.submittedAt)}
-                </span>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <section className="ad9-panel ad9-glass" aria-labelledby="ad9-pending-title">
+      <header className="ad9-panel__head"><h2 id="ad9-pending-title">Tài khoản chờ duyệt</h2><span>{countText}</span></header>
+      {items.length === 0
+        ? <p className="ad9-empty">Không có tài khoản nào chờ duyệt</p>
+        : <ul className="ad9-list">{items.map(item => (
+          <li key={`${item.kind}:${item.id}`}>
+            <strong>{item.name}</strong>
+            <span className="ad9-chip">{item.kind}</span>
+            <time className="ad9-muted">{hanoiDate(item.submittedAt)}</time>
+          </li>
+        ))}</ul>}
+    </section>
   )
 }

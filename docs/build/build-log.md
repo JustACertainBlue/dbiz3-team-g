@@ -1160,6 +1160,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm test` 194 files passed, 4 skipped (1168 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; contrast of every new colour pair ≥ 4.5:1 (text) / ≥ 3:1 (input border) |
 | Open question | COM065 #8 Create booking in a Closed Chat: §3 row 15 (OQ for spec IAC / BKG). Human decision 09/11: keep the link to BKG134 in both states; spec unchanged |
 
+### Entry 88: 09/11 Claude Code + human — design wave 4 screen 5: Dashboard ADM079 (`design/screen-dashboard`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (wave 4, straight chain on #153) |
+| Change | ADM079 restyled to Figma "Màn 5" with spec content: scope title (UBND "Dashboard làng {village}", HDT "Dashboard toàn thành phố"), **Apply filters** (#17, filters edit a draft; `filter-draft.ts`), **Manage accounts** → ADM095 `/admin/users` (#18), four FR-003 cards in Vietnamese (no "Doanh thu"), status breakdown as a stacked bar + rows with counts and percentages (FR-009 (1)), booking trend as a **line** with BR-019 granularity (FR-009 (2); was bars), FR-007 / FR-008 panels, booking table (sortable, sticky header) and Top 10 table with the Frequency / Recency toggle. New `src/lib/adm/dashboard-view.ts` and `dashboard-v9.css`; inline styles removed from MetricCards, BookingStatusDonut, ChartsSection, BookingTable, TopPairsList, PendingVerificationPanel; FilterPanel only gets `title` / `actions` props |
+| Tests | `tests/adm/unit/dashboard-view.test.ts` (10) and `filter-draft.test.ts` (4), new: red first on stubs, then green; mutations 6/6 and 2/2 caught. No existing test changed |
+| Follow-up (linhkhanh-vu 09/11) | Approved: filter bar to Figma (four boxes Thời gian · Làng · Agency · Provider, Vietnamese labels, Lock icon + "Bị khoá theo tài khoản UBND") and the pending panel in Vietnamese. Spec first: `spec-ADM.md:184` FR-005 "All Villages" gets the display label "Tất cả các làng" (behaviour unchanged) in separate PR #155 with the `specs/003-adm-core` snapshot (its build-log note is this row, so the two PRs do not conflict). Then `tests/adm/unit/filter-panel.test.ts:38-91` and `pending-verification.test.ts:46`: **spec đổi → kỳ vọng đổi**, text only; the 4 changed tests failed on the old labels first. Behaviour unchanged: one category (Agency or Provider) at a time with a switch confirmation, same filter values; browser check (Playwright, DEV): switch dialog, Apply sends `providerId`, Custom shows "Từ ngày / Đến ngày", UBND village locked |
+| Figma check | After-only shots (HDT and UBND) at 1440/390 next to Figma; difference table in the PR with (c) = 0. Browser check on the DEV dev server (Playwright): Apply disabled at load, enabled after choosing Last 7 days while the cards keep 42, cards show 14 only after Apply; sort toggle applies at once; Manage accounts → `/admin/users` |
+| Checks | `npm test` 196 files passed, 4 skipped (1182 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

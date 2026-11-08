@@ -1,3 +1,4 @@
+import './tokens.css'
 import './globals.css'
 import './screen-specs.css'
 import './product-ui.css'

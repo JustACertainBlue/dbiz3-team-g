@@ -31,7 +31,7 @@ export default function ExperienceActions({ experienceId, quoteSent = false }: {
     {quoteSent
       ? <p className="handoff-note" data-testid="quote-sent">Đã gửi yêu cầu báo giá cho trải nghiệm này. <button disabled={busy !== null} onClick={() => handoff('chat')}>Mở hội thoại</button></p>
       : <button className="button" disabled={busy !== null} onClick={() => handoff('quote')}>{busy === 'quote' ? 'Đang tạo yêu cầu…' : 'Yêu cầu báo giá'}</button>}
-    <button className="button button--secondary" disabled={busy !== null} onClick={() => handoff('chat')}>{busy === 'chat' ? 'Đang mở Chat…' : 'Chat với Provider'}</button>
+    <button className="button button--secondary" disabled={busy !== null} onClick={() => handoff('chat')}>{busy === 'chat' ? 'Đang mở Chat…' : 'Nhắn tin'}</button>
     {error && <p role="alert" className="handoff-error">{error}</p>}
   </div>
 }

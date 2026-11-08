@@ -29,7 +29,6 @@
     "test:storage": "node scripts/storage/test.mjs"
   },
   "dependencies": {
-    "@googlemaps/google-maps-services-js": "^3.4.0",
     "@next/env": "14.2.35",
     "bcryptjs": "^3.0.3",
     "csv-parse": "^5.6.0",

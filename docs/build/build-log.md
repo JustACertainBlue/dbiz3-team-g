@@ -1033,6 +1033,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 75: 08/11 Claude Code + human — #84 remove the `major-change` stub route (`fix/84-remove-major-change-stub`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu: check callers and spec first, remove the route only if nothing needs it (file deletion approved in the prompt) |
+| Callers checked | `git grep major-change`: no UI, test or `docs/spec/` reference calls the endpoint; spec-PRF FR-002 / spec-AUT FR-018 define the contract of the profile update, not a separate endpoint. Only `specs/002-prf-core` (plan, tasks T045, contracts) and docs described it |
+| Tests first | `tests/contract/aut-prf-major-change.test.ts` (#84 case): red before the removal (`{ status: 201, written: 0 }` for the Agency Owner), green after (route module gone) |
+| Change | Deleted `src/app/api/prf/agency/[agencyId]/major-change/route.ts`; `docs/test/integration-contract.md` §9 item 5 and `specs/002-prf-core/contracts/agency-profile.md` now say the route was removed; major changes are still created only by `PATCH /api/prf/agency/[agencyId]` |
+| Mutation | The red run is the mutant: with the route file present the test fails |
+| Checks | `npm test` 191 files passed, 4 skipped (1147 passed, 20 skipped); `npm run lint` OK (after `npm run build` regenerated `.next/types`); `npm run build` OK; DEV dev server: `POST …/major-change` → 404, `GET /api/prf/agency/[id]` → 200 |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

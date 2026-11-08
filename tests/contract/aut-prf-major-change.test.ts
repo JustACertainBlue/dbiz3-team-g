@@ -69,4 +69,18 @@ describe('Contract AUT ↔ PRF | Agency major legal change review (integration-c
     expect(profile().tax_id).toBe(before)
     expect(pendingChanges().map(c => c.major_change_id)).toEqual([id])
   })
+
+  // Issue #84: the profile PATCH is the only way a major change is created (PRF FR-002); a separate
+  // POST .../major-change must not answer 201 "created" while writing nothing.
+  it('PRF FR-002 (issue #84): POST /api/prf/agency/[agencyId]/major-change no longer answers 201 without writing a request', async () => {
+    const routeModule = '@/app/api/prf/agency/[agencyId]/major-change/route'
+    const stub = await import(/* @vite-ignore */ routeModule).catch(() => null)
+    if (stub) {
+      const before = repo().all('agency_major_change_requests').length
+      const response = await stub.POST(request(`/api/prf/agency/${AGENCY}/major-change`, 'agency', 'POST', { company_name: 'Tên mới' }), ctx)
+      expect({ status: response.status, written: repo().all('agency_major_change_requests').length - before })
+        .not.toEqual({ status: 201, written: 0 })
+    }
+    expect(stub, 'the stub route module should be removed').toBeNull()
+  })
 })

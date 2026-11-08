@@ -1033,6 +1033,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 79: 08/11 Claude Code + human — Admins see the review state of the version under review (`fix/provider-review-status-display`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); High defect from the 08/11 test session, reported by Minh Thư (UBND) and Nguyễn Thư (HDT); fix approved by linhkhanh-vu after the investigation |
+| Reproduced / cause | UBND: `/admin/providers` (status column, the two counts, order) and the ADM079 pending list (`pending-service.ts`) read `provider_profiles.verification_status`, which stays Verified while a revision of a published provider is open (PRF Q32 / BR-007); the revision was shown as Verified and was missing from the UBND queue. The write path and the detail page were already right. HDT: seed inconsistency (`c8e989d4…` Draft v1 never submitted, yet `provider_verification_reviews.csv:9` has Approve for v1), found on DEV with a read-only query; reported as a data issue, not changed here |
+| Tests first | `tests/prf/unit/provider-review-status-display.test.ts` (6): the ADM079 pending list missed the open revision (red for the real bug) and the 4 helper cases were red; the route case (blank or whitespace Request Revision → 400, no review written) was green from the start (server already refuses at schema and service level) |
+| Fix | New `src/lib/prf/provider-review-view.ts`: `providerReviewState` (label "Bản công khai v1: Verified · Bản đang xét v2: …"), `adminProviderQueue` (rows, counts, order Pending → Revision Required → Draft → Verified, village scope), `reviewHistoryRows` ("Approve · v1"); used by `/admin/providers`, its detail page and `pending-service.ts`. `provider-service.ts` unchanged |
+| Mutation (foreground) | 10 mutants, 10 killed (after adding an order assertion over all four states: alphabetical order first survived): provider-level status, revision always open, published status when never published, single label, alphabetical order, counts by provider status, blank village sees all, history without version, history unsorted, old pending filter |
+| Checks | `npm test` 192 files passed, 4 skipped (1152 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; DEV dev server as the HDT test account: queue order Revision Required → Draft → Verified, detail of `c8e989d4…` shows "Approve · v1". Not seen live: a pending revision (none on DEV; the API call as UBND was refused by the agent's auto-mode classifier, so the route case is covered by the test only) |
+| Not in scope | Hydration warning from the existing `<style>{detailStyles}</style>` on the detail page (escaped `>`); status labels stay English until design wave 2 |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

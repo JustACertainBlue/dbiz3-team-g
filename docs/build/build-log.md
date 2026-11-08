@@ -1149,6 +1149,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 | Follow-up (linhkhanh-vu 09/11) | The lock-reason line under the actions bar is a **Figma addition, not required by the spec** (FR-007 / FR-006 / BR-017 only define when Mark Group Arrival is enabled). Moved to `arrivalLockReason()` in `src/lib/booking/booking-actions.ts` and checked against those conditions: tests first `tests/unit/bkg-arrival-lock-reason.test.ts` (6: On hold, Booked before start, Booked at/after start = no reason, Completed, Cancelled, invariant reason ⇔ locked for every status/time, render with `aria-describedby`); 5 red before (no helper), the Completed/Cancelled reasons were missing in the first version. Mutation 6/6 killed. `npm test` 193 files passed, 4 skipped (1156 passed); lint and build OK |
 
+### Entry 87: 09/11 Claude Code + human — design wave 4 screen 4: Chat COM048 / COM065 (`design/screen-chat`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (wave 4, straight chain on #152) |
+| Change | `src/app/messages/page.tsx` restyled to Figma "Màn 4" (list 380 + thread; phones: list or thread with a back button); styled-jsx replaced by `chat-v9.css`; new pure helpers `chat-view.ts` (initials, Active / Closed line, Hanoi-time list time and day separators, attachment line, screen actions). Screen actions now follow the specs: COM048 #8–#10 Close Chat · Bookings · Schedule; COM065 #8–#10 Create booking · Close Chat · Bookings (Bookings / Schedule / Create booking links were missing before). API calls, composer, close and attach logic unchanged |
+| Tests | `tests/unit/iac-chat-view.test.ts` (new, 12 tests): red first (10 failing on a stub), then green; 6/6 mutations caught. No existing test changed |
+| Figma check | After-only shots (Agency thread, Agency list, Provider thread) at 1440/390 next to Figma; difference table in the PR with (c) = 0. Opening a thread on DEV resets that chat's unread count (BR-015), as any read does |
+| Checks | `npm test` 194 files passed, 4 skipped (1168 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; contrast of every new colour pair ≥ 4.5:1 (text) / ≥ 3:1 (input border) |
+| Open question | COM065 #8 Create booking: the spec does not say whether it stays available in a Closed Chat. Kept as a plain link to BKG134 in both states (it does not write to the Chat); listed in the PR for the spec owner |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

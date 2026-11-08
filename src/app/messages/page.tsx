@@ -1,19 +1,22 @@
 'use client'
 
 import Link from 'next/link'
-import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react'
+import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { SessionContext } from '@/lib/auth/session'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { renderChatMarkdown } from '@/lib/iac/markdown-utils'
 import { composerState } from './composer-state'
 import { closedNotice, closeReasonState } from './close-chat'
-import { ACCEPT_ATTRIBUTE, ATTACH_ERROR_TEXT, attachState, sizeLabel, typeLabel } from './attach-state'
-import StatusBadge from '@/app/components/StatusBadge'
-import { statusLabel } from '@/lib/status-labels'
+import { ACCEPT_ATTRIBUTE, ATTACH_ERROR_TEXT, attachState, typeLabel } from './attach-state'
+import { ChevronLeft, Paperclip } from 'lucide-react'
+import { hanoiClock } from '@/lib/time/hanoi-time'
+import { attachmentLine, chatActions, chatStatusLine, groupByDay, initials, listTime } from './chat-view'
+import './chat-v9.css'
 
 // Screens COM048 (Tour Agency) and COM065 (Local Provider): F-CHAT-01..05 on /api/iac/chats (spec-IAC FR-001..005);
 // the attach dialog is COM125 (Agency) / COM126 (Provider), spec-IAC #49.
+// Design wave 4 screen 4: Figma "Màn 4" layout; content per the screen specs (see chat-view.ts).
 type ChatEntry = {
   chat_session_id: string; chat_status: 'Active' | 'Closed'; participant_name: string; organization: string;
   last_message_preview?: string; last_message_at?: string; unread_count: number
@@ -25,10 +28,8 @@ type Message = {
 }
 type History = { chat_session_id: string; chat_status: 'Active' | 'Closed'; message_history: Message[]; has_more_messages: boolean; closed_at?: string; closed_by_name?: string }
 
-const formatTime = (value?: string) => value ? new Date(value).toLocaleString('vi-VN') : ''
-
 export default function MessagesPage() {
-  return <Suspense fallback={<main className="messages-state"><p>Đang tải hộp thư…</p></main>}><MessagesContent /></Suspense>
+  return <Suspense fallback={<main className="ch9-state"><p>Đang tải hộp thư…</p></main>}><MessagesContent /></Suspense>
 }
 
 function MessagesContent() {
@@ -48,6 +49,12 @@ function MessagesContent() {
   const [attachOpen, setAttachOpen] = useState(false)
   const [attachFiles, setAttachFiles] = useState<File[]>([])
   const [attaching, setAttaching] = useState(false)
+  // Phones show the list or one thread (Figma 360); desktop shows both.
+  const [threadOpen, setThreadOpen] = useState(Boolean(requestedId))
+  const logRef = useRef<HTMLDivElement>(null)
+  const lastMessageId = history?.message_history[history.message_history.length - 1]?.message_id
+  // Open a thread at its newest message; loading older messages does not move the view.
+  useEffect(() => { const log = logRef.current; if (log) log.scrollTop = log.scrollHeight }, [history?.chat_session_id, lastMessageId])
 
   const loadList = useCallback(async () => {
     const [sessionContext, listResponse] = await Promise.all([
@@ -163,78 +170,95 @@ function MessagesContent() {
     }
   }
 
-  if (!session) return <main className="messages-state"><p>Đang tải hộp thư…</p></main>
+  if (!session) return <main className="ch9-state"><p>Đang tải hộp thư…</p></main>
   if (!session.authenticated || (session.role !== 'Tour_Agency' && session.role !== 'Local_Provider')) {
-    return <main className="messages-state"><h1>Hộp thư B2B</h1><p>Đăng nhập bằng tài khoản Agency hoặc Provider để xem hội thoại.</p><Link href="/login">Đăng nhập</Link></main>
+    return <main className="ch9-state"><h1>Tin nhắn</h1><p>Đăng nhập bằng tài khoản Agency hoặc Provider để xem hội thoại.</p><Link href="/login">Đăng nhập</Link></main>
   }
   const isAgency = session.role === 'Tour_Agency'
+  const now = new Date()
+  const actions = history ? chatActions(session, history.chat_status) : []
+  const openChat = (chatId: string) => {
+    setSelectedId(chatId); setThreadOpen(true); setCloseOpen(false); setCloseReason(''); setNotice(''); resetAttach()
+  }
 
-  return <main className="messages-shell">
-    <header className="messages-header"><div><p>HANOI ARTISAN BRIDGE</p><h1>Chat</h1></div><div><strong>{isAgency ? 'Không gian công ty du lịch' : 'Không gian chủ xưởng'}</strong><small>{isAgency ? 'Công ty du lịch' : 'Chủ xưởng'}</small></div></header>
-    {error && <p className="messages-error" role="alert">{error}</p>}
-    {notice && <p className="messages-notice" role="status">{notice}</p>}
-    <div className="messages-layout">
-      <aside className="conversation-list"><div className="conversation-list__title">Hội thoại ({chats.length})</div>
-        {chats.length === 0 && <p>Chưa có hội thoại. {isAgency ? 'Agency có thể bắt đầu từ Explore hoặc AI Tour Matching.' : 'Mở Chat từ một Booking.'}</p>}
-        {chats.map(chat => <button key={chat.chat_session_id} className={chat.chat_session_id === selectedId ? 'is-selected' : ''} onClick={() => { setSelectedId(chat.chat_session_id); setCloseOpen(false); setCloseReason(''); setNotice(''); resetAttach() }}>
-          <strong>{chat.organization}{chat.unread_count > 0 && <em className="unread-badge" aria-label={`${chat.unread_count} tin chưa đọc`}>{chat.unread_count}</em>}</strong>
-          <span>{chat.participant_name} · {statusLabel('chat', chat.chat_status)}</span>
-          <small>{chat.last_message_preview || 'Hội thoại mới'}</small>
-          <time>{formatTime(chat.last_message_at)}</time>
-        </button>)}
-      </aside>
-      <section className="conversation-panel">
-        {!selected || !history ? <div className="messages-empty"><h2>Chọn một hội thoại</h2><p>Mỗi cặp Agency–Provider có một hội thoại đang mở; Experience, Quote và Booking là ngữ cảnh trong cùng hội thoại.</p></div> : <>
-          <header className="conversation-header"><div><StatusBadge family="chat" status={history.chat_status} /><h2>{selected.organization}</h2><p>{selected.participant_name}</p></div>
-            {history.chat_status === 'Active' && <button type="button" className="close-chat" onClick={() => { setCloseOpen(true); setNotice('') }}>Đóng hội thoại</button>}</header>
-          {closeOpen && history.chat_status === 'Active' && <div className="close-dialog" role="dialog" aria-label="Đóng hội thoại">
-            <p><strong>Đóng hội thoại này?</strong> Lịch sử vẫn được giữ; hội thoại đã đóng không mở lại được.</p>
-            <label>Lý do (không bắt buộc)<textarea value={closeReason} onChange={event => setCloseReason(event.target.value)} rows={2} /></label>
-            <small className={closeState.canConfirm || closing ? '' : 'is-over'}>{closeState.counter}</small>
-            <div><button type="button" onClick={() => { setCloseOpen(false); setCloseReason('') }}>Hủy</button>
-              <button type="button" className="close-confirm" disabled={!closeState.canConfirm} onClick={confirmClose}>{closing ? 'Đang đóng…' : 'Đóng hội thoại'}</button></div>
-          </div>}
-          <div className="message-log">
-            {history.has_more_messages && <button type="button" className="load-older" onClick={loadOlder}>Tải tin nhắn cũ hơn</button>}
-            {history.message_history.length === 0 && <p className="messages-empty">Chưa có tin nhắn.</p>}
-            {history.message_history.map(message => {
+  return <main className={threadOpen ? 'ch9 is-thread' : 'ch9'}>
+    <aside className="ch9-list" aria-label="Danh sách hội thoại">
+      <h1>Tin nhắn</h1>
+      <p className="ch9-count">{chats.length} hội thoại</p>
+      {chats.length === 0 && <p className="ch9-empty">Chưa có hội thoại. {isAgency ? 'Agency có thể bắt đầu từ Explore hoặc AI Tour Matching.' : 'Mở Chat từ một Booking.'}</p>}
+      <ul>{chats.map(chat => <li key={chat.chat_session_id}>
+        <button type="button" className={chat.chat_session_id === selectedId ? 'ch9-item is-selected' : 'ch9-item'} aria-current={chat.chat_session_id === selectedId ? 'true' : undefined} onClick={() => openChat(chat.chat_session_id)}>
+          <span className="ch9-avatar" aria-hidden="true">{initials(chat.organization)}</span>
+          <span className="ch9-item__body">
+            <span className="ch9-item__top"><strong>{chat.organization}</strong><time>{listTime(chat.last_message_at, now)}</time>
+              {chat.unread_count > 0 && <em className="ch9-unread" aria-label={`${chat.unread_count} tin chưa đọc`}>{chat.unread_count}</em>}</span>
+            <span className="ch9-item__bottom"><span className="ch9-preview">{chat.last_message_preview || 'Hội thoại mới'}</span>
+              <span className={chat.chat_status === 'Active' ? 'ch9-state-text is-active' : 'ch9-state-text'}>{chatStatusLine(chat.chat_status).split(' · ')[0]}</span></span>
+          </span>
+        </button>
+      </li>)}</ul>
+    </aside>
+    <section className="ch9-thread" aria-label="Hội thoại">
+      {error && <p className="ch9-alert" role="alert">{error}</p>}
+      {notice && <p className="ch9-notice" role="status">{notice}</p>}
+      {!selected || !history ? <div className="ch9-placeholder"><h2>Chọn một hội thoại</h2><p>Mỗi cặp Agency–Provider có một hội thoại đang mở; Experience, Quote và Booking là ngữ cảnh trong cùng hội thoại.</p></div> : <>
+        <header className="ch9-head">
+          <button type="button" className="ch9-back" onClick={() => setThreadOpen(false)} aria-label="Quay lại danh sách hội thoại"><ChevronLeft size={22} aria-hidden="true" /></button>
+          <span className="ch9-avatar" aria-hidden="true">{initials(selected.organization)}</span>
+          <div className="ch9-head__name"><h2>{selected.organization}</h2>
+            <p><span className={history.chat_status === 'Active' ? 'ch9-state-text is-active' : 'ch9-state-text'}>{chatStatusLine(history.chat_status)}</span> · {selected.participant_name}</p></div>
+          <div className="ch9-actions">{actions.map(action => action.href
+            ? <Link key={action.key} href={action.href} className={action.key === 'create_booking' ? 'ch9-btn ch9-btn--primary' : 'ch9-btn'}>{action.label}</Link>
+            : <button key={action.key} type="button" className="ch9-btn ch9-btn--danger" onClick={() => { setCloseOpen(true); setNotice('') }}>{action.label}</button>)}</div>
+        </header>
+        {closeOpen && history.chat_status === 'Active' && <div className="ch9-dialog" role="dialog" aria-label="Đóng hội thoại">
+          <p><strong>Đóng hội thoại này?</strong> Lịch sử vẫn được giữ; hội thoại đã đóng không mở lại được.</p>
+          <label>Lý do (không bắt buộc)<textarea value={closeReason} onChange={event => setCloseReason(event.target.value)} rows={2} /></label>
+          <small className={closeState.canConfirm || closing ? '' : 'is-over'}>{closeState.counter}</small>
+          <div><button type="button" className="ch9-btn" onClick={() => { setCloseOpen(false); setCloseReason('') }}>Hủy</button>
+            <button type="button" className="ch9-btn ch9-btn--danger" disabled={!closeState.canConfirm} onClick={confirmClose}>{closing ? 'Đang đóng…' : 'Đóng hội thoại'}</button></div>
+        </div>}
+        <div className="ch9-log" ref={logRef}>
+          {history.has_more_messages && <button type="button" className="ch9-older" onClick={loadOlder}>Tải tin nhắn cũ hơn</button>}
+          {history.message_history.length === 0 && <p className="ch9-empty">Chưa có tin nhắn.</p>}
+          {groupByDay(history.message_history, now).map(group => <div key={`${group.label}-${group.items[0].message_id}`} className="ch9-day">
+            <p className="ch9-day__label">{group.label}</p>
+            {group.items.map(message => {
+              const system = message.message_kind === 'Booking Update'
               // A message is the reader's own when it is not from the counterpart (participant_name, #22) or the system.
-              const mine = message.message_kind !== 'Booking Update' && message.sender_name !== selected.participant_name
-              return <article key={message.message_id} className={message.message_kind === 'Booking Update' ? 'message message--system' : mine ? 'message message--mine' : 'message'}>
-                <small>{message.sender_name}{message.message_kind !== 'User Text' ? ` · ${message.message_kind}` : ''}</small>
+              const mine = !system && message.sender_name !== selected.participant_name
+              return <article key={message.message_id} className={system ? 'ch9-msg ch9-msg--system' : mine ? 'ch9-msg ch9-msg--mine' : 'ch9-msg'}>
+                {!system && !mine && <small className="ch9-msg__sender">{message.sender_name}{message.message_kind !== 'User Text' ? ` · ${message.message_kind}` : ''}</small>}
                 {message.text && <p dangerouslySetInnerHTML={{ __html: renderChatMarkdown(message.text) }} />}
-                {message.attachments.map(file => <p key={file.attachment_id} className="message-file">📎 <a href={`/api/iac/chats/${encodeURIComponent(history.chat_session_id)}/attachments/${encodeURIComponent(file.attachment_id)}`} download={file.file_name}>{file.file_name}</a> · {typeLabel(file.file_name)} · {sizeLabel(file.file_size)}</p>)}
-                {(message.experience_id || message.booking_id) && <p className="message-context">
+                {message.attachments.map(file => <p key={file.attachment_id} className="ch9-file"><a href={`/api/iac/chats/${encodeURIComponent(history.chat_session_id)}/attachments/${encodeURIComponent(file.attachment_id)}`} download={file.file_name}>{attachmentLine(file)}</a> <span>· {typeLabel(file.file_name)}</span></p>)}
+                {(message.experience_id || message.booking_id) && <p className="ch9-context">
                   {message.experience_id && <Link href={`/explore/experiences/${message.experience_id}`}>Experience</Link>}
-                  {message.booking_id && <Link href={isAgency ? `/agency/${session.agencyId}/bookings/${message.booking_id}` : `/provider/${session.providerId}/bookings/${message.booking_id}`}>Booking</Link>}
+                  {message.booking_id && <Link href={isAgency ? `/agency/${session.agencyId}/bookings/${message.booking_id}` : `/provider/${session.providerId}/bookings/${message.booking_id}`}>Xem đặt chỗ</Link>}
                 </p>}
-                <time>{formatTime(message.sent_at)}</time>
+                {!system && <time>{hanoiClock(message.sent_at)}</time>}
               </article>
             })}
-          </div>
-          {attachOpen && history.chat_status === 'Active' && <div className="attach-dialog" role="dialog" aria-label="Đính kèm tài liệu">
-            <p><strong>Đính kèm tài liệu</strong> 1–5 tệp PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG; tối đa 10 MB mỗi tệp.</p>
-            <input type="file" multiple accept={ACCEPT_ATTRIBUTE} aria-label="Chọn tệp" onChange={event => setAttachFiles(Array.from(event.target.files ?? []))} />
-            {attach.rows.length > 0 && <ul>{attach.rows.map((row, index) => <li key={`${row.name}-${index}`} className={row.error ? 'is-invalid' : ''}>
-              <strong>{row.name}</strong><span>{row.typeLabel} · {row.sizeLabel}</span>{row.error && <em>{row.error}</em>}
-            </li>)}</ul>}
-            {attach.message && <p className="attach-message">{attach.message}</p>}
-            <div><button type="button" onClick={resetAttach}>Hủy</button>
-              <button type="button" className="attach-send" disabled={!attach.canSend} onClick={sendFiles}>{attaching ? 'Đang gửi tệp…' : 'Gửi tệp'}</button></div>
-          </div>}
-          {composer.readOnly
-            ? <div className="message-closed"><p>{closed?.title ?? 'Hội thoại đã đóng — chỉ xem.'}</p><small>{closed?.hint}</small></div>
-            : <form className="message-composer" onSubmit={submit}>
-              <textarea value={messageText} onChange={event => setMessageText(event.target.value)} placeholder="Nhập nội dung trao đổi… (**đậm**, *nghiêng*)" rows={2} />
-              <small className={composer.canSend || !messageText.trim() ? '' : 'is-over'}>{composer.counter}</small>
-              <button type="button" className="attach-open" onClick={() => setAttachOpen(true)}>Đính kèm</button>
-              <button type="submit" disabled={!composer.canSend}>{pending ? 'Đang gửi…' : 'Gửi tin nhắn'}</button>
-            </form>}
-        </>}
-      </section>
-    </div>
-    <style jsx>{`
-      .messages-shell{min-height:100vh;background:var(--palette-gray-94);color:var(--palette-teal-16-2);padding:var(--space-28px)}.messages-header{max-width:1180px;margin:auto;display:flex;justify-content:space-between;align-items:end;padding:var(--space-22px) 0}.messages-header p,.conversation-header small{font-size:var(--font-size-11);letter-spacing:.14em;color:var(--palette-orange-42);font-weight:800}.messages-header h1{margin:var(--space-4px) 0;font-family:Georgia,serif}.messages-header div:last-child{display:grid;text-align:right}.messages-header small{color:var(--palette-gray-43-2)}.messages-layout{max-width:1180px;min-height:650px;margin:auto;display:grid;grid-template-columns:330px 1fr;background:var(--palette-white);border:var(--border-width-1) solid var(--palette-amber-83);border-radius:var(--radius-lg);overflow:hidden}.conversation-list{padding:var(--space-18px);background:var(--palette-gray-96-3);border-right:var(--border-width-1) solid var(--palette-amber-83)}.conversation-list__title{font-weight:800;margin-bottom:var(--space-14px)}.conversation-list button{width:100%;display:grid;gap:var(--space-5px);text-align:left;padding:var(--space-14px);margin-bottom:var(--space-9px);border:var(--border-width-1) solid var(--palette-amber-83);border-radius:var(--radius-md);background:white;cursor:pointer}.conversation-list button.is-selected{border-color:var(--palette-orange-42);box-shadow:0 0 0 2px var(--alpha-orange-42-13p3)}.conversation-list span{font-size:var(--font-size-12);color:var(--palette-orange-42)}.conversation-list small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--palette-gray-43-2)}.conversation-panel{display:flex;flex-direction:column}.conversation-header{display:flex;justify-content:space-between;padding:var(--space-20px) var(--space-24px);border-bottom:var(--border-width-1) solid var(--palette-gray-93-2)}.conversation-header h2{margin:var(--space-4px) 0}.conversation-header a{color:var(--palette-orange-42)}.message-log{flex:1;padding:var(--space-24px);display:flex;flex-direction:column;gap:var(--space-13px);overflow:auto;background:var(--palette-gray-99)}.message{max-width:72%;align-self:flex-start;background:var(--palette-amber-91);padding:var(--space-11px) var(--space-14px);border-radius:var(--radius-14)}.message--mine{align-self:flex-end;background:var(--palette-teal-28);color:white}.message p{margin:var(--space-5px) 0;line-height:1.5}.message time,.message small{font-size:var(--font-size-10);opacity:.7}.message-composer{display:flex;gap:var(--space-10px);padding:var(--space-18px);border-top:var(--border-width-1) solid var(--palette-gray-93-2)}.message-composer input{flex:1;padding:var(--space-12px);border:var(--border-width-1) solid var(--palette-gray-80);border-radius:var(--radius-999)}.message-composer button{border:0;border-radius:var(--radius-999);padding:0 var(--space-22px);background:var(--palette-orange-42);color:white;font-weight:800}.messages-state{padding:var(--space-80px);text-align:center}.messages-error{max-width:1180px;margin:0 auto var(--space-12px);color:var(--palette-red-36)}.messages-empty{margin:auto;text-align:center;color:var(--palette-gray-43-2)}.unread-badge{margin-left:var(--space-8px);padding:var(--space-1px) var(--space-8px);border-radius:var(--radius-999);background:var(--palette-orange-42);color:white;font-style:normal;font-size:var(--font-size-11)}.conversation-list time{font-size:var(--font-size-10);color:var(--palette-gray-56)}.load-older{align-self:center;border:var(--border-width-1) solid var(--palette-amber-83);border-radius:var(--radius-999);background:white;padding:var(--space-6px) var(--space-14px);cursor:pointer}.message--system{align-self:center;background:var(--palette-orange-93-4);max-width:85%}.message-file,.message-context{font-size:var(--font-size-12)}.message-context{display:flex;gap:var(--space-10px)}.message-context a{color:inherit;font-weight:700}.message-closed{padding:var(--space-18px);border-top:var(--border-width-1) solid var(--palette-gray-93-2);color:var(--palette-gray-43-2);text-align:center}.message-closed p{margin:0 0 var(--space-4px);font-weight:700}.messages-notice{max-width:1180px;margin:0 auto var(--space-12px);color:var(--palette-teal-28);font-weight:700}.close-chat{align-self:center;border:var(--border-width-1) solid var(--palette-orange-42);border-radius:var(--radius-999);background:white;color:var(--palette-orange-42);padding:var(--space-8px) var(--space-16px);font-weight:800;cursor:pointer}.close-dialog{display:grid;gap:var(--space-8px);padding:var(--space-16px) var(--space-24px);background:var(--palette-orange-93-4);border-bottom:var(--border-width-1) solid var(--palette-gray-93-2)}.close-dialog label{display:grid;gap:var(--space-4px);font-size:var(--font-size-13);font-weight:700}.close-dialog textarea{padding:var(--space-8px);border:var(--border-width-1) solid var(--palette-gray-80);border-radius:var(--radius-10);font:inherit}.close-dialog small{font-size:var(--font-size-11);color:var(--palette-gray-43-2)}.close-dialog small.is-over{color:var(--palette-red-36);font-weight:800}.close-dialog div{display:flex;gap:var(--space-10px);justify-content:flex-end}.close-dialog button{border:var(--border-width-1) solid var(--palette-gray-80);border-radius:var(--radius-999);background:white;padding:var(--space-8px) var(--space-16px);cursor:pointer}.close-dialog .close-confirm{background:var(--palette-red-30-2);color:white;border-color:var(--palette-red-30-2)}.close-dialog button:disabled{opacity:.45;cursor:not-allowed}.message-composer textarea{flex:1;padding:var(--space-12px);border:var(--border-width-1) solid var(--palette-gray-80);border-radius:var(--radius-16);font:inherit;resize:vertical}.message-composer small{align-self:center;font-size:var(--font-size-11);color:var(--palette-gray-43-2)}.message-composer small.is-over{color:var(--palette-red-36);font-weight:800}.message-composer button:disabled{opacity:.45;cursor:not-allowed}.message-file a{color:inherit;font-weight:700}.attach-dialog{display:grid;gap:var(--space-8px);padding:var(--space-16px) var(--space-24px);background:var(--palette-gray-95-2);border-top:var(--border-width-1) solid var(--palette-gray-93-2)}.attach-dialog p{margin:0;font-size:var(--font-size-13)}.attach-dialog ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-6px)}.attach-dialog li{display:grid;grid-template-columns:1fr auto;gap:var(--space-2px) var(--space-10px);padding:var(--space-8px) var(--space-10px);background:white;border:var(--border-width-1) solid var(--palette-amber-83);border-radius:var(--radius-10);font-size:var(--font-size-14)}.attach-dialog li span{font-size:var(--font-size-12);color:var(--palette-gray-43-2)}.attach-dialog li em{grid-column:1/-1;color:var(--palette-red-36);font-style:normal;font-size:var(--font-size-12);font-weight:700}.attach-dialog li.is-invalid{border-color:var(--palette-red-36)}.attach-message{color:var(--palette-red-36);font-weight:700}.attach-dialog div{display:flex;gap:var(--space-10px);justify-content:flex-end}.attach-dialog button{border:var(--border-width-1) solid var(--palette-gray-80);border-radius:var(--radius-999);background:white;padding:var(--space-8px) var(--space-16px);cursor:pointer}.attach-dialog .attach-send{background:var(--palette-teal-28);color:white;border-color:var(--palette-teal-28)}.attach-dialog button:disabled{opacity:.45;cursor:not-allowed}.message-composer .attach-open{background:white;color:var(--palette-teal-28);border:var(--border-width-1) solid var(--palette-teal-28)}@media(max-width:760px){.messages-layout{grid-template-columns:1fr}.conversation-list{border-right:0;border-bottom:var(--border-width-1) solid var(--palette-gray-87)}.messages-header{align-items:start}.messages-shell{padding:var(--space-14px)}}
-    `}</style>
+          </div>)}
+        </div>
+        {attachOpen && history.chat_status === 'Active' && <div className="ch9-dialog" role="dialog" aria-label="Đính kèm tài liệu">
+          <p><strong>Đính kèm tài liệu</strong> 1–5 tệp PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG; tối đa 10 MB mỗi tệp.</p>
+          <input type="file" multiple accept={ACCEPT_ATTRIBUTE} aria-label="Chọn tệp" onChange={event => setAttachFiles(Array.from(event.target.files ?? []))} />
+          {attach.rows.length > 0 && <ul>{attach.rows.map((row, index) => <li key={`${row.name}-${index}`} className={row.error ? 'is-invalid' : ''}>
+            <strong>{row.name}</strong><span>{row.typeLabel} · {row.sizeLabel}</span>{row.error && <em>{row.error}</em>}
+          </li>)}</ul>}
+          {attach.message && <p className="ch9-attach-message">{attach.message}</p>}
+          <div><button type="button" className="ch9-btn" onClick={resetAttach}>Hủy</button>
+            <button type="button" className="ch9-btn ch9-btn--primary" disabled={!attach.canSend} onClick={sendFiles}>{attaching ? 'Đang gửi tệp…' : 'Gửi tệp'}</button></div>
+        </div>}
+        {composer.readOnly
+          ? <div className="ch9-closed"><p>{closed?.title ?? 'Hội thoại đã đóng — chỉ xem.'}</p><small>{closed?.hint}</small></div>
+          : <form className="ch9-composer" onSubmit={submit}>
+            <button type="button" className="ch9-clip" onClick={() => setAttachOpen(true)} aria-label="Đính kèm tệp"><Paperclip size={22} aria-hidden="true" /></button>
+            <div className="ch9-input"><textarea value={messageText} onChange={event => setMessageText(event.target.value)} placeholder="Nhập tin nhắn…" title="Hỗ trợ **đậm** và *nghiêng*" rows={1} aria-label="Nội dung tin nhắn" />
+              <small className={composer.canSend || !messageText.trim() ? '' : 'is-over'}>{composer.counter}</small></div>
+            <button type="submit" className="ch9-btn ch9-btn--primary ch9-send" disabled={!composer.canSend}>{pending ? 'Đang gửi…' : 'Gửi'}</button>
+          </form>}
+      </>}
+    </section>
   </main>
 }

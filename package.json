@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
+    "lint:tokens": "node scripts/check-design-tokens.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

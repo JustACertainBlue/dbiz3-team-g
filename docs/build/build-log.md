@@ -1033,6 +1033,19 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 72: 08/11 Claude Code + human — #83 Request More Information on a major Agency change keeps reviewed_at empty (`fix/83-rmi-major-change-reviewed-at`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (reproduce on DEV, test first, fix at the root) |
+| Reproduced on DEV | New hosted test `tests/postgres/agency-major-change.test.ts` (rolled back; DEV project jfrpnffknjpgmkyquxql): HDT Request More Information on a major change failed with `violates check constraint "major_change_reviewed_chk"`; Reject passed |
+| Cause | `reviewAgency` (`src/lib/auth/agency-review.ts`) set `reviewed_at = now` for every decision; the schema requires `reviewed_at IS NULL` for Pending Review / Request More Information. The JSON fixture does not enforce CHECKs, so ordinary tests never saw it |
+| Tests first | `tests/unit/aut-major-change-rmi.test.ts` (4): RMI keeps status Request More Information with no reviewed_at (red before), Approve / Reject set reviewed_at, RMI without a comment is refused and leaves Pending Review |
+| Fix | `reviewed_at` is set only when the decision closes the change (Approve / Reject) |
+| Mutation (foreground) | 3/3 killed: always set (old), never set, wrong decision cleared |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 5 skipped (1150 passed, 22 skipped); `npm run test:postgres` on DEV 16/16 (the first two runs timed out on the network, then passed) |
+| Not in scope | The Agency still has no way to answer the request (#57, options sent to the human) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

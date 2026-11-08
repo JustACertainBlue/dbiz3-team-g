@@ -40,7 +40,8 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
         profile.updated_at = now
       }
       change.review_status = decision === 'Approve' ? 'Approved' : decision === 'Reject' ? 'Rejected' : 'Request More Information'
-      change.reviewed_at = now
+      // major_change_reviewed_chk (#83): Request More Information keeps the change open, so no reviewed_at.
+      change.reviewed_at = decision === 'Request More Information' ? '' : now
     } else if (kind === 'registration') {
       const registration = table('agency_registration_requests').find(row => row.registration_request_id === id && row.current_status === 'Pending Approval')
       if (!registration) throw new Error('STALE_REVIEW')

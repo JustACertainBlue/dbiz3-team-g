@@ -53,4 +53,22 @@ describe('#58 spec-AUT FR-018 §5.1 | HDT review reports the email delivery it a
   it('page text (boundary): an unknown or missing status never claims an email was delivered', () => {
     for (const status of [undefined, '', 'Something else']) expect(reviewNotice(status)).toMatch(/chưa được gửi/)
   })
+
+  // #124 condition (linhkhanh-vu, 08/11): the decision is always saved; email Fail only means the email was not
+  // sent, and the HDT page says so plainly: "Đã lưu quyết định — email chưa gửi được".
+  it('FR-018 (normal): a Reject without an email service is saved, and the page says "Đã lưu quyết định — email chưa gửi được"', async () => {
+    const result = await reviewAgency(await demoSessionContextFor('hdt'), requestId, 'registration', 'Reject', 'Giấy phép hết hạn.')
+    expect(repo().find('agency_registration_requests', row => row.registration_request_id === requestId)?.current_status).toBe('Rejected')
+    expect(repo().all('agency_review_records').filter(row => row.registration_request_id === requestId).map(row => row.decision)).toEqual(['Reject'])
+    expect(notification().email_delivery_status).toBe('Fail')
+    expect(reviewNotice(result.email_delivery_status)).toMatch(/^Đã lưu quyết định — email chưa gửi được/)
+  })
+
+  it('FR-018 (error): an email adapter that throws does not undo the decision; it is stored as email Fail', async () => {
+    const result = await reviewAgency(await demoSessionContextFor('hdt'), requestId, 'registration', 'Request More Information', 'Bổ sung giấy phép.', () => { throw new Error('SMTP down') })
+    expect(repo().all('agency_review_records').filter(row => row.registration_request_id === requestId).map(row => row.decision)).toEqual(['Request More Information'])
+    expect(notification().email_delivery_status).toBe('Fail')
+    expect(repo().all('registration_resubmission_tokens').filter(row => row.registration_request_id === requestId)).toHaveLength(0)
+    expect(reviewNotice(result.email_delivery_status)).toMatch(/^Đã lưu quyết định — email chưa gửi được/)
+  })
 })

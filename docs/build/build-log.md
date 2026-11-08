@@ -1044,6 +1044,11 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Fix | `notifications.email_delivery_status = delivered ? 'Success' : 'Fail'`; new client-safe `src/lib/auth/review-notice.ts` used by the page |
 | Mutation (foreground) | 4/4 killed |
 | Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped). Not clicked in the UI (the page only calls `reviewNotice` with the API field) |
+| Follow-up 08/11 (linhkhanh-vu's condition) | Assumption accepted on condition: the decision is always saved, email `Fail` only means the email was not sent, and the HDT page says "Đã lưu quyết định — email chưa gửi được". Found a gap: an email adapter that threw aborted the whole review transaction, so the decision was lost |
+| Follow-up tests first | +2 in `tests/unit/aut-review-email-status.test.ts`: Reject without email is saved and the notice starts with "Đã lưu quyết định — email chưa gửi được" (red: old wording); RMI with a throwing adapter keeps the decision, stores `Fail`, issues no token (red: "SMTP down" thrown) |
+| Follow-up fix | `reviewAgency`: adapter errors are caught (other errors still abort); result `email_delivery_status: 'Fail'`; `reviewNotice` wording for `Fail` / not configured |
+| Follow-up mutation (foreground) | 6 mutants, 5 killed (rethrow, failure counted as delivered, no wrapper, old wording, `Fail` claims sent); 1 survivor: swallowing non-email errors too (the only other error, "not pending", is unreachable after the earlier status check) |
+| Follow-up checks | `npm test` 192 files passed, 4 skipped (1152 passed, 20 skipped); `npm run lint` OK. Not clicked in the UI: submitting a review on the dev server writes to the DEV database |
 
 ## 3. Spec issues found while building
 

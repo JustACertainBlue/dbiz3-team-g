@@ -10,6 +10,9 @@ interface FilterPanelProps {
   villageOptions: VillageOption[]
   isVillageLocked: boolean
   assignedVillageId: string | null
+  /** ADM079 #1 screen title (scope-aware) and #18 action; design wave 4. */
+  title?: string
+  actions?: React.ReactNode
 }
 
 const PRESETS: TimePreset[] = [
@@ -33,6 +36,8 @@ export function FilterPanel({
   villageOptions,
   isVillageLocked,
   assignedVillageId,
+  title,
+  actions,
 }: FilterPanelProps) {
   const [agencies, setAgencies] = useState<FilterAutocompleteOption[]>([])
   const [providers, setProviders] = useState<FilterAutocompleteOption[]>([])
@@ -279,31 +284,10 @@ export function FilterPanel({
           gap: 'var(--space-16px)',
         }}
       >
-        {/* Left Header Title matching ADM079.png */}
-        <div>
-          <div
-            style={{
-              fontSize: 'var(--font-size-0p68rem)',
-              fontWeight: 600,
-              color: 'var(--palette-gray-46)',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              fontFamily: 'monospace, sans-serif',
-            }}
-          >
-            ADMINISTRATION
-          </div>
-          <h1
-            style={{
-              fontSize: 'var(--font-size-2rem)',
-              fontWeight: 700,
-              color: 'var(--palette-gray-4)',
-              margin: 'var(--space-2px) 0 0 0',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Dashboard
-          </h1>
+        {/* Screen title (ADM079 #1) and the Manage accounts action (#18); design wave 4, Figma "Màn 5" */}
+        <div className="ad9-title">
+          <h1>{title ?? 'Dashboard'}</h1>
+          {actions}
         </div>
 
         {/* Right Time Period Dropdown matching ADM079.png */}

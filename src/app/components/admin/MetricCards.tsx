@@ -2,120 +2,31 @@
 
 import React from 'react'
 import { MetricCard } from '@/lib/adm/types'
+import { metricLabel } from '@/lib/adm/dashboard-view'
 
 interface MetricCardsProps {
   cards: MetricCard[]
   loading?: boolean
 }
 
+// FR-003 / SR-004: exactly the four cards the API returns; the optional trend only when it exists (BR-011).
+// Design wave 4 (Figma "Màn 5"): glass cards, label + large number.
 export function MetricCards({ cards, loading }: MetricCardsProps) {
   if (loading) {
-    return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-16px)', marginBottom: 'var(--space-24px)' }}>
-        {[1, 2, 3, 4].map(i => (
-          <div
-            key={i}
-            style={{
-              background: 'var(--palette-white)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-24px)',
-              border: 'var(--border-width-1) solid var(--palette-gray-90)',
-              minHeight: 'var(--space-110px)',
-              opacity: 0.6,
-            }}
-          />
-        ))}
-      </div>
-    )
+    return <div className="ad9-cards" aria-busy="true">{[1, 2, 3, 4].map(i => <div key={i} className="ad9-card ad9-glass is-loading" />)}</div>
   }
-
-  // Format label to uppercase tracking matching ADM079.png
-  const formatCardLabel = (label: string) => {
-    switch (label) {
-      case 'Total Agencies':
-        return 'TOUR AGENCIES'
-      case 'Total Providers':
-        return 'LOCAL PROVIDERS'
-      case 'Total Bookings':
-        return 'TOTAL BOOKINGS'
-      case 'Active Collaborations':
-        return 'ACTIVE COLLABORATIONS'
-      default:
-        return label.toUpperCase()
-    }
-  }
-
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 'var(--space-16px)',
-        marginBottom: 'var(--space-24px)',
-      }}
-    >
-      {cards.map((card, idx) => {
-        const isUp = card.trendDirection === 'Up'
-        const isDown = card.trendDirection === 'Down'
-        const trendSymbol = isUp ? '↑' : isDown ? '↓' : '→'
-
+    <div className="ad9-cards">
+      {cards.map(card => {
+        const direction = card.trendDirection === 'Up' ? 'up' : card.trendDirection === 'Down' ? 'down' : 'flat'
+        const symbol = direction === 'up' ? '↑' : direction === 'down' ? '↓' : '→'
         return (
-          <div
-            key={idx}
-            style={{
-              background: 'var(--palette-white)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-22px) var(--space-24px)',
-              border: 'var(--border-width-1) solid var(--palette-gray-90)',
-              boxShadow: '0 var(--space-1px) var(--space-2px) var(--alpha-black-3)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            {/* Card Label */}
-            <div
-              style={{
-                fontSize: 'var(--font-size-0p68rem)',
-                fontWeight: 600,
-                color: 'var(--palette-gray-46)',
-                letterSpacing: '0.08em',
-                fontFamily: 'monospace, sans-serif',
-              }}
-            >
-              {formatCardLabel(card.label)}
-            </div>
-
-            {/* Value & Trend */}
-            <div style={{ marginTop: 'var(--space-12px)', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-              <span
-                style={{
-                  fontSize: 'var(--font-size-2p25rem)',
-                  fontWeight: 700,
-                  color: 'var(--palette-gray-4)',
-                  lineHeight: 1,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                {card.value.toLocaleString()}
-              </span>
-
-              {card.trendPct != null && (
-                <span
-                  style={{
-                    fontSize: 'var(--font-size-0p72rem)',
-                    fontWeight: 600,
-                    color: isUp ? 'var(--palette-green-36)' : isDown ? 'var(--palette-red-51)' : 'var(--palette-gray-46)',
-                    background: isUp ? 'var(--palette-green-97)' : isDown ? 'var(--palette-red-97)' : 'var(--palette-gray-96)',
-                    padding: 'var(--space-2px) var(--space-6px)',
-                    borderRadius: 'var(--radius-4)',
-                  }}
-                  title={card.subLabel}
-                >
-                  {trendSymbol} {Math.abs(card.trendPct)}%
-                </span>
-              )}
-            </div>
+          <div key={card.label} className="ad9-card ad9-glass">
+            <span className="ad9-card__label">{metricLabel(card.label)}</span>
+            <span className="ad9-card__row">
+              <strong className="ad9-card__value">{card.value.toLocaleString('vi-VN')}</strong>
+              {card.trendPct != null && <span className={`ad9-trend ad9-trend--${direction}`} title={card.subLabel}>{symbol} {Math.abs(card.trendPct)}%</span>}
+            </span>
           </div>
         )
       })}

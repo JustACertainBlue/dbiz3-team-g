@@ -20,7 +20,7 @@ lives inside the server process: the timer that cancels expired On hold Bookings
 1. Host the Next.js app as **one Render web service** (always-on server), **exactly one instance**, because the
    On hold expiry timer runs in the process; several instances would each run their own timer.
    - Build: `npm ci && npm run build` · Start: `npm run start` (`NODE_ENV=production`, port from `PORT`)
-   - Node: `engines.node >= 22` in `package.json`
+   - Node: `engines.node` = `22.x` in `package.json` (was `>=22`, which let Render pick Node 26; CI uses 22)
 2. **Data** in Supabase PostgreSQL, **files** in Supabase Storage. Data is **not** lost on restart or redeploy.
 3. **Separate databases for development and production** (two Supabase projects, or at least two databases).
    Nothing in `scripts/db/*` or the app distinguishes them: `db:seed`, `db:migrate`, `test:postgres` and

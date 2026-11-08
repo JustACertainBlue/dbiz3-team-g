@@ -52,8 +52,8 @@ Do not run `test:postgres` / `test:storage` against production; they run on the 
 
 1. New **Web Service** from the GitHub repository, branch `main`, **one instance** (no autoscaling; ADR 0001).
 2. Build command: `npm ci && npm run build` · Start command: `npm run start`.
-3. Node: `package.json` has `engines.node >= 22`; check that Render picks a 22.x version (to re-check how it
-   reads the version; set its Node version setting if needed).
+3. Node: `package.json` has `engines.node` = `22.x`, so Render installs the latest Node 22 (with `>=22` it picked
+   Node 26). Check the Node version in the build log; it must match CI (`node-version: 22`).
 4. Environment variables (names only; values from the production folder's `.env.local`, entered in Render's
    settings, never in the repository):
 

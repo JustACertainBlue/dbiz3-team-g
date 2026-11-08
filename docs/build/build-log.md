@@ -1033,6 +1033,19 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 77: 08/11 Claude Code + human — #57 / #83 Request More Information closes a major Agency change (`fix/57-rmi-major-change-closes`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); decision by linhkhanh-vu: option B1 (RMI closes the change as Rejected, the Agency submits a new change), new PR from `main` that supersedes #121 |
+| Why not plain option B | `data/schema.sql:254-263`: Request More Information is an open status (`reviewed_at IS NULL`) and `agency_one_pending_major_change_uq` allows one open row per Agency, so a change left in that status would block the Agency's next change on PostgreSQL; spec-AUT FR-018 §5.1 has no such status |
+| Spec change (approved in the prompt) | `docs/spec/specs/spec-AUT.md` FR-018: "For a major change, Request More Information closes the change like Reject (status Rejected, decision recorded as Request More Information); the Agency submits a new change from its profile."; snapshot `specs/010-aut-manage-accounts/spec.md` refreshed, `start_feature.py --check` OK |
+| Tests first | `tests/unit/aut-major-change-rmi-closes.test.ts` (4), all red before: status stayed Request More Information, no next step in the notification, an open row was left, the Agency's second change was blocked |
+| Fix | `reviewAgency`: a major change is Approved or Rejected with `reviewed_at`; the review record keeps the decision and comment; the in-app notification payload adds `next_step` ("…gửi thay đổi mới từ hồ sơ Agency") |
+| Mutation (foreground) | 7/7 killed: old status, no reviewed_at for RMI (#121 behaviour), no next step, decision recorded as Reject, closed change decidable again, RMI without comment, wrong recipient |
+| Checks | `npm test` 192 files passed, 5 skipped (1150 passed, 22 skipped); `npm run lint` OK. Opt-in hosted test `tests/postgres/agency-major-change.test.ts` (from #121, RMI case rewritten) not run yet: waits for the human's go-ahead on DEV |
+| Not built | The Agency has no screen that lists notifications; the message is stored in-app and email remains not configured |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

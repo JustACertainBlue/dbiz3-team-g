@@ -1138,6 +1138,28 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Figma check | After-only shots (login default, login error filled by the shot tool, OTP) at 1440/390 next to Figma; difference table in the PR with (c) = 0 |
 | Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; browser: digit auto-advance, Backspace back, submit disabled below 6 digits |
 
+### Entry 86: 09/11 Claude Code + human — design wave 4 screen 3: Booking Detail BKG135 / BKG138 (`design/screen-booking`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (wave 4); button labels approved after the spec lines were amended in #138 |
+| Change | `BookingDetailScreen` (Figma "Màn 3" layout with FR-007 content only: Trạng thái card with steps, Điều kiện đặt chỗ with agreed price, notice period, cancellation policy; payment and other non-FR-007 blocks removed), actions bar with Vietnamese labels and the FR-006 lock reason, BKG138 read-only note, Provider schedule subtitle in Vietnamese |
+| Tests | `tests/unit/bkg-screens.test.ts:42-46`: spec changed → expectation changed (label words only, approved); it was the only failing test before the change |
+| Figma check | After-only shots of BKG135 (Provider) and BKG138 (Agency) at 1440/390 next to Figma; difference table in the PR with (c) = 0 |
+| Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+| Follow-up (linhkhanh-vu 09/11) | The lock-reason line under the actions bar is a **Figma addition, not required by the spec** (FR-007 / FR-006 / BR-017 only define when Mark Group Arrival is enabled). Moved to `arrivalLockReason()` in `src/lib/booking/booking-actions.ts` and checked against those conditions: tests first `tests/unit/bkg-arrival-lock-reason.test.ts` (6: On hold, Booked before start, Booked at/after start = no reason, Completed, Cancelled, invariant reason ⇔ locked for every status/time, render with `aria-describedby`); 5 red before (no helper), the Completed/Cancelled reasons were missing in the first version. Mutation 6/6 killed. `npm test` 193 files passed, 4 skipped (1156 passed); lint and build OK |
+
+### Entry 87: 09/11 Claude Code + human — design wave 4 screen 4: Chat COM048 / COM065 (`design/screen-chat`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (wave 4, straight chain on #152) |
+| Change | `src/app/messages/page.tsx` restyled to Figma "Màn 4" (list 380 + thread; phones: list or thread with a back button); styled-jsx replaced by `chat-v9.css`; new pure helpers `chat-view.ts` (initials, Active / Closed line, Hanoi-time list time and day separators, attachment line, screen actions). Screen actions now follow the specs: COM048 #8–#10 Close Chat · Bookings · Schedule; COM065 #8–#10 Create booking · Close Chat · Bookings (Bookings / Schedule / Create booking links were missing before). API calls, composer, close and attach logic unchanged |
+| Tests | `tests/unit/iac-chat-view.test.ts` (new, 12 tests): red first (10 failing on a stub), then green; 6/6 mutations caught. No existing test changed |
+| Figma check | After-only shots (Agency thread, Agency list, Provider thread) at 1440/390 next to Figma; difference table in the PR with (c) = 0. Opening a thread on DEV resets that chat's unread count (BR-015), as any read does |
+| Checks | `npm test` 194 files passed, 4 skipped (1168 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; contrast of every new colour pair ≥ 4.5:1 (text) / ≥ 3:1 (input border) |
+| Open question | COM065 #8 Create booking in a Closed Chat: §3 row 15 (OQ for spec IAC / BKG). Human decision 09/11: keep the link to BKG134 in both states; spec unchanged |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It
@@ -1160,6 +1182,7 @@ is never fixed silently in code.
 | 12 | Plan review, Analyze / Entry 45 (IAC 014) | Spec silent on: context message sender and kind, `source` per entry point, accepted markdown, reuse context, participant name/organization, unread reset/increment, Booking-source open, 4000 counting, unknown/non-participant Chat answer, context ids in history. | spec-IAC #18–#28 (2026-11-05). | Closed |
 | 13 | Prepare / Entry 46 (IAC 015) | F-CHAT-04 silent on: who may close, where `close_reason` lives (no column), closing a Closed Chat, `success_message`, confirmation, read-only view fields, new interaction after close, BKG Booking Updates after close, notification, concurrency. | spec-IAC #29–#38 (2026-11-05). | Closed |
 | 14 | Prepare / Entry 47 (IAC 016) | F-CHAT-05 silent on: where files are stored and how they are sent, how participants download, the 1280×720 image check of `stored_files`, how the format is checked, exact 10 MB and empty files, message count and caption, the error answer for a bad batch, upload-succeeds-attach-fails order, which F-CHAT-02 rules apply, list preview, the COM125/COM126 dialog and mockup tags, §8 entity fields missing from `data/`. | spec-IAC #39–#50 (2026-11-05). | Closed (#50: §8 entity row left for the spec owner) |
+| 15 | Design wave 4 / Entry 87 (Chat COM065) | OQ for spec IAC / BKG: COM065 #8 "Create booking" (→ BKG134, "Always On hold") does not say whether it stays available in a **Closed** Chat (SR-004: Closed history is read-only; Create booking does not write to the Chat). | Not changed in `docs/spec/` (human decision 09/11: keep the button in both states, record the question only). Owners of spec-IAC / spec-BKG to answer | Open; UI keeps "Tạo đặt chỗ" for Active and Closed (#153) |
 
 ## 4. Agent mistakes worth remembering
 

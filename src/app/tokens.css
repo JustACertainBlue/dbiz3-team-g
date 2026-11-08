@@ -419,4 +419,11 @@
   --shadow-md: 0 4px 12px var(--alpha-gray-12-8);
   --shadow-lg: 0 12px 28px var(--alpha-gray-12-12);
   --shadow-glow: 0 0 0 3px var(--alpha-orange-43-20);
+
+  /* Booking status colours of the admin dashboard chart (ADM079), same values as before */
+  --color-status-completed: var(--palette-gray-10);
+  --color-status-booked: var(--palette-gray-34);
+  --color-status-cancelled: var(--palette-gray-65);
+  --color-status-on-hold: var(--palette-gray-90);
+  --color-chart-track: var(--palette-gray-96);
 }

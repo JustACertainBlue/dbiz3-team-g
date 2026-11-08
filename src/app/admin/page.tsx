@@ -150,9 +150,9 @@ export default function AdminDashboardPage() {
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: '#f8f6f0',
+        background: 'var(--palette-gray-96-4)',
         fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        color: '#09090b',
+        color: 'var(--palette-gray-4)',
       }}
     >
       {/* 1. Fixed Dark Left Sidebar matching ADM079.png */}
@@ -161,7 +161,7 @@ export default function AdminDashboardPage() {
       <main
         style={{
           flex: 1,
-          padding: '28px 36px 60px 36px',
+          padding: 'var(--space-28) var(--space-36) var(--space-60) var(--space-36)',
           overflowY: 'auto',
           minWidth: 0,
         }}
@@ -173,32 +173,32 @@ export default function AdminDashboardPage() {
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'rgba(0,0,0,0.4)',
+                background: 'var(--alpha-black-40)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 100,
-                padding: '20px',
+                padding: 'var(--space-20)',
               }}
             >
               <div
                 style={{
-                  background: '#ffffff',
+                  background: 'var(--palette-white)',
                   borderRadius: '12px',
-                  padding: '24px',
-                  maxWidth: '520px',
+                  padding: 'var(--space-24)',
+                  maxWidth: 'var(--space-520)',
                   width: '100%',
-                  boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
-                  border: '1px solid #e4e4e7',
+                  boxShadow: '0 var(--space-20) var(--space-25) -5px var(--alpha-black-10)',
+                  border: 'var(--space-1) solid var(--palette-gray-90)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '1.25rem' }}>ℹ️</span>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#09090b' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 'var(--space-12)' }}>
+                  <span style={{ fontSize: 'var(--font-size-1p25rem)' }}>ℹ️</span>
+                  <h3 style={{ fontSize: 'var(--font-size-1p1rem)', fontWeight: 700, margin: 0, color: 'var(--palette-gray-4)' }}>
                     Information Notice
                   </h3>
                 </div>
-                <p style={{ fontSize: '0.88rem', color: '#52525b', lineHeight: 1.5, margin: '0 0 20px 0' }}>
+                <p style={{ fontSize: 'var(--font-size-0p88rem)', color: 'var(--palette-gray-34)', lineHeight: 1.5, margin: '0 0 var(--space-20) 0' }}>
                   {modalNotice}
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -206,12 +206,12 @@ export default function AdminDashboardPage() {
                     type="button"
                     onClick={() => setModalNotice(null)}
                     style={{
-                      background: '#18181b',
-                      color: '#ffffff',
+                      background: 'var(--palette-gray-10)',
+                      color: 'var(--palette-white)',
                       border: 'none',
-                      padding: '8px 18px',
-                      borderRadius: '6px',
-                      fontSize: '0.85rem',
+                      padding: 'var(--space-8) var(--space-18)',
+                      borderRadius: 'var(--space-6)',
+                      fontSize: 'var(--space-0p85rem)',
                       fontWeight: 600,
                       cursor: 'pointer',
                     }}
@@ -227,13 +227,13 @@ export default function AdminDashboardPage() {
           {error && (
             <div
               style={{
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                color: '#991b1b',
-                padding: '12px 18px',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                fontSize: '0.85rem',
+                background: 'var(--palette-red-97)',
+                border: '1px solid var(--palette-red-89)',
+                color: 'var(--palette-red-35)',
+                padding: 'var(--space-12) var(--space-18)',
+                borderRadius: 'var(--space-8)',
+                marginBottom: 'var(--space-16)',
+                fontSize: 'var(--space-0p85rem)',
               }}
             >
               {error}
@@ -260,8 +260,8 @@ export default function AdminDashboardPage() {
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1.5fr 1fr',
-                gap: '20px',
-                marginBottom: '24px',
+                gap: 'var(--space-20)',
+                marginBottom: 'var(--space-24)',
                 alignItems: 'stretch',
               }}
             >
@@ -288,7 +288,7 @@ export default function AdminDashboardPage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1.8fr 1.2fr',
-                  gap: '20px',
+                  gap: 'var(--space-20)',
                   alignItems: 'start',
                 }}
               >

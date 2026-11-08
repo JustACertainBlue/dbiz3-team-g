@@ -33,21 +33,21 @@ export function BookingTable({ bookings }: BookingTableProps) {
   })
 
   const getStatusBadge = (status: string) => {
-    let bg = '#f1f5f9'
-    let color = '#475569'
+    let bg = 'var(--palette-gray-96-5)'
+    let color = 'var(--palette-blue-35)'
 
     if (status === 'Booked') {
-      bg = '#dbeafe'
-      color = '#1d4ed8'
+      bg = 'var(--palette-blue-93)'
+      color = 'var(--palette-blue-48)'
     } else if (status === 'Completed') {
-      bg = '#dcfce7'
-      color = '#15803d'
+      bg = 'var(--palette-green-93)'
+      color = 'var(--palette-green-29)'
     } else if (status === 'On hold') {
-      bg = '#fef3c7'
-      color = '#b45309'
+      bg = 'var(--palette-amber-89)'
+      color = 'var(--palette-orange-37)'
     } else if (status === 'Cancelled') {
-      bg = '#fee2e2'
-      color = '#b91c1c'
+      bg = 'var(--palette-red-94)'
+      color = 'var(--palette-red-42)'
     }
 
     return (
@@ -55,9 +55,9 @@ export function BookingTable({ bookings }: BookingTableProps) {
         style={{
           background: bg,
           color,
-          padding: '2px 8px',
-          borderRadius: '12px',
-          fontSize: '0.7rem',
+          padding: 'var(--space-2) var(--space-8)',
+          borderRadius: 'var(--space-12)',
+          fontSize: 'var(--space-0p7rem)',
           fontWeight: 700,
           textTransform: 'uppercase',
         }}
@@ -70,49 +70,49 @@ export function BookingTable({ bookings }: BookingTableProps) {
   return (
     <div
       style={{
-        background: '#ffffff',
+        background: 'var(--palette-white)',
         borderRadius: '10px',
-        padding: '1.25rem',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        padding: 'var(--space-1p25rem)',
+        border: 'var(--space-1) solid var(--palette-blue-91)',
+        boxShadow: '0 var(--space-1) var(--space-3) var(--alpha-black-5)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-1rem)' }}>
         <div>
-          <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: 0 }}>
+          <h3 style={{ fontSize: 'var(--font-size-0p9rem)', fontWeight: 700, color: 'var(--palette-blue-17)', display: 'flex', alignItems: 'center', gap: 'var(--space-0p4rem)', margin: 0 }}>
             <span>📋</span> GIÁM SÁT BOOKING (READ-ONLY)
           </h3>
-          <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+          <span style={{ fontSize: 'var(--font-size-0p72rem)', color: 'var(--palette-blue-47)' }}>
             Hiển thị danh sách booking theo bộ lọc và quyền hạn quản trị (BR-006, BR-013)
           </span>
         </div>
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0f172a', background: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
+        <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-blue-11)', background: 'var(--palette-gray-96-5)', padding: 'var(--space-3) var(--space-8)', borderRadius: 'var(--space-4)' }}>
           {bookings.length} bản ghi
         </span>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-0p78rem)' }}>
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+            <tr style={{ background: 'var(--palette-gray-98-2)', borderBottom: '2px solid var(--palette-blue-91)', textAlign: 'left', color: 'var(--palette-blue-35)' }}>
               <th
                 onClick={() => handleSort('date')}
-                style={{ padding: '8px 10px', cursor: 'pointer', fontWeight: 700 }}
+                style={{ padding: 'var(--space-8) var(--space-10)', cursor: 'pointer', fontWeight: 700 }}
               >
                 NGÀY {sortField === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
-              <th style={{ padding: '8px 10px', fontWeight: 700 }}>TOUR AGENCY</th>
-              <th style={{ padding: '8px 10px', fontWeight: 700 }}>XƯỞNG THỦ CÔNG</th>
-              <th style={{ padding: '8px 10px', fontWeight: 700 }}>TRẢI NGHIỆM</th>
+              <th style={{ padding: 'var(--space-8) var(--space-10)', fontWeight: 700 }}>TOUR AGENCY</th>
+              <th style={{ padding: 'var(--space-8) var(--space-10)', fontWeight: 700 }}>XƯỞNG THỦ CÔNG</th>
+              <th style={{ padding: 'var(--space-8) var(--space-10)', fontWeight: 700 }}>TRẢI NGHIỆM</th>
               <th
                 onClick={() => handleSort('status')}
-                style={{ padding: '8px 10px', cursor: 'pointer', fontWeight: 700 }}
+                style={{ padding: 'var(--space-8) var(--space-10)', cursor: 'pointer', fontWeight: 700 }}
               >
                 TRẠNG THÁI {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
               <th
                 onClick={() => handleSort('price')}
-                style={{ padding: '8px 10px', cursor: 'pointer', fontWeight: 700, textAlign: 'right' }}
+                style={{ padding: 'var(--space-8) var(--space-10)', cursor: 'pointer', fontWeight: 700, textAlign: 'right' }}
               >
                 GIÁ TRỊ (VNĐ) {sortField === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
@@ -124,33 +124,33 @@ export function BookingTable({ bookings }: BookingTableProps) {
                 <tr
                   key={b.bookingId || i}
                   style={{
-                    borderBottom: '1px solid #f1f5f9',
-                    background: i % 2 === 0 ? '#ffffff' : '#fafafa',
+                    borderBottom: '1px solid var(--palette-gray-96-5)',
+                    background: i % 2 === 0 ? 'var(--palette-white)' : 'var(--palette-gray-98)',
                   }}
                 >
-                  <td style={{ padding: '10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: 'var(--space-10)', color: 'var(--palette-blue-47)', whiteSpace: 'nowrap' }}>
                     {new Date(b.date).toLocaleDateString('vi-VN')}
                   </td>
-                  <td style={{ padding: '10px', fontWeight: 600, color: '#1e3a5f' }}>
+                  <td style={{ padding: 'var(--space-10)', fontWeight: 600, color: 'var(--palette-blue-25)' }}>
                     {b.agencyName}
                   </td>
-                  <td style={{ padding: '10px', fontWeight: 600, color: '#b84c24' }}>
+                  <td style={{ padding: 'var(--space-10)', fontWeight: 600, color: 'var(--palette-orange-43)' }}>
                     {b.providerName}
                   </td>
-                  <td style={{ padding: '10px', color: '#334155' }}>
+                  <td style={{ padding: 'var(--space-10)', color: 'var(--palette-blue-27)' }}>
                     {b.experienceName}
                   </td>
-                  <td style={{ padding: '10px' }}>
+                  <td style={{ padding: 'var(--space-10)' }}>
                     {getStatusBadge(b.status)}
                   </td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
+                  <td style={{ padding: 'var(--space-10)', textAlign: 'right', fontWeight: 700, color: 'var(--palette-blue-11)' }}>
                     {b.price.toLocaleString('vi-VN')} đ
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-2rem)', color: 'var(--palette-blue-65)' }}>
                   Không tìm thấy bản ghi booking nào phù hợp với bộ lọc hiện tại.
                 </td>
               </tr>

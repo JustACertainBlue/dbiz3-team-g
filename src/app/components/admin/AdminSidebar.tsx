@@ -31,6 +31,7 @@ export function AdminSidebar({
         minWidth: '240px',
         background: 'var(--palette-white)',
         borderRight: 'var(--border-width-1) solid var(--palette-gray-90)',
+        borderRight: '1px solid var(--palette-gray-90)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -46,6 +47,7 @@ export function AdminSidebar({
           style={{
             padding: 'var(--space-20) var(--space-24)',
             borderBottom: 'var(--border-width-1) solid var(--palette-gray-96)',
+            borderBottom: 'var(--space-1) solid var(--palette-gray-96)',
             display: 'flex',
             alignItems: 'center',
             gap: 'var(--space-12)',
@@ -58,6 +60,7 @@ export function AdminSidebar({
               height: '32px',
               background: 'var(--palette-gray-10)',
               borderRadius: 'var(--radius-sm)',
+              borderRadius: '6px',
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
               gap: 'var(--space-3)',
@@ -68,6 +71,10 @@ export function AdminSidebar({
             <div style={{ background: 'var(--palette-white)', borderRadius: 'var(--radius-1p5)' }} />
             <div style={{ background: 'var(--palette-white)', borderRadius: 'var(--radius-1p5)' }} />
             <div style={{ background: 'var(--palette-white)', borderRadius: 'var(--radius-1p5)' }} />
+            <div style={{ background: 'var(--palette-white)', borderRadius: '1.5px' }} />
+            <div style={{ background: 'var(--palette-white)', borderRadius: '1.5px' }} />
+            <div style={{ background: 'var(--palette-white)', borderRadius: '1.5px' }} />
+            <div style={{ background: 'var(--palette-white)', borderRadius: '1.5px' }} />
           </div>
 
           <div>
@@ -112,6 +119,8 @@ export function AdminSidebar({
               textDecoration: 'none',
               borderRadius: 'var(--radius-8)',
               fontSize: 'var(--font-size-0p85rem)',
+              borderRadius: 'var(--space-8)',
+              fontSize: 'var(--space-0p85rem)',
               fontWeight: 600,
               cursor: 'pointer',
               textAlign: 'left',
@@ -137,6 +146,7 @@ export function AdminSidebar({
         style={{
           padding: 'var(--space-16) var(--space-20)',
           borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
+          borderTop: 'var(--space-1) solid var(--palette-gray-90)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -148,6 +158,7 @@ export function AdminSidebar({
               width: '36px',
               height: '36px',
               borderRadius: 'var(--radius-50pct)',
+              borderRadius: '50%',
               background: 'var(--palette-gray-10)',
               color: 'var(--palette-white)',
               display: 'flex',

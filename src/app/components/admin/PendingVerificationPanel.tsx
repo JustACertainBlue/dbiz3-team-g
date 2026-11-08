@@ -18,6 +18,8 @@ export function PendingVerificationPanel({ items }: PendingVerificationPanelProp
         background: 'var(--palette-white)',
         borderRadius: 'var(--radius-md)',
         border: 'var(--border-width-1) solid var(--palette-gray-90)',
+        borderRadius: '12px',
+        border: '1px solid var(--palette-gray-90)',
         padding: 'var(--space-24)',
         display: 'flex',
         flexDirection: 'column',
@@ -33,6 +35,7 @@ export function PendingVerificationPanel({ items }: PendingVerificationPanelProp
 
       {items.length === 0 ? (
         <div style={{ padding: 'var(--space-28) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--font-size-0p82rem)' }}>
+        <div style={{ padding: 'var(--space-28) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--space-0p82rem)' }}>
           No accounts awaiting review
         </div>
       ) : (
@@ -45,6 +48,11 @@ export function PendingVerificationPanel({ items }: PendingVerificationPanelProp
               <span style={{ fontSize: 'var(--font-size-0p88rem)', fontWeight: 600, color: 'var(--palette-gray-10)' }}>{item.name}</span>
               <span style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
                 <span style={{ fontSize: 'var(--font-size-0p68rem)', fontWeight: 600, color: 'var(--palette-gray-34)', border: 'var(--border-width-1) solid var(--palette-gray-90)', padding: 'var(--space-2) var(--space-6)', borderRadius: 'var(--radius-4)', textTransform: 'uppercase' }}>
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-12) 0', borderTop: 'var(--space-1) solid var(--palette-gray-96)' }}
+            >
+              <span style={{ fontSize: 'var(--font-size-0p88rem)', fontWeight: 600, color: 'var(--palette-gray-10)' }}>{item.name}</span>
+              <span style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
+                <span style={{ fontSize: 'var(--font-size-0p68rem)', fontWeight: 600, color: 'var(--palette-gray-34)', border: '1px solid var(--palette-gray-90)', padding: 'var(--space-2) var(--space-6)', borderRadius: 'var(--space-4)', textTransform: 'uppercase' }}>
                   {item.kind}
                 </span>
                 <span style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', fontFamily: 'monospace, sans-serif' }}>

@@ -334,6 +334,10 @@ export function FilterPanel({
                 borderRadius: 'var(--radius-8)',
                 padding: 'var(--space-8) var(--space-36) var(--space-8) var(--space-14)',
                 fontSize: 'var(--font-size-0p85rem)',
+                border: '1px solid var(--palette-gray-90)',
+                borderRadius: '8px',
+                padding: 'var(--space-8) var(--space-36) var(--space-8) var(--space-14)',
+                fontSize: 'var(--space-0p85rem)',
                 fontWeight: 500,
                 color: 'var(--palette-gray-4)',
                 cursor: 'pointer',
@@ -391,6 +395,12 @@ export function FilterPanel({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}>
+            borderRadius: 'var(--space-8)',
+            border: 'var(--space-1) solid var(--palette-gray-90)',
+            width: 'fit-content',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--space-0p8rem)' }}>
             <label style={{ color: 'var(--palette-gray-46)', fontWeight: 500 }}>From:</label>
             <input
               type="date"
@@ -400,12 +410,17 @@ export function FilterPanel({
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}>
+              style={{ border: '1px solid var(--palette-gray-90)', borderRadius: '4px', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--space-0p8rem)' }}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--space-0p8rem)' }}>
             <label style={{ color: 'var(--palette-gray-46)', fontWeight: 500 }}>To:</label>
             <input
               type="date"
               value={filters.endDate || ''}
               onChange={e => onFilterChange({ endDate: e.target.value })}
               style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}
+              style={{ border: '1px solid var(--palette-gray-90)', borderRadius: '4px', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--space-0p8rem)' }}
             />
           </div>
         </div>
@@ -421,6 +436,11 @@ export function FilterPanel({
             padding: 'var(--space-8) var(--space-14)',
             borderRadius: 'var(--radius-sm)',
             fontSize: 'var(--font-size-0p78rem)',
+            border: '1px solid var(--palette-red-89)',
+            color: 'var(--palette-red-35)',
+            padding: 'var(--space-8) var(--space-14)',
+            borderRadius: 'var(--space-6)',
+            fontSize: 'var(--space-0p78rem)',
           }}
         >
           ⚠️ Error loading filter options: {optionsError}
@@ -438,6 +458,8 @@ export function FilterPanel({
           padding: 'var(--space-10) var(--space-16)',
           borderRadius: 'var(--radius-10)',
           border: 'var(--border-width-1) solid var(--palette-gray-90)',
+          borderRadius: 'var(--space-10)',
+          border: 'var(--space-1) solid var(--palette-gray-90)',
           position: 'relative',
         }}
       >
@@ -457,6 +479,10 @@ export function FilterPanel({
                 padding: 'var(--space-5) var(--space-12)',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: 'var(--font-size-0p8rem)',
+                border: 'var(--space-1) solid var(--palette-gray-90)',
+                padding: 'var(--space-5) var(--space-12)',
+                borderRadius: 'var(--space-6)',
+                fontSize: 'var(--space-0p8rem)',
                 fontWeight: 600,
                 color: 'var(--palette-gray-4)',
               }}
@@ -477,6 +503,10 @@ export function FilterPanel({
                 borderRadius: 'var(--radius-sm)',
                 padding: 'var(--space-5) var(--space-12)',
                 fontSize: 'var(--font-size-0p8rem)',
+                border: '1px solid var(--palette-gray-90)',
+                borderRadius: '6px',
+                padding: 'var(--space-5) var(--space-12)',
+                fontSize: 'var(--space-0p8rem)',
                 color: 'var(--palette-gray-4)',
                 cursor: 'pointer',
               }}
@@ -503,6 +533,8 @@ export function FilterPanel({
               alignItems: 'center',
               border: 'var(--border-width-1) solid var(--palette-gray-90)',
               borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--palette-gray-90)',
+              borderRadius: '6px',
               background: 'var(--palette-gray-99-2)',
               padding: 'var(--space-2)',
             }}
@@ -518,6 +550,7 @@ export function FilterPanel({
                 border: 'none',
                 padding: 'var(--space-4) var(--space-10)',
                 fontSize: 'var(--font-size-0p8rem)',
+                fontSize: 'var(--space-0p8rem)',
                 fontWeight: (selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) ? 600 : 400,
                 color: (selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) ? 'var(--palette-gray-4)' : 'var(--palette-gray-34)',
                 cursor: 'pointer',
@@ -545,6 +578,8 @@ export function FilterPanel({
                   cursor: 'pointer',
                   fontSize: 'var(--font-size-0p75rem)',
                   borderRadius: 'var(--radius-4)',
+                  fontSize: 'var(--space-0p75rem)',
+                  borderRadius: 'var(--space-4)',
                 }}
               >
                 ✕
@@ -563,6 +598,8 @@ export function FilterPanel({
                 background: 'var(--palette-white)',
                 border: 'var(--border-width-1) solid var(--palette-gray-90)',
                 borderRadius: 'var(--radius-10)',
+                border: '1px solid var(--palette-gray-90)',
+                borderRadius: '10px',
                 padding: 'var(--space-16)',
                 width: 'var(--space-420)',
                 boxShadow: '0 var(--space-10) var(--space-25) -5px var(--alpha-black-10), 0 var(--space-8) var(--space-10) -6px var(--alpha-black-5)',
@@ -578,6 +615,10 @@ export function FilterPanel({
                     Select Provider or Agency
                   </h4>
                   <p style={{ margin: 'var(--space-2) 0 0 0', fontSize: 'var(--font-size-0p72rem)', color: 'var(--palette-gray-46)' }}>
+                  <h4 style={{ margin: 0, fontSize: 'var(--space-0p88rem)', fontWeight: 700, color: 'var(--palette-gray-4)' }}>
+                    Select Provider or Agency
+                  </h4>
+                  <p style={{ margin: 'var(--space-2) 0 0 0', fontSize: 'var(--space-0p72rem)', color: 'var(--palette-gray-46)' }}>
                     Mutually exclusive: select multiple within one category.
                   </p>
                 </div>
@@ -608,6 +649,8 @@ export function FilterPanel({
                     background: 'var(--palette-amber-96)',
                     border: 'var(--border-width-1) solid var(--palette-amber-77)',
                     borderRadius: 'var(--radius-8)',
+                    border: '1px solid var(--palette-amber-77)',
+                    borderRadius: '8px',
                     padding: 'var(--space-12)',
                     display: 'flex',
                     flexDirection: 'column',
@@ -630,6 +673,10 @@ export function FilterPanel({
                         borderRadius: 'var(--radius-4)',
                         padding: 'var(--space-3) var(--space-8)',
                         fontSize: 'var(--font-size-0p72rem)',
+                        border: '1px solid var(--palette-gray-84)',
+                        borderRadius: '4px',
+                        padding: 'var(--space-3) var(--space-8)',
+                        fontSize: 'var(--space-0p72rem)',
                         cursor: 'pointer',
                         color: 'var(--palette-blue-27-2)',
                       }}
@@ -646,6 +693,9 @@ export function FilterPanel({
                         borderRadius: 'var(--radius-4)',
                         padding: 'var(--space-3) var(--space-10)',
                         fontSize: 'var(--font-size-0p72rem)',
+                        borderRadius: '4px',
+                        padding: 'var(--space-3) var(--space-10)',
+                        fontSize: 'var(--space-0p72rem)',
                         fontWeight: 600,
                         cursor: 'pointer',
                       }}
@@ -661,6 +711,8 @@ export function FilterPanel({
                 style={{
                   border: 'var(--border-width-1) solid var(--palette-gray-90)',
                   borderRadius: 'var(--radius-8)',
+                  border: '1px solid var(--palette-gray-90)',
+                  borderRadius: '8px',
                   background: selectedProviderIds.length > 0 ? 'var(--palette-green-97)' : 'var(--palette-gray-98)',
                   overflow: 'hidden',
                 }}
@@ -687,6 +739,7 @@ export function FilterPanel({
                           color: 'var(--palette-green-29)',
                           padding: 'var(--space-1) var(--space-6)',
                           borderRadius: 'var(--radius-10)',
+                          borderRadius: 'var(--space-10)',
                         }}
                       >
                         {selectedProviderIds.length} active
@@ -704,6 +757,8 @@ export function FilterPanel({
                       background: 'var(--palette-white)',
                       border: 'var(--border-width-1) solid var(--palette-gray-90)',
                       borderRadius: 'var(--radius-4)',
+                      border: '1px solid var(--palette-gray-90)',
+                      borderRadius: '4px',
                       width: '24px',
                       height: '24px',
                       display: 'flex',
@@ -724,6 +779,7 @@ export function FilterPanel({
                   <div
                     style={{
                       borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
+                      borderTop: '1px solid var(--palette-gray-90)',
                       background: 'var(--palette-white)',
                       padding: 'var(--space-12) var(--space-14)',
                       display: 'flex',
@@ -746,6 +802,8 @@ export function FilterPanel({
                           padding: 'var(--space-4) var(--space-8)',
                           border: 'var(--border-width-1) solid var(--palette-gray-90)',
                           borderRadius: 'var(--radius-4)',
+                          border: 'var(--space-1) solid var(--palette-gray-90)',
+                          borderRadius: 'var(--space-4)',
                         }}
                       />
                       {selectedProviderIds.length > 0 && (
@@ -787,6 +845,7 @@ export function FilterPanel({
                               alignItems: 'center',
                               gap: 'var(--space-8)',
                               fontSize: 'var(--font-size-0p78rem)',
+                              fontSize: 'var(--space-0p78rem)',
                               color: 'var(--palette-gray-4)',
                               cursor: 'pointer',
                               padding: 'var(--space-3) 0',
@@ -812,6 +871,8 @@ export function FilterPanel({
                 style={{
                   border: 'var(--border-width-1) solid var(--palette-gray-90)',
                   borderRadius: 'var(--radius-8)',
+                  border: '1px solid var(--palette-gray-90)',
+                  borderRadius: '8px',
                   background: selectedAgencyIds.length > 0 ? 'var(--palette-green-97)' : 'var(--palette-gray-98)',
                   overflow: 'hidden',
                 }}
@@ -838,6 +899,7 @@ export function FilterPanel({
                           color: 'var(--palette-green-29)',
                           padding: 'var(--space-1) var(--space-6)',
                           borderRadius: 'var(--radius-10)',
+                          borderRadius: 'var(--space-10)',
                         }}
                       >
                         {selectedAgencyIds.length} active
@@ -855,6 +917,8 @@ export function FilterPanel({
                       background: 'var(--palette-white)',
                       border: 'var(--border-width-1) solid var(--palette-gray-90)',
                       borderRadius: 'var(--radius-4)',
+                      border: '1px solid var(--palette-gray-90)',
+                      borderRadius: '4px',
                       width: '24px',
                       height: '24px',
                       display: 'flex',
@@ -875,6 +939,7 @@ export function FilterPanel({
                   <div
                     style={{
                       borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
+                      borderTop: '1px solid var(--palette-gray-90)',
                       background: 'var(--palette-white)',
                       padding: 'var(--space-12) var(--space-14)',
                       display: 'flex',
@@ -897,6 +962,8 @@ export function FilterPanel({
                           padding: 'var(--space-4) var(--space-8)',
                           border: 'var(--border-width-1) solid var(--palette-gray-90)',
                           borderRadius: 'var(--radius-4)',
+                          border: 'var(--space-1) solid var(--palette-gray-90)',
+                          borderRadius: 'var(--space-4)',
                         }}
                       />
                       {selectedAgencyIds.length > 0 && (
@@ -938,6 +1005,7 @@ export function FilterPanel({
                               alignItems: 'center',
                               gap: 'var(--space-8)',
                               fontSize: 'var(--font-size-0p78rem)',
+                              fontSize: 'var(--space-0p78rem)',
                               color: 'var(--palette-gray-4)',
                               cursor: 'pointer',
                               padding: 'var(--space-3) 0',

@@ -24,6 +24,15 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
       case 'On hold':
       case 'On Hold':
         return 'var(--color-status-on-hold)' // Light gray
+        return 'var(--palette-gray-10)' // Black
+      case 'Booked':
+        return 'var(--palette-gray-34)' // Dark gray
+      case 'Cancelled':
+      case 'Canceled':
+        return 'var(--palette-gray-65)' // Medium gray
+      case 'On hold':
+      case 'On Hold':
+        return 'var(--palette-gray-90)' // Light gray
       default:
         return 'var(--palette-gray-46)'
     }
@@ -65,6 +74,8 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
         background: 'var(--palette-white)',
         borderRadius: 'var(--radius-md)',
         border: 'var(--border-width-1) solid var(--palette-gray-90)',
+        borderRadius: '12px',
+        border: '1px solid var(--palette-gray-90)',
         padding: 'var(--space-24)',
         display: 'flex',
         flexDirection: 'column',

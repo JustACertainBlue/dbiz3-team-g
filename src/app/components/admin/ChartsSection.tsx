@@ -26,6 +26,9 @@ export function ChartsSection({
           borderRadius: 'var(--radius-md)',
           padding: 'var(--space-24)',
           border: 'var(--border-width-1) solid var(--palette-gray-90)',
+          borderRadius: '12px',
+          padding: 'var(--space-24)',
+          border: 'var(--space-1) solid var(--palette-gray-90)',
           boxShadow: '0 var(--space-1) var(--space-2) var(--alpha-black-3)',
         }}
       >
@@ -41,7 +44,7 @@ export function ChartsSection({
         </div>
 
         {trendPoints.length === 0 ? (
-          <div style={{ padding: 'var(--space-36) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--font-size-0p82rem)' }}>
+          <div style={{ padding: 'var(--space-36) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--space-0p82rem)' }}>
             No booking trend data for the selected period.
           </div>
         ) : (
@@ -72,6 +75,7 @@ export function ChartsSection({
                       height: `${Math.max(6, heightPct)}%`,
                       background: 'var(--palette-gray-10)',
                       borderRadius: 'var(--radius-4) var(--radius-4) 0 0',
+                      borderRadius: '4px 4px 0 0',
                       transition: 'height 0.3s ease',
                     }}
                     title={`${label}: ${pt.count} bookings`}
@@ -95,6 +99,9 @@ export function ChartsSection({
             borderRadius: 'var(--radius-md)',
             padding: 'var(--space-20)',
             border: 'var(--border-width-1) solid var(--palette-gray-90)',
+            borderRadius: '12px',
+            padding: 'var(--space-20)',
+            border: 'var(--space-1) solid var(--palette-gray-90)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-14)' }}>
@@ -125,6 +132,9 @@ export function ChartsSection({
             borderRadius: 'var(--radius-md)',
             padding: 'var(--space-20)',
             border: 'var(--border-width-1) solid var(--palette-gray-90)',
+            borderRadius: '12px',
+            padding: 'var(--space-20)',
+            border: 'var(--space-1) solid var(--palette-gray-90)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-14)' }}>

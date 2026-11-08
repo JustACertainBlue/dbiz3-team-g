@@ -58,6 +58,8 @@ export function BookingTable({ bookings }: BookingTableProps) {
           padding: 'var(--space-2) var(--space-8)',
           borderRadius: 'var(--radius-md)',
           fontSize: 'var(--font-size-0p7rem)',
+          borderRadius: 'var(--space-12)',
+          fontSize: 'var(--space-0p7rem)',
           fontWeight: 700,
           textTransform: 'uppercase',
         }}
@@ -74,6 +76,9 @@ export function BookingTable({ bookings }: BookingTableProps) {
         borderRadius: 'var(--radius-10)',
         padding: 'var(--space-1p25rem)',
         border: 'var(--border-width-1) solid var(--palette-blue-91)',
+        borderRadius: '10px',
+        padding: 'var(--space-1p25rem)',
+        border: 'var(--space-1) solid var(--palette-blue-91)',
         boxShadow: '0 var(--space-1) var(--space-3) var(--alpha-black-5)',
       }}
     >
@@ -87,6 +92,7 @@ export function BookingTable({ bookings }: BookingTableProps) {
           </span>
         </div>
         <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-blue-11)', background: 'var(--palette-gray-96-5)', padding: 'var(--space-3) var(--space-8)', borderRadius: 'var(--radius-4)' }}>
+        <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-blue-11)', background: 'var(--palette-gray-96-5)', padding: 'var(--space-3) var(--space-8)', borderRadius: 'var(--space-4)' }}>
           {bookings.length} bản ghi
         </span>
       </div>
@@ -95,6 +101,7 @@ export function BookingTable({ bookings }: BookingTableProps) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-0p78rem)' }}>
           <thead>
             <tr style={{ background: 'var(--palette-gray-98-2)', borderBottom: 'var(--border-width-2) solid var(--palette-blue-91)', textAlign: 'left', color: 'var(--palette-blue-35)' }}>
+            <tr style={{ background: 'var(--palette-gray-98-2)', borderBottom: '2px solid var(--palette-blue-91)', textAlign: 'left', color: 'var(--palette-blue-35)' }}>
               <th
                 onClick={() => handleSort('date')}
                 style={{ padding: 'var(--space-8) var(--space-10)', cursor: 'pointer', fontWeight: 700 }}
@@ -125,6 +132,7 @@ export function BookingTable({ bookings }: BookingTableProps) {
                   key={b.bookingId || i}
                   style={{
                     borderBottom: 'var(--border-width-1) solid var(--palette-gray-96-5)',
+                    borderBottom: '1px solid var(--palette-gray-96-5)',
                     background: i % 2 === 0 ? 'var(--palette-white)' : 'var(--palette-gray-98)',
                   }}
                 >

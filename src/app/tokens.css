@@ -5,6 +5,8 @@
  *   1. Primitive: raw values only (palette, alpha colours, font sizes, spacing, corner radii, border widths),
  *      named after the value itself (--palette-<hue>-<HSL lightness %>, --font-size-<px|rem>, --space-<px|rem>,
  *      --radius-<px> / --radius-50pct, --border-width-<px>).
+ *   1. Primitive: raw values only (palette, alpha colours, font sizes, spacing), named after the value
+ *      itself (--palette-<hue>-<HSL lightness %>, --font-size-<px|rem>, --space-<px|rem>).
  *   2. Semantic: what components should use (--color-*, --radius-*, --shadow-*, --font-*). They point
  *      at primitives. When the designer delivers the token table, change the values here only.
  *
@@ -406,7 +408,6 @@
   /* ---- Primitive: border widths ---- */
   --border-width-1: 1px;
   --border-width-2: 2px;
-
   /* ---- Semantic (moved from globals.css :root, same values) ---- */
 
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -448,6 +449,10 @@
   --radius-full: var(--radius-9999);
   /* Organic logo shape of the Explore header mark (same value as before) */
   --radius-brand-mark: var(--radius-50pct) var(--radius-50pct) 46% 54% / 42% 52% 48% 58%;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
 
   --shadow-sm: 0 1px 3px var(--alpha-black-5);
   --shadow-md: 0 4px 12px var(--alpha-gray-12-8);

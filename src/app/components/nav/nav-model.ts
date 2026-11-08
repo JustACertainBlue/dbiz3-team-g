@@ -63,7 +63,8 @@ export function navItems(session: SessionContext | null): NavItem[] {
     return [
       { href: '/admin', label: 'Dashboard toàn thành phố', short: 'Dashboard', icon: 'grid' },
       { href: '/admin/agencies', label: 'Duyệt Agency', icon: 'check' },
-      { href: '/admin/providers', label: 'Hồ sơ xưởng', short: 'Xưởng', icon: 'building' },
+      // VER146 View Pending Profile (provider subtype); HDT views, the village UBND decides (PRF BR-005).
+      { href: '/admin/providers', label: 'Hồ sơ chờ thẩm định', short: 'Hồ sơ', icon: 'building' },
       { href: '/admin/users', label: 'Quản lý tài khoản', short: 'Tài khoản', icon: 'users' },
     ]
   }

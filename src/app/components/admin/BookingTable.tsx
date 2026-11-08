@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { BookingRecord } from '@/lib/adm/types'
+import StatusBadge from '@/app/components/StatusBadge'
 
 interface BookingTableProps {
   bookings: BookingRecord[]
@@ -32,40 +33,8 @@ export function BookingTable({ bookings }: BookingTableProps) {
     return sortOrder === 'desc' ? -comparison : comparison
   })
 
-  const getStatusBadge = (status: string) => {
-    let bg = 'var(--palette-gray-96-5)'
-    let color = 'var(--palette-blue-35)'
-
-    if (status === 'Booked') {
-      bg = 'var(--palette-blue-93)'
-      color = 'var(--palette-blue-48)'
-    } else if (status === 'Completed') {
-      bg = 'var(--palette-green-93)'
-      color = 'var(--palette-green-29)'
-    } else if (status === 'On hold') {
-      bg = 'var(--palette-amber-89)'
-      color = 'var(--palette-orange-37)'
-    } else if (status === 'Cancelled') {
-      bg = 'var(--palette-red-94)'
-      color = 'var(--palette-red-42)'
-    }
-
-    return (
-      <span
-        style={{
-          background: bg,
-          color,
-          padding: 'var(--space-2px) var(--space-8px)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: 'var(--font-size-0p7rem)',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-        }}
-      >
-        {status}
-      </span>
-    )
-  }
+  // Design wave 2: the shared badge (icon + Vietnamese label, v9 status tokens) instead of local colours.
+  const getStatusBadge = (status: string) => <StatusBadge family="booking" status={status} />
 
   return (
     <div

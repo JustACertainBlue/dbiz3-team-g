@@ -7,6 +7,7 @@ import CalendarGrid, { calendarStyles } from '@/app/schedule-calendar/CalendarGr
 import { bookingDetailStyles } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
 import { agencyPageSession } from '../agency-booking-gate'
 import { sessionDisplayName } from '@/lib/auth/session'
+import { statusLabel } from '@/lib/status-labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,7 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
       <label>Trạng thái
         <select name="status" defaultValue={status}>
           <option value="">Tất cả</option>
-          {BOOKING_STATUSES.map(value => <option key={value} value={value}>{value}</option>)}
+          {BOOKING_STATUSES.map(value => <option key={value} value={value}>{statusLabel('booking', value)}</option>)}
         </select>
       </label>
       <label>Từ ngày<input type="date" name="date_from" defaultValue={dateFrom} /></label>

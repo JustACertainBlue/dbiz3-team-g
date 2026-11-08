@@ -39,7 +39,7 @@ export default function RoleSwitcher() {
         color: 'var(--palette-white)',
         borderBottom: 'var(--border-width-2) solid var(--palette-orange-43)',
         padding: 'var(--space-0p45rem) var(--space-1p25rem)',
-        fontSize: 'var(--space-0p75rem)',
+        fontSize: 'var(--font-size-0p75rem)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -98,7 +98,7 @@ export default function RoleSwitcher() {
             border: role === 'LocalProvider' ? 'var(--border-width-1) solid var(--palette-orange-53)' : 'var(--border-width-1) solid var(--palette-blue-27)',
             padding: 'var(--space-3) var(--space-9)',
             borderRadius: 'var(--radius-2)',
-            fontSize: 'var(--space-0p72rem)',
+            fontSize: 'var(--font-size-0p72rem)',
             cursor: 'pointer',
             fontWeight: role === 'LocalProvider' ? 800 : 500,
           }}
@@ -115,7 +115,7 @@ export default function RoleSwitcher() {
             border: role === 'TourAgency' ? 'var(--border-width-1) solid var(--palette-sky-60)' : 'var(--border-width-1) solid var(--palette-blue-27)',
             padding: 'var(--space-3) var(--space-9)',
             borderRadius: 'var(--radius-2)',
-            fontSize: 'var(--space-0p72rem)',
+            fontSize: 'var(--font-size-0p72rem)',
             cursor: 'pointer',
             fontWeight: role === 'TourAgency' ? 800 : 500,
           }}
@@ -132,7 +132,7 @@ export default function RoleSwitcher() {
             border: role === 'UBND' ? 'var(--border-width-1) solid var(--palette-red-71)' : 'var(--border-width-1) solid var(--palette-blue-27)',
             padding: 'var(--space-3) var(--space-9)',
             borderRadius: 'var(--radius-2)',
-            fontSize: 'var(--space-0p72rem)',
+            fontSize: 'var(--font-size-0p72rem)',
             cursor: 'pointer',
             fontWeight: role === 'UBND' ? 800 : 500,
           }}
@@ -143,7 +143,7 @@ export default function RoleSwitcher() {
         <button
           type="button"
           onClick={() => handleSelectRole('HDT')}
-          style={{ background: role === 'HDT' ? 'var(--palette-violet-50)' : 'var(--palette-blue-17)', color: 'var(--palette-white)', border: 'var(--border-width-1) solid var(--palette-violet-58)', padding: 'var(--space-3) var(--space-9)', borderRadius: 'var(--radius-2)', fontSize: 'var(--space-0p72rem)', cursor: 'pointer' }}
+          style={{ background: role === 'HDT' ? 'var(--palette-violet-50)' : 'var(--palette-blue-17)', color: 'var(--palette-white)', border: 'var(--border-width-1) solid var(--palette-violet-58)', padding: 'var(--space-3) var(--space-9)', borderRadius: 'var(--radius-2)', fontSize: 'var(--font-size-0p72rem)', cursor: 'pointer' }}
         >
           🏛️ HDT Admin
         </button>
@@ -157,7 +157,7 @@ export default function RoleSwitcher() {
             border: role === 'Guest' ? 'var(--border-width-1) solid var(--palette-blue-65)' : 'var(--border-width-1) solid var(--palette-blue-27)',
             padding: 'var(--space-3) var(--space-9)',
             borderRadius: 'var(--radius-2)',
-            fontSize: 'var(--space-0p72rem)',
+            fontSize: 'var(--font-size-0p72rem)',
             cursor: 'pointer',
             fontWeight: role === 'Guest' ? 800 : 500,
           }}

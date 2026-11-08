@@ -1040,6 +1040,7 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Path and agent | A (Claude Code, Claude Opus 5.5); lines approved by linhkhanh-vu in the prompt (design wave 2 prerequisite: Design System v9, Figma Status Badge) |
 | Spec change | `docs/spec/specs/spec-BKG.md:450` and `:539` (#49): the chat template uses `{status_label}`, the Vietnamese display label of the canonical status (On hold → Tạm giữ, Booked → Đã đặt, Completed → Hoàn tất, Cancelled → Đã huỷ); stored status stays canonical. `docs/spec/screens/screen-spec-DSH018.md:80`: badges show the canonical statuses through these labels; stored and API values stay canonical |
 | Snapshots | `specs/004-bkg-core`, `011-bkg-manage`, `012-bkg-list`, `013-bkg-schedule` refreshed with `start_feature.py --use` + `--refresh`, each `--check` OK; active feature set back to `specs/010-aut-manage-accounts` (`--check` OK) |
+| Follow-up (approved 08/11) | Screen specs scanned for English status names used as badge/chip display text; three such lines amended the same way: `screen-spec-SCH139.md:80`, `screen-spec-SCH140.md:74`, `screen-spec-PRF127.md:73`. Lines that use status names as business concepts (rules, SR rows, element names) are unchanged. Screen specs are not part of any feature snapshot; `start_feature.py --check` OK |
 | Code | None in this PR; the label table, badges and the template change come in the design wave 2 PR |
 
 ## 3. Spec issues found while building

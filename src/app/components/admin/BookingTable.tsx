@@ -55,7 +55,7 @@ export function BookingTable({ bookings }: BookingTableProps) {
         style={{
           background: bg,
           color,
-          padding: 'var(--space-2) var(--space-8)',
+          padding: 'var(--space-2px) var(--space-8px)',
           borderRadius: 'var(--radius-md)',
           fontSize: 'var(--font-size-0p7rem)',
           fontWeight: 700,
@@ -74,7 +74,7 @@ export function BookingTable({ bookings }: BookingTableProps) {
         borderRadius: 'var(--radius-10)',
         padding: 'var(--space-1p25rem)',
         border: 'var(--border-width-1) solid var(--palette-blue-91)',
-        boxShadow: '0 var(--space-1) var(--space-3) var(--alpha-black-5)',
+        boxShadow: '0 var(--space-1px) var(--space-3px) var(--alpha-black-5)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-1rem)' }}>
@@ -86,7 +86,7 @@ export function BookingTable({ bookings }: BookingTableProps) {
             Hiển thị danh sách booking theo bộ lọc và quyền hạn quản trị (BR-006, BR-013)
           </span>
         </div>
-        <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-blue-11)', background: 'var(--palette-gray-96-5)', padding: 'var(--space-3) var(--space-8)', borderRadius: 'var(--radius-4)' }}>
+        <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-blue-11)', background: 'var(--palette-gray-96-5)', padding: 'var(--space-3px) var(--space-8px)', borderRadius: 'var(--radius-4)' }}>
           {bookings.length} bản ghi
         </span>
       </div>
@@ -97,22 +97,22 @@ export function BookingTable({ bookings }: BookingTableProps) {
             <tr style={{ background: 'var(--palette-gray-98-2)', borderBottom: 'var(--border-width-2) solid var(--palette-blue-91)', textAlign: 'left', color: 'var(--palette-blue-35)' }}>
               <th
                 onClick={() => handleSort('date')}
-                style={{ padding: 'var(--space-8) var(--space-10)', cursor: 'pointer', fontWeight: 700 }}
+                style={{ padding: 'var(--space-8px) var(--space-10px)', cursor: 'pointer', fontWeight: 700 }}
               >
                 NGÀY {sortField === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
-              <th style={{ padding: 'var(--space-8) var(--space-10)', fontWeight: 700 }}>TOUR AGENCY</th>
-              <th style={{ padding: 'var(--space-8) var(--space-10)', fontWeight: 700 }}>XƯỞNG THỦ CÔNG</th>
-              <th style={{ padding: 'var(--space-8) var(--space-10)', fontWeight: 700 }}>TRẢI NGHIỆM</th>
+              <th style={{ padding: 'var(--space-8px) var(--space-10px)', fontWeight: 700 }}>TOUR AGENCY</th>
+              <th style={{ padding: 'var(--space-8px) var(--space-10px)', fontWeight: 700 }}>XƯỞNG THỦ CÔNG</th>
+              <th style={{ padding: 'var(--space-8px) var(--space-10px)', fontWeight: 700 }}>TRẢI NGHIỆM</th>
               <th
                 onClick={() => handleSort('status')}
-                style={{ padding: 'var(--space-8) var(--space-10)', cursor: 'pointer', fontWeight: 700 }}
+                style={{ padding: 'var(--space-8px) var(--space-10px)', cursor: 'pointer', fontWeight: 700 }}
               >
                 TRẠNG THÁI {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
               <th
                 onClick={() => handleSort('price')}
-                style={{ padding: 'var(--space-8) var(--space-10)', cursor: 'pointer', fontWeight: 700, textAlign: 'right' }}
+                style={{ padding: 'var(--space-8px) var(--space-10px)', cursor: 'pointer', fontWeight: 700, textAlign: 'right' }}
               >
                 GIÁ TRỊ (VNĐ) {sortField === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
@@ -128,22 +128,22 @@ export function BookingTable({ bookings }: BookingTableProps) {
                     background: i % 2 === 0 ? 'var(--palette-white)' : 'var(--palette-gray-98)',
                   }}
                 >
-                  <td style={{ padding: 'var(--space-10)', color: 'var(--palette-blue-47)', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: 'var(--space-10px)', color: 'var(--palette-blue-47)', whiteSpace: 'nowrap' }}>
                     {new Date(b.date).toLocaleDateString('vi-VN')}
                   </td>
-                  <td style={{ padding: 'var(--space-10)', fontWeight: 600, color: 'var(--palette-blue-25)' }}>
+                  <td style={{ padding: 'var(--space-10px)', fontWeight: 600, color: 'var(--palette-blue-25)' }}>
                     {b.agencyName}
                   </td>
-                  <td style={{ padding: 'var(--space-10)', fontWeight: 600, color: 'var(--palette-orange-43)' }}>
+                  <td style={{ padding: 'var(--space-10px)', fontWeight: 600, color: 'var(--palette-orange-43)' }}>
                     {b.providerName}
                   </td>
-                  <td style={{ padding: 'var(--space-10)', color: 'var(--palette-blue-27)' }}>
+                  <td style={{ padding: 'var(--space-10px)', color: 'var(--palette-blue-27)' }}>
                     {b.experienceName}
                   </td>
-                  <td style={{ padding: 'var(--space-10)' }}>
+                  <td style={{ padding: 'var(--space-10px)' }}>
                     {getStatusBadge(b.status)}
                   </td>
-                  <td style={{ padding: 'var(--space-10)', textAlign: 'right', fontWeight: 700, color: 'var(--palette-blue-11)' }}>
+                  <td style={{ padding: 'var(--space-10px)', textAlign: 'right', fontWeight: 700, color: 'var(--palette-blue-11)' }}>
                     {b.price.toLocaleString('vi-VN')} đ
                   </td>
                 </tr>

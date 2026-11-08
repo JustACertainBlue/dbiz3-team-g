@@ -44,11 +44,11 @@ export function AdminSidebar({
       <div>
         <div
           style={{
-            padding: 'var(--space-20) var(--space-24)',
+            padding: 'var(--space-20px) var(--space-24px)',
             borderBottom: 'var(--border-width-1) solid var(--palette-gray-96)',
             display: 'flex',
             alignItems: 'center',
-            gap: 'var(--space-12)',
+            gap: 'var(--space-12px)',
           }}
         >
           {/* 4-square logo icon */}
@@ -60,8 +60,8 @@ export function AdminSidebar({
               borderRadius: 'var(--radius-sm)',
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: 'var(--space-3)',
-              padding: 'var(--space-6)',
+              gap: 'var(--space-3px)',
+              padding: 'var(--space-6px)',
             }}
           >
             <div style={{ background: 'var(--palette-white)', borderRadius: 'var(--radius-1p5)' }} />
@@ -96,7 +96,7 @@ export function AdminSidebar({
         </div>
 
         {/* Nav Links */}
-        <nav style={{ padding: 'var(--space-16) var(--space-12)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <nav style={{ padding: 'var(--space-16px) var(--space-12px)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4px)' }}>
           {/* Dashboard Tab */}
           <Link
             href="/admin"
@@ -104,9 +104,9 @@ export function AdminSidebar({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'var(--space-12)',
+              gap: 'var(--space-12px)',
               width: '100%',
-              padding: 'var(--space-10) var(--space-14)',
+              padding: 'var(--space-10px) var(--space-14px)',
               background: activeTab === 'dashboard' ? 'var(--palette-gray-10)' : 'transparent',
               color: activeTab === 'dashboard' ? 'var(--palette-white)' : 'var(--palette-gray-46)',
               textDecoration: 'none',
@@ -135,14 +135,14 @@ export function AdminSidebar({
       {/* Bottom User Profile */}
       <div
         style={{
-          padding: 'var(--space-16) var(--space-20)',
+          padding: 'var(--space-16px) var(--space-20px)',
           borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10px)' }}>
           <div
             style={{
               width: '36px',
@@ -183,7 +183,7 @@ export function AdminSidebar({
             border: 'none',
             color: 'var(--palette-gray-46)',
             cursor: 'pointer',
-            padding: 'var(--space-4)',
+            padding: 'var(--space-4px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -265,8 +265,8 @@ export function FilterPanel({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 'var(--space-12)',
-        marginBottom: 'var(--space-20)',
+        gap: 'var(--space-12px)',
+        marginBottom: 'var(--space-20px)',
       }}
     >
       {/* Top Controls Row: Header and Time Period */}
@@ -276,7 +276,7 @@ export function FilterPanel({
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: 'var(--space-16)',
+          gap: 'var(--space-16px)',
         }}
       >
         {/* Left Header Title matching ADM079.png */}
@@ -298,7 +298,7 @@ export function FilterPanel({
               fontSize: 'var(--font-size-2rem)',
               fontWeight: 700,
               color: 'var(--palette-gray-4)',
-              margin: 'var(--space-2) 0 0 0',
+              margin: 'var(--space-2px) 0 0 0',
               letterSpacing: '-0.02em',
             }}
           >
@@ -316,7 +316,7 @@ export function FilterPanel({
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               fontFamily: 'monospace, sans-serif',
-              marginBottom: 'var(--space-6)',
+              marginBottom: 'var(--space-6px)',
             }}
           >
             TIME PERIOD
@@ -332,12 +332,12 @@ export function FilterPanel({
                 background: 'var(--palette-white)',
                 border: 'var(--border-width-1) solid var(--palette-gray-90)',
                 borderRadius: 'var(--radius-8)',
-                padding: 'var(--space-8) var(--space-36) var(--space-8) var(--space-14)',
+                padding: 'var(--space-8px) var(--space-36px) var(--space-8px) var(--space-14px)',
                 fontSize: 'var(--font-size-0p85rem)',
                 fontWeight: 500,
                 color: 'var(--palette-gray-4)',
                 cursor: 'pointer',
-                boxShadow: '0 var(--space-1) var(--space-2) var(--alpha-black-2)',
+                boxShadow: '0 var(--space-1px) var(--space-2px) var(--alpha-black-2)',
               }}
             >
               {PRESETS.map(p => (
@@ -368,7 +368,7 @@ export function FilterPanel({
               fontSize: 'var(--font-size-0p72rem)',
               color: 'var(--palette-gray-46)',
               fontFamily: 'monospace, sans-serif',
-              marginTop: 'var(--space-4)',
+              marginTop: 'var(--space-4px)',
             }}
           >
             {getDateRangeText()}
@@ -382,30 +382,30 @@ export function FilterPanel({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 'var(--space-12)',
+            gap: 'var(--space-12px)',
             background: 'var(--palette-white)',
-            padding: 'var(--space-10) var(--space-16)',
+            padding: 'var(--space-10px) var(--space-16px)',
             borderRadius: 'var(--radius-8)',
             border: 'var(--border-width-1) solid var(--palette-gray-90)',
             width: 'fit-content',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)', fontSize: 'var(--font-size-0p8rem)' }}>
             <label style={{ color: 'var(--palette-gray-46)', fontWeight: 500 }}>From:</label>
             <input
               type="date"
               value={filters.startDate || ''}
               onChange={e => onFilterChange({ startDate: e.target.value })}
-              style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}
+              style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4px) var(--space-8px)', fontSize: 'var(--font-size-0p8rem)' }}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)', fontSize: 'var(--font-size-0p8rem)' }}>
             <label style={{ color: 'var(--palette-gray-46)', fontWeight: 500 }}>To:</label>
             <input
               type="date"
               value={filters.endDate || ''}
               onChange={e => onFilterChange({ endDate: e.target.value })}
-              style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4) var(--space-8)', fontSize: 'var(--font-size-0p8rem)' }}
+              style={{ border: 'var(--border-width-1) solid var(--palette-gray-90)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4px) var(--space-8px)', fontSize: 'var(--font-size-0p8rem)' }}
             />
           </div>
         </div>
@@ -418,7 +418,7 @@ export function FilterPanel({
             background: 'var(--palette-red-97)',
             border: 'var(--border-width-1) solid var(--palette-red-89)',
             color: 'var(--palette-red-35)',
-            padding: 'var(--space-8) var(--space-14)',
+            padding: 'var(--space-8px) var(--space-14px)',
             borderRadius: 'var(--radius-sm)',
             fontSize: 'var(--font-size-0p78rem)',
           }}
@@ -432,17 +432,17 @@ export function FilterPanel({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 'var(--space-16)',
+          gap: 'var(--space-16px)',
           flexWrap: 'wrap',
           background: 'var(--palette-white)',
-          padding: 'var(--space-10) var(--space-16)',
+          padding: 'var(--space-10px) var(--space-16px)',
           borderRadius: 'var(--radius-10)',
           border: 'var(--border-width-1) solid var(--palette-gray-90)',
           position: 'relative',
         }}
       >
         {/* Village Scope Selector (HDT selectable, UBND locked per BR-003) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', minWidth: 'var(--space-220)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)', minWidth: 'var(--space-220px)' }}>
           <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-gray-46)', letterSpacing: '0.04em' }}>
             VILLAGE:
           </span>
@@ -451,10 +451,10 @@ export function FilterPanel({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 'var(--space-6)',
+                gap: 'var(--space-6px)',
                 background: 'var(--palette-gray-96)',
                 border: 'var(--border-width-1) solid var(--palette-gray-90)',
-                padding: 'var(--space-5) var(--space-12)',
+                padding: 'var(--space-5px) var(--space-12px)',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: 'var(--font-size-0p8rem)',
                 fontWeight: 600,
@@ -475,7 +475,7 @@ export function FilterPanel({
                 background: 'var(--palette-gray-99-2)',
                 border: 'var(--border-width-1) solid var(--palette-gray-90)',
                 borderRadius: 'var(--radius-sm)',
-                padding: 'var(--space-5) var(--space-12)',
+                padding: 'var(--space-5px) var(--space-12px)',
                 fontSize: 'var(--font-size-0p8rem)',
                 color: 'var(--palette-gray-4)',
                 cursor: 'pointer',
@@ -492,7 +492,7 @@ export function FilterPanel({
         </div>
 
         {/* PART 2: Combined Filter Box: Local Provider / Agency */}
-        <div ref={popoverRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+        <div ref={popoverRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-8px)' }}>
           <span style={{ fontSize: 'var(--font-size-0p75rem)', fontWeight: 600, color: 'var(--palette-gray-46)', letterSpacing: '0.04em' }}>
             LOCAL PROVIDER / AGENCY:
           </span>
@@ -504,7 +504,7 @@ export function FilterPanel({
               border: 'var(--border-width-1) solid var(--palette-gray-90)',
               borderRadius: 'var(--radius-sm)',
               background: 'var(--palette-gray-99-2)',
-              padding: 'var(--space-2)',
+              padding: 'var(--space-2px)',
             }}
           >
             <button
@@ -516,14 +516,14 @@ export function FilterPanel({
               style={{
                 background: 'transparent',
                 border: 'none',
-                padding: 'var(--space-4) var(--space-10)',
+                padding: 'var(--space-4px) var(--space-10px)',
                 fontSize: 'var(--font-size-0p8rem)',
                 fontWeight: (selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) ? 600 : 400,
                 color: (selectedProviderIds.length > 0 || selectedAgencyIds.length > 0) ? 'var(--palette-gray-4)' : 'var(--palette-gray-34)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 'var(--space-8)',
+                gap: 'var(--space-8px)',
                 outline: 'none',
               }}
             >
@@ -541,7 +541,7 @@ export function FilterPanel({
                   background: 'transparent',
                   border: 'none',
                   color: 'var(--palette-gray-65)',
-                  padding: 'var(--space-2) var(--space-6)',
+                  padding: 'var(--space-2px) var(--space-6px)',
                   cursor: 'pointer',
                   fontSize: 'var(--font-size-0p75rem)',
                   borderRadius: 'var(--radius-4)',
@@ -563,12 +563,12 @@ export function FilterPanel({
                 background: 'var(--palette-white)',
                 border: 'var(--border-width-1) solid var(--palette-gray-90)',
                 borderRadius: 'var(--radius-10)',
-                padding: 'var(--space-16)',
-                width: 'var(--space-420)',
-                boxShadow: '0 var(--space-10) var(--space-25) -5px var(--alpha-black-10), 0 var(--space-8) var(--space-10) -6px var(--alpha-black-5)',
+                padding: 'var(--space-16px)',
+                width: 'var(--space-420px)',
+                boxShadow: '0 var(--space-10px) var(--space-25px) -5px var(--alpha-black-10), 0 var(--space-8px) var(--space-10px) -6px var(--alpha-black-5)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 'var(--space-12)',
+                gap: 'var(--space-12px)',
               }}
             >
               {/* Popover Header */}
@@ -577,7 +577,7 @@ export function FilterPanel({
                   <h4 style={{ margin: 0, fontSize: 'var(--font-size-0p88rem)', fontWeight: 700, color: 'var(--palette-gray-4)' }}>
                     Select Provider or Agency
                   </h4>
-                  <p style={{ margin: 'var(--space-2) 0 0 0', fontSize: 'var(--font-size-0p72rem)', color: 'var(--palette-gray-46)' }}>
+                  <p style={{ margin: 'var(--space-2px) 0 0 0', fontSize: 'var(--font-size-0p72rem)', color: 'var(--palette-gray-46)' }}>
                     Mutually exclusive: select multiple within one category.
                   </p>
                 </div>
@@ -593,7 +593,7 @@ export function FilterPanel({
                       fontSize: 'var(--font-size-0p74rem)',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      padding: 'var(--space-2) var(--space-6)',
+                      padding: 'var(--space-2px) var(--space-6px)',
                     }}
                   >
                     Clear All
@@ -608,19 +608,19 @@ export function FilterPanel({
                     background: 'var(--palette-amber-96)',
                     border: 'var(--border-width-1) solid var(--palette-amber-77)',
                     borderRadius: 'var(--radius-8)',
-                    padding: 'var(--space-12)',
+                    padding: 'var(--space-12px)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 'var(--space-8)',
+                    gap: 'var(--space-8px)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-6)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-6px)' }}>
                     <span style={{ fontSize: 'var(--font-size-0p9rem)' }}>⚠️</span>
                     <span style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-orange-31)', lineHeight: 1.4 }}>
                       <strong>Mutually Exclusive Selection:</strong> You currently have {switchDialog.activeCount} {switchDialog.activeCategory} selected. You cannot select {switchDialog.targetCategory} simultaneously.
                     </span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-8)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-8px)' }}>
                     <button
                       type="button"
                       onClick={() => setSwitchDialog(null)}
@@ -628,7 +628,7 @@ export function FilterPanel({
                         background: 'var(--palette-white)',
                         border: 'var(--border-width-1) solid var(--palette-gray-84)',
                         borderRadius: 'var(--radius-4)',
-                        padding: 'var(--space-3) var(--space-8)',
+                        padding: 'var(--space-3px) var(--space-8px)',
                         fontSize: 'var(--font-size-0p72rem)',
                         cursor: 'pointer',
                         color: 'var(--palette-blue-27-2)',
@@ -644,7 +644,7 @@ export function FilterPanel({
                         color: 'var(--palette-white)',
                         border: 'none',
                         borderRadius: 'var(--radius-4)',
-                        padding: 'var(--space-3) var(--space-10)',
+                        padding: 'var(--space-3px) var(--space-10px)',
                         fontSize: 'var(--font-size-0p72rem)',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -671,10 +671,10 @@ export function FilterPanel({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: 'var(--space-10) var(--space-14)',
+                    padding: 'var(--space-10px) var(--space-14px)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)' }}>
                     <span style={{ fontSize: 'var(--font-size-0p82rem)', fontWeight: 600, color: 'var(--palette-gray-4)' }}>
                       Local Provider
                     </span>
@@ -685,7 +685,7 @@ export function FilterPanel({
                           fontWeight: 600,
                           background: 'var(--palette-green-93)',
                           color: 'var(--palette-green-29)',
-                          padding: 'var(--space-1) var(--space-6)',
+                          padding: 'var(--space-1px) var(--space-6px)',
                           borderRadius: 'var(--radius-10)',
                         }}
                       >
@@ -725,16 +725,16 @@ export function FilterPanel({
                     style={{
                       borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
                       background: 'var(--palette-white)',
-                      padding: 'var(--space-12) var(--space-14)',
+                      padding: 'var(--space-12px) var(--space-14px)',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: 'var(--space-8)',
-                      maxHeight: 'var(--space-200)',
+                      gap: 'var(--space-8px)',
+                      maxHeight: 'var(--space-200px)',
                       overflowY: 'auto',
                     }}
                   >
                     {/* Search and Clear Sub-bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-8)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-8px)' }}>
                       <input
                         type="text"
                         placeholder="Search providers..."
@@ -743,7 +743,7 @@ export function FilterPanel({
                         style={{
                           flex: 1,
                           fontSize: 'var(--font-size-0p75rem)',
-                          padding: 'var(--space-4) var(--space-8)',
+                          padding: 'var(--space-4px) var(--space-8px)',
                           border: 'var(--border-width-1) solid var(--palette-gray-90)',
                           borderRadius: 'var(--radius-4)',
                         }}
@@ -769,11 +769,11 @@ export function FilterPanel({
 
                     {/* Providers List */}
                     {loadingOptions ? (
-                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6) 0' }}>
+                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6px) 0' }}>
                         Loading providers...
                       </div>
                     ) : filteredProviders.length === 0 ? (
-                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6) 0' }}>
+                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6px) 0' }}>
                         No local providers available in current scope.
                       </div>
                     ) : (
@@ -785,11 +785,11 @@ export function FilterPanel({
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 'var(--space-8)',
+                              gap: 'var(--space-8px)',
                               fontSize: 'var(--font-size-0p78rem)',
                               color: 'var(--palette-gray-4)',
                               cursor: 'pointer',
-                              padding: 'var(--space-3) 0',
+                              padding: 'var(--space-3px) 0',
                             }}
                           >
                             <input
@@ -822,10 +822,10 @@ export function FilterPanel({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: 'var(--space-10) var(--space-14)',
+                    padding: 'var(--space-10px) var(--space-14px)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8px)' }}>
                     <span style={{ fontSize: 'var(--font-size-0p82rem)', fontWeight: 600, color: 'var(--palette-gray-4)' }}>
                       Agency
                     </span>
@@ -836,7 +836,7 @@ export function FilterPanel({
                           fontWeight: 600,
                           background: 'var(--palette-green-93)',
                           color: 'var(--palette-green-29)',
-                          padding: 'var(--space-1) var(--space-6)',
+                          padding: 'var(--space-1px) var(--space-6px)',
                           borderRadius: 'var(--radius-10)',
                         }}
                       >
@@ -876,16 +876,16 @@ export function FilterPanel({
                     style={{
                       borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
                       background: 'var(--palette-white)',
-                      padding: 'var(--space-12) var(--space-14)',
+                      padding: 'var(--space-12px) var(--space-14px)',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: 'var(--space-8)',
-                      maxHeight: 'var(--space-200)',
+                      gap: 'var(--space-8px)',
+                      maxHeight: 'var(--space-200px)',
                       overflowY: 'auto',
                     }}
                   >
                     {/* Search and Clear Sub-bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-8)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-8px)' }}>
                       <input
                         type="text"
                         placeholder="Search agencies..."
@@ -894,7 +894,7 @@ export function FilterPanel({
                         style={{
                           flex: 1,
                           fontSize: 'var(--font-size-0p75rem)',
-                          padding: 'var(--space-4) var(--space-8)',
+                          padding: 'var(--space-4px) var(--space-8px)',
                           border: 'var(--border-width-1) solid var(--palette-gray-90)',
                           borderRadius: 'var(--radius-4)',
                         }}
@@ -920,11 +920,11 @@ export function FilterPanel({
 
                     {/* Agencies List */}
                     {loadingOptions ? (
-                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6) 0' }}>
+                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6px) 0' }}>
                         Loading agencies...
                       </div>
                     ) : filteredAgencies.length === 0 ? (
-                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6) 0' }}>
+                      <div style={{ fontSize: 'var(--font-size-0p75rem)', color: 'var(--palette-gray-46)', padding: 'var(--space-6px) 0' }}>
                         No tour agencies available in current scope.
                       </div>
                     ) : (
@@ -936,11 +936,11 @@ export function FilterPanel({
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 'var(--space-8)',
+                              gap: 'var(--space-8px)',
                               fontSize: 'var(--font-size-0p78rem)',
                               color: 'var(--palette-gray-4)',
                               cursor: 'pointer',
-                              padding: 'var(--space-3) 0',
+                              padding: 'var(--space-3px) 0',
                             }}
                           >
                             <input

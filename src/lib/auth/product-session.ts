@@ -79,6 +79,8 @@ async function createSession(identity: DemoSession): Promise<LoginResult> {
     expires_at: new Date(now.getTime() + PRODUCT_SESSION_TTL_SECONDS * 1000).toISOString(),
     revoked_at: '', created_at: now.toISOString(),
   }))
+  // spec-AUT FR-021 §5.1 / F-AUTH-07 (#56): the account list shows the last successful login.
+  ;(await demoRepository().update('user_accounts', row => row.user_id === identity.userId, { last_login: now.toISOString() }))
   return { ok: true, token, identity }
 }
 

@@ -1033,6 +1033,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` OK; `npm test` 191 files passed, 4 skipped (1146 passed, 20 skipped); DEV dev server (curl as HDT): Custom 2026-11-07 → 2026-11-07 now spans 2026-11-06T17:00Z–2026-11-07T16:59:59.999Z and lists the two Bookings created 21:13 / 21:30 Hanoi that day; 2026-11-08 lists neither |
 | Existing tests changed | Only the `it.fails` → `it` in the #94 contract test, as that test's own comment and the human asked |
 
+### Entry 73: 08/11 Claude Code + human — #56 a successful login records last_login (`fix/56-last-login`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (item 7, "if time") |
+| Cause | spec-AUT FR-021 §5.1 returns `last_login` ("null if never logged in") and the data model writes it from F-AUTH-07, but no code wrote `user_accounts.last_login` |
+| Tests first | `tests/unit/aut-last-login.test.ts` (4) through `POST /api/auth/login` and `GET /api/auth/users`: successful login stores the time and the HDT list shows it (red before); a later login moves it forward (red before); never logged in stays empty; wrong password / Disabled account leave it unchanged |
+| Fix | `createSession` (`src/lib/auth/product-session.ts`) updates `last_login` with the session's creation time; only successful logins reach it |
+| Mutation (foreground) | 3/3 killed: not written, wrong account updated, written before the password check |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run test:postgres` on DEV 14/14 (the real-hash login test now also writes last_login through `hab_app`) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

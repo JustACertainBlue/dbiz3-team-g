@@ -9,6 +9,8 @@ import { renderChatMarkdown } from '@/lib/iac/markdown-utils'
 import { composerState } from './composer-state'
 import { closedNotice, closeReasonState } from './close-chat'
 import { ACCEPT_ATTRIBUTE, ATTACH_ERROR_TEXT, attachState, sizeLabel, typeLabel } from './attach-state'
+import StatusBadge from '@/app/components/StatusBadge'
+import { statusLabel } from '@/lib/status-labels'
 
 // Screens COM048 (Tour Agency) and COM065 (Local Provider): F-CHAT-01..05 on /api/iac/chats (spec-IAC FR-001..005);
 // the attach dialog is COM125 (Agency) / COM126 (Provider), spec-IAC #49.
@@ -176,14 +178,14 @@ function MessagesContent() {
         {chats.length === 0 && <p>Chưa có hội thoại. {isAgency ? 'Agency có thể bắt đầu từ Explore hoặc AI Tour Matching.' : 'Mở Chat từ một Booking.'}</p>}
         {chats.map(chat => <button key={chat.chat_session_id} className={chat.chat_session_id === selectedId ? 'is-selected' : ''} onClick={() => { setSelectedId(chat.chat_session_id); setCloseOpen(false); setCloseReason(''); setNotice(''); resetAttach() }}>
           <strong>{chat.organization}{chat.unread_count > 0 && <em className="unread-badge" aria-label={`${chat.unread_count} tin chưa đọc`}>{chat.unread_count}</em>}</strong>
-          <span>{chat.participant_name} · {chat.chat_status}</span>
+          <span>{chat.participant_name} · {statusLabel('chat', chat.chat_status)}</span>
           <small>{chat.last_message_preview || 'Hội thoại mới'}</small>
           <time>{formatTime(chat.last_message_at)}</time>
         </button>)}
       </aside>
       <section className="conversation-panel">
         {!selected || !history ? <div className="messages-empty"><h2>Chọn một hội thoại</h2><p>Mỗi cặp Agency–Provider có một hội thoại đang mở; Experience, Quote và Booking là ngữ cảnh trong cùng hội thoại.</p></div> : <>
-          <header className="conversation-header"><div><small>{history.chat_status === 'Active' ? 'ACTIVE' : 'CLOSED'}</small><h2>{selected.organization}</h2><p>{selected.participant_name}</p></div>
+          <header className="conversation-header"><div><StatusBadge family="chat" status={history.chat_status} /><h2>{selected.organization}</h2><p>{selected.participant_name}</p></div>
             {history.chat_status === 'Active' && <button type="button" className="close-chat" onClick={() => { setCloseOpen(true); setNotice('') }}>Đóng hội thoại</button>}</header>
           {closeOpen && history.chat_status === 'Active' && <div className="close-dialog" role="dialog" aria-label="Đóng hội thoại">
             <p><strong>Đóng hội thoại này?</strong> Lịch sử vẫn được giữ; hội thoại đã đóng không mở lại được.</p>

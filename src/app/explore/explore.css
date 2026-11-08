@@ -1,12 +1,12 @@
 .explore-module {
-  --exp-ink: #203229;
-  --exp-muted: #66746d;
-  --exp-clay: #a94f2d;
-  --exp-clay-dark: #7c361f;
-  --exp-moss: #486653;
-  --exp-cream: #f5f0e6;
-  --exp-paper: #fffdf8;
-  --exp-line: #ded8cb;
+  --exp-ink: var(--palette-teal-16-2);
+  --exp-muted: var(--palette-gray-43-2);
+  --exp-clay: var(--palette-orange-42);
+  --exp-clay-dark: var(--palette-red-30);
+  --exp-moss: var(--palette-green-34);
+  --exp-cream: var(--palette-orange-93);
+  --exp-paper: var(--palette-gray-99);
+  --exp-line: var(--palette-amber-83);
   min-height: 100vh;
   color: var(--exp-ink);
   background:

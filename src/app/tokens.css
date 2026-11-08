@@ -1,0 +1,422 @@
+/*
+ * Design tokens — Hanoi Artisan Bridge. Imported first by src/app/layout.tsx.
+ *
+ * Two layers:
+ *   1. Primitive: raw values only (palette, alpha colours, font sizes, spacing), named after the value
+ *      itself (--palette-<hue>-<HSL lightness %>, --font-size-<px|rem>, --space-<px|rem>).
+ *   2. Semantic: what components should use (--color-*, --radius-*, --shadow-*, --font-*). They point
+ *      at primitives. When the designer delivers the token table, change the values here only.
+ *
+ * Every value below is exactly a value that was hard-coded in the app before tokens were introduced;
+ * introducing this file changes nothing visually.
+ *
+ * Breakpoints in use (media queries cannot use var(), so widths stay literal in @media rules; reuse these):
+ *   560px  (max-width)
+ *   600px  (max-width)
+ *   620px  (max-width)
+ *   650px  (max-width)
+ *   680px  (max-width)
+ *   700px  (max-width)
+ *   720px  (max-width)
+ *   760px  (max-width)
+ *   850px  (max-width)
+ *   980px  (max-width)
+ */
+
+/* Web fonts behind --font-sans / --font-serif. Must stay the first rule: tokens.css is imported first. */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+
+
+:root {
+  /* ---- Primitive: palette ---- */
+  --palette-amber-32: #6e5b35;
+  --palette-amber-41: #82714d;
+  --palette-amber-56: #fbbf24;
+  --palette-amber-76: #c9c4ba;
+  --palette-amber-77: #fde68a;
+  --palette-amber-81: #d8d2c3;
+  --palette-amber-83: #ded8cb;
+  --palette-amber-84: #e0dacd;
+  --palette-amber-84-2: #f0e2bc;
+  --palette-amber-89: #fef3c7;
+  --palette-amber-91: #f0ece2;
+  --palette-amber-92: #f7efdf;
+  --palette-amber-93: #f4f1e8;
+  --palette-amber-93-2: #f2eee6;
+  --palette-amber-93-3: #f3efe6;
+  --palette-amber-96: #fffbeb;
+  --palette-blue-11: #0f172a;
+  --palette-blue-17: #1e293b;
+  --palette-blue-25: #1e3a5f;
+  --palette-blue-27: #334155;
+  --palette-blue-27-2: #374151;
+  --palette-blue-35: #475569;
+  --palette-blue-47: #64748b;
+  --palette-blue-48: #1d4ed8;
+  --palette-blue-65: #94a3b8;
+  --palette-blue-91: #e2e8f0;
+  --palette-blue-93: #dbeafe;
+  --palette-cyan-41: #5b7078;
+  --palette-cyan-42: #5c7278;
+  --palette-gray-4: #09090b;
+  --palette-gray-10: #18181b;
+  --palette-gray-13: #1f2421;
+  --palette-gray-34: #52525b;
+  --palette-gray-36: #526456;
+  --palette-gray-37: #59665e;
+  --palette-gray-37-2: #58655e;
+  --palette-gray-38: #59685e;
+  --palette-gray-39: #5d6a63;
+  --palette-gray-41: #637067;
+  --palette-gray-41-2: #5d6e76;
+  --palette-gray-43: #68736d;
+  --palette-gray-43-2: #66746d;
+  --palette-gray-43-3: #69736e;
+  --palette-gray-45: #6a7a69;
+  --palette-gray-46: #71717a;
+  --palette-gray-46-2: #6e806d;
+  --palette-gray-47: #6f806e;
+  --palette-gray-55: #8a918c;
+  --palette-gray-56: #8a948f;
+  --palette-gray-65: #a1a1aa;
+  --palette-gray-74: #b6c3b8;
+  --palette-gray-74-2: #b9c2bc;
+  --palette-gray-80: #cccccc;
+  --palette-gray-82: #cbd5ce;
+  --palette-gray-84: #d1d5db;
+  --palette-gray-86: #d9dfd9;
+  --palette-gray-87: #dddddd;
+  --palette-gray-89: #e9e9df;
+  --palette-gray-90: #e4e4e7;
+  --palette-gray-92: #e8eee9;
+  --palette-gray-93: #f1eee7;
+  --palette-gray-93-2: #eeeeee;
+  --palette-gray-94: #f4f1e9;
+  --palette-gray-95: #eef5ef;
+  --palette-gray-95-2: #eef4ef;
+  --palette-gray-96: #f4f4f5;
+  --palette-gray-96-2: #fbf8f1;
+  --palette-gray-96-3: #faf8f2;
+  --palette-gray-96-4: #f8f6f0;
+  --palette-gray-96-5: #f1f5f9;
+  --palette-gray-97: #f7faf7;
+  --palette-gray-98: #fafafa;
+  --palette-gray-98-2: #f8fafc;
+  --palette-gray-99: #fffdf8;
+  --palette-gray-99-2: #fcfcfd;
+  --palette-green-24: #314a3b;
+  --palette-green-27: #315b40;
+  --palette-green-29: #15803d;
+  --palette-green-30: #376045;
+  --palette-green-34: #486653;
+  --palette-green-36: #16a34a;
+  --palette-green-37: #526c5c;
+  --palette-green-37-2: #526b5a;
+  --palette-green-40: #587363;
+  --palette-green-43: #4c9162;
+  --palette-green-87: #d7e5d9;
+  --palette-green-90: #dfeee3;
+  --palette-green-90-2: #dfece1;
+  --palette-green-91: #e2eee5;
+  --palette-green-93: #dcfce7;
+  --palette-green-97: #f0fdf4;
+  --palette-indigo-85: #c4b5fd;
+  --palette-orange-31: #92400e;
+  --palette-orange-35: #9c3c18;
+  --palette-orange-37: #b45309;
+  --palette-orange-38: #9a4a2a;
+  --palette-orange-40: #c2410c;
+  --palette-orange-41: #a04c2f;
+  --palette-orange-42: #a94f2d;
+  --palette-orange-42-2: #847351;
+  --palette-orange-43: #b84c24;
+  --palette-orange-45: #9d6549;
+  --palette-orange-45-2: #9b674d;
+  --palette-orange-45-3: #9a674d;
+  --palette-orange-51: #c48a3f;
+  --palette-orange-53: #f97316;
+  --palette-orange-61: #d9a05f;
+  --palette-orange-66: #e4b26f;
+  --palette-orange-66-2: #b7ad9b;
+  --palette-orange-72: #fdba74;
+  --palette-orange-80: #d7cfc0;
+  --palette-orange-81: #d8d2c7;
+  --palette-orange-82: #d9d2c7;
+  --palette-orange-83: #ddd6ca;
+  --palette-orange-84: #e1d9ca;
+  --palette-orange-84-2: #dfd8cc;
+  --palette-orange-84-3: #f2cbba;
+  --palette-orange-86: #e5ded3;
+  --palette-orange-87: #e6e0d6;
+  --palette-orange-88: #ede4d3;
+  --palette-orange-88-2: #e8e2d8;
+  --palette-orange-88-3: #ebe3d6;
+  --palette-orange-89: #eee5d8;
+  --palette-orange-90: #ece7de;
+  --palette-orange-91: #f5e5d9;
+  --palette-orange-92: #ffedd5;
+  --palette-orange-93: #f5f0e6;
+  --palette-orange-93-2: #f9f1e3;
+  --palette-orange-93-3: #f4efe5;
+  --palette-orange-93-4: #fff3dc;
+  --palette-orange-94: #faeee7;
+  --palette-orange-95: #fbf5eb;
+  --palette-orange-96: #fff9ed;
+  --palette-red-30: #7c361f;
+  --palette-red-30-2: #8a1f11;
+  --palette-red-35: #991b1b;
+  --palette-red-36: #9b1c1c;
+  --palette-red-40: #b42318;
+  --palette-red-41: #be123c;
+  --palette-red-42: #b91c1c;
+  --palette-red-51: #dc2626;
+  --palette-red-60: #ef4444;
+  --palette-red-71: #f87171;
+  --palette-red-82: #fca5a5;
+  --palette-red-89: #fecaca;
+  --palette-red-93: #fbe4e1;
+  --palette-red-94: #fee2e2;
+  --palette-red-95: #ffe4e6;
+  --palette-red-97: #fef2f2;
+  --palette-sky-42: #5e7078;
+  --palette-sky-60: #38bdf8;
+  --palette-sky-78: #93c5fd;
+  --palette-sky-84: #cbd5e1;
+  --palette-teal-12: #17251e;
+  --palette-teal-15: #1e2f27;
+  --palette-teal-16: #064e3b;
+  --palette-teal-16-2: #203229;
+  --palette-teal-19: #243b30;
+  --palette-teal-23: #274d3b;
+  --palette-teal-28: #355b49;
+  --palette-teal-30: #0d8a57;
+  --palette-teal-52: #34d399;
+  --palette-teal-79: #b0e3cb;
+  --palette-teal-93: #e6f6ee;
+  --palette-violet-50: #6d28d9;
+  --palette-violet-58: #7c3aed;
+  --palette-white: #ffffff;
+
+  /* ---- Primitive: colours with transparency ---- */
+  --alpha-black-26p7: rgba(0, 0, 0, 0.267);
+  --alpha-black-2: rgba(0, 0, 0, 0.02);
+  --alpha-black-3: rgba(0, 0, 0, 0.03);
+  --alpha-black-5: rgba(0, 0, 0, 0.05);
+  --alpha-black-10: rgba(0, 0, 0, 0.1);
+  --alpha-black-30: rgba(0, 0, 0, 0.3);
+  --alpha-black-40: rgba(0, 0, 0, 0.4);
+  --alpha-black-60: rgba(0, 0, 0, 0.6);
+  --alpha-gray-12-8: rgba(27, 31, 35, 0.08);
+  --alpha-gray-12-12: rgba(27, 31, 35, 0.12);
+  --alpha-gray-99-92p9: rgba(255, 253, 248, 0.929);
+  --alpha-gray-99-86: rgba(255, 253, 248, 0.86);
+  --alpha-gray-99-94: rgba(255, 253, 248, 0.94);
+  --alpha-gray-99-97: rgba(255, 253, 248, 0.97);
+  --alpha-green-12-50: rgba(19, 42, 29, 0.5);
+  --alpha-orange-16-6: rgba(48, 41, 32, 0.06);
+  --alpha-orange-16-8: rgba(51, 42, 31, 0.08);
+  --alpha-orange-16-10: rgba(51, 42, 31, 0.1);
+  --alpha-orange-16-11: rgba(48, 41, 32, 0.11);
+  --alpha-orange-18-12: rgba(61, 46, 30, 0.12);
+  --alpha-orange-19-13: rgba(66, 51, 33, 0.13);
+  --alpha-orange-31-8: rgba(113, 80, 45, 0.08);
+  --alpha-orange-42-13p3: rgba(169, 79, 45, 0.133);
+  --alpha-orange-43-20: rgba(184, 76, 36, 0.2);
+  --alpha-orange-49-9: rgba(189, 119, 63, 0.09);
+  --alpha-orange-61-9: rgba(217, 160, 95, 0.09);
+  --alpha-orange-97-90: rgba(255, 250, 240, 0.9);
+  --alpha-teal-12-11: rgba(23, 37, 30, 0.11);
+  --alpha-teal-13-80: rgba(24, 44, 34, 0.8);
+  --alpha-teal-16-11: rgba(32, 50, 41, 0.11);
+  --alpha-teal-16-15: rgba(32, 50, 41, 0.15);
+  --alpha-white-12p2: rgba(255, 255, 255, 0.122);
+  --alpha-white-14p9: rgba(255, 255, 255, 0.149);
+  --alpha-white-3p5: rgba(255, 255, 255, 0.035);
+  --alpha-white-2p5: rgba(255, 255, 255, 0.025);
+  --alpha-white-2: rgba(255, 255, 255, 0.02);
+  --alpha-white-5: rgba(255, 255, 255, 0.05);
+  --alpha-white-18: rgba(255, 255, 255, 0.18);
+  --alpha-white-20: rgba(255, 255, 255, 0.2);
+  --alpha-white-24: rgba(255, 255, 255, 0.24);
+  --alpha-white-25: rgba(255, 255, 255, 0.25);
+  --alpha-white-29: rgba(255, 255, 255, 0.29);
+  --alpha-white-38: rgba(255, 255, 255, 0.38);
+  --alpha-white-45: rgba(255, 255, 255, 0.45);
+  --alpha-white-50: rgba(255, 255, 255, 0.5);
+  --alpha-white-55: rgba(255, 255, 255, 0.55);
+  --alpha-white-58: rgba(255, 255, 255, 0.58);
+  --alpha-white-65: rgba(255, 255, 255, 0.65);
+  --alpha-white-70: rgba(255, 255, 255, 0.7);
+  --alpha-white-75: rgba(255, 255, 255, 0.75);
+  --alpha-white-86: rgba(255, 255, 255, 0.86);
+  --alpha-white-88: rgba(255, 255, 255, 0.88);
+
+  /* ---- Primitive: font sizes ---- */
+  --font-size-8: 8px;
+  --font-size-9: 9px;
+  --font-size-10: 10px;
+  --font-size-11: 11px;
+  --font-size-12: 12px;
+  --font-size-13: 13px;
+  --font-size-14: 14px;
+  --font-size-15: 15px;
+  --font-size-16: 16px;
+  --font-size-17: 17px;
+  --font-size-19: 19px;
+  --font-size-20: 20px;
+  --font-size-22: 22px;
+  --font-size-24: 24px;
+  --font-size-25: 25px;
+  --font-size-28: 28px;
+  --font-size-29: 29px;
+  --font-size-31: 31px;
+  --font-size-34: 34px;
+  --font-size-38: 38px;
+  --font-size-39: 39px;
+  --font-size-42: 42px;
+  --font-size-48: 48px;
+  --font-size-59: 59px;
+  --font-size-61: 61px;
+  --font-size-63: 63px;
+  --font-size-68: 68px;
+  --font-size-74: 74px;
+  --font-size-0p65rem: 0.65rem;
+  --font-size-0p68rem: 0.68rem;
+  --font-size-0p7rem: 0.7rem;
+  --font-size-0p72rem: 0.72rem;
+  --font-size-0p74rem: 0.74rem;
+  --font-size-0p75rem: 0.75rem;
+  --font-size-0p78rem: 0.78rem;
+  --font-size-0p8rem: 0.8rem;
+  --font-size-0p82rem: 0.82rem;
+  --font-size-0p85rem: 0.85rem;
+  --font-size-0p88rem: 0.88rem;
+  --font-size-0p9rem: 0.9rem;
+  --font-size-1rem: 1rem;
+  --font-size-1p1rem: 1.1rem;
+  --font-size-1p125rem: 1.125rem;
+  --font-size-1p25rem: 1.25rem;
+  --font-size-2rem: 2rem;
+  --font-size-2p25rem: 2.25rem;
+
+  /* ---- Primitive: spacing (padding, margin, gap) ---- */
+  --space-1: 1px;
+  --space-2: 2px;
+  --space-3: 3px;
+  --space-4: 4px;
+  --space-5: 5px;
+  --space-6: 6px;
+  --space-7: 7px;
+  --space-8: 8px;
+  --space-9: 9px;
+  --space-10: 10px;
+  --space-11: 11px;
+  --space-12: 12px;
+  --space-13: 13px;
+  --space-14: 14px;
+  --space-15: 15px;
+  --space-16: 16px;
+  --space-17: 17px;
+  --space-18: 18px;
+  --space-19: 19px;
+  --space-20: 20px;
+  --space-21: 21px;
+  --space-22: 22px;
+  --space-23: 23px;
+  --space-24: 24px;
+  --space-25: 25px;
+  --space-26: 26px;
+  --space-27: 27px;
+  --space-28: 28px;
+  --space-29: 29px;
+  --space-30: 30px;
+  --space-31: 31px;
+  --space-32: 32px;
+  --space-33: 33px;
+  --space-34: 34px;
+  --space-35: 35px;
+  --space-36: 36px;
+  --space-37: 37px;
+  --space-38: 38px;
+  --space-40: 40px;
+  --space-42: 42px;
+  --space-43: 43px;
+  --space-45: 45px;
+  --space-48: 48px;
+  --space-50: 50px;
+  --space-54: 54px;
+  --space-55: 55px;
+  --space-60: 60px;
+  --space-64: 64px;
+  --space-70: 70px;
+  --space-80: 80px;
+  --space-110: 110px;
+  --space-200: 200px;
+  --space-220: 220px;
+  --space-350: 350px;
+  --space-420: 420px;
+  --space-520: 520px;
+  --space-0p2rem: 0.2rem;
+  --space-0p35rem: 0.35rem;
+  --space-0p4rem: 0.4rem;
+  --space-0p45rem: 0.45rem;
+  --space-0p5rem: 0.5rem;
+  --space-0p65rem: 0.65rem;
+  --space-0p7rem: 0.7rem;
+  --space-0p72rem: 0.72rem;
+  --space-0p75rem: 0.75rem;
+  --space-0p78rem: 0.78rem;
+  --space-0p8rem: 0.8rem;
+  --space-0p82rem: 0.82rem;
+  --space-0p85rem: 0.85rem;
+  --space-0p88rem: 0.88rem;
+  --space-1rem: 1rem;
+  --space-1p25rem: 1.25rem;
+  --space-1p5rem: 1.5rem;
+  --space-2rem: 2rem;
+
+  /* ---- Semantic (moved from globals.css :root, same values) ---- */
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+
+  --color-primary: var(--palette-orange-43);
+  --color-primary-hover: var(--palette-orange-35);
+  --color-primary-light: var(--palette-orange-94);
+  --color-primary-border: var(--palette-orange-84-3);
+
+  --color-secondary: var(--palette-teal-16-2);
+  --color-secondary-light: var(--palette-green-34);
+
+  --color-accent: var(--palette-orange-51);
+  --color-accent-light: var(--palette-orange-95);
+
+  --color-bg-page: var(--palette-gray-96-4);
+  --color-surface: var(--palette-white);
+  --color-surface-alt: var(--palette-amber-93-3);
+
+  --color-text-main: var(--palette-gray-13);
+  --color-text-muted: var(--palette-gray-38);
+  --color-text-subtle: var(--palette-blue-65);
+
+  --color-success: var(--palette-teal-30);
+  --color-success-bg: var(--palette-teal-93);
+  --color-success-border: var(--palette-teal-79);
+
+  --color-warning: var(--palette-orange-37);
+  --color-warning-bg: var(--palette-amber-89);
+  --color-warning-border: var(--palette-amber-77);
+
+  --color-danger: var(--palette-red-41);
+  --color-danger-bg: var(--palette-red-95);
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px var(--alpha-black-5);
+  --shadow-md: 0 4px 12px var(--alpha-gray-12-8);
+  --shadow-lg: 0 12px 28px var(--alpha-gray-12-12);
+  --shadow-glow: 0 0 0 3px var(--alpha-orange-43-20);
+}

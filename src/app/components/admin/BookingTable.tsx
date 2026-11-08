@@ -57,7 +57,7 @@ export function BookingTable({ bookings }: BookingTableProps) {
           color,
           padding: 'var(--space-2) var(--space-8)',
           borderRadius: 'var(--radius-md)',
-          fontSize: 'var(--space-0p7rem)',
+          fontSize: 'var(--font-size-0p7rem)',
           fontWeight: 700,
           textTransform: 'uppercase',
         }}

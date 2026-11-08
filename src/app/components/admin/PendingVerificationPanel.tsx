@@ -32,7 +32,7 @@ export function PendingVerificationPanel({ items }: PendingVerificationPanelProp
       </p>
 
       {items.length === 0 ? (
-        <div style={{ padding: 'var(--space-28) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--space-0p82rem)' }}>
+        <div style={{ padding: 'var(--space-28) 0', textAlign: 'center', color: 'var(--palette-gray-46)', fontSize: 'var(--font-size-0p82rem)' }}>
           No accounts awaiting review
         </div>
       ) : (

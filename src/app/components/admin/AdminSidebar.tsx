@@ -111,7 +111,7 @@ export function AdminSidebar({
               color: activeTab === 'dashboard' ? 'var(--palette-white)' : 'var(--palette-gray-46)',
               textDecoration: 'none',
               borderRadius: 'var(--radius-8)',
-              fontSize: 'var(--space-0p85rem)',
+              fontSize: 'var(--font-size-0p85rem)',
               fontWeight: 600,
               cursor: 'pointer',
               textAlign: 'left',

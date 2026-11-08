@@ -211,7 +211,7 @@ export default function AdminDashboardPage() {
                       border: 'none',
                       padding: 'var(--space-8) var(--space-18)',
                       borderRadius: 'var(--radius-sm)',
-                      fontSize: 'var(--space-0p85rem)',
+                      fontSize: 'var(--font-size-0p85rem)',
                       fontWeight: 600,
                       cursor: 'pointer',
                     }}
@@ -233,7 +233,7 @@ export default function AdminDashboardPage() {
                 padding: 'var(--space-12) var(--space-18)',
                 borderRadius: 'var(--radius-8)',
                 marginBottom: 'var(--space-16)',
-                fontSize: 'var(--space-0p85rem)',
+                fontSize: 'var(--font-size-0p85rem)',
               }}
             >
               {error}

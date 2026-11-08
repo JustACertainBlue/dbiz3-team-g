@@ -2,8 +2,9 @@
  * Design tokens — Hanoi Artisan Bridge. Imported first by src/app/layout.tsx.
  *
  * Two layers:
- *   1. Primitive: raw values only (palette, alpha colours, font sizes, spacing), named after the value
- *      itself (--palette-<hue>-<HSL lightness %>, --font-size-<px|rem>, --space-<px|rem>).
+ *   1. Primitive: raw values only (palette, alpha colours, font sizes, spacing, corner radii, border widths),
+ *      named after the value itself (--palette-<hue>-<HSL lightness %>, --font-size-<px|rem>, --space-<px|rem>,
+ *      --radius-<px> / --radius-50pct, --border-width-<px>).
  *   2. Semantic: what components should use (--color-*, --radius-*, --shadow-*, --font-*). They point
  *      at primitives. When the designer delivers the token table, change the values here only.
  *
@@ -375,6 +376,37 @@
   --space-1p5rem: 1.5rem;
   --space-2rem: 2rem;
 
+  /* ---- Primitive: corner radii (border-radius), named after the px value ---- */
+  --radius-1p5: 1.5px;
+  --radius-2: 2px;
+  --radius-3: 3px;
+  --radius-4: 4px;
+  --radius-5: 5px;
+  --radius-6: 6px;
+  --radius-7: 7px;
+  --radius-8: 8px;
+  --radius-9: 9px;
+  --radius-10: 10px;
+  --radius-11: 11px;
+  --radius-12: 12px;
+  --radius-14: 14px;
+  --radius-15: 15px;
+  --radius-16: 16px;
+  --radius-17: 17px;
+  --radius-18: 18px;
+  --radius-20: 20px;
+  --radius-22: 22px;
+  --radius-25: 25px;
+  --radius-28: 28px;
+  --radius-130: 130px;
+  --radius-999: 999px;
+  --radius-9999: 9999px;
+  --radius-50pct: 50%;
+
+  /* ---- Primitive: border widths ---- */
+  --border-width-1: 1px;
+  --border-width-2: 2px;
+
   /* ---- Semantic (moved from globals.css :root, same values) ---- */
 
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -410,10 +442,12 @@
   --color-danger: var(--palette-red-41);
   --color-danger-bg: var(--palette-red-95);
 
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-full: 9999px;
+  --radius-sm: var(--radius-6);
+  --radius-md: var(--radius-12);
+  --radius-lg: var(--radius-18);
+  --radius-full: var(--radius-9999);
+  /* Organic logo shape of the Explore header mark (same value as before) */
+  --radius-brand-mark: var(--radius-50pct) var(--radius-50pct) 46% 54% / 42% 52% 48% 58%;
 
   --shadow-sm: 0 1px 3px var(--alpha-black-5);
   --shadow-md: 0 4px 12px var(--alpha-gray-12-8);

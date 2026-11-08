@@ -72,8 +72,8 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
     <div
       style={{
         background: 'var(--palette-white)',
-        borderRadius: '12px',
-        border: '1px solid var(--palette-gray-90)',
+        borderRadius: 'var(--radius-md)',
+        border: 'var(--border-width-1) solid var(--palette-gray-90)',
         padding: 'var(--space-24)',
         display: 'flex',
         flexDirection: 'column',
@@ -190,7 +190,7 @@ export function BookingStatusDonut({ bookingMetrics }: BookingStatusDonutProps) 
                   style={{
                     width: '8px',
                     height: '8px',
-                    borderRadius: '50%',
+                    borderRadius: 'var(--radius-50pct)',
                     background: getStatusColor(item.status),
                     display: 'inline-block',
                   }}

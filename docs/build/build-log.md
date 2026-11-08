@@ -1128,6 +1128,7 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Tests | `tests/unit/bkg-screens.test.ts:42-46`: spec changed → expectation changed (label words only, approved); it was the only failing test before the change |
 | Figma check | After-only shots of BKG135 (Provider) and BKG138 (Agency) at 1440/390 next to Figma; difference table in the PR with (c) = 0 |
 | Checks | `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+| Follow-up (linhkhanh-vu 09/11) | The lock-reason line under the actions bar is a **Figma addition, not required by the spec** (FR-007 / FR-006 / BR-017 only define when Mark Group Arrival is enabled). Moved to `arrivalLockReason()` in `src/lib/booking/booking-actions.ts` and checked against those conditions: tests first `tests/unit/bkg-arrival-lock-reason.test.ts` (6: On hold, Booked before start, Booked at/after start = no reason, Completed, Cancelled, invariant reason ⇔ locked for every status/time, render with `aria-describedby`); 5 red before (no helper), the Completed/Cancelled reasons were missing in the first version. Mutation 6/6 killed. `npm test` 193 files passed, 4 skipped (1156 passed); lint and build OK |
 
 ## 3. Spec issues found while building
 

@@ -7,6 +7,7 @@ import { agencyPageSession, ownVillages } from '../agency-booking-gate'
 import { sessionDisplayName } from '@/lib/auth/session'
 import { hanoiClock } from '@/lib/time/hanoi-time'
 import StatusBadge from '@/app/components/StatusBadge'
+import AutoRefresh from '@/app/components/AutoRefresh'
 import { statusLabel } from '@/lib/status-labels'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +30,8 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
   }
 
   return <main className="bkg-page bkg-list">
+    {/* BKG FR-002: Provider changes show within ~10 s without a reload (#157 hook) */}
+    <AutoRefresh />
     <header><p>HANOI ARTISAN BRIDGE · BKG137</p><h1>Booking History</h1><span>{(await sessionDisplayName(session))} · chỉ xem, sắp theo giờ bắt đầu</span></header>
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái

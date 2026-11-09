@@ -1,5 +1,7 @@
 import type { TourContext, TourPreferenceProfile } from '@/lib/matching/types'
 import { detectCraftPreference, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
+import { systemClock } from '@/lib/booking/clock'
+import { extractTourDate } from './tour-date'
 
 const HANOI_PLACES = [
   'Hoàn Kiếm', 'Hoan Kiem', 'Old Quarter', 'Ba Đình', 'Tây Hồ', 'Long Biên', 'Cầu Giấy', 'Đống Đa',
@@ -21,6 +23,7 @@ export interface MessageInput {
 
 export interface ExtractionOptions {
   simulateFailure?: boolean
+  now?: () => Date
 }
 
 export interface ExtractionResult {
@@ -47,6 +50,7 @@ export async function extractTourContext(
 
   const messages: MessageInput[] = Array.isArray(input) ? input : input.messages || []
   const tourContext: TourContext = {}
+  const now = options?.now ?? systemClock
   let craftPref: string | undefined = undefined
 
   // Process messages in chronological order so later turns properly update requirements (FR-009, BR-008)
@@ -61,22 +65,10 @@ export async function extractTourContext(
       tourContext.group_size = parseInt(groupMatch[1] || groupMatch[2], 10)
     }
 
-    // 2. Date extraction (ISO YYYY-MM-DD, named months, or DD/MM/YYYY)
-    const dateMatch = text.match(
-      /(\d{4}-\d{2}-\d{2})|(\d{1,2}\/\d{1,2}\/\d{4})|((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{1,2}(?:st|nd|rd|th)?)|(\d{1,2}(?:st|nd|rd|th)?\s*(?:of\s*)?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)/i
-    )
-    if (dateMatch) {
-      const rawDate = dateMatch[0]
-      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(rawDate)) {
-        const [d, mo, y] = rawDate.split('/')
-        tourContext.target_date_or_range = {
-          start_date: `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`,
-        }
-      } else {
-        tourContext.target_date_or_range = {
-          start_date: rawDate.includes('-') ? rawDate : '2026-11-10',
-        }
-      }
+    // 2. Date (#156): explicit year kept; no year → next upcoming occurrence from today (Hanoi).
+    const startDate = extractTourDate(text, now())
+    if (startDate) {
+      tourContext.target_date_or_range = { start_date: startDate }
     }
 
     // 3. Budget extraction (handles e.g. 20,000 VND, 20k, under 500k)

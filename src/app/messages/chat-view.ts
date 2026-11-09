@@ -78,3 +78,17 @@ export function chatActions(session: { role: string | null; agencyId?: string | 
     { key: 'schedule', label: 'Lịch', href: `${base}/schedule` },
   ]
 }
+
+// #158: a poll fetches the latest page of the open Chat. Messages the user already loaded with
+// "older messages" stay; new ones are appended; status fields (Closed) come from the latest page.
+export function mergeLatestPage<M extends { message_id: string }, H extends { chat_session_id: string; message_history: M[]; has_more_messages: boolean }>(
+  current: H | null, latest: H,
+): H {
+  if (!current || current.chat_session_id !== latest.chat_session_id) return latest
+  const latestIds = new Set(latest.message_history.map(message => message.message_id))
+  const first = latest.message_history[0]?.message_id
+  const firstIndex = first === undefined ? -1 : current.message_history.findIndex(message => message.message_id === first)
+  if (firstIndex <= 0) return latest
+  const older = current.message_history.slice(0, firstIndex).filter(message => !latestIds.has(message.message_id))
+  return { ...latest, message_history: [...older, ...latest.message_history], has_more_messages: current.has_more_messages }
+}

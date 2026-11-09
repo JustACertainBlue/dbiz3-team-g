@@ -1216,6 +1216,15 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Tests | `tests/unit/adm118-disable-reason.test.ts` (11): red first, 7 failed for the right reason (stored reason was always the default, route dropped it, stub body `{}`, no field on the page); then green. Mutations 5/5 caught (server ignores reason, no trim, route drops reason, enable sends disable, no type check). No existing test changed |
 | Browser check | DEV (`jfrpnffknjpgmkyquxql`), HDT `thanhvien9`, `/admin/users`, account `thanhvien14` (Sen Việt): "Khóa tài khoản" showed the optional Reason field; typed "Kiem thu #160 tren DEV", Xác nhận → PATCH 200, status "Đã vô hiệu"; "Mở lại tài khoản" showed no Reason field → back to "Đã phê duyệt". The stored reason was not read back on DEV (no database access allowed in this run); it is covered by the route test |
 | Checks | `npm test` 197 files passed, 4 skipped (1193 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+### Entry 93: 09/11 Claude Code + human — #159 ADM095 role filter separates UBND and HDT (`fix/159-adm095-role-filter`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: role filter must separate UBND and HDT, derived from existing data, no schema or data change; verify organization and role filters on DEV) |
+| Change | `src/lib/auth/admin-user-filter.ts`: `roleValue` (`ADMIN:<admin_type>` for Admin accounts, else the role code; `admin_type` is the canonical subtype, consistency-contract.md:16, :49) and `roleOptions` (only roles present in the actor's list, order Tour Agency, Local Provider, Admin UBND, Admin HDT); `filterAdminUsers` matches `ADMIN:UBND` / `ADMIN:HDT`. ADM095 (`/admin/users`) Vai trò select uses `roleOptions(users)` instead of the fixed ADMIN / Tour_Agency / Local_Provider list. The organization filter was already there (`cf554d9`) and is unchanged |
+| Tests | `tests/unit/adm095-role-filter.test.ts` (8): red first, 6 failed for the right reason (UBND/HDT filters returned `[]`, stub options `[]`, page still had the fixed list); then green. Mutations 3/3 caught. Existing `admin-user-filter.test.ts` unchanged and green |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`). HDT `thanhvien9`: Vai trò options "Tour Agency, Local Provider, Admin UBND, Admin HDT"; Admin UBND → only "ADMIN UBND" rows; Admin HDT → 3 HDT rows (thanhvien10, thanhvien9, `demo84-reviewer`); Admin UBND + Tổ chức "UBND — Vạn Phúc" → 1 row (thanhvien2). UBND `thanhvien8`: Vai trò options only "Local Provider", Tổ chức only "Xưởng thủ công Hạ Thái" |
+| Checks | `npm test` 197 files passed, 4 skipped (1190 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
 ## 3. Spec issues found while building
 

@@ -1239,6 +1239,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Follow-up (linhkhanh-vu 09/11) | Decision: enforce Contact on the server (ADM117 #10 Required, F-AUTH-20). Test first: new case "a Provider without contact is refused" failed (`promise resolved … instead of rejecting`), then green; the village check still runs first (existing `aut-lifecycle.test.ts:32` expectation kept); UBND needs no contact. Without contact the old copy of name/phone is gone. `tests/integration/aut-lifecycle.test.ts:33`: **input only** updated to send a valid contact, comment "spec ADM117 #10: contact Required → test input updated" (approved). Not changed (not allowed): `tests/storage/provider-publication.test.ts:49` (opt-in `npm run test:storage`, not in `npm test`) still creates a Provider without contact and will now fail there until its input is updated. Mutation (contact optional again) caught. `npm test` 198 files passed, 4 skipped (1195 passed, 20 skipped); lint and build OK |
 | Checks | `npm test` 198 files passed, 4 skipped (1192 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+
+### Entry 97: 09/11 Claude Code + human — EARS draft for hosted-only failures (`docs/ears-hosted`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: draft EARS lines for failures seen only on the hosted build: cold start, M04, polling delay, email not configured) |
+| Change | New `docs/build/ears-hosted-draft.md`: 7 proposals H1–H7 in the "When … the system shall …" form, each with its issue or source and a proposed spec place; H1–H4 and H7 marked **needs human** (cold-start bound N, M04 re-check after #153, time bound for polling, overlap of H7 with H6), H6 = existing `spec-AUT.md:231` (no new line). No file under `docs/spec/` changed; #104 lines (#87, #88, #93, #102) not repeated |
+| Tests | None (documentation only) |
+| Checks | `uv run tools/start_feature.py --check` not affected (no spec change); `npm run lint` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

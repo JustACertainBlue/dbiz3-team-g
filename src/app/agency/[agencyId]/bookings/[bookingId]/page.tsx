@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import ChatOpenButton from '@/app/messages/ChatOpenButton'
+import AutoRefresh from '@/app/components/AutoRefresh'
 import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/db/application-store'
 import { canViewAgencyBooking } from '@/lib/booking/booking-access'
@@ -18,6 +19,8 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
   }
   const detail = await getBookingDetail(session, params.bookingId) // runs expiry first (#50)
   return <main>
+    {/* #157: Provider changes show within ~10 s without a reload (FR-008) */}
+    <AutoRefresh />
     <BookingDetailScreen detail={detail} readOnly back={{ href: `/agency/${params.agencyId}/bookings`, label: 'Quay lại đặt chỗ' }}
       actions={<ChatOpenButton bookingId={params.bookingId} label="Nhắn tin" className="bkg-btn bkg-btn--outline" />} />
     <style>{bookingDetailStyles}</style>

@@ -145,6 +145,8 @@ describe('#157 / #158 | the shared hook is used by BKG138, SCH141 and the open C
   it.each([
     ['BKG138', 'src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx'],
     ['SCH141', 'src/app/agency/[agencyId]/schedule/page.tsx'],
+    // BKG FR-002 (spec-BKG.md:317): Booking History "Syncs real-time when LP updates booking".
+    ['BKG137', 'src/app/agency/[agencyId]/bookings/page.tsx'],
   ])('%s renders <AutoRefresh />, which polls with usePolling + router.refresh', (_screen, path) => {
     expect(read(path)).toMatch(/<AutoRefresh\s*\/>/)
     const auto = read('src/app/components/AutoRefresh.tsx')

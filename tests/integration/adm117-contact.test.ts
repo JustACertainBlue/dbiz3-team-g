@@ -45,6 +45,21 @@ describe('#170 | the entered contact is stored', () => {
   })
 })
 
+describe('#170 | Contact is Required on the server (decision 09/11; ADM117 #10, F-AUTH-20)', () => {
+  it('a Provider without contact is refused and nothing is written', async () => {
+    await expect(createManagedAccount(await ubnd(), 'provider', base, delivery)).rejects.toThrow('contact')
+    expect(demoRepository().find('user_accounts', row => row.email === base.email)).toBeUndefined()
+  })
+
+  it('a wrong village is still reported first (existing check order kept)', async () => {
+    await expect(createManagedAccount(await ubnd(), 'provider', { ...base, village_id: 'a28d2842-b623-49ea-aac7-52e85a1d94ce' }, delivery)).rejects.toThrow('assigned village')
+  })
+
+  it('UBND accounts need no contact', async () => {
+    await expect(createManagedAccount({ ...(await demoSessionContextFor('hdt')) }, 'ubnd', { name: 'U', email: 'u-contact@example.invalid', phone: '0912345678', village_id: village }, delivery)).resolves.toMatchObject({ account_status: 'Active' })
+  })
+})
+
 describe('#170 | ADM117 screen', () => {
   it('the Provider form has Required "Người liên hệ" and "Điện thoại liên hệ"; the UBND form has none', () => {
     const provider = renderToStaticMarkup(createElement(CreateAccountFields, { options: { kind: 'provider', villages: [] } }))

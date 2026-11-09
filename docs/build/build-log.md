@@ -1416,6 +1416,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Not changed (spec silent or out of scope; replies drafted, not posted) | #111 409 vs 400/422 (FR-018 gives no HTTP codes); #112 order of new/current password checks (not specified); #107 prototype-only status disclosure (dev only) and Active account without profile; #106 old session of a Disabled account (FR-017, separate PR suggested); #167 reason length and generic `INVALID_REASON` message (spec gives none); #122 / #104 wrap long build-log lines (rows are Markdown table rows; logs moved to #178) |
 | Checks | Each changed branch: `npm test`, `npm run lint`, `npm run build` green locally; CI on the PRs |
 
+### Entry 100: 09/11 Claude Code + human — UX audit, #192 check, EXP070 location input (#208, PR #229)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5, with 6 read-only subagents for the audit); requested by linhkhanh-vu (09/11 night) |
+| UX audit (read-only) | 50 screen specs mapped to routes on `main` `ec859af`; each screen shot on the dev build (DEV database, 1440 and 390 px) next to its spec image, outside the repo. 47 screens have gaps: one issue each, #181–#227 (`ux-gap`, `after-tag`). sev:medium: #208 EXP070, #216 PRF021; the rest sev:low. Spec conflict: SCH139/140/141 §8 month grid vs spec-BKG OQ #70 day rows. Limitations row 63 on PR #176 |
+| #192 BKG136 (read-only) | Server already refuses arrival unless the Booking is Booked and now ≥ start_at: `src/lib/booking/mark-arrival.ts:49-50`, test `tests/unit/bkg-mark-arrival.test.ts:42` (Cancelled → "Booking Not Booked", nothing written). UI-only, stays sev:low; no code change |
+| #208 EXP070 (PR #229) | Test first: `tests/unit/exp070-location-field.test.ts` red (field did not exist). New `ExperienceLocationField` (required, ≤ 500, disabled + "Đang khóa" under BR-014) rendered on the edit page with `locked={hasActiveBookings}`. Server unchanged (it already validated and locked the field, `prf-br-fixes.test.ts:68`) |
+| Checks | `npm test` 1252 passed / 20 skipped; lint exit 0; build 44/44; seed PASS. Browser: locked state checked on the demo Provider's only Experience; unlocked state covered by the unit test only. Noted, not changed: the server create schema has the address optional although EXP069 says Required for Create |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

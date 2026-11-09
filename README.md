@@ -6,7 +6,7 @@ The current MVP scope, priorities and business decisions are defined in [docs/pr
 
 ## Public test version
 
-https://hanoi-artisan-bridge.onrender.com: a test version on Render's free plan, auto-deployed from `main`, using the production Supabase database. The first page can be slow if the server was asleep. Use only the test account you were given, do not enter real personal data, and start anything you create with `[T-<your name>]`. Email is not set up, so registration and "forgot password" report "Email chưa được cấu hình" ([ADR 0001](docs/adr/0001-hosting.md)). Problems met moving to this version: [docs/build/local-vs-internet.md](docs/build/local-vs-internet.md).
+https://hanoi-artisan-bridge.onrender.com: a test version on Render's free plan, auto-deployed from `main`, using the production Supabase database. The first page can be slow if the server was asleep. Use only the test account you were given, do not enter real personal data, and start anything you create with `[T-<your name>]`. Email is not set up, so registration and "forgot password" report "Email chưa được cấu hình" ([ADR 0001](docs/adr/0001-hosting.md)). What went wrong moving from localhost to this version and how it was handled: [From localhost to the hosted version](docs/build/local-vs-internet.md).
 
 ## Repository map
 

@@ -44,3 +44,16 @@ export function noMatchView(body: any): { prompt: string; lines: string[] } {
       : `${s.criterion}: ${s.suggested_value}`)
   return { prompt: relaxation.conversation_prompt ?? '', lines }
 }
+
+// #156: show the date the assistant understood, so the Agency can correct it with a new message
+// (a later message replaces it, FR-009 / BR-008).
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+export function understoodDateLine(body: any): string | null {
+  const date = body?.extraction?.tour_context?.target_date_or_range?.start_date
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
+  const [y, m, d] = date.split('-').map(Number)
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
+  return `Tour date understood: ${weekday} ${d} ${MONTH_NAMES[m - 1]} ${y}. If this is wrong, send the correct date with the year.`
+}

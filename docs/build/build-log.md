@@ -1172,6 +1172,32 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm test` 196 files passed, 4 skipped (1182 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
 
+### Entry 89: 09/11 Claude Code + human — function-list F-ADMIN-05 "All Villages" display label (`docs/function-list-all-villages`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (approved spec edit, exact line) |
+| Change | `docs/spec/docs/function-list.md:80` (row 78, F-ADMIN-05): `"All Villages"` gets the same note as `spec-ADM.md:184` in #155: `(display label: "Tất cả các làng"; behaviour unchanged)`. Only that line. No `specs/<feature>/spec.md` snapshot copies `function-list.md`, so no snapshot refresh |
+| Tests | None (spec text only; no code or test changed) |
+| Checks | `uv run tools/start_feature.py --check` OK; `git diff --stat` = 1 line in `function-list.md` plus the two logs |
+### Entry 90: 09/11 Claude Code + human — #156 AIT date without a year (`fix/156-ait-date-year`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (decision 09/11: next upcoming occurrence from server "today"; extracted date visible so the Agency can correct it; remove the hard-coded `'2026-11-10'`) |
+| Change | New `src/lib/ai/tour-date.ts` (`extractTourDate`): ISO, D/M[/YYYY], "Dec 20[, 2027]", "20 Dec [2027]"; explicit year kept; no year → next occurrence on or after today in Asia/Ho_Chi_Minh (`hanoiDate`); a date that does not exist (31/02) is not extracted, so the date follow-up is asked (FR-003). `extractor.ts` uses it with an injectable `now` (`ExtractionOptions.now`, default `systemClock`); the hard-coded date is gone. AIT121: `understoodDateLine` (`matching-view.ts`) shows "Tour date understood: Sun 20 Dec 2026. If this is wrong, send the correct date with the year." under the clarify, match and no-match replies (a later message replaces the date, FR-009) |
+| Tests | `tests/unit/ait-date-year.test.ts` (18): red first, 14 failed for the right reason (`expected '2026-11-10' to be '2026-12-20'`, `20/12` → undefined, display stub null); then green. Mutations 3/3 caught (no "past → next year", UTC instead of Hanoi day, explicit year ignored). No existing test changed |
+| Checks | `npm test` 197 files passed, 4 skipped (1200 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+### Entry 91: 09/11 Claude Code + human — #157 / #158 polling for BKG138, SCH141 and the open Chat (`fix/157-158-polling`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (decision 09/11: polling every 10 s, paused while the tab is hidden, immediate fetch when visible again; one shared client hook; no Supabase Realtime) |
+| Change | New `src/lib/client/poller.ts` (`startPolling`, `POLL_INTERVAL_MS` = 10 000; no timer while hidden; one fetch at a time; a failed fetch does not stop it), `src/lib/client/use-polling.ts` (`usePolling`, the shared hook), `src/app/components/AutoRefresh.tsx` (`router.refresh()` through `usePolling`). BKG138 and SCH141 render `<AutoRefresh />` (spec-BKG FR-008). COM048 / COM065 poll the chat list and the open Chat's first page (spec-IAC FR-002 "Message delivered immediately"); `mergeLatestPage` (`chat-view.ts`) appends new messages and keeps older ones the user loaded, and takes the latest status (Closed) |
+| Tests | `tests/unit/polling.test.ts` (16): red first, 12 of 15 failed on stubs (`POLL_INTERVAL_MS` 0, no fetch, merge returned the latest page only, `use-polling.ts` / `<AutoRefresh />` / `usePolling(` missing); then green. One test added after a mutation run showed redundant guards (no timer left while hidden, `vi.getTimerCount()`); the redundant hidden check in `tick` was removed. Mutations 6/6 caught (no stop on hidden, timer started while hidden, no in-flight guard, no immediate fetch on visible, 30 s interval, merge drops older messages). Wiring tests read the page sources (no React renderer in the test setup). No existing test changed |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`), `npm run dev`. Agency `thanhvien13` in the browser pane; Provider `thanhvien19` by curl with its own session. Test booking `dd6d8728` created by the Provider (Bát Tràng, 16/11 09:00, chat `d8c81af9`): Provider On hold → Booked: BKG138 showed "Đã đặt" ≤ 16 s later, page not reloaded (window marker kept); Provider Booked → Cancelled (reason "Test booking for #157 polling check (DEV)"): SCH141 block changed to "Đã huỷ" ≤ 15 s later, no reload; Provider message "Polling check #158 (DEV test message)": shown in the open Chat ≤ 15 s later, no reload. The test booking is left Cancelled on DEV |
+| Checks | `npm test` 197 files passed, 4 skipped (1198 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+| Follow-up (linhkhanh-vu 09/11) | BKG137 Booking History also polls (spec-BKG FR-002, `spec-BKG.md:317`: "Syncs real-time when LP updates booking"): `<AutoRefresh />` in `src/app/agency/[agencyId]/bookings/page.tsx`. Test first: new BKG137 case in `tests/unit/polling.test.ts` failed (`<AutoRefresh />` missing), then green. DEV check: test booking `99a98c58` (Provider, 16/11 11:00) shown "Tạm giữ"; Provider cancelled it → the Agency's BKG137 row showed "Đã huỷ" ≤ 22 s later without a reload (first refresh after a fresh dev compile). `npm test` 197 files passed, 4 skipped (1199 passed, 20 skipped); lint and build OK |
 ### Entry 94: 09/11 Claude Code + human — #161 ADM117 Required fields marked (`fix/161-required-asterisks`)
 
 | Field | Value |
@@ -1181,6 +1207,24 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Tests | `tests/unit/adm117-required-marks.test.ts` (4, `react-dom/server` render): red first, 3 failed for the right reason (no `aria-required`, no legend) after a first run that failed on `React is not defined` (fixed with `import React` in the component, not in the test); then green. Mutations 4/4 caught (mark removed, aria removed, mark not aria-hidden, limit changed). No existing test changed |
 | Browser check | DEV (`jfrpnffknjpgmkyquxql`), `/admin/create-account`: UBND `thanhvien8` (Provider form) and HDT `thanhvien9` (UBND form) show "* bắt buộc" and "Label *" on every field, `aria-required=true` and `required` on each control. The first browser look showed the "*" on its own line (label is a grid); label text and mark were wrapped in one span. No account created |
 | Checks | `npm test` 197 files passed, 4 skipped (1186 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+### Entry 92: 09/11 Claude Code + human — #160 ADM118 optional disable Reason (`fix/160-disable-reason`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (decision 09/11: optional Reason on ADM118, sent to the server; default only when empty) |
+| Change | ADM118 (`src/app/admin/users/page.tsx`): the disable confirmation shows "Lý do (không bắt buộc)" (`#disable-reason`, textarea), not shown for enable; body built by new `account-action.ts` (`accountActionBody`: trimmed reason for disable, none when blank or for enable). `PATCH /api/auth/users` passes `body.reason`; `accountAction(…, reason)` stores it in `account_status_history.reason`, empty or missing → `DEFAULT_DISABLE_REASON` ("Disabled by administrator", new `src/lib/auth/disable-reason.ts`); a non-text reason → `INVALID_REASON` (400), nothing written. No length limit (spec gives none) |
+| Tests | `tests/unit/adm118-disable-reason.test.ts` (11): red first, 7 failed for the right reason (stored reason was always the default, route dropped it, stub body `{}`, no field on the page); then green. Mutations 5/5 caught (server ignores reason, no trim, route drops reason, enable sends disable, no type check). No existing test changed |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`), HDT `thanhvien9`, `/admin/users`, account `thanhvien14` (Sen Việt): "Khóa tài khoản" showed the optional Reason field; typed "Kiem thu #160 tren DEV", Xác nhận → PATCH 200, status "Đã vô hiệu"; "Mở lại tài khoản" showed no Reason field → back to "Đã phê duyệt". The stored reason was not read back on DEV (no database access allowed in this run); it is covered by the route test |
+| Checks | `npm test` 197 files passed, 4 skipped (1193 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+### Entry 93: 09/11 Claude Code + human — #159 ADM095 role filter separates UBND and HDT (`fix/159-adm095-role-filter`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: role filter must separate UBND and HDT, derived from existing data, no schema or data change; verify organization and role filters on DEV) |
+| Change | `src/lib/auth/admin-user-filter.ts`: `roleValue` (`ADMIN:<admin_type>` for Admin accounts, else the role code; `admin_type` is the canonical subtype, consistency-contract.md:16, :49) and `roleOptions` (only roles present in the actor's list, order Tour Agency, Local Provider, Admin UBND, Admin HDT); `filterAdminUsers` matches `ADMIN:UBND` / `ADMIN:HDT`. ADM095 (`/admin/users`) Vai trò select uses `roleOptions(users)` instead of the fixed ADMIN / Tour_Agency / Local_Provider list. The organization filter was already there (`cf554d9`) and is unchanged |
+| Tests | `tests/unit/adm095-role-filter.test.ts` (8): red first, 6 failed for the right reason (UBND/HDT filters returned `[]`, stub options `[]`, page still had the fixed list); then green. Mutations 3/3 caught. Existing `admin-user-filter.test.ts` unchanged and green |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`). HDT `thanhvien9`: Vai trò options "Tour Agency, Local Provider, Admin UBND, Admin HDT"; Admin UBND → only "ADMIN UBND" rows; Admin HDT → 3 HDT rows (thanhvien10, thanhvien9, `demo84-reviewer`); Admin UBND + Tổ chức "UBND — Vạn Phúc" → 1 row (thanhvien2). UBND `thanhvien8`: Vai trò options only "Local Provider", Tổ chức only "Xưởng thủ công Hạ Thái" |
+| Checks | `npm test` 197 files passed, 4 skipped (1190 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
 
 ### Entry 95: 09/11 Claude Code + human — #170 ADM117 Contact field (`fix/adm117-contact`, on top of `fix/161-required-asterisks`)

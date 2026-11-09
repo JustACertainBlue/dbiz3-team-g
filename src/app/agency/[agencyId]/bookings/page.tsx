@@ -6,6 +6,9 @@ import { bookingDetailStyles, formatVnd, hanoiTime } from '@/app/provider/[provi
 import { agencyPageSession, ownVillages } from '../agency-booking-gate'
 import { sessionDisplayName } from '@/lib/auth/session'
 import { hanoiClock } from '@/lib/time/hanoi-time'
+import StatusBadge from '@/app/components/StatusBadge'
+import AutoRefresh from '@/app/components/AutoRefresh'
+import { statusLabel } from '@/lib/status-labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,12 +30,14 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
   }
 
   return <main className="bkg-page bkg-list">
+    {/* BKG FR-002: Provider changes show within ~10 s without a reload (#157 hook) */}
+    <AutoRefresh />
     <header><p>HANOI ARTISAN BRIDGE · BKG137</p><h1>Booking History</h1><span>{(await sessionDisplayName(session))} · chỉ xem, sắp theo giờ bắt đầu</span></header>
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái
         <select name="status" defaultValue={query.status}>
           <option value="">Tất cả</option>
-          {BOOKING_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
+          {BOOKING_STATUSES.map(status => <option key={status} value={status}>{statusLabel('booking', status)}</option>)}
         </select>
       </label>
       <label>Làng nghề
@@ -56,7 +61,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
               <td>{row.experience_name}</td>
               <td>{row.group_size}</td>
               <td>{formatVnd(row.agreed_price)}</td>
-              <td><strong className="bkg-status">{row.status}</strong></td>
+              <td><StatusBadge family="booking" status={row.status} /></td>
               <td><Link href={`${base}/${row.booking_id}`}>Booking detail</Link></td>
             </tr>)}
           </tbody>

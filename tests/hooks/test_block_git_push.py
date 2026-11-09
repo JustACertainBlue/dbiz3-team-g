@@ -3,7 +3,9 @@
 Rule (human decision 2026-11-05, deviation from constitution V, build log section 4 row 46):
 the agent may push a feature branch to a named remote and open PRs; it never pushes to
 main, never force-pushes, never deletes remote refs, never pushes tags, --mirror or --all,
-and never merges (`gh pr merge`). Everything else stays allowed.
+and never merges a pull request (`gh pr merge`). Since 2026-11-08 it may run
+`git merge origin/main` as a single command while a feature branch is checked out.
+Everything else stays allowed.
 
 Standard library only. Run from the repository root on macOS or Windows:
     python -m unittest discover -s tests/hooks -v
@@ -118,6 +120,45 @@ ALLOWED = [
     "echo merge",
 ]
 
+# `git merge origin/main` (human decision 2026-11-08): only on a feature branch, only as the whole command.
+MERGE_ALLOWED_ON_FEATURE = [
+    "git merge origin/main",
+    "git merge --no-edit origin/main",
+    "git merge --no-ff --no-edit origin/main",
+    "git --no-pager merge --no-edit origin/main",
+    "git -C . merge origin/main",
+    "git merge --no-edit origin/main 2>&1",
+    "git merge --abort",
+    "git merge --continue",
+]
+MERGE_BLOCKED_ON_FEATURE = [
+    "git merge origin/feat-y",
+    "git merge main",
+    "git merge origin/main feat/y",
+    "git merge",
+    "git merge -s ours origin/main",
+    "git merge -X theirs origin/main",
+    "git merge --squash origin/main",
+    "git merge -m msg origin/main",
+    "git merge --abort origin/main",
+    "git -c merge.ff=false merge origin/main",
+    "git switch main && git merge origin/main",
+    "git checkout main; git merge origin/main",
+    "git fetch && git merge origin/main",
+    "git merge origin/main && git push origin feat/x",
+    "git merge origin/main | tail -3",
+    WRAP + "git merge origin/main",
+    'sh -c "git merge origin/main"',
+    "git merge $(echo origin/main)",
+    "gh pr merge 47",
+]
+MERGE_BLOCKED_ON_MAIN = [
+    "git merge origin/main",
+    "git merge --no-edit origin/main",
+    "git merge --abort",
+    "git merge feat/x",
+]
+
 
 def git(repo, *args):
     subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
@@ -168,6 +209,36 @@ class BlockGitPushTest(unittest.TestCase):
                 result = self.run_hook(self.bash(command))
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stderr, "")
+
+    def test_merge_origin_main_only_as_one_command_on_a_feature_branch(self):
+        feature = Path(tempfile.mkdtemp(prefix="hook-repo-feature-"))
+        try:
+            git(feature, "init", "-q", "-b", "main")
+            git(feature, "-c", "user.name=t", "-c", "user.email=t@example.com",
+                "commit", "-q", "--allow-empty", "-m", "init")
+            git(feature, "switch", "-q", "-c", "feat/x")
+            detached = Path(tempfile.mkdtemp(prefix="hook-repo-detached-"))
+            git(detached, "init", "-q", "-b", "main")
+            git(detached, "-c", "user.name=t", "-c", "user.email=t@example.com",
+                "commit", "-q", "--allow-empty", "-m", "init")
+            git(detached, "switch", "-q", "--detach")
+            cases = [
+                (feature, MERGE_ALLOWED_ON_FEATURE, 0),
+                (feature, MERGE_BLOCKED_ON_FEATURE, 2),
+                (self.repo, MERGE_BLOCKED_ON_MAIN, 2),
+                (detached, ["git merge origin/main"], 2),
+            ]
+            for repo, commands, code in cases:
+                for command in commands:
+                    with self.subTest(repo=repo.name, command=command):
+                        payload = {"tool_name": "Bash", "cwd": str(repo), "tool_input": {"command": command}}
+                        result = self.run_hook(payload)
+                        self.assertEqual(result.returncode, code, result.stderr)
+                        if code:
+                            self.assertIn(MARKER, result.stderr)
+            shutil.rmtree(detached, ignore_errors=True)
+        finally:
+            shutil.rmtree(feature, ignore_errors=True)
 
     def test_ignores_payload_without_command(self):
         for payload in ({"tool_name": "Bash", "tool_input": {}}, {"tool_name": "Read"}, "not json"):

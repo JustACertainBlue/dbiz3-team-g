@@ -31,6 +31,7 @@ async function historyTexts(chatId: string): Promise<string[]> {
   return history.message_history.map(m => m.text)
 }
 
+// spec-BKG #49 amended 2026-11-08: the chat template shows the Vietnamese status label (spec changed → expectation changed).
 describe('Issue #66 | BKG → IAC Booking Update sent_at and order', () => {
   beforeEach(() => repo().reset())
 
@@ -49,7 +50,7 @@ describe('Issue #66 | BKG → IAC Booking Update sent_at and order', () => {
     const [first, second] = updatesFor(booking_id).sort((a, b) => Date.parse(a.sent_at) - Date.parse(b.sent_at))
     expect(Date.parse(second.sent_at)).toBeGreaterThan(Date.parse(first.sent_at))
     const texts = (await historyTexts(first.chat_session_id)).filter(t => t.includes('2026-10-12 09:00'))
-    expect(texts.map(t => t.split(':')[0])).toEqual(['Booking On hold', 'Booking Booked'])
+    expect(texts.map(t => t.split(':')[0])).toEqual(['Booking Tạm giữ', 'Booking Đã đặt'])
   })
 
   it('spec-IAC BR-014 / #47 (boundary, same millisecond): two events at the same instant still get increasing sent_at in write order', async () => {
@@ -60,7 +61,7 @@ describe('Issue #66 | BKG → IAC Booking Update sent_at and order', () => {
     expect(rows).toHaveLength(2)
     expect(new Set(rows.map(r => r.sent_at)).size).toBe(2)
     const texts = (await historyTexts(rows[0].chat_session_id)).filter(t => t.includes('2026-10-12 11:00'))
-    expect(texts.map(t => t.split(':')[0])).toEqual(['Booking On hold', 'Booking Cancelled'])
+    expect(texts.map(t => t.split(':')[0])).toEqual(['Booking Tạm giữ', 'Booking Đã huỷ'])
   })
 
   it('spec-BKG FR-008 (failure): a refused status change writes no message, and the next accepted event is still strictly later', async () => {
@@ -72,7 +73,7 @@ describe('Issue #66 | BKG → IAC Booking Update sent_at and order', () => {
     const rows = updatesFor(booking_id).sort((a, b) => Date.parse(a.sent_at) - Date.parse(b.sent_at))
     expect(rows).toHaveLength(2)
     expect(Date.parse(rows[1].sent_at)).toBeGreaterThan(Date.parse(rows[0].sent_at))
-    expect(rows.map(r => r.text.split(':')[0])).toEqual(['Booking On hold', 'Booking Booked'])
+    expect(rows.map(r => r.text.split(':')[0])).toEqual(['Booking Tạm giữ', 'Booking Đã đặt'])
   })
 
   it('spec-IAC BR-014 (legacy +07:00 rows): history compares instants, not strings, and a new update lands after an older-format later row', async () => {
@@ -90,7 +91,7 @@ describe('Issue #66 | BKG → IAC Booking Update sent_at and order', () => {
     })
     await changeBookingStatus(provider, booking_id, { target_status: 'Booked' }, at('2026-09-29T17:00:00.500Z'))
     const texts = (await historyTexts(chatId)).filter(t => t.startsWith('Legacy') || t.includes('2026-10-12 15:00'))
-    expect(texts.map(t => t.split(':')[0])).toEqual(['Legacy', 'Booking On hold', 'Legacy', 'Booking Booked'])
+    expect(texts.map(t => t.split(':')[0])).toEqual(['Legacy', 'Booking Tạm giữ', 'Legacy', 'Booking Đã đặt'])
     expect(texts[0]).toBe('Legacy: earlier instant')
   })
 })

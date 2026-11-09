@@ -10,6 +10,10 @@ import { currentServerSession } from '../../lib/auth/server-session';
 import './explore-v9.css';
 import { categoryLabel, craftLabel } from '../../lib/explore/display-labels';
 
+// Rendered per request (cookies, searchParams, live catalog). Without this, `next build` tries to
+// prerender the page and opens a database connection before noticing it is dynamic.
+export const dynamic = 'force-dynamic';
+
 type Params = { page?: string; category?: string };
 
 // Design wave 4 (Figma "Explore v6", v9 §6c), content per EXP120 (Guest) / EXP017 (Agency): a static hero

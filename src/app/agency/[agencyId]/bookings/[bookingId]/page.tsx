@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import ChatOpenButton from '@/app/messages/ChatOpenButton'
+import AutoRefresh from '@/app/components/AutoRefresh'
 import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/db/application-store'
 import { canViewAgencyBooking } from '@/lib/booking/booking-access'
 import { getBookingDetail } from '@/lib/booking/booking-detail'
-import BookingDetailView, { bookingDetailStyles } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
+import { bookingDetailStyles } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
+import BookingDetailScreen from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailScreen'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,10 +18,11 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
     return <main className="bkg-page bkg-state"><h1>Booking Detail</h1><p>Chỉ Tour Agency của Booking này mới xem được trang này.</p><Link href="/login">Đăng nhập</Link><style>{bookingDetailStyles}</style></main>
   }
   const detail = await getBookingDetail(session, params.bookingId) // runs expiry first (#50)
-  return <main className="bkg-page">
-    <header><p>HANOI ARTISAN BRIDGE · BKG138</p><h1>Booking Detail</h1><span>Chỉ xem · mọi thay đổi do Local Provider thực hiện</span></header>
-    <BookingDetailView detail={detail} />
-    <p className="bkg-actions"><ChatOpenButton bookingId={params.bookingId} /><Link href={`/agency/${params.agencyId}/bookings`}>← Back</Link></p>
+  return <main>
+    {/* #157: Provider changes show within ~10 s without a reload (FR-008) */}
+    <AutoRefresh />
+    <BookingDetailScreen detail={detail} readOnly back={{ href: `/agency/${params.agencyId}/bookings`, label: 'Quay lại đặt chỗ' }}
+      actions={<ChatOpenButton bookingId={params.bookingId} label="Nhắn tin" className="bkg-btn bkg-btn--outline" />} />
     <style>{bookingDetailStyles}</style>
   </main>
 }

@@ -67,7 +67,7 @@ export function eligibleRows(seed: ExploreSeed): Array<{ experience: CsvRow; pro
   }).sort((a, b) => a.experience.name.localeCompare(b.experience.name, 'vi') || a.experience.experience_id.localeCompare(b.experience.experience_id));
 }
 
-function toCard(seed: ExploreSeed, row: ReturnType<typeof eligibleRows>[number], viewer: Viewer): ExperienceCard {
+export function toCard(seed: ExploreSeed, row: ReturnType<typeof eligibleRows>[number], viewer: Viewer): ExperienceCard {
   const { experience, version, village } = row;
   const files = new Map(seed.stored_files.map(file => [file.file_id, file]));
   const images = seed.profile_media
@@ -121,4 +121,21 @@ export function buildExplorePage(
 export function findExperienceCard(seed: ExploreSeed, id: string, viewer: Viewer): ExperienceCard | null {
   const row = eligibleRows(seed).find(item => item.experience.experience_id === id);
   return row ? toCard(seed, row, safeViewer(seed, viewer)) : null;
+}
+
+/**
+ * Explore hero strip (design wave 4, Figma "Explore v6"): one card per active village with a verified,
+ * published Experience (the same eligibility as the catalog), in village-name order. Decoration only:
+ * each card links to that Experience's detail page; no new filter or search is implied (spec-EXP Q8, Q11).
+ */
+export function villageStrip(seed: ExploreSeed, viewer: Viewer): Array<{ village_name: string; craft: string; card: ExperienceCard }> {
+  const seen = new Set<string>()
+  const strip: Array<{ village_name: string; craft: string; card: ExperienceCard }> = []
+  const rows = [...eligibleRows(seed)].sort((a, b) => a.village.name.localeCompare(b.village.name, 'vi'))
+  for (const row of rows) {
+    if (seen.has(row.village.village_id)) continue
+    seen.add(row.village.village_id)
+    strip.push({ village_name: row.village.name, craft: row.version.craft_type || row.experience.category, card: toCard(seed, row, safeViewer(seed, viewer)) })
+  }
+  return strip
 }

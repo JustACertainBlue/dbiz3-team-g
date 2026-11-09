@@ -30,7 +30,8 @@ describe('PR #11 remaining AUT stories on the shared repository', () => {
     expect(renewed.ok).toBe(true); if (!renewed.ok) return
     const ubnd = (await sessionContextFromRequest(request(renewed.token)))
     await expect(createManagedAccount(ubnd, 'provider', { name: 'Wrong village', email: 'wrong@example.invalid', phone: '0912345678', village_id: 'a28d2842-b623-49ea-aac7-52e85a1d94ce', address: 'Street' }, delivery)).rejects.toThrow('assigned village')
-    const provider = await createManagedAccount(ubnd, 'provider', { name: 'Synthetic Workshop', email: 'workshop@example.invalid', phone: '0912345678', village_id: village, address: 'Street' }, delivery)
+    // spec ADM117 #10: contact Required → test input updated
+    const provider = await createManagedAccount(ubnd, 'provider', { name: 'Synthetic Workshop', email: 'workshop@example.invalid', phone: '0912345678', village_id: village, address: 'Street', contact: { contact_person_name: 'Synthetic Contact', phone_number: '0912345678' } }, delivery)
     expect(repo.find('provider_profiles', row => row.provider_id === provider.provider_id)).toMatchObject({ verification_status: 'Draft', village_id: village, published_version_no: '' })
     expect(repo.find('user_accounts', row => row.user_id === user.user_id)?.must_change_password).toBe('false')
     await expect(createManagedAccount((await demoSessionContextFor('hdt')), 'ubnd', { name: 'Duplicate', email: 'duplicate@example.invalid', phone: '0912345678', village_id: village }, delivery)).rejects.toThrow('already has')

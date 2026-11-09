@@ -11,6 +11,8 @@ import { readSessionContext } from '@/lib/auth/client-session'
 import type { SessionContext } from '@/lib/auth/session'
 import { providerPageView } from '@/lib/prf/provider-page-view'
 import { providerBkgLinks } from '@/lib/booking/nav-links'
+import StatusBadge from '@/app/components/StatusBadge'
+import { statusLabel } from '@/lib/status-labels'
 
 interface ProviderExperience {
   experience_id: string
@@ -91,7 +93,7 @@ export default function ProviderProfilePage({
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Lỗi khi thẩm định hồ sơ')
-      setReviewMessage({ type: 'success', text: `Đã cập nhật trạng thái thẩm định: ${data.verification_status}` })
+      setReviewMessage({ type: 'success', text: `Đã cập nhật trạng thái thẩm định: ${statusLabel('provider', data.verification_status)}` })
       await loadProfile()
     } catch (err: unknown) {
       setReviewMessage({ type: 'error', text: err instanceof Error ? err.message : 'Không thể thực hiện thẩm định' })
@@ -233,7 +235,7 @@ export default function ProviderProfilePage({
                 UBND thẩm định hồ sơ (US-6, BR-005)
               </div>
               <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#991b1b' }}>
-                Trạng thái: {provider.verification_status}
+                Trạng thái: <StatusBadge family="provider" status={provider.verification_status} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>

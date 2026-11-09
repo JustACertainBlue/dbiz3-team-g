@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { SessionContext } from './session'
 import { demoRepository } from '../db/application-store'
 import type { DemoRow } from '../demo/types'
+import { DEFAULT_DISABLE_REASON } from './disable-reason'
 
 async function allowed(session: SessionContext, account: DemoRow) {
   if (!session.authenticated || session.role !== 'ADMIN' || !session.permissions.includes('manage_users')) return false
@@ -21,12 +22,15 @@ export async function listAccounts(session: SessionContext) {
     return { user_id: account.user_id, name: account.full_name, email: account.email, role: account.role_code, admin_type: account.admin_type, status: account.account_status, organization: agency?.company_name || version?.business_name || (account.admin_type === 'HDT' ? 'Sở Du lịch Hà Nội' : account.admin_type === 'UBND' ? `UBND — ${village?.name || ''}` : 'Chưa có hồ sơ'), last_login: account.last_login || null, created_date: account.created_at, provider_id: provider?.provider_id, agency_id: agency?.agency_id }
   })))
 }
-export async function accountAction(session: SessionContext, userId: string, action: unknown) {
+// #160: optional disable reason (spec-AUT FR-022); empty or missing → the default text.
+export async function accountAction(session: SessionContext, userId: string, action: unknown, reason?: unknown) {
   const repo = demoRepository()
   const target = (await repo.find('user_accounts', row => row.user_id === userId))
   if (!target || !(await allowed(session, target))) throw new Error('FORBIDDEN')
   if (action === 'reset_password') throw new Error('EMAIL_NOT_CONFIGURED')
   if (action !== 'enable' && action !== 'disable') throw new Error('INVALID_ACTION')
+  if (reason !== undefined && reason !== null && typeof reason !== 'string') throw new Error('INVALID_REASON')
+  const disableReason = (typeof reason === 'string' && reason.trim()) || DEFAULT_DISABLE_REASON
   return (await repo.transaction(["user_accounts","provider_profiles","account_status_history","audit_logs","sessions","notifications"], tables => {
     const table = (name: string) => tables[name] ??= []
     const account = table('user_accounts').find(row => row.user_id === userId)!
@@ -39,7 +43,7 @@ export async function accountAction(session: SessionContext, userId: string, act
     const before = account.account_status, status = action === 'disable' ? 'Disabled' : previous!, now = new Date().toISOString()
     account.account_status = status; account.updated_at = now
     for (const row of table('sessions')) if (action === 'disable' && row.user_id === userId && !row.revoked_at) row.revoked_at = now
-    table('account_status_history').push({ history_id: randomUUID(), user_id: userId, from_status: before, to_status: status, changed_by: session.userId!, changed_at: now, reason: action === 'disable' ? 'Disabled by administrator' : 'Restored previous status' })
+    table('account_status_history').push({ history_id: randomUUID(), user_id: userId, from_status: before, to_status: status, changed_by: session.userId!, changed_at: now, reason: action === 'disable' ? disableReason : 'Restored previous status' })
     table('audit_logs').push({ audit_id: randomUUID(), actor_user_id: session.userId!, action: action === 'disable' ? 'DISABLE_ACCOUNT' : 'ENABLE_ACCOUNT', target_type: 'UserAccount', target_id: userId, occurred_at: now, change_or_result: JSON.stringify({ previous_status: before, status }) })
     table('notifications').push({ notification_id: randomUUID(), recipient_user_id: userId, event_type: 'Account Status Changed', source_type: 'UserAccount', source_id: userId, payload: JSON.stringify({ status }), created_at: now, read_at: '', email_delivery_status: 'Fail' })
     return { account_status: status }

@@ -1171,6 +1171,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Figma check | After-only shots (HDT and UBND) at 1440/390 next to Figma; difference table in the PR with (c) = 0. Browser check on the DEV dev server (Playwright): Apply disabled at load, enabled after choosing Last 7 days while the cards keep 42, cards show 14 only after Apply; sort toggle applies at once; Manage accounts → `/admin/users` |
 | Checks | `npm test` 196 files passed, 4 skipped (1182 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+
+### Entry 90: 09/11 Claude Code + human — #156 AIT date without a year (`fix/156-ait-date-year`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (decision 09/11: next upcoming occurrence from server "today"; extracted date visible so the Agency can correct it; remove the hard-coded `'2026-11-10'`) |
+| Change | New `src/lib/ai/tour-date.ts` (`extractTourDate`): ISO, D/M[/YYYY], "Dec 20[, 2027]", "20 Dec [2027]"; explicit year kept; no year → next occurrence on or after today in Asia/Ho_Chi_Minh (`hanoiDate`); a date that does not exist (31/02) is not extracted, so the date follow-up is asked (FR-003). `extractor.ts` uses it with an injectable `now` (`ExtractionOptions.now`, default `systemClock`); the hard-coded date is gone. AIT121: `understoodDateLine` (`matching-view.ts`) shows "Tour date understood: Sun 20 Dec 2026. If this is wrong, send the correct date with the year." under the clarify, match and no-match replies (a later message replaces the date, FR-009) |
+| Tests | `tests/unit/ait-date-year.test.ts` (18): red first, 14 failed for the right reason (`expected '2026-11-10' to be '2026-12-20'`, `20/12` → undefined, display stub null); then green. Mutations 3/3 caught (no "past → next year", UTC instead of Hanoi day, explicit year ignored). No existing test changed |
+| Checks | `npm test` 197 files passed, 4 skipped (1200 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

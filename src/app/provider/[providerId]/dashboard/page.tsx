@@ -6,6 +6,7 @@ import { canOpenCreateBooking } from '@/lib/booking/create-booking'
 import { BOOKING_STATUSES, providerBookingSummary } from '@/lib/booking/list-bookings'
 import { bookingDetailStyles } from '../bookings/[bookingId]/BookingDetailView'
 import { demoRepository } from '@/lib/db/application-store'
+import StatusBadge from '@/app/components/StatusBadge'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,11 +30,11 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
   const chats = (await repository.all('chat_sessions')).filter(row => row.provider_id === params.providerId && participants.some(participant => participant.chat_session_id === row.chat_session_id)).sort((a, b) => b.last_message_at.localeCompare(a.last_message_at)).slice(0, 3)
   return <main className="bkg-page provider-dashboard">
     <header><p>HANOI ARTISAN BRIDGE</p><h1>Tổng quan hoạt động</h1><span>{(await sessionDisplayName(session))}</span></header>
-    <section className="bkg-panel" style={{ marginTop: 24 }}><h2>Hồ sơ xưởng</h2><p>Trạng thái thẩm định: <strong>{currentStatus || 'Chưa có hồ sơ'}</strong></p><p>Hoàn thiện hồ sơ: <strong>{completion.percentage}%</strong></p><progress aria-label="Mức độ hoàn thiện hồ sơ" value={completion.percentage} max={100}/>{completion.missing.length>0&&<p>Cần bổ sung: {completion.missing.join(", ")}.</p>}{review?.revision_comments&&<p><strong>Yêu cầu từ UBND:</strong> {review.revision_comments}</p>}{profile?.published_version_no && profile.current_version_no!==profile.published_version_no && <p>Phiên bản đã xác minh vẫn hiển thị công khai trong khi chờ duyệt bản sửa.</p>}<Link href={`/provider/${params.providerId}/edit`}>Cập nhật hồ sơ →</Link></section>
+    <section className="bkg-panel" style={{ marginTop: 24 }}><h2>Hồ sơ xưởng</h2><p>Trạng thái thẩm định: {currentStatus ? <StatusBadge family="provider" status={currentStatus} /> : <strong>Chưa có hồ sơ</strong>}</p><p>Hoàn thiện hồ sơ: <strong>{completion.percentage}%</strong></p><progress aria-label="Mức độ hoàn thiện hồ sơ" value={completion.percentage} max={100}/>{completion.missing.length>0&&<p>Cần bổ sung: {completion.missing.join(", ")}.</p>}{review?.revision_comments&&<p><strong>Yêu cầu từ UBND:</strong> {review.revision_comments}</p>}{profile?.published_version_no && profile.current_version_no!==profile.published_version_no && <p>Phiên bản đã xác minh vẫn hiển thị công khai trong khi chờ duyệt bản sửa.</p>}<Link href={`/provider/${params.providerId}/edit`}>Cập nhật hồ sơ →</Link></section>
     <section className="bkg-panel" style={{ marginTop: 24 }}>
       <h2>Tổng quan booking</h2>
       <dl>
-        {BOOKING_STATUSES.map(status => <div className="booking-metric" key={status}><dt>{status}</dt><dd>{summary.status_counts[status]}</dd></div>)}
+        {BOOKING_STATUSES.map(status => <div className="booking-metric" key={status}><dt><StatusBadge family="booking" status={status} /></dt><dd>{summary.status_counts[status]}</dd></div>)}
       </dl>
       <p><strong>⚑ {summary.requires_action_count} Booking cần xử lý</strong></p>
       <p className="bkg-actions"><Link className="bkg-link-btn" href={`/provider/${params.providerId}/bookings?date_from=&status=&date_to=&page=1`}>Xem tất cả booking</Link></p>

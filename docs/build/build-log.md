@@ -1406,6 +1406,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Other PRs | #173 EARS draft: H3/H4 bound 20 s, H7 kept apart from H6, H1 still needs the cold-start measurement; marked ready for review. #176: MVP Alpha checklist §3 rows 28 and 31 closed, rows 58–62 added. #177: CI runs `npm run build`; `/explore` marked `force-dynamic` because `next build` opened a database connection while trying to prerender it (reproduced with the DB variables cleared) |
 | Checks | Each code branch (#124, #174, #175, #177): `npm test`, `npm run lint`, `npm run build` green locally; CI green on every pushed branch (see the PRs) |
 
+### Entry 99: 09/11 Claude Code + human — first teammate reviews handled (#123, #110, #101)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11 night: read every review on the open PRs and on #164–#171, fix valid change requests, draft replies, post nothing) |
+| Reviews read | linh-daotruc: #106, #107, #110, #111, #112, #123, #167, #172 (all Approve with non-blocking notes); nguyenthu-0505: #127, #135 (Approve); mizaki311: #101, #104, #122 (Comment). No "changes requested" |
+| Fixed | #123 (`fd90196`): `GET /api/auth/users` returned `last_login: ""` for an account that never logged in; spec-AUT FR-021 §5.1 says null. New test through the route red first (`expected '' to be null`), then `last_login || null`. #110 (`702f6b3`): new test that REG003's only choice control is `company_type` with the FR-001 enum and no radio; a mutation adding another select was caught (the old name regex missed it). #101 (`70fa529`): README link text now matches the document title "From localhost to the hosted version" |
+| Not changed (spec silent or out of scope; replies drafted, not posted) | #111 409 vs 400/422 (FR-018 gives no HTTP codes); #112 order of new/current password checks (not specified); #107 prototype-only status disclosure (dev only) and Active account without profile; #106 old session of a Disabled account (FR-017, separate PR suggested); #167 reason length and generic `INVALID_REASON` message (spec gives none); #122 / #104 wrap long build-log lines (rows are Markdown table rows; logs moved to #178) |
+| Checks | Each changed branch: `npm test`, `npm run lint`, `npm run build` green locally; CI on the PRs |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

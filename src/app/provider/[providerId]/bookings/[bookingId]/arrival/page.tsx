@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { bookingDetailStyles, hanoiTime } from '../BookingDetailView'
 import { loadProviderBooking } from '../load-provider-booking'
 import ConfirmArrival from './ConfirmArrival'
+import StatusBadge from '@/app/components/StatusBadge'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,7 @@ export default async function ConfirmArrivalPage({ params }: { params: { provide
         <dt>Booking ID</dt><dd>{detail.booking_id}</dd>
         <dt>Bắt đầu</dt><dd>{hanoiTime(detail.start_at)}</dd>
         <dt>Số khách</dt><dd>{detail.group_size}</dd>
-        <dt>Trạng thái</dt><dd><strong className="bkg-status">{detail.status}</strong></dd>
+        <dt>Trạng thái</dt><dd><StatusBadge family="booking" status={detail.status} /></dd>
       </dl>
     </section>
     <p className="bkg-panel">Xác nhận đoàn đã đến sẽ chuyển Booking từ Booked sang Completed. Chỉ làm được khi Booking đang Booked và đã tới giờ bắt đầu.</p>

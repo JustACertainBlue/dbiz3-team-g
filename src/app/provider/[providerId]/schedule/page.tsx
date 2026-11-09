@@ -36,7 +36,7 @@ export default async function ProviderSchedulePage({ params, searchParams }: { p
     : null
 
   return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · SCH139</p><h1>Provider Schedule</h1><span>{(await sessionDisplayName(session))} · lịch tính từ giờ mở cửa và các Booking On hold / Booked</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · SCH139</p><h1>Provider Schedule</h1><span>{(await sessionDisplayName(session))} · lịch tính từ giờ mở cửa và các đặt chỗ Tạm giữ / Đã đặt</span></header>
     <p className="bkg-actions">
       <Link href={`${base}?date_from=${addDays(dateFrom, -30)}`}>← 30 ngày trước</Link>
       <span>{dateFrom} → {addDays(dateFrom, 29)}</span>

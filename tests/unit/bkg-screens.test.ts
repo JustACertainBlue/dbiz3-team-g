@@ -38,12 +38,13 @@ describe('G3 audit | BKG135 action buttons (011 M7, SC-007, BR-017)', () => {
   it('keeps all four buttons visible and disables what a Booked Booking before start does not allow', () => {
     const actions = bookingActions('Booked', new Date('2026-10-01T00:00:00+07:00'), '2026-10-12T09:00:00+07:00', 'provider')
     const markup = renderToStaticMarkup(React.createElement(BookingActionsBar, { providerId: BAT_TRANG, bookingId: 'b1', actions }))
+    // spec đổi (nhãn tiếng Việt, FR-007 / screen-spec-BKG135 amended 2026-11-08) → kỳ vọng đổi; logic bật/khoá không đổi.
     const button = (label: string) => markup.match(new RegExp(`<button[^>]*>${label.replace('/', '\\/')}</button>`))?.[0] ?? ''
-    for (const label of ['Confirm/Book', 'Update', 'Cancel', 'Mark Group Arrival']) expect(button(label)).not.toBe('')
-    expect(button('Confirm/Book')).toContain('disabled')
-    expect(button('Mark Group Arrival')).toContain('disabled')
-    expect(button('Update')).not.toContain('disabled')
-    expect(button('Cancel')).not.toContain('disabled')
+    for (const label of ['Xác nhận', 'Cập nhật', 'Huỷ', 'Đánh dấu đoàn đã đến']) expect(button(label)).not.toBe('')
+    expect(button('Xác nhận')).toContain('disabled')
+    expect(button('Đánh dấu đoàn đã đến')).toContain('disabled')
+    expect(button('Cập nhật')).not.toContain('disabled')
+    expect(button('Huỷ')).not.toContain('disabled')
   })
 })
 

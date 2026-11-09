@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { chatOpenOutcome } from './chat-open'
 
 // BKG135 / BKG138 "Chat": open (or reuse) the pair's Active Chat with source Booking (spec-IAC #19, #24).
-export default function ChatOpenButton({ bookingId }: { bookingId: string }) {
+export default function ChatOpenButton({ bookingId, label = 'Chat', className = 'bkg-chat-button' }: { bookingId: string; label?: string; className?: string }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -24,7 +24,7 @@ export default function ChatOpenButton({ bookingId }: { bookingId: string }) {
   }
 
   return <>
-    <button type="button" className="bkg-chat-button" disabled={busy} onClick={open}>{busy ? 'Đang mở Chat…' : 'Chat'}</button>
+    <button type="button" className={className} disabled={busy} onClick={open}>{busy ? 'Đang mở Chat…' : label}</button>
     {error && <small role="alert">{error}</small>}
   </>
 }

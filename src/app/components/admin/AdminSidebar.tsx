@@ -29,8 +29,8 @@ export function AdminSidebar({
       style={{
         width: '240px',
         minWidth: '240px',
-        background: '#ffffff',
-        borderRight: '1px solid #e4e4e7',
+        background: 'var(--palette-white)',
+        borderRight: 'var(--border-width-1) solid var(--palette-gray-90)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -44,11 +44,11 @@ export function AdminSidebar({
       <div>
         <div
           style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid #f4f4f5',
+            padding: 'var(--space-20px) var(--space-24px)',
+            borderBottom: 'var(--border-width-1) solid var(--palette-gray-96)',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: 'var(--space-12px)',
           }}
         >
           {/* 4-square logo icon */}
@@ -56,26 +56,26 @@ export function AdminSidebar({
             style={{
               width: '32px',
               height: '32px',
-              background: '#18181b',
-              borderRadius: '6px',
+              background: 'var(--palette-gray-10)',
+              borderRadius: 'var(--radius-sm)',
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '3px',
-              padding: '6px',
+              gap: 'var(--space-3px)',
+              padding: 'var(--space-6px)',
             }}
           >
-            <div style={{ background: '#ffffff', borderRadius: '1.5px' }} />
-            <div style={{ background: '#ffffff', borderRadius: '1.5px' }} />
-            <div style={{ background: '#ffffff', borderRadius: '1.5px' }} />
-            <div style={{ background: '#ffffff', borderRadius: '1.5px' }} />
+            <div style={{ background: 'var(--palette-white)', borderRadius: 'var(--radius-1p5)' }} />
+            <div style={{ background: 'var(--palette-white)', borderRadius: 'var(--radius-1p5)' }} />
+            <div style={{ background: 'var(--palette-white)', borderRadius: 'var(--radius-1p5)' }} />
+            <div style={{ background: 'var(--palette-white)', borderRadius: 'var(--radius-1p5)' }} />
           </div>
 
           <div>
             <div
               style={{
-                fontSize: '0.85rem',
+                fontSize: 'var(--font-size-0p85rem)',
                 fontWeight: 700,
-                color: '#09090b',
+                color: 'var(--palette-gray-4)',
                 letterSpacing: '-0.01em',
                 lineHeight: 1.2,
               }}
@@ -84,9 +84,9 @@ export function AdminSidebar({
             </div>
             <div
               style={{
-                fontSize: '0.68rem',
+                fontSize: 'var(--font-size-0p68rem)',
                 fontWeight: 600,
-                color: '#71717a',
+                color: 'var(--palette-gray-46)',
                 letterSpacing: '0.08em',
               }}
             >
@@ -96,7 +96,7 @@ export function AdminSidebar({
         </div>
 
         {/* Nav Links */}
-        <nav style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <nav style={{ padding: 'var(--space-16px) var(--space-12px)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4px)' }}>
           {/* Dashboard Tab */}
           <Link
             href="/admin"
@@ -104,14 +104,14 @@ export function AdminSidebar({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
+              gap: 'var(--space-12px)',
               width: '100%',
-              padding: '10px 14px',
-              background: activeTab === 'dashboard' ? '#18181b' : 'transparent',
-              color: activeTab === 'dashboard' ? '#ffffff' : '#71717a',
+              padding: 'var(--space-10px) var(--space-14px)',
+              background: activeTab === 'dashboard' ? 'var(--palette-gray-10)' : 'transparent',
+              color: activeTab === 'dashboard' ? 'var(--palette-white)' : 'var(--palette-gray-46)',
               textDecoration: 'none',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
+              borderRadius: 'var(--radius-8)',
+              fontSize: 'var(--font-size-0p85rem)',
               fontWeight: 600,
               cursor: 'pointer',
               textAlign: 'left',
@@ -135,35 +135,35 @@ export function AdminSidebar({
       {/* Bottom User Profile */}
       <div
         style={{
-          padding: '16px 20px',
-          borderTop: '1px solid #e4e4e7',
+          padding: 'var(--space-16px) var(--space-20px)',
+          borderTop: 'var(--border-width-1) solid var(--palette-gray-90)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10px)' }}>
           <div
             style={{
               width: '36px',
               height: '36px',
-              borderRadius: '50%',
-              background: '#18181b',
-              color: '#ffffff',
+              borderRadius: 'var(--radius-50pct)',
+              background: 'var(--palette-gray-10)',
+              color: 'var(--palette-white)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 700,
-              fontSize: '0.78rem',
+              fontSize: 'var(--font-size-0p78rem)',
             }}
           >
             {adminInitials}
           </div>
           <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#09090b', lineHeight: 1.2 }}>
+            <div style={{ fontSize: 'var(--font-size-0p82rem)', fontWeight: 600, color: 'var(--palette-gray-4)', lineHeight: 1.2 }}>
               {adminName}
             </div>
-            <div style={{ fontSize: '0.68rem', fontWeight: 500, color: '#71717a', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: 'var(--font-size-0p68rem)', fontWeight: 500, color: 'var(--palette-gray-46)', letterSpacing: '0.04em' }}>
               {adminSub}
             </div>
           </div>
@@ -181,9 +181,9 @@ export function AdminSidebar({
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#71717a',
+            color: 'var(--palette-gray-46)',
             cursor: 'pointer',
-            padding: '4px',
+            padding: 'var(--space-4px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

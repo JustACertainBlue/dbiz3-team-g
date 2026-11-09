@@ -99,9 +99,10 @@ describe('#87 spec-BKG #31 | Booking times from PostgreSQL (UTC) are shown in As
       blocks: [{ start_at: START_UTC, end_at: END_UTC, status: 'Booked' }, { start_at: EARLY_UTC, end_at: '2026-11-23T00:30:00.000Z', status: 'On hold' }],
     }))
     const day = (d: string) => markup.match(new RegExp(`<section[^>]*aria-label="${d}"[\\s\\S]*?</section>`))?.[0] ?? ''
-    expect(day('2026-11-23')).toContain('09:00–10:30 Booked')
-    expect(day('2026-11-23')).toContain('06:30–07:30 On hold')
-    expect(day('2026-11-22')).not.toContain('On hold')
+    // spec đổi (nhãn tiếng Việt, DSH018/SCH139 amended 2026-11-08) → kỳ vọng đổi; phần kiểm giờ #70/#87 không đổi.
+    expect(day('2026-11-23')).toContain('09:00–10:30 Đã đặt')
+    expect(day('2026-11-23')).toContain('06:30–07:30 Tạm giữ')
+    expect(day('2026-11-22')).not.toContain('Tạm giữ')
   })
 })
 

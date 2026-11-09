@@ -1,0 +1,203 @@
+/*
+ * App shell: page background, glass layers and navigation (design wave 3).
+ * Design System v9 §6b (navigation rules), §6d (glass tokens and rules), §6e (Admin sidebar); Figma "Điều hướng",
+ * "Điều hướng Admin (thanh bên) và mobile", "Thanh nav hero dạng gập (< 1.100 px)". Light mode only (dark: wave 5).
+ */
+
+/* ---- Page background: warm base + three soft radial patches (v9 surface.mesh, fading out at 70%) ---- */
+body {
+  background-color: var(--color-surface-mesh-base);
+  background-image:
+    radial-gradient(640px 640px at 0 0, color-mix(in srgb, var(--color-surface-mesh-1) 70%, transparent), transparent 70%),
+    radial-gradient(720px 720px at 100% 30%, color-mix(in srgb, var(--color-surface-mesh-2) 70%, transparent), transparent 70%),
+    radial-gradient(560px 560px at 30% 100%, color-mix(in srgb, var(--color-surface-mesh-3) 70%, transparent), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* ---- Glass layers (v9 §6d). Rule 1: no glass inside glass; nested boxes use .glass-nested. ---- */
+.glass-light {
+  background: var(--color-glass-light-bg);
+  border: var(--border-width-1) solid var(--color-glass-light-border);
+  box-shadow: var(--shadow-glass);
+  -webkit-backdrop-filter: var(--glass-light-blur);
+  backdrop-filter: var(--glass-light-blur);
+}
+.glass-nested { background: var(--color-glass-nested-bg); border: var(--border-width-1) solid var(--color-glass-nested-border); }
+.glass-nav {
+  background: var(--color-glass-nav-bg);
+  border: var(--border-width-1) solid var(--color-glass-nav-border);
+  -webkit-backdrop-filter: var(--glass-nav-blur);
+  backdrop-filter: var(--glass-nav-blur);
+}
+.glass-sidebar {
+  background: var(--color-glass-sidebar-bg);
+  -webkit-backdrop-filter: var(--glass-nav-blur);
+  backdrop-filter: var(--glass-nav-blur);
+}
+.glass-menu {
+  background: var(--color-glass-menu-bg);
+  border: var(--border-width-1) solid var(--color-glass-light-border);
+  box-shadow: var(--shadow-lg);
+  -webkit-backdrop-filter: var(--glass-light-blur);
+  backdrop-filter: var(--glass-light-blur);
+}
+/* Rule 5: without backdrop-filter the layers fall back to (near) solid colours. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-light, .glass-menu { background: rgba(255, 255, 255, .88); }
+  .glass-nav { background: rgba(15, 61, 42, .96); }
+  .glass-sidebar { background: rgba(15, 61, 42, .97); }
+}
+
+/* ---- Shared pieces ---- */
+.shell-logo { display: grid; color: var(--color-text-onbrand); text-decoration: none; line-height: 1.1; white-space: nowrap; }
+.shell-logo strong { font: 700 20px/28px var(--font-heading); }
+.shell-logo small { font: 400 12px/16px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--color-brand-200); }
+.shell-avatar {
+  flex: none; width: 40px; height: 40px; border-radius: var(--radius-pill); display: grid; place-items: center;
+  background: var(--color-brand-100); color: var(--color-brand-800); font: 600 14px/1 var(--font-body); text-decoration: none;
+}
+.shell-unread {
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius-pill); display: inline-grid; place-items: center;
+  background: var(--color-accent-default); color: var(--color-text-onbrand); font: 600 12px/1 var(--font-body);
+}
+.shell-icon-button, .shell-round-button {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: var(--radius-pill);
+  background: transparent; color: inherit; border: 0; cursor: pointer;
+}
+.shell-round-button { border: 1.5px solid rgba(255, 255, 255, .85); color: var(--color-text-onbrand); }
+.shell-bar :is(a, button):focus-visible, .shell-sidebar :is(a, button):focus-visible, .shell-topbar :is(a, button):focus-visible,
+.shell-tabbar a:focus-visible { outline: var(--focus-ring-width) solid var(--color-brand-300); outline-offset: var(--focus-ring-offset); }
+
+/* ---- Pill bar: Guest, Agency, Provider (v9 §6d rule 8: 20 px from the edges, 64 px high, radius 999) ---- */
+.shell-bar {
+  position: sticky; top: 20px; z-index: 1000; margin: 20px 20px 0; min-height: 64px; padding: 8px 12px 8px 32px;
+  display: flex; align-items: center; gap: var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-onbrand);
+}
+.shell-bar__items { display: flex; align-items: center; gap: var(--space-2); margin-left: var(--space-2); }
+.shell-bar__items a {
+  min-height: 44px; display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4);
+  border-radius: var(--radius-pill); color: var(--color-text-onbrand); text-decoration: none; white-space: nowrap;
+  font: 600 15px/20px var(--font-body); transition: background-color var(--motion-duration-base) ease-out;
+}
+.shell-bar__items a:hover { background: rgba(255, 255, 255, .08); }
+.shell-bar__items a.is-active { background: var(--color-brand-700); }
+.shell-bar__end { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+.shell-pill {
+  min-height: 44px; display: inline-flex; align-items: center; padding: 0 var(--space-6); border-radius: var(--radius-pill);
+  font: 600 15px/20px var(--font-body); text-decoration: none; white-space: nowrap;
+}
+.shell-pill--outline { color: var(--color-text-onbrand); border: 1.5px solid var(--color-text-onbrand); }
+.shell-pill--solid { background: var(--color-neutral-0); color: var(--color-brand-800); }
+.shell-bar__menu { display: none; color: var(--color-text-onbrand); }
+
+.shell-user { position: relative; }
+.shell-user__button {
+  display: flex; align-items: center; gap: var(--space-3); min-height: 48px; padding: 0 var(--space-2) 0 var(--space-3);
+  background: transparent; border: 0; border-radius: var(--radius-pill); color: var(--color-text-onbrand); cursor: pointer; text-align: right;
+}
+.shell-user__text { display: grid; }
+.shell-user__text strong { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-1); font: 600 15px/20px var(--font-body); }
+.shell-user__text small { font: 400 13px/18px var(--font-body); color: var(--color-brand-100); }
+.shell-user__menu {
+  position: absolute; right: 0; top: calc(100% + 8px); min-width: 240px; padding: var(--space-2); border-radius: var(--radius-lg);
+  display: grid; gap: var(--space-1); color: var(--color-text-primary);
+}
+.shell-user__menu a, .shell-user__logout, .shell-menu nav a, .shell-menu__account a, .shell-menu__logout {
+  min-height: 44px; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3); border-radius: var(--radius-md);
+  color: var(--color-text-primary); text-decoration: none; font: 600 15px/20px var(--font-body); background: transparent; border: 0; cursor: pointer; text-align: left;
+}
+.shell-user__menu a:hover, .shell-user__logout:hover, .shell-menu nav a:hover, .shell-menu__account a:hover, .shell-menu__logout:hover { background: var(--color-neutral-100); }
+
+/* ---- Collapsed menu panel (< 1,100 px for the bar, < 1,024 px for Admin) ---- */
+.shell-menu {
+  position: fixed; z-index: 1200; top: 92px; left: 20px; right: 20px; max-width: 420px; margin-left: auto;
+  padding: var(--space-4); border-radius: 24px; color: var(--color-text-primary); max-height: calc(100vh - 112px); overflow: auto;
+}
+.shell-menu__head { display: flex; align-items: center; justify-content: space-between; }
+.shell-menu__head strong { font: 600 18px/26px var(--font-body); }
+.shell-menu__who { margin: 0 0 var(--space-2); font: 400 12px/16px var(--font-body); color: var(--color-text-muted); }
+.shell-menu nav { display: grid; gap: var(--space-1); padding-bottom: var(--space-2); border-bottom: var(--border-width-1) solid var(--color-border-default); }
+.shell-menu nav a.is-active { background: var(--color-brand-50); }
+.shell-menu__account { display: grid; gap: var(--space-1); padding-top: var(--space-2); }
+
+/* ---- Bottom tab bar (phones, signed-in) ---- */
+.shell-tabbar { display: none; }
+
+/* ---- Admin sidebar 264 (v9 §6e) ---- */
+.shell-sidebar {
+  position: fixed; z-index: 1000; inset: 0 auto 0 0; width: var(--layout-sidebar-width); display: flex; flex-direction: column;
+  color: var(--color-text-onbrand);
+}
+.shell-sidebar .shell-logo { padding: 24px 24px 20px; border-bottom: var(--border-width-1) solid rgba(255, 255, 255, .14); }
+.shell-sidebar nav { display: grid; gap: 4px; padding: var(--space-3); }
+.shell-sidebar nav a {
+  min-height: 44px; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3); border-radius: var(--radius-pill);
+  color: var(--color-text-onbrand); text-decoration: none; font: 600 15px/20px var(--font-body); transition: background-color var(--motion-duration-base) ease-out;
+}
+.shell-sidebar nav a:hover { background: rgba(255, 255, 255, .08); }
+.shell-sidebar nav a.is-active { background: var(--color-brand-700); font-weight: 700; }
+.shell-sidebar__foot {
+  margin-top: auto; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-3);
+  border-top: var(--border-width-1) solid rgba(255, 255, 255, .14);
+}
+.shell-sidebar__foot > span { min-width: 0; flex: 1; display: grid; }
+.shell-sidebar__foot strong { font: 600 14px/20px var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shell-sidebar__foot small { font: 400 12px/16px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--color-brand-200); }
+.shell-topbar { display: none; }
+body:has(.shell-sidebar) #page-content, body:has(.shell-sidebar) > footer { margin-left: var(--layout-sidebar-width); }
+/* The fixed sidebar's column continues down long pages (same colour as the glass sidebar over the mesh). */
+body:has(.shell-sidebar) { box-shadow: inset var(--layout-sidebar-width) 0 0 0 var(--color-glass-sidebar-bg); }
+
+/* ---- Logout dialog ---- */
+.logout-overlay { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: var(--space-6); background: rgba(18, 26, 22, .45); }
+.logout-dialog { width: min(100%, 420px); padding: var(--space-6); border-radius: var(--radius-xl); color: var(--color-text-primary); }
+.logout-dialog h2 { margin: 0; font: 600 24px/32px var(--font-heading); }
+.logout-dialog p { margin: var(--space-3) 0 var(--space-6); color: var(--color-text-secondary); }
+.logout-dialog div { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.logout-dialog button { min-height: 44px; padding: 0 var(--space-6); border-radius: var(--radius-pill); border: 1.5px solid var(--color-brand-700); background: transparent; color: var(--color-brand-700); font: 600 15px/20px var(--font-body); cursor: pointer; }
+.logout-dialog button:last-child { background: var(--color-brand-700); color: var(--color-text-onbrand); }
+
+/* ---- Responsive ---- */
+@media (max-width: 1099px) {
+  .shell-bar__items, .shell-user, .shell-bar--guest .shell-pill { display: none; }
+  .shell-bar__menu { display: grid; }
+}
+@media (max-width: 1023px) {
+  .shell-sidebar { display: none; }
+  body:has(.shell-sidebar) #page-content, body:has(.shell-sidebar) > footer { margin-left: 0; }
+  body:has(.shell-sidebar) { box-shadow: none; }
+  .shell-topbar {
+    position: sticky; top: 12px; z-index: 1000; margin: 12px 12px 0; min-height: 56px; padding: 6px 6px 6px 20px;
+    display: flex; align-items: center; justify-content: space-between; border-radius: var(--radius-pill); color: var(--color-text-onbrand);
+  }
+  .shell-topbar .shell-logo strong { font-size: 17px; line-height: 24px; }
+}
+@media (max-width: 767px) {
+  .shell-bar { top: 12px; margin: 12px 12px 0; min-height: 56px; padding: 6px 6px 6px 20px; }
+  .shell-bar .shell-logo strong { font-size: 17px; line-height: 24px; }
+  .shell-bar .shell-logo small { display: none; }
+  .shell-menu { top: 80px; left: 12px; right: 12px; max-width: none; }
+  .shell-tabbar {
+    position: fixed; z-index: 1000; left: 0; right: 0; bottom: 0; min-height: 56px; display: flex; justify-content: space-around;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); background: var(--color-glass-nav-bg);
+    -webkit-backdrop-filter: var(--glass-nav-blur); backdrop-filter: var(--glass-nav-blur);
+  }
+  .shell-tabbar a {
+    flex: 1; min-height: 48px; display: grid; justify-items: center; align-content: center; gap: 2px; border-radius: var(--radius-md);
+    color: var(--color-text-onbrand); text-decoration: none; font: 500 11px/14px var(--font-body);
+  }
+  .shell-tabbar a.is-active { background: var(--color-brand-700); }
+  .shell-tabbar__icon { position: relative; display: grid; }
+  .shell-tabbar__icon .shell-unread { position: absolute; top: -6px; right: -12px; min-width: 16px; height: 16px; font-size: 10px; padding: 0 4px; }
+  body:has(.shell-tabbar) #page-content { padding-bottom: 72px; }
+  body:has(.shell-tabbar) > footer { padding-bottom: 80px !important; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .shell-tabbar { background: rgba(15, 61, 42, .96); }
+}
+
+/* ---- Reduced motion: no transitions in the shell ---- */
+@media (prefers-reduced-motion: reduce) {
+  .shell-bar *, .shell-sidebar *, .shell-tabbar *, .shell-menu * { transition: none !important; }
+  html:focus-within { scroll-behavior: auto; }
+}

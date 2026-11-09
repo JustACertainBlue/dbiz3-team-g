@@ -41,9 +41,10 @@ describe('T053 | A6 listPendingVerification', () => {
 })
 
 describe('T053 | A6 PendingVerificationPanel is read-only', () => {
-  it('shows "No accounts awaiting review" when empty and no View/Verify buttons with items', () => {
+  it('shows "Không có tài khoản nào chờ duyệt" when empty and no View/Verify buttons with items', () => {
     const empty = renderToStaticMarkup(React.createElement(PendingVerificationPanel, { items: [] }))
-    expect(empty).toContain('No accounts awaiting review')
+    // spec đổi → kỳ vọng đổi (design wave 4: Vietnamese labels, approved by linhkhanh-vu; behaviour unchanged)
+    expect(empty).toContain('Không có tài khoản nào chờ duyệt')
     const filled = renderToStaticMarkup(React.createElement(PendingVerificationPanel, {
       items: [{ kind: 'Provider', id: 'p1', name: 'Xưởng thủ công Hạ Thái', villageId: SEED_ADMIN_IDS.haThaiVillageId, submittedAt: '2026-09-12T08:00:00+07:00' }],
     }))

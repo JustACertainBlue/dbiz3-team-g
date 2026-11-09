@@ -1239,6 +1239,16 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Follow-up (linhkhanh-vu 09/11) | Decision: enforce Contact on the server (ADM117 #10 Required, F-AUTH-20). Test first: new case "a Provider without contact is refused" failed (`promise resolved … instead of rejecting`), then green; the village check still runs first (existing `aut-lifecycle.test.ts:32` expectation kept); UBND needs no contact. Without contact the old copy of name/phone is gone. `tests/integration/aut-lifecycle.test.ts:33`: **input only** updated to send a valid contact, comment "spec ADM117 #10: contact Required → test input updated" (approved). Not changed (not allowed): `tests/storage/provider-publication.test.ts:49` (opt-in `npm run test:storage`, not in `npm test`) still creates a Provider without contact and will now fail there until its input is updated. Mutation (contact optional again) caught. `npm test` 198 files passed, 4 skipped (1195 passed, 20 skipped); lint and build OK |
 | Checks | `npm test` 198 files passed, 4 skipped (1192 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+
+### Entry 96: 09/11 Claude Code + human — storage test sends the required Contact (`fix/storage-test-contact`, refs #170)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: update only the input of `tests/storage/provider-publication.test.ts:49`, same way as `aut-lifecycle.test.ts:33`) |
+| Change | `tests/storage/provider-publication.test.ts:49`: input only; `contact: { contact_person_name: 'Synthetic Storage Contact', phone_number: '0912345678' }` added, with the comment "spec ADM117 #10: contact Required → test input updated". No assertion and no other test changed |
+| Search | Other Provider-creation calls in `tests/` without a contact (not edited): `tests/integration/aut-lifecycle.test.ts:32` (expects "assigned village"; the village check runs before the contact check, so it still passes) and `:42` (HDT creating a Provider with `{}` expects "Forbidden", checked first). `tests/integration/adm117-contact.test.ts:50` and `:55` omit the contact on purpose. No call through `POST /api/auth/users/create` creates a Provider |
+| Checks | `npm test` 202 files passed, 4 skipped (1249 passed, 20 skipped); `npm run test:storage` on DEV (DB and Storage project `jfrpnffknjpgmkyquxql`, host/ref printed first, no secrets shown): 2 files, 6/6 passed incl. the committed publication flow (167 s, fixtures cleaned by the test); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

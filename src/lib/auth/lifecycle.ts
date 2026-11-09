@@ -95,36 +95,64 @@ export async function changePassword(session: SessionContext, current: string, p
   }))
 }
 
-const accountSchema = z.object({ name: z.string().trim().min(1).max(100), email: z.string().email().max(254), phone: z.string().regex(/^\+?[0-9]{10,15}$/), village_id: z.string().uuid(), address: z.string().trim().max(500).optional() })
+// Schema for UBND account creation: village_name (free text) instead of village_id UUID, because
+// UBND ↔ Village is 1-to-1 and HDT creates the village record at the same time as the account.
+// First-login profile completion (personal info + village detail) is out of MVP scope. The village
+// row is created with is_active=false so it does not appear in public-facing pages until a future
+// activation step. Rule: no public API or page may surface villages where is_active is false.
+const ubndAccountSchema = z.object({ name: z.string().trim().min(1).max(100), email: z.string().email().max(254), phone: z.string().regex(/^\+?[0-9]{10,15}$/), village_name: z.string().trim().min(1).max(255) })
+const providerAccountSchema = z.object({ name: z.string().trim().min(1).max(100), email: z.string().email().max(254), phone: z.string().regex(/^\+?[0-9]{10,15}$/), village_id: z.string().uuid(), address: z.string().trim().max(500).optional() })
 // #170: ADM117 Contact (F-AUTH-20 element #10, Required): a Provider account needs contact
 // { contact_person_name, phone_number } (decision 09/11: enforced on the server).
 const contactSchema = z.object({ contact_person_name: z.string().trim().min(1).max(100), phone_number: z.string().trim().regex(/^\+?[0-9]{10,15}$/) })
 export async function createManagedAccount(session: SessionContext, kind: string, input: unknown, delivery?: Delivery) {
   if (!session.authenticated || session.role !== 'ADMIN' || !session.permissions.includes('manage_users') || (kind === 'ubnd' ? session.adminType !== 'HDT' : kind !== 'provider' || session.adminType !== 'UBND')) fail('Forbidden', 403)
-  const parsed = accountSchema.safeParse(input)
+
+  if (kind === 'ubnd') {
+    // F-AUTH-19: HDT creates a UBND account and a new village record in one atomic transaction.
+    const parsed = ubndAccountSchema.safeParse(input)
+    if (!parsed.success) fail('Check name, email, phone and village name')
+    const data = parsed.data
+    const deliver = delivery ?? authDelivery(), temporary = `Aa1!${tokenValue()}`, hash = await hashPassword(temporary)
+    return (await demoRepository().transaction(["user_accounts","sessions","password_reset_tokens","audit_logs","auth_rate_limits","villages","ubnd_village_assignments","provider_profiles","provider_profile_versions","agency_registration_requests","agency_review_records","registration_submission_versions","registration_resubmission_tokens","agency_profiles","stored_files","registration_documents"], tables => {
+      const email = data.email.trim().toLowerCase()
+      if (rows(tables, 'user_accounts').some(row => row.email.toLowerCase() === email) || rows(tables, 'agency_registration_requests').some(row => row.email.toLowerCase() === email)) fail('Email already exists', 409)
+      // Prevent duplicate village names (case-insensitive) among active and inactive villages.
+      if (rows(tables, 'villages').some(row => row.name.toLowerCase() === data.village_name.toLowerCase())) fail('A village with this name already exists', 409)
+      const user = randomUUID(), villageId = randomUUID(), now = new Date().toISOString()
+      // Village is created inactive; a future activation step (out of MVP scope) sets is_active=true
+      // after the UBND completes their profile. Public pages filter by is_active=true only.
+      const sourceCode = `HDT-${villageId.slice(0, 8).toUpperCase()}`
+      rows(tables, 'villages').push({ village_id: villageId, source_code: sourceCode, name: data.village_name, district: '', city_province: 'Hà Nội', is_active: 'false' })
+      rows(tables, 'ubnd_village_assignments').push({ ubnd_user_id: user, village_id: villageId, assigned_by: session.userId!, assigned_at: now })
+      deliver({ kind: 'account-created', to: email, temporary_password: temporary })
+      rows(tables, 'user_accounts').push({ user_id: user, email, password_hash: hash, role_code: 'ADMIN', admin_type: 'UBND', account_status: 'Active', full_name: data.name, title: '', phone: data.phone, avatar_file_id: '', must_change_password: 'true', password_changed_at: '', last_login: '', created_at: now, updated_at: now })
+      audit(tables, session.userId!, 'UBND_ACCOUNT_CREATED', user, { village_id: villageId, village_name: data.village_name })
+      return { user_id: user, provider_id: null, village_id: villageId, account_status: 'Active', must_change_password: true, email_delivery_status: 'Dev outbox' }
+    }))
+  }
+
+  // F-AUTH-20: UBND creates a Provider account assigned to their own village.
+  const parsed = providerAccountSchema.safeParse(input)
   if (!parsed.success) fail('Check name, email, phone and assigned village')
   const data = parsed.data
-  if (kind === 'provider' && (!data.address || session.assignedVillageId !== data.village_id)) fail('Provider must belong to your assigned village', 403)
-  const contact = kind === 'provider' ? contactSchema.safeParse(input && typeof input === 'object' ? (input as { contact?: unknown }).contact : undefined) : undefined
-  if (contact && !contact.success) fail('Check contact person and contact phone')
-  const contactInformation = contact?.success ? contact.data : null
+  if (!data.address || session.assignedVillageId !== data.village_id) fail('Provider must belong to your assigned village', 403)
+  const contact = contactSchema.safeParse(input && typeof input === 'object' ? (input as { contact?: unknown }).contact : undefined)
+  if (!contact.success) fail('Check contact person and contact phone')
+  const contactInformation = contact.data
   const deliver = delivery ?? authDelivery(), temporary = `Aa1!${tokenValue()}`, hash = await hashPassword(temporary)
   return (await demoRepository().transaction(["user_accounts","sessions","password_reset_tokens","audit_logs","auth_rate_limits","villages","ubnd_village_assignments","provider_profiles","provider_profile_versions","agency_registration_requests","agency_review_records","registration_submission_versions","registration_resubmission_tokens","agency_profiles","stored_files","registration_documents"], tables => {
-    const village = rows(tables, 'villages').find(row => row.village_id === data.village_id && row.is_active === 'true')
-    if (!village) fail('Village not found or inactive')
-    if (kind === 'ubnd' && rows(tables, 'ubnd_village_assignments').some(row => row.village_id === data.village_id)) fail('Village already has an assigned UBND', 409)
+    const village = rows(tables, 'villages').find(row => row.village_id === data.village_id)
+    if (!village) fail('Village not found')
     const email = data.email.trim().toLowerCase()
     if (rows(tables, 'user_accounts').some(row => row.email.toLowerCase() === email) || rows(tables, 'agency_registration_requests').some(row => row.email.toLowerCase() === email)) fail('Email already exists', 409)
     const user = randomUUID(), profile = randomUUID(), now = new Date().toISOString()
     deliver({ kind: 'account-created', to: email, temporary_password: temporary })
-    rows(tables, 'user_accounts').push({ user_id: user, email, password_hash: hash, role_code: kind === 'ubnd' ? 'ADMIN' : 'Local_Provider', admin_type: kind === 'ubnd' ? 'UBND' : '', account_status: 'Active', full_name: data.name, title: '', phone: data.phone, avatar_file_id: '', must_change_password: 'true', password_changed_at: '', last_login: '', created_at: now, updated_at: now })
-    if (kind === 'ubnd') rows(tables, 'ubnd_village_assignments').push({ ubnd_user_id: user, village_id: data.village_id, assigned_by: session.userId!, assigned_at: now })
-    else {
-      rows(tables, 'provider_profiles').push({ provider_id: profile, user_id: user, village_id: data.village_id, verification_status: 'Draft', current_version_no: '1', published_version_no: '', created_at: now, updated_at: now })
-      rows(tables, 'provider_profile_versions').push({ provider_id: profile, version_no: '1', version_status: 'Draft', business_registration_number: '', business_name: data.name, craft_type: '', artisan_names: '[]', location_address: data.address!, description: '', contact_information: JSON.stringify(contactInformation), booking_conditions: '', submitted_at: '', published_at: '' })
-    }
-    audit(tables, session.userId!, kind === 'ubnd' ? 'UBND_ACCOUNT_CREATED' : 'LOCAL_PROVIDER_ACCOUNT_CREATED', user, { village_id: data.village_id })
-    return { user_id: user, provider_id: kind === 'provider' ? profile : null, account_status: 'Active', must_change_password: true, email_delivery_status: 'Dev outbox' }
+    rows(tables, 'user_accounts').push({ user_id: user, email, password_hash: hash, role_code: 'Local_Provider', admin_type: '', account_status: 'Active', full_name: data.name, title: '', phone: data.phone, avatar_file_id: '', must_change_password: 'true', password_changed_at: '', last_login: '', created_at: now, updated_at: now })
+    rows(tables, 'provider_profiles').push({ provider_id: profile, user_id: user, village_id: data.village_id, verification_status: 'Draft', current_version_no: '1', published_version_no: '', created_at: now, updated_at: now })
+    rows(tables, 'provider_profile_versions').push({ provider_id: profile, version_no: '1', version_status: 'Draft', business_registration_number: '', business_name: data.name, craft_type: '', artisan_names: '[]', location_address: data.address!, description: '', contact_information: JSON.stringify(contactInformation), booking_conditions: '', submitted_at: '', published_at: '' })
+    audit(tables, session.userId!, 'LOCAL_PROVIDER_ACCOUNT_CREATED', user, { village_id: data.village_id })
+    return { user_id: user, provider_id: profile, account_status: 'Active', must_change_password: true, email_delivery_status: 'Dev outbox' }
   }))
 }
 

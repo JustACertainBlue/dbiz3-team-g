@@ -71,7 +71,7 @@ Shared avatar navigation for authenticated actors: My Account → ACC129; My Bus
 
 - Smallest supported width: 360px
 - What collapses or stacks on a narrow screen: the calendar grid and the right-hand panels (selected date, request quote, cooperative profile) stack vertically; the Preferred Operating Window button group wraps or becomes a dropdown
-- Text that must remain readable (contrast, minimum size): Booked vs. On Hold chip styling must remain distinguishable at small size and not rely on color alone (dashed vs. filled, per the legend)
+- Text that must remain readable (contrast, minimum size): Booked vs. On hold chip styling (shown as Đã đặt vs. Tạm giữ; stored values stay canonical, 2026-11-08) must remain distinguishable at small size and not rely on color alone (dashed vs. filled, per the legend)
 
 ## 9. Decisions and review
 

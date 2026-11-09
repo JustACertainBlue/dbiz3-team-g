@@ -28,10 +28,27 @@ Repository: https://github.com/JustACertainBlue/dbiz3-team-g
 | 10 | ADR on the hosting option | ✅ / 🟡 | `docs/adr/0001-hosting.md` ✅; `docs/adr/0002-next14-advisories.md` 🟡 (PR #109) | Merge #109 |
 | 11 | Notes: local versus internet | 🟡 | `docs/build/local-vs-internet.md` (PR #101; 22 problems + smoke check, incl. Node 26 → 22.x, #118) | Merge #101 and #118 |
 | 12 | **Spec with new EARS lines** (at least one on a failure found when testing from outside) | 🟡 | `main`: 1 line (spec-AUT, email not configured). PR #104: 4 lines for failures found on the hosted / DEV version (#102 AUT, #87 BKG, #88 PRF, #93 ADM) | Merge #104. Failures found by the **outside** test (item 9) each need one more EARS line — none yet because that test has not run |
-| 13 | Extension task (encouraged) | ⏳ | Candidate already running on the hosted version: "minimal sign-in blocking a page" (`/login` + `hab_session`; protected pages show a login prompt, APIs answer 401/403) | The course asks for one EARS line **before** implementing an extension; decide whether to claim the existing sign-in or pick a new one (human) |
+| 13 | Extension task (encouraged) | 🟡 **claimed, pending human approval** | Claim (draft, 2026-11-09): the existing **minimal sign-in blocking a page** (`/login` + `hab_session`). EARS line and evidence in "Extension task claim" below. **Built before this claim** (AUT PR #11, merged 2026-11-06), so it is claimed as already implemented, not newly built | Human: approve the claim, or pick a new extension and write its EARS line before building it |
 | 14 | Session cookie flags on a production build | ✅ | Local production build of `main` (`npm run build` + `next start`, DEV database): `Set-Cookie: hab_session=…; Path=/; Max-Age=43200; Secure; HttpOnly; SameSite=lax`. Seed demo account with "any password" refused (401) | Re-check once on the hosted site with a test account (DevTools → Cookies) |
 | 15 | Security / dependencies | 🟡 | PR #105 (remove `openai`, non-breaking `npm audit fix`), #108 (remove unused Google Maps client), #109 (Image Optimizer off; ADR 0002 lists the 25 Next 14 advisories), #118 (Node 22.x) | Merge in this order: #105, then #108 (lockfile may need regenerating), #109, #118. Next 15.5.x upgrade planned after MVP RC (ADR 0002) |
 | 16 | Design-system preparation (team decision) | 🟡 | PR #113 (`tokens.css`), #114–#117, #119, #120 (shared components and five main screens; no visual change, Playwright + computed-style proof) | Merge #113 first, then the others |
+
+### Extension task claim (draft — pending human approval)
+
+**EARS:** When a request without a valid `hab_session` sign-in reaches a protected page or API, the system shall not return the protected content: a protected API shall answer **401** (no session) or **403** (signed in with the wrong role or organization), and a protected page shall show a sign-in prompt or redirect to `/login` instead of the data.
+
+**Honesty note:** this behaviour was **built before the claim**. It came with AUT PR #11 (merged 2026-11-06, `06b1fae`) and the product session (`cf554d9`, 2026-11-07). Nothing new is implemented for the claim.
+
+Evidence on `main` (`ec859af`):
+| What | Where |
+|---|---|
+| Session cookie and lookup | `src/lib/auth/product-session.ts:7` (`PRODUCT_SESSION_COOKIE = 'hab_session'`); `src/lib/auth/session.ts:80` (`sessionContextFromRequest`) |
+| API → 401 without a session | `src/app/api/adm/dashboard/route.ts:13`; `src/app/api/auth/account/avatar/route.ts:10`, `:21`, `:44`; `src/app/api/ait/sessions/[id]/messages/route.ts:9` |
+| API → 403 for the wrong role / owner | `src/app/api/ait/sessions/[id]/messages/route.ts:11` |
+| Page → sign-in prompt / redirect | `src/app/ai-matching/page.tsx:124` (link `/login?next=/ai-matching`); `src/app/messages/page.tsx:188`; `src/app/agency/[agencyId]/bookings/[bookingId]/page.tsx:18` |
+| Tests (401) | `tests/adm/contract/dashboard-api.test.ts:70`, `:107`; `tests/contract/account-avatar-api.test.ts:6-8`; `tests/contract/aut-lifecycle-api.test.ts:24`; `tests/contract/ait-iac-exp-handoff.test.ts:64`; `tests/integration/ait-matching-api.test.ts:146`, `:178` |
+| Tests (403) | `tests/integration/iac-chats-api.test.ts:67` (Provider calling an Agency-only Chat start) |
+| Tests (page) | `tests/unit/ai-matching-access.test.ts:7` ("Guest → redirect to Login") |
 
 ## Before MVP RC (from the same file)
 

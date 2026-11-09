@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import CreateAccountFields from './CreateAccountFields'
+import { createAccountPayload } from './create-payload'
 type Options = { kind: string; email_configured: boolean; villages: { village_id: string; name: string }[] }
 export default function CreateAccountPage() {
   const [options, setOptions] = useState<Options | null>(null), [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false)
@@ -9,7 +10,7 @@ export default function CreateAccountPage() {
     event.preventDefault(); setBusy(true); setError(''); setNotice('')
     const form = event.currentTarget
     try {
-      const data = { ...Object.fromEntries(new FormData(form)), kind: options?.kind }
+      const data = createAccountPayload(Object.fromEntries(new FormData(form)), options?.kind)
       const response = await fetch('/api/auth/users/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
       const body = await response.json(); if (!response.ok) throw new Error(body.error_message)
       setNotice('Đã tạo tài khoản. Thông tin đăng nhập được ghi vào dev-outbox; chưa gửi email thật.'); form.reset()

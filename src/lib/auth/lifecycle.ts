@@ -96,11 +96,17 @@ export async function changePassword(session: SessionContext, current: string, p
 }
 
 const accountSchema = z.object({ name: z.string().trim().min(1).max(100), email: z.string().email().max(254), phone: z.string().regex(/^\+?[0-9]{10,15}$/), village_id: z.string().uuid(), address: z.string().trim().max(500).optional() })
+// #170: ADM117 Contact (F-AUTH-20 element #10). Without it (older callers) the contact falls back to the
+// Provider name and account phone, as before; making it mandatory server-side is an open team decision.
+const contactSchema = z.object({ contact_person_name: z.string().trim().min(1).max(100), phone_number: z.string().trim().regex(/^\+?[0-9]{10,15}$/) })
 export async function createManagedAccount(session: SessionContext, kind: string, input: unknown, delivery?: Delivery) {
   if (!session.authenticated || session.role !== 'ADMIN' || !session.permissions.includes('manage_users') || (kind === 'ubnd' ? session.adminType !== 'HDT' : kind !== 'provider' || session.adminType !== 'UBND')) fail('Forbidden', 403)
   const parsed = accountSchema.safeParse(input)
   if (!parsed.success) fail('Check name, email, phone and assigned village')
   const data = parsed.data
+  const rawContact = kind === 'provider' && input && typeof input === 'object' ? (input as { contact?: unknown }).contact : undefined
+  const contact = rawContact === undefined ? undefined : contactSchema.safeParse(rawContact)
+  if (contact && !contact.success) fail('Check contact person and contact phone')
   if (kind === 'provider' && (!data.address || session.assignedVillageId !== data.village_id)) fail('Provider must belong to your assigned village', 403)
   const deliver = delivery ?? authDelivery(), temporary = `Aa1!${tokenValue()}`, hash = await hashPassword(temporary)
   return (await demoRepository().transaction(["user_accounts","sessions","password_reset_tokens","audit_logs","auth_rate_limits","villages","ubnd_village_assignments","provider_profiles","provider_profile_versions","agency_registration_requests","agency_review_records","registration_submission_versions","registration_resubmission_tokens","agency_profiles","stored_files","registration_documents"], tables => {
@@ -115,7 +121,7 @@ export async function createManagedAccount(session: SessionContext, kind: string
     if (kind === 'ubnd') rows(tables, 'ubnd_village_assignments').push({ ubnd_user_id: user, village_id: data.village_id, assigned_by: session.userId!, assigned_at: now })
     else {
       rows(tables, 'provider_profiles').push({ provider_id: profile, user_id: user, village_id: data.village_id, verification_status: 'Draft', current_version_no: '1', published_version_no: '', created_at: now, updated_at: now })
-      rows(tables, 'provider_profile_versions').push({ provider_id: profile, version_no: '1', version_status: 'Draft', business_registration_number: '', business_name: data.name, craft_type: '', artisan_names: '[]', location_address: data.address!, description: '', contact_information: JSON.stringify({ contact_person_name: data.name, phone_number: data.phone }), booking_conditions: '', submitted_at: '', published_at: '' })
+      rows(tables, 'provider_profile_versions').push({ provider_id: profile, version_no: '1', version_status: 'Draft', business_registration_number: '', business_name: data.name, craft_type: '', artisan_names: '[]', location_address: data.address!, description: '', contact_information: JSON.stringify(contact?.success ? contact.data : { contact_person_name: data.name, phone_number: data.phone }), booking_conditions: '', submitted_at: '', published_at: '' })
     }
     audit(tables, session.userId!, kind === 'ubnd' ? 'UBND_ACCOUNT_CREATED' : 'LOCAL_PROVIDER_ACCOUNT_CREATED', user, { village_id: data.village_id })
     return { user_id: user, provider_id: kind === 'provider' ? profile : null, account_status: 'Active', must_change_password: true, email_delivery_status: 'Dev outbox' }

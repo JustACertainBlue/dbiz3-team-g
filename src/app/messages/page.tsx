@@ -11,7 +11,8 @@ import { closedNotice, closeReasonState } from './close-chat'
 import { ACCEPT_ATTRIBUTE, ATTACH_ERROR_TEXT, attachState, typeLabel } from './attach-state'
 import { ChevronLeft, Paperclip } from 'lucide-react'
 import { hanoiClock } from '@/lib/time/hanoi-time'
-import { attachmentLine, chatActions, chatStatusLine, groupByDay, initials, listTime } from './chat-view'
+import { attachmentLine, chatActions, chatStatusLine, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
+import { usePolling } from '@/lib/client/use-polling'
 import './chat-v9.css'
 
 // Screens COM048 (Tour Agency) and COM065 (Local Provider): F-CHAT-01..05 on /api/iac/chats (spec-IAC FR-001..005);
@@ -86,6 +87,18 @@ function MessagesContent() {
 
   useEffect(() => { loadList().catch(() => setError('Không thể tải hội thoại')) }, [loadList])
   useEffect(() => { loadHistory(selectedId).catch(() => setError('Không thể tải lịch sử hội thoại')) }, [selectedId, loadHistory])
+
+  // #158 (spec-IAC FR-002): every 10 s while the tab is visible, refresh the list (previews, unread)
+  // and append new messages of the open Chat; older messages the user loaded stay.
+  usePolling(async () => {
+    await loadList()
+    if (!selectedId) return
+    const response = await fetch(`/api/iac/chats/${encodeURIComponent(selectedId)}/messages`, { cache: 'no-store' })
+    if (!response.ok) return
+    const latest: History = (await response.json()).data
+    setHistory(current => current?.chat_session_id === latest.chat_session_id ? mergeLatestPage(current, latest) : current)
+    setChats(list => list.map(chat => chat.chat_session_id === latest.chat_session_id ? { ...chat, unread_count: 0 } : chat))
+  })
 
   async function loadOlder() {
     if (!history?.message_history.length) return

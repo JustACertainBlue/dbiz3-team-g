@@ -1171,6 +1171,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Figma check | After-only shots (HDT and UBND) at 1440/390 next to Figma; difference table in the PR with (c) = 0. Browser check on the DEV dev server (Playwright): Apply disabled at load, enabled after choosing Last 7 days while the cards keep 42, cards show 14 only after Apply; sort toggle applies at once; Manage accounts → `/admin/users` |
 | Checks | `npm test` 196 files passed, 4 skipped (1182 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+
+### Entry 91: 09/11 Claude Code + human — #157 / #158 polling for BKG138, SCH141 and the open Chat (`fix/157-158-polling`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (decision 09/11: polling every 10 s, paused while the tab is hidden, immediate fetch when visible again; one shared client hook; no Supabase Realtime) |
+| Change | New `src/lib/client/poller.ts` (`startPolling`, `POLL_INTERVAL_MS` = 10 000; no timer while hidden; one fetch at a time; a failed fetch does not stop it), `src/lib/client/use-polling.ts` (`usePolling`, the shared hook), `src/app/components/AutoRefresh.tsx` (`router.refresh()` through `usePolling`). BKG138 and SCH141 render `<AutoRefresh />` (spec-BKG FR-008). COM048 / COM065 poll the chat list and the open Chat's first page (spec-IAC FR-002 "Message delivered immediately"); `mergeLatestPage` (`chat-view.ts`) appends new messages and keeps older ones the user loaded, and takes the latest status (Closed) |
+| Tests | `tests/unit/polling.test.ts` (16): red first, 12 of 15 failed on stubs (`POLL_INTERVAL_MS` 0, no fetch, merge returned the latest page only, `use-polling.ts` / `<AutoRefresh />` / `usePolling(` missing); then green. One test added after a mutation run showed redundant guards (no timer left while hidden, `vi.getTimerCount()`); the redundant hidden check in `tick` was removed. Mutations 6/6 caught (no stop on hidden, timer started while hidden, no in-flight guard, no immediate fetch on visible, 30 s interval, merge drops older messages). Wiring tests read the page sources (no React renderer in the test setup). No existing test changed |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`), `npm run dev`. Agency `thanhvien13` in the browser pane; Provider `thanhvien19` by curl with its own session. Test booking `dd6d8728` created by the Provider (Bát Tràng, 16/11 09:00, chat `d8c81af9`): Provider On hold → Booked: BKG138 showed "Đã đặt" ≤ 16 s later, page not reloaded (window marker kept); Provider Booked → Cancelled (reason "Test booking for #157 polling check (DEV)"): SCH141 block changed to "Đã huỷ" ≤ 15 s later, no reload; Provider message "Polling check #158 (DEV test message)": shown in the open Chat ≤ 15 s later, no reload. The test booking is left Cancelled on DEV |
+| Checks | `npm test` 197 files passed, 4 skipped (1198 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

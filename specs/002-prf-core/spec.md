@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-PRF.md sha256=b08b78deb48d1bfd53433c9637e0e1f3596254dbb2a14d8a8da57f8066f2bf21 taken=2026-11-04T16:43Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-PRF.md sha256=9ba7a65248cf7cd6290aa2b652e92bf149386a2d590fd7ee4a6cb109e2a7b902 taken=2026-11-09T09:54Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-PRF.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -219,6 +219,8 @@ UC-PRO-06 maps directly to F-PROFILE-05.
 - An Experience with active bookings is edited: price/capacity/date-sensitive fields are locked per BR-014; other fields (description, images, policies) remain editable.
 
 - Provider tries to delete the last image in a required category before uploading a replacement: blocked per BR-015 until a replacement in the same category is uploaded.
+
+- EARS (2026-11-08, hosted version, issue #88): IF a Local Provider creates or updates an Experience with a category outside Enum[Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo] (FR-006), THEN THE SYSTEM SHALL reject the request with a validation error that names the allowed values and SHALL NOT save the Experience.
 
 ### Consistency acceptance examples
 

@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-AUT.md sha256=f162e312a233ce3d8bd7f71bf7f9b1f905c67eb4662f4660c2a9783e91507459 taken=2026-11-07T11:31Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-AUT.md sha256=df8a0d36f90eee0dd016340f2d9d8710d4b2eeeb7f8537e6d4cc47602d94f637 taken=2026-11-09T09:54Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-AUT.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -233,6 +233,8 @@ UC-ACC-06 also maps to F-AUTH-26.
 - Repeated reset-password requests exceed the configured rate limit.
 
 - EARS (2026-11-07, hosted version without email, ADR 0001): IF an action needs to send an email (registration OTP or OTP resend, password-reset link, temporary credentials for a new UBND or Local Provider account, admin password reset, Request More Information edit link) and no email service is configured, THEN THE SYSTEM SHALL show the message "Email chưa được cấu hình" (email not configured), SHALL NOT create the OTP, reset or edit token, account or temporary password, and SHALL NOT report that an email was sent.
+
+- EARS (2026-11-08, hosted version, issue #102): IF the prototype login (a seeded email with any non-empty password) is not available in the current environment, as in production, THEN THE SYSTEM SHALL NOT show the test-account panel or the "any password" hint on the login screen and SHALL offer only the email and password form.
 
 ### Consistency acceptance examples
 

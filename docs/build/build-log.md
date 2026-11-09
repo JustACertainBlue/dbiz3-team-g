@@ -1207,6 +1207,15 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Tests | `tests/unit/adm117-required-marks.test.ts` (4, `react-dom/server` render): red first, 3 failed for the right reason (no `aria-required`, no legend) after a first run that failed on `React is not defined` (fixed with `import React` in the component, not in the test); then green. Mutations 4/4 caught (mark removed, aria removed, mark not aria-hidden, limit changed). No existing test changed |
 | Browser check | DEV (`jfrpnffknjpgmkyquxql`), `/admin/create-account`: UBND `thanhvien8` (Provider form) and HDT `thanhvien9` (UBND form) show "* bắt buộc" and "Label *" on every field, `aria-required=true` and `required` on each control. The first browser look showed the "*" on its own line (label is a grid); label text and mark were wrapped in one span. No account created |
 | Checks | `npm test` 197 files passed, 4 skipped (1186 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+### Entry 92: 09/11 Claude Code + human — #160 ADM118 optional disable Reason (`fix/160-disable-reason`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (decision 09/11: optional Reason on ADM118, sent to the server; default only when empty) |
+| Change | ADM118 (`src/app/admin/users/page.tsx`): the disable confirmation shows "Lý do (không bắt buộc)" (`#disable-reason`, textarea), not shown for enable; body built by new `account-action.ts` (`accountActionBody`: trimmed reason for disable, none when blank or for enable). `PATCH /api/auth/users` passes `body.reason`; `accountAction(…, reason)` stores it in `account_status_history.reason`, empty or missing → `DEFAULT_DISABLE_REASON` ("Disabled by administrator", new `src/lib/auth/disable-reason.ts`); a non-text reason → `INVALID_REASON` (400), nothing written. No length limit (spec gives none) |
+| Tests | `tests/unit/adm118-disable-reason.test.ts` (11): red first, 7 failed for the right reason (stored reason was always the default, route dropped it, stub body `{}`, no field on the page); then green. Mutations 5/5 caught (server ignores reason, no trim, route drops reason, enable sends disable, no type check). No existing test changed |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`), HDT `thanhvien9`, `/admin/users`, account `thanhvien14` (Sen Việt): "Khóa tài khoản" showed the optional Reason field; typed "Kiem thu #160 tren DEV", Xác nhận → PATCH 200, status "Đã vô hiệu"; "Mở lại tài khoản" showed no Reason field → back to "Đã phê duyệt". The stored reason was not read back on DEV (no database access allowed in this run); it is covered by the route test |
+| Checks | `npm test` 197 files passed, 4 skipped (1193 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
 ## 3. Spec issues found while building
 

@@ -41,6 +41,11 @@ describe('#56 spec-AUT FR-021 / F-AUTH-07 | a successful login records last_logi
     expect(account().last_login ?? '').toBe('')
   })
 
+  it('FR-021 §5.1 (boundary, review 09/11): the account list returns last_login null for an account that never logged in', async () => {
+    const users = (await (await listUsers(new Request('http://localhost:3000/api/auth/users', { headers: { cookie: 'hab_demo_account=hdt' } }))).json()).data
+    expect(users.find((u: any) => u.email === EMAIL).last_login).toBeNull()
+  })
+
   it('F-AUTH-07 (error): a wrong password or a Disabled account does not change last_login', async () => {
     expect((await post('Wrong#2026x')).status).toBe(401)
     repo().update('user_accounts', row => row.email === EMAIL, { account_status: 'Disabled' })

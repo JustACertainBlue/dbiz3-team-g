@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { filterAdminUsers } from '@/lib/auth/admin-user-filter'
-type User = { user_id: string; name: string; email: string; organization: string; role: string; admin_type: string; status: string; last_login: string; created_date: string; provider_id?: string; agency_id?: string }
+type User = { user_id: string; name: string; email: string; organization: string; role: string; admin_type: string; status: string; last_login: string | null; created_date: string; provider_id?: string; agency_id?: string }
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [query, setQuery] = useState('')

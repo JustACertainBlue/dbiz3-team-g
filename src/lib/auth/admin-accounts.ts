@@ -18,7 +18,7 @@ export async function listAccounts(session: SessionContext) {
     const version = provider && (await repo.find('provider_profile_versions', row => row.provider_id === provider.provider_id && row.version_no === provider.current_version_no))
     const assignment = (await repo.find('ubnd_village_assignments', row => row.ubnd_user_id === account.user_id))
     const village = assignment && (await repo.find('villages', row => row.village_id === assignment.village_id))
-    return { user_id: account.user_id, name: account.full_name, email: account.email, role: account.role_code, admin_type: account.admin_type, status: account.account_status, organization: agency?.company_name || version?.business_name || (account.admin_type === 'HDT' ? 'Sở Du lịch Hà Nội' : account.admin_type === 'UBND' ? `UBND — ${village?.name || ''}` : 'Chưa có hồ sơ'), last_login: account.last_login, created_date: account.created_at, provider_id: provider?.provider_id, agency_id: agency?.agency_id }
+    return { user_id: account.user_id, name: account.full_name, email: account.email, role: account.role_code, admin_type: account.admin_type, status: account.account_status, organization: agency?.company_name || version?.business_name || (account.admin_type === 'HDT' ? 'Sở Du lịch Hà Nội' : account.admin_type === 'UBND' ? `UBND — ${village?.name || ''}` : 'Chưa có hồ sơ'), last_login: account.last_login || null, created_date: account.created_at, provider_id: provider?.provider_id, agency_id: agency?.agency_id }
   })))
 }
 export async function accountAction(session: SessionContext, userId: string, action: unknown) {

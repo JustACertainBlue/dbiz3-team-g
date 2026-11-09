@@ -1226,6 +1226,19 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Browser check | DEV (`jfrpnffknjpgmkyquxql`). HDT `thanhvien9`: Vai trò options "Tour Agency, Local Provider, Admin UBND, Admin HDT"; Admin UBND → only "ADMIN UBND" rows; Admin HDT → 3 HDT rows (thanhvien10, thanhvien9, `demo84-reviewer`); Admin UBND + Tổ chức "UBND — Vạn Phúc" → 1 row (thanhvien2). UBND `thanhvien8`: Vai trò options only "Local Provider", Tổ chức only "Xưởng thủ công Hạ Thái" |
 | Checks | `npm test` 197 files passed, 4 skipped (1190 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+
+### Entry 95: 09/11 Claude Code + human — #170 ADM117 Contact field (`fix/adm117-contact`, on top of `fix/161-required-asterisks`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: ADM117 Contact, F-AUTH-20 element #10; check schema/API first; PR only if no schema/data change; issue first) |
+| Check | `provider_profile_versions.contact_information` (jsonb) exists (`data/schema.sql:314`); `POST /api/auth/users/create` passes the whole body; `createManagedAccount` stored `{ contact_person_name: name, phone_number: phone }` (copied). No schema or data change needed → issue #170 created (bug, sev:medium), then this PR |
+| Change | Provider form (`CreateAccountFields.tsx`): Required "Người liên hệ" (`contact_person_name`, max 100) and "Điện thoại liên hệ" (`contact_phone_number`, same pattern as phone), with `*` and `aria-required` as in #161; UBND form unchanged. New `create-payload.ts` sends them as `contact { contact_person_name, phone_number }` (F-AUTH-20 contract). `lifecycle.ts`: `contactSchema` (trimmed name 1–100, phone `^\+?[0-9]{10,15}$`); a given contact is stored, an invalid one fails ("Check contact person and contact phone", nothing written); no contact → the old copy (callers and `aut-lifecycle.test.ts:33` unchanged) |
+| Tests | `tests/integration/adm117-contact.test.ts` (6): red first, 6 failed for the right reason (copied contact stored, invalid contact accepted, no fields, flat payload); then green. Mutations 4/4 caught. No existing test changed |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`), UBND `thanhvien8`, `/admin/create-account`: 7 fields, all "*" and `aria-required`, incl. "Người liên hệ *" and "Điện thoại liên hệ *"; contact phone "12ab" invalid, "0987654321" valid. No account created: the demo UBND's village (Hạ Thái) is inactive, so Create is disabled (known, #65); storage is covered by the test |
+| Follow-up (linhkhanh-vu 09/11) | Decision: enforce Contact on the server (ADM117 #10 Required, F-AUTH-20). Test first: new case "a Provider without contact is refused" failed (`promise resolved … instead of rejecting`), then green; the village check still runs first (existing `aut-lifecycle.test.ts:32` expectation kept); UBND needs no contact. Without contact the old copy of name/phone is gone. `tests/integration/aut-lifecycle.test.ts:33`: **input only** updated to send a valid contact, comment "spec ADM117 #10: contact Required → test input updated" (approved). Not changed (not allowed): `tests/storage/provider-publication.test.ts:49` (opt-in `npm run test:storage`, not in `npm test`) still creates a Provider without contact and will now fail there until its input is updated. Mutation (contact optional again) caught. `npm test` 198 files passed, 4 skipped (1195 passed, 20 skipped); lint and build OK |
+| Checks | `npm test` 198 files passed, 4 skipped (1192 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

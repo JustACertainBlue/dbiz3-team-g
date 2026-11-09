@@ -44,7 +44,8 @@ Spec files are **nested** in `docs/spec/specs/`, so `start_feature.py` needs `--
    **failing for the right reason**, and only then write code. Never edit a test to make it
    pass; if a test looks wrong, stop and say which and why.
 3. Agent may push feature branches and open PRs; never pushes to main, never force-pushes,
-   never merges (human merges). Enforced by the `PreToolUse` hook `.claude/hooks/block-git-push.py`
+   never merges a PR (human merges). It may run `git merge origin/main` as a single command on a
+   feature branch to resolve conflicts, then push normally (2026-11-08, build log §4 row 78). Enforced by the `PreToolUse` hook `.claude/hooks/block-git-push.py`
    (deviation from constitution V, build log §4 row 46). Never `git reset --hard`, `git clean`,
    or delete files without asking. Never press "Merge pull request". Never commit on a teammate's feature branch unless the
    human says that branch is now theirs.

@@ -26,7 +26,7 @@ The controls and decisions below define the current screen specification.
 |---|---|---|---|---|---|
 | 1 | Booking Detail | Heading | Booking Detail | No | Static screen title |
 | 2 | Own booking details and latest update | Read-only panel | F-SCHED-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
-| 3 | Chat | Button / navigation | Agency chat | No | Enabled only when the linked permission/validation guard succeeds |
+| 3 | Chat (display label “Nhắn tin”; behaviour and function name unchanged, 2026-11-08) | Button / navigation | Agency chat | No | Enabled only when the linked permission/validation guard succeeds |
 | 4 | Back | Button / navigation | No Agency mutation actions | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
@@ -43,7 +43,7 @@ The controls and decisions below define the current screen specification.
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Chat | Select | Agency chat | COM048 |
+| 1 | Chat (“Nhắn tin”) | Select | Agency chat | COM048 |
 | 2 | Back | Select | No Agency mutation actions | BKG137 |
 
 Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.

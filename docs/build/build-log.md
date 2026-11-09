@@ -1171,6 +1171,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Figma check | After-only shots (HDT and UBND) at 1440/390 next to Figma; difference table in the PR with (c) = 0. Browser check on the DEV dev server (Playwright): Apply disabled at load, enabled after choosing Last 7 days while the cards keep 42, cards show 14 only after Apply; sort toggle applies at once; Manage accounts → `/admin/users` |
 | Checks | `npm test` 196 files passed, 4 skipped (1182 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+
+### Entry 93: 09/11 Claude Code + human — #159 ADM095 role filter separates UBND and HDT (`fix/159-adm095-role-filter`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: role filter must separate UBND and HDT, derived from existing data, no schema or data change; verify organization and role filters on DEV) |
+| Change | `src/lib/auth/admin-user-filter.ts`: `roleValue` (`ADMIN:<admin_type>` for Admin accounts, else the role code; `admin_type` is the canonical subtype, consistency-contract.md:16, :49) and `roleOptions` (only roles present in the actor's list, order Tour Agency, Local Provider, Admin UBND, Admin HDT); `filterAdminUsers` matches `ADMIN:UBND` / `ADMIN:HDT`. ADM095 (`/admin/users`) Vai trò select uses `roleOptions(users)` instead of the fixed ADMIN / Tour_Agency / Local_Provider list. The organization filter was already there (`cf554d9`) and is unchanged |
+| Tests | `tests/unit/adm095-role-filter.test.ts` (8): red first, 6 failed for the right reason (UBND/HDT filters returned `[]`, stub options `[]`, page still had the fixed list); then green. Mutations 3/3 caught. Existing `admin-user-filter.test.ts` unchanged and green |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`). HDT `thanhvien9`: Vai trò options "Tour Agency, Local Provider, Admin UBND, Admin HDT"; Admin UBND → only "ADMIN UBND" rows; Admin HDT → 3 HDT rows (thanhvien10, thanhvien9, `demo84-reviewer`); Admin UBND + Tổ chức "UBND — Vạn Phúc" → 1 row (thanhvien2). UBND `thanhvien8`: Vai trò options only "Local Provider", Tổ chức only "Xưởng thủ công Hạ Thái" |
+| Checks | `npm test` 197 files passed, 4 skipped (1190 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

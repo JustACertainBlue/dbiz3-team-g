@@ -2,162 +2,72 @@
 
 import React, { useState } from 'react'
 import { BookingRecord } from '@/lib/adm/types'
+import StatusBadge from '@/app/components/StatusBadge'
+import { hanoiDate } from '@/lib/time/hanoi-time'
 
 interface BookingTableProps {
   bookings: BookingRecord[]
 }
 
+type SortField = 'date' | 'price' | 'status'
+const dmy = (value: string) => { const date = hanoiDate(value); return date ? `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}` : '' }
+
+// FR-009 (3): read-only booking list with sortable columns (Date, Agency, Provider, Experience, Status, Price);
+// no drill-down links (BR-012 / BR-013). Design wave 4 (Figma "Màn 5" table): beige header, row lines.
 export function BookingTable({ bookings }: BookingTableProps) {
-  const [sortField, setSortField] = useState<'date' | 'price' | 'status'>('date')
+  const [sortField, setSortField] = useState<SortField>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  const handleSort = (field: 'date' | 'price' | 'status') => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortOrder('desc')
-    }
+  const handleSort = (field: SortField) => {
+    if (sortField === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortOrder('desc') }
   }
 
   const sortedBookings = [...bookings].sort((a, b) => {
     let comparison = 0
-    if (sortField === 'date') {
-      comparison = new Date(a.date).getTime() - new Date(b.date).getTime()
-    } else if (sortField === 'price') {
-      comparison = a.price - b.price
-    } else if (sortField === 'status') {
-      comparison = a.status.localeCompare(b.status)
-    }
+    if (sortField === 'date') comparison = new Date(a.date).getTime() - new Date(b.date).getTime()
+    else if (sortField === 'price') comparison = a.price - b.price
+    else comparison = a.status.localeCompare(b.status)
     return sortOrder === 'desc' ? -comparison : comparison
   })
 
-  const getStatusBadge = (status: string) => {
-    let bg = '#f1f5f9'
-    let color = '#475569'
-
-    if (status === 'Booked') {
-      bg = '#dbeafe'
-      color = '#1d4ed8'
-    } else if (status === 'Completed') {
-      bg = '#dcfce7'
-      color = '#15803d'
-    } else if (status === 'On hold') {
-      bg = '#fef3c7'
-      color = '#b45309'
-    } else if (status === 'Cancelled') {
-      bg = '#fee2e2'
-      color = '#b91c1c'
-    }
-
-    return (
-      <span
-        style={{
-          background: bg,
-          color,
-          padding: '2px 8px',
-          borderRadius: '12px',
-          fontSize: '0.7rem',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-        }}
-      >
-        {status}
-      </span>
-    )
-  }
+  const sortable = (field: SortField, label: string, align?: 'end') => (
+    <th aria-sort={sortField === field ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'} className={align ? 'is-end' : undefined}>
+      <button type="button" className="ad9-sort" onClick={() => handleSort(field)}>{label}{sortField === field && <span aria-hidden="true">{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}</button>
+    </th>
+  )
 
   return (
-    <div
-      style={{
-        background: '#ffffff',
-        borderRadius: '10px',
-        padding: '1.25rem',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <div>
-          <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: 0 }}>
-            <span>📋</span> GIÁM SÁT BOOKING (READ-ONLY)
-          </h3>
-          <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-            Hiển thị danh sách booking theo bộ lọc và quyền hạn quản trị (BR-006, BR-013)
-          </span>
-        </div>
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0f172a', background: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
-          {bookings.length} bản ghi
-        </span>
-      </div>
-
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+    <section className="ad9-panel ad9-glass" aria-labelledby="ad9-bookings-title">
+      <header className="ad9-panel__head"><h2 id="ad9-bookings-title">Danh sách đặt chỗ</h2><span>{bookings.length} đặt chỗ · chỉ xem</span></header>
+      <div className="ad9-table-wrap">
+        <table className="ad9-table">
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
-              <th
-                onClick={() => handleSort('date')}
-                style={{ padding: '8px 10px', cursor: 'pointer', fontWeight: 700 }}
-              >
-                NGÀY {sortField === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th style={{ padding: '8px 10px', fontWeight: 700 }}>TOUR AGENCY</th>
-              <th style={{ padding: '8px 10px', fontWeight: 700 }}>XƯỞNG THỦ CÔNG</th>
-              <th style={{ padding: '8px 10px', fontWeight: 700 }}>TRẢI NGHIỆM</th>
-              <th
-                onClick={() => handleSort('status')}
-                style={{ padding: '8px 10px', cursor: 'pointer', fontWeight: 700 }}
-              >
-                TRẠNG THÁI {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th
-                onClick={() => handleSort('price')}
-                style={{ padding: '8px 10px', cursor: 'pointer', fontWeight: 700, textAlign: 'right' }}
-              >
-                GIÁ TRỊ (VNĐ) {sortField === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
+            <tr>
+              {sortable('date', 'Ngày')}
+              <th>Agency</th>
+              <th>Xưởng</th>
+              <th>Trải nghiệm</th>
+              {sortable('status', 'Trạng thái')}
+              {sortable('price', 'Giá (VND)', 'end')}
             </tr>
           </thead>
           <tbody>
-            {sortedBookings.length > 0 ? (
-              sortedBookings.map((b, i) => (
-                <tr
-                  key={b.bookingId || i}
-                  style={{
-                    borderBottom: '1px solid #f1f5f9',
-                    background: i % 2 === 0 ? '#ffffff' : '#fafafa',
-                  }}
-                >
-                  <td style={{ padding: '10px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                    {new Date(b.date).toLocaleDateString('vi-VN')}
-                  </td>
-                  <td style={{ padding: '10px', fontWeight: 600, color: '#1e3a5f' }}>
-                    {b.agencyName}
-                  </td>
-                  <td style={{ padding: '10px', fontWeight: 600, color: '#b84c24' }}>
-                    {b.providerName}
-                  </td>
-                  <td style={{ padding: '10px', color: '#334155' }}>
-                    {b.experienceName}
-                  </td>
-                  <td style={{ padding: '10px' }}>
-                    {getStatusBadge(b.status)}
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
-                    {b.price.toLocaleString('vi-VN')} đ
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
-                  Không tìm thấy bản ghi booking nào phù hợp với bộ lọc hiện tại.
-                </td>
+            {sortedBookings.length > 0 ? sortedBookings.map((b, i) => (
+              <tr key={b.bookingId || i}>
+                <td className="ad9-num">{dmy(b.date)}</td>
+                <td>{b.agencyName}</td>
+                <td>{b.providerName}</td>
+                <td>{b.experienceName}</td>
+                <td><StatusBadge family="booking" status={b.status} /></td>
+                <td className="ad9-num is-end">{b.price.toLocaleString('vi-VN')} đ</td>
               </tr>
+            )) : (
+              <tr><td colSpan={6} className="ad9-empty">Không có đặt chỗ nào khớp bộ lọc hiện tại.</td></tr>
             )}
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   )
 }

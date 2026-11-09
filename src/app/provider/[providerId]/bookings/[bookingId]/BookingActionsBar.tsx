@@ -2,14 +2,17 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import type { BookingActions } from '@/lib/booking/booking-actions'
+import React from 'react'
+import { arrivalLockReason, type BookingActions } from '@/lib/booking/booking-actions'
 
 // BKG135 buttons from bookingActions (BR-017): disabled buttons stay visible and disabled (SC-007).
 // The server re-checks every action (SR-001); the buttons are only a guide.
-export default function BookingActionsBar({ providerId, bookingId, actions }: {
+export default function BookingActionsBar({ providerId, bookingId, actions, status, chat }: {
   providerId: string
   bookingId: string
   actions: BookingActions
+  status?: string
+  chat?: React.ReactNode
 }) {
   const router = useRouter()
   const base = `/provider/${providerId}/bookings/${bookingId}`
@@ -40,20 +43,24 @@ export default function BookingActionsBar({ providerId, bookingId, actions }: {
     }
   }
 
+  // FR-007 matrix; Figma "Màn 3" order and labels. The lock reason line is a Figma addition (arrivalLockReason).
+  const arrivalReason = status ? arrivalLockReason(status, actions) : ''
   return <>
-    <div className="bkg-actions">
-      <button type="button" disabled={!actions.confirm || pending} onClick={() => changeStatus({ target_status: 'Booked' })}>Confirm/Book</button>
-      <button type="button" disabled={!actions.update || pending} onClick={() => router.push(`${base}/edit`)}>Update</button>
-      <button type="button" className="bkg-danger" disabled={!actions.cancel || pending} onClick={() => setCancelling(true)}>Cancel</button>
-      <button type="button" disabled={!actions.mark_arrival || pending} onClick={() => router.push(`${base}/arrival`)}>Mark Group Arrival</button>
+    <div className="bkg-actions bkg-actions--bar">
+      {chat}
+      <button type="button" className="bkg-btn bkg-btn--outline" disabled={!actions.update || pending} onClick={() => router.push(`${base}/edit`)}>Cập nhật</button>
+      <button type="button" className="bkg-btn bkg-btn--danger" disabled={!actions.cancel || pending} onClick={() => setCancelling(true)}>Huỷ</button>
+      <button type="button" className="bkg-btn bkg-btn--outline bkg-btn--lockable" disabled={!actions.mark_arrival || pending} aria-describedby={arrivalReason ? 'bkg-arrival-reason' : undefined} onClick={() => router.push(`${base}/arrival`)}>Đánh dấu đoàn đã đến</button>
+      <button type="button" className="bkg-btn bkg-btn--primary" disabled={!actions.confirm || pending} onClick={() => changeStatus({ target_status: 'Booked' })}>Xác nhận</button>
     </div>
+    {arrivalReason && <p id="bkg-arrival-reason" className="bkg-reason">{arrivalReason}</p>}
     {cancelling && actions.cancel && <form className="bkg-form" onSubmit={event => { event.preventDefault(); changeStatus({ target_status: 'Cancelled', cancellation_reason: reason }) }}>
-      <label>Lý do hủy (bắt buộc)
+      <label>Lý do huỷ (bắt buộc)
         <input value={reason} onChange={event => { setReason(event.target.value); setError(null) }} required />
       </label>
       <div className="bkg-actions">
-        <button type="submit" className="bkg-danger" disabled={pending || !reason.trim()}>Xác nhận hủy</button>
-        <button type="button" onClick={() => { setCancelling(false); setError(null) }}>Giữ Booking</button>
+        <button type="submit" className="bkg-btn bkg-btn--danger" disabled={pending || !reason.trim()}>Xác nhận huỷ</button>
+        <button type="button" className="bkg-btn bkg-btn--outline" onClick={() => { setCancelling(false); setError(null) }}>Giữ đặt chỗ</button>
       </div>
     </form>}
     {error && <p className="bkg-error" role="alert">{error}</p>}

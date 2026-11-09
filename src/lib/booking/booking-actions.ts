@@ -19,3 +19,17 @@ export function bookingActions(status: string, now: Date, startAt: string, actor
   }
   return { ...NONE } // Completed, Cancelled: view only
 }
+
+/**
+ * Why "Đánh dấu đoàn đã đến" (Mark Group Arrival) is locked, shown under the BKG135 actions bar. This line is a Figma
+ * addition ("Màn 3"); the spec only defines when the button is enabled (FR-007 matrix, FR-006: Booked and
+ * server time >= start_at, BR-017). It returns '' exactly when the button is enabled.
+ */
+export function arrivalLockReason(status: string, actions: BookingActions): string {
+  if (actions.mark_arrival) return ''
+  if (status === 'Booked') return 'Đánh dấu đoàn đã đến: chưa tới giờ bắt đầu'
+  if (status === 'On hold') return 'Đánh dấu đoàn đã đến: chỉ khi đặt chỗ đã đặt và đã tới giờ bắt đầu'
+  if (status === 'Completed') return 'Đánh dấu đoàn đã đến: đặt chỗ đã hoàn tất, chỉ xem'
+  if (status === 'Cancelled') return 'Đánh dấu đoàn đã đến: đặt chỗ đã huỷ, chỉ xem'
+  return 'Đánh dấu đoàn đã đến: không khả dụng với trạng thái này'
+}

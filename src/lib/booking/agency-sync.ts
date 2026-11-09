@@ -3,6 +3,7 @@ import { demoRepository } from '../db/application-store'
 import type { BatchOperation, DemoRow } from '../demo/types'
 import { findActivePairChat, newPairChatOperations, nextSentAt } from '../iac/chat-pairs'
 import { hanoiClock, hanoiDate } from '../time/hanoi-time'
+import { statusLabel } from '@/lib/status-labels'
 
 // F-SCHED-08: every Booking event sends one 'Booking Update' message to the Agency (spec #49, #55).
 // The caller adds the returned operations to its own applyBatch call (one persist per event, #44)
@@ -13,10 +14,11 @@ function money(value: string): string {
   return Number(value).toLocaleString('en-US', { maximumFractionDigits: 2 })
 }
 
-// #49: "Booking {status}: {experience}, {start}–{end}, {group_size} pax, {agreed_price} VND" (+ changed fields).
+// #49 (amended 2026-11-08): "Booking {status_label}: {experience}, {start}–{end}, {group_size} pax, {agreed_price} VND"
+// (+ changed fields); {status_label} is the Vietnamese display label, the stored status stays canonical.
 function messageText(booking: DemoRow, experienceName: string, changedFields: readonly string[]): string {
   const when = `${hanoiDate(booking.start_at)} ${hanoiClock(booking.start_at)}–${hanoiClock(booking.end_at)}` // spec-BKG #31, #87
-  const text = `Booking ${booking.status}: ${experienceName}, ${when}, ${booking.group_size} pax, ${money(booking.agreed_price_total)} VND`
+  const text = `Booking ${statusLabel('booking', booking.status)}: ${experienceName}, ${when}, ${booking.group_size} pax, ${money(booking.agreed_price_total)} VND`
   return changedFields.length ? `${text}; changed: ${changedFields.join(', ')}` : text
 }
 

@@ -6,6 +6,8 @@ import { BookingError, canOpenCreateBooking } from '@/lib/booking/create-booking
 import { BOOKING_STATUSES, countActionsOutsideFilter, listProviderBookings, type ListQuery } from '@/lib/booking/list-bookings'
 import { bookingListRowView } from '@/lib/booking/list-row-view'
 import { bookingDetailStyles } from './[bookingId]/BookingDetailView'
+import StatusBadge from '@/app/components/StatusBadge'
+import { statusLabel } from '@/lib/status-labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +57,7 @@ export default async function BookingManagementPage({ params, searchParams }: { 
       <label>Trạng thái
         <select name="status" defaultValue={String(query.status ?? '')}>
           <option value="">Tất cả</option>
-          {BOOKING_STATUSES.map(status => <option key={status} value={status}>{status} ({list.status_counts[status]})</option>)}
+          {BOOKING_STATUSES.map(status => <option key={status} value={status}>{statusLabel('booking', status)} ({list.status_counts[status]})</option>)}
         </select>
       </label>
       <label>Từ ngày<input type="date" name="date_from" defaultValue={String(query.date_from ?? '')} /></label>
@@ -76,7 +78,7 @@ export default async function BookingManagementPage({ params, searchParams }: { 
               <td>{row.agency_name}</td>
               <td>{row.experience_name}</td>
               <td>{row.group_size}</td>
-              <td><strong className="bkg-status">{row.status}</strong>{row.needs_action_label && <span className="bkg-flag">⚑ {row.needs_action_label}</span>}</td>
+              <td><span className="bkg-badges"><StatusBadge family="booking" status={row.status} />{row.needs_action_label && <StatusBadge family="flag" status="Needs action" />}</span></td>
               <td><Link href={row.detail_href}>Detail</Link></td>
             </tr>)}
           </tbody>

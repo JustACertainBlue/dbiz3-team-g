@@ -3,10 +3,12 @@ import { listAgencyBookings } from '@/lib/booking/agency-bookings'
 import { addDays, hanoiDate } from '@/lib/booking/clock'
 import { BookingError } from '@/lib/booking/create-booking'
 import { BOOKING_STATUSES } from '@/lib/booking/list-bookings'
+import AutoRefresh from '@/app/components/AutoRefresh'
 import CalendarGrid, { calendarStyles } from '@/app/schedule-calendar/CalendarGrid'
 import { bookingDetailStyles } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
 import { agencyPageSession } from '../agency-booking-gate'
 import { sessionDisplayName } from '@/lib/auth/session'
+import { statusLabel } from '@/lib/status-labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,12 +36,14 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
   const blocks = rows.map(row => ({ start_at: row.start_at, end_at: row.end_at, status: row.status, booking_id: row.booking_id }))
 
   return <main className="bkg-page bkg-list">
+    {/* #157: Provider changes show within ~10 s without a reload (FR-008) */}
+    <AutoRefresh />
     <header><p>HANOI ARTISAN BRIDGE · SCH141</p><h1>Agency Schedule</h1><span>{(await sessionDisplayName(session))} · Booking của chính Agency, chỉ xem</span></header>
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái
         <select name="status" defaultValue={status}>
           <option value="">Tất cả</option>
-          {BOOKING_STATUSES.map(value => <option key={value} value={value}>{value}</option>)}
+          {BOOKING_STATUSES.map(value => <option key={value} value={value}>{statusLabel('booking', value)}</option>)}
         </select>
       </label>
       <label>Từ ngày<input type="date" name="date_from" defaultValue={dateFrom} /></label>

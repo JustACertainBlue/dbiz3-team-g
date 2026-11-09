@@ -34,10 +34,12 @@ describe('T030: Filter Panel & Combined Filter Acceptance Test (BR-003..BR-005, 
       })
     )
 
-    // Must have the new combined label
-    expect(markup).toContain('LOCAL PROVIDER / AGENCY:')
+    // Must have the Agency and Provider filter labels
+    // spec đổi → kỳ vọng đổi (design wave 4: Vietnamese labels, spec-ADM FR-005 amended in #155; behaviour unchanged, approved by linhkhanh-vu)
+    expect(markup).toContain('>Agency<')
+    expect(markup).toContain('>Provider<')
     expect(markup).toContain('combined-filter-trigger')
-    expect(markup).toContain('All (None selected)')
+    expect(markup).toContain('Tất cả')
   })
 
   it('locks village filter for UBND Admin and allows selection for HDT Admin (BR-003, BR-004)', () => {
@@ -51,8 +53,9 @@ describe('T030: Filter Panel & Combined Filter Acceptance Test (BR-003..BR-005, 
         assignedVillageId: null,
       })
     )
-    expect(hdtMarkup).toContain('All Craft Villages (Platform-Wide)')
-    expect(hdtMarkup).not.toContain('🔒')
+    // spec đổi → kỳ vọng đổi (design wave 4: Vietnamese labels, spec-ADM FR-005 amended in #155; behaviour unchanged, approved by linhkhanh-vu)
+    expect(hdtMarkup).toContain('Tất cả các làng')
+    expect(hdtMarkup).not.toContain('Bị khoá theo tài khoản UBND')
 
     // UBND: Locked badge
     const ubndMarkup = renderToStaticMarkup(
@@ -64,9 +67,9 @@ describe('T030: Filter Panel & Combined Filter Acceptance Test (BR-003..BR-005, 
         assignedVillageId: SEED_ADMIN_IDS.batTrangVillageId,
       })
     )
-    expect(ubndMarkup).toContain('🔒')
+    expect(ubndMarkup).toContain('Bị khoá theo tài khoản UBND')
     expect(ubndMarkup).toContain('Làng gốm Bát Tràng')
-    expect(ubndMarkup).not.toContain('All Craft Villages (Platform-Wide)')
+    expect(ubndMarkup).not.toContain('Tất cả các làng')
   })
 
   it('displays active selection count and clear button when entity filters are active', () => {
@@ -86,8 +89,9 @@ describe('T030: Filter Panel & Combined Filter Acceptance Test (BR-003..BR-005, 
       })
     )
 
-    expect(providerMarkup).toContain('2 Local Providers selected')
-    expect(providerMarkup).toContain('Reset Filters')
+    // spec đổi → kỳ vọng đổi (design wave 4: Vietnamese labels, spec-ADM FR-005 amended in #155; behaviour unchanged, approved by linhkhanh-vu)
+    expect(providerMarkup).toContain('2 Provider đã chọn')
+    expect(providerMarkup).toContain('Xoá bộ lọc')
     expect(providerMarkup).toContain('✕')
   })
 

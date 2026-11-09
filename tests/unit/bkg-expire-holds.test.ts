@@ -23,6 +23,7 @@ function withinOneSecond<T>(promise: Promise<T>): Promise<T> {
   return Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('deadlock: did not resolve within 1 s')), 1000))])
 }
 
+// spec-BKG #49 amended 2026-11-08: the chat template shows the Vietnamese status label (spec changed → expectation changed).
 describe('T013 | 72-hour expiry', () => {
   beforeEach(() => demoRepository().reset())
 
@@ -98,6 +99,6 @@ describe('T013 | 72-hour expiry', () => {
     expect(second.status).toBe('On hold')
     expect(row(first.booking_id).status).toBe('Cancelled')
     expect(historyOf(first.booking_id).at(-1)).toMatchObject({ to_status: 'Cancelled', reason: EXPIRY_REASON })
-    expect(messagesFor(first.booking_id).some(m => m.text.startsWith('Booking Cancelled'))).toBe(true)
+    expect(messagesFor(first.booking_id).some(m => m.text.startsWith('Booking Đã huỷ'))).toBe(true)
   })
 })

@@ -1,13 +1,26 @@
 import Link from 'next/link';
 import MediaImage from '@/app/components/MediaImage';
 import { cookies } from 'next/headers';
-import { buildExplorePage, eligibleRows, resolveViewer } from '../../lib/explore/catalog';
+import { CircleCheck, ImageIcon, Lock, ShieldCheck, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { buildExplorePage, eligibleRows, resolveViewer, villageStrip } from '../../lib/explore/catalog';
 import { demoRuntime } from '../../lib/explore/demo-runtime';
 import { loadExploreRuntime } from '../../lib/explore/seed-repository';
 import ExploreTracker from './ExploreTracker';
 import { currentServerSession } from '../../lib/auth/server-session';
+import './explore-v9.css';
+import { categoryLabel, craftLabel } from '../../lib/explore/display-labels';
 
 type Params = { page?: string; category?: string };
+
+// Design wave 4 (Figma "Explore v6", v9 §6c), content per EXP120 (Guest) / EXP017 (Agency): a static hero
+// (no slider: screen-spec §9 "no new feature implied by decorative mockup copy"), one ranked list with the
+// permitted filter and pagination (no search: spec-EXP Q8/Q11), Guest analytics consent kept (EXP120 #2, SR-004),
+// AI Matching for Agency only (EXP120 SR-003), no booking button (BKG BR-002).
+function durationLabel(minutes: number) {
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  return h && m ? `${h} giờ ${m} phút` : h ? `${h} giờ` : `${m} phút`;
+}
+const vnd = (value: number) => `${value.toLocaleString('vi-VN')} ₫`;
 
 export default async function ExplorePage({ searchParams }: { searchParams: Params }) {
   const seed = (await loadExploreRuntime());
@@ -23,80 +36,82 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
   const carry = searchParams.category ? `&category=${encodeURIComponent(searchParams.category)}` : '';
   const totalPages = Math.ceil(catalog.pagination.total_count / catalog.pagination.page_size);
   const categories = [...new Set(eligibleRows(seed).map(row => row.experience.category))].sort();
+  const strip = villageStrip(seed, viewer);
+  const heroImage = strip.find(item => item.card.images[0])?.card.images[0]?.storage_key;
 
   const isAgency = viewer.kind === 'agency';
 
-  return <div className="explore-module">
+  return <div className="explore-module xv">
+    <section className="xv-hero" aria-label="Giới thiệu">
+      <div className="xv-hero__media">
+        {heroImage ? <MediaImage src={heroImage} alt="Xưởng thủ công làng nghề Hà Nội" large /> : <span className="xv-placeholder" aria-hidden="true"><ImageIcon size={40} /></span>}
+      </div>
+      <div className="xv-hero__panel">
+        <div className="xv-hero__intro">
+          <p className="xv-script">Yêu mến làng nghề</p>
+          <h1 className="xv-hero__title">Hà Nội</h1>
+          <p className="xv-hero__lead">Cầu nối đại lý du lịch với làng nghề thủ công đã xác minh quanh Hà Nội.</p>
+        </div>
+        <ul className="xv-strip" aria-label="Làng nghề có trải nghiệm đã xác minh">
+          {strip.map(item => <li key={item.village_name}>
+            <Link href={`/explore/experiences/${item.card.id}`} className="xv-strip__card" data-exp-action="click_card" data-exp-id={item.card.id} data-provider-id={item.card.provider_id}>
+              {item.card.images[0] ? <MediaImage src={item.card.images[0].storage_key} alt={`${item.village_name} — ${item.card.name}`} /> : <span className="xv-placeholder" aria-hidden="true"><ImageIcon size={24} /></span>}
+              <span className="xv-verified"><ShieldCheck aria-hidden="true" size={14} />Đã xác minh</span>
+              <span className="xv-strip__label"><strong>{item.village_name}</strong><small>{craftLabel(item.craft)}{!isAgency && <> · <Lock aria-hidden="true" size={12} /> Giá ẩn</>}</small></span>
+            </Link>
+          </li>)}
+        </ul>
+        <a className="xv-cta" href="#tim-kiem"><span>Khám phá làng nghề</span></a>
+      </div>
+    </section>
+
     <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
 
-    <main className="explore-surface">
-      <section className="explore-hero">
-        <div className="explore-hero__copy">
-          <p className="eyebrow">Di sản sống · Trải nghiệm được xác minh</p>
-          <h1>Khám phá tinh hoa<br /><em>làng nghề Hà Nội</em></h1>
-          <p className="hero-lead">Kết nối hành trình của bạn với nghệ nhân, xưởng thủ công và những câu chuyện văn hóa được gìn giữ qua nhiều thế hệ.</p>
-          <div className="hero-stats" aria-label="Tổng quan danh mục">
-            <span><strong>{catalog.pagination.total_count}</strong> trải nghiệm</span>
-            <span><strong>{new Set(catalog.experience_cards.map(card => card.location.village_name)).size}</strong> làng nghề</span>
-            <span><strong>100%</strong> đã xác minh</span>
-          </div>
-        </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="hero-art__sun" />
-          <div className="hero-art__arch"><span>Hanoi</span><strong>Craft</strong></div>
-          <div className="hero-art__caption">Curated heritage experiences</div>
-        </div>
-      </section>
-
-      <section className="discovery-bar" aria-label="Tìm và lọc trải nghiệm">
-        <div className="search-prompt"><span aria-hidden="true">⌕</span><div><strong>Tìm theo nghề, làng hoặc trải nghiệm</strong><small>Chọn một nhóm bên dưới để bắt đầu khám phá</small></div></div>
-        {isAgency && <Link className="matching-cta" href="/ai-matching"><span>✦</span> AI Tour Matching</Link>}
-      </section>
-
-      <div className="viewer-strip">
-        <div><span className={`mode-badge ${isAgency ? 'mode-badge--agency' : ''}`}>{isAgency ? 'Agency access' : 'Public access'}</span>
-          <strong>{isAgency ? 'Giá B2B và thông tin hợp tác đang được hiển thị' : 'Bạn đang xem danh mục công khai'}</strong></div>
-        {!isAgency && <Link className="mode-switch" href="/login">Đăng nhập Agency →</Link>}
-      </div>
-
-      <section className="catalog-section">
-        <div className="section-heading"><div><p className="eyebrow">Bộ sưu tập được tuyển chọn</p><h2>Trải nghiệm nổi bật</h2></div><p>{catalog.pagination.total_count} kết quả phù hợp</p></div>
-        <nav className="category-filters" aria-label="Lọc theo loại hoạt động">
-          <Link className={!searchParams.category ? 'is-selected' : ''} href="/explore">Tất cả</Link>
-          {categories.map(category => <Link className={searchParams.category === category ? 'is-selected' : ''} key={category} data-exp-action="apply_filter" data-category={category}
-            href={`/explore?category=${encodeURIComponent(category)}${carry.replace(/&category=[^&]*/, '')}`}>{category}</Link>)}
+    <main className="xv-main">
+      <section id="tim-kiem" className="xv-filter" aria-label="Lọc trải nghiệm">
+        <SlidersHorizontal aria-hidden="true" size={20} />
+        <nav className="xv-chips" aria-label="Lọc theo loại hoạt động">
+          <Link className={!searchParams.category ? 'is-selected' : ''} aria-current={!searchParams.category ? 'true' : undefined} href="/explore#tim-kiem">Tất cả</Link>
+          {categories.map(category => <Link className={searchParams.category === category ? 'is-selected' : ''} aria-current={searchParams.category === category ? 'true' : undefined} key={category} data-exp-action="apply_filter" data-category={category}
+            href={`/explore?category=${encodeURIComponent(category)}#tim-kiem`}>{categoryLabel(category)}</Link>)}
         </nav>
-
-    {catalog.experience_cards.length === 0 ? <section className="empty"><h2>Chưa có trải nghiệm để hiển thị</h2><p>Hãy quay lại sau khi danh mục được cập nhật.</p></section> :
-      <section className="card-grid" aria-label="Danh sách trải nghiệm">
-        {catalog.experience_cards.map((card, index) => <article className="experience-card" key={card.id}>
-          <div className="catalog-media">
-            <MediaImage src={card.images[0]?.storage_key} alt={card.name}/><span className="verified-tag">✓ Đã xác minh</span>
-
-            <small>{card.type}</small>
-          </div>
-          <div className="card-body">
-            <p className="card-kicker"><span>{card.location.village_name}</span><span>{card.duration_minutes} phút</span></p>
-            <h2>{card.name}</h2>
-            <p className="provider-line">bởi <Link href={`/explore/providers/${card.provider_id}`}>{card.provider_name}</Link></p>
-            <p className="card-description">{card.description}</p>
-            <div className="card-meta"><span>Nhóm 1–{card.capacity.max_pax}</span><span>{card.type}</span></div>
-            <div className="price-row"><div><small>{card.price === null ? 'Quyền truy cập' : 'Giá B2B từ'}</small><p className="price">{card.price === null ? 'Dành cho Agency' : `${card.price.toLocaleString('vi-VN')} ₫`} {card.price !== null && <span>/ khách</span>}</p></div></div>
-            <div className="card-actions">
-              <Link className="button" data-exp-action="click_card" data-exp-id={card.id} data-provider-id={card.provider_id}
-                href={`/explore/experiences/${card.id}`}>Xem chi tiết <span>→</span></Link>
-              {!isAgency && <Link className="text-action" href="/login">Đăng nhập để liên hệ</Link>}
-            </div>
-          </div>
-        </article>)}
-      </section>}
+        {isAgency && <Link className="xv-button xv-button--primary" href="/ai-matching"><Sparkles aria-hidden="true" size={18} />Ghép tour AI</Link>}
       </section>
-    {totalPages > 1 && <nav className="pagination" aria-label="Phân trang">
-      {page > 1 && <Link href={`/explore?page=${page - 1}${carry}`}>Trang trước</Link>}
-      <span>Trang {page} / {totalPages}</span>
-      {page < totalPages && <Link href={`/explore?page=${page + 1}${carry}`}>Trang sau</Link>}
-    </nav>}
+
+      <section className="xv-section" aria-labelledby="xv-list-title">
+        <div className="xv-section__head">
+          <h2 id="xv-list-title">Trải nghiệm làng nghề</h2>
+          <p><span>{catalog.pagination.total_count} kết quả</span>{isAgency && <span className="xv-chip">Giá hiển thị: ₫ (VND)</span>}</p>
+        </div>
+
+        {catalog.experience_cards.length === 0
+          ? <div className="xv-empty"><p>Không có trải nghiệm khớp bộ lọc này.</p>{searchParams.category && <Link className="xv-button xv-button--outline" href="/explore#tim-kiem">Xóa bộ lọc</Link>}</div>
+          : <ul className="xv-grid" aria-label="Danh sách trải nghiệm">
+            {catalog.experience_cards.map(card => <li key={card.id}><article className="xv-card">
+              <div className="xv-card__media">
+                {card.images[0] ? <MediaImage src={card.images[0].storage_key} alt={card.name} /> : <span className="xv-placeholder" aria-hidden="true"><ImageIcon size={28} /></span>}
+              </div>
+              <div className="xv-card__body">
+                <p className="xv-card__meta"><span className="xv-tag">{card.location.village_name}</span><span>{durationLabel(card.duration_minutes)} · Tối đa {card.capacity.max_pax} khách</span></p>
+                <h3>{card.name}</h3>
+                <p className="xv-card__provider"><span className="xv-verified xv-verified--inline"><ShieldCheck aria-hidden="true" size={14} />Đã xác minh</span><Link href={`/explore/providers/${card.provider_id}`}>{card.provider_name}</Link></p>
+                <p className="xv-card__desc">{card.description}</p>
+                <p className="xv-card__type"><CircleCheck aria-hidden="true" size={16} />{categoryLabel(card.type)}</p>
+                {card.price === null
+                  ? <p className="xv-price xv-price--locked"><Lock aria-hidden="true" size={16} />Đăng nhập để xem giá</p>
+                  : <p className="xv-price">{vnd(card.price)}<small>/khách</small></p>}
+                <Link className="xv-button xv-button--outline" data-exp-action="click_card" data-exp-id={card.id} data-provider-id={card.provider_id} href={`/explore/experiences/${card.id}`}>Xem chi tiết</Link>
+              </div>
+            </article></li>)}
+          </ul>}
+
+        {totalPages > 1 && <nav className="xv-pagination" aria-label="Phân trang">
+          {page > 1 ? <Link href={`/explore?page=${page - 1}${carry}#tim-kiem`}>Trang trước</Link> : <span aria-hidden="true" />}
+          <span>Trang {page} / {totalPages}</span>
+          {page < totalPages ? <Link href={`/explore?page=${page + 1}${carry}#tim-kiem`}>Trang sau</Link> : <span aria-hidden="true" />}
+        </nav>}
+      </section>
     </main>
-    <footer className="explore-footer"><div><strong>Hanoi Artisan Bridge</strong><p>Nơi di sản trở thành hành trình đáng nhớ.</p></div><span>Curated B2B heritage platform · Hà Nội</span></footer>
+    <footer className="xv-footer"><span>© {new Date().getFullYear()} Hanoi Artisan Bridge</span>{!isAgency && <Link href="/login">Đăng nhập Agency</Link>}</footer>
   </div>;
 }

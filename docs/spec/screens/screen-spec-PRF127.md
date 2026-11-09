@@ -70,7 +70,7 @@ Shared avatar navigation for authenticated actors: My Account → ACC129; My Bus
 
 - Smallest supported width: 360px
 - What collapses or stacks on a narrow screen: same stacking pattern as DSC122 (hero stacks, facility/Experience cards stack, thumbnail strip scrolls horizontally).
-- Text that must remain readable (contrast, minimum size): verification status badge text must remain legible and distinguishable across all three possible states (Verified / Pending Verification / Revision Required), not color alone.
+- Text that must remain readable (contrast, minimum size): verification status badge text must remain legible and distinguishable across all three possible states (Verified / Pending Verification / Revision Required, shown as Đã xác minh / Chờ xác minh / Cần chỉnh sửa; stored values stay canonical, 2026-11-08), not color alone.
 
 ## 9. Decisions and review
 

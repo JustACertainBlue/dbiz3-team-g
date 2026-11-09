@@ -1171,6 +1171,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Figma check | After-only shots (HDT and UBND) at 1440/390 next to Figma; difference table in the PR with (c) = 0. Browser check on the DEV dev server (Playwright): Apply disabled at load, enabled after choosing Last 7 days while the cards keep 42, cards show 14 only after Apply; sort toggle applies at once; Manage accounts → `/admin/users` |
 | Checks | `npm test` 196 files passed, 4 skipped (1182 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+
+### Entry 94: 09/11 Claude Code + human — #161 ADM117 Required fields marked (`fix/161-required-asterisks`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: mark Required fields on ADM117 with * and an accessible "required" (aria-required); no behaviour change) |
+| Change | ADM117 form fields moved from `src/app/admin/create-account/page.tsx` into new `CreateAccountFields.tsx` so they can be render-tested. Each spec-Required field (screen-spec-ADM117.md:28-36: name, email, phone, village; address for Provider) shows "*" (`aria-hidden`, inline with the label text) and has `aria-required="true"`; legend "* bắt buộc" above the fields. Names, `required`, `pattern`, `maxLength` unchanged |
+| Tests | `tests/unit/adm117-required-marks.test.ts` (4, `react-dom/server` render): red first, 3 failed for the right reason (no `aria-required`, no legend) after a first run that failed on `React is not defined` (fixed with `import React` in the component, not in the test); then green. Mutations 4/4 caught (mark removed, aria removed, mark not aria-hidden, limit changed). No existing test changed |
+| Browser check | DEV (`jfrpnffknjpgmkyquxql`), `/admin/create-account`: UBND `thanhvien8` (Provider form) and HDT `thanhvien9` (UBND form) show "* bắt buộc" and "Label *" on every field, `aria-required=true` and `required` on each control. The first browser look showed the "*" on its own line (label is a grid); label text and mark were wrapped in one span. No account created |
+| Checks | `npm test` 197 files passed, 4 skipped (1186 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

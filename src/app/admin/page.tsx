@@ -185,8 +185,9 @@ export default function AdminDashboardPage() {
         isVillageLocked={villagesData.isLocked}
         assignedVillageId={villagesData.assignedVillageId}
         title={dashboardTitle(villageName)}
+        onApply={() => setFilters(prev => ({ ...draft, sortBy: prev.sortBy }))}
+        applyDisabled={!filtersChanged(draft, filters) || loading}
         actions={<div className="ad9-title__actions">
-          <button type="button" className="ad9-btn ad9-btn--primary" disabled={!filtersChanged(draft, filters) || loading} onClick={() => setFilters(prev => ({ ...draft, sortBy: prev.sortBy }))}>Áp dụng bộ lọc</button>
           <a href="/admin/users" className="ad9-btn">Quản lý tài khoản</a>
         </div>}
       />

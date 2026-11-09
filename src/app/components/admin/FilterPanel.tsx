@@ -12,9 +12,13 @@ interface FilterPanelProps {
   villageOptions: VillageOption[]
   isVillageLocked: boolean
   assignedVillageId: string | null
-  /** ADM079 #1 screen title (scope-aware) and #18 action; design wave 4. */
+  /** ADM079 #1 screen title (scope-aware); design wave 4. */
   title?: string
+  /** Actions rendered in the title row (e.g. Manage accounts link). */
   actions?: React.ReactNode
+  /** ADM079 #17 Apply filters button: callback and disabled state, rendered inside the filter box. */
+  onApply?: () => void
+  applyDisabled?: boolean
 }
 
 const PRESETS: TimePreset[] = [
@@ -50,6 +54,8 @@ export function FilterPanel({
   assignedVillageId,
   title,
   actions,
+  onApply,
+  applyDisabled,
 }: FilterPanelProps) {
   const [agencies, setAgencies] = useState<FilterAutocompleteOption[]>([])
   const [providers, setProviders] = useState<FilterAutocompleteOption[]>([])
@@ -374,6 +380,18 @@ export function FilterPanel({
 
         {entityBox('Agency')}
         {entityBox('Provider')}
+        {onApply && (
+          <div className="ad9-field ad9-field--apply">
+            <button
+              type="button"
+              className="ad9-btn ad9-btn--primary"
+              disabled={applyDisabled}
+              onClick={onApply}
+            >
+              Áp dụng bộ lọc
+            </button>
+          </div>
+        )}
       </div>
 
       {optionsError && <p className="ad9-alert" role="alert">Không tải được danh sách bộ lọc: {optionsError}</p>}

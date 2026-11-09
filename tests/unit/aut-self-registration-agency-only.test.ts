@@ -52,6 +52,13 @@ describe('#62 spec-AUT BR-001 / US-1 AS-3 | self-registration creates Tour Agenc
     expect(html).not.toMatch(/name="role|name="role_code|Local[ _]Provider|Nhà cung cấp|Xưởng/i)
   })
 
+  it('US-1 AS-3 (boundary, review 09/11): the only choice control is company_type with the FR-001 enum; no radio, no other select', () => {
+    const html = renderToStaticMarkup(React.createElement(RegisterPage))
+    expect([...html.matchAll(/<select[^>]*name="([^"]+)"/g)].map(m => m[1])).toEqual(['company_type'])
+    expect(html).not.toMatch(/type="radio"/)
+    expect([...html.matchAll(/<option[^>]*>([^<]*)</g)].map(m => m[1])).toEqual(['Travel Agency', 'Tour Operator', 'TMC'])
+  })
+
   it('BR-001 (error): a Guest cannot create a Local Provider account through the account-creation route; nothing is written', async () => {
     const before = repo().all('user_accounts').length
     const response = await createAccount(new Request('http://localhost:3000/api/auth/users/create', {

@@ -1,0 +1,88 @@
+/* AUT009 Login / REG115 OTP — design wave 4. Figma "Màn 1" desktop 1440 (two halves) and mobile 360 (banner + form). */
+.auth-v9 { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; background: var(--color-surface-page); color: var(--color-text-primary); }
+.auth-v9__brand {
+  position: relative; overflow: hidden; display: flex; align-items: center; padding: 48px 48px 48px 48px; color: var(--color-text-onbrand);
+  background:
+    radial-gradient(420px 420px at 80% 20%, rgba(255, 255, 255, .28), transparent 60%),
+    radial-gradient(520px 520px at 10% 30%, rgba(46, 127, 82, .55), transparent 70%),
+    radial-gradient(640px 640px at 70% 100%, rgba(46, 127, 82, .45), transparent 70%),
+    var(--color-brand-800);
+}
+.auth-v9__rings {
+  position: absolute; right: -180px; top: -220px; width: 820px; height: 820px; border-radius: 50%; pointer-events: none;
+  background: repeating-radial-gradient(circle, transparent 0 66px, rgba(255, 255, 255, .22) 67px 68px, transparent 69px 100px);
+  -webkit-mask-image: radial-gradient(circle, #000 60%, transparent 72%); mask-image: radial-gradient(circle, #000 60%, transparent 72%);
+}
+.auth-v9__brand-text { position: relative; max-width: 560px; }
+.auth-v9__logo { color: var(--color-brand-200); text-decoration: none; font: 700 20px/28px var(--font-heading); }
+.auth-v9__headline { margin: 16px 0 0; font: 700 34px/42px var(--font-heading); }
+.auth-v9__sub { margin: 16px 0 0; font: 400 16px/24px var(--font-body); color: var(--color-brand-50); }
+.auth-v9__panel { display: grid; place-items: center; padding: 48px; }
+.auth-v9__card { width: min(100%, 440px); padding: 40px 32px 32px; border-radius: var(--radius-xl); background: var(--color-surface-card); border: var(--border-width-1) solid var(--color-border-default); box-shadow: var(--shadow-md); }
+.auth-v9__card h1 { margin: 0 0 24px; font: 600 28px/36px var(--font-heading); }
+.auth-v9__form { display: grid; gap: 20px; }
+.auth-v9__field { display: grid; gap: 8px; font: 600 14px/20px var(--font-body); }
+.auth-v9__field input {
+  min-height: 56px; padding: 0 16px; border-radius: var(--radius-md); border: 1.5px solid var(--color-border-input); background: var(--color-glass-input-bg);
+  font: 400 16px/24px var(--font-body); color: var(--color-text-primary);
+}
+.auth-v9__field input:focus { outline: var(--focus-ring-width) solid var(--color-border-focus); outline-offset: 1px; border-color: var(--color-border-focus); }
+.auth-v9__field small { font: 400 13px/18px var(--font-body); color: var(--color-text-muted); }
+.auth-v9__primary {
+  min-height: 56px; border: 0; border-radius: var(--radius-pill); background: var(--color-brand-primary); color: var(--color-text-onbrand);
+  font: 600 16px/24px var(--font-body); cursor: pointer;
+}
+.auth-v9__primary:hover:not(:disabled) { background: var(--color-brand-primary-hover); }
+.auth-v9__primary:disabled { opacity: .55; cursor: not-allowed; }
+.auth-v9__links { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.auth-v9__links a, .auth-v9__link-button { color: var(--color-brand-700); font: 600 15px/20px var(--font-body); text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
+.auth-v9__links a:hover, .auth-v9__link-button:hover:not(:disabled) { text-decoration: underline; }
+.auth-v9__link-button:disabled { color: var(--color-text-muted); cursor: not-allowed; }
+.auth-v9 :is(a, button):focus-visible { outline: var(--focus-ring-width) solid var(--color-border-focus); outline-offset: var(--focus-ring-offset); border-radius: 4px; }
+.auth-v9__alert { display: flex; gap: 12px; padding: 14px 16px; border-radius: var(--radius-md); font: 400 15px/22px var(--font-body); }
+.auth-v9__alert--danger { background: var(--color-danger-bg); border: 1.5px solid var(--color-danger-fg); color: var(--color-danger-fg); }
+.auth-v9__alert--success { background: var(--color-success-bg); border: 1.5px solid var(--color-success-fg); color: var(--color-success-fg); }
+.auth-v9__alert strong { display: block; font-weight: 700; }
+.auth-v9__alert p { margin: 2px 0 0; }
+.auth-v9__alert-icon { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; display: grid; place-items: center; font: 700 13px/1 var(--font-body); }
+.auth-v9__lead { margin: -12px 0 0; color: var(--color-text-secondary); font: 400 16px/24px var(--font-body); overflow-wrap: anywhere; }
+.auth-v9__otp { display: flex; justify-content: center; gap: 12px; border: 0; padding: 0; margin: 0; }
+.auth-v9__otp input {
+  width: 48px; height: 56px; text-align: center; border-radius: var(--radius-md); border: 1.5px solid var(--color-border-input); background: var(--color-glass-input-bg);
+  font: 600 22px/28px var(--font-heading); color: var(--color-text-primary);
+}
+.auth-v9__otp input:focus { outline: var(--focus-ring-width) solid var(--color-border-focus); outline-offset: 1px; border-color: var(--color-border-focus); }
+.auth-v9__hint { margin: 0; text-align: center; font: 400 13px/18px var(--font-body); color: var(--color-text-muted); }
+.auth-v9__demo { margin-top: 24px; padding: 16px; border-radius: var(--radius-lg); background: var(--color-neutral-100); }
+.auth-v9__demo strong { font: 600 15px/20px var(--font-body); }
+.auth-v9__demo p { margin: 4px 0 12px; font: 400 13px/18px var(--font-body); color: var(--color-text-secondary); }
+.auth-v9__demo div { display: grid; gap: 8px; }
+.auth-v9__demo button { display: grid; text-align: left; padding: 10px 12px; border-radius: var(--radius-md); border: var(--border-width-1) solid var(--color-border-default); background: var(--color-surface-card); cursor: pointer; font: 600 14px/20px var(--font-body); color: var(--color-text-primary); }
+.auth-v9__demo small { font-weight: 400; color: var(--color-text-muted); }
+
+@media (max-width: 767px) {
+  .auth-v9 { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .auth-v9__brand { min-height: 136px; padding: 24px 16px; align-items: flex-end; }
+  .auth-v9__rings { right: -320px; top: -360px; }
+  .auth-v9__logo { font-size: 17px; line-height: 24px; }
+  .auth-v9__headline { margin-top: 8px; font: 600 18px/26px var(--font-body); }
+  .auth-v9__sub { display: none; }
+  .auth-v9__panel { place-items: start stretch; padding: 24px 16px 32px; }
+  .auth-v9__card { width: 100%; padding: 0; border: 0; box-shadow: none; background: none; }
+  .auth-v9__card h1 { font: 700 26px/34px var(--font-heading); }
+  .auth-v9__otp { gap: 8px; }
+  .auth-v9__otp input { width: 44px; height: 52px; }
+}
+
+/* REG115 sits inside the registration layout: drop its width limit and show its note as a thin banner. */
+.registration-shell:has(> .auth-v9) { max-width: none; margin: 0; padding: 0; }
+.registration-shell:has(> .auth-v9) > p[role="note"] { margin: 0; padding: 10px 24px; background: var(--color-warning-bg); color: var(--color-warning-fg); font: 400 14px/20px var(--font-body); text-align: center; }
+.registration-shell:has(> .auth-v9) > .auth-v9 { min-height: calc(100vh - 40px); }
+
+/* Soft light specks on the brand panel (Figma "Màn 1"): one 6 px dot repeated with box-shadow, decoration only. */
+.auth-v9__brand::after {
+  content: ''; position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, .55); pointer-events: none;
+  box-shadow: 220px 120px 0 0 rgba(255,255,255,.45), 380px 40px 0 1px rgba(255,255,255,.4), 560px 250px 0 0 rgba(255,255,255,.35), 120px 430px 0 1px rgba(255,255,255,.3),
+    470px 600px 0 0 rgba(255,255,255,.35), 60px 700px 0 1px rgba(255,255,255,.3), 300px 820px 0 0 rgba(255,255,255,.4), 640px 760px 0 0 rgba(255,255,255,.3),
+    160px 960px 0 1px rgba(255,255,255,.35), 520px 1000px 0 0 rgba(255,255,255,.3), 700px 420px 0 0 rgba(255,255,255,.35), 30px 260px 0 0 rgba(255,255,255,.3);
+}

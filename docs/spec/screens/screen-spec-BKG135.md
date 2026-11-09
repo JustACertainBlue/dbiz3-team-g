@@ -28,9 +28,9 @@ The controls and decisions below define the current screen specification.
 | 2 | Booking, Agency and Experience details | Read-only panel | F-SCHED-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
 | 3 | Time, group size and agreed conditions | Read-only panel | F-SCHED-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
 | 4 | Canonical status and latest update | Read-only panel | F-SCHED-07 — permitted output fields only | No | Actor-specific field visibility; optional missing values omitted. Never expose tokens, password hashes, session values or internal delivery diagnostics. |
-| 5 | Edit | Button / navigation | Provider owner permission | No | Enabled only when the linked permission/validation guard succeeds |
-| 6 | Mark Group Arrival | Button / navigation | Booked only, current time>=start_at | No | Enabled only when the linked permission/validation guard succeeds |
-| 7 | Chat | Button / navigation | Provider chat | No | Enabled only when the linked permission/validation guard succeeds |
+| 5 | Edit (display label “Cập nhật”; behaviour and function name unchanged, 2026-11-08) | Button / navigation | Provider owner permission | No | Enabled only when the linked permission/validation guard succeeds |
+| 6 | Mark Group Arrival (display label “Đánh dấu đoàn đã đến”; behaviour and function name unchanged, 2026-11-08) | Button / navigation | Booked only, current time>=start_at | No | Enabled only when the linked permission/validation guard succeeds |
+| 7 | Chat (display label “Nhắn tin”; behaviour and function name unchanged, 2026-11-08) | Button / navigation | Provider chat | No | Enabled only when the linked permission/validation guard succeeds |
 
 ## 4. States
 
@@ -46,9 +46,9 @@ The controls and decisions below define the current screen specification.
 
 | # | Element | User action | System response | Goes to screen |
 |---|---|---|---|---|
-| 1 | Edit | Select | Provider owner permission | BKG144 |
-| 2 | Mark Group Arrival | Select | Booked only, current time>=start_at | BKG136 |
-| 3 | Chat | Select | Provider chat | COM065 |
+| 1 | Edit (“Cập nhật”) | Select | Provider owner permission | BKG144 |
+| 2 | Mark Group Arrival (“Đánh dấu đoàn đã đến”) | Select | Booked only, current time>=start_at | BKG136 |
+| 3 | Chat (“Nhắn tin”) | Select | Provider chat | COM065 |
 
 Shared avatar navigation for authenticated actors: My Account → ACC129; My Business → PRF019 (Agency) / PRF127 (Provider), omitted for Admin without a business; Logout → AUT026. Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095. Guest has EXP120 and AUT009/REG003, with no AI navigation.
 

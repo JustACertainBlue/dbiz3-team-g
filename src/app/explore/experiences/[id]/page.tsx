@@ -9,6 +9,14 @@ import ExploreTracker from '../../ExploreTracker';
 import { currentServerSession } from '../../../../lib/auth/server-session';
 import ExperienceActions from '../../ExperienceActions';
 import { hasQuoteRequest } from '../../../../lib/demo/commercial-handoff-service';
+import { Lock, ShieldCheck } from 'lucide-react';
+import '../../explore-v9.css';
+import { categoryLabel } from '../../../../lib/explore/display-labels';
+
+function durationLabel(minutes: number) {
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  return h && m ? `${h} giờ ${m} phút` : h ? `${h} giờ` : `${m} phút`;
+}
 
 function slotLabel(value: string) {
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
@@ -24,36 +32,31 @@ export default async function ExperienceEntry({ params }: { params: { id: string
   const isAgency = viewer.kind === 'agency';
   const back = '/explore';
 
-  return <div className="explore-module">
+  return <div className="explore-module xv xv-detail-page">
     <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} detailExperienceId={card.id} />
 
     <main className="explore-surface detail-page">
-      <nav className="detail-breadcrumb" aria-label="Breadcrumb">
-        <Link href={back}>Explore</Link><span>/</span><span>{card.location.village_name}</span><span>/</span><strong>{card.name}</strong>
-      </nav>
+      <nav className="xv-breadcrumb" aria-label="Breadcrumb"><Link href={back}>Quay lại Khám phá</Link><span aria-hidden="true">/</span><span>{card.name}</span></nav>
 
-      <section className="detail-titlebar">
-        <div><p className="eyebrow">{card.type} · Trải nghiệm đã xác minh</p><h1>{card.name}</h1>
-          <div className="detail-meta"><span>⌖ {card.location.village_name}</span><span>◷ {card.duration_minutes} phút</span><span>Nhóm 1–{card.capacity.max_pax} khách</span></div></div>
-        <span className={`mode-badge ${isAgency ? 'mode-badge--agency' : ''}`}>{isAgency ? 'Công ty du lịch' : 'Thông tin công khai'}</span>
-      </section>
-
-      <section className="experience-hero-grid">
-        <div className="detail-visual detail-visual--main"><MediaImage src={detail.gallery[0]} alt={card.name} large/></div>
-        <aside className="access-card">
-          <p className="access-card__label">{isAgency ? 'Giá hợp tác' : 'Giá và quyền truy cập'}</p>
-          {isAgency && detail.pricing_breakdown
-            ? <><div className="access-price">{detail.pricing_breakdown.price_per_person.toLocaleString('vi-VN')} ₫ <small>/ khách</small></div><p>Giá dành cho doanh nghiệp du lịch đã được xác minh.</p></>
-            : <><div className="locked-rate"><span>◇</span><strong>Giá B2B được bảo vệ</strong></div><p>Đăng nhập bằng tài khoản Agency để xem giá hợp đồng và điều kiện hợp tác.</p></>}
-          <div className="access-facts"><span><small>Sức chứa</small><strong>Tối đa {card.capacity.max_pax} khách</strong></span><span><small>Thời lượng</small><strong>{card.duration_minutes} phút</strong></span></div>
+      <section className="xv-detail">
+        <div className="xv-detail__media"><MediaImage src={detail.gallery[0]} alt={card.name} large/></div>
+        <aside className="xv-detail__card">
+          <h1>{card.name}</h1>
+          <p className="xv-detail__provider"><span>{card.provider_name} — {card.location.village_name}</span><span className="xv-verified xv-verified--inline"><ShieldCheck aria-hidden="true" size={16} />Đã xác minh</span></p>
+          <dl className="xv-detail__facts">
+            <div><dt>Giá</dt><dd>{isAgency && detail.pricing_breakdown ? <>{detail.pricing_breakdown.price_per_person.toLocaleString('vi-VN')} ₫/khách</> : <span className="xv-price--locked"><Lock aria-hidden="true" size={16} />Đăng nhập để xem giá</span>}</dd></div>
+            <div><dt>Sức chứa</dt><dd>Tối đa {card.capacity.max_pax} khách</dd></div>
+            <div><dt>Thời lượng</dt><dd>{durationLabel(card.duration_minutes)}</dd></div>
+            <div><dt>Loại hoạt động</dt><dd>{categoryLabel(card.type)}</dd></div>
+          </dl>
           {isAgency
             ? <ExperienceActions experienceId={card.id} quoteSent={(await hasQuoteRequest(session, card.id))} />
-            : <div className="stack-actions"><Link className="button" href="/login">Đăng nhập để liên hệ</Link><Link className="button button--secondary" href="/register">Đăng ký Agency</Link></div>}
+            : <div className="stack-actions"><Link className="button" href="/login">Đăng nhập</Link><Link className="button button--secondary" href="/register">Đăng ký Agency</Link></div>}
         </aside>
       </section>
 
       {detail.gallery.length>1&&<section className="media-gallery-grid" aria-label="Ảnh trải nghiệm">{detail.gallery.slice(1).map((url,index)=><MediaImage key={`${url}-${index}`} src={url} alt={`${card.name} — ảnh ${index+2}`}/>)}</section>}
-      {isAgency&&detail.operational_booking_info&&<section className="content-panel"><h2>Điều kiện đặt và hủy</h2><p>Báo trước tối thiểu {detail.operational_booking_info.booking_lead_time} giờ.</p>{cancellationLines(detail.operational_booking_info.cancellation_policy).map((line,index)=><p key={index}>{line}</p>)}{detail.pricing_breakdown?.group_discounts.map((rule,index)=><p key={index}>Từ {rule.pax_threshold} khách: giảm {rule.discount_percentage}%.</p>)}</section>}
+      {isAgency&&detail.operational_booking_info&&<section className="content-panel"><h2>Điều kiện đặt và huỷ</h2><p>Báo trước tối thiểu {detail.operational_booking_info.booking_lead_time} giờ.</p>{cancellationLines(detail.operational_booking_info.cancellation_policy).map((line,index)=><p key={index}>{line}</p>)}{detail.pricing_breakdown?.group_discounts.map((rule,index)=><p key={index}>Từ {rule.pax_threshold} khách: giảm {rule.discount_percentage}%.</p>)}</section>}
       <div className="detail-content-grid">
         <div>
           <section className="story-panel"><p className="section-number">01 · Câu chuyện trải nghiệm</p><h2>Nơi kỹ nghệ truyền thống được sống lại</h2><p className="story-lead">{card.description}</p><p>{detail.provider_public_bio || 'Thông tin giới thiệu đang được đơn vị cung cấp cập nhật.'}</p></section>
@@ -68,7 +71,7 @@ export default async function ExperienceEntry({ params }: { params: { id: string
 
         <aside>
           <section className="provider-summary"><p className="section-number">Đơn vị tổ chức</p><div className="provider-monogram">{card.provider_name.slice(0, 2).toUpperCase()}</div><h2>{card.provider_name}</h2><p>{detail.provider_public_bio || 'Đơn vị trải nghiệm làng nghề đã được xác minh.'}</p>
-            <Link className="button button--secondary" href={`/explore/providers/${detail.provider_id}`}>Xem hồ sơ xưởng →</Link></section>
+            <Link className="button button--secondary" href={`/explore/providers/${detail.provider_id}`}>Xem hồ sơ xưởng →</Link>{isAgency && <Link className="button button--secondary" href={`/explore/providers/${detail.provider_id}/schedule`}>Lịch của xưởng →</Link>}</section>
           {detail.provider_private_contact && <section className="contact-panel"><p className="section-number">Liên hệ hợp tác</p><p>{detail.provider_private_contact.phone}</p><p>{detail.provider_private_contact.email}</p></section>}
         </aside>
       </div>

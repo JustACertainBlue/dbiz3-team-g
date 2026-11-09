@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { readSessionContext } from '@/lib/auth/client-session'
-import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, noMatchView, type ApiResult } from './matching-view'
+import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, noMatchView, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 
 interface Message {
@@ -12,6 +12,7 @@ interface Message {
   sender: 'Agency' | 'Assistant'
   text: string
   sent_at: string
+  dateLine?: string
   clarificationQuestions?: string[]
   recommendations?: any[]
   relaxationLines?: string[]
@@ -164,11 +165,14 @@ export default function AiMatchingScreen() {
     if (!sessionId) return
     setLoading(true)
     try {
-      const outcome = messageOutcome(await postJson(`/api/ait/sessions/${sessionId}/messages`, body))
+      const result = await postJson(`/api/ait/sessions/${sessionId}/messages`, body)
+      const outcome = messageOutcome(result)
+      // #156: show the date understood so the Agency can correct it.
+      const dateLine = 'body' in result ? understoodDateLine(result.body) ?? undefined : undefined
       if (outcome.kind === 'clarify') {
-        addAssistant({ text: 'I need a few more details to find the best craft match for your tour:', clarificationQuestions: outcome.questions })
+        addAssistant({ text: 'I need a few more details to find the best craft match for your tour:', clarificationQuestions: outcome.questions, dateLine })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile)
+        await fetchMatchingResults(outcome.profile, dateLine)
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
@@ -190,7 +194,7 @@ export default function AiMatchingScreen() {
    * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
    * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
-  const fetchMatchingResults = async (profile: unknown) => {
+  const fetchMatchingResults = async (profile: unknown, dateLine?: string) => {
     const result = await postJson('/api/ait/matching', { session_id: sessionId, tour_preference_profile: profile })
     if ('networkError' in result || !result.ok) {
       addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
@@ -200,6 +204,7 @@ export default function AiMatchingScreen() {
     if (topMatches.length > 0) {
       addAssistant({
         text: 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
+        dateLine,
         recommendations: topMatches.map(m => ({
           experience_id: m.experience_id,
           provider_id: m.provider_id,
@@ -216,7 +221,7 @@ export default function AiMatchingScreen() {
     } else {
       // No candidate reaches the constraints or 60/100 → relaxation suggestions (BR-011, FR-012)
       const view = noMatchView(result.body)
-      addAssistant({ text: view.prompt, relaxationLines: view.lines })
+      addAssistant({ text: view.prompt, relaxationLines: view.lines, dateLine })
     }
   }
 
@@ -342,6 +347,11 @@ export default function AiMatchingScreen() {
               </div>
 
               <div>{msg.text}</div>
+
+              {/* #156: the date the assistant understood, so the Agency can correct it */}
+              {msg.dateLine && (
+                <div id="understood-date" style={{ marginTop: '8px', fontSize: '13px', color: '#FCD34D' }}>{msg.dateLine}</div>
+              )}
 
               {/* Relaxation suggestions (BR-011, FR-012, #23, #24) */}
               {msg.relaxationLines && msg.relaxationLines.length > 0 && (

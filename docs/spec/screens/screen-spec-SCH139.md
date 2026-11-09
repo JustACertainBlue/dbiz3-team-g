@@ -77,7 +77,7 @@ Shared avatar navigation for authenticated actors: My Account → ACC129; My Bus
 
 - Smallest supported width: 360px
 - What collapses or stacks on a narrow screen: the month calendar grid and the right-hand detail panel stack vertically; the roster table becomes horizontally scrollable or collapses to stacked cards
-- Text that must remain readable (contrast, minimum size): day-cell booking chips must remain legible at small size; status badges (Booked, On hold, Completed, Cancelled) must not rely on color alone
+- Text that must remain readable (contrast, minimum size): day-cell booking chips must remain legible at small size; status badges (Booked, On hold, Completed, Cancelled, shown as Đã đặt, Tạm giữ, Hoàn tất, Đã huỷ; stored values stay canonical, 2026-11-08) must not rely on color alone
 
 ## 9. Decisions and review
 

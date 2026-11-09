@@ -1172,6 +1172,14 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm test` 196 files passed, 4 skipped (1182 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
 
+### Entry 89: 09/11 Claude Code + human — function-list F-ADMIN-05 "All Villages" display label (`docs/function-list-all-villages`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (approved spec edit, exact line) |
+| Change | `docs/spec/docs/function-list.md:80` (row 78, F-ADMIN-05): `"All Villages"` gets the same note as `spec-ADM.md:184` in #155: `(display label: "Tất cả các làng"; behaviour unchanged)`. Only that line. No `specs/<feature>/spec.md` snapshot copies `function-list.md`, so no snapshot refresh |
+| Tests | None (spec text only; no code or test changed) |
+| Checks | `uv run tools/start_feature.py --check` OK; `git diff --stat` = 1 line in `function-list.md` plus the two logs |
 ### Entry 90: 09/11 Claude Code + human — #156 AIT date without a year (`fix/156-ait-date-year`)
 
 | Field | Value |

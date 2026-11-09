@@ -1,7 +1,10 @@
+import './tokens.css'
 import './globals.css'
 import './screen-specs.css'
 import './product-ui.css'
+import './shell.css'
 import React from 'react'
+import { fontVariables } from './fonts'
 
 export const metadata = {
   title: 'Hanoi Artisan Bridge — Nền tảng Kết nối Làng nghề Hà Nội',
@@ -16,15 +19,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="vi">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="vi" className={fontVariables}>
       <body>
         <SessionHeader />
         <div id="page-content">{children}</div>

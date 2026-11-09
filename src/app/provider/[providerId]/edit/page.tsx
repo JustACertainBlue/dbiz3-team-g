@@ -16,6 +16,8 @@ import {
   profileToForm,
   type ProviderEditForm,
 } from '@/lib/prf/provider-edit-form'
+import StatusBadge from '@/app/components/StatusBadge'
+import { statusLabel } from '@/lib/status-labels'
 
 const EMPTY_FORM: ProviderEditForm = {
   business_name: '', craft_type: '', business_registration: '', location_address: '',
@@ -147,11 +149,11 @@ export default function EditProviderProfilePage({
         if (data.new_version_pending) {
           setMessage({
             type: 'success',
-            text: `✓ Đã lưu. Bản sửa đổi đang ở trạng thái ${data.verification_status} chờ UBND thẩm định; phiên bản đã xác minh vẫn hiển thị công khai.`,
+            text: `✓ Đã lưu. Bản sửa đổi đang ở trạng thái ${statusLabel('provider', data.verification_status)} chờ UBND thẩm định; phiên bản đã xác minh vẫn hiển thị công khai.`,
           })
         } else {
           setStatus(data.verification_status)
-          setMessage({ type: 'success', text: `✓ Lưu thay đổi thành công. Trạng thái: ${data.verification_status}` })
+          setMessage({ type: 'success', text: `✓ Lưu thay đổi thành công. Trạng thái: ${statusLabel('provider', data.verification_status)}` })
         }
       } else {
         setMessage({ type: 'error', text: data.error || 'Lỗi khi lưu hồ sơ.' })
@@ -193,7 +195,7 @@ export default function EditProviderProfilePage({
           Hồ sơ xưởng / <span style={{ color: '#111827' }}>Chỉnh sửa thông tin</span>
         </div>
         <div>
-          Trạng thái thẩm định: <span style={{ color: '#111827' }}>{status}</span>
+          Trạng thái thẩm định: {status ? <StatusBadge family="provider" status={status} /> : <span>Chưa có hồ sơ</span>}
         </div>
       </div>
 

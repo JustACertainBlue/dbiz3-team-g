@@ -1,7 +1,6 @@
 'use client'
 import { reviewNotice } from '@/lib/auth/review-notice'
 import { useEffect, useState } from 'react'
-import StatusBadge from '@/app/components/StatusBadge'
 type Review = { id: string; kind: string; name: string; status: string; submitted: string; fields: Record<string, unknown>; account: { email: string; status: string; name: string; created_at: string; last_login: string } | null; history: { review_id: string; decision: string; comments: string; decided_at: string }[]; documents: { type: string; name: string; available: boolean; href: string | null }[] }
 const labels: Record<string,string> = { company_name:'Tên công ty hiện tại', tax_id:'Mã số thuế hiện tại', proposed_company_name:'Tên công ty đề nghị', proposed_tax_id:'Mã số thuế đề nghị', full_name:'Người đại diện', company_type:'Loại công ty', location:'Địa chỉ', contact_information:'Liên hệ', team_size:'Quy mô', tour_types:'Loại tour', submitted_at:'Ngày nộp', version_no:'Phiên bản' }
 function readable(value: unknown): string {

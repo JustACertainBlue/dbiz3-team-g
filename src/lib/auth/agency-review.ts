@@ -18,7 +18,14 @@ export async function agencyReviews(session: SessionContext) {
     const profile = (await repo.find('agency_profiles', item => item.agency_id === row.agency_id))
     return { id: row.major_change_id, kind: 'change', name: profile?.company_name || row.agency_id, status: row.review_status, submitted: row.submitted_at, fields: { company_name: profile?.company_name || '', tax_id: profile?.tax_id || '', proposed_company_name: row.proposed_company_name, proposed_tax_id: row.proposed_tax_id }, account: (await repo.find('user_accounts', item => item.user_id === profile?.user_id)), history: (await repo.all('agency_review_records')).filter(item => item.major_change_id === row.major_change_id), documents: [] }
   })))
-  return [...registrations, ...changes].map(({ account, ...item }) => ({ ...item, account: account ? { email: account.email, status: account.account_status, name: account.full_name, created_at: account.created_at, last_login: account.last_login } : null }))
+  // VER119 §3 (#225): account id, role (admin_type only for ADMIN), status, organization, created date, last login.
+  return (await Promise.all([...registrations, ...changes].map(async ({ account, ...item }) => ({ ...item, account: account ? {
+    user_id: account.user_id, name: account.full_name, email: account.email, role: account.role_code,
+    ...(account.role_code === 'ADMIN' ? { admin_type: account.admin_type } : {}),
+    status: account.account_status,
+    organization: (await repo.find('agency_profiles', profile => profile.user_id === account.user_id))?.company_name || String((item.fields as Record<string, unknown>).company_name || ''),
+    created_at: account.created_at, last_login: account.last_login,
+  } : null }))))
 }
 export async function reviewAgency(session: SessionContext, id: string, kind: string, decision: string, comment: string, delivery?: Delivery) {
   authorize(session)

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { filterAdminUsers, roleOptions } from '@/lib/auth/admin-user-filter'
 import StatusBadge from '@/app/components/StatusBadge'
+import { accountActionBody } from './account-action'
 type User = { user_id: string; name: string; email: string; organization: string; role: string; admin_type: string; status: string; last_login: string; created_date: string; provider_id?: string; agency_id?: string }
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -19,6 +20,9 @@ export default function UsersPage() {
   const [busy, setBusy] = useState(false)
   const [selected, setSelected] = useState<User | null>(null)
   const [confirm, setConfirm] = useState(false)
+  const [reason, setReason] = useState('')
+  // #160: a new account starts with an empty reason.
+  useEffect(() => { setReason('') }, [selected?.user_id])
   async function load() { setLoading(true); try { const response = await fetch('/api/auth/users'); const body = await response.json(); if (!response.ok) throw new Error(body.error); setUsers(body.data) } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tải được dữ liệu.') } finally { setLoading(false) } }
   useEffect(() => { void load() }, [])
   async function resetPassword() {
@@ -29,7 +33,7 @@ export default function UsersPage() {
   async function act() {
     if (!selected) return
     setBusy(true); setError('')
-    try { const response = await fetch('/api/auth/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: selected.user_id, action: selected.status === 'Disabled' ? 'enable' : 'disable' }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setSelected({ ...selected, status: body.data.account_status }); setConfirm(false); await load() }
+    try { const response = await fetch('/api/auth/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(accountActionBody(selected, reason)) }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setSelected({ ...selected, status: body.data.account_status }); setConfirm(false); setReason(''); await load() }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể lưu.') } finally { setBusy(false) }
   }
   const filtered = filterAdminUsers(users, { query, status, role, organization, dateFrom, dateTo })
@@ -44,8 +48,8 @@ export default function UsersPage() {
     {selected && <section className="detail"><h2>{selected.name}</h2><dl><dt>Email</dt><dd>{selected.email}</dd><dt>Tổ chức</dt><dd>{selected.organization}</dd><dt>Trạng thái</dt><dd><StatusBadge family={selected.status === 'Active' ? 'account' : 'agency'} status={selected.status} /></dd><dt>Ngày tạo</dt><dd>{selected.created_date}</dd><dt>Đăng nhập gần nhất</dt><dd>{selected.last_login || 'Chưa đăng nhập'}</dd></dl>
       {selected.provider_id && <p><Link href={`/admin/providers/${selected.provider_id}`}>Xem hồ sơ và thẩm định Provider →</Link></p>}
       <p>Đặt lại mật khẩu và gửi thông tin đăng nhập cần dịch vụ email được cấu hình.</p><button disabled={busy} onClick={resetPassword}>Đặt lại mật khẩu</button>
-      {confirm ? <div><p>{selected.status === 'Disabled' ? 'Mở lại tài khoản về trạng thái trước khi khóa?' : 'Khóa tài khoản và kết thúc các phiên đăng nhập?'}</p><button disabled={busy} onClick={act}>{busy ? 'Đang lưu…' : 'Xác nhận'}</button><button disabled={busy} onClick={() => setConfirm(false)}>Hủy</button></div> : <button onClick={() => setConfirm(true)}>{selected.status === 'Disabled' ? 'Mở lại tài khoản' : 'Khóa tài khoản'}</button>}
+      {confirm ? <div><p>{selected.status === 'Disabled' ? 'Mở lại tài khoản về trạng thái trước khi khóa?' : 'Khóa tài khoản và kết thúc các phiên đăng nhập?'}</p>{selected.status !== 'Disabled' && <label htmlFor="disable-reason">Lý do (không bắt buộc)<textarea id="disable-reason" value={reason} onChange={e => setReason(e.target.value)} rows={3} /></label>}<button disabled={busy} onClick={act}>{busy ? 'Đang lưu…' : 'Xác nhận'}</button><button disabled={busy} onClick={() => { setConfirm(false); setReason('') }}>Hủy</button></div> : <button onClick={() => setConfirm(true)}>{selected.status === 'Disabled' ? 'Mở lại tài khoản' : 'Khóa tài khoản'}</button>}
       <button disabled={busy} onClick={() => setSelected(null)}>Đóng</button></section>}
-    <style jsx>{`.users-page{max-width:1200px;margin:auto;padding:32px 20px;color:#203229}.users-page h1{font:700 36px Georgia,serif;margin:10px 0}.filters{display:flex;gap:16px;flex-wrap:wrap;margin:24px 0}label{display:grid;gap:8px}input,select,button{font:inherit;border:1px solid #b8c3b9;border-radius:8px;padding:10px;background:#fffdf8;color:#203229}button{cursor:pointer;margin:8px 8px 8px 0}button:disabled{opacity:.6}.table-wrap{overflow:auto;border:1px solid #ded8cb;border-radius:14px;background:#fffdf8}table{border-collapse:collapse;width:100%;min-width:750px}th,td{padding:14px;text-align:left;border-bottom:1px solid #ded8cb;font-size:14px}th{background:#eef2e9}small{display:block;color:#66746d}.detail{margin:24px 0;padding:24px;border:1px solid #ded8cb;background:#fffdf8;border-radius:14px}dl{display:grid;grid-template-columns:160px 1fr;gap:10px;margin:20px 0}dd{overflow-wrap:anywhere}[role=alert]{color:#a51f30}`}</style>
+    <style jsx>{`.users-page{max-width:1200px;margin:auto;padding:32px 20px;color:#203229}.users-page h1{font:700 36px Georgia,serif;margin:10px 0}.filters{display:flex;gap:16px;flex-wrap:wrap;margin:24px 0}label{display:grid;gap:8px}input,select,textarea,button{font:inherit;border:1px solid #b8c3b9;border-radius:8px;padding:10px;background:#fffdf8;color:#203229}button{cursor:pointer;margin:8px 8px 8px 0}button:disabled{opacity:.6}.table-wrap{overflow:auto;border:1px solid #ded8cb;border-radius:14px;background:#fffdf8}table{border-collapse:collapse;width:100%;min-width:750px}th,td{padding:14px;text-align:left;border-bottom:1px solid #ded8cb;font-size:14px}th{background:#eef2e9}small{display:block;color:#66746d}.detail{margin:24px 0;padding:24px;border:1px solid #ded8cb;background:#fffdf8;border-radius:14px}dl{display:grid;grid-template-columns:160px 1fr;gap:10px;margin:20px 0}dd{overflow-wrap:anywhere}[role=alert]{color:#a51f30}`}</style>
   </section>
 }

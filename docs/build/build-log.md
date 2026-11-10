@@ -1463,6 +1463,30 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Update rounds | #124 (code conflict with #130 in `agency-review.ts`: kept `next_step` and the real email status), #175 and #251 (snapshots refreshed), #108 (lockfile regenerated from `main` without `@googlemaps`; `npm ci` clean) |
 | Checks | Each branch: `npm run test`, lint, build 44/44; CI green on Windows and macOS for every pushed branch |
 
+### Entry 104: 10/11 Claude Code + human — hosted EARS into the spec (#258, #259), deliverables rows 12–13 (#257), #162 closed
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu on 10/11. No merges by the agent |
+| #258 | #173 was merged at `4a9871b` before the commit deleting the two "What only a person can do" bullets (measure H1, re-check M04 / H2) was pushed; the commit was cherry-picked onto a new branch from `main`. Docs only |
+| #259 spec (approved "OK EARS", linhkhanh-vu 2026-11-10) | Verified lines of `docs/build/ears-hosted-draft.md` copied into the Edge cases sections, style of #175, each with its evidence: H1 → spec-EXP; H2, H4 → spec-IAC under a new heading "Hosted-version EARS"; H3, H5 → spec-BKG; H7 → spec-AUT (issue #58, PR #124). H6 not included. Draft shown as a unified diff and changed on request before commit (H7 keeps "issue #58"; IAC heading) |
+| Snapshots (CLAUDE.md rule 6) | 16 feature snapshots refreshed: AUT 001–010, EXP 001, BKG 004 and 011–013, IAC 016; `start_feature.py --check` OK for each; active feature restored to `specs/010-aut-manage-accounts`. IAC 014 and 015 already drifted on `main` before #259 and were left as they were |
+| #257 rows 12–13 | Row 12 → ✅ (#175, #173, #258, #259). Row 13 → ✅ "claimed 2026-11-10, approved by linhkhanh-vu; built before the claim"; the claim section keeps its EARS line and evidence |
+| #162 | Comment "Close Chat on Render: PASS 2026-11-10" (test by linhkhanh-vu: Provider thanhvien19 closed the [T-hoang] chat at 16:42:07, read-only for both sides, history kept), then the issue was closed |
+| Log PR rounds | #240, #250, #256 each updated with `main` after the previous one merged; only the two log files conflicted, both sides kept |
+| Checks | #258, #259, #240, #250, #256, #257: CI green on Windows and macOS. #258 and #250: the first Windows run failed in `next build` on a `next/font` fetch (`TypeError: Cannot read properties of null (reading '1')`); the rerun of the failed job passed |
+
+### Entry 105: 10/11 Claude Code + human — ADM079 Agency / Provider filter boxes (#260)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu on 10/11 before the 20:00 freeze. No merges by the agent |
+| Bug (DEV, before) | The trigger could not shrink inside the flex `.ad9-picker`: with a long Agency name the Agency box grew from 774 to 1167 px over the Provider box (997–1200 px) at 1440 px, and the page scrolled sideways at 390 px |
+| Fix (CSS and markup only) | Trigger `flex: 1 1 auto; min-width: 0`; value in `.ad9-ellipsis` with the full value as `title`; with a selection the picker is the box and the ✕ sits in the same row right after the value (trigger `::after` keeps the whole box clickable); ✕ stays a focusable `<button>` with a label per box: `aria-label="Xoá lựa chọn Agency"` / `"Xoá lựa chọn Provider"` (second commit `f79bb3c`, so a screen reader can tell the two apart; requested by linhkhanh-vu). Filter logic, values sent and the switch confirm unchanged |
+| Tests | New `tests/adm/unit/adm079-filter-boxes.test.ts` (4), red first (3 failed for the right reason); for the per-box labels both tests were updated first and failed (2) before the code change. Two #242 expectations in `tests/adm/unit/adm-242-ui.test.ts` (✕ label "Bỏ chọn Agency" → "Xoá lựa chọn Agency"; `.ad9-clear` absolute → relative) changed only after linhkhanh-vu approved it when asked (2026-11-10), marked in the file |
+| Browser check | DEV, HDT `thanhvien9`, Playwright 1440 and 390 px, longest Agency name and 2 agencies: no overlap, no horizontal scroll, value truncated, ✕ inside and centred; click on the box opens the list; Tab reaches ✕, Enter clears; switch confirm and Apply (`providerId=…`) as before. Screenshots outside the repo (`~/Desktop/hab-scratch/shots/adm079-filters/`) |
+| Checks | `npm test` 240 files / 1391 passed (22 skipped); lint 0; build 44/44; seed PASS |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

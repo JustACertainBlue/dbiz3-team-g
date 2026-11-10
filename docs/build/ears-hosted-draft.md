@@ -21,6 +21,4 @@ existing line at `docs/spec/specs/spec-AUT.md:231`.
 
 ## What only a person can do here
 
-- **Measure N for H1** (cold start; planned for 10/11). The H3 / H4 bound is set to 20 s.
-- **Re-check M04 (H2) on the hosted build** after deploy, on a real phone.
 - **Approve the exact lines and their target spec files.** Then a spec PR copies them (agents edit `docs/spec/` only for the exact approved lines) and refreshes the Spec Kit snapshots with `uv run tools/start_feature.py --refresh`.

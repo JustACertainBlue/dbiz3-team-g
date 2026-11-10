@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { prototypeLoginEnabled } from './prototype-login'
 import type { NextRequest } from 'next/server'
 import { DEMO_IDENTITIES, type DemoSession } from './demo-session'
 import { demoRepository } from '../db/application-store'
@@ -53,7 +54,7 @@ function cookieValue(request: NextRequest | Request, name: string): string | nul
  * Role and organization IDs always come from stored account data, never client input.
  */
 export async function authenticatePrototype(email: string, password: string): Promise<LoginResult> {
-  if (process.env.NODE_ENV === 'production') return { ok: false, reason: 'INVALID_CREDENTIALS' }
+  if (!prototypeLoginEnabled()) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const normalizedEmail = email.trim().toLowerCase()
   if (!normalizedEmail || !password) return { ok: false, reason: 'INVALID_CREDENTIALS' }
 
@@ -95,7 +96,7 @@ export async function authenticateAccount(email: string, password: string): Prom
   if (!email.trim() || !password.trim()) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const account = (await demoRepository().find('user_accounts', row => row.email.toLowerCase() === email.trim().toLowerCase()))
   if (!account) return { ok: false, reason: 'INVALID_CREDENTIALS' }
-  if (process.env.NODE_ENV !== 'production' && account.password_hash.includes('seedhash')) return (await authenticatePrototype(email, password))
+  if (prototypeLoginEnabled() && account.password_hash.includes('seedhash')) return (await authenticatePrototype(email, password))
   if (!await verifyPassword(password, account.password_hash)) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const identity = (await identityForUser(account.user_id))
   if (!identity) return { ok: false, reason: 'ACCOUNT_INACTIVE' }

@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AuthShell, { AuthAlert } from '../components/AuthShell'
+import { prototypeLoginEnabled } from '@/lib/auth/prototype-login'
 
 const demoAccounts = [
   ['Tour Agency', 'thanhvien13@example.invalid'],
@@ -53,10 +54,11 @@ function LoginForm() {
       <button className="auth-v9__primary" type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
       <div className="auth-v9__links"><a href="/forgot-password">Quên mật khẩu?</a><a href="/register">Đăng ký Agency</a></div>
     </form>
-    <aside className="auth-v9__demo">
+    {/* #102: the demo panel only where the prototype login works (same condition as the server) */}
+    {prototypeLoginEnabled() && <aside className="auth-v9__demo">
       <strong>Tài khoản thử nghiệm</strong>
       <p>Chọn một email mẫu bên dưới. Ở prototype hiện tại, nhập bất kỳ mật khẩu không rỗng.</p>
       <div>{demoAccounts.map(([label, value]) => <button type="button" key={value} onClick={() => setEmail(value)}><span>{label}</span><small>{value}</small></button>)}</div>
-    </aside>
+    </aside>}
   </AuthShell>
 }

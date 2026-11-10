@@ -1426,6 +1426,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | #208 EXP070 (PR #229) | Test first: `tests/unit/exp070-location-field.test.ts` red (field did not exist). New `ExperienceLocationField` (required, ≤ 500, disabled + "Đang khóa" under BR-014) rendered on the edit page with `locked={hasActiveBookings}`. Server unchanged (it already validated and locked the field, `prf-br-fixes.test.ts:68`) |
 | Checks | `npm test` 1252 passed / 20 skipped; lint exit 0; build 44/44; seed PASS. Browser: locked state checked on the demo Provider's only Experience; unlocked state covered by the unit test only. Noted, not changed: the server create schema has the address optional although EXP069 says Required for Create |
 
+### Entry 101: 09–10/11 Claude Code + human — UX wave 1 (11 PRs, #229–#239)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5), unattended run requested by linhkhanh-vu: one branch and PR per `ux-gap` issue from fresh `main` (`ec859af`), test first, no merge. Rules: layout/elements = screen spec §3/§5/§8, look = Figma tokens, behaviour = module FRs, schedule screens follow spec-BKG OQ #70 |
+| PRs | #229 EXP070 location input (#208); #230 BKG136 Confirm Group Arrival gated by the F-SCHED-06 guard (#192); #231 BKG134 Cancel → BKG133 (#191); #232 ADM145 Close → ADM095 (#187); #233 ADM117 Cancel → ADM095 (#185); #234 PRF127 links to EXP067 and VIL030 (#217); #235 PRF128 Manage Experiences → EXP067 (#218); #236 EXP120 and #237 DSC124 locked Request Quote / Chat for Guest, FR-001 / FR-003 / BR-009 (#209, #202; same new `GuestLockedActions.tsx`, byte-identical, merge-tree clean); #238 ADM118 role in the identity block (#186); #239 VER119 account id, role, organization (#225) |
+| Gap re-check | Every gap re-read in code before the fix; all 11 were real. #185 was small (a back link already existed; the Cancel next to Create was missing). #192 was screen-side only: the server already refused (`mark-arrival.ts:49-50`) |
+| Tests | One new test file per PR, red first for the right reason. Where a component had no `React` import (Vitest classic JSX runtime), the import was added before the red run. Server-rendered or client-fetching pages are checked through their source, as in `adm118-disable-reason.test.ts`. No existing test edited |
+| Checks | Each branch: seed PASS, `npm test` green (1250–1253 passed, 20 skipped), lint exit 0, build 44/44; CI green on Windows and macOS. Screenshots (desktop + 390 px) of each branch on the dev build (DEV database) beside the spec image and the pre-change audit shot, kept outside the repo |
+| Scope note | Each PR fixes only the item named for wave 1 but says "Closes #n"; the remaining items of #191, #185, #217, #218, #202, #186, #225 need follow-up issues if still wanted (listed in each PR body) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

@@ -28,6 +28,7 @@ export default function AdminDashboardPage() {
   const [adminType, setAdminType] = useState<AdminType | null>(null)
   const [displayName, setDisplayName] = useState('')
   const [access, setAccess] = useState<'allow' | 'restricted' | null>(null)
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null)
   const villageLockedRef = useRef(false)
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -65,6 +66,7 @@ export default function AdminDashboardPage() {
       setRole(session.role)
       setAdminType(session.adminType)
       setDisplayName(`${session.adminType ?? ''} Admin`.trim())
+      setAuthenticated(session.authenticated)
       setAccess(adminPageAccess(session))
     })
   }, [])
@@ -148,6 +150,14 @@ export default function AdminDashboardPage() {
   }
 
   if (!mounted || access === null) return null
+
+  // Unauthenticated users are redirected to login; keep rendering null while redirect fires.
+  if (access === 'restricted' && authenticated === false) {
+    if (typeof window !== 'undefined') {
+      window.location.replace('/login?next=/admin')
+    }
+    return null
+  }
 
   if (access === 'restricted') {
     return (

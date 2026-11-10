@@ -30,7 +30,8 @@ class DOMParserLite {
 
 describe('#161 | every Required field shows * and aria-required', () => {
   it.each([
-    ['ubnd', ['name', 'email', 'phone', 'village_id']],
+    // spec changed 2026-11-10 (ADM117 §3 #5 village_name, #242 / spec PR #251) → expected field updated
+    ['ubnd', ['name', 'email', 'phone', 'village_name']],
     ['provider', ['name', 'email', 'phone', 'village_id', 'address']],
   ] as const)('%s form: %j', (kind, names) => {
     const page = render(kind)

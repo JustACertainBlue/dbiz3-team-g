@@ -56,7 +56,8 @@ describe('#170 | Contact is Required on the server (decision 09/11; ADM117 #10, 
   })
 
   it('UBND accounts need no contact', async () => {
-    await expect(createManagedAccount({ ...(await demoSessionContextFor('hdt')) }, 'ubnd', { name: 'U', email: 'u-contact@example.invalid', phone: '0912345678', village_id: village }, delivery)).resolves.toMatchObject({ account_status: 'Active' })
+    // spec changed 2026-11-10 (FR-019 village_name, #242 / spec PR #251) → test input updated
+    await expect(createManagedAccount({ ...(await demoSessionContextFor('hdt')) }, 'ubnd', { name: 'U', email: 'u-contact@example.invalid', phone: '0912345678', village_name: 'Synthetic village' }, delivery)).resolves.toMatchObject({ account_status: 'Active' })
   })
 })
 

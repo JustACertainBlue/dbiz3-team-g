@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { readSessionContext } from '@/lib/auth/client-session'
-import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, noMatchView, understoodDateLine, type ApiResult } from './matching-view'
+import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 
 interface Message {
@@ -15,6 +15,7 @@ interface Message {
   dateLine?: string
   clarificationQuestions?: string[]
   recommendations?: any[]
+  additionalSuggestions?: any[] // FR-008 (#188): up to 5 after the Top 5
   relaxationLines?: string[]
   retry?: 'reanalyze' | 'resend'
   retryText?: string
@@ -200,23 +201,13 @@ export default function AiMatchingScreen() {
       addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
       return
     }
-    const topMatches: any[] = result.body?.top_matches || []
+    const { top: topMatches, additional } = matchResultsView(result.body)
     if (topMatches.length > 0) {
       addAssistant({
         text: 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
         dateLine,
-        recommendations: topMatches.map(m => ({
-          experience_id: m.experience_id,
-          provider_id: m.provider_id,
-          experience_name: m.experience_name || m.name,
-          provider_name: m.provider_name,
-          village_name: m.village_name,
-          rank: m.rank,
-          match_score: m.match_score,
-          price_per_person: m.price_per_person,
-          max_participants: m.max_participants,
-          explanation: m.explanation,
-        })),
+        recommendations: topMatches,
+        additionalSuggestions: additional,
       })
     } else {
       // No candidate reaches the constraints or 60/100 → relaxation suggestions (BR-011, FR-012)
@@ -243,57 +234,17 @@ export default function AiMatchingScreen() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        minHeight: '70vh', // #188: inside the app shell, no fixed 100vh frame under the shared header
         background: 'linear-gradient(180deg, #0B1120 0%, #0F172A 100%)',
         color: '#F8FAFC',
       }}
     >
-      {/* Top Navigation Bar */}
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '16px 28px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid #1E293B',
-          zIndex: 10,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '18px',
-            }}
-          >
-            H
-          </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '-0.02em' }}>
-              Hanoi Artisan Bridge
-            </h1>
-            <span style={{ fontSize: '12px', color: '#94A3B8' }}>
-              Screen AIT121 — Conversational AI Tour Matching
-            </span>
-          </div>
-        </div>
-
-        {/* Current organization context comes from the authenticated session. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ fontSize: '12px', color: '#CBD5E1' }}>
-            Active Agency: <strong style={{ color: '#F59E0B' }}>{agencyId}</strong>
-          </div>
-        </div>
-      </header>
+      {/* #188, screen-spec-AIT121 §3 #1: the screen heading; brand, navigation and account come from the shared shell. */}
+      <div style={{ padding: '20px 28px 0', maxWidth: '1000px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em' }}>
+          AI Tour Matching
+        </h1>
+      </div>
 
       {/* Main Content: Chat Stream */}
       <main
@@ -408,9 +359,12 @@ export default function AiMatchingScreen() {
                     marginTop: '16px',
                   }}
                 >
-                  {msg.recommendations.map(rec => (
+                  {[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (
+                    <React.Fragment key={rec.experience_id}>
+                    {index === msg.recommendations!.length && (
+                      <h4 style={{ margin: '10px 0 0', fontSize: '14px', color: '#94A3B8', fontWeight: 700 }}>Gợi ý thêm</h4>
+                    )}
                     <div
-                      key={rec.experience_id}
                       className="rec-card"
                       style={{
                         background: '#0F172A',
@@ -568,6 +522,7 @@ export default function AiMatchingScreen() {
                         </div>
                       )}
                     </div>
+                    </React.Fragment>
                   ))}
                 </div>
               )}

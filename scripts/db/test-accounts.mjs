@@ -6,7 +6,7 @@ import { createHash, randomUUID } from 'node:crypto'
 
 const NAME = /^[A-Za-z][A-Za-z0-9]{0,19}$/
 const OUTSIDER = 'Khach' // "[T-Khach]": the Agency account for testers outside the team
-const SEED_HDT_APPROVER = 'thanhvien9@example.invalid' // seed HDT that approves every seed Agency
+export const SEED_HDT_APPROVER = 'thanhvien9@example.invalid' // seed HDT that approves every seed Agency
 // Existing accounts that only get a password; nothing new is created for these roles.
 const EXISTING = [
   { env: 'HAB_TEST_PASSWORD_PROVIDER', email: 'thanhvien19@example.invalid', role: 'Local_Provider' }, // Xưởng thủ công Bát Tràng, Verified
@@ -61,7 +61,7 @@ function taxIdFor(name) {
 }
 
 /** Sets the password of an existing account; unchanged password → no write. A changed one revokes its sessions. */
-async function setPassword(port, account, row, deps) {
+export async function setPassword(port, account, row, deps) {
   const same = !String(row.password_hash ?? '').includes('seedhash') && await deps.verify(account.password, row.password_hash)
   const mustChange = String(row.must_change_password) === 'true'
   if (same && !mustChange) return 'unchanged'
@@ -73,15 +73,16 @@ async function setPassword(port, account, row, deps) {
   return 'updated'
 }
 
-async function createAgency(port, account, approverId, deps) {
+/** `naming` lets lecturer mode (lecturer-accounts.mjs) use its own label, company name and tax-id key. */
+export async function createAgency(port, account, approverId, deps, naming = {}) {
   const now = deps.now().toISOString()
-  const taxId = taxIdFor(account.name)
+  const taxId = taxIdFor(naming.taxKey ?? account.name)
   if (await port.findOne('agency_profiles', { tax_id: taxId }) || await port.findOne('registration_submission_versions', { tax_id: taxId })) {
     deps.log.warn(`[test-accounts] synthetic tax id for ${account.email} is already used; skipped.`); return 'skipped'
   }
   const userId = randomUUID(), requestId = randomUUID(), agencyId = randomUUID()
-  const label = `[T-${account.name}]`
-  const companyName = `${label} Công ty du lịch thử nghiệm`
+  const label = naming.label ?? `[T-${account.name}]`
+  const companyName = naming.companyName ?? `${label} Công ty du lịch thử nghiệm`
   const location = { street: `${label} Địa chỉ thử nghiệm`, ward: 'Hàng Trống', district: 'Hoàn Kiếm', city_province: 'Hà Nội' }
   const contact = { contact_person_name: `${label} Người thử nghiệm`, phone_number: '+84900000000', business_email: account.email }
   const tourTypes = ['Craft Village/Experiential']
@@ -114,11 +115,11 @@ async function createAgency(port, account, approverId, deps) {
   return 'created'
 }
 
-async function createHdt(port, account, deps) {
+export async function createHdt(port, account, deps, fullName = `[T-${account.name}] HDT thử nghiệm`) {
   const now = deps.now().toISOString()
   await port.insert('user_accounts', {
     user_id: randomUUID(), email: account.email, password_hash: await deps.hash(account.password), role_code: 'ADMIN', admin_type: 'HDT',
-    account_status: 'Active', full_name: `[T-${account.name}] HDT thử nghiệm`, title: null, phone: null, avatar_file_id: null,
+    account_status: 'Active', full_name: fullName, title: null, phone: null, avatar_file_id: null,
     must_change_password: false, password_changed_at: now, last_login: null, created_at: now, updated_at: now,
   })
   return 'created'

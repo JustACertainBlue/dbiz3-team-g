@@ -35,10 +35,11 @@ describe('#242 | ADM079 filter box', () => {
     const picker = html.match(/<div class="ad9-picker">([\s\S]*?)<\/div>/)![1]
     const trigger = picker.match(/<button[^>]*combined-filter-trigger[\s\S]*?<\/button>/)![0]
     expect(trigger).not.toContain('✕')
-    expect(picker).toMatch(/<\/button><button type="button" class="ad9-clear" aria-label="Bỏ chọn Agency">✕<\/button>$/)
+    // spec đổi → kỳ vọng đổi (ADM079 filter-box fix: ✕ label "Xoá lựa chọn Agency" / "Xoá lựa chọn Provider", ✕ in the row right after the value; approved by linhkhanh-vu 2026-11-10)
+    expect(picker).toMatch(/<\/button><button type="button" class="ad9-clear" aria-label="Xoá lựa chọn Agency">✕<\/button>$/)
     const css = readFileSync('src/app/admin/dashboard-v9.css', 'utf8')
     expect(css).toMatch(/\.ad9-picker \{ position: relative;/)
-    expect(css).toMatch(/\.ad9-clear \{ position: absolute;/)
+    expect(css).toMatch(/\.ad9-clear \{ position: relative;/)
   })
 })
 

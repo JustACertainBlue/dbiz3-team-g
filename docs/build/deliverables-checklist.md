@@ -2,7 +2,7 @@
 
 Source of the list: `docs/build/claude-context/07-session10-11-requirements.md` (course summary), plus items the
 team added (branch protection, cookie check, review drafts). Status as of **2026-11-10 (final pass), `main` = `c858ba9`**
-(PR #260, code freeze). Every ✅ was re-checked against `main` and GitHub on 2026-11-10; open PRs: #257 (this file) and #242 (superseded by #252).
+(PR #260, code freeze; `main` is now `34155da` after the docs-only PR #228, `docs/bug-reports/ubnd-bug-report.md`). Every ✅ was re-checked against `main` and GitHub on 2026-11-10; open PRs: #257 (this file) only (#242 closed 2026-11-10, superseded by #252).
 
 Legend: ✅ done on `main` · 🟡 done in an open PR (merge pending) · ❌ missing · ⏳ in progress / waiting for a person.
 Repository: https://github.com/JustACertainBlue/dbiz3-team-g
@@ -18,7 +18,7 @@ Repository: https://github.com/JustACertainBlue/dbiz3-team-g
 | 5 | Defect reports as GitHub Issues (template), each closed by its fixing PR | ⏳ | 27 issues labelled `defect`: 19 closed, each by its fixing PR (e.g. #55 → #107, #56 → #123, #57 / #83 → #130, #58 → #124, #59 → #106, #60 → #111, #61 → #112, #62 → #110, #64 → #252, #84 → #127, #87 → #89, #88 → #90, #93 → #100, #96 → #97, #102 → #174). Close Chat on Render verified and #162 closed 2026-11-10 | 8 open, none `sev:high`: #63, #65, #136, #139, #179, #180 (labelled `after-tag`), #131, #132 (`question`, need a spec decision) |
 | 6 | Release tag `v0.1-integration` on `main` (annotated, never moved) | ✅ | Annotated tag by linhkhanh-vu, 2026-11-07, on `9bc6f7c` ("Session 10: 7 modules integrated, contract tests for 9 interfaces"), in `main` history | — |
 | 7 | AI Use Log (`docs/ai-use-log.md`): AI-generated parts and who checked them | ⏳ | 140 rows on `main`, 145 with #257 (+5); every PR since #95 added its row | "Checked by" filled on 16 rows, 4 of them only "_pending: linhkhanh-vu_" → 12 rows actually checked by a person. Human: fill "Checked by" for the rest, or state that the human who merged checked them |
-| 8 | Branch protection on `main` | ⏳ | GitHub API 2026-11-10 (`gh api`): `branches/main` → `"protected": false`; `branches/main/protection` → 404 Not Found; `rules/branches/main` → `[]`; `rulesets` → `[]`. Our account has no admin right on the repository (`permissions.admin: false`). The agent push guard (`.claude/hooks/block-git-push.py`) is local only | Repository owner (@JustACertainBlue): require a PR, ≥ 1 approving review from someone else, required checks `check (windows-latest)` and `check (macos-latest)`, no force-push, no deletion |
+| 8 | Branch protection on `main` | ⏳ | Re-checked with `gh api` on 2026-11-10 after the owner enabled rulesets (created 19:01 +07:00): `branches/main` → `"protected": true`; `branches/main/protection` → 404 (classic protection not used); `rulesets` → two active branch rulesets on `refs/heads/main`, no bypass actors: **main-1** (id 26938623) `deletion` + `non_fast_forward`; **main-2** (id 26938624) `pull_request` with `required_approving_review_count: 1` and `required_status_checks` with **`required_status_checks: []`** (empty list, so no check is actually required). PR #257 now shows `mergeStateStatus: BLOCKED`, `reviewDecision: REVIEW_REQUIRED`. PR required ✅, 1 approval ✅, no force-push ✅, no deletion ✅, required checks ❌ | Repository owner (@JustACertainBlue): in ruleset main-2 → Require status checks, add `check (windows-latest)` and `check (macos-latest)`; then this row can be ✅ |
 
 ## Session 11 — Product Completion and Deployment Ready
 

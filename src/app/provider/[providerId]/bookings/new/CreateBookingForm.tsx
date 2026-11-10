@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 export interface ExperienceOption {
   experience_id: string
@@ -136,7 +136,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
     {error && <p className="bkg-error" role="alert">{error}</p>}
     <div className="bkg-actions">
       <button type="submit" disabled={saving}>{saving ? 'Đang tạo…' : 'Create On hold'}</button>
-      <Link href={`/provider/${providerId}`}>Cancel</Link>
+      <Link href={`/provider/${providerId}/bookings`}>Cancel</Link>
     </div>
   </form>
 }

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import ExperienceTermsField from '../../ExperienceTermsField'
 import { readCancellationPolicy, cancellationPatch, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
+import ExperienceLocationField from '../../ExperienceLocationField'
 import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 
@@ -440,6 +441,9 @@ export default function EditExperiencePage({
                   className="prf-input prf-input-locked"
                 />
               </div>
+
+              <ExperienceLocationField value={formData.experience_location_address} locked={hasActiveBookings}
+                onChange={value => setFormData({ ...formData, experience_location_address: value })} />
 
               <div className="prf-field-group">
                 <label className="prf-label" htmlFor="experience-field-6">Thời gian báo trước (giờ)</label>

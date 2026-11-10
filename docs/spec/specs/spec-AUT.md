@@ -236,6 +236,8 @@ UC-ACC-06 also maps to F-AUTH-26.
 
 - EARS (2026-11-07, hosted version without email, ADR 0001): IF an action needs to send an email (registration OTP or OTP resend, password-reset link, temporary credentials for a new UBND or Local Provider account, admin password reset, Request More Information edit link) and no email service is configured, THEN THE SYSTEM SHALL show the message "Email chưa được cấu hình" (email not configured), SHALL NOT create the OTP, reset or edit token, account or temporary password, and SHALL NOT report that an email was sent.
 
+- EARS (2026-11-08, hosted version, issue #102): IF the prototype login (a seeded email with any non-empty password) is not available in the current environment, as in production, THEN THE SYSTEM SHALL NOT show the test-account panel or the "any password" hint on the login screen and SHALL offer only the email and password form.
+
 ### Consistency acceptance examples
 
 | AC ID | Given / When | Expected result |

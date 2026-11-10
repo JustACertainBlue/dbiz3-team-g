@@ -3,10 +3,15 @@
 import Link from 'next/link'
 import React from 'react'
 import '../auth-v9.css'
+import { guestNavLinks } from './nav/nav-model'
 
 export default function AuthShell({ children, title }: { children: React.ReactNode; title: string }) {
   // A <div>: the login page wraps it in <main>; REG115 already sits inside the registration layout's <main>.
   return <div className="auth-v9">
+    {/* #253: the app shell is hidden on these pages, so the Guest navigation (EXP120, AUT009, REG003) is shown here. */}
+    <nav className="auth-v9__nav" aria-label="Điều hướng">
+      {guestNavLinks().map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}
+    </nav>
     <section className="auth-v9__brand" aria-label="Hanoi Artisan Bridge">
       <div className="auth-v9__rings" aria-hidden="true" />
       <div className="auth-v9__brand-text">

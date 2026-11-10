@@ -66,18 +66,16 @@ export default function ExperienceManagementPage({
             Danh mục các hoạt động văn hóa, nặn gốm và tham quan do xưởng trực tiếp cung cấp cho du khách và tour B2B
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className="prf-spec-actions">
           <Link
             href={`/provider/${params.providerId}`}
             className="prf-btn prf-btn-outline"
-            style={{ fontSize: '0.8rem' }}
           >
             ← Hồ sơ xưởng
           </Link>
           <Link
             href={`/provider/${params.providerId}/experiences/new`}
             className="prf-btn prf-btn-primary"
-            style={{ fontSize: '0.8rem' }}
           >
             + Thêm trải nghiệm mới
           </Link>
@@ -174,11 +172,11 @@ export default function ExperienceManagementPage({
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <Link href={`/provider/${params.providerId}/experiences/${exp.experience_id}`} className="prf-btn prf-btn-outline" style={{ fontSize: '0.78rem' }}>Xem chi tiết</Link>
+              <Link href={`/provider/${params.providerId}/experiences/${exp.experience_id}`} className="prf-btn prf-btn-outline">Xem chi tiết</Link>
               <Link
                 href={`/provider/${params.providerId}/experiences/${exp.experience_id}/edit`}
                 className="prf-btn prf-btn-primary"
-                style={{ fontSize: '0.78rem' }}
+               
               >
                 Chỉnh sửa
               </Link>

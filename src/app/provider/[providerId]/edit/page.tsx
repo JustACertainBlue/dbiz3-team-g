@@ -210,7 +210,11 @@ export default function EditProviderProfilePage({
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {/* #218, screen-spec-PRF128 §3 #18 / §5 #4: Manage Experiences → EXP067 */}
+            <Link href={`/provider/${params.providerId}/experiences`} className="spec-btn-white">
+              Quản lý trải nghiệm
+            </Link>
             <Link href={`/provider/${params.providerId}`} className="spec-btn-white">
               Hủy thay đổi
             </Link>

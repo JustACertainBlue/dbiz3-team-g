@@ -8,6 +8,7 @@ import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
 import ExploreTracker from '../../ExploreTracker';
 import { currentServerSession } from '../../../../lib/auth/server-session';
 import ExperienceActions from '../../ExperienceActions';
+import GuestLockedActions from '../../GuestLockedActions';
 import { hasQuoteRequest } from '../../../../lib/demo/commercial-handoff-service';
 import { Lock, ShieldCheck } from 'lucide-react';
 import '../../explore-v9.css';
@@ -51,7 +52,7 @@ export default async function ExperienceEntry({ params }: { params: { id: string
           </dl>
           {isAgency
             ? <ExperienceActions experienceId={card.id} quoteSent={(await hasQuoteRequest(session, card.id))} />
-            : <div className="stack-actions"><Link className="button" href="/login">Đăng nhập</Link><Link className="button button--secondary" href="/register">Đăng ký Agency</Link></div>}
+            : <div className="stack-actions"><GuestLockedActions buttonClassName="button button--secondary" /><Link className="button" href="/login">Đăng nhập</Link><Link className="button button--secondary" href="/register">Đăng ký Agency</Link></div>}
         </aside>
       </section>
 

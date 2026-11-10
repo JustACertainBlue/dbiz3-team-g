@@ -1448,6 +1448,21 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | Each branch: `npm run test` green (1251–1254 passed, 20 skipped), lint passes, build 44/44. Not run: `validate_seed.py` (python not in the allowed list; no `data/` change) and screenshots (no dev server overnight) |
 | Overlaps | #246 conflicts with #236 on one line of `src/app/explore/page.tsx` (both add a card action line); resolve by keeping both (mutually exclusive by `isAgency`). #249 is merge-tree clean with #238, #123 |
 
+### Entry 103: 10/11 Claude Code + human — #242 adopted spec-first (#251, #252), Guest landing (#254), Provider Experience forms (#255), browser-check fixes
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu on 10/11. No merges by the agent |
+| Team PR review | #242 (nguyenthu-0505) and #228 (thuvutp-prog) reviewed against the spec; review drafts kept outside the repo. #242: CI red from its own changes; free-text village and the KPI filter change contradicted FR-019 and spec-ADM OQ #21 |
+| #251 spec (decision linhkhanh-vu 2026-11-10) | spec-AUT FR-019 / §5.1 `village_name`, US-7 AS-1 + 1a/1b/1c, OQ #14 note, new OQ #22; function-list F-AUTH-19; screen-spec-ADM117 §3 #5 (suggestions = active villages without UBND); spec-ADM OQ #21 reopened → cards follow Agency/Provider filters; consistency-contract lines 12, 82, 108. AUT/ADM snapshots refreshed (`--check` OK); IAC snapshots left as they were (older drift). Two update rounds after #130 and #175 (snapshot-only conflicts) |
+| #252 code (supersedes #242, Closes #64; co-author nguyenthu-0505 on every commit) | UBND village by name (assign / create ACTIVE "HDT-xxxxxxxx", Hà Nội / refuse with UBND / refuse inactive); Provider active-village check and BR-008 kept; KPI cards by all filters; ADM118 / VER146 modal (Escape, backdrop); Apply inside the filter box; ✕ as a real button; guest redirect from an effect; no unused STATUS_LABEL. Tests first (3 new files); 5 existing tests had only their inputs changed where the spec changed ("spec changed 2026-11-10"). Browser check on DEV found Create disabled when no village is suggested (#64 state) → fixed test-first (`8240cc2`) |
+| DEV test data | Village "[T-Linh-1011] Làng thử" created and UBND `t-linh-1011-ubnd@example.invalid` created then **Disabled** (`5979d05f-…`). The village stays (no delete function) |
+| #254 (Closes #253, sev:medium) | "/" sends a Guest to `/explore`; AuthShell (AUT009, REG115) shows the Guest navigation; signed-in routing unchanged. Test first (3 red) |
+| #255 (refs #205 #206 #207) | EXP067–070: internal codes removed from user-facing text, "Huỷ thay đổi" / "Lưu thay đổi", styles for the unstyled `prf-*` form classes, no number spinners, footer not sticky on phones. Guard test red on the old code. Spec question: image category display names |
+| Wave 2 browser check | #248 VIL030: images rendered 1440 px wide outside the Provider workspace → page-owned grid + margins (`335eb22`). #246 EXP017: card actions were unstyled native buttons → CSS in explore-v9.css (`8fccef6`), after updating #246 with `main` (kept both card lines per `isAgency`) |
+| Update rounds | #124 (code conflict with #130 in `agency-review.ts`: kept `next_step` and the real email status), #175 and #251 (snapshots refreshed), #108 (lockfile regenerated from `main` without `@googlemaps`; `npm ci` clean) |
+| Checks | Each branch: `npm run test`, lint, build 44/44; CI green on Windows and macOS for every pushed branch |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

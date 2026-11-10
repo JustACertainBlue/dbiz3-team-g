@@ -188,6 +188,8 @@ UC-DIS-04 maps to F-EXPLORE-03, F-EXPLORE-04 and F-EXPLORE-12.
 
 - New ranking parameters reduce performance compared with the previous version.
 
+- EARS (2026-11-10, hosted version, outside test; draft #173 H1): WHEN a visitor opens the public link on a mobile 4G connection, THE SYSTEM SHALL display the Explore page within 10 seconds. Evidence: measured 5–10 s on iPhone 11 / Safari / Viettel 4G on 2026-11-10 with the keep-alive job running; a cold start after the Render free-tier sleep was not measured (the keep-alive job prevents the sleep).
+
 ### Consistency acceptance examples
 
 | AC ID | Given / When | Expected result |

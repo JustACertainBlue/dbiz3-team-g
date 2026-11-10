@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-IAC.md sha256=824d1e3584df510c4514724006ebb323f74981898037014c393173fc3fea0a71 taken=2026-11-05T10:29Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-IAC.md sha256=2911bf0400d10024e42b397ab1bd12edf0ac22c62cff74f5255bf1fa0ad39a61 taken=2026-11-10T09:47Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-IAC.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -176,6 +176,12 @@ F-CHAT-01 explicitly references permission validation through F-AUTH-16 and allo
 ## A multi-file attachment contains one or more invalid files.
 
 ## File upload succeeds but attachment to the Chat fails.
+
+## Hosted-version EARS
+
+- EARS (2026-11-10, hosted version, team test report 09/11 item M04; draft #173 H2): WHEN the chat screen is shown on a 390 px-wide phone screen, THE SYSTEM SHALL display the message input, send and attach controls without clipping. Evidence: 390 px emulation (Việt Hoàng, M01) and a real iPhone 11 over 4G (Thu Hà, team H), 2026-11-10.
+
+- EARS (2026-11-09, hosted version, issue #158; draft #173 H4): WHEN the other participant sends a message in an Active Chat that is open on screen, THE SYSTEM SHALL show the message in that Chat within 20 seconds while the page is visible, without a reload. Evidence: PR #166 (10 s polling, `src/lib/client/poller.ts`, `tests/unit/polling.test.ts`); DEV check 09/11: ≤ 15 s.
 
 
 ### Consistency acceptance examples

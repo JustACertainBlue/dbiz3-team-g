@@ -562,14 +562,14 @@ only HDT, comment required, duplicate Tax ID refused), `tests/unit/agency-review
    Pending Review, Approved, Rejected])` (spec-PRF.md:340) vs spec-AUT FR-018
    `major_change_review_status (Enum[Not Applicable, Pending Review, Approved, Rejected])`
    (spec-AUT.md:405).
-2. **"Request More Information" for a major change.** spec-AUT FR-018 allows decision
-   `Request More Information` for both review types (spec-AUT.md:405) but neither output enum
-   (spec-PRF.md:340, spec-AUT.md:405) contains it; schema has it (schema.sql:254).
-3. **Code vs schema on that state.** `reviewAgency` writes `review_status = 'Request More
-   Information'` and `reviewed_at = now` (`agency-review.ts:42-43`) vs schema
-   `major_change_reviewed_chk` (issue #83): Pending Review / Request More Information require `reviewed_at IS
-   NULL` (schema.sql:255-258; table at :244). Would fail on PostgreSQL; the JSON runtime does not enforce it
-   (inferred, not run).
+2. **"Request More Information" for a major change** (resolved 08/11, issues #57 / #83). spec-AUT FR-018 now
+   says: Request More Information closes a major change like Reject (status Rejected, decision recorded as
+   Request More Information); the Agency submits a new change from its profile. This fits the output enum
+   (no Request More Information status) and the schema (schema.sql:254-263).
+3. **Code vs schema on that state** (resolved, issue #83). `reviewAgency` now stores `Rejected` with `reviewed_at`
+   for both Reject and Request More Information, as `major_change_reviewed_chk` requires, and leaves no open row,
+   so `agency_one_pending_major_change_uq` accepts the Agency's next change. Tests:
+   `tests/unit/aut-major-change-rmi-closes.test.ts`, opt-in `tests/postgres/agency-major-change.test.ts`.
 4. **PRF outputs missing (spec vs code).** spec-PRF FR-002 requires `updated_profile`,
    `success_message`, `updated_at`, `change_log_entry`, `major_change_review_status`
    (spec-PRF.md:340); `updateAgencyProfile` returns only `success, agency_id,

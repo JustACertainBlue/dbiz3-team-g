@@ -48,6 +48,41 @@ In the production folder, after `npm ci`:
 Skip `storage:import-local` (there are no local production files) and `import-legacy` (development history only).
 Do not run `test:postgres` / `test:storage` against production; they run on the development project.
 
+### 2.1 Lecturer tester accounts (`--lecturer`)
+
+Four logins for the lecturer on one village (decision linhkhanh-vu, 2026-11-10: **Phú Vinh**; Provider `thanhvien21`,
+UBND `thanhvien3`; the village has one Experience):
+
+| Login | What the run does |
+|---|---|
+| `agency-tester@example.invalid` | Creates a Tour Agency, **Approved**, company "[Tester] Công ty du lịch" (approved by seed HDT `thanhvien9`, same records as a seed Agency) |
+| `hdt-tester@example.invalid` | Creates an ADMIN / HDT account |
+| `provider-tester@example.invalid` | **Changes the email** of the village's Verified Provider user (`thanhvien21@…`); user id, provider profile and Experiences unchanged |
+| `ubnd-tester@example.invalid` | **Changes the email** of the village's UBND user (`thanhvien3@…`); user id and village assignment unchanged |
+
+In the production folder (`.env.local` holds only production values), add for the run only:
+
+```
+HAB_EXPECT_PROJECT_REF=<production project ref>
+HAB_LECTURER_VILLAGE=e482884e-7190-56cf-bc03-4e69614b1fe5   # Phú Vinh (village_id; the name "Phú Vinh" also works)
+```
+
+| # | Command | Expected |
+|---|---|---|
+| 1 | `npm run db:set-test-passwords -- --lecturer --dry-run` | Stops before connecting if `HAB_EXPECT_PROJECT_REF` is missing or differs from the ref in `DATABASE_APP_URL`. Otherwise prints the target, the village, both user ids with old → new email, `create` for Agency/HDT, and `dry run: nothing was written` |
+| 2 | `npm run db:set-test-passwords -- --lecturer` | Same plan, applied in **one transaction**; prints each generated password **once**, to the terminal only (refuses to run when the output is piped or redirected). Sessions of the changed users are revoked |
+| 3 | Remove `HAB_EXPECT_PROJECT_REF` and `HAB_LECTURER_VILLAGE` from `.env.local` | — |
+
+- Passwords are generated (`crypto.randomBytes`, 20 characters, AUT rule) and never written to a file, log, issue or chat.
+  Give them to the lecturer privately.
+- Re-running prints `unchanged` and no password. `--reset-passwords` sets and prints new passwords for all four and
+  revokes their sessions (e.g. if a password was lost).
+- The run stops without writing if the village is unknown or inactive, has no or several Verified Providers or UBND
+  users, if either user is not Active, or if a tester email already belongs to another user.
+- **Production now differs from the seed by two emails**: `thanhvien21@example.invalid` → `provider-tester@example.invalid`
+  and `thanhvien3@example.invalid` → `ubnd-tester@example.invalid`. The seed (`data/`) and the development database are
+  unchanged; a production re-seed (forbidden, §5) would bring the old emails back.
+
 ## 3. Create the Render web service (human)
 
 1. New **Web Service** from the GitHub repository, branch `main`, **one instance** (no autoscaling; ADR 0001).

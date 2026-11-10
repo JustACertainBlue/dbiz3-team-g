@@ -1487,6 +1487,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Browser check | DEV, HDT `thanhvien9`, Playwright 1440 and 390 px, longest Agency name and 2 agencies: no overlap, no horizontal scroll, value truncated, ✕ inside and centred; click on the box opens the list; Tab reaches ✕, Enter clears; switch confirm and Apply (`providerId=…`) as before. Screenshots outside the repo (`~/Desktop/hab-scratch/shots/adm079-filters/`) |
 | Checks | `npm test` 240 files / 1391 passed (22 skipped); lint 0; build 44/44; seed PASS |
 
+### Entry 106: 10/11 Claude Code + human — lecturer tester accounts (`db:set-test-passwords -- --lecturer`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested and decided by linhkhanh-vu on 10/11 (village Phú Vinh, Provider `thanhvien21`, UBND `thanhvien3`, 1 Experience accepted; option (a): change the two users' emails on PROD). Branch `fix/lecturer-test-accounts`; no merge, no `db:*` run, no `.env` read by the agent |
+| Finding (read-only) | The existing `db:set-test-passwords` could not do it: fixed `t-<name>-agency` / `t-<name>-hdt` emails and company name, Provider/UBND hard-wired to Bát Tràng, passwords from env, and no PROD guard (it only printed host/database). No village in `data/seed` has a Provider with ≥ 2 Experiences (8 Experiences, one per Provider), so that criterion was dropped by the human |
+| Change | New `scripts/db/lecturer-accounts.mjs`; CLI flags `--lecturer`, `--dry-run`, `--reset-passwords` in `scripts/db/set-test-passwords.mjs` (plus `findAll` on the PostgreSQL port). `HAB_EXPECT_PROJECT_REF` must match the ref in `DATABASE_APP_URL` (pooler user `hab_app.<ref>` or host `db.<ref>.supabase.co`) before connecting; `HAB_LECTURER_VILLAGE` (name or id) resolves exactly one active village, one Verified Provider and one UBND assignment with Active users. Agency/HDT created with the existing helpers (now exported, Agency naming parameterised; default output unchanged); Provider/UBND keep their user ids. One transaction; passwords from `crypto.randomBytes` (20 chars, AUT rule), printed once to an interactive terminal only (refuses piped/redirected output), never logged; sessions revoked. Re-run = unchanged unless `--reset-passwords`. Flags without `--lecturer` and unknown flags stop |
+| Tests | New `tests/unit/set-test-passwords-lecturer.test.ts` (16): red first against a not-implemented stub (16 failed for the right reason). After the code, 2 failed because the new test checked "no open session" after logging in, and a login opens a session (`createSession`); the assertion was moved before the logins in this new, never-green test. Existing `tests/unit/set-test-passwords.test.ts` (9) unchanged and green |
+| CLI check | Synthetic URLs, empty folder, no `.env`: ref mismatch, missing `HAB_EXPECT_PROJECT_REF`, `--dry-run` without `--lecturer`, unknown flag and piped real run each stop with exit 1 before connecting. **Not run against any database** (DEV or PROD): the PostgreSQL path is verified by the human's `--dry-run` on PROD |
+| Docs | `docs/build/deploy-runbook.md` §2.1 (lecturer mode, PROD-vs-seed email difference); `docs/build/mvp-alpha-checklist.md` §3 limitation #64; `.env.example` names `HAB_EXPECT_PROJECT_REF`, `HAB_LECTURER_VILLAGE` (no values) |
+| Checks | `npm test` 241 files / 1407 passed (22 skipped); lint 0; build 44/44 |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

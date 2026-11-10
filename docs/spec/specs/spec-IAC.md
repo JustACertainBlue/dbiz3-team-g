@@ -173,6 +173,12 @@ F-CHAT-01 explicitly references permission validation through F-AUTH-16 and allo
 
 ## File upload succeeds but attachment to the Chat fails.
 
+## Hosted-version EARS
+
+- EARS (2026-11-10, hosted version, team test report 09/11 item M04; draft #173 H2): WHEN the chat screen is shown on a 390 px-wide phone screen, THE SYSTEM SHALL display the message input, send and attach controls without clipping. Evidence: 390 px emulation (Việt Hoàng, M01) and a real iPhone 11 over 4G (Thu Hà, team H), 2026-11-10.
+
+- EARS (2026-11-09, hosted version, issue #158; draft #173 H4): WHEN the other participant sends a message in an Active Chat that is open on screen, THE SYSTEM SHALL show the message in that Chat within 20 seconds while the page is visible, without a reload. Evidence: PR #166 (10 s polling, `src/lib/client/poller.ts`, `tests/unit/polling.test.ts`); DEV check 09/11: ≤ 15 s.
+
 
 ### Consistency acceptance examples
 

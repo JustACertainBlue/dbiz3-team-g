@@ -24,11 +24,20 @@
 .ad9-input--button > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ad9-input--button.is-set { border-color: var(--color-brand-700); font-weight: 600; }
 .ad9-input--locked { display: flex; align-items: center; justify-content: space-between; background: var(--color-neutral-100); border-color: var(--color-neutral-200); color: var(--color-text-secondary); }
-/* #242: the ✕ clear button stays a real, focusable sibling of the trigger, drawn inside the field's right edge
-   (it used to sit beside the field and overflow into the next column). */
-.ad9-picker { position: relative; display: flex; }
-.ad9-picker .ad9-input--button.is-set { padding-right: 52px; }
-.ad9-clear { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-size: 16px; cursor: pointer; }
+/* ADM079 filter boxes (2026-11-10, after #242): the trigger can shrink (min-width: 0), so a long value never widens
+   the box over the next filter box; the value is one line with an ellipsis. With a selection the picker itself is the
+   box and the ✕ — still a real, focusable sibling of the trigger — sits in the same row right after the value; the
+   trigger's ::after covers the whole box so a click anywhere but the ✕ still opens the list. */
+.ad9-picker { position: relative; display: flex; align-items: center; min-width: 0; }
+.ad9-picker > .combined-filter-trigger { flex: 1 1 auto; min-width: 0; }
+.ad9-ellipsis { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad9-picker:has(> .ad9-clear) { min-height: 52px; padding: 0 44px 0 16px; gap: 4px; border: 1.5px solid var(--color-brand-700); border-radius: var(--radius-md); background: var(--color-surface-card); }
+.ad9-picker:has(> .ad9-clear) > .combined-filter-trigger { flex: 0 1 auto; width: auto; min-height: 49px; padding: 0; border: 0; background: transparent; }
+.ad9-picker:has(> .ad9-clear) > .combined-filter-trigger::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-md); }
+.ad9-picker:has(> .ad9-clear) > .combined-filter-trigger:focus-visible { outline: none; }
+.ad9-picker:has(> .ad9-clear) > .combined-filter-trigger:focus-visible::after { outline: 2px solid var(--color-brand-700); outline-offset: 2px; }
+.ad9-picker:has(> .ad9-clear) > .combined-filter-trigger svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--color-text-secondary); }
+.ad9-clear { position: relative; z-index: 1; flex: none; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-size: 16px; cursor: pointer; }
 .ad9-clear:hover, .ad9-clear:focus-visible { background: var(--color-neutral-100); color: var(--color-text-primary); }
 .ad9-field--apply { align-self: end; }
 .ad9-pop { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; right: 0; min-width: 280px; max-height: 360px; overflow: auto; padding: 12px; display: grid; gap: 10px; border-radius: var(--radius-md); background: var(--color-surface-card); border: var(--border-width-1) solid var(--color-border-default); box-shadow: var(--shadow-lg); }

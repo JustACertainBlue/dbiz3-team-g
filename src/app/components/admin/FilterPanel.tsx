@@ -293,16 +293,17 @@ export function FilterPanel({
     const open = openBox === kind
     const dialogHere = switchDialog && (switchDialog.targetCategory === 'Agency') === isAgency
     const otherLabel = (category: string) => category === 'Agency' ? 'Agency' : 'Provider'
+    const valueText = selectionText(kind, ids, options)
     return (
       <div className="ad9-field">
         <span className="ad9-field__label" id={`ad9-${kind}-label`}>{kind}</span>
         <div className="ad9-picker">
           <button type="button" className={`ad9-input ad9-input--button combined-filter-trigger${ids.length ? ' is-set' : ''}`} aria-haspopup="listbox" aria-expanded={open} aria-labelledby={`ad9-${kind}-label ad9-${kind}-value`}
             onClick={() => { setOpenBox(open ? null : kind); setSwitchDialog(null) }}>
-            <span id={`ad9-${kind}-value`}>{selectionText(kind, ids, options)}</span>
+            <span id={`ad9-${kind}-value`} className="ad9-ellipsis" title={valueText}>{valueText}</span>
             <ChevronDown size={18} aria-hidden="true" />
           </button>
-          {ids.length > 0 && <button type="button" className="ad9-clear" aria-label={`Bỏ chọn ${kind}`} onClick={clear}>✕</button>}
+          {ids.length > 0 && <button type="button" className="ad9-clear" aria-label="Xoá lựa chọn" onClick={clear}>✕</button>}
         </div>
         {open && (
           <div className="ad9-pop" role="dialog" aria-label={`Chọn ${kind}`}>

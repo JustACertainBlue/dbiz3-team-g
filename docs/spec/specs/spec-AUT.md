@@ -238,6 +238,8 @@ UC-ACC-06 also maps to F-AUTH-26.
 
 - EARS (2026-11-08, hosted version, issue #102): IF the prototype login (a seeded email with any non-empty password) is not available in the current environment, as in production, THEN THE SYSTEM SHALL NOT show the test-account panel or the "any password" hint on the login screen and SHALL offer only the email and password form.
 
+- EARS (2026-11-09, hosted version, issue #58; draft #173 H7): WHEN HDT reviews an Agency registration or change and the notification email is not sent, THE SYSTEM SHALL show on the review screen that the email was not sent and SHALL NOT show "email sent" for a delivery that did not happen. Evidence: PR #124 (`src/lib/auth/agency-review.ts` reports the delivery it actually made), `tests/unit/aut-review-email-status.test.ts`.
+
 ### Consistency acceptance examples
 
 | AC ID | Given / When | Expected result |

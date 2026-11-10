@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-BKG.md sha256=14866daddee90c9d79be1da43f556fc7bc3450763bd7bb877cd6e1b2f731513d taken=2026-11-09T09:55Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-BKG.md sha256=1a6814e53942798b87a38bdb02f198c20bb02a550ff3fd795a515ae2a47c886e taken=2026-11-10T09:47Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-BKG.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -233,6 +233,10 @@ UC-BOOK-06 maps to F-SCHED-10.
 - A schedule sync succeeds for Provider but fails for Agency view.
 
 - EARS (2026-11-08, hosted version, issue #87): IF a Booking date or time is shown to a user (Booking list, Booking detail, schedule, edit form or Chat Booking Update message), THEN THE SYSTEM SHALL show it in Asia/Ho_Chi_Minh local time (#31), whatever offset the stored timestamptz value is returned with.
+
+- EARS (2026-11-09, hosted version, issue #157; draft #173 H3): WHEN a Local Provider changes a Booking (status, schedule, group size, price or conditions), THE SYSTEM SHALL show the change on the Tour Agency's open Booking History (BKG137), Booking Detail (BKG138) and Agency Schedule (SCH141) within 20 seconds while the page is visible, without a reload. Evidence: PR #166 (10 s polling, `tests/unit/polling.test.ts`); DEV check 09/11: 15–22 s, including the first dev compile.
+
+- EARS (2026-11-09, hosted version, issues #157 / #158; draft #173 H5): WHEN a browser tab showing BKG137, BKG138, SCH141 or an open Chat becomes visible again after being hidden, THE SYSTEM SHALL fetch the latest data at once. Evidence: PR #166 (`src/lib/client/poller.ts`: polling pauses while hidden and refetches on visibility), unit-tested in `tests/unit/polling.test.ts`.
 
 ### Consistency acceptance examples
 

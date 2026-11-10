@@ -43,13 +43,13 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
     <section className="bkg-panel" style={{ marginTop: 24 }}><h2>Hội thoại gần đây</h2>{chats.length ? (await Promise.all(chats.map(async chat => <p key={chat.chat_session_id}><Link href={`/messages?chat_session_id=${encodeURIComponent(chat.chat_session_id)}`}>{(await repository.find('agency_profiles', row => row.agency_id === chat.agency_id))?.company_name || 'Agency'} · {chat.status === 'Open' ? 'Đang trao đổi' : chat.status === 'Active' ? 'Đang trao đổi' : 'Đã đóng'} · {participants.find(row => row.chat_session_id === chat.chat_session_id)?.unread_count || '0'} tin chưa đọc</Link></p>))) : <p>Chưa có hội thoại.</p>}</section>
     <section className="provider-modules" aria-labelledby="provider-modules-title">
       <h2 id="provider-modules-title">Quản lý hoạt động của xưởng</h2>
+      {/* screen-spec-DSH018 §3 #6–#10, in spec order (#128): PRF127 stays in the avatar menu ("My Business"). */}
       <div className="provider-module-grid">
-        <Link href={`/provider/${params.providerId}`}><strong>Hồ sơ xưởng</strong><span>Xem thông tin công khai và trạng thái xác minh.</span></Link>
+        <Link href={`/provider/${params.providerId}/edit`}><strong>Chỉnh sửa hồ sơ</strong><span>Cập nhật thông tin và gửi lại nội dung cần xác minh.</span></Link>
         <Link href={`/provider/${params.providerId}/experiences`}><strong>Trải nghiệm</strong><span>Quản lý danh mục trải nghiệm đang cung cấp.</span></Link>
         <Link href={`/provider/${params.providerId}/bookings`}><strong>Đặt đoàn</strong><span>Theo dõi và xử lý các booking của xưởng.</span></Link>
         <Link href={`/provider/${params.providerId}/schedule`}><strong>Lịch hoạt động</strong><span>Xem lịch hoạt động và các khung giờ đã được giữ.</span></Link>
         <Link href="/messages"><strong>Hộp thư</strong><span>Trao đổi với các công ty du lịch.</span></Link>
-        <Link href={`/provider/${params.providerId}/edit`}><strong>Chỉnh sửa hồ sơ</strong><span>Cập nhật thông tin và gửi lại nội dung cần xác minh.</span></Link>
       </div>
     </section>
     <style>{bookingDetailStyles}</style>

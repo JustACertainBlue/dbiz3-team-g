@@ -183,21 +183,37 @@ export async function calculateMetricCards(
     ? allBookings.filter(b => scopedProviderIds.has(b.provider_id))
     : allBookings
 
+  // spec-ADM OQ #21, reopened and closed 2026-11-10 (#242, adopted from nguyenthu-0505): the four cards also follow the
+  // Agency and Provider filters (BR-005), combined with AND (BR-014). Total Agencies = the selected Agencies, or with only a
+  // Provider filter the Agencies that have a Booking with those Providers; Total Providers the same in reverse;
+  // Total Bookings and Active Collaborations count only the matching Bookings.
+  const agencyList = filters.agencyIds?.length ? filters.agencyIds
+    : filters.agencyId ? filters.agencyId.split(',').map(s => s.trim()).filter(Boolean) : []
+  const providerList = filters.providerIds?.length ? filters.providerIds
+    : filters.providerId ? filters.providerId.split(',').map(s => s.trim()).filter(Boolean) : []
+  const metricAgencies = agencyList.length ? scopedAgencies.filter(a => agencyList.includes(a.agency_id))
+    : providerList.length ? scopedAgencies.filter(a => scopedBookings.some(b => b.agency_id === a.agency_id && providerList.includes(b.provider_id)))
+    : scopedAgencies
+  const metricProviders = providerList.length ? scopedProviders.filter(p => providerList.includes(p.provider_id))
+    : agencyList.length ? scopedProviders.filter(p => scopedBookings.some(b => b.provider_id === p.provider_id && agencyList.includes(b.agency_id)))
+    : scopedProviders
+  const metricBookings = scopedBookings.filter(b => (!agencyList.length || agencyList.includes(b.agency_id)) && (!providerList.length || providerList.includes(b.provider_id)))
+
   // Bookings created in the current and previous period (A4)
-  const currentPeriodBookings = scopedBookings.filter(b => createdInPeriod(b, startDate, endDate))
-  const prevPeriodBookings = scopedBookings.filter(b => createdInPeriod(b, prevStartDate, prevEndDate))
+  const currentPeriodBookings = metricBookings.filter(b => createdInPeriod(b, startDate, endDate))
+  const prevPeriodBookings = metricBookings.filter(b => createdInPeriod(b, prevStartDate, prevEndDate))
 
   // 1. Total Agencies and 2. Total Providers: snapshots at the end date (A4, contract:110)
-  const totalAgenciesVal = scopedAgencies.filter(a => existedAt(a.created_at, endDate)).length
+  const totalAgenciesVal = metricAgencies.filter(a => existedAt(a.created_at, endDate)).length
   const agencyTrend = calculateTrendPercentage(
     totalAgenciesVal,
-    scopedAgencies.filter(a => existedAt(a.created_at, prevEndDate)).length || null
+    metricAgencies.filter(a => existedAt(a.created_at, prevEndDate)).length || null
   )
 
-  const totalProvidersVal = scopedProviders.filter(p => existedAt(p.created_at, endDate)).length
+  const totalProvidersVal = metricProviders.filter(p => existedAt(p.created_at, endDate)).length
   const providerTrend = calculateTrendPercentage(
     totalProvidersVal,
-    scopedProviders.filter(p => existedAt(p.created_at, prevEndDate)).length || null
+    metricProviders.filter(p => existedAt(p.created_at, prevEndDate)).length || null
   )
 
   // 3. Total Bookings
@@ -210,8 +226,8 @@ export async function calculateMetricCards(
 
   // 4. Active Collaborations (BR-017, AC-ADM-PAIR, A5): distinct pairs with an On hold or Booked
   // Booking at the end date, from booking_status_history; the trend compares with the previous end date.
-  const activeCollabVal = activePairsAt(scopedBookings, history, endDate).size
-  const prevActiveCollab = activePairsAt(scopedBookings, history, prevEndDate).size
+  const activeCollabVal = activePairsAt(metricBookings, history, endDate).size
+  const prevActiveCollab = activePairsAt(metricBookings, history, prevEndDate).size
   const collabTrend = calculateTrendPercentage(activeCollabVal, prevActiveCollab > 0 ? prevActiveCollab : null)
 
   return [

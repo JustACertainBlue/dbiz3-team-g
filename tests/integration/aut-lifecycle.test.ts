@@ -17,7 +17,8 @@ describe('PR #11 remaining AUT stories on the shared repository', () => {
   it('HDT creates scoped UBND; first login requires password change; UBND creates Draft Provider', async () => {
     const repo = demoRepository(), messages: Record<string,string>[] = [], delivery: Delivery = value => { messages.push(value) }
     repo.insert('villages', { village_id: village, name: 'Synthetic village', is_active: 'true' })
-    const user = await createManagedAccount((await demoSessionContextFor('hdt')), 'ubnd', { name: 'Synthetic UBND', email: 'new-ubnd@example.invalid', phone: '0912345678', village_id: village }, delivery)
+    // spec changed 2026-11-10 (FR-019 village_name, #242 / spec PR #251) → test input updated
+    const user = await createManagedAccount((await demoSessionContextFor('hdt')), 'ubnd', { name: 'Synthetic UBND', email: 'new-ubnd@example.invalid', phone: '0912345678', village_name: 'Synthetic village' }, delivery)
     const login = await authenticateAccount('new-ubnd@example.invalid', messages[0].temporary_password)
     expect(login.ok).toBe(true); if (!login.ok) return
     expect((await workspacePath(login.identity))).toBe('/account/change-password')
@@ -34,14 +35,16 @@ describe('PR #11 remaining AUT stories on the shared repository', () => {
     const provider = await createManagedAccount(ubnd, 'provider', { name: 'Synthetic Workshop', email: 'workshop@example.invalid', phone: '0912345678', village_id: village, address: 'Street', contact: { contact_person_name: 'Synthetic Contact', phone_number: '0912345678' } }, delivery)
     expect(repo.find('provider_profiles', row => row.provider_id === provider.provider_id)).toMatchObject({ verification_status: 'Draft', village_id: village, published_version_no: '' })
     expect(repo.find('user_accounts', row => row.user_id === user.user_id)?.must_change_password).toBe('false')
-    await expect(createManagedAccount((await demoSessionContextFor('hdt')), 'ubnd', { name: 'Duplicate', email: 'duplicate@example.invalid', phone: '0912345678', village_id: village }, delivery)).rejects.toThrow('already has')
+    // spec changed 2026-11-10 (FR-019 village_name) → test input updated
+    await expect(createManagedAccount((await demoSessionContextFor('hdt')), 'ubnd', { name: 'Duplicate', email: 'duplicate@example.invalid', phone: '0912345678', village_name: 'Synthetic village' }, delivery)).rejects.toThrow('already has')
   }, 20000)
   it('rejects wrong creators and rolls back all account records when delivery fails', async () => {
     const repo = demoRepository()
     await expect(createManagedAccount((await demoSessionContextFor('provider')), 'ubnd', {}, () => {})).rejects.toThrow('Forbidden')
     await expect(createManagedAccount((await demoSessionContextFor('hdt')), 'provider', {}, () => {})).rejects.toThrow('Forbidden')
     repo.insert('villages', { village_id: village, name: 'Synthetic', is_active: 'true' })
-    await expect(createManagedAccount((await demoSessionContextFor('hdt')), 'ubnd', { name:'Delivery Failure', email:'delivery-fail@example.invalid', phone:'0912345678', village_id:village }, () => { throw new Error('Delivery failure') })).rejects.toThrow('Delivery failure')
+    // spec changed 2026-11-10 (FR-019 village_name) → test input updated
+    await expect(createManagedAccount((await demoSessionContextFor('hdt')), 'ubnd', { name:'Delivery Failure', email:'delivery-fail@example.invalid', phone:'0912345678', village_name:'Synthetic' }, () => { throw new Error('Delivery failure') })).rejects.toThrow('Delivery failure')
     expect(repo.find('user_accounts', row => row.email === 'delivery-fail@example.invalid')).toBeUndefined()
     expect(repo.find('ubnd_village_assignments', row => row.village_id === village)).toBeUndefined()
   })

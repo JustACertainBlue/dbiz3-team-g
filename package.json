@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   },
   "scripts": {
     "demo:seed": "node scripts/demo-seed.mjs",
@@ -37,7 +37,6 @@
     "image-size": "^2.1.0",
     "lucide-react": "^1.70.0",
     "next": "^14.2.0",
-    "openai": "^4.57.0",
     "pg": "8.23.1",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",

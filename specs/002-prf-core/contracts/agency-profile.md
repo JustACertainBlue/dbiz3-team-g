@@ -100,10 +100,10 @@ Updates the Agency's own profile. Only the Agency Owner (`agency_profiles.user_i
 
 ---
 
-## POST /api/prf/agency/:agencyId/major-change
+## ~~POST /api/prf/agency/:agencyId/major-change~~ (removed, issue #84)
 
-Internal endpoint; called by PATCH handler when a major-change field is detected.
-Returns the same shape as the PATCH response.
+Never called: the PATCH handler creates the major-change request itself (`updateAgencyProfile`).
+The route only answered 201 without writing anything, so it was removed.
 
 ---
 

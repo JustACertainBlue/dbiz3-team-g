@@ -5,6 +5,7 @@ import { demoRepository } from '../db/application-store'
 import { authDelivery, issueResubmission, type Delivery } from './lifecycle'
 
 const EMAIL_FAILED = Symbol('EMAIL_FAILED')
+const CHANGE_RMI_NEXT_STEP = 'Yêu cầu thay đổi này đã đóng. Vui lòng bổ sung theo góp ý của HDT và gửi thay đổi mới từ hồ sơ Agency.'
 
 function authorize(session: SessionContext) {
   if (!session.authenticated || session.role !== 'ADMIN' || session.adminType !== 'HDT' || !session.permissions.includes('manage_users')) throw new Error('FORBIDDEN')
@@ -41,7 +42,9 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
         if (change.proposed_tax_id) profile.tax_id = change.proposed_tax_id
         profile.updated_at = now
       }
-      change.review_status = decision === 'Approve' ? 'Approved' : decision === 'Reject' ? 'Rejected' : 'Request More Information'
+      // spec-AUT FR-018 (#57, #83): Request More Information closes a major change like Reject; the decision record
+      // keeps "Request More Information" and the Agency submits a new change. Closed changes carry reviewed_at.
+      change.review_status = decision === 'Approve' ? 'Approved' : 'Rejected'
       change.reviewed_at = now
     } else if (kind === 'registration') {
       const registration = table('agency_registration_requests').find(row => row.registration_request_id === id && row.current_status === 'Pending Approval')
@@ -67,7 +70,7 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
       registration.updated_at = now
     } else throw new Error('INVALID_REVIEW')
     table('agency_review_records').push({ review_id: randomUUID(), registration_request_id: kind === 'registration' ? id : '', registration_version_no: version, major_change_id: kind === 'change' ? id : '', hdt_user_id: session.userId!, decision, comments: comment.trim(), decided_at: now })
-    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: recipient, event_type: 'Registration Reviewed', source_type: kind === 'change' ? 'AgencyMajorChange' : 'AgencyRegistration', source_id: id, payload: JSON.stringify({ decision, comment }), created_at: now, read_at: '', email_delivery_status: delivered ? 'Success' : 'Fail' })
+    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: recipient, event_type: 'Registration Reviewed', source_type: kind === 'change' ? 'AgencyMajorChange' : 'AgencyRegistration', source_id: id, payload: JSON.stringify(kind === 'change' && decision === 'Request More Information' ? { decision, comment, next_step: CHANGE_RMI_NEXT_STEP } : { decision, comment }), created_at: now, read_at: '', email_delivery_status: delivered ? 'Success' : 'Fail' })
     table('audit_logs').push({ audit_id: randomUUID(), actor_user_id: session.userId!, action: 'REVIEW_AGENCY', target_type: kind, target_id: id, occurred_at: now, change_or_result: JSON.stringify({ decision, comment }) })
     return { success: true, email_delivery_status: delivered ? 'Dev outbox' : emailFailed ? 'Fail' : 'Not configured', in_app_status: 'Success' }
   }))

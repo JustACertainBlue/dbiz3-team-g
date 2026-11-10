@@ -1463,6 +1463,19 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Update rounds | #124 (code conflict with #130 in `agency-review.ts`: kept `next_step` and the real email status), #175 and #251 (snapshots refreshed), #108 (lockfile regenerated from `main` without `@googlemaps`; `npm ci` clean) |
 | Checks | Each branch: `npm run test`, lint, build 44/44; CI green on Windows and macOS for every pushed branch |
 
+### Entry 104: 10/11 Claude Code + human — hosted EARS into the spec (#258, #259), deliverables rows 12–13 (#257), #162 closed
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu on 10/11. No merges by the agent |
+| #258 | #173 was merged at `4a9871b` before the commit deleting the two "What only a person can do" bullets (measure H1, re-check M04 / H2) was pushed; the commit was cherry-picked onto a new branch from `main`. Docs only |
+| #259 spec (approved "OK EARS", linhkhanh-vu 2026-11-10) | Verified lines of `docs/build/ears-hosted-draft.md` copied into the Edge cases sections, style of #175, each with its evidence: H1 → spec-EXP; H2, H4 → spec-IAC under a new heading "Hosted-version EARS"; H3, H5 → spec-BKG; H7 → spec-AUT (issue #58, PR #124). H6 not included. Draft shown as a unified diff and changed on request before commit (H7 keeps "issue #58"; IAC heading) |
+| Snapshots (CLAUDE.md rule 6) | 16 feature snapshots refreshed: AUT 001–010, EXP 001, BKG 004 and 011–013, IAC 016; `start_feature.py --check` OK for each; active feature restored to `specs/010-aut-manage-accounts`. IAC 014 and 015 already drifted on `main` before #259 and were left as they were |
+| #257 rows 12–13 | Row 12 → ✅ (#175, #173, #258, #259). Row 13 → ✅ "claimed 2026-11-10, approved by linhkhanh-vu; built before the claim"; the claim section keeps its EARS line and evidence |
+| #162 | Comment "Close Chat on Render: PASS 2026-11-10" (test by linhkhanh-vu: Provider thanhvien19 closed the [T-hoang] chat at 16:42:07, read-only for both sides, history kept), then the issue was closed |
+| Log PR rounds | #240, #250, #256 each updated with `main` after the previous one merged; only the two log files conflicted, both sides kept |
+| Checks | #258, #259, #240, #250, #256, #257: CI green on Windows and macOS. #258 and #250: the first Windows run failed in `next build` on a `next/font` fetch (`TypeError: Cannot read properties of null (reading '1')`); the rerun of the failed job passed |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

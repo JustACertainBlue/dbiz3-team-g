@@ -33,6 +33,7 @@
 .provider-workspace .spec-action-label{margin-right:auto}
 @media(max-width:760px){
  .provider-dashboard{grid-template-columns:1fr}
+ .provider-dashboard .bkg-panel dl{grid-template-columns:repeat(2,minmax(0,1fr))}
  .provider-workspace .spec-content-wrap,.provider-workspace .prf-container,.provider-workspace .bkg-page{padding:20px 14px 90px}
  .provider-workspace [style*="grid-template-columns"]{grid-template-columns:1fr!important}
  .provider-workspace .spec-hero-box{display:block;padding:22px}
@@ -48,3 +49,36 @@
 .provider-workspace .spec-form-section>label input{padding:10px;border:1px solid #bec9bd;background:#fffdf8}
 .provider-media-grid label{display:grid;gap:6px;margin:12px 0}.provider-media-grid button{padding:8px 12px;border:1px solid #bac5b8;border-radius:8px;background:#eef2e9;color:#203229;cursor:pointer}
 .provider-workspace progress{accent-color:#355b46;width:100%;height:12px}
+
+/* Provider Experience screens EXP067/068/069/070 (2026-11-10): the prf-* form classes had no styles, so labels sat
+   inline with shrunken inputs. Same pattern as the BKG134 form (bkg-form) and PRF128: label above a full-width input,
+   44px controls, 10px radius, 16px rhythm; styled fieldsets for the terms; no native number spinners. */
+.provider-workspace .prf-spec-header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px 24px;flex-wrap:wrap;margin-bottom:24px}
+.provider-workspace .prf-spec-code{display:block;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9a4a2a}
+.provider-workspace .prf-spec-title{margin:8px 0}
+.provider-workspace .prf-spec-subtitle{margin:0;max-width:760px;color:#5f6b64;line-height:1.6}
+.provider-workspace .prf-spec-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.provider-workspace .prf-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-width:1px;border-style:solid;border-radius:10px;font:700 14px/20px var(--font-body);text-decoration:none;white-space:nowrap;cursor:pointer}
+.provider-workspace .prf-btn:disabled{opacity:.5;cursor:not-allowed}
+.provider-workspace .prf-section-card{margin-bottom:20px}
+.provider-workspace .prf-section-heading{display:flex;align-items:flex-start;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #ece6da}
+.provider-workspace .prf-step-badge{flex:none;font-weight:800;color:#9a4a2a}
+.provider-workspace .prf-field-group{display:grid;gap:6px;margin:0 0 16px;min-width:0}
+.provider-workspace .prf-label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font:700 14px/20px var(--font-body);color:#203229}
+.provider-workspace .prf-input,.provider-workspace .prf-select,.provider-workspace .prf-textarea{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid #bec9bd;border-radius:10px;background:#fff;color:#203229;font:400 14px/1.5 var(--font-body)}
+.provider-workspace .prf-textarea{min-height:140px;resize:vertical}
+.provider-workspace .prf-input:disabled,.provider-workspace .prf-input-locked:disabled{background:#eeeee6;color:#5a665d;cursor:not-allowed}
+.provider-workspace .prf-field-helper{font-size:13px;line-height:1.5;color:#5f6b64}
+.provider-workspace input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.provider-workspace input[type=number]::-webkit-inner-spin-button,.provider-workspace input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.provider-workspace .terms-field{display:grid;gap:16px;margin-top:8px}
+.provider-workspace .terms-field fieldset{display:grid;gap:12px;margin:0;padding:16px;border:1px solid #ded8cb;border-radius:12px;background:#fbf8f1;min-width:0}
+.provider-workspace .terms-field legend{padding:0 6px;font:700 14px/20px var(--font-body);color:#203229}
+.provider-workspace .terms-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;align-items:end}
+.provider-workspace .terms-field label{display:grid;gap:6px;font:600 13px/18px var(--font-body);color:#203229}
+.provider-workspace .terms-field input,.provider-workspace .terms-field textarea{width:100%;box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid #bec9bd;border-radius:10px;background:#fff;font:400 14px/1.5 var(--font-body)}
+.provider-workspace .terms-field button{justify-self:start;min-height:40px;padding:0 16px;border:1px solid #bbc7ba;border-radius:10px;background:#fffdf8;color:#203229;font:600 14px/20px var(--font-body);cursor:pointer}
+.provider-workspace .prf-sticky-footer{position:sticky;bottom:0;z-index:5;margin-top:24px}
+.provider-workspace .prf-sticky-footer-content{max-width:1132px;margin:auto;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+/* Phones: the app shell has its own bottom tab bar, so the form actions sit at the end of the form instead. */
+@media(max-width:767px){.provider-workspace .prf-sticky-footer{position:static}.provider-workspace .prf-sticky-footer-content{padding:14px 16px}}

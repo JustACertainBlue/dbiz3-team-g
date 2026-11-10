@@ -10,7 +10,8 @@ import {
 import { getAuthHeaders } from '@/lib/prf/client-session'
 import type { AdminType, AuthRole } from '@/lib/auth/session'
 import { startAdminRoleSync } from './admin-role-sync'
-import { adminPageAccess } from './admin-page-access'
+import { adminGuestRedirect, adminPageAccess } from './admin-page-access'
+import { useRouter } from 'next/navigation'
 import { nextVillageFilter } from './village-filter-state'
 import { FilterPanel } from '@/app/components/admin/FilterPanel'
 import { MetricCards } from '@/app/components/admin/MetricCards'
@@ -24,6 +25,7 @@ import { filtersChanged } from './filter-draft'
 import './dashboard-v9.css'
 
 export default function AdminDashboardPage() {
+  const router = useRouter()
   const [role, setRole] = useState<AuthRole | null>(null)
   const [adminType, setAdminType] = useState<AdminType | null>(null)
   const [displayName, setDisplayName] = useState('')
@@ -59,15 +61,18 @@ export default function AdminDashboardPage() {
   })
 
   // The actor comes from the server-side demo session (A2); non-admins see the restricted state (L3).
+  // #242: a signed-out visitor is sent to Login from this effect (never during render); access stays null meanwhile.
   useEffect(() => {
     setMounted(true)
     return startAdminRoleSync(session => {
+      const target = adminGuestRedirect(session)
+      if (target) { router.replace(target); return }
       setRole(session.role)
       setAdminType(session.adminType)
       setDisplayName(`${session.adminType ?? ''} Admin`.trim())
       setAccess(adminPageAccess(session))
     })
-  }, [])
+  }, [router])
 
   // Load villages configuration
   const loadVillages = useCallback(async () => {
@@ -185,8 +190,9 @@ export default function AdminDashboardPage() {
         isVillageLocked={villagesData.isLocked}
         assignedVillageId={villagesData.assignedVillageId}
         title={dashboardTitle(villageName)}
+        onApply={() => setFilters(prev => ({ ...draft, sortBy: prev.sortBy }))}
+        applyDisabled={!filtersChanged(draft, filters) || loading}
         actions={<div className="ad9-title__actions">
-          <button type="button" className="ad9-btn ad9-btn--primary" disabled={!filtersChanged(draft, filters) || loading} onClick={() => setFilters(prev => ({ ...draft, sortBy: prev.sortBy }))}>Áp dụng bộ lọc</button>
           <a href="/admin/users" className="ad9-btn">Quản lý tài khoản</a>
         </div>}
       />

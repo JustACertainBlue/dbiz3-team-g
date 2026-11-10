@@ -6,6 +6,7 @@ import Link from 'next/link'
 import ExperienceTermsField from '../../ExperienceTermsField'
 import { readCancellationPolicy, cancellationPatch, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
+import ExperienceLocationField from '../../ExperienceLocationField'
 import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 
@@ -108,7 +109,7 @@ export default function EditExperiencePage({
     if (!authorized) {
       setFeedback({
         type: 'error',
-        message: 'Lỗi phân quyền (403): Chỉ tài khoản Local Provider mới có quyền cập nhật trải nghiệm (BR-001).',
+        message: 'Lỗi phân quyền: Chỉ tài khoản Local Provider mới có quyền cập nhật trải nghiệm.',
       })
       setSaving(false)
       return
@@ -174,13 +175,12 @@ export default function EditExperiencePage({
             Cập nhật nội dung mô tả, bộ sưu tập hình ảnh và điều kiện đón tiếp
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className="prf-spec-actions">
           <Link
             href={`/provider/${params.providerId}/experiences`}
             className="prf-btn prf-btn-outline"
-            style={{ fontSize: '0.8rem' }}
           >
-            ← Danh sách Trải nghiệm (EXP067)
+            ← Danh sách trải nghiệm
           </Link>
         </div>
       </div>
@@ -203,7 +203,7 @@ export default function EditExperiencePage({
         >
           <div>
             <strong style={{ color: '#92400e', fontSize: '0.95rem' }}>
-              ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER (BR-001)
+              ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER
             </strong>
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#78350f' }}>
               Tài khoản hiện tại không sở hữu Provider này. Chỉ Local Provider đúng tổ chức mới có quyền chỉnh sửa trải nghiệm của xưởng.
@@ -237,7 +237,7 @@ export default function EditExperiencePage({
         >
           <span style={{ fontSize: '1.2rem' }}>🔒</span>
           <div>
-            <strong>KHÓA TRƯỜNG DỮ LIỆU ĐANG CÓ BOOKING HOẠT ĐỘNG (SR-003):</strong>
+            <strong>KHÓA TRƯỜNG DỮ LIỆU ĐANG CÓ BOOKING HOẠT ĐỘNG:</strong>
             <p style={{ margin: '0.2rem 0 0 0' }}>
               Trải nghiệm này đang có hợp đồng tour hoặc booking giữ chỗ còn hiệu lực. Để đảm bảo quyền lợi của công ty lữ hành, các trường: <em>Giá niêm yết, Sức chứa tối đa, Thời lượng và Địa điểm</em> bị khóa không cho sửa đổi trực tiếp.
             </p>
@@ -392,7 +392,7 @@ export default function EditExperiencePage({
                 <span className="prf-step-badge">03</span>
                 <div>
                   <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Bộ Sưu Tập Hình Ảnh Bắt Buộc (BR-009)
+                    Bộ Sưu Tập Hình Ảnh Bắt Buộc
                   </h2>
                 </div>
               </div>
@@ -441,6 +441,9 @@ export default function EditExperiencePage({
                 />
               </div>
 
+              <ExperienceLocationField value={formData.experience_location_address} locked={hasActiveBookings}
+                onChange={value => setFormData({ ...formData, experience_location_address: value })} />
+
               <div className="prf-field-group">
                 <label className="prf-label" htmlFor="experience-field-6">Thời gian báo trước (giờ)</label>
                 <input id="experience-field-6"
@@ -465,20 +468,19 @@ export default function EditExperiencePage({
               {hasActiveBookings ? 'Đang bảo vệ giá theo hợp đồng tour đang chạy' : 'Mọi thay đổi có hiệu lực ngay'}
             </span>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className="prf-spec-actions">
               <Link
                 href={`/provider/${params.providerId}/experiences`}
                 className="prf-btn prf-btn-outline"
               >
-                Hủy thay đổi (Discard)
+                Huỷ thay đổi
               </Link>
               <button
                 type="submit"
                 disabled={saving || uploading}
                 className="prf-btn prf-btn-primary"
-                style={{ padding: '0.55rem 1.75rem' }}
               >
-                {saving ? 'Đang lưu...' : 'Lưu Thay Đổi (Save)'}
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
               </button>
             </div>
           </div>

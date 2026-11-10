@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-EXP.md sha256=671037127ed371ea8f8581567c65e3e04b74a2615fcd31075d37bb7a863bab30 taken=2026-11-04T17:08Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-EXP.md sha256=5808e02bf20c9250375dcb0b8a4dfefc7787455288d3461913ee75cc7ced697c taken=2026-11-10T09:47Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-EXP.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -191,6 +191,8 @@ UC-DIS-04 maps to F-EXPLORE-03, F-EXPLORE-04 and F-EXPLORE-12.
 - KPI calculations run before enough sessions exist.
 
 - New ranking parameters reduce performance compared with the previous version.
+
+- EARS (2026-11-10, hosted version, outside test; draft #173 H1): WHEN a visitor opens the public link on a mobile 4G connection, THE SYSTEM SHALL display the Explore page within 10 seconds. Evidence: measured 5–10 s on iPhone 11 / Safari / Viettel 4G on 2026-11-10 with the keep-alive job running; a cold start after the Render free-tier sleep was not measured (the keep-alive job prevents the sleep).
 
 ### Consistency acceptance examples
 

@@ -4,6 +4,9 @@ import type { SessionContext } from './session'
 import { demoRepository } from '../db/application-store'
 import { authDelivery, issueResubmission, type Delivery } from './lifecycle'
 
+const EMAIL_FAILED = Symbol('EMAIL_FAILED')
+const CHANGE_RMI_NEXT_STEP = 'Yêu cầu thay đổi này đã đóng. Vui lòng bổ sung theo góp ý của HDT và gửi thay đổi mới từ hồ sơ Agency.'
+
 function authorize(session: SessionContext) {
   if (!session.authenticated || session.role !== 'ADMIN' || session.adminType !== 'HDT' || !session.permissions.includes('manage_users')) throw new Error('FORBIDDEN')
 }
@@ -18,7 +21,14 @@ export async function agencyReviews(session: SessionContext) {
     const profile = (await repo.find('agency_profiles', item => item.agency_id === row.agency_id))
     return { id: row.major_change_id, kind: 'change', name: profile?.company_name || row.agency_id, status: row.review_status, submitted: row.submitted_at, fields: { company_name: profile?.company_name || '', tax_id: profile?.tax_id || '', proposed_company_name: row.proposed_company_name, proposed_tax_id: row.proposed_tax_id }, account: (await repo.find('user_accounts', item => item.user_id === profile?.user_id)), history: (await repo.all('agency_review_records')).filter(item => item.major_change_id === row.major_change_id), documents: [] }
   })))
-  return [...registrations, ...changes].map(({ account, ...item }) => ({ ...item, account: account ? { email: account.email, status: account.account_status, name: account.full_name, created_at: account.created_at, last_login: account.last_login } : null }))
+  // VER119 §3 (#225): account id, role (admin_type only for ADMIN), status, organization, created date, last login.
+  return (await Promise.all([...registrations, ...changes].map(async ({ account, ...item }) => ({ ...item, account: account ? {
+    user_id: account.user_id, name: account.full_name, email: account.email, role: account.role_code,
+    ...(account.role_code === 'ADMIN' ? { admin_type: account.admin_type } : {}),
+    status: account.account_status,
+    organization: (await repo.find('agency_profiles', profile => profile.user_id === account.user_id))?.company_name || String((item.fields as Record<string, unknown>).company_name || ''),
+    created_at: account.created_at, last_login: account.last_login,
+  } : null }))))
 }
 export async function reviewAgency(session: SessionContext, id: string, kind: string, decision: string, comment: string, delivery?: Delivery) {
   authorize(session)
@@ -26,7 +36,7 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
   const now = new Date().toISOString()
   return (await demoRepository().transaction(["agency_major_change_requests","agency_profiles","agency_registration_requests","user_accounts","agency_review_records","registration_resubmission_tokens","notifications","audit_logs"], tables => {
     const table = (name: string) => tables[name] ??= []
-    let recipient = '', version = '', delivered = false
+    let recipient = '', version = '', delivered = false, emailFailed = false
     if (kind === 'change') {
       const change = table('agency_major_change_requests').find(row => row.major_change_id === id && row.review_status === 'Pending Review')
       if (!change) throw new Error('STALE_REVIEW')
@@ -39,7 +49,9 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
         if (change.proposed_tax_id) profile.tax_id = change.proposed_tax_id
         profile.updated_at = now
       }
-      change.review_status = decision === 'Approve' ? 'Approved' : decision === 'Reject' ? 'Rejected' : 'Request More Information'
+      // spec-AUT FR-018 (#57, #83): Request More Information closes a major change like Reject; the decision record
+      // keeps "Request More Information" and the Agency submits a new change. Closed changes carry reviewed_at.
+      change.review_status = decision === 'Approve' ? 'Approved' : 'Rejected'
       change.reviewed_at = now
     } else if (kind === 'registration') {
       const registration = table('agency_registration_requests').find(row => row.registration_request_id === id && row.current_status === 'Pending Approval')
@@ -51,7 +63,11 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
       if (lastReview?.decision === 'Request More Information' && decision !== 'Request More Information') throw new Error('STALE_REVIEW')
       if (decision === 'Request More Information') {
         if (delivery || (process.env.NODE_ENV !== 'production' && process.env.HAB_EMAIL_MODE === 'dev-outbox')) {
-          issueResubmission(tables, id, delivery ?? authDelivery()); delivered = true
+          // #124: a failing email adapter must not undo the decision; it is recorded as email Fail.
+          // issueResubmission calls the adapter before touching any token, so a failure leaves the tokens as they were.
+          const send = delivery ?? authDelivery()
+          try { issueResubmission(tables, id, message => { try { send(message) } catch { throw EMAIL_FAILED } }); delivered = true }
+          catch (cause) { if (cause !== EMAIL_FAILED) throw cause; emailFailed = true }
         }
       } else {
         registration.current_status = decision === 'Approve' ? 'Approved' : 'Rejected'
@@ -61,8 +77,8 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
       registration.updated_at = now
     } else throw new Error('INVALID_REVIEW')
     table('agency_review_records').push({ review_id: randomUUID(), registration_request_id: kind === 'registration' ? id : '', registration_version_no: version, major_change_id: kind === 'change' ? id : '', hdt_user_id: session.userId!, decision, comments: comment.trim(), decided_at: now })
-    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: recipient, event_type: 'Registration Reviewed', source_type: kind === 'change' ? 'AgencyMajorChange' : 'AgencyRegistration', source_id: id, payload: JSON.stringify({ decision, comment }), created_at: now, read_at: '', email_delivery_status: 'Fail' })
+    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: recipient, event_type: 'Registration Reviewed', source_type: kind === 'change' ? 'AgencyMajorChange' : 'AgencyRegistration', source_id: id, payload: JSON.stringify(kind === 'change' && decision === 'Request More Information' ? { decision, comment, next_step: CHANGE_RMI_NEXT_STEP } : { decision, comment }), created_at: now, read_at: '', email_delivery_status: delivered ? 'Success' : 'Fail' })
     table('audit_logs').push({ audit_id: randomUUID(), actor_user_id: session.userId!, action: 'REVIEW_AGENCY', target_type: kind, target_id: id, occurred_at: now, change_or_result: JSON.stringify({ decision, comment }) })
-    return { success: true, email_delivery_status: delivered ? 'Dev outbox' : 'Not configured', in_app_status: 'Success' }
+    return { success: true, email_delivery_status: delivered ? 'Dev outbox' : emailFailed ? 'Fail' : 'Not configured', in_app_status: 'Success' }
   }))
 }

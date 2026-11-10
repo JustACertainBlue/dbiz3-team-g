@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { prototypeLoginEnabled } from './prototype-login'
 import type { NextRequest } from 'next/server'
 import { DEMO_IDENTITIES, type DemoSession } from './demo-session'
 import { demoRepository } from '../db/application-store'
@@ -53,7 +54,7 @@ function cookieValue(request: NextRequest | Request, name: string): string | nul
  * Role and organization IDs always come from stored account data, never client input.
  */
 export async function authenticatePrototype(email: string, password: string): Promise<LoginResult> {
-  if (process.env.NODE_ENV === 'production') return { ok: false, reason: 'INVALID_CREDENTIALS' }
+  if (!prototypeLoginEnabled()) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const normalizedEmail = email.trim().toLowerCase()
   if (!normalizedEmail || !password) return { ok: false, reason: 'INVALID_CREDENTIALS' }
 
@@ -79,7 +80,15 @@ async function createSession(identity: DemoSession): Promise<LoginResult> {
     expires_at: new Date(now.getTime() + PRODUCT_SESSION_TTL_SECONDS * 1000).toISOString(),
     revoked_at: '', created_at: now.toISOString(),
   }))
+  // spec-AUT FR-021 §5.1 / F-AUTH-07 (#56): the account list shows the last successful login.
+  ;(await demoRepository().update('user_accounts', row => row.user_id === identity.userId, { last_login: now.toISOString() }))
   return { ok: true, token, identity }
+}
+
+/** spec-AUT FR-007 §5.1 (#55): which refusal an inactive account gets; call only after the password matched. */
+export async function inactiveLoginMessage(email: string): Promise<'Account not approved' | 'Account disabled'> {
+  const account = (await demoRepository().find('user_accounts', row => row.email.toLowerCase() === email.trim().toLowerCase()))
+  return account?.account_status === 'Disabled' ? 'Account disabled' : 'Account not approved'
 }
 
 /** Password verification reused from PR #11, adapted to the shared repository and session. */
@@ -87,7 +96,7 @@ export async function authenticateAccount(email: string, password: string): Prom
   if (!email.trim() || !password.trim()) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const account = (await demoRepository().find('user_accounts', row => row.email.toLowerCase() === email.trim().toLowerCase()))
   if (!account) return { ok: false, reason: 'INVALID_CREDENTIALS' }
-  if (process.env.NODE_ENV !== 'production' && account.password_hash.includes('seedhash')) return (await authenticatePrototype(email, password))
+  if (prototypeLoginEnabled() && account.password_hash.includes('seedhash')) return (await authenticatePrototype(email, password))
   if (!await verifyPassword(password, account.password_hash)) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const identity = (await identityForUser(account.user_id))
   if (!identity) return { ok: false, reason: 'ACCOUNT_INACTIVE' }

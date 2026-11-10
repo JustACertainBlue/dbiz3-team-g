@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createDetailExitReporter } from '../../lib/explore/detail-visit';
+import RefreshedNotice from './RefreshedNotice';
 
 type Action = 'click_card' | 'expand_preview' | 'view_detail' | 'apply_filter' | 'scroll';
 
@@ -10,6 +11,7 @@ export default function ExploreTracker({ demoAgencyId, detailExperienceId }: { d
   const router = useRouter();
   const [consent, setConsent] = useState(false);
   const [ready, setReady] = useState(false);
+  const [refreshed, setRefreshed] = useState(false); // FR-010 indicator (#204)
   const enteredAt = useRef(Date.now());
 
   useEffect(() => { setConsent(localStorage.getItem('explore_analytics_consent') === 'yes'); }, []);
@@ -38,7 +40,7 @@ export default function ExploreTracker({ demoAgencyId, detailExperienceId }: { d
           filter_values: category ? { category } : undefined,
           duration_on_previous_screen: Math.max(0, Math.floor((Date.now() - enteredAt.current) / 1000)) }) })
         .then(response => response.ok ? response.json() : null)
-        .then(result => { if (result?.results_refreshed_indicator) router.refresh(); })
+        .then(result => { if (result?.results_refreshed_indicator) { setRefreshed(true); router.refresh(); } })
         .catch(() => {});
     };
     const onClick = (event: MouseEvent) => {
@@ -75,10 +77,10 @@ export default function ExploreTracker({ demoAgencyId, detailExperienceId }: { d
     };
   }, [ready, router, detailExperienceId]);
 
-  if (demoAgencyId) return null;
-  return <aside className="consent-panel" aria-label="Tùy chọn phân tích">
+  if (demoAgencyId) return <RefreshedNotice show={refreshed} />;
+  return <><RefreshedNotice show={refreshed} /><aside className="consent-panel" aria-label="Tùy chọn phân tích">
     <label><input type="checkbox" checked={consent} onChange={event => {
       const value = event.target.checked; setConsent(value); localStorage.setItem('explore_analytics_consent', value ? 'yes' : 'no');
     }} /> Cho phép phân tích lượt xem ẩn danh để cải thiện danh mục</label>
-  </aside>;
+  </aside></>;
 }

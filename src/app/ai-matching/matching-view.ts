@@ -36,6 +36,25 @@ export function handoffOutcome(result: ApiResult): HandoffOutcome {
   return { kind: 'success', navigateTo: `/messages?chat_session_id=${encodeURIComponent(chatId)}` }
 }
 
+export interface RecommendationView {
+  experience_id: string; provider_id: string; experience_name: string; provider_name: string; village_name: string
+  rank: number; match_score: number; price_per_person: number; max_participants: number; explanation: string
+}
+
+const recommendationView = (m: any): RecommendationView => ({
+  experience_id: m.experience_id, provider_id: m.provider_id, experience_name: m.experience_name || m.name,
+  provider_name: m.provider_name, village_name: m.village_name, rank: m.rank, match_score: m.match_score,
+  price_per_person: m.price_per_person, max_participants: m.max_participants, explanation: m.explanation,
+})
+
+/** FR-008 (#188): the Top 5 and up to 5 additional suggestions, both shown with the same card. */
+export function matchResultsView(body: any): { top: RecommendationView[]; additional: RecommendationView[] } {
+  return {
+    top: (body?.top_matches ?? []).map(recommendationView),
+    additional: (body?.additional_suggestions ?? []).slice(0, 5).map(recommendationView),
+  }
+}
+
 export function noMatchView(body: any): { prompt: string; lines: string[] } {
   const relaxation = body?.relaxation_suggestions ?? {}
   const lines = (relaxation.relaxation_suggestions ?? []).map((s: { criterion: string; suggested_value: string | number }) =>

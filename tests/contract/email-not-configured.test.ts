@@ -90,8 +90,9 @@ describe('ADR 0001 / spec-AUT EARS | email flows without an email service (produ
   it('F-AUTH-19 create UBND account: refused with "Email chưa được cấu hình", no account or temporary password', async () => {
     const before = count('user_accounts')
     await expect(asProduction(() => createManagedAccount(HDT, 'ubnd', {
-      // Valid input (Bát Tràng village id), so the request reaches the email check instead of the 400 validation.
-      name: 'UBND Test', email: 'ubnd-new@example.invalid', phone: '+84900000003', village_id: '20896522-6235-5699-aeaf-f48b8150d895',
+      // Valid input, so the request reaches the email check instead of the 400 validation.
+      // spec changed 2026-11-10 (FR-019 village_name, #242 / spec PR #251) → test input updated
+      name: 'UBND Test', email: 'ubnd-new@example.invalid', phone: '+84900000003', village_name: 'Bát Tràng',
     }))).rejects.toMatchObject({ status: 503, message: expect.stringMatching(NOT_CONFIGURED) })
     expect(count('user_accounts')).toBe(before)
   })

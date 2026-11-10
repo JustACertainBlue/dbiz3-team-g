@@ -1239,6 +1239,204 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Follow-up (linhkhanh-vu 09/11) | Decision: enforce Contact on the server (ADM117 #10 Required, F-AUTH-20). Test first: new case "a Provider without contact is refused" failed (`promise resolved … instead of rejecting`), then green; the village check still runs first (existing `aut-lifecycle.test.ts:32` expectation kept); UBND needs no contact. Without contact the old copy of name/phone is gone. `tests/integration/aut-lifecycle.test.ts:33`: **input only** updated to send a valid contact, comment "spec ADM117 #10: contact Required → test input updated" (approved). Not changed (not allowed): `tests/storage/provider-publication.test.ts:49` (opt-in `npm run test:storage`, not in `npm test`) still creates a Provider without contact and will now fail there until its input is updated. Mutation (contact optional again) caught. `npm test` 198 files passed, 4 skipped (1195 passed, 20 skipped); lint and build OK |
 | Checks | `npm test` 198 files passed, 4 skipped (1192 passed, 20 skipped); `npm run lint` OK; `npm run build` OK |
 
+### Entry 63: 08/11 Claude Code + human — #102 /login demo panel only where the prototype login works (`fix/102-login-demo-panel`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu after the read-only smoke check of https://hanoi-artisan-bridge.onrender.com (issue #102, Medium) |
+| Cause | `src/app/login/page.tsx` rendered the "Tài khoản thử nghiệm … nhập bất kỳ mật khẩu" panel unconditionally, while production refuses that login (`authenticatePrototype`) |
+| Tests first | `tests/unit/login-demo-panel.test.ts` (3, `vi.stubEnv('NODE_ENV')`): production → no panel / seed emails / "any password" text (red before); development → panel with the four identities (green); production → panel hidden and `authenticatePrototype` refuses (red before) |
+| Fix | `src/lib/auth/prototype-login.ts` `prototypeLoginEnabled()` (client-safe); used by the page and by both checks in `product-session.ts` |
+| Mutation (foreground) | 4/4 killed: panel always shown, panel never shown, condition always on, production treated as enabled |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1149 passed, 20 skipped); local production build (`npm run build`, `prod-test` on :3100, built-in browser): `/login` has the password field and no panel, seed emails or "any password" text |
+| Existing tests changed | None |
+
+### Entry 64: 08/11 Claude Code + human — EARS lines for the defects found on the hosted version (`docs/ears-hosted-defects`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); the human allowed editing exactly these lines in `docs/spec/` (2026-11-08) |
+| Lines added | One "IF … THEN THE SYSTEM SHALL …" line in the Edge cases of: spec-AUT (#102, no prototype-login panel where that login is unavailable), spec-BKG (#87, Booking times in Asia/Ho_Chi_Minh), spec-PRF (#88, category outside the enum rejected with a validation error), spec-ADM (#93, Custom range = whole Hanoi days, both included) |
+| Snapshots | 16 snapshots refreshed with `start_feature.py --use … --refresh`, each `--check` OK (AUT 001–010, BKG 004/011/012/013, PRF 002, ADM 003); active feature set back to `specs/010-aut-manage-accounts` |
+| Code / tests | None changed |
+
+### Entry 65: 08/11 Claude Code + human — #59 test: HDT, UBND and Local Provider log in only when Active (`test/59-disabled-staff-login`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan for #55–#63: #59 first) |
+| Gap | spec-AUT BR-004 / US-2 AS-3 had no regression test (found in AUT Step 7 verify, PR #54) |
+| Tests | `tests/unit/aut-staff-login-active.test.ts` (10) through `POST /api/auth/login` with a real bcrypt hash for HDT, UBND and Local Provider: Active → 200 + session; Disabled → 403 `ACCOUNT_INACTIVE`, no session, no cookie; "Approved" (Agency status) → 403; plus the development prototype path (seeded Provider, any password) refused once Disabled. Green at once: the behaviour was already correct |
+| Mutation (foreground) | 4/4 killed: BR-004 guard removed, staff accepted when Approved, prototype status check removed, inactive reported as bad credentials |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1156 passed, 20 skipped) |
+| Product code changed | None |
+
+### Entry 66: 08/11 Claude Code + human — #55 login failure error_message per account status (`fix/55-login-error-message`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan for #55–#63: #55 after #59) |
+| Cause | `POST /api/auth/login` returned one `ACCOUNT_INACTIVE` / "Tài khoản hiện không hoạt động." for Pending Approval, Rejected and Disabled, and no `error_message` (spec-AUT FR-007 §5.1) |
+| Interpretation | Pending Approval and Rejected → "Account not approved" (Rejected is not approved; FR-007 lists both under "deny with message"); Disabled → "Account disabled"; bad password or unknown email → "Invalid credentials", also for inactive accounts, so the status is told only after the password matched |
+| Tests first | `tests/unit/aut-login-error-message.test.ts` (6): 5 red before (no `error_message`), the success case green |
+| Fix | `inactiveLoginMessage(email)` in `product-session.ts`; the login route adds `error_message` and a Vietnamese message per case. `error.code` and `authenticateAccount`'s result are unchanged, so existing clients and tests (incl. #59) keep working |
+| Mutation (foreground) | 5/5 killed: Disabled reported as not approved, everything as disabled, status revealed on a wrong password, not-approved text lost, `error_message` dropped |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1152 passed, 20 skipped). Not clicked in the UI: the page shows `error.message`, which the tests check |
+| Existing tests changed | None |
+
+### Entry 67: 08/11 Claude Code + human — #62 test: self-registration is Tour Agency only (`test/62-self-registration-agency-only`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan #55–#63; one PR per issue, not merged during the evening test session) |
+| Tests | `tests/unit/aut-self-registration-agency-only.test.ts` (4) for spec-AUT BR-001 / US-1 AS-3: completed self-registration → Tour_Agency, Pending Approval, Agency profile, no Provider profile; role fields smuggled into the request are ignored; REG003 form has no role choice; a Guest cannot create a Provider account through `POST /api/auth/users/create` (nothing written). Green at once (behaviour correct) |
+| Mutation (foreground) | Killed: registration creates Local_Provider; form offers a Local Provider role; account-creation guard + village check removed together (503 instead of 401/403). Survived as equivalent: role read from the stored request (the version row copies named fields only, so a role can never reach it); account-creation guard alone (the Provider village check still refuses a Guest) |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped) |
+| Product code changed | None |
+
+### Entry 68: 08/11 Claude Code + human — #60 test: HDT rejects an Agency registration (`test/60-hdt-reject-registration`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan #55–#63; one PR per issue, not merged during the evening test session) |
+| Tests | `tests/unit/aut-hdt-reject-registration.test.ts` (5) through `POST /api/auth/agency-reviews` (kind = registration) on a registration created by submit + OTP: Reject with a reason → registration and account Rejected, reason and HDT reviewer recorded, login refused; empty or blank reason → 409, nothing changes; a rejected registration cannot be decided again; UBND / Agency / Provider → 403. Green at once (behaviour correct) |
+| Mutation (foreground) | 6/6 killed: Reject leaves Pending, account status not updated, reason not required, reason not recorded, decided registration decided again, any signed-in role reviews |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1151 passed, 20 skipped) |
+| Product code changed | None |
+
+### Entry 69: 08/11 Claude Code + human — #61 test: Change Password with an incorrect current password (`test/61-change-password-wrong-current`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (plan #55–#63; one PR per issue, not merged during the evening test session) |
+| Tests | `tests/unit/aut-change-password-current.test.ts` (6) through `POST /api/auth/change-password` as the demo Agency with a real hash: correct current → 200, hash replaced, PASSWORD_CHANGED recorded, open sessions ended; wrong current → 400 "Current password incorrect", hash, audit and open sessions unchanged; different case / trailing space / empty → same; repeated wrong attempts change nothing and the right one still works. Green once the test's own session-count assumption was fixed (the seed already has an open session for this user) |
+| Mutation (foreground) | Killed: current password not checked, error message changed, sessions not revoked on success, trailing space trimmed before compare. A first "lowercase" mutant was ineffective (cannot match the hash) and was replaced by the trailing-space one |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1152 passed, 20 skipped) |
+| Product code changed | None |
+
+### Entry 73: 08/11 Claude Code + human — #56 a successful login records last_login (`fix/56-last-login`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (item 7, "if time") |
+| Cause | spec-AUT FR-021 §5.1 returns `last_login` ("null if never logged in") and the data model writes it from F-AUTH-07, but no code wrote `user_accounts.last_login` |
+| Tests first | `tests/unit/aut-last-login.test.ts` (4) through `POST /api/auth/login` and `GET /api/auth/users`: successful login stores the time and the HDT list shows it (red before); a later login moves it forward (red before); never logged in stays empty; wrong password / Disabled account leave it unchanged |
+| Fix | `createSession` (`src/lib/auth/product-session.ts`) updates `last_login` with the session's creation time; only successful logins reach it |
+| Mutation (foreground) | 3/3 killed: not written, wrong account updated, written before the password check |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped); `npm run test:postgres` on DEV 14/14 (the real-hash login test now also writes last_login through `hab_app`) |
+
+### Entry 74: 08/11 Claude Code + human — #58 HDT review reports the email delivery it actually made (`fix/58-review-email-status`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (item 7, "if time") |
+| Cause | `src/app/admin/agencies/page.tsx` always showed "Email chưa được gửi…" and `reviewAgency` always stored `notifications.email_delivery_status = 'Fail'`, even when the Request More Information edit link was handed to the dev-outbox adapter |
+| Interpretation | spec-AUT FR-018 §5.1 `notification_status.email: Enum[Success, Fail]`; open question #13 says all three decisions are notified by email + in-app. So: `Success` when the delivery adapter took the email, `Fail` otherwise. Approve / Reject send no email today and stay `Fail`. The page shows the API's `email_delivery_status` ("Dev outbox" → written to the test outbox, not real email) |
+| Tests first | `tests/unit/aut-review-email-status.test.ts` (4): RMI with an adapter → result "Dev outbox", notification Success, notice does not say "not sent" (red before, with a helper that returned the old hard-coded text); no email service → "Not configured", Fail, notice says not sent; Approve → Fail; unknown status never claims delivery |
+| Fix | `notifications.email_delivery_status = delivered ? 'Success' : 'Fail'`; new client-safe `src/lib/auth/review-notice.ts` used by the page |
+| Mutation (foreground) | 4/4 killed |
+| Checks | `npm run lint` OK; `npm test` 192 files passed, 4 skipped (1150 passed, 20 skipped). Not clicked in the UI (the page only calls `reviewNotice` with the API field) |
+| Follow-up 08/11 (linhkhanh-vu's condition) | Assumption accepted on condition: the decision is always saved, email `Fail` only means the email was not sent, and the HDT page says "Đã lưu quyết định — email chưa gửi được". Found a gap: an email adapter that threw aborted the whole review transaction, so the decision was lost |
+| Follow-up tests first | +2 in `tests/unit/aut-review-email-status.test.ts`: Reject without email is saved and the notice starts with "Đã lưu quyết định — email chưa gửi được" (red: old wording); RMI with a throwing adapter keeps the decision, stores `Fail`, issues no token (red: "SMTP down" thrown) |
+| Follow-up fix | `reviewAgency`: adapter errors are caught (other errors still abort); result `email_delivery_status: 'Fail'`; `reviewNotice` wording for `Fail` / not configured |
+| Follow-up mutation (foreground) | 6 mutants, 5 killed (rethrow, failure counted as delivered, no wrapper, old wording, `Fail` claims sent); 1 survivor: swallowing non-email errors too (the only other error, "not pending", is unreachable after the earlier status check) |
+| Follow-up checks | `npm test` 192 files passed, 4 skipped (1152 passed, 20 skipped); `npm run lint` OK. Not clicked in the UI: submitting a review on the dev server writes to the DEV database |
+
+### Entry 75: 08/11 Claude Code + human — #84 remove the `major-change` stub route (`fix/84-remove-major-change-stub`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu: check callers and spec first, remove the route only if nothing needs it (file deletion approved in the prompt) |
+| Callers checked | `git grep major-change`: no UI, test or `docs/spec/` reference calls the endpoint; spec-PRF FR-002 / spec-AUT FR-018 define the contract of the profile update, not a separate endpoint. Only `specs/002-prf-core` (plan, tasks T045, contracts) and docs described it |
+| Tests first | `tests/contract/aut-prf-major-change.test.ts` (#84 case): red before the removal (`{ status: 201, written: 0 }` for the Agency Owner), green after (route module gone) |
+| Change | Deleted `src/app/api/prf/agency/[agencyId]/major-change/route.ts`; `docs/test/integration-contract.md` §9 item 5 and `specs/002-prf-core/contracts/agency-profile.md` now say the route was removed; major changes are still created only by `PATCH /api/prf/agency/[agencyId]` |
+| Mutation | The red run is the mutant: with the route file present the test fails |
+| Checks | `npm test` 191 files passed, 4 skipped (1147 passed, 20 skipped); `npm run lint` OK (after `npm run build` regenerated `.next/types`); `npm run build` OK; DEV dev server: `POST …/major-change` → 404, `GET /api/prf/agency/[id]` → 200 |
+
+### Entry 77: 08/11 Claude Code + human — #57 / #83 Request More Information closes a major Agency change (`fix/57-rmi-major-change-closes`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); decision by linhkhanh-vu: option B1 (RMI closes the change as Rejected, the Agency submits a new change), new PR from `main` that supersedes #121 |
+| Why not plain option B | `data/schema.sql:254-263`: Request More Information is an open status (`reviewed_at IS NULL`) and `agency_one_pending_major_change_uq` allows one open row per Agency, so a change left in that status would block the Agency's next change on PostgreSQL; spec-AUT FR-018 §5.1 has no such status |
+| Spec change (approved in the prompt) | `docs/spec/specs/spec-AUT.md` FR-018: "For a major change, Request More Information closes the change like Reject (status Rejected, decision recorded as Request More Information); the Agency submits a new change from its profile."; snapshot `specs/010-aut-manage-accounts/spec.md` refreshed, `start_feature.py --check` OK |
+| Tests first | `tests/unit/aut-major-change-rmi-closes.test.ts` (4), all red before: status stayed Request More Information, no next step in the notification, an open row was left, the Agency's second change was blocked |
+| Fix | `reviewAgency`: a major change is Approved or Rejected with `reviewed_at`; the review record keeps the decision and comment; the in-app notification payload adds `next_step` ("…gửi thay đổi mới từ hồ sơ Agency") |
+| Mutation (foreground) | 7/7 killed: old status, no reviewed_at for RMI (#121 behaviour), no next step, decision recorded as Reject, closed change decidable again, RMI without comment, wrong recipient |
+| Checks | `npm test` 192 files passed, 5 skipped (1150 passed, 22 skipped); `npm run lint` OK. Opt-in hosted test `tests/postgres/agency-major-change.test.ts` (from #121, RMI case rewritten): `npm run test:postgres` on DEV (host aws-0-ap-southeast-1.pooler.supabase.com, project jfrpnffknjpgmkyquxql, checked before the run, approved by the human) 3 files, 16/16 passed, all changes rolled back |
+| Not built | The Agency has no screen that lists notifications; the message is stored in-app and email remains not configured |
+
+### Entry 79: 08/11 Claude Code + human — Admins see the review state of the version under review (`fix/provider-review-status-display`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); High defect from the 08/11 test session, reported by Minh Thư (UBND) and Nguyễn Thư (HDT); fix approved by linhkhanh-vu after the investigation |
+| Reproduced / cause | UBND: `/admin/providers` (status column, the two counts, order) and the ADM079 pending list (`pending-service.ts`) read `provider_profiles.verification_status`, which stays Verified while a revision of a published provider is open (PRF Q32 / BR-007); the revision was shown as Verified and was missing from the UBND queue. The write path and the detail page were already right. HDT: seed inconsistency (`c8e989d4…` Draft v1 never submitted, yet `provider_verification_reviews.csv:9` has Approve for v1), found on DEV with a read-only query; reported as a data issue, not changed here |
+| Tests first | `tests/prf/unit/provider-review-status-display.test.ts` (6): the ADM079 pending list missed the open revision (red for the real bug) and the 4 helper cases were red; the route case (blank or whitespace Request Revision → 400, no review written) was green from the start (server already refuses at schema and service level) |
+| Fix | New `src/lib/prf/provider-review-view.ts`: `providerReviewState` (label "Bản công khai v1: Verified · Bản đang xét v2: …"), `adminProviderQueue` (rows, counts, order Pending → Revision Required → Draft → Verified, village scope), `reviewHistoryRows` ("Approve · v1"); used by `/admin/providers`, its detail page and `pending-service.ts`. `provider-service.ts` unchanged |
+| Mutation (foreground) | 10 mutants, 10 killed (after adding an order assertion over all four states: alphabetical order first survived): provider-level status, revision always open, published status when never published, single label, alphabetical order, counts by provider status, blank village sees all, history without version, history unsorted, old pending filter |
+| Checks | `npm test` 192 files passed, 4 skipped (1152 passed, 20 skipped); `npm run lint` OK; `npm run build` OK; DEV dev server as the HDT test account: queue order Revision Required → Draft → Verified, detail of `c8e989d4…` shows "Approve · v1". Not seen live: a pending revision (none on DEV; the API call as UBND was refused by the agent's auto-mode classifier, so the route case is covered by the test only) |
+| Not in scope | Hydration warning from the existing `<style>{detailStyles}</style>` on the detail page (escaped `>`); status labels stay English until design wave 2 |
+
+### Entry 96: 09/11 Claude Code + human — storage test sends the required Contact (`fix/storage-test-contact`, refs #170)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: update only the input of `tests/storage/provider-publication.test.ts:49`, same way as `aut-lifecycle.test.ts:33`) |
+| Change | `tests/storage/provider-publication.test.ts:49`: input only; `contact: { contact_person_name: 'Synthetic Storage Contact', phone_number: '0912345678' }` added, with the comment "spec ADM117 #10: contact Required → test input updated". No assertion and no other test changed |
+| Search | Other Provider-creation calls in `tests/` without a contact (not edited): `tests/integration/aut-lifecycle.test.ts:32` (expects "assigned village"; the village check runs before the contact check, so it still passes) and `:42` (HDT creating a Provider with `{}` expects "Forbidden", checked first). `tests/integration/adm117-contact.test.ts:50` and `:55` omit the contact on purpose. No call through `POST /api/auth/users/create` creates a Provider |
+| Checks | `npm test` 202 files passed, 4 skipped (1249 passed, 20 skipped); `npm run test:storage` on DEV (DB and Storage project `jfrpnffknjpgmkyquxql`, host/ref printed first, no secrets shown): 2 files, 6/6 passed incl. the committed publication flow (167 s, fixtures cleaned by the test); `npm run lint` OK; `npm run build` OK |
+
+### Entry 97: 09/11 Claude Code + human — EARS draft for hosted-only failures (`docs/ears-hosted`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11: draft EARS lines for failures seen only on the hosted build: cold start, M04, polling delay, email not configured) |
+| Change | New `docs/build/ears-hosted-draft.md`: 7 proposals H1–H7 in the "When … the system shall …" form, each with its issue or source and a proposed spec place; H1–H4 and H7 marked **needs human** (cold-start bound N, M04 re-check after #153, time bound for polling, overlap of H7 with H6), H6 = existing `spec-AUT.md:231` (no new line). No file under `docs/spec/` changed; #104 lines (#87, #88, #93, #102) not repeated |
+| Tests | None (documentation only) |
+| Checks | `uv run tools/start_feature.py --check` not affected (no spec change); `npm run lint` OK |
+
+### Entry 98: 09/11 Claude Code + human — prepare the old PRs for the 10/11 merges (`docs/consolidated-logs-0911`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11 evening, team testing on Render, nothing merged) |
+| Logs moved here | On 20 PR branches the two log files were restored to `origin/main` (commit "docs: move log entries to consolidated log PR"), so the PRs no longer conflict on them: #172, #122, #101, #106, #110, #111, #112, #107, #123, #127, #130, #135, #118, #109, #105, #108, #124, #103, #104 and #173. Their entries (63–69, 73–75, 77, 79, 96, 97) and AI Use Log rows are copied above / in `docs/ai-use-log.md` with the text unchanged; no Entry id was renumbered (none collides with `main`). Bringing `main` into the branches first was refused by the permission check after the first branch; for the log-only PRs this is not needed (identical log files on both sides merge cleanly; each branch checked with `git merge-tree` against `main`) |
+| Code conflicts | #124: the `reviewNotice` import moved above the React import, so `main`'s `StatusBadge` import merges without conflict; merged tree checked in a temporary worktree (`tsc` OK, `aut-review-email-status.test.ts` 6/6). #103: redone on the new AuthShell page in new PR #174 (supersedes #103): #103's render test red on the new page first (2 failed), then green; local production build `/login` shows no demo panel. #104: redone in new PR #175 (supersedes #104): the same four approved EARS lines on current `main`, 16 snapshots refreshed with `tools/start_feature.py` (`--check` OK). #108: lockfile regeneration left for 10/11, after #105 is merged |
+| Other PRs | #173 EARS draft: H3/H4 bound 20 s, H7 kept apart from H6, H1 still needs the cold-start measurement; marked ready for review. #176: MVP Alpha checklist §3 rows 28 and 31 closed, rows 58–62 added. #177: CI runs `npm run build`; `/explore` marked `force-dynamic` because `next build` opened a database connection while trying to prerender it (reproduced with the DB variables cleared) |
+| Checks | Each code branch (#124, #174, #175, #177): `npm test`, `npm run lint`, `npm run build` green locally; CI green on every pushed branch (see the PRs) |
+
+### Entry 99: 09/11 Claude Code + human — first teammate reviews handled (#123, #110, #101)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu (09/11 night: read every review on the open PRs and on #164–#171, fix valid change requests, draft replies, post nothing) |
+| Reviews read | linh-daotruc: #106, #107, #110, #111, #112, #123, #167, #172 (all Approve with non-blocking notes); nguyenthu-0505: #127, #135 (Approve); mizaki311: #101, #104, #122 (Comment). No "changes requested" |
+| Fixed | #123 (`fd90196`): `GET /api/auth/users` returned `last_login: ""` for an account that never logged in; spec-AUT FR-021 §5.1 says null. New test through the route red first (`expected '' to be null`), then `last_login || null`. #110 (`702f6b3`): new test that REG003's only choice control is `company_type` with the FR-001 enum and no radio; a mutation adding another select was caught (the old name regex missed it). #101 (`70fa529`): README link text now matches the document title "From localhost to the hosted version" |
+| Not changed (spec silent or out of scope; replies drafted, not posted) | #111 409 vs 400/422 (FR-018 gives no HTTP codes); #112 order of new/current password checks (not specified); #107 prototype-only status disclosure (dev only) and Active account without profile; #106 old session of a Disabled account (FR-017, separate PR suggested); #167 reason length and generic `INVALID_REASON` message (spec gives none); #122 / #104 wrap long build-log lines (rows are Markdown table rows; logs moved to #178) |
+| Checks | Each changed branch: `npm test`, `npm run lint`, `npm run build` green locally; CI on the PRs |
+
+### Entry 100: 09/11 Claude Code + human — UX audit, #192 check, EXP070 location input (#208, PR #229)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5, with 6 read-only subagents for the audit); requested by linhkhanh-vu (09/11 night) |
+| UX audit (read-only) | 50 screen specs mapped to routes on `main` `ec859af`; each screen shot on the dev build (DEV database, 1440 and 390 px) next to its spec image, outside the repo. 47 screens have gaps: one issue each, #181–#227 (`ux-gap`, `after-tag`). sev:medium: #208 EXP070, #216 PRF021; the rest sev:low. Spec conflict: SCH139/140/141 §8 month grid vs spec-BKG OQ #70 day rows. Limitations row 63 on PR #176 |
+| #192 BKG136 (read-only) | Server already refuses arrival unless the Booking is Booked and now ≥ start_at: `src/lib/booking/mark-arrival.ts:49-50`, test `tests/unit/bkg-mark-arrival.test.ts:42` (Cancelled → "Booking Not Booked", nothing written). UI-only, stays sev:low; no code change |
+| #208 EXP070 (PR #229) | Test first: `tests/unit/exp070-location-field.test.ts` red (field did not exist). New `ExperienceLocationField` (required, ≤ 500, disabled + "Đang khóa" under BR-014) rendered on the edit page with `locked={hasActiveBookings}`. Server unchanged (it already validated and locked the field, `prf-br-fixes.test.ts:68`) |
+| Checks | `npm test` 1252 passed / 20 skipped; lint exit 0; build 44/44; seed PASS. Browser: locked state checked on the demo Provider's only Experience; unlocked state covered by the unit test only. Noted, not changed: the server create schema has the address optional although EXP069 says Required for Create |
+
+### Entry 101: 09–10/11 Claude Code + human — UX wave 1 (11 PRs, #229–#239)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5), unattended run requested by linhkhanh-vu: one branch and PR per `ux-gap` issue from fresh `main` (`ec859af`), test first, no merge. Rules: layout/elements = screen spec §3/§5/§8, look = Figma tokens, behaviour = module FRs, schedule screens follow spec-BKG OQ #70 |
+| PRs | #229 EXP070 location input (#208); #230 BKG136 Confirm Group Arrival gated by the F-SCHED-06 guard (#192); #231 BKG134 Cancel → BKG133 (#191); #232 ADM145 Close → ADM095 (#187); #233 ADM117 Cancel → ADM095 (#185); #234 PRF127 links to EXP067 and VIL030 (#217); #235 PRF128 Manage Experiences → EXP067 (#218); #236 EXP120 and #237 DSC124 locked Request Quote / Chat for Guest, FR-001 / FR-003 / BR-009 (#209, #202; same new `GuestLockedActions.tsx`, byte-identical, merge-tree clean); #238 ADM118 role in the identity block (#186); #239 VER119 account id, role, organization (#225) |
+| Gap re-check | Every gap re-read in code before the fix; all 11 were real. #185 was small (a back link already existed; the Cancel next to Create was missing). #192 was screen-side only: the server already refused (`mark-arrival.ts:49-50`) |
+| Tests | One new test file per PR, red first for the right reason. Where a component had no `React` import (Vitest classic JSX runtime), the import was added before the red run. Server-rendered or client-fetching pages are checked through their source, as in `adm118-disable-reason.test.ts`. No existing test edited |
+| Checks | Each branch: seed PASS, `npm test` green (1250–1253 passed, 20 skipped), lint exit 0, build 44/44; CI green on Windows and macOS. Screenshots (desktop + 390 px) of each branch on the dev build (DEV database) beside the spec image and the pre-change audit shot, kept outside the repo |
+| Scope note | Each PR fixes only the item named for wave 1 but says "Closes #n"; the remaining items of #191, #185, #217, #218, #202, #186, #225 need follow-up issues if still wanted (listed in each PR body) |
+
 ### Entry 102: 10/11 Claude Code (overnight, unattended) — UX wave 2 (8 PRs, #241, #243–#249)
 
 | Field | Value |

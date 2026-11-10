@@ -23,6 +23,15 @@ export function homeHref(session: SessionContext | null): string {
   return '/explore'
 }
 
+/** Guest navigation (shared §5 rule: "Guest has EXP120 and AUT009/REG003, with no AI navigation"); #253. */
+export function guestNavLinks(): Array<{ href: string; label: string }> {
+  return [
+    { href: '/explore', label: 'Khám phá' },
+    { href: '/login', label: 'Đăng nhập' },
+    { href: '/register', label: 'Đăng ký Agency' },
+  ]
+}
+
 /** Portal tagline under the logo (Figma). */
 export function tagline(session: SessionContext | null): string {
   if (session?.role === 'Local_Provider') return 'Cổng nhà cung cấp địa phương'

@@ -84,14 +84,14 @@ export default function AddExperiencePage({
     setError(null)
 
     if (!authorized) {
-      setError('Lỗi phân quyền: Chỉ tài khoản Local Provider mới có quyền tạo mới trải nghiệm (BR-001). Vui lòng chuyển vai trò.')
+      setError('Lỗi phân quyền: Chỉ tài khoản Local Provider mới có quyền tạo mới trải nghiệm.')
       setSaving(false)
       return
     }
 
     const missing = missingCategories(images)
     if (missing.length > 0) {
-      setError(`Required Image Category Missing: ${missing.join(', ')} (BR-009)`)
+      setError(`Required Image Category Missing: ${missing.join(', ')}`)
       setSaving(false)
       return
     }
@@ -143,16 +143,15 @@ export default function AddExperiencePage({
           <span className="prf-spec-code">THÊM TRẢI NGHIỆM</span>
           <h1 className="prf-spec-title">Tạo mới Hoạt động Trải nghiệm Làng nghề</h1>
           <p className="prf-spec-subtitle">
-            Thiết lập biểu phí B2B, quy mô đoàn khách, thời lượng thực hành và 3 danh mục hình ảnh quy chuẩn (BR-009)
+            Thiết lập biểu phí B2B, quy mô đoàn khách, thời lượng thực hành và 3 danh mục hình ảnh quy chuẩn
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className="prf-spec-actions">
           <Link
             href={`/provider/${params.providerId}/experiences`}
             className="prf-btn prf-btn-outline"
-            style={{ fontSize: '0.8rem' }}
           >
-            ← Danh sách Trải nghiệm (EXP067)
+            ← Danh sách trải nghiệm
           </Link>
         </div>
       </div>
@@ -175,7 +174,7 @@ export default function AddExperiencePage({
         >
           <div>
             <strong style={{ color: '#92400e', fontSize: '0.95rem' }}>
-              ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER (BR-001)
+              ⚠️ YÊU CẦU TÀI KHOẢN LOCAL PROVIDER
             </strong>
             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#78350f' }}>
               Tài khoản hiện tại không sở hữu Provider này. Chỉ Local Provider đúng tổ chức mới có quyền thêm mới trải nghiệm cho xưởng.
@@ -356,7 +355,7 @@ export default function AddExperiencePage({
                 <span className="prf-step-badge">03</span>
                 <div>
                   <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    3 Danh mục Hình ảnh Bắt buộc (BR-009)
+                    3 Danh mục Hình ảnh Bắt buộc
                   </h2>
                   <span style={{ fontSize: '0.75rem', color: '#b84c24', fontWeight: 700 }}>
                     Quy chuẩn bắt buộc: Phải cung cấp đủ cả 3 loại ảnh mới có thể xuất bản trải nghiệm
@@ -433,20 +432,19 @@ export default function AddExperiencePage({
               Trải nghiệm sẽ có hiệu lực tức thì sau khi được tạo thành công
             </span>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className="prf-spec-actions">
               <Link
                 href={`/provider/${params.providerId}/experiences`}
                 className="prf-btn prf-btn-outline"
               >
-                Hủy (Discard)
+                Huỷ
               </Link>
               <button
                 type="submit"
                 disabled={saving || uploading}
                 className="prf-btn prf-btn-primary"
-                style={{ padding: '0.55rem 1.75rem' }}
               >
-                {saving ? 'Đang tạo...' : 'Tạo Trải Nghiệm Mới (EXP069)'}
+                {saving ? 'Đang tạo...' : 'Tạo trải nghiệm'}
               </button>
             </div>
           </div>

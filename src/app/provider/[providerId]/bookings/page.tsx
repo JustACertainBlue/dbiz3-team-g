@@ -52,6 +52,13 @@ export default async function BookingManagementPage({ params, searchParams }: { 
 
   return <main className="bkg-page bkg-list">
     <header><p>HANOI ARTISAN BRIDGE · BKG133</p><h1>Booking Management</h1><span>{(await sessionDisplayName(session))} · sắp theo giờ bắt đầu</span></header>
+    {/* #190: §3 #4 Create in the header area; §8 four stat cards = F-SCHED-10 status_counts, each filters by its status. */}
+    <p className="bkg-actions bkg-head-actions"><Link className="bkg-link-btn" href={`/provider/${params.providerId}/bookings/new`}>Create</Link></p>
+    <nav className="bkg-stat-cards" aria-label="Số Booking theo trạng thái">
+      {BOOKING_STATUSES.map(status => <Link key={status} href={href({ status, page: '1' })} aria-current={query.status === status ? 'page' : undefined}>
+        <span>{statusLabel('booking', status)}</span><strong>{list.status_counts[status]}</strong>
+      </Link>)}
+    </nav>
 
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái
@@ -90,11 +97,10 @@ export default async function BookingManagementPage({ params, searchParams }: { 
       {page < lastPage && <Link href={href({ page: String(page + 1) })}>Trang sau →</Link>}
     </p>
     <p className="bkg-actions">
-      <Link className="bkg-link-btn" href={`/provider/${params.providerId}/bookings/new`}>Create</Link>
       <Link href="/messages">Messages</Link>
     </p>
     <style>{bookingDetailStyles + listStyles}</style>
   </main>
 }
 
-const listStyles = `.bkg-list{max-width:1080px}.bkg-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:20px;padding:16px;background:#f4efe5;border-radius:14px}.bkg-filters label{display:grid;gap:4px;font-weight:700;font-size:13px}.bkg-filters input,.bkg-filters select{padding:8px 10px;border:1px solid #ddd6ca;border-radius:10px;font:inherit;background:white}.bkg-filters .bkg-actions{margin-top:0}.bkg-outside{margin-top:14px}.bkg-empty{margin-top:14px}.bkg-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}.bkg-table th,.bkg-table td{padding:10px 8px;border-bottom:1px solid #e4ddd0;text-align:left;vertical-align:top}.bkg-table small{display:block;color:#66746d}.bkg-needs{background:#fff4e0}.bkg-needs td:first-child{border-left:4px solid #9a4a2a}.bkg-flag{display:inline-block;margin-left:8px;font-weight:800;color:#8a1f11}@media(max-width:720px){.bkg-table thead{display:none}.bkg-table tr{display:grid;padding:8px 0}.bkg-table td{border:0;padding:2px 8px}}`
+const listStyles = `.bkg-list{max-width:1080px}.bkg-head-actions{margin-top:12px}.bkg-stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}.bkg-stat-cards a{display:grid;gap:6px;padding:14px 16px;border:1px solid #ddd6ca;border-radius:14px;background:white;color:#203229;text-decoration:none}.bkg-stat-cards span{font-size:13px;font-weight:700;color:#66746d}.bkg-stat-cards strong{font-size:26px;color:#355b46}.bkg-stat-cards a[aria-current="page"]{border-color:#203229;box-shadow:inset 0 0 0 1px #203229}@media(max-width:720px){.bkg-stat-cards{grid-template-columns:1fr}}.bkg-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:20px;padding:16px;background:#f4efe5;border-radius:14px}.bkg-filters label{display:grid;gap:4px;font-weight:700;font-size:13px}.bkg-filters input,.bkg-filters select{padding:8px 10px;border:1px solid #ddd6ca;border-radius:10px;font:inherit;background:white}.bkg-filters .bkg-actions{margin-top:0}.bkg-outside{margin-top:14px}.bkg-empty{margin-top:14px}.bkg-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}.bkg-table th,.bkg-table td{padding:10px 8px;border-bottom:1px solid #e4ddd0;text-align:left;vertical-align:top}.bkg-table small{display:block;color:#66746d}.bkg-needs{background:#fff4e0}.bkg-needs td:first-child{border-left:4px solid #9a4a2a}.bkg-flag{display:inline-block;margin-left:8px;font-weight:800;color:#8a1f11}@media(max-width:720px){.bkg-table thead{display:none}.bkg-table tr{display:grid;padding:8px 0}.bkg-table td{border:0;padding:2px 8px}}`

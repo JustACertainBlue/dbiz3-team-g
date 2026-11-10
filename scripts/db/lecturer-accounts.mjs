@@ -93,22 +93,98 @@ async function newAccount(port, email, check, what) {
   return { email, user_id: row.user_id, action: 'exists' }
 }
 
+const plural = count => `${count} Experience${count === 1 ? '' : 's'}`
+
+/** Business name (published version, else current) and number of Experiences, for the candidate list and dry run. */
+async function providerSummary(port, profile) {
+  const versions = await port.findAll('provider_profile_versions', { provider_id: profile.provider_id })
+  const wanted = [profile.published_version_no, profile.current_version_no].map(value => String(value ?? '')).filter(Boolean)
+  const version = wanted.map(no => versions.find(row => String(row.version_no) === no)).find(Boolean)
+  const experiences = (await port.findAll('experiences', { provider_id: profile.provider_id })).length
+  return `${version?.business_name || '(no business name)'} — ${plural(experiences)}`
+}
+
+const ambiguous = (what, variable, candidates) => new Error(
+  `${what} is ambiguous (${candidates.length} found). Set ${variable} to one of:\n${candidates.map(line => `  - ${line}`).join('\n')}\nNothing was changed.`)
+
+/** The village's Verified Provider user: HAB_LECTURER_PROVIDER_EMAIL, else the one already renamed, else the only one. */
+async function selectProvider(port, env, village) {
+  const target = LECTURER_EMAILS.provider
+  const variable = 'HAB_LECTURER_PROVIDER_EMAIL'
+  const explicit = String(env[variable] ?? '').trim().toLowerCase()
+  const describe = async profile => {
+    const user = await port.findOne('user_accounts', { user_id: profile.user_id })
+    return { profile, user, line: `${user?.email ?? `(no user ${profile.user_id})`} — ${await providerSummary(port, profile)}` }
+  }
+  if (explicit) {
+    let user = await port.findOne('user_accounts', { email: explicit })
+    let reason = variable
+    if (!user) {
+      // A re-run after the real run: the chosen user now carries the tester email.
+      user = await port.findOne('user_accounts', { email: target })
+      if (!user) throw new Error(`No user with email ${explicit} (${variable}). Nothing was changed.`)
+      reason = `already ${target} (${explicit} no longer exists)`
+    }
+    if (user.role_code !== 'Local_Provider') throw new Error(`${user.email} (${variable}) is not a Local Provider. Nothing was changed.`)
+    if (!['Active', 'Approved'].includes(user.account_status)) throw new Error(`${user.email} (${variable}) is not Active (${user.account_status}). Nothing was changed.`)
+    const profile = await port.findOne('provider_profiles', { user_id: user.user_id })
+    if (!profile) throw new Error(`${user.email} (${variable}) has no provider profile. Nothing was changed.`)
+    if (profile.verification_status !== 'Verified') throw new Error(`${user.email} (${variable}) is not Verified (${profile.verification_status}). Nothing was changed.`)
+    if (profile.village_id !== village.village_id) throw new Error(`${user.email} (${variable}) is not in ${village.name}. Nothing was changed.`)
+    return { profile, user, reason, line: (await describe(profile)).line }
+  }
+  const candidates = await Promise.all((await port.findAll('provider_profiles', { village_id: village.village_id, verification_status: 'Verified' })).map(describe))
+  if (candidates.length === 0) throw new Error(`No Verified Provider in ${village.name} found`)
+  const renamed = candidates.filter(item => item.user?.email === target)
+  if (renamed.length === 1) return { ...renamed[0], reason: `already ${target}` }
+  if (candidates.length > 1) throw ambiguous(`Verified Provider in ${village.name}`, variable, candidates.map(item => item.line))
+  return { ...candidates[0], reason: `only Verified Provider in ${village.name}` }
+}
+
+/** The village's UBND user: HAB_LECTURER_UBND_EMAIL, else the one already renamed, else the only one. */
+async function selectUbnd(port, env, village) {
+  const target = LECTURER_EMAILS.ubnd
+  const variable = 'HAB_LECTURER_UBND_EMAIL'
+  const explicit = String(env[variable] ?? '').trim().toLowerCase()
+  const assignments = await port.findAll('ubnd_village_assignments', { village_id: village.village_id })
+  const candidates = await Promise.all(assignments.map(async row => {
+    const user = await port.findOne('user_accounts', { user_id: row.ubnd_user_id })
+    return { userId: row.ubnd_user_id, user, line: `${user?.email ?? `(no user ${row.ubnd_user_id})`} — ${user?.full_name ?? ''}`.replace(/ — $/, '') }
+  }))
+  if (explicit) {
+    let user = await port.findOne('user_accounts', { email: explicit })
+    let reason = variable
+    if (!user) {
+      user = await port.findOne('user_accounts', { email: target })
+      if (!user) throw new Error(`No user with email ${explicit} (${variable}). Nothing was changed.`)
+      reason = `already ${target} (${explicit} no longer exists)`
+    }
+    if (!candidates.some(item => item.userId === user.user_id)) throw new Error(`${user.email} (${variable}) is not assigned to ${village.name}. Nothing was changed.`)
+    return { userId: user.user_id, reason }
+  }
+  if (candidates.length === 0) throw new Error(`No UBND assignment in ${village.name} found`)
+  const renamed = candidates.filter(item => item.user?.email === target)
+  if (renamed.length === 1) return { ...renamed[0], reason: `already ${target}` }
+  if (candidates.length > 1) throw ambiguous(`UBND assignment in ${village.name}`, variable, candidates.map(item => item.line))
+  return { ...candidates[0], reason: `only UBND user assigned to ${village.name}` }
+}
+
 /** Read-only: resolves the village and the four accounts, or throws. */
 export async function resolveLecturerPlan(port, env) {
   const value = String(env.HAB_LECTURER_VILLAGE ?? '').trim()
   if (!value) throw new Error('HAB_LECTURER_VILLAGE is required in lecturer mode (village name or village_id)')
   const village = await resolveVillage(port, value)
-  const provider = one(await port.findAll('provider_profiles', { village_id: village.village_id, verification_status: 'Verified' }), `Verified Provider in ${village.name}`)
-  const ubnd = one(await port.findAll('ubnd_village_assignments', { village_id: village.village_id }), `UBND assignment in ${village.name}`)
-  const providerUser = await resolveUser(port, provider.user_id, 'Local_Provider', null, 'Provider')
-  const ubndUser = await resolveUser(port, ubnd.ubnd_user_id, 'ADMIN', 'UBND', 'UBND')
+  const provider = await selectProvider(port, env, village)
+  const ubnd = await selectUbnd(port, env, village)
+  const providerUser = await resolveUser(port, provider.profile.user_id, 'Local_Provider', null, 'Provider')
+  const ubndUser = await resolveUser(port, ubnd.userId, 'ADMIN', 'UBND', 'UBND')
   const approver = await port.findOne('user_accounts', { email: SEED_HDT_APPROVER })
   const agency = await newAccount(port, LECTURER_EMAILS.agency, row => row.role_code === 'Tour_Agency', 'Agency')
   if (agency.action === 'create' && !approver) throw new Error(`Seed HDT ${SEED_HDT_APPROVER} not found; cannot approve ${LECTURER_EMAILS.agency}`)
   return {
     village: { village_id: village.village_id, name: village.name },
-    provider: { ...await moveTarget(port, providerUser, LECTURER_EMAILS.provider), provider_id: provider.provider_id },
-    ubnd: await moveTarget(port, ubndUser, LECTURER_EMAILS.ubnd),
+    provider: { ...await moveTarget(port, providerUser, LECTURER_EMAILS.provider), provider_id: provider.profile.provider_id, summary: provider.line.slice(provider.line.indexOf(' — ') + 3), reason: provider.reason },
+    ubnd: { ...await moveTarget(port, ubndUser, LECTURER_EMAILS.ubnd), reason: ubnd.reason },
     agency,
     hdt: await newAccount(port, LECTURER_EMAILS.hdt, row => row.role_code === 'ADMIN' && row.admin_type === 'HDT', 'HDT'),
     approver: approver ? { user_id: approver.user_id, email: approver.email } : null,
@@ -121,6 +197,8 @@ export function describeLecturerPlan(plan, { resetPasswords = false } = {}) {
   const { village, agency, hdt, provider, ubnd, approver } = plan
   return [
     `[lecturer] village: ${village.name} (${village.village_id})`,
+    `[lecturer] Provider selected: ${provider.from} (${provider.user_id}), ${provider.summary.replace(' — ', ', ')} — ${provider.reason}`,
+    `[lecturer] UBND selected: ${ubnd.from} (${ubnd.user_id}) — ${ubnd.reason}`,
     agency.action === 'create'
       ? `[lecturer] ${agency.email}: create Tour_Agency, Approved, company "${AGENCY_NAMING.companyName}", approved by ${approver.email} (${approver.user_id}); new password`
       : `[lecturer] ${agency.email}: exists (${agency.user_id}); ${password(true)}`,

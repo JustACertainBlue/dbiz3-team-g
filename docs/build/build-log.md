@@ -1499,6 +1499,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Docs | `docs/build/deploy-runbook.md` §2.1 (lecturer mode, PROD-vs-seed email difference); `docs/build/mvp-alpha-checklist.md` §3 limitation #64; `.env.example` names `HAB_EXPECT_PROJECT_REF`, `HAB_LECTURER_VILLAGE` (no values) |
 | Checks | `npm test` 241 files / 1407 passed (22 skipped); lint 0; build 44/44 |
 
+### Entry 107: 10/11 Claude Code + human — lecturer mode: choose the Provider / UBND user (`HAB_LECTURER_PROVIDER_EMAIL`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu after the PROD dry run. Branch `fix/lecturer-provider-select`; no merge, no `db:*` run, no `.env` read by the agent |
+| Trigger | linhkhanh-vu ran `--lecturer --dry-run` on PROD after #261: ref guard matched, then "Verified Provider in Phú Vinh is ambiguous (3 found)", nothing written. Production has more Verified Providers in Phú Vinh than the seed (1). The agent had run the command sequence with the human: an early warning stopped the run before #261 was merged (the old script ignores `--lecturer` and would have written in legacy mode) |
+| Change | `scripts/db/lecturer-accounts.mjs`: optional `HAB_LECTURER_PROVIDER_EMAIL` (must exist, be Active, Local Provider, profile Verified, in the village; else stop) and `HAB_LECTURER_UBND_EMAIL` (must be assigned to the village). Without them, an ambiguous village stops and lists the candidates (`email — business name — N Experiences`; UBND: `email — full name`). A user already carrying the tester email is selected again on a re-run. The plan lines say `Provider selected: … — <reason>` / `UBND selected: … — <reason>`. `HAB_LECTURER_UBND_EMAIL` was added for "same for UBND" so a listed UBND candidate can be chosen |
+| Tests | 7 new tests in `tests/unit/set-test-passwords-lecturer.test.ts`, red first (7 failed for the right reason, 16 existing green), then green; no existing test changed |
+| Not verified | Not run against a database; PROD dry run by the human is the check |
+| Checks | `npm test` 241 files / 1414 passed (22 skipped); lint 0; build 44/44 |
+| Docs | `docs/build/deploy-runbook.md` §2.1 (variables, PROD has 3 Verified Providers in Phú Vinh), `.env.example` (names only) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

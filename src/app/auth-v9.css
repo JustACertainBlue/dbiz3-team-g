@@ -1,5 +1,10 @@
 /* AUT009 Login / REG115 OTP — design wave 4. Figma "Màn 1" desktop 1440 (two halves) and mobile 360 (banner + form). */
-.auth-v9 { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; background: var(--color-surface-page); color: var(--color-text-primary); }
+.auth-v9 { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; background: var(--color-surface-page); color: var(--color-text-primary); }
+/* #253: Guest navigation (Khám phá · Đăng nhập · Đăng ký Agency) as a full-width row above both halves;
+   the app shell is hidden on these pages. */
+.auth-v9__nav { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 24px; border-bottom: var(--border-width-1) solid var(--color-border-default); background: var(--color-surface-card); }
+.auth-v9__nav a { min-height: 40px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: var(--radius-pill); background: var(--color-surface-card); border: var(--border-width-1) solid var(--color-border-default); color: var(--color-brand-800); font: 600 14px/20px var(--font-body); text-decoration: none; }
+.auth-v9__nav a:hover, .auth-v9__nav a:focus-visible { border-color: var(--color-brand-700); }
 .auth-v9__brand {
   position: relative; overflow: hidden; display: flex; align-items: center; padding: 48px 48px 48px 48px; color: var(--color-text-onbrand);
   background:
@@ -61,7 +66,8 @@
 .auth-v9__demo small { font-weight: 400; color: var(--color-text-muted); }
 
 @media (max-width: 767px) {
-  .auth-v9 { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .auth-v9 { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+  .auth-v9__nav { justify-content: center; padding: 10px 16px; }
   .auth-v9__brand { min-height: 136px; padding: 24px 16px; align-items: flex-end; }
   .auth-v9__rings { right: -320px; top: -360px; }
   .auth-v9__logo { font-size: 17px; line-height: 24px; }

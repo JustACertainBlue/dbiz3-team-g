@@ -230,3 +230,84 @@ describe('db:set-test-passwords --lecturer | dry run and real run', () => {
     expect(repo().all('user_accounts').filter(row => Object.values(EMAILS).includes(row.email))).toHaveLength(4)
   })
 })
+
+// PROD dry-run 2026-11-10 stopped with "Verified Provider in Phú Vinh is ambiguous (3 found)" (nothing written).
+// Human request (linhkhanh-vu): optional HAB_LECTURER_PROVIDER_EMAIL picks exactly that user (exists, Active, Local
+// Provider, profile Verified and in HAB_LECTURER_VILLAGE, else stop); without it, an ambiguous village stops and lists the
+// candidates (email, business name, number of Experiences); same for UBND; the dry run says which user was selected and why.
+describe('db:set-test-passwords --lecturer | choosing the Provider / UBND user', () => {
+  const CHUONG_PROVIDER = '867719ea' // Xưởng thủ công Chuông (thanhvien22), moved into Phú Vinh to make it ambiguous
+  const VAN_PHUC_UBND = 'thanhvien2@example.invalid'
+  const crowd = () => {
+    repo().update('provider_profiles', row => row.provider_id.startsWith(CHUONG_PROVIDER), { village_id: PHU_VINH })
+    const extraUbnd = repo().find('user_accounts', row => row.email === VAN_PHUC_UBND)!
+    repo().insert('ubnd_village_assignments', { ...repo().all('ubnd_village_assignments')[0], ubnd_user_id: extraUbnd.user_id, village_id: PHU_VINH })
+  }
+  const choose = { HAB_LECTURER_PROVIDER_EMAIL: 'thanhvien21@example.invalid', HAB_LECTURER_UBND_EMAIL: 'thanhvien3@example.invalid' }
+  const message = async (env: Record<string, string>) => { try { await run({ dryRun: true }, env); return '' } catch (error) { return String((error as Error).message) } }
+
+  beforeEach(() => { repo().reset(); writes.insert.mockClear(); writes.update.mockClear() })
+
+  it('without the variable, an ambiguous village stops and lists each candidate: email, business name, number of Experiences', async () => {
+    crowd()
+    const text = await message(ENV)
+    expect(text).toMatch(/ambiguous/)
+    expect(text).toContain('HAB_LECTURER_PROVIDER_EMAIL')
+    expect(text).toContain('thanhvien21@example.invalid — Xưởng thủ công Phú Vinh — 1 Experience')
+    expect(text).toContain('thanhvien22@example.invalid — Xưởng thủ công Chuông — 1 Experience')
+  })
+
+  it('an ambiguous UBND assignment stops the same way and lists the UBND users', async () => {
+    crowd()
+    const text = await message({ ...ENV, HAB_LECTURER_PROVIDER_EMAIL: choose.HAB_LECTURER_PROVIDER_EMAIL })
+    expect(text).toMatch(/UBND .*ambiguous/)
+    expect(text).toContain('HAB_LECTURER_UBND_EMAIL')
+    expect(text).toContain('thanhvien3@example.invalid')
+    expect(text).toContain(VAN_PHUC_UBND)
+  })
+
+  it('the explicit emails select exactly those users, and the dry run says which and why while writing nothing', async () => {
+    crowd()
+    const before = repo().snapshot(TABLES)
+    const { plan, lines } = await run({ dryRun: true }, { ...ENV, ...choose })
+    expect(plan.provider).toMatchObject({ user_id: PROVIDER_USER, from: 'thanhvien21@example.invalid', to: EMAILS.provider })
+    expect(plan.ubnd).toMatchObject({ user_id: UBND_USER, from: 'thanhvien3@example.invalid', to: EMAILS.ubnd })
+    const text = lines.join('\n')
+    expect(text).toMatch(/Provider selected: thanhvien21@example\.invalid \(40ed08b5-27a5-55b4-aea3-e8e80352ee76\), Xưởng thủ công Phú Vinh, 1 Experience — HAB_LECTURER_PROVIDER_EMAIL/)
+    expect(text).toMatch(/UBND selected: thanhvien3@example\.invalid \(adcd99a2-ef24-5895-9a4e-59256bb1a23f\) — HAB_LECTURER_UBND_EMAIL/)
+    expect(writes.insert).not.toHaveBeenCalled()
+    expect(writes.update).not.toHaveBeenCalled()
+    expect(repo().snapshot(TABLES)).toEqual(before)
+  })
+
+  it('without the variables and one candidate each, the dry run says it was the only one', async () => {
+    const text = (await run({ dryRun: true })).lines.join('\n')
+    expect(text).toMatch(/Provider selected: thanhvien21@example\.invalid .* — only Verified Provider in Phú Vinh/)
+    expect(text).toMatch(/UBND selected: thanhvien3@example\.invalid .* — only UBND user assigned to Phú Vinh/)
+  })
+
+  it('an explicit Provider email in another village, not Verified, not Active, not a Provider or unknown stops', async () => {
+    expect(await message({ ...ENV, HAB_LECTURER_PROVIDER_EMAIL: 'thanhvien20@example.invalid' })).toMatch(/not in Phú Vinh/)
+    expect(await message({ ...ENV, HAB_LECTURER_PROVIDER_EMAIL: 'thanhvien3@example.invalid' })).toMatch(/not a Local Provider/)
+    expect(await message({ ...ENV, HAB_LECTURER_PROVIDER_EMAIL: 'nobody@example.invalid' })).toMatch(/No user with email nobody@example\.invalid/)
+    repo().update('provider_profiles', row => row.user_id === PROVIDER_USER, { verification_status: 'Suspended' })
+    expect(await message({ ...ENV, HAB_LECTURER_PROVIDER_EMAIL: 'thanhvien21@example.invalid' })).toMatch(/not Verified/)
+    repo().reset()
+    repo().update('user_accounts', row => row.user_id === PROVIDER_USER, { account_status: 'Disabled' })
+    expect(await message({ ...ENV, HAB_LECTURER_PROVIDER_EMAIL: 'thanhvien21@example.invalid' })).toMatch(/not Active/)
+  })
+
+  it('an explicit UBND email for another village stops', async () => {
+    expect(await message({ ...ENV, HAB_LECTURER_UBND_EMAIL: VAN_PHUC_UBND })).toMatch(/not assigned to Phú Vinh/)
+  })
+
+  it('after the real run, a re-run with the variables still set finds the renamed users and changes nothing', async () => {
+    crowd()
+    await run({}, { ...ENV, ...choose })
+    const before = repo().snapshot(TABLES)
+    const again = await run({}, { ...ENV, ...choose })
+    expect(again.credentials).toEqual([])
+    expect(repo().snapshot(TABLES)).toEqual(before)
+    expect(again.lines.join('\n')).toMatch(/Provider selected: provider-tester@example\.invalid .* — already provider-tester/)
+  })
+})

@@ -65,13 +65,22 @@ In the production folder (`.env.local` holds only production values), add for th
 ```
 HAB_EXPECT_PROJECT_REF=<production project ref>
 HAB_LECTURER_VILLAGE=e482884e-7190-56cf-bc03-4e69614b1fe5   # Phú Vinh (village_id; the name "Phú Vinh" also works)
+HAB_LECTURER_PROVIDER_EMAIL=thanhvien21@example.invalid      # only needed when the village has several Verified Providers
 ```
+
+Production has **3 Verified Providers in Phú Vinh** (dry run 2026-11-10: "ambiguous (3 found)", nothing written), so
+`HAB_LECTURER_PROVIDER_EMAIL` is needed there. That user must exist, be Active, be a Local Provider whose profile is
+Verified and in `HAB_LECTURER_VILLAGE`; otherwise the run stops. Without the variable, an ambiguous village stops and
+lists the candidates (`email — business name — N Experiences`). `HAB_LECTURER_UBND_EMAIL` does the same for the UBND
+user (needed only if the village has several UBND assignments; the user must be assigned to that village). On a re-run
+after the real run, the chosen user is found again by its tester email. The dry run prints `Provider selected: …` and
+`UBND selected: …` with the reason (`HAB_LECTURER_PROVIDER_EMAIL`, `only Verified Provider in …`, `already provider-tester…`).
 
 | # | Command | Expected |
 |---|---|---|
-| 1 | `npm run db:set-test-passwords -- --lecturer --dry-run` | Stops before connecting if `HAB_EXPECT_PROJECT_REF` is missing or differs from the ref in `DATABASE_APP_URL`. Otherwise prints the target, the village, both user ids with old → new email, `create` for Agency/HDT, and `dry run: nothing was written` |
+| 1 | `npm run db:set-test-passwords -- --lecturer --dry-run` | Stops before connecting if `HAB_EXPECT_PROJECT_REF` is missing or differs from the ref in `DATABASE_APP_URL`. Otherwise prints the target, the village, which Provider/UBND user was selected and why, both user ids with old → new email, `create` for Agency/HDT, and `dry run: nothing was written` |
 | 2 | `npm run db:set-test-passwords -- --lecturer` | Same plan, applied in **one transaction**; prints each generated password **once**, to the terminal only (refuses to run when the output is piped or redirected). Sessions of the changed users are revoked |
-| 3 | Remove `HAB_EXPECT_PROJECT_REF` and `HAB_LECTURER_VILLAGE` from `.env.local` | — |
+| 3 | Remove `HAB_EXPECT_PROJECT_REF`, `HAB_LECTURER_VILLAGE`, `HAB_LECTURER_PROVIDER_EMAIL` and `HAB_LECTURER_UBND_EMAIL` from `.env.local` | — |
 
 - Passwords are generated (`crypto.randomBytes`, 20 characters, AUT rule) and never written to a file, log, issue or chat.
   Give them to the lecturer privately.

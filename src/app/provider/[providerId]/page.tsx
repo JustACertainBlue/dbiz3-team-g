@@ -28,6 +28,7 @@ interface ProviderData {
   provider_name: string
   craft_type: string
   general_description: string
+  village_id?: string
   village_name?: string
   village_district?: string
   village_city?: string
@@ -139,6 +140,9 @@ export default function ProviderProfilePage({
             {view.canCreateBooking && (
               <Link href={`/provider/${params.providerId}/bookings/new`} className="spec-btn-black">+ Tạo booking</Link>
             )}
+            {view.experiencesHref && (
+              <Link href={view.experiencesHref} className="spec-btn-black">Quản lý trải nghiệm</Link>
+            )}
           </div>
         )}
 
@@ -150,7 +154,7 @@ export default function ProviderProfilePage({
             <h1 className="spec-hero-title">{provider.provider_name}</h1>
             <div className="spec-hero-subtitle">{provider.craft_type}</div>
             {village && (
-              <div className="spec-hero-location"><span>📍</span><span>{village}</span></div>
+              <div className="spec-hero-location"><span>📍</span><span>{view.villageHref ? <Link href={view.villageHref}>{village}</Link> : village}</span></div>
             )}
             {provider.location_address && (
               <div style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '0.75rem' }}>{provider.location_address}</div>

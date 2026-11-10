@@ -303,7 +303,7 @@ export function FilterPanel({
             <span id={`ad9-${kind}-value`} className="ad9-ellipsis" title={valueText}>{valueText}</span>
             <ChevronDown size={18} aria-hidden="true" />
           </button>
-          {ids.length > 0 && <button type="button" className="ad9-clear" aria-label="Xoá lựa chọn" onClick={clear}>✕</button>}
+          {ids.length > 0 && <button type="button" className="ad9-clear" aria-label={`Xoá lựa chọn ${kind}`} onClick={clear}>✕</button>}
         </div>
         {open && (
           <div className="ad9-pop" role="dialog" aria-label={`Chọn ${kind}`}>

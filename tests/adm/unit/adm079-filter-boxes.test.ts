@@ -2,7 +2,8 @@
  * ADM079 Admin Dashboard — Agency and Provider filter boxes (UI fix requested by linhkhanh-vu, 2026-11-10).
  * - The selected value renders inside the box on one line and is cut with an ellipsis (class `ad9-ellipsis`);
  *   the full value is in its title.
- * - The clear ✕ is a real, focusable <button> (aria-label "Xoá lựa chọn") inside the same box, right after the value.
+ * - The clear ✕ is a real, focusable <button> inside the same box, right after the value, with a label per box:
+ *   "Xoá lựa chọn Agency" / "Xoá lựa chọn Provider" (distinct names for screen readers; linhkhanh-vu 2026-11-10).
  * - The trigger can shrink below its text width, so a long value never widens the box over the next filter box.
  * Filter logic, values sent and the Agency-or-Provider switch confirm are not changed (covered by filter-panel tests).
  */
@@ -36,11 +37,13 @@ describe('ADM079 | Agency / Provider filter boxes', () => {
     }
   })
 
-  it('the ✕ is a focusable <button aria-label="Xoá lựa chọn"> inside the same box, right after the trigger', () => {
-    const box = picker(panel({ agencyIds: ['a1'] }), 'Agency')
-    expect(box).toMatch(/<\/button><button type="button" class="ad9-clear" aria-label="Xoá lựa chọn">✕<\/button>$/)
-    const clear = box.match(/<button type="button" class="ad9-clear"[^>]*>/)![0]
-    expect(clear).not.toMatch(/tabindex="-1"|disabled|aria-hidden/)
+  it('each ✕ is a focusable <button> inside its box, right after the trigger, with its own label', () => {
+    for (const [kind, filters] of [['Agency', { agencyIds: ['a1'] }], ['Provider', { providerIds: ['p1'] }]] as const) {
+      const box = picker(panel(filters), kind)
+      expect(box, kind).toMatch(new RegExp(`</button><button type="button" class="ad9-clear" aria-label="Xoá lựa chọn ${kind}">✕</button>$`))
+      const clear = box.match(/<button type="button" class="ad9-clear"[^>]*>/)![0]
+      expect(clear).not.toMatch(/tabindex="-1"|disabled|aria-hidden/)
+    }
   })
 
   it('no ✕ when nothing is selected', () => {

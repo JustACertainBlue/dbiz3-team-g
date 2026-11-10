@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import MediaImage from '@/app/components/MediaImage'
 import { refreshDemoSession, type CurrentUserRole } from '@/lib/prf/client-session'
 
 interface VillageResult {
   village: { village_id: string; source_code: string; name: string; district: string; city_province: string; is_active: boolean }
-  featured_experiences?:Array<{experience_id:string;name:string;category:string;duration_minutes:number;max_participants:number}>
+  featured_experiences?:Array<{experience_id:string;name:string;category:string;duration_minutes:number;max_participants:number;provider_name:string;image:string|null;price_per_person?:number}>
   providers: Array<{ provider_id: string; business_name: string; craft_type: string; description: string; location_address: string; experience_count: number }>
 }
 
@@ -71,7 +72,15 @@ export default function VillageProfilePage({ params }: { params: { villageId: st
           </div>
         )}
       </section>
-      <section className="prf-section-card"><h2>Trải nghiệm nổi bật tại làng nghề</h2><div className="provider-media-grid">{result.featured_experiences?.length?result.featured_experiences.map(item=><article key={item.experience_id}><h3>{item.name}</h3><p>{item.category} · {item.duration_minutes} phút · tối đa {item.max_participants} khách</p><Link href={`/explore/experiences/${item.experience_id}`}>Xem trải nghiệm →</Link></article>):<p>Chưa có trải nghiệm công khai.</p>}</div></section>
+      {/* #227, VIL030 §3 #4: F-EXPLORE-02 card — image, workshop name, price only when the API returns it (Agency). */}
+      <section className="prf-section-card"><h2>Trải nghiệm nổi bật tại làng nghề</h2><div className="provider-media-grid">{result.featured_experiences?.length?result.featured_experiences.map(item=><article key={item.experience_id}>
+        {item.image ? <MediaImage src={item.image} alt={item.name} /> : null}
+        <h3>{item.name}</h3>
+        <p style={{ margin: '0.25rem 0', color: '#64748b' }}>{item.provider_name}</p>
+        <p>{item.category} · {item.duration_minutes} phút · tối đa {item.max_participants} khách</p>
+        {item.price_per_person !== undefined && <p><strong>{item.price_per_person.toLocaleString('vi-VN')} ₫</strong>/khách</p>}
+        <Link href={`/explore/experiences/${item.experience_id}`}>Xem trải nghiệm →</Link>
+      </article>):<p>Chưa có trải nghiệm công khai.</p>}</div></section>
     </main>
   )
 }

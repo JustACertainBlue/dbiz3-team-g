@@ -1476,6 +1476,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Log PR rounds | #240, #250, #256 each updated with `main` after the previous one merged; only the two log files conflicted, both sides kept |
 | Checks | #258, #259, #240, #250, #256, #257: CI green on Windows and macOS. #258 and #250: the first Windows run failed in `next build` on a `next/font` fetch (`TypeError: Cannot read properties of null (reading '1')`); the rerun of the failed job passed |
 
+### Entry 105: 10/11 Claude Code + human — ADM079 Agency / Provider filter boxes (#260)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu on 10/11 before the 20:00 freeze. No merges by the agent |
+| Bug (DEV, before) | The trigger could not shrink inside the flex `.ad9-picker`: with a long Agency name the Agency box grew from 774 to 1167 px over the Provider box (997–1200 px) at 1440 px, and the page scrolled sideways at 390 px |
+| Fix (CSS and markup only) | Trigger `flex: 1 1 auto; min-width: 0`; value in `.ad9-ellipsis` with the full value as `title`; with a selection the picker is the box and the ✕ sits in the same row right after the value (trigger `::after` keeps the whole box clickable); ✕ stays a focusable `<button>`, `aria-label="Xoá lựa chọn"`. Filter logic, values sent and the switch confirm unchanged |
+| Tests | New `tests/adm/unit/adm079-filter-boxes.test.ts` (4), red first (3 failed for the right reason). Two #242 expectations in `tests/adm/unit/adm-242-ui.test.ts` (✕ label "Bỏ chọn Agency" → "Xoá lựa chọn"; `.ad9-clear` absolute → relative) changed only after linhkhanh-vu approved it when asked (2026-11-10), marked in the file |
+| Browser check | DEV, HDT `thanhvien9`, Playwright 1440 and 390 px, longest Agency name and 2 agencies: no overlap, no horizontal scroll, value truncated, ✕ inside and centred; click on the box opens the list; Tab reaches ✕, Enter clears; switch confirm and Apply (`providerId=…`) as before. Screenshots outside the repo (`~/Desktop/hab-scratch/shots/adm079-filters/`) |
+| Checks | `npm test` 240 files / 1391 passed (22 skipped); lint 0; build 44/44; seed PASS |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

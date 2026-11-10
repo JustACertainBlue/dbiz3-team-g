@@ -1,4 +1,4 @@
-<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-ADM.md sha256=9eb08a2e619e698b6d8afdd609d991524a6e0236a0a6b1de9ef1507e3bb271f9 taken=2026-11-08T18:25Z -->
+<!-- DBIZ3-SNAPSHOT source=docs/spec/specs/spec-ADM.md sha256=675fca4c2316b00bbab8da48104ed6b93e827b87b23046820612f39f7e756b32 taken=2026-11-10T04:12Z -->
 <!-- Read-only copy for Spec Kit. Do not edit here. Edit docs/spec/specs/spec-ADM.md, then run:
      uv run tools/start_feature.py --refresh -->
 
@@ -288,7 +288,8 @@ sequenceDiagram
 
 ## Clarifications
 
-- 2026-11-04 #21: The four metric cards follow only the time and village filters; Agency/Provider filters apply to the Booking table, top 10 pairs, status breakdown and trend.
+- 2026-11-04 #21: The four metric cards follow only the time and village filters; Agency/Provider filters apply to the Booking table, top 10 pairs, status breakdown and trend. *(Superseded 2026-11-10, see below.)*
+- 2026-11-10 #21 (reopened): The four metric cards follow the time, village, Agency and Provider filters, like the lists and charts (BR-005; Agency and Provider combine with AND, BR-014). Total Agencies counts the selected Agencies, or, with only a Provider filter, the Agencies that have a Booking with the selected Providers; Total Providers works the same way in reverse; Total Bookings and Active Collaborations count only the Bookings that match the filters.
 - 2026-11-04 #22: An Agency is relevant to a UBND village when it has a Booking, Quote Request or Chat with a Provider in that village.
 
 **10. Open questions**
@@ -315,7 +316,7 @@ sequenceDiagram
 | 18 | How is “Active Collaborations” on the metric card defined? | No | BA | Closed | The number of unique Agency–Provider pairs that have at least one On hold or Booked Booking in the selected reporting scope. |
 | 19 | Should Provider activity count Chat interactions, Bookings, or both? F-ADMIN-08 mentions both. | No | BA | Closed | Quote Request, Chat and Booking are separate Provider activity types. A Provider is Active when at least one of these activities occurs during the selected reporting period. |
 | 20 | Should the Module 6 Sequence Diagram be expanded to include filters and F-ADMIN-07–10 metric retrieval? | No | BA | Closed | Yes. Current sequence includes scoped filter requests, metrics, booking trend/list and top10 pairs. |
-| 21 | BR-005 says dashboard metrics respect the Agency and Provider filters, while FR-006 and the consistency contract call them result-list filters. Do the Agency/Provider filters change the four metric cards? | No | BA | **Closed** | No. The four metric cards follow only the time and village filters. The Agency and Provider filters apply to the result lists (Booking table, top 10 collaboration pairs) and to the Booking status breakdown and Booking trend charts (consistency contract: "Agency/Provider result-list filters"). Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
+| 21 | BR-005 says dashboard metrics respect the Agency and Provider filters, while FR-006 and the consistency contract call them result-list filters. Do the Agency/Provider filters change the four metric cards? | No | BA | **Closed** (reopened and closed again 2026-11-10) | **Yes.** The four metric cards follow the time, village, Agency and Provider filters (BR-005), like the result lists (Booking table, top 10 collaboration pairs) and the Booking status breakdown and Booking trend charts; Agency and Provider combine with AND (BR-014). Total Agencies counts the selected Agencies, or, with only a Provider filter, the Agencies that have a Booking with the selected Providers; Total Providers works the same way in reverse; Total Bookings and Active Collaborations count only the matching Bookings. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-10; replaces the 2026-11-04 answer ("No. The four metric cards follow only the time and village filters."). |
 | 22 | BR-008 limits UBND Agency metrics to Agencies "relevant to/interacting with" the assigned village. Which interactions count? | No | BA | **Closed** | An Agency is relevant to the village when it has at least one Booking, Quote Request or Chat with a Provider in that village (the same activity types as BR-015). A Quote Request is linked to the Provider of its Experience. Decided by Vũ Khánh Linh (linhkhanh-vu), 2026-11-04. |
 
 **11. Traceability to DBIZ2**

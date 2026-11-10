@@ -183,21 +183,55 @@ export async function calculateMetricCards(
     ? allBookings.filter(b => scopedProviderIds.has(b.provider_id))
     : allBookings
 
+  // Extract agency/provider filter lists (same pattern as aggregateBookingMetrics)
+  const agencyList = filters.agencyIds?.length ? filters.agencyIds
+    : filters.agencyId ? filters.agencyId.split(',').map(s => s.trim()).filter(Boolean) : []
+  const providerList = filters.providerIds?.length ? filters.providerIds
+    : filters.providerId ? filters.providerId.split(',').map(s => s.trim()).filter(Boolean) : []
+
+  // Filter agencies: direct selection, or agencies with any booking to selected providers
+  let metricAgencies = scopedAgencies
+  if (agencyList.length > 0) {
+    metricAgencies = scopedAgencies.filter(a => agencyList.includes(a.agency_id))
+  } else if (providerList.length > 0) {
+    const agencyIdsWithProvider = new Set(allBookings.filter(b => providerList.includes(b.provider_id)).map(b => b.agency_id))
+    metricAgencies = scopedAgencies.filter(a => agencyIdsWithProvider.has(a.agency_id))
+  }
+
+  // Filter providers: direct selection, or providers with any booking from selected agencies
+  let metricProviders = scopedProviders
+  if (providerList.length > 0) {
+    metricProviders = scopedProviders.filter(p => providerList.includes(p.provider_id))
+  } else if (agencyList.length > 0) {
+    const providerIdsWithAgency = new Set(allBookings.filter(b => agencyList.includes(b.agency_id)).map(b => b.provider_id))
+    metricProviders = scopedProviders.filter(p => providerIdsWithAgency.has(p.provider_id))
+  }
+
+  // Filter bookings by agency and/or provider selection
+  let filteredBookings = scopedBookings
+  if (agencyList.length > 0 && providerList.length > 0) {
+    filteredBookings = filteredBookings.filter(b => agencyList.includes(b.agency_id) && providerList.includes(b.provider_id))
+  } else if (agencyList.length > 0) {
+    filteredBookings = filteredBookings.filter(b => agencyList.includes(b.agency_id))
+  } else if (providerList.length > 0) {
+    filteredBookings = filteredBookings.filter(b => providerList.includes(b.provider_id))
+  }
+
   // Bookings created in the current and previous period (A4)
-  const currentPeriodBookings = scopedBookings.filter(b => createdInPeriod(b, startDate, endDate))
-  const prevPeriodBookings = scopedBookings.filter(b => createdInPeriod(b, prevStartDate, prevEndDate))
+  const currentPeriodBookings = filteredBookings.filter(b => createdInPeriod(b, startDate, endDate))
+  const prevPeriodBookings = filteredBookings.filter(b => createdInPeriod(b, prevStartDate, prevEndDate))
 
   // 1. Total Agencies and 2. Total Providers: snapshots at the end date (A4, contract:110)
-  const totalAgenciesVal = scopedAgencies.filter(a => existedAt(a.created_at, endDate)).length
+  const totalAgenciesVal = metricAgencies.filter(a => existedAt(a.created_at, endDate)).length
   const agencyTrend = calculateTrendPercentage(
     totalAgenciesVal,
-    scopedAgencies.filter(a => existedAt(a.created_at, prevEndDate)).length || null
+    metricAgencies.filter(a => existedAt(a.created_at, prevEndDate)).length || null
   )
 
-  const totalProvidersVal = scopedProviders.filter(p => existedAt(p.created_at, endDate)).length
+  const totalProvidersVal = metricProviders.filter(p => existedAt(p.created_at, endDate)).length
   const providerTrend = calculateTrendPercentage(
     totalProvidersVal,
-    scopedProviders.filter(p => existedAt(p.created_at, prevEndDate)).length || null
+    metricProviders.filter(p => existedAt(p.created_at, prevEndDate)).length || null
   )
 
   // 3. Total Bookings
@@ -210,8 +244,8 @@ export async function calculateMetricCards(
 
   // 4. Active Collaborations (BR-017, AC-ADM-PAIR, A5): distinct pairs with an On hold or Booked
   // Booking at the end date, from booking_status_history; the trend compares with the previous end date.
-  const activeCollabVal = activePairsAt(scopedBookings, history, endDate).size
-  const prevActiveCollab = activePairsAt(scopedBookings, history, prevEndDate).size
+  const activeCollabVal = activePairsAt(filteredBookings, history, endDate).size
+  const prevActiveCollab = activePairsAt(filteredBookings, history, prevEndDate).size
   const collabTrend = calculateTrendPercentage(activeCollabVal, prevActiveCollab > 0 ? prevActiveCollab : null)
 
   return [

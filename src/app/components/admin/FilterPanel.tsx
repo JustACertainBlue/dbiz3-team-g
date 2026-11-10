@@ -301,9 +301,10 @@ export function FilterPanel({
           <button type="button" className={`ad9-input ad9-input--button combined-filter-trigger${ids.length ? ' is-set' : ''}`} aria-haspopup="listbox" aria-expanded={open} aria-labelledby={`ad9-${kind}-label ad9-${kind}-value`}
             onClick={() => { setOpenBox(open ? null : kind); setSwitchDialog(null) }}>
             <span id={`ad9-${kind}-value`}>{selectionText(kind, ids, options)}</span>
-            <ChevronDown size={18} aria-hidden="true" />
+            {ids.length > 0
+              ? <span className="ad9-clear-inline" role="button" aria-label={`Bỏ chọn ${kind}`} onClick={e => { e.stopPropagation(); clear() }}>✕</span>
+              : <ChevronDown size={18} aria-hidden="true" />}
           </button>
-          {ids.length > 0 && <button type="button" className="ad9-clear" aria-label={`Bỏ chọn ${kind}`} onClick={clear}>✕</button>}
         </div>
         {open && (
           <div className="ad9-pop" role="dialog" aria-label={`Chọn ${kind}`}>

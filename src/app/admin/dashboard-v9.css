@@ -25,8 +25,10 @@
 .ad9-input--button > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ad9-input--button.is-set { border-color: var(--color-brand-700); font-weight: 600; }
 .ad9-input--locked { display: flex; align-items: center; justify-content: space-between; background: var(--color-neutral-100); border-color: var(--color-neutral-200); color: var(--color-text-secondary); }
-.ad9-picker { display: flex; gap: 8px; }
-.ad9-clear { flex: none; width: 52px; min-height: 52px; border-radius: var(--radius-md); border: 1.5px solid var(--color-border-input); background: var(--color-surface-card); color: var(--color-text-secondary); font-size: 16px; cursor: pointer; }
+.ad9-picker { display: flex; }
+/* ✕ inside the trigger button — no longer a sibling element */
+.ad9-clear-inline { flex: none; display: flex; align-items: center; color: var(--color-text-secondary); padding: 0 2px; font-size: 16px; line-height: 1; cursor: pointer; }
+.ad9-clear-inline:hover { color: var(--color-text-primary); }
 .ad9-pop { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; right: 0; min-width: 280px; max-height: 360px; overflow: auto; padding: 12px; display: grid; gap: 10px; border-radius: var(--radius-md); background: var(--color-surface-card); border: var(--border-width-1) solid var(--color-border-default); box-shadow: var(--shadow-lg); }
 .ad9-pop ul { list-style: none; margin: 0; padding: 0; display: grid; }
 .ad9-pop li label { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 8px; border-radius: var(--radius-sm); font-size: 15px; cursor: pointer; }

@@ -1437,6 +1437,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | Each branch: seed PASS, `npm test` green (1250–1253 passed, 20 skipped), lint exit 0, build 44/44; CI green on Windows and macOS. Screenshots (desktop + 390 px) of each branch on the dev build (DEV database) beside the spec image and the pre-change audit shot, kept outside the repo |
 | Scope note | Each PR fixes only the item named for wave 1 but says "Closes #n"; the remaining items of #191, #185, #217, #218, #202, #186, #225 need follow-up issues if still wanted (listed in each PR body) |
 
+### Entry 102: 10/11 Claude Code (overnight, unattended) — UX wave 2 (8 PRs, #241, #243–#249)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5), overnight unattended run requested by linhkhanh-vu: one `ux/<issue>-<screen>` branch and PR per issue from fresh `main` (`ec859af`), test first, no merge, no questions (assumptions written in each PR). Allowed tools only: git, npm test/lint/build, npx vitest, gh pr/issue/run, Read/Edit/Write. Schedule screens follow spec-BKG OQ #70 (day rows) |
+| PRs | #241 DSH018 tiles in §3 order without "Hồ sơ xưởng", status summary 2 columns < 760 px (Closes #128, Refs #203); #243 SCH139 Create / Operating hours and the selected booking above the day rows (Refs #222); #244 BKG137 status tabs keeping village/date filters (Closes #193); #245 BKG133 four stat cards from `status_counts` + Create at the top (Refs #190); #246 EXP017 Agency card Request Quote / Chat with `source_context` "Card" + FR-010 refreshed notice (Refs #204); #247 AIT121 `additional_suggestions` shown with the same card + one header inside the shell (Refs #188); #248 VIL030 Experience cards with image, workshop and Agency-only price via the Explore card builder (Refs #227); #249 ADM095 Last login column + Review submission links per admin type (Refs #184) |
+| Gap re-check | All 8 gaps re-read in code before the fix; all real. "Closes" only where every item of the issue is fixed (#128, #193); otherwise "Refs" with the remaining items listed in the PR |
+| Tests | One new test file per PR, red first for the right reason (two fixtures corrected before the first green: BKG137 village of the Agency's own bookings). No existing test edited |
+| Checks | Each branch: `npm run test` green (1251–1254 passed, 20 skipped), lint passes, build 44/44. Not run: `validate_seed.py` (python not in the allowed list; no `data/` change) and screenshots (no dev server overnight) |
+| Overlaps | #246 conflicts with #236 on one line of `src/app/explore/page.tsx` (both add a card action line); resolve by keeping both (mutually exclusive by `isAgency`). #249 is merge-tree clean with #238, #123 |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

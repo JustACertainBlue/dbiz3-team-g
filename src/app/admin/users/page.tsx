@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { filterAdminUsers, roleOptions } from '@/lib/auth/admin-user-filter'
 import StatusBadge from '@/app/components/StatusBadge'
 import { accountActionBody } from './account-action'
+import { reviewSubmissionLinks } from './review-links'
+import { readSessionContext } from '@/lib/auth/client-session'
 type User = { user_id: string; name: string; email: string; organization: string; role: string; admin_type: string; status: string; last_login: string; created_date: string; provider_id?: string; agency_id?: string }
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -21,6 +23,8 @@ export default function UsersPage() {
   const [selected, setSelected] = useState<User | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [reason, setReason] = useState('')
+  const [adminType, setAdminType] = useState<string | null | undefined>(undefined) // #184: which review queues to offer
+  useEffect(() => { readSessionContext().then(session => setAdminType(session.adminType)).catch(() => {}) }, [])
   // #160: a new account starts with an empty reason.
   useEffect(() => { setReason('') }, [selected?.user_id])
   async function load() { setLoading(true); try { const response = await fetch('/api/auth/users'); const body = await response.json(); if (!response.ok) throw new Error(body.error); setUsers(body.data) } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tải được dữ liệu.') } finally { setLoading(false) } }
@@ -48,11 +52,11 @@ export default function UsersPage() {
   const filtered = filterAdminUsers(users, { query, status, role, organization, dateFrom, dateTo })
   const pages = Math.max(1, Math.ceil(filtered.length / 20))
   const rows = filtered.slice((Math.min(page, pages) - 1) * 20, Math.min(page, pages) * 20)
-  return <section className="users-page"><p>QUẢN TRỊ</p><h1>Quản lý tài khoản</h1><p><Link href="/admin/create-account">Tạo tài khoản mới →</Link></p><p>Danh sách được giới hạn theo quyền và làng nghề được phân công.</p>
+  return <section className="users-page"><p>QUẢN TRỊ</p><h1>Quản lý tài khoản</h1><p className="users-entry-links" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}><Link href="/admin/create-account">Tạo tài khoản mới →</Link>{reviewSubmissionLinks(adminType).map(link => <Link key={link.href} href={link.href}>{link.label} →</Link>)}</p><p>Danh sách được giới hạn theo quyền và làng nghề được phân công.</p>
     {error && <p role="alert">{error}</p>}
     <div className="filters"><label>Tổ chức<select value={organization} onChange={e => setOrganization(e.target.value)}><option value="">Tất cả</option>{[...new Set(users.map(user => user.organization))].sort().map(name => <option key={name}>{name}</option>)}</select></label><label>Ngày tạo từ<input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}/></label><label>Đến ngày<input type="date" min={dateFrom} value={dateTo} onChange={e => setDateTo(e.target.value)}/></label><button onClick={() => { setQuery(''); setStatus(''); setRole(''); setOrganization(''); setDateFrom(''); setDateTo('') }}>Xóa bộ lọc</button></div>
     <div className="filters"><label>Tìm tên, email, tổ chức<input value={query} onChange={e => setQuery(e.target.value)}/></label><label>Trạng thái<select value={status} onChange={e => setStatus(e.target.value)}><option value="">Tất cả</option>{['Approved','Active','Pending Approval','Rejected','Disabled'].map(value => <option key={value}>{value}</option>)}</select></label><label>Vai trò<select value={role} onChange={e => setRole(e.target.value)}><option value="">Tất cả</option>{roleOptions(users).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div>
-    {loading ? <p>Đang tải…</p> : <div className="table-wrap"><table><thead><tr><th>Họ tên / Email</th><th>Tổ chức</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{rows.map(user => <tr key={user.user_id}><td>{user.name}<small>{user.email}</small></td><td>{user.organization}</td><td>{user.role} {user.admin_type}</td><td><StatusBadge family={user.status === 'Active' ? 'account' : 'agency'} status={user.status} /></td><td><button onClick={() => { setSelected(user); setConfirm(false); setError('') }}>Xem tài khoản</button></td></tr>)}</tbody></table>{!filtered.length && <p>Không có tài khoản phù hợp.</p>}</div>}
+    {loading ? <p>Đang tải…</p> : <div className="table-wrap"><table><thead><tr><th>Họ tên / Email</th><th>Tổ chức</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th><th>Thao tác</th></tr></thead><tbody>{rows.map(user => <tr key={user.user_id}><td>{user.name}<small>{user.email}</small></td><td>{user.organization}</td><td>{user.role} {user.admin_type}</td><td><StatusBadge family={user.status === 'Active' ? 'account' : 'agency'} status={user.status} /></td><td>{user.last_login || 'Chưa đăng nhập'}</td><td><button onClick={() => { setSelected(user); setConfirm(false); setError('') }}>Xem tài khoản</button></td></tr>)}</tbody></table>{!filtered.length && <p>Không có tài khoản phù hợp.</p>}</div>}
     <nav aria-label="Phân trang tài khoản"><button disabled={page <= 1} onClick={() => setPage(value => value - 1)}>← Trước</button><span>Trang {Math.min(page, pages)} / {pages} · {filtered.length} tài khoản</span><button disabled={page >= pages} onClick={() => setPage(value => value + 1)}>Sau →</button></nav>
     {selected && <div className="overlay" role="dialog" aria-modal="true" aria-label="Chi tiết tài khoản" onClick={e => { if (e.target === e.currentTarget) closeDetail() }}><section className="detail"><h2>{selected.name}</h2><dl><dt>Email</dt><dd>{selected.email}</dd><dt>Tổ chức</dt><dd>{selected.organization}</dd><dt>Vai trò</dt><dd>{selected.role} {selected.admin_type}</dd><dt>Trạng thái</dt><dd><StatusBadge family={selected.status === 'Active' ? 'account' : 'agency'} status={selected.status} /></dd><dt>Ngày tạo</dt><dd>{selected.created_date}</dd><dt>Đăng nhập gần nhất</dt><dd>{selected.last_login || 'Chưa đăng nhập'}</dd></dl>
       {selected.provider_id && <p><Link href={`/admin/providers/${selected.provider_id}`}>Xem hồ sơ và thẩm định Provider →</Link></p>}

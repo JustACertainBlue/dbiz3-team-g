@@ -82,6 +82,12 @@ async function createSession(identity: DemoSession): Promise<LoginResult> {
   return { ok: true, token, identity }
 }
 
+/** spec-AUT FR-007 §5.1 (#55): which refusal an inactive account gets; call only after the password matched. */
+export async function inactiveLoginMessage(email: string): Promise<'Account not approved' | 'Account disabled'> {
+  const account = (await demoRepository().find('user_accounts', row => row.email.toLowerCase() === email.trim().toLowerCase()))
+  return account?.account_status === 'Disabled' ? 'Account disabled' : 'Account not approved'
+}
+
 /** Password verification reused from PR #11, adapted to the shared repository and session. */
 export async function authenticateAccount(email: string, password: string): Promise<LoginResult> {
   if (!email.trim() || !password.trim()) return { ok: false, reason: 'INVALID_CREDENTIALS' }

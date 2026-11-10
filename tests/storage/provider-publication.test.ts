@@ -46,7 +46,8 @@ describe.skipIf(process.env.HAB_TEST_STORAGE!=='1')('Committed Provider onboardi
    const adminCookie=`hab_session=${adminLogin.token}`
    const email=`provider-flow-${randomUUID()}@example.invalid`
    let temporary=''
-   const account=await createManagedAccount(ubnd,'provider',{name:'Synthetic Storage Review Workshop',email,phone:'0912345678',village_id:ubnd.assignedVillageId,address:'Synthetic test address'},message=>{temporary=message.temporary_password||''})
+   // spec ADM117 #10: contact Required → test input updated
+   const account=await createManagedAccount(ubnd,'provider',{name:'Synthetic Storage Review Workshop',email,phone:'0912345678',village_id:ubnd.assignedVillageId,address:'Synthetic test address',contact:{contact_person_name:'Synthetic Storage Contact',phone_number:'0912345678'}},message=>{temporary=message.temporary_password||''})
    userId=account.user_id;providerId=account.provider_id!
    const owner={...seedOwner,userId,providerId}
    const state=async()=> (await reader.query('SELECT verification_status,published_version_no,current_version_no FROM public.provider_profiles WHERE provider_id=$1',[providerId])).rows[0]

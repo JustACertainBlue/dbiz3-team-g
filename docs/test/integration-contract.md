@@ -574,9 +574,10 @@ only HDT, comment required, duplicate Tax ID refused), `tests/unit/agency-review
    `success_message`, `updated_at`, `change_log_entry`, `major_change_review_status`
    (spec-PRF.md:340); `updateAgencyProfile` returns only `success, agency_id,
    requires_hdt_rereview, account_status` (`agency-service.ts:133-138`).
-5. **Stub route** (issue #84). `POST /api/prf/agency/[agencyId]/major-change` answers 201 "Major change review
-   request created for HDT" but writes nothing (`src/app/api/prf/agency/[agencyId]/major-change/route.ts:15-24`),
-   while the real request is created by the profile update (`agency-service.ts:106-111`).
+5. **Stub route removed** (issue #84). `POST /api/prf/agency/[agencyId]/major-change` used to answer 201
+   "Major change review request created for HDT" while writing nothing; no UI, test or spec called it, so the
+   route was removed. The only way to create a major-change request is the profile update
+   (`PATCH /api/prf/agency/[agencyId]`, `agency-service.ts:106-111`); test: `aut-prf-major-change.test.ts` (#84 case).
    Also spec silent — code allows several Pending Review rows for one Agency (one insert per save,
    :106) and stores the notification with `event_type: 'Registration Reviewed'` for a change review
    (`agency-review.ts:64`).

@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import React, { useState } from 'react'
 
 // BKG136 action. F-SCHED-06 answers 200 even when the arrival is rejected; validation_error says why.
-export default function ConfirmArrival({ bookingId, backHref }: { bookingId: string; backHref: string }) {
+// #192, screen-spec-BKG136 §3 #5: enabled only when the F-SCHED-06 guard succeeds (Booked and start reached);
+// `allowed` and `lockReason` come from the server-computed booking actions. The server still re-checks.
+export default function ConfirmArrival({ bookingId, backHref, allowed, lockReason = '' }: { bookingId: string; backHref: string; allowed: boolean; lockReason?: string }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -36,8 +38,9 @@ export default function ConfirmArrival({ bookingId, backHref }: { bookingId: str
   return <>
     {error && <p className="bkg-error" role="alert">{error}</p>}
     <div className="bkg-actions">
-      <button type="button" disabled={pending} onClick={confirm}>{pending ? 'Đang xác nhận…' : 'Confirm Group Arrival'}</button>
+      <button type="button" disabled={!allowed || pending} aria-describedby={!allowed && lockReason ? 'bkg136-lock-reason' : undefined} onClick={confirm}>{pending ? 'Đang xác nhận…' : 'Confirm Group Arrival'}</button>
       <Link href={backHref}>Cancel</Link>
     </div>
+    {!allowed && lockReason && <p id="bkg136-lock-reason" className="bkg-reason">{lockReason}</p>}
   </>
 }

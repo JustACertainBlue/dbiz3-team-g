@@ -147,3 +147,8 @@
 .xv-skeleton__block { background: var(--color-neutral-200); }
 .xv-skeleton__line { display: block; height: 14px; border-radius: var(--radius-pill); background: var(--color-neutral-200); margin-bottom: 10px; }
 .xv-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* #246: Agency card actions (Request Quote / Chat) reuse ExperienceActions; give them the .xv-button look inside a card. */
+.xv-card .stack-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.xv-card .stack-actions .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 20px; border-radius: var(--radius-pill); font: 600 15px/20px var(--font-body); cursor: pointer; background: var(--color-brand-primary); color: var(--color-text-onbrand); border: 0; }
+.xv-card .stack-actions .button--secondary { background: transparent; color: var(--color-brand-800); border: 1.5px solid var(--color-brand-700); }
+.xv-card .stack-actions .button:disabled { opacity: .6; cursor: not-allowed; }

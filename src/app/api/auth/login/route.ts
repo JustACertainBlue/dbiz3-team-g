@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { DEMO_SESSION_COOKIE } from '@/lib/auth/demo-session'
-import { authenticateAccount, PRODUCT_SESSION_COOKIE, PRODUCT_SESSION_TTL_SECONDS, workspacePath } from '@/lib/auth/product-session'
+import { authenticateAccount, inactiveLoginMessage, PRODUCT_SESSION_COOKIE, PRODUCT_SESSION_TTL_SECONDS, workspacePath } from '@/lib/auth/product-session'
 import { sessionContextFor } from '@/lib/auth/session'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,11 @@ export async function POST(request: Request) {
   const result = await authenticateAccount(typeof body.email === 'string' ? body.email : '', typeof body.password === 'string' ? body.password : '')
   if (!result.ok) {
     const inactive = result.reason === 'ACCOUNT_INACTIVE'
-    return NextResponse.json({ error: { code: result.reason, message: inactive ? 'Tài khoản hiện không hoạt động.' : 'Email hoặc mật khẩu không hợp lệ.' } }, { status: inactive ? 403 : 401 })
+    // spec-AUT FR-007 §5.1 (#55): error_message ∈ {Invalid credentials, Account not approved, Account disabled};
+    // the status is only told after the password matched. error.code stays for existing clients.
+    const errorMessage = inactive ? (await inactiveLoginMessage(typeof body.email === 'string' ? body.email : '')) : 'Invalid credentials'
+    const message = errorMessage === 'Account disabled' ? 'Tài khoản đã bị vô hiệu hóa.' : errorMessage === 'Account not approved' ? 'Tài khoản chưa được duyệt.' : 'Email hoặc mật khẩu không hợp lệ.'
+    return NextResponse.json({ error: { code: result.reason, message }, error_message: errorMessage }, { status: inactive ? 403 : 401 })
   }
 
   const response = NextResponse.json({ data: { session: (await sessionContextFor(result.identity)), redirectTo: (await workspacePath(result.identity)) } })

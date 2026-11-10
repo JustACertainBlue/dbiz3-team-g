@@ -37,6 +37,17 @@ export default async function ProviderSchedulePage({ params, searchParams }: { p
 
   return <main className="bkg-page bkg-list">
     <header><p>HANOI ARTISAN BRIDGE · SCH139</p><h1>Provider Schedule</h1><span>{(await sessionDisplayName(session))} · lịch tính từ giờ mở cửa và các đặt chỗ Tạm giữ / Đã đặt</span></header>
+    {/* #222: §3 #4 Create booking and #8 Operating hours, then the selected booking (#3), before the day rows (OQ #70). */}
+    <p className="bkg-actions">
+      <Link className="bkg-link-btn" href={`/provider/${params.providerId}/bookings/new`}>Create booking</Link>
+      <Link href={`/provider/${params.providerId}/edit`}>Operating hours</Link>
+    </p>
+    {selected && <section aria-labelledby="sch139-selected" style={{ marginTop: 20 }}>
+      <h2 id="sch139-selected">Booking đã chọn</h2>
+      <BookingDetailView detail={selected} />
+      <BookingActionsBar providerId={params.providerId} bookingId={selected.booking_id} actions={selected.actions} />
+      <p className="bkg-actions"><Link href={`/provider/${params.providerId}/bookings/${selected.booking_id}`}>View → BKG135</Link></p>
+    </section>}
     <p className="bkg-actions">
       <Link href={`${base}?date_from=${addDays(dateFrom, -30)}`}>← 30 ngày trước</Link>
       <span>{dateFrom} → {addDays(dateFrom, 29)}</span>
@@ -44,16 +55,6 @@ export default async function ProviderSchedulePage({ params, searchParams }: { p
     </p>
     <CalendarGrid days={days} blocks={schedule.calendar_blocks}
       hrefFor={block => block.booking_id ? `${base}?date_from=${dateFrom}&booking=${block.booking_id}` : undefined} />
-    {selected && <section style={{ marginTop: 20 }}>
-      <h2>Booking đã chọn</h2>
-      <BookingDetailView detail={selected} />
-      <BookingActionsBar providerId={params.providerId} bookingId={selected.booking_id} actions={selected.actions} />
-      <p className="bkg-actions"><Link href={`/provider/${params.providerId}/bookings/${selected.booking_id}`}>View → BKG135</Link></p>
-    </section>}
-    <p className="bkg-actions">
-      <Link className="bkg-link-btn" href={`/provider/${params.providerId}/bookings/new`}>Create booking</Link>
-      <Link href={`/provider/${params.providerId}/edit`}>Operating hours</Link>
-    </p>
     <style>{styles}</style>
   </main>
 }

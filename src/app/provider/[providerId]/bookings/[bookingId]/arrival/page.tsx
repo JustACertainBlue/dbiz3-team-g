@@ -3,6 +3,7 @@ import { bookingDetailStyles, hanoiTime } from '../BookingDetailView'
 import { loadProviderBooking } from '../load-provider-booking'
 import ConfirmArrival from './ConfirmArrival'
 import StatusBadge from '@/app/components/StatusBadge'
+import { arrivalLockReason } from '@/lib/booking/booking-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export default async function ConfirmArrivalPage({ params }: { params: { provide
       </dl>
     </section>
     <p className="bkg-panel">Xác nhận đoàn đã đến sẽ chuyển Booking từ Booked sang Completed. Chỉ làm được khi Booking đang Booked và đã tới giờ bắt đầu.</p>
-    <ConfirmArrival bookingId={detail.booking_id} backHref={back} />
+    <ConfirmArrival bookingId={detail.booking_id} backHref={back} allowed={detail.actions.mark_arrival} lockReason={arrivalLockReason(detail.status, detail.actions)} />
     <style>{bookingDetailStyles}</style>
   </main>
 }

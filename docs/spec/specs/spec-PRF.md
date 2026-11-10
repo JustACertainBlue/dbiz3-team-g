@@ -216,6 +216,8 @@ UC-PRO-06 maps directly to F-PROFILE-05.
 
 - Provider tries to delete the last image in a required category before uploading a replacement: blocked per BR-015 until a replacement in the same category is uploaded.
 
+- EARS (2026-11-08, hosted version, issue #88): IF a Local Provider creates or updates an Experience with a category outside Enum[Workshop/Hands-on, Sightseeing, Culinary/Tasting, Cultural Show, Combo] (FR-006), THEN THE SYSTEM SHALL reject the request with a validation error that names the allowed values and SHALL NOT save the Experience.
+
 ### Consistency acceptance examples
 
 | AC ID | Given / When | Expected result |

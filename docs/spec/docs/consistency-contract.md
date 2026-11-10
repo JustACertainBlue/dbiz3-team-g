@@ -9,7 +9,7 @@ Revision: 28 September 2026. Status: revised for human review. This document rec
 - The DBIZ2 workbook and PNG mockups are preserved without modification. Current Markdown requirements define the consistency corrections; image design remains outside this revision.
 - Context Markdown is the current integration context. The original context.md.docx is the historical business-context source.
 - Any future change updates UC/Function/FR/IO/Screen/AC and associated diagrams together. Approval fields remain pending until the human approves.
-- Village is a seeded read-only reference catalog in this MVP. There is no Village verification lifecycle; discovery and matching use eligible Verified Provider profiles linked to a seeded Village.
+- Village is a seeded reference catalog in this MVP. The only way to add a village is F-AUTH-19: when HDT creates a UBND for a village name that matches no village, a new active village is created with only its name (no description or media; decision 2026-11-10, spec-AUT §10 #22). There is no Village edit screen and no Village verification lifecycle; discovery and matching use eligible Verified Provider profiles linked to a Village.
 
 ## Actor and permission model
 
@@ -79,7 +79,7 @@ Group discounts/special rates use the existing PRF Q23 array schema: pax_thresho
 
 Guest sees basic public profile/Experience data, participant capacity and a public availability summary. Price, contact and other Agencies' booking details remain restricted. Full interactive Provider schedule remains authenticated under F-SCHED-01; an availability summary does not grant access to private schedule records. AI interface/nav is hidden for Guest, and a direct URL requires Login.
 
-Village catalog is read-only seeded/source-provided reference data in this MVP; no Village CRUD/review feature is introduced. Unknown rating/review values are omitted, not synthesized.
+Village catalog is seeded/source-provided reference data in this MVP; the only addition is a name-only active village created by F-AUTH-19 (spec-AUT §10 #22); no Village edit/delete/review feature is introduced. Unknown rating/review values are omitted, not synthesized.
 
 ## Chat and Quote Request
 
@@ -105,7 +105,7 @@ Ranking parameter versions use Draft / Active / Retired. F-EXPLORE-17 is the sol
 
 ## Dashboard
 
-ADM079 contains time/village filters, Agency/Provider result-list filters, four cards, booking status chart, trend, booking table and top10 collaboration pairs. UBND village is fixed. Distinct Active Collaboration pairs have On hold/Booked bookings. Frequency ranking counts Booked/Completed only. These are separate from total bookings. Account status, profile verification and activity are separate dimensions. No additional drill-down is implied.
+ADM079 contains time/village filters, Agency/Provider filters (they apply to the result lists, the charts and, since 2026-11-10, the four cards; spec-ADM §10 #21), four cards, booking status chart, trend, booking table and top10 collaboration pairs. UBND village is fixed. Distinct Active Collaboration pairs have On hold/Booked bookings. Frequency ranking counts Booked/Completed only. These are separate from total bookings. Account status, profile verification and activity are separate dimensions. No additional drill-down is implied.
 
 Dashboard KPI time basis is fixed: Agency and Provider totals are snapshots at the selected end date; Booking totals, status breakdowns and trends use Booking created_at within the selected period; Active Collaborations are unique Agency–Provider pairs with at least one On hold or Booked Booking at the selected end date; activity metrics use events occurring within the selected period; top collaboration frequency counts Booked and Completed Bookings created within the selected period.
 

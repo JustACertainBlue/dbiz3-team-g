@@ -5,6 +5,7 @@ import type { SessionContext } from '@/lib/auth/session'
 interface ProfileForView {
   provider_id: string
   verification_status?: string
+  village_id?: string
   availability?: unknown
   booking_conditions?: unknown
   pricing?: number
@@ -23,6 +24,10 @@ export interface ProviderPageView {
   /** spec-PRF #34: "từ X ₫/khách", or null without Experiences. */
   pricingLine: string | null
   capacityLine: string | null
+  /** #217, screen-spec-PRF127 §5 #2: Experiences → EXP067, own Experience management (owner only). */
+  experiencesHref: string | null
+  /** #217, §5 #3 / §1: the Village name links to VIL030 (Tour Agency / Local Provider / Admin, not Guest). */
+  villageHref: string | null
 }
 
 export function providerPageView(profile: ProfileForView, session: SessionContext): ProviderPageView {
@@ -34,6 +39,8 @@ export function providerPageView(profile: ProfileForView, session: SessionContex
     : []
   return {
     canEdit: isOwner,
+    experiencesHref: isOwner ? `/provider/${profile.provider_id}/experiences` : null,
+    villageHref: session.authenticated && profile.village_id ? `/village/${profile.village_id}` : null,
     canCreateBooking: isOwner,
     canReview: isUbnd && profile.verification_status === 'Pending Verification',
     operatingHours: operatingHoursToRows(hours).map(row => `${WEEKDAY_LABELS[row.weekday]} ${row.local_start}–${row.local_end}`),

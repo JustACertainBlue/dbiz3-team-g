@@ -6,9 +6,14 @@ import { buildExplorePage, eligibleRows, resolveViewer, villageStrip } from '../
 import { demoRuntime } from '../../lib/explore/demo-runtime';
 import { loadExploreRuntime } from '../../lib/explore/seed-repository';
 import ExploreTracker from './ExploreTracker';
+import GuestLockedActions from './GuestLockedActions';
 import { currentServerSession } from '../../lib/auth/server-session';
 import './explore-v9.css';
 import { categoryLabel, craftLabel } from '../../lib/explore/display-labels';
+
+// Rendered per request (cookies, searchParams, live catalog). Without this, `next build` tries to
+// prerender the page and opens a database connection before noticing it is dynamic.
+export const dynamic = 'force-dynamic';
 
 type Params = { page?: string; category?: string };
 
@@ -101,6 +106,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
                   ? <p className="xv-price xv-price--locked"><Lock aria-hidden="true" size={16} />Đăng nhập để xem giá</p>
                   : <p className="xv-price">{vnd(card.price)}<small>/khách</small></p>}
                 <Link className="xv-button xv-button--outline" data-exp-action="click_card" data-exp-id={card.id} data-provider-id={card.provider_id} href={`/explore/experiences/${card.id}`}>Xem chi tiết</Link>
+                {!isAgency && <GuestLockedActions buttonClassName="xv-button xv-button--outline" />}
               </div>
             </article></li>)}
           </ul>}

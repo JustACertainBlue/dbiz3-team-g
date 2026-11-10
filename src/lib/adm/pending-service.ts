@@ -1,11 +1,12 @@
 /**
  * A6: Pending Verification items for ADM079, read from the shared runtime (Constitution I).
- * Providers: provider_profiles.verification_status = Pending Verification (name and submitted_at from the
- * current profile version). Agencies: agency_registration_requests.current_status = Pending Approval
+ * Providers: the version under review is Pending Verification (providerReviewState: a new provider, or the open
+ * revision of a published one — PRF Q32 / BR-007); name and submitted_at come from that version. Agencies: agency_registration_requests.current_status = Pending Approval
  * (company name from the latest registration_submission_versions row). Read-only (BR-012).
  */
 import { demoRepository } from '@/lib/db/application-store'
 import { resolveAdminScope, SessionLike } from './scope-guard'
+import { providerReviewState } from '@/lib/prf/provider-review-view'
 
 export interface PendingVerificationItem {
   kind: 'Provider' | 'Agency'
@@ -22,8 +23,9 @@ export async function listPendingVerification(
   const scope = (await resolveAdminScope(session, requestedVillageId))
   const repository = demoRepository()
 
+  const versions = (await repository.all('provider_profile_versions'))
   const providers: PendingVerificationItem[] = (await Promise.all((await repository.all('provider_profiles'))
-    .filter(p => p.verification_status === 'Pending Verification')
+    .filter(p => providerReviewState(p, versions).review_status === 'Pending Verification')
     .filter(p => !scope.effectiveVillageId || p.village_id === scope.effectiveVillageId)
     .map(async p => {
       const version = (await repository.find('provider_profile_versions', v => v.provider_id === p.provider_id && v.version_no === p.current_version_no))

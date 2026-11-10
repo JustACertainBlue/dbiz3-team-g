@@ -28,7 +28,7 @@ The controls and decisions below define the current screen specification.
 | 2 | Name | Input | `name` — F-AUTH-19 | Yes | name (String; Required) |
 | 3 | Email | Input | `email` — F-AUTH-19 | Yes | email (Email; Required) |
 | 4 | Phone | Input | `phone` — F-AUTH-19 | Yes | phone (String; Required — 10–15 digits with optional leading +) |
-| 5 | Assigned village id | Input | `assigned_village_id` — F-AUTH-19 | Yes | assigned_village_id (ID; Required) |
+| 5 | Village name | Input with suggestions | `village_name` — F-AUTH-19 | Yes | village_name (String, 1–255 characters, trimmed; Required — suggestions list only the active villages that have no UBND, and free text is allowed for a new name; a name matching no village creates a new active village with only its name; a village that already has a UBND is refused with "Village already has an assigned UBND"; an inactive village is refused with "Village is inactive") |
 | 6 | Role | System context (not editable) | `role` — F-AUTH-19 | Yes | role (Enum[ADMIN]; Required — system-assigned) |
 | 7 | Admin type | System context (not editable) | `admin_type` — F-AUTH-19 | Yes | admin_type (Enum[UBND]; Required — system-assigned) |
 | 8 | Provider name | Input | `provider_name` — F-AUTH-20 | Yes | provider_name (String; Required) |

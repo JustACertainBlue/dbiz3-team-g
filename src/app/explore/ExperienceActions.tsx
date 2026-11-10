@@ -1,11 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-// FR-007 (spec-EXP #29): actions on the Experience detail page carry source_context "Detail Page".
+export type SourceContext = 'Card' | 'Detail Page'
+
+/** FR-007 handoff payload: `source_context` is "Card" on an Explore card (#204) or "Detail Page" (spec-EXP #29). */
+export function handoffBody(action: 'quote' | 'chat', experienceId: string, sourceContext: SourceContext) {
+  return { action, experience_id: experienceId, source_context: sourceContext }
+}
+
+// FR-007 (spec-EXP #29): actions carry their source_context ("Detail Page" by default, "Card" on Explore cards).
 // FR-011: once this Agency sent a Quote Request for the Experience, Request Quote is hidden.
-export default function ExperienceActions({ experienceId, quoteSent = false }: { experienceId: string; quoteSent?: boolean }) {
+export default function ExperienceActions({ experienceId, quoteSent = false, sourceContext = 'Detail Page' }: { experienceId: string; quoteSent?: boolean; sourceContext?: SourceContext }) {
   const router = useRouter()
   const [busy, setBusy] = useState<'quote' | 'chat' | null>(null)
   const [error, setError] = useState('')
@@ -16,7 +23,7 @@ export default function ExperienceActions({ experienceId, quoteSent = false }: {
     try {
       const response = await fetch('/api/demo/handoff', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action, experience_id: experienceId, source_context: 'Detail Page' }),
+        body: JSON.stringify(handoffBody(action, experienceId, sourceContext)),
       })
       const body = await response.json()
       if (!response.ok) throw new Error(body.error?.message || 'Không thể mở hội thoại')

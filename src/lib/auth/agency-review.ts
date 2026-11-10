@@ -4,6 +4,7 @@ import type { SessionContext } from './session'
 import { demoRepository } from '../db/application-store'
 import { authDelivery, issueResubmission, type Delivery } from './lifecycle'
 
+const EMAIL_FAILED = Symbol('EMAIL_FAILED')
 const CHANGE_RMI_NEXT_STEP = 'Yêu cầu thay đổi này đã đóng. Vui lòng bổ sung theo góp ý của HDT và gửi thay đổi mới từ hồ sơ Agency.'
 
 function authorize(session: SessionContext) {
@@ -35,7 +36,7 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
   const now = new Date().toISOString()
   return (await demoRepository().transaction(["agency_major_change_requests","agency_profiles","agency_registration_requests","user_accounts","agency_review_records","registration_resubmission_tokens","notifications","audit_logs"], tables => {
     const table = (name: string) => tables[name] ??= []
-    let recipient = '', version = '', delivered = false
+    let recipient = '', version = '', delivered = false, emailFailed = false
     if (kind === 'change') {
       const change = table('agency_major_change_requests').find(row => row.major_change_id === id && row.review_status === 'Pending Review')
       if (!change) throw new Error('STALE_REVIEW')
@@ -62,7 +63,11 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
       if (lastReview?.decision === 'Request More Information' && decision !== 'Request More Information') throw new Error('STALE_REVIEW')
       if (decision === 'Request More Information') {
         if (delivery || (process.env.NODE_ENV !== 'production' && process.env.HAB_EMAIL_MODE === 'dev-outbox')) {
-          issueResubmission(tables, id, delivery ?? authDelivery()); delivered = true
+          // #124: a failing email adapter must not undo the decision; it is recorded as email Fail.
+          // issueResubmission calls the adapter before touching any token, so a failure leaves the tokens as they were.
+          const send = delivery ?? authDelivery()
+          try { issueResubmission(tables, id, message => { try { send(message) } catch { throw EMAIL_FAILED } }); delivered = true }
+          catch (cause) { if (cause !== EMAIL_FAILED) throw cause; emailFailed = true }
         }
       } else {
         registration.current_status = decision === 'Approve' ? 'Approved' : 'Rejected'
@@ -72,8 +77,8 @@ export async function reviewAgency(session: SessionContext, id: string, kind: st
       registration.updated_at = now
     } else throw new Error('INVALID_REVIEW')
     table('agency_review_records').push({ review_id: randomUUID(), registration_request_id: kind === 'registration' ? id : '', registration_version_no: version, major_change_id: kind === 'change' ? id : '', hdt_user_id: session.userId!, decision, comments: comment.trim(), decided_at: now })
-    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: recipient, event_type: 'Registration Reviewed', source_type: kind === 'change' ? 'AgencyMajorChange' : 'AgencyRegistration', source_id: id, payload: JSON.stringify(kind === 'change' && decision === 'Request More Information' ? { decision, comment, next_step: CHANGE_RMI_NEXT_STEP } : { decision, comment }), created_at: now, read_at: '', email_delivery_status: 'Fail' })
+    table('notifications').push({ notification_id: randomUUID(), recipient_user_id: recipient, event_type: 'Registration Reviewed', source_type: kind === 'change' ? 'AgencyMajorChange' : 'AgencyRegistration', source_id: id, payload: JSON.stringify(kind === 'change' && decision === 'Request More Information' ? { decision, comment, next_step: CHANGE_RMI_NEXT_STEP } : { decision, comment }), created_at: now, read_at: '', email_delivery_status: delivered ? 'Success' : 'Fail' })
     table('audit_logs').push({ audit_id: randomUUID(), actor_user_id: session.userId!, action: 'REVIEW_AGENCY', target_type: kind, target_id: id, occurred_at: now, change_or_result: JSON.stringify({ decision, comment }) })
-    return { success: true, email_delivery_status: delivered ? 'Dev outbox' : 'Not configured', in_app_status: 'Success' }
+    return { success: true, email_delivery_status: delivered ? 'Dev outbox' : emailFailed ? 'Fail' : 'Not configured', in_app_status: 'Success' }
   }))
 }

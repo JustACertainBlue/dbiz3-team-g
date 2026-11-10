@@ -1,4 +1,5 @@
 'use client'
+import { reviewNotice } from '@/lib/auth/review-notice'
 import { useEffect, useState } from 'react'
 import StatusBadge from '@/app/components/StatusBadge'
 type Review = { id: string; kind: string; name: string; status: string; submitted: string; fields: Record<string, unknown>; account: { user_id: string; name: string; email: string; role: string; admin_type?: string; status: string; organization: string; created_at: string; last_login: string } | null; history: { review_id: string; decision: string; comments: string; decided_at: string }[]; documents: { type: string; name: string; available: boolean; href: string | null }[] }
@@ -24,7 +25,7 @@ export default function AgencyReviews() {
   async function submit(event: React.FormEvent) {
     event.preventDefault(); if (!selected) return
     setBusy(true); setError(''); setNotice('')
-    try { const response = await fetch('/api/auth/agency-reviews', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id:selected.id, kind:selected.kind, decision, comment }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setSelected(null); setNotice('Đã lưu quyết định và thông báo trong ứng dụng. Email chưa được gửi vì chưa cấu hình dịch vụ.'); await load() }
+    try { const response = await fetch('/api/auth/agency-reviews', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id:selected.id, kind:selected.kind, decision, comment }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error); setSelected(null); setNotice(reviewNotice(body.data?.email_delivery_status)); await load() }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể lưu.') } finally { setBusy(false) }
   }
   return <main className="review-page"><p>QUẢN TRỊ HDT</p><h1>Thẩm định Agency</h1><p>Đăng ký mới và thay đổi thông tin pháp lý được xử lý riêng. Dữ liệu đã duyệt vẫn có hiệu lực khi chờ thẩm định thay đổi.</p>{error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}

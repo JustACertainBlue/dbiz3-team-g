@@ -13,7 +13,11 @@ export default function CreateAccountFields({ options }: { options: CreateAccoun
     <label><span>{options.kind === 'ubnd' ? 'Họ tên' : 'Tên hộ kinh doanh'}<Mark /></span><input name="name" required aria-required="true" maxLength={100}/></label>
     <label><span>Email<Mark /></span><input name="email" type="email" required aria-required="true"/></label>
     <label><span>Điện thoại<Mark /></span><input name="phone" required aria-required="true" pattern="\+?[0-9]{10,15}"/></label>
-    <label><span>Làng nghề<Mark /></span><select name="village_id" required aria-required="true"><option value="">Chọn làng nghề</option>{options.villages.map(item => <option key={item.village_id} value={item.village_id}>{item.name}</option>)}</select></label>
+    {options.kind === 'ubnd'
+      // ADM117 §3 #5 (F-AUTH-19, decision 2026-11-10, #242): village by name; suggestions = active villages without UBND;
+      // a new name creates a new active village with only its name.
+      ? <><label><span>Tên làng nghề<Mark /></span><input name="village_name" required aria-required="true" maxLength={255} list="ubnd-village-suggestions" autoComplete="off"/><small>Chọn làng có sẵn trong gợi ý, hoặc nhập tên làng mới để tạo làng.</small></label><datalist id="ubnd-village-suggestions">{options.villages.map(item => <option key={item.village_id} value={item.name}/>)}</datalist></>
+      : <label><span>Làng nghề<Mark /></span><select name="village_id" required aria-required="true"><option value="">Chọn làng nghề</option>{options.villages.map(item => <option key={item.village_id} value={item.village_id}>{item.name}</option>)}</select></label>}
     {options.kind === 'provider' && <label><span>Địa chỉ<Mark /></span><input name="address" required aria-required="true" maxLength={500}/></label>}
     {/* #170: Contact (F-AUTH-20 element #10), Provider form only */}
     {options.kind === 'provider' && <label><span>Người liên hệ<Mark /></span><input name="contact_person_name" required aria-required="true" maxLength={100}/></label>}

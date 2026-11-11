@@ -11,7 +11,18 @@
 .xv-script { margin: 0; font: 400 32px/44px var(--text-script-family); letter-spacing: var(--text-script-ls); color: var(--color-accent-default); }
 .xv-hero__title { margin: 4px 0 0; font: 700 var(--text-hero-size)/var(--text-hero-line) var(--font-heading); letter-spacing: -0.02em; }
 .xv-hero__lead { max-width: 46ch; margin: 16px 48px 0 0; font: 400 16px/24px var(--font-body); color: var(--color-text-secondary); }
-.xv-strip { list-style: none; display: flex; gap: 16px; margin: 32px 0 0 var(--layout-hero-strip-overlap); padding: 0; overflow: hidden; }
+.xv-slider { min-width: 0; margin: 28px 0 0; padding-right: 24px; }
+.xv-strip { list-style: none; display: flex; gap: 16px; margin: 0; padding: 4px 0 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.xv-strip::-webkit-scrollbar { display: none; }
+.xv-strip[data-scrollable="true"] { user-select: none; }
+@media (pointer: fine) { .xv-strip[data-scrollable="true"] { cursor: grab; } }
+.xv-strip[data-dragging="true"], .xv-strip[data-dragging="true"] a { cursor: grabbing; scroll-snap-type: none; }
+.xv-strip > li { flex: none; scroll-snap-align: start; }
+.xv-slider__controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 0; }
+.xv-slider__controls button { display: grid; place-items: center; width: 32px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+.xv-slider__controls button::after { content: ''; width: 8px; height: 8px; border: 1px solid var(--color-brand-700); border-radius: 50%; }
+.xv-slider__controls button[aria-current="true"]::after { background: var(--color-brand-700); }
+.xv-slider__controls button:focus-visible { outline: 2px solid var(--color-brand-700); outline-offset: -4px; }
 .xv-strip__card {
   position: relative; display: block; width: var(--layout-hero-strip-card-w); height: var(--layout-hero-strip-card-h); flex: none;
   border-radius: 24px; overflow: hidden; border: 2px solid rgba(255, 255, 255, .7); box-shadow: 0 12px 32px rgba(15, 61, 42, .28);
@@ -27,7 +38,7 @@
 .xv-verified--inline { position: static; }
 .xv-strip__label {
   position: absolute; left: 8px; right: 8px; bottom: 8px; display: grid; gap: 2px; padding: 8px 12px; border-radius: 14px;
-  background: rgba(15, 61, 42, .78); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  background: rgba(15, 61, 42, .88); color: var(--color-text-onbrand); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
 }
 .xv-strip__label strong { font: 600 15px/20px var(--font-body); }
 .xv-strip__label small { display: inline-flex; align-items: center; gap: 4px; font: 400 12px/16px var(--font-body); }
@@ -90,8 +101,7 @@
   .xv-hero__title { font-size: 32px; line-height: 36px; color: var(--color-text-onbrand); }
   .xv-hero__lead { margin: 4px 0 0; font-size: 14px; line-height: 20px; color: var(--color-text-onbrand); }
   .xv-cta { display: none; }
-  .xv-strip { margin: 0; padding: 0 12px 8px 0; overflow-x: auto; scroll-snap-type: x mandatory; }
-  .xv-strip li { scroll-snap-align: start; }
+  .xv-slider { margin-top: 0; padding-right: 12px; }
   .xv-strip__card { width: 140px; height: 196px; }
   .xv-main { padding: 0 12px 32px; }
   .xv-filter { flex-wrap: wrap; border-radius: 24px; padding: 16px; }

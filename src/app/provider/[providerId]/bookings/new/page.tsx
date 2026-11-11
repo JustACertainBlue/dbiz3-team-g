@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export default async function CreateBookingPage({ params }: { params: { providerId: string } }) {
   const session = (await currentServerSession())
   if (!(await canOpenCreateBooking(session, params.providerId))) {
-    return <main className="bkg-state"><h1>Create Booking</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới tạo được Booking.</p><Link href="/login">Đăng nhập</Link><style>{bookingStyles}</style></main>
+    return <main className="bkg-state"><h1>Tạo đặt chỗ</h1><p>Chỉ chủ xưởng mới có thể tạo đặt chỗ cho xưởng này.</p><Link href="/login">Đăng nhập</Link><style>{bookingStyles}</style></main>
   }
 
   const repository = demoRepository()
@@ -32,7 +32,7 @@ export default async function CreateBookingPage({ params }: { params: { provider
     .sort((a, b) => a.company_name.localeCompare(b.company_name))
 
   return <main className="bkg-create">
-    <header><p>HANOI ARTISAN BRIDGE · BKG134</p><h1>Create Booking</h1><span>{(await sessionDisplayName(session))} · Booking mới luôn ở trạng thái On hold trong 72 giờ</span></header>
+    <header><p>HANOI ARTISAN BRIDGE</p><h1>Tạo đặt chỗ</h1><span>{(await sessionDisplayName(session))} · Đặt chỗ mới được tạm giữ trong 72 giờ.</span></header>
     <CreateBookingForm providerId={params.providerId} experiences={experiences} agencies={agencies} />
     <style>{bookingStyles}</style>
   </main>

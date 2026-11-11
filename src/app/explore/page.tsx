@@ -9,6 +9,7 @@ import ExploreTracker from './ExploreTracker';
 import ExperienceActions from './ExperienceActions';
 import { hasQuoteRequest } from '../../lib/demo/commercial-handoff-service';
 import GuestLockedActions from './GuestLockedActions';
+import VillageSlider from './VillageSlider';
 import { currentServerSession } from '../../lib/auth/server-session';
 import './explore-v9.css';
 import { categoryLabel, craftLabel } from '../../lib/explore/display-labels';
@@ -19,8 +20,7 @@ export const dynamic = 'force-dynamic';
 
 type Params = { page?: string; category?: string };
 
-// Design wave 4 (Figma "Explore v6", v9 §6c), content per EXP120 (Guest) / EXP017 (Agency): a static hero
-// (no slider: screen-spec §9 "no new feature implied by decorative mockup copy"), one ranked list with the
+// Design wave 4 (Figma "Explore v6", v9 §6c), content per EXP120 (Guest) / EXP017 (Agency): one ranked list with the
 // permitted filter and pagination (no search: spec-EXP Q8/Q11), Guest analytics consent kept (EXP120 #2, SR-004),
 // AI Matching for Agency only (EXP120 SR-003), no booking button (BKG BR-002).
 function durationLabel(minutes: number) {
@@ -63,7 +63,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
           <h1 className="xv-hero__title">Hà Nội</h1>
           <p className="xv-hero__lead">Cầu nối đại lý du lịch với làng nghề thủ công đã xác minh quanh Hà Nội.</p>
         </div>
-        <ul className="xv-strip" aria-label="Làng nghề có trải nghiệm đã xác minh">
+        {strip.length > 0 && <VillageSlider>
           {strip.map(item => <li key={item.village_name}>
             <Link href={`/explore/experiences/${item.card.id}`} className="xv-strip__card" data-exp-action="click_card" data-exp-id={item.card.id} data-provider-id={item.card.provider_id}>
               {item.card.images[0] ? <MediaImage src={item.card.images[0].storage_key} alt={`${item.village_name} — ${item.card.name}`} /> : <span className="xv-placeholder" aria-hidden="true"><ImageIcon size={24} /></span>}
@@ -71,12 +71,10 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
               <span className="xv-strip__label"><strong>{item.village_name}</strong><small>{craftLabel(item.craft)}{!isAgency && <> · <Lock aria-hidden="true" size={12} /> Giá ẩn</>}</small></span>
             </Link>
           </li>)}
-        </ul>
+        </VillageSlider>}
         <a className="xv-cta" href="#tim-kiem"><span>Khám phá làng nghề</span></a>
       </div>
     </section>
-
-    <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
 
     <main className="xv-main">
       <section id="tim-kiem" className="xv-filter" aria-label="Lọc trải nghiệm">
@@ -94,6 +92,8 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
           <h2 id="xv-list-title">Trải nghiệm làng nghề</h2>
           <p><span>{catalog.pagination.total_count} kết quả</span>{isAgency && <span className="xv-chip">Giá hiển thị: ₫ (VND)</span>}</p>
         </div>
+
+        <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
 
         {catalog.experience_cards.length === 0
           ? <div className="xv-empty"><p>Không có trải nghiệm khớp bộ lọc này.</p>{searchParams.category && <Link className="xv-button xv-button--outline" href="/explore#tim-kiem">Xóa bộ lọc</Link>}</div>

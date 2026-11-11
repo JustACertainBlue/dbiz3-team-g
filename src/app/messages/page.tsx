@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import type { SessionContext } from '@/lib/auth/session'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { renderChatMarkdown } from '@/lib/iac/markdown-utils'
+import { bookingUpdateCopy } from './booking-update-copy'
 import { composerState } from './composer-state'
 import { closedNotice, closeReasonState } from './close-chat'
 import { ACCEPT_ATTRIBUTE, ATTACH_ERROR_TEXT, attachState, typeLabel } from './attach-state'
@@ -198,7 +199,7 @@ function MessagesContent() {
     <aside className="ch9-list" aria-label="Danh sách hội thoại">
       <h1>Tin nhắn</h1>
       <p className="ch9-count">{chats.length} hội thoại</p>
-      {chats.length === 0 && <p className="ch9-empty">Chưa có hội thoại. {isAgency ? 'Agency có thể bắt đầu từ Explore hoặc AI Tour Matching.' : 'Mở Chat từ một Booking.'}</p>}
+      {chats.length === 0 && <p className="ch9-empty">Chưa có hội thoại. {isAgency ? 'Chọn một trải nghiệm trong Khám phá để nhắn tin cho xưởng.' : 'Mở một đặt chỗ để nhắn tin cho công ty du lịch.'}</p>}
       <ul>{chats.map(chat => <li key={chat.chat_session_id}>
         <button type="button" className={chat.chat_session_id === selectedId ? 'ch9-item is-selected' : 'ch9-item'} aria-current={chat.chat_session_id === selectedId ? 'true' : undefined} onClick={() => openChat(chat.chat_session_id)}>
           <span className="ch9-avatar" aria-hidden="true">{initials(chat.organization)}</span>
@@ -214,7 +215,7 @@ function MessagesContent() {
     <section className="ch9-thread" aria-label="Hội thoại">
       {error && <p className="ch9-alert" role="alert">{error}</p>}
       {notice && <p className="ch9-notice" role="status">{notice}</p>}
-      {!selected || !history ? <div className="ch9-placeholder"><h2>Chọn một hội thoại</h2><p>Mỗi cặp Agency–Provider có một hội thoại đang mở; Experience, Quote và Booking là ngữ cảnh trong cùng hội thoại.</p></div> : <>
+      {!selected || !history ? <div className="ch9-placeholder"><h2>Chọn một hội thoại</h2><p>Chọn từ danh sách để xem tin nhắn.</p></div> : <>
         <header className="ch9-head">
           <button type="button" className="ch9-back" onClick={() => setThreadOpen(false)} aria-label="Quay lại danh sách hội thoại"><ChevronLeft size={22} aria-hidden="true" /></button>
           <span className="ch9-avatar" aria-hidden="true">{initials(selected.organization)}</span>
@@ -237,15 +238,23 @@ function MessagesContent() {
           {groupByDay(history.message_history, now).map(group => <div key={`${group.label}-${group.items[0].message_id}`} className="ch9-day">
             <p className="ch9-day__label">{group.label}</p>
             {group.items.map(message => {
+              const displayText = message.text && message.experience_id
+                ? message.text
+                    .replace(/^(Xin chào, tôi quan tâm đến trải nghiệm này: \*\*|Yêu cầu báo giá cho trải nghiệm: )\[DEMO\]\s*/i, '$1')
+                    .replace(` (/explore/experiences/${message.experience_id})`, '')
+                : message.text
               const system = message.message_kind === 'Booking Update'
+              const quote = message.message_kind === 'Quote Request'
+              const formattedText = displayText && (system ? bookingUpdateCopy(displayText)
+                : quote ? displayText.replace(/^Yêu cầu báo giá(?=\s|[:.!?]|$)/iu, '**Yêu cầu báo giá**') : displayText)
               // A message is the reader's own when it is not from the counterpart (participant_name, #22) or the system.
               const mine = !system && message.sender_name !== selected.participant_name
               return <article key={message.message_id} className={system ? 'ch9-msg ch9-msg--system' : mine ? 'ch9-msg ch9-msg--mine' : 'ch9-msg'}>
-                {!system && !mine && <small className="ch9-msg__sender">{message.sender_name}{message.message_kind !== 'User Text' ? ` · ${message.message_kind}` : ''}</small>}
-                {message.text && <p dangerouslySetInnerHTML={{ __html: renderChatMarkdown(message.text) }} />}
+                {!system && !mine && <small className="ch9-msg__sender">{message.sender_name}{quote && !formattedText?.startsWith('**Yêu cầu báo giá**') && <> · <strong>Yêu cầu báo giá</strong></>}</small>}
+                {formattedText && <p dangerouslySetInnerHTML={{ __html: renderChatMarkdown(formattedText) }} />}
                 {message.attachments.map(file => <p key={file.attachment_id} className="ch9-file"><a href={`/api/iac/chats/${encodeURIComponent(history.chat_session_id)}/attachments/${encodeURIComponent(file.attachment_id)}`} download={file.file_name}>{attachmentLine(file)}</a> <span>· {typeLabel(file.file_name)}</span></p>)}
                 {(message.experience_id || message.booking_id) && <p className="ch9-context">
-                  {message.experience_id && <Link href={`/explore/experiences/${message.experience_id}`}>Experience</Link>}
+                  {message.experience_id && <Link href={`/explore/experiences/${message.experience_id}`}>Xem trải nghiệm</Link>}
                   {message.booking_id && <Link href={isAgency ? `/agency/${session.agencyId}/bookings/${message.booking_id}` : `/provider/${session.providerId}/bookings/${message.booking_id}`}>Xem đặt chỗ</Link>}
                 </p>}
                 {!system && <time>{hanoiClock(message.sent_at)}</time>}

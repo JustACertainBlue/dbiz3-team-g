@@ -56,7 +56,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
     {rows.length === 0
       ? <p className="bkg-panel" style={{ marginTop: 14 }}>Không có Booking nào khớp bộ lọc này.</p>
       : <table className="bkg-table">
-          <thead><tr><th>Thời gian</th><th>Làng · Provider</th><th>Experience</th><th>Khách</th><th>Giá</th><th>Trạng thái</th><th></th></tr></thead>
+          <thead><tr><th>Thời gian</th><th>Làng · Provider</th><th>Trải nghiệm</th><th>Khách</th><th>Giá</th><th>Trạng thái</th><th></th></tr></thead>
           <tbody>
             {rows.map(row => <tr key={row.booking_id}>
               <td>{hanoiTime(row.start_at)} → {hanoiClock(row.end_at)}<small>Cập nhật {hanoiTime(row.last_updated_at)}</small></td>

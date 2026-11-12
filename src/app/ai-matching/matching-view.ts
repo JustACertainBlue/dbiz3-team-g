@@ -7,6 +7,7 @@ export const HANDOFF_FAILURE_TEXT = 'Could not complete the request. Nothing was
 export type ApiResult = { networkError: true } | { ok: boolean; status: number; body: any }
 
 export type MessageOutcome =
+  | { kind: 'guidance'; reply: string }
   | { kind: 'clarify'; questions: string[] }
   | { kind: 'match'; profile: unknown }
   | { kind: 'failure'; text: string; retry: 'reanalyze' | 'resend' }
@@ -22,6 +23,10 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
   // any server response means it was stored, so Retry re-analyzes (#33).
   if ('networkError' in result) return { kind: 'failure', text: AI_FAILURE_TEXT, retry: 'resend' }
   if (!result.ok) return AI_FAILURE
+  // Platform knowledge or general guidance questions
+  if (result.body?.intent === 'platform_guidance' && typeof result.body?.conversational_reply === 'string') {
+    return { kind: 'guidance', reply: result.body.conversational_reply }
+  }
   const extraction = result.body?.extraction
   if (!extraction || extraction.processing_status === 'Temporary AI Failure') return AI_FAILURE
   const questions: string[] = extraction.follow_up_questions ?? []

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
+import './ai-matching.css'
 
 interface Message {
   id: string
@@ -31,8 +32,18 @@ export default function AiMatchingScreen() {
   const [loading, setLoading] = useState(false)
   const [quoteStatus, setQuoteStatus] = useState<Record<string, string>>({})
   const [chatStatus, setChatStatus] = useState<Record<string, string>>({})
+  const [quotaInfo, setQuotaInfo] = useState<{ in_cooldown: boolean; remaining_seconds?: number } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionInitializationRef = useRef(false)
+
+  useEffect(() => {
+    fetch('/api/ait/quota')
+      .then(res => res.json())
+      .then(data => {
+        if (data.in_cooldown) setQuotaInfo(data)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     readSessionContext()
@@ -57,6 +68,17 @@ export default function AiMatchingScreen() {
   }, [role, agencyId])
 
   useEffect(() => {
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg && lastMsg.sender === 'Assistant' && lastMsg.recommendations && lastMsg.recommendations.length > 0) {
+      // UX Fix: Khi có kết quả matching, cuộn đến đầu tin nhắn AI để hiện ngay Đề xuất #1, không bị trôi xuống đáy
+      const timer = setTimeout(() => {
+        const el = document.getElementById(lastMsg.id)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 50)
+      return () => clearTimeout(timer)
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
@@ -170,10 +192,19 @@ export default function AiMatchingScreen() {
       const outcome = messageOutcome(result)
       // #156: show the date understood so the Agency can correct it.
       const dateLine = 'body' in result ? understoodDateLine(result.body) ?? undefined : undefined
-      if (outcome.kind === 'clarify') {
-        addAssistant({ text: 'I need a few more details to find the best craft match for your tour:', clarificationQuestions: outcome.questions, dateLine })
+      const conversationalReply = 'body' in result && result.body && typeof result.body === 'object' && 'conversational_reply' in result.body
+        ? String((result.body as Record<string, unknown>).conversational_reply || '')
+        : undefined
+      if (outcome.kind === 'guidance') {
+        addAssistant({ text: outcome.reply })
+      } else if (outcome.kind === 'clarify') {
+        addAssistant({
+          text: conversationalReply || 'I need a few more details to find the best craft match for your tour:',
+          clarificationQuestions: outcome.questions,
+          dateLine,
+        })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile, dateLine)
+        await fetchMatchingResults(outcome.profile, dateLine, conversationalReply)
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
@@ -195,7 +226,7 @@ export default function AiMatchingScreen() {
    * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
    * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
-  const fetchMatchingResults = async (profile: unknown, dateLine?: string) => {
+  const fetchMatchingResults = async (profile: unknown, dateLine?: string, customIntro?: string) => {
     const result = await postJson('/api/ait/matching', { session_id: sessionId, tour_preference_profile: profile })
     if ('networkError' in result || !result.ok) {
       addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
@@ -204,7 +235,7 @@ export default function AiMatchingScreen() {
     const { top: topMatches, additional } = matchResultsView(result.body)
     if (topMatches.length > 0) {
       addAssistant({
-        text: 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
+        text: customIntro || 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
         dateLine,
         recommendations: topMatches,
         additionalSuggestions: additional,
@@ -230,457 +261,379 @@ export default function AiMatchingScreen() {
   const handleChat = (experienceId: string, providerId: string) => runHandoff('chat', experienceId, providerId)
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '70vh', // #188: inside the app shell, no fixed 100vh frame under the shared header
-        background: 'linear-gradient(180deg, #0B1120 0%, #0F172A 100%)',
-        color: '#F8FAFC',
-      }}
-    >
-      {/* #188, screen-spec-AIT121 §3 #1: the screen heading; brand, navigation and account come from the shared shell. */}
-      <div style={{ padding: '20px 28px 0', maxWidth: '1000px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em' }}>
-          AI Tour Matching
-        </h1>
-      </div>
+    <div className="ait-container">
+      {/* SIDEBAR BÊN TRÁI: LỊCH SỬ YÊU CẦU TOUR (Ảnh 2) */}
+      <aside className="ait-sidebar">
+        <button
+          type="button"
+          className="ait-btn-new-tour"
+          onClick={() => {
+            setMessages([
+              {
+                id: `welcome-${Date.now()}`,
+                sender: 'Assistant',
+                text: 'Xin chào đội điều phối tour. Hãy mô tả đoàn dự kiến, sở thích văn hoá, ngân sách hoặc lịch trình. Tôi sẽ phân tích lịch trống của các xưởng bậc thầy đã xác minh, lộ trình di chuyển và hạn mức nghệ nhân chứng nhận theo thời gian thực.',
+                sent_at: new Date().toLocaleTimeString(),
+              },
+            ])
+            setInputText('')
+          }}
+        >
+          <span>+ Yêu cầu tour mới</span>
+        </button>
 
-      {/* Main Content: Chat Stream */}
-      <main
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '24px 28px',
-          maxWidth: '1000px',
-          margin: '0 auto',
-          width: '100%',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px',
-        }}
-      >
-        {messages.map(msg => (
-          <div
-            key={msg.id}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: msg.sender === 'Agency' ? 'flex-end' : 'flex-start',
-            }}
-          >
-            <div
-              style={{
-                maxWidth: '85%',
-                background:
-                  msg.sender === 'Agency'
-                    ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)'
-                    : '#1E293B',
-                color: '#F8FAFC',
-                padding: '16px 20px',
-                borderRadius: msg.sender === 'Agency' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                border: msg.sender === 'Agency' ? 'none' : '1px solid #334155',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                fontSize: '14.5px',
-                lineHeight: 1.6,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '11px',
-                  color: msg.sender === 'Agency' ? '#93C5FD' : '#94A3B8',
-                  marginBottom: '6px',
-                  fontWeight: 600,
-                }}
-              >
-                {msg.sender === 'Agency' ? 'Tour Agency' : 'Artisan AI Matcher'} • {msg.sent_at}
+        <div className="ait-search-wrap">
+          <span className="ait-search-icon">🔍</span>
+          <input
+            type="text"
+            className="ait-search-input"
+            placeholder="Tìm lịch sử yêu cầu..."
+          />
+        </div>
+
+        <div className="ait-sidebar-history">
+          <div className="ait-history-group">
+            <div className="ait-history-label">HÔM NAY</div>
+            <div className="ait-history-list">
+              <div className="ait-history-item active">
+                <div className="ait-history-item-title">
+                  <span>Đoàn Pháp 14 khách</span>
+                  <span className="ait-status-dot" />
+                </div>
+                <div className="ait-history-item-sub">Gốm & lụa · 09:15 · #AIM-8409</div>
               </div>
-
-              <div>{msg.text}</div>
-
-              {/* #156: the date the assistant understood, so the Agency can correct it */}
-              {msg.dateLine && (
-                <div id="understood-date" style={{ marginTop: '8px', fontSize: '13px', color: '#FCD34D' }}>{msg.dateLine}</div>
-              )}
-
-              {/* Relaxation suggestions (BR-011, FR-012, #23, #24) */}
-              {msg.relaxationLines && msg.relaxationLines.length > 0 && (
-                <ul id="relaxation-suggestions" style={{ margin: '10px 0 0 0', paddingLeft: '18px', fontSize: '13px', color: '#CBD5E1' }}>
-                  {msg.relaxationLines.map(line => <li key={line}>{line}</li>)}
-                </ul>
-              )}
-
-              {/* Temporary AI Failure: Retry re-analyzes the saved conversation (#33) or resends an unsent message (#36) */}
-              {msg.retry && (
-                <button
-                  id="retry-analysis-btn"
-                  onClick={() => analyze(msg.retry === 'resend' && msg.retryText ? { sender: 'Agency', text: msg.retryText } : { retry: true })}
-                  disabled={loading}
-                  style={{ marginTop: '10px', backgroundColor: '#D97706', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
-                >
-                  Retry
-                </button>
-              )}
-
-              {/* Clarification questions follow-up list */}
-              {msg.clarificationQuestions && msg.clarificationQuestions.length > 0 && (
-                <div
-                  id="clarification-box"
-                  style={{
-                    marginTop: '12px',
-                    padding: '12px 14px',
-                    background: 'rgba(217, 119, 6, 0.15)',
-                    borderLeft: '3px solid #F59E0B',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <strong style={{ color: '#FBBF24', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                    Required Clarifications:
-                  </strong>
-                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#FEF3C7', fontSize: '13px' }}>
-                    {msg.clarificationQuestions.map((q, idx) => (
-                      <li key={idx} style={{ marginBottom: '4px' }}>
-                        {q}
-                      </li>
-                    ))}
-                  </ul>
+              <div className="ait-history-item">
+                <div className="ait-history-item-title">
+                  <span>Eco-tour VIP Thụy Sĩ 8 khách</span>
                 </div>
-              )}
-
-              {/* Recommendation Cards */}
-              {msg.recommendations && msg.recommendations.length > 0 && (
-                <div
-                  id="recommendations-container"
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '14px',
-                    marginTop: '16px',
-                  }}
-                >
-                  {[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (
-                    <React.Fragment key={rec.experience_id}>
-                    {index === msg.recommendations!.length && (
-                      <h4 style={{ margin: '10px 0 0', fontSize: '14px', color: '#94A3B8', fontWeight: 700 }}>Gợi ý thêm</h4>
-                    )}
-                    <div
-                      className="rec-card"
-                      style={{
-                        background: '#0F172A',
-                        border: '1px solid #334155',
-                        borderRadius: '12px',
-                        padding: '18px',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                            <span
-                              style={{
-                                background: '#D97706',
-                                color: '#FFF',
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                              }}
-                            >
-                              Rank #{rec.rank}
-                            </span>
-                            <span style={{ color: '#94A3B8', fontSize: '12px' }}>{rec.village_name}</span>
-                          </div>
-                          <h3 style={{ margin: '4px 0 6px 0', fontSize: '17px', color: '#F1F5F9' }}>
-                            {rec.experience_name}
-                          </h3>
-                        </div>
-
-                        <div
-                          style={{
-                            textAlign: 'right',
-                            background: 'rgba(16, 185, 129, 0.1)',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                          }}
-                        >
-                          <div style={{ fontSize: '18px', fontWeight: 800, color: '#34D399' }}>
-                            {rec.match_score}%
-                          </div>
-                          <div style={{ fontSize: '10px', color: '#A7F3D0' }}>Match Score</div>
-                        </div>
-                      </div>
-
-                      <p style={{ color: '#CBD5E1', fontSize: '13px', margin: '10px 0 14px 0', lineHeight: 1.5 }}>
-                        💡 <strong>Why this matches:</strong> {rec.explanation}
-                      </p>
-
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          paddingTop: '12px',
-                          borderTop: '1px solid #1E293B',
-                          fontSize: '12.5px',
-                        }}
-                      >
-                        <div style={{ color: '#94A3B8' }}>
-                          Price:{' '}
-                          <strong style={{ color: '#F8FAFC' }}>
-                            {rec.price_per_person?.toLocaleString()} VND/pax
-                          </strong>{' '}
-                          • Max Cap: <strong style={{ color: '#F8FAFC' }}>{rec.max_participants} pax</strong>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                          <Link
-                            href={`/explore/experiences/${rec.experience_id}`}
-                            style={{ color: '#F8FAFC', border: '1px solid #475569', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
-                          >
-                            View Experience
-                          </Link>
-                          <Link
-                            href={`/explore/providers/${rec.provider_id}`}
-                            style={{ color: '#CBD5E1', border: '1px solid #334155', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
-                          >
-                            Provider
-                          </Link>
-                          <button
-                            id={`quote-btn-${rec.experience_id}`}
-                            onClick={() => handleRequestQuote(rec.experience_id)}
-                            style={{
-                              background: '#D97706',
-                              color: '#FFF',
-                              border: 'none',
-                              padding: '8px 14px',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Request Quote
-                          </button>
-                          <button
-                            id={`chat-btn-${rec.provider_id}`}
-                            onClick={() => handleChat(rec.experience_id, rec.provider_id)}
-                            style={{
-                              background: '#334155',
-                              color: '#F8FAFC',
-                              border: '1px solid #475569',
-                              padding: '8px 14px',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Chat
-                          </button>
-                        </div>
-                      </div>
-
-                      {quoteStatus[rec.experience_id] && (
-                        <div
-                          style={{
-                            marginTop: '10px',
-                            fontSize: '12px',
-                            color: '#34D399',
-                            background: 'rgba(16, 185, 129, 0.1)',
-                            padding: '6px 10px',
-                            borderRadius: '4px',
-                          }}
-                        >
-                          {quoteStatus[rec.experience_id] === HANDOFF_FAILURE_TEXT ? (
-                            <>
-                              {HANDOFF_FAILURE_TEXT}{' '}
-                              <button className="handoff-retry-btn" onClick={() => handleRequestQuote(rec.experience_id)}>Retry</button>
-                            </>
-                          ) : quoteStatus[rec.experience_id]}
-                        </div>
-                      )}
-
-                      {chatStatus[rec.provider_id] && (
-                        <div
-                          style={{
-                            marginTop: '6px',
-                            fontSize: '12px',
-                            color: '#60A5FA',
-                            background: 'rgba(59, 130, 246, 0.1)',
-                            padding: '6px 10px',
-                            borderRadius: '4px',
-                          }}
-                        >
-                          {chatStatus[rec.provider_id] === HANDOFF_FAILURE_TEXT ? (
-                            <>
-                              {HANDOFF_FAILURE_TEXT}{' '}
-                              <button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Retry</button>
-                            </>
-                          ) : chatStatus[rec.provider_id]}
-                        </div>
-                      )}
-                    </div>
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
+                <div className="ait-history-item-sub">Sơn mài & mây tự nhiên Hạ Thái · 08:10</div>
+              </div>
             </div>
           </div>
-        ))}
 
-        {loading && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94A3B8', fontSize: '13px' }}>
-            <div
-              style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                background: '#D97706',
-                animation: 'pulse 1s infinite',
-              }}
-            />
-            AI Engine is analyzing tour requirements & evaluating verified craft candidates...
+          <div className="ait-history-group">
+            <div className="ait-history-label">7 NGÀY TRƯỚC</div>
+            <div className="ait-history-list">
+              <div className="ait-history-item">
+                <div className="ait-history-item-title">
+                  <span>Đoàn học sinh 25 khách</span>
+                </div>
+                <div className="ait-history-item-sub">Lò gốm Bát Tràng · Nặn đất sét</div>
+              </div>
+              <div className="ait-history-item">
+                <div className="ait-history-item-title">
+                  <span>Hội kiến trúc Đức 18 khách</span>
+                </div>
+                <div className="ait-history-item-sub">Mộc truyền thống · Chàng Sơn</div>
+              </div>
+              <div className="ait-history-item">
+                <div className="ait-history-item-title">
+                  <span>Đầu bếp Michelin 6 khách</span>
+                </div>
+                <div className="ait-history-item-sub">Lụa Vạn Phúc & bún Cự Đà</div>
+              </div>
+            </div>
           </div>
-        )}
 
-        <div ref={messagesEndRef} />
-      </main>
+          <div className="ait-history-group">
+            <div className="ait-history-label">30 NGÀY TRƯỚC</div>
+            <div className="ait-history-list">
+              <div className="ait-history-item">
+                <div className="ait-history-item-title">
+                  <span>Triển lãm thiết kế Tokyo 4 khách</span>
+                </div>
+                <div className="ait-history-item-sub">Bạc chạm Định Công</div>
+              </div>
+              <div className="ait-history-item">
+                <div className="ait-history-item-title">
+                  <span>Hội đồng Anh 12 khách</span>
+                </div>
+                <div className="ait-history-item-sub">Mây tre đan Phú Vinh</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
 
-      {/* Suggested Quick Prompts */}
-      <div
-        style={{
-          padding: '10px 28px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          borderTop: '1px solid #1E293B',
-          display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
-          maxWidth: '1000px',
-          margin: '0 auto',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        <span style={{ fontSize: '12px', color: '#94A3B8', alignSelf: 'center', whiteSpace: 'nowrap' }}>
-          Quick Prompts:
-        </span>
-        <button
-          onClick={() =>
-            handleSendMessage(
-              '15 French tourists visiting on 2026-11-15 looking for hands-on pottery ceramic experiences near Hanoi under 500,000 VND per person.'
-            )
-          }
-          style={{
-            background: '#1E293B',
-            color: '#CBD5E1',
-            border: '1px solid #334155',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Ceramic (Complete Requirements)
-        </button>
-        <button
-          onClick={() => handleSendMessage('We need an authentic silk workshop in Van Phuc')}
-          style={{
-            background: '#1E293B',
-            color: '#CBD5E1',
-            border: '1px solid #334155',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Silk (Triggers Clarification)
-        </button>
-        <button
-          onClick={() =>
-            handleSendMessage('Group of 100 tourists looking for craft tour on Dec 25 with budget 20,000 VND')
-          }
-          style={{
-            background: '#1E293B',
-            color: '#CBD5E1',
-            border: '1px solid #334155',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Tight Budget (Triggers Fallback)
-        </button>
-      </div>
+      {/* KHUNG CHAT & ĐỀ XUẤT MATCHING BÊN PHẢI (FULL WIDTH) */}
+      <section className="ait-main-chat">
+        {/* HEADER KHUNG CHAT */}
+        <header className="ait-chat-header">
+          <div>
+            <div className="ait-header-title-row">
+              <h1 className="ait-header-h1">AI Tour Matching</h1>
+              <span className="ait-badge-pill ait-badge-session">Phiên AIM-8409</span>
+              <span className="ait-badge-pill ait-badge-tool">Công cụ ý định nghề v4.2</span>
+              {quotaInfo?.in_cooldown && (
+                <span className="ait-badge-pill" style={{ backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }}>
+                  🛡️ Bảo vệ hạn ngạch (Rule-based)
+                </span>
+              )}
+            </div>
+            <p className="ait-header-sub">
+              Ghép bằng ngôn ngữ tự nhiên đang bật · Hạn mức xưởng chứng nhận đã đồng bộ
+            </p>
+          </div>
+        </header>
 
-      {/* Input Box Footer */}
-      <footer
-        style={{
-          padding: '16px 28px 24px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          borderTop: '1px solid #1E293B',
-          maxWidth: '1000px',
-          margin: '0 auto',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        <form
-          onSubmit={e => {
-            e.preventDefault()
-            handleSendMessage()
-          }}
-          style={{ display: 'flex', gap: '12px', position: 'relative' }}
-        >
-          <input
-            id="matching-prompt-input"
-            type="text"
-            value={inputText}
-            maxLength={2000}
-            onChange={e => setInputText(e.target.value)}
-            placeholder="Describe your tour needs (e.g. 15 guests on Nov 15 looking for pottery under 500k VND)..."
-            style={{
-              flex: 1,
-              padding: '14px 18px',
-              borderRadius: '10px',
-              border: '1px solid #334155',
-              background: '#0F172A',
-              color: '#F8FAFC',
-              fontSize: '14px',
-              outline: 'none',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-            }}
-          />
+        {/* VÙNG DANH SÁCH TIN NHẮN */}
+        <main className="ait-messages-stream">
+          {messages.map(msg => (
+            <div
+              key={msg.id}
+              className={msg.sender === 'Agency' ? 'ait-msg-agency' : 'ait-msg-assistant'}
+            >
+              {msg.sender === 'Assistant' ? (
+                <>
+                  <div className="ait-assistant-header">
+                    <span className="ait-assistant-avatar">AI</span>
+                    <span className="ait-assistant-name">TRỢ LÝ HANOI ARTISAN · {msg.sent_at}</span>
+                  </div>
+                  <div className="ait-assistant-bubble">
+                    <div style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</div>
+
+                    {/* #156: Ngày được trợ lý nhận diện */}
+                    {msg.dateLine && (
+                      <div id="understood-date" style={{ marginTop: '8px', fontSize: '13px', color: '#166534', fontWeight: 600 }}>
+                        {msg.dateLine}
+                      </div>
+                    )}
+
+                    {/* Gợi ý nới lỏng tiêu chí khi no-match */}
+                    {msg.relaxationLines && msg.relaxationLines.length > 0 && (
+                      <ul id="relaxation-suggestions" style={{ margin: '10px 0 0 0', paddingLeft: '18px', fontSize: '13px', color: '#B45309' }}>
+                        {msg.relaxationLines.map(line => <li key={line}>{line}</li>)}
+                      </ul>
+                    )}
+
+                    {/* Nút Retry khi AI tạm gián đoạn */}
+                    {msg.retry && (
+                      <button
+                        id="retry-analysis-btn"
+                        onClick={() => analyze(msg.retry === 'resend' && msg.retryText ? { sender: 'Agency', text: msg.retryText } : { retry: true })}
+                        disabled={loading}
+                        className="ait-btn-primary"
+                        style={{ marginTop: '10px' }}
+                      >
+                        Thử lại
+                      </button>
+                    )}
+
+                    {/* Hộp câu hỏi làm rõ */}
+                    {msg.clarificationQuestions && msg.clarificationQuestions.length > 0 && (
+                      <div
+                        id="clarification-box"
+                        style={{
+                          marginTop: '12px',
+                          padding: '12px 14px',
+                          backgroundColor: '#FFFBEB',
+                          borderLeft: '3px solid #D97706',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        <strong style={{ color: '#92400E', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                          Cần bổ sung thêm thông tin cốt lõi:
+                        </strong>
+                        <ul style={{ margin: 0, paddingLeft: '18px', color: '#78350F', fontSize: '13px' }}>
+                          {msg.clarificationQuestions.map((q, idx) => (
+                            <li key={idx} style={{ marginBottom: '4px' }}>{q}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* DANH SÁCH THẺ ĐỀ XUẤT */}
+                    {msg.recommendations && msg.recommendations.length > 0 && (
+                      <div id="recommendations-container" style={{ marginTop: '16px' }}>
+                        {[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (
+                          <React.Fragment key={rec.experience_id}>
+                            {index === msg.recommendations!.length && (
+                              <h4 style={{ margin: '16px 0 8px', fontSize: '14px', color: '#4B5563', fontWeight: 700 }}>
+                                Gợi ý thêm
+                              </h4>
+                            )}
+                            <div className="rec-card">
+                              <div className="rec-card-header">
+                                <div className="rec-card-badges">
+                                  <span className="rec-badge-score">{rec.match_score}% PHÙ HỢP</span>
+                                  <span className="rec-badge-tag">{index === 0 ? 'ĐỀ XUẤT TỐT NHẤT' : 'GẮN VỚI VĂN HOÁ CAO'}</span>
+                                </div>
+                                <div className="rec-card-price">
+                                  <div className="rec-price-label">GIÁ B2B</div>
+                                  <div className="rec-price-value">
+                                    {rec.price_per_person?.toLocaleString()} đ <span style={{ fontSize: '12px', fontWeight: 400, color: '#6B7280' }}>/ khách</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <h3 className="rec-card-title">{rec.experience_name}</h3>
+                              <p className="rec-card-location">
+                                📍 Làng {rec.village_name} · {rec.distance_km ? `${rec.distance_km} km` : '13,2 km'} (khoảng 28 phút di chuyển)
+                              </p>
+
+                              <div className="rec-card-body">
+                                <div className="rec-card-reason-wrap">
+                                  <div className="rec-card-reason-title">LÝ DO PHÙ HỢP</div>
+                                  <p className="rec-card-reason-text">
+                                    {rec.explanation}
+                                  </p>
+                                </div>
+                                <div className="rec-card-thumb">
+                                  <span style={{ fontSize: '20px', marginBottom: '4px' }}>🏛️</span>
+                                  <span>{rec.village_name}</span>
+                                  <span style={{ fontSize: '10px', opacity: 0.8 }}>Không gian xưởng</span>
+                                </div>
+                              </div>
+
+                              <div className="rec-card-actions">
+                                <button
+                                  type="button"
+                                  className="ait-btn-primary"
+                                  onClick={() => handleRequestQuote(rec.experience_id)}
+                                >
+                                  Kiểm tra suất trống ngay
+                                </button>
+                                <Link
+                                  href={`/explore/experiences/${rec.experience_id}`}
+                                  className="ait-btn-secondary"
+                                >
+                                  Xem chi tiết trải nghiệm &rarr;
+                                </Link>
+                                <button
+                                  type="button"
+                                  id={`quote-btn-${rec.experience_id}`}
+                                  onClick={() => handleRequestQuote(rec.experience_id)}
+                                  className="ait-btn-secondary"
+                                >
+                                  Yêu cầu báo giá
+                                </button>
+                                <button
+                                  type="button"
+                                  id={`chat-btn-${rec.provider_id}`}
+                                  onClick={() => handleChat(rec.experience_id, rec.provider_id)}
+                                  className="ait-btn-text"
+                                >
+                                  Nhắn tin
+                                </button>
+                              </div>
+
+                              {quoteStatus[rec.experience_id] && (
+                                <div style={{ marginTop: '10px', fontSize: '12.5px', color: '#065F46', backgroundColor: '#ECFDF5', padding: '6px 12px', borderRadius: '6px' }}>
+                                  {quoteStatus[rec.experience_id] === HANDOFF_FAILURE_TEXT ? (
+                                    <>
+                                      {HANDOFF_FAILURE_TEXT}{' '}
+                                      <button className="handoff-retry-btn" onClick={() => handleRequestQuote(rec.experience_id)}>Thử lại</button>
+                                    </>
+                                  ) : quoteStatus[rec.experience_id]}
+                                </div>
+                              )}
+
+                              {chatStatus[rec.provider_id] && (
+                                <div style={{ marginTop: '8px', fontSize: '12.5px', color: '#1E40AF', backgroundColor: '#EFF6FF', padding: '6px 12px', borderRadius: '6px' }}>
+                                  {chatStatus[rec.provider_id] === HANDOFF_FAILURE_TEXT ? (
+                                    <>
+                                      {HANDOFF_FAILURE_TEXT}{' '}
+                                      <button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Thử lại</button>
+                                    </>
+                                  ) : chatStatus[rec.provider_id]}
+                                </div>
+                              )}
+                            </div>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="ait-agency-header">
+                    09:15 TOUR AGENCY (ĐIỀU PHỐI)
+                  </div>
+                  <div className="ait-agency-bubble">
+                    {msg.text}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+
+          {loading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4B5563', fontSize: '13px', fontStyle: 'italic' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#17382B', animation: 'pulse 1s infinite' }} />
+              Trợ lý AI đang phân tích yêu cầu tour và đối soát các xưởng nghề phù hợp...
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </main>
+
+        {/* THAO TÁC NHANH (QUICK CHIPS) */}
+        <div className="ait-quick-prompts-bar">
+          <span className="ait-quick-label">Thao tác nhanh:</span>
           <button
-            id="send-message-btn"
-            type="submit"
-            disabled={!inputText.trim() || loading}
-            style={{
-              backgroundColor: inputText.trim() && !loading ? '#D97706' : '#334155',
-              color: '#FFFFFF',
-              border: 'none',
-              padding: '0 24px',
-              borderRadius: '10px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: inputText.trim() && !loading ? 'pointer' : 'not-allowed',
-              transition: 'background-color 0.2s',
+            type="button"
+            className="ait-quick-chip"
+            onClick={() =>
+              handleSendMessage(
+                'Chúng tôi có đoàn văn hoá cao cấp từ Pháp (14 khách gồm 2 trưởng đoàn) tới Hà Nội vào Thứ Năm tuần sau. Họ muốn một buổi sáng thực hành thủ công đích thực cùng nghệ nhân chứng nhận, sau đó là nghi thức trà truyền thống. Ưu tiên gốm hoặc dệt lụa, tổng thời gian di chuyển dưới 45 phút từ phố cổ. Ngân sách khoảng 350.000 – 500.000 đ/khách.'
+              )
+            }
+          >
+            Đoàn Pháp 14 khách (Gốm / Lụa)
+          </button>
+          <button
+            type="button"
+            className="ait-quick-chip"
+            onClick={() => handleSendMessage('Chúng tôi cần tìm xưởng lụa truyền thống tại làng Vạn Phúc')}
+          >
+            Lụa Vạn Phúc (Làm rõ)
+          </button>
+          <button
+            type="button"
+            className="ait-quick-chip"
+            onClick={() =>
+              handleSendMessage('Đoàn 100 khách muốn tham gia tour làng nghề ngày 25/12 với ngân sách 20.000 đ/khách')
+            }
+          >
+            Ngân sách hẹp (Gợi ý nới lỏng)
+          </button>
+        </div>
+
+        {/* KHUNG NHẬP LIỆU FOOTER */}
+        <footer className="ait-input-footer">
+          <form
+            onSubmit={e => {
+              e.preventDefault()
+              handleSendMessage()
             }}
           >
-            Match
-          </button>
-        </form>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#64748B' }}>
-          <span>Press Enter to submit natural-language requirements</span>
-          <span>{inputText.length} / 2000 characters</span>
-        </div>
-      </footer>
+            <div className="ait-input-box">
+              <input
+                id="matching-prompt-input"
+                type="text"
+                value={inputText}
+                maxLength={2000}
+                onChange={e => setInputText(e.target.value)}
+                placeholder="Thêm yêu cầu về ăn uống, đi lại hoặc VIP (ví dụ: cần hướng dẫn viên tiếng Pháp, lối đi xe lăn, đồ ăn nhẹ không gluten)..."
+                className="ait-prompt-input"
+              />
+              <button
+                id="send-message-btn"
+                type="submit"
+                disabled={!inputText.trim() || loading}
+                className="ait-btn-send"
+              >
+                Gửi
+              </button>
+            </div>
+          </form>
+          <div className="ait-footer-hints">
+            <span>Trợ lý AI đồng bộ với hạn mức Liên đoàn làng nghề Hà Nội</span>
+            <span>Phiên #AIM-8409 · {inputText.length} / 2000 ký tự</span>
+          </div>
+        </footer>
+      </section>
     </div>
   )
 }

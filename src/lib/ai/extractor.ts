@@ -1,19 +1,6 @@
 import type { TourContext, TourPreferenceProfile } from '@/lib/matching/types'
-import { detectCraftPreference, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
-import { systemClock } from '@/lib/booking/clock'
-import { extractTourDate } from './tour-date'
-
-const HANOI_PLACES = [
-  'Hoàn Kiếm', 'Hoan Kiem', 'Old Quarter', 'Ba Đình', 'Tây Hồ', 'Long Biên', 'Cầu Giấy', 'Đống Đa',
-  'Hai Bà Trưng', 'Hoàng Mai', 'Thanh Xuân', 'Nam Từ Liêm', 'Bắc Từ Liêm', 'Hà Đông', 'Hà Nội', 'Hanoi',
-]
-
-// #35: the text after "from" / "near" up to a comma or the next clause, else a named Hanoi place.
-function detectOrigin(text: string): string | undefined {
-  const stated = text.match(/(?:^|[\s,])(?:from|near|xuất phát từ)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at)\s|[,.;!?]|$)/iu)
-  if (stated) return stated[1].trim()
-  return HANOI_PLACES.find(place => new RegExp(`(?<![\\p{L}])${place}(?![\\p{L}])`, 'iu').test(text))
-}
+import { ConversationalAiService, type ConversationalAiResult } from './llm-service'
+import type { QuotaStatus } from './quota-manager'
 
 export interface MessageInput {
   sender?: string
@@ -32,6 +19,10 @@ export interface ExtractionResult {
   retry_available: boolean
   follow_up_questions: string[]
   tour_context: TourContext
+  conversational_reply?: string
+  intent?: 'tour_matching' | 'platform_guidance' | 'mixed'
+  quota_status?: QuotaStatus
+  usedLlm?: boolean
 }
 
 export async function extractTourContext(
@@ -49,82 +40,23 @@ export async function extractTourContext(
   }
 
   const messages: MessageInput[] = Array.isArray(input) ? input : input.messages || []
-  const tourContext: TourContext = {}
-  const now = options?.now ?? systemClock
-  let craftPref: string | undefined = undefined
 
-  // Process messages in chronological order so later turns properly update requirements (FR-009, BR-008)
-  for (const m of messages) {
-    const text = m.text || ''
-
-    // 1. Group size extraction: matches numbers in context of group size
-    const groupMatch = text.match(
-      /(?:group of|for)\s*(\d+)|\b(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists?|passengers?|kh\u00e1ch|ng\u01b0\u1eddi)/i
-    )
-    if (groupMatch) {
-      tourContext.group_size = parseInt(groupMatch[1] || groupMatch[2], 10)
-    }
-
-    // 2. Date (#156): explicit year kept; no year → next upcoming occurrence from today (Hanoi).
-    const startDate = extractTourDate(text, now())
-    if (startDate) {
-      tourContext.target_date_or_range = { start_date: startDate }
-    }
-
-    // 3. Budget extraction (handles e.g. 20,000 VND, 20k, under 500k)
-    const budgetMatch = text.match(
-      /(?:budget|under|around|tight budget)\s*(\d+)(?:k|,\d{3}|\.000|000)?\s*(?:VND|vnd)?|(\d+)[,.]?000\s*(?:VND|vnd)/i
-    )
-    if (budgetMatch) {
-      let amountStr = budgetMatch[1] || budgetMatch[2]
-      let amount = parseInt(amountStr, 10)
-      if (amount < 1000) {
-        amount *= 1000
-      }
-      tourContext.budget = {
-        max_per_person: amount,
-        currency: 'VND',
-      }
-    }
-
-    // 4. Craft & Experience preferences (#32, #34): only what the Agency states
-    const craft = detectCraftPreference(text)
-    if (craft) craftPref = craft
-    const types = detectExperienceTypes(text)
-    if (types.length > 0) tourContext.experience_types = types
-
-    // 5. Origin (#35): "from X", "near X" or a named Hanoi district/city. A craft village named
-    // only as a place to visit is a destination, never an origin.
-    const origin = detectOrigin(text)
-    if (origin) tourContext.origin_or_route = { origin_address: origin }
-  }
-
-  if (craftPref) {
-    tourContext.craft_preference = craftPref
-  }
-
-  const followUps: string[] = []
-  if (tourContext.group_size === undefined) {
-    followUps.push('Could you please specify your expected group size or number of guests/pax?')
-  }
-  if (!tourContext.target_date_or_range) {
-    followUps.push('What is your desired date or date range for the tour?')
-  }
-  if (!tourContext.origin_or_route) {
-    followUps.push('Where will the group start from (for example "from Hoàn Kiếm")?')
-  }
-  if (!tourContext.craft_preference && !tourContext.experience_types?.length) {
-    followUps.push('Which craft or type of experience are you looking for (for example silk weaving, pottery or a hands-on workshop)?')
-  }
-
-  const isComplete = followUps.length === 0
+  // Run through Conversational AI service (with Cloudflare Workers AI + Quota Protection)
+  const result: ConversationalAiResult = await ConversationalAiService.processConversation(
+    messages,
+    options
+  )
 
   return {
-    is_complete: isComplete,
+    is_complete: result.is_complete,
     processing_status: 'Success',
     retry_available: false,
-    follow_up_questions: followUps,
-    tour_context: tourContext,
+    follow_up_questions: result.follow_up_questions,
+    tour_context: result.tour_context,
+    conversational_reply: result.conversational_reply,
+    intent: result.intent,
+    quota_status: result.quota_status,
+    usedLlm: result.usedLlm,
   }
 }
 

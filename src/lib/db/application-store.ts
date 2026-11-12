@@ -35,5 +35,6 @@ let postgres:ApplicationStore|undefined
 export function demoRepository():ApplicationStore {
   if(override.getStore())return override.getStore()!
   if(process.env.NODE_ENV==='test'&&process.env.HAB_TEST_POSTGRES!=='1')return fixtures
+  if(!process.env.DATABASE_APP_URL)return fixtures
   return postgres??=new AsyncPostgresStore(getDbClient())
 }

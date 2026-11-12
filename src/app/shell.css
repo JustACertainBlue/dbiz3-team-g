@@ -68,23 +68,25 @@ body {
 .shell-bar :is(a, button):focus-visible, .shell-sidebar :is(a, button):focus-visible, .shell-topbar :is(a, button):focus-visible,
 .shell-tabbar a:focus-visible { outline: var(--focus-ring-width) solid var(--color-brand-300); outline-offset: var(--focus-ring-offset); }
 
-/* ---- Pill bar: Guest, Agency, Provider (v9 §6d rule 8: 20 px from the edges, 64 px high, radius 999) ---- */
+/* ---- Top nav bar: Simple, sticky at the very top of the viewport (full width, 0 margin) ---- */
 .shell-bar {
-  position: sticky; top: 20px; z-index: 1000; margin: 20px 20px 0; min-height: 64px; padding: 8px 12px 8px 32px;
-  display: flex; align-items: center; gap: var(--space-4); border-radius: var(--radius-pill); color: var(--color-text-onbrand);
+  position: sticky; top: 0; z-index: 1000; margin: 0; width: 100%; min-height: 58px; padding: 6px 28px;
+  display: flex; align-items: center; gap: var(--space-4); border-radius: 0; color: var(--color-text-onbrand);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12); border-left: none; border-right: none; border-top: none;
+  box-sizing: border-box;
 }
 .shell-bar__items { display: flex; align-items: center; gap: var(--space-2); margin-left: var(--space-2); }
 .shell-bar__items a {
-  min-height: 44px; display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4);
+  min-height: 40px; display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4);
   border-radius: var(--radius-pill); color: var(--color-text-onbrand); text-decoration: none; white-space: nowrap;
-  font: 600 15px/20px var(--font-body); transition: background-color var(--motion-duration-base) ease-out;
+  font: 600 14.5px/20px var(--font-body); transition: background-color var(--motion-duration-base) ease-out;
 }
 .shell-bar__items a:hover { background: rgba(255, 255, 255, .08); }
 .shell-bar__items a.is-active { background: var(--color-brand-700); }
 .shell-bar__end { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
 .shell-pill {
-  min-height: 44px; display: inline-flex; align-items: center; padding: 0 var(--space-6); border-radius: var(--radius-pill);
-  font: 600 15px/20px var(--font-body); text-decoration: none; white-space: nowrap;
+  min-height: 40px; display: inline-flex; align-items: center; padding: 0 var(--space-5); border-radius: var(--radius-pill);
+  font: 600 14.5px/20px var(--font-body); text-decoration: none; white-space: nowrap;
 }
 .shell-pill--outline { color: var(--color-text-onbrand); border: 1.5px solid var(--color-text-onbrand); }
 .shell-pill--solid { background: var(--color-neutral-0); color: var(--color-brand-800); }
@@ -92,26 +94,26 @@ body {
 
 .shell-user { position: relative; }
 .shell-user__button {
-  display: flex; align-items: center; gap: var(--space-3); min-height: 48px; padding: 0 var(--space-2) 0 var(--space-3);
+  display: flex; align-items: center; gap: var(--space-3); min-height: 44px; padding: 0 var(--space-2) 0 var(--space-3);
   background: transparent; border: 0; border-radius: var(--radius-pill); color: var(--color-text-onbrand); cursor: pointer; text-align: right;
 }
 .shell-user__text { display: grid; }
-.shell-user__text strong { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-1); font: 600 15px/20px var(--font-body); }
-.shell-user__text small { font: 400 13px/18px var(--font-body); color: var(--color-brand-100); }
+.shell-user__text strong { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-1); font: 600 14.5px/20px var(--font-body); }
+.shell-user__text small { font: 400 12px/16px var(--font-body); color: var(--color-brand-100); }
 .shell-user__menu {
-  position: absolute; right: 0; top: calc(100% + 8px); min-width: 240px; padding: var(--space-2); border-radius: var(--radius-lg);
+  position: absolute; right: 0; top: calc(100% + 4px); min-width: 240px; padding: var(--space-2); border-radius: var(--radius-lg);
   display: grid; gap: var(--space-1); color: var(--color-text-primary);
 }
 .shell-user__menu a, .shell-user__logout, .shell-menu nav a, .shell-menu__account a, .shell-menu__logout {
-  min-height: 44px; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3); border-radius: var(--radius-md);
-  color: var(--color-text-primary); text-decoration: none; font: 600 15px/20px var(--font-body); background: transparent; border: 0; cursor: pointer; text-align: left;
+  min-height: 40px; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3); border-radius: var(--radius-md);
+  color: var(--color-text-primary); text-decoration: none; font: 600 14.5px/20px var(--font-body); background: transparent; border: 0; cursor: pointer; text-align: left;
 }
 .shell-user__menu a:hover, .shell-user__logout:hover, .shell-menu nav a:hover, .shell-menu__account a:hover, .shell-menu__logout:hover { background: var(--color-neutral-100); }
 
 /* ---- Collapsed menu panel (< 1,100 px for the bar, < 1,024 px for Admin) ---- */
 .shell-menu {
-  position: fixed; z-index: 1200; top: 92px; left: 20px; right: 20px; max-width: 420px; margin-left: auto;
-  padding: var(--space-4); border-radius: 24px; color: var(--color-text-primary); max-height: calc(100vh - 112px); overflow: auto;
+  position: fixed; z-index: 1200; top: 66px; left: 16px; right: 16px; max-width: 420px; margin-left: auto;
+  padding: var(--space-4); border-radius: 16px; color: var(--color-text-primary); max-height: calc(100vh - 80px); overflow: auto;
 }
 .shell-menu__head { display: flex; align-items: center; justify-content: space-between; }
 .shell-menu__head strong { font: 600 18px/26px var(--font-body); }
@@ -167,16 +169,17 @@ body:has(.shell-sidebar) { box-shadow: inset var(--layout-sidebar-width) 0 0 0 v
   body:has(.shell-sidebar) #page-content, body:has(.shell-sidebar) > footer { margin-left: 0; }
   body:has(.shell-sidebar) { box-shadow: none; }
   .shell-topbar {
-    position: sticky; top: 12px; z-index: 1000; margin: 12px 12px 0; min-height: 56px; padding: 6px 6px 6px 20px;
-    display: flex; align-items: center; justify-content: space-between; border-radius: var(--radius-pill); color: var(--color-text-onbrand);
+    position: sticky; top: 0; z-index: 1000; margin: 0; min-height: 54px; padding: 6px 16px;
+    display: flex; align-items: center; justify-content: space-between; border-radius: 0; color: var(--color-text-onbrand);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   }
   .shell-topbar .shell-logo strong { font-size: 17px; line-height: 24px; }
 }
 @media (max-width: 767px) {
-  .shell-bar { top: 12px; margin: 12px 12px 0; min-height: 56px; padding: 6px 6px 6px 20px; }
+  .shell-bar { top: 0; margin: 0; min-height: 54px; padding: 6px 16px; border-radius: 0; }
   .shell-bar .shell-logo strong { font-size: 17px; line-height: 24px; }
   .shell-bar .shell-logo small { display: none; }
-  .shell-menu { top: 80px; left: 12px; right: 12px; max-width: none; }
+  .shell-menu { top: 58px; left: 10px; right: 10px; max-width: none; }
   .shell-tabbar {
     position: fixed; z-index: 1000; left: 0; right: 0; bottom: 0; min-height: 56px; display: flex; justify-content: space-around;
     padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); background: var(--color-glass-nav-bg);

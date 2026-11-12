@@ -51,11 +51,11 @@ export class CloudflareAiClient {
   }
 
   get primaryModel(): string {
-    return this.options?.primaryModel || process.env.CLOUDFLARE_AI_MODEL || '@cf/zai-org/glm-4.7-flash'
+    return this.options?.primaryModel || process.env.CLOUDFLARE_AI_MODEL || '@cf/meta/llama-3.1-8b-instruct'
   }
 
   get fallbackModel(): string {
-    return this.options?.fallbackModel || process.env.CLOUDFLARE_AI_FALLBACK_MODEL || '@cf/meta/llama-3.1-8b-instruct'
+    return this.options?.fallbackModel || process.env.CLOUDFLARE_AI_FALLBACK_MODEL || '@cf/zai-org/glm-4.7-flash'
   }
 
   get timeoutMs(): number {

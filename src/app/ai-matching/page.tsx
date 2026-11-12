@@ -20,6 +20,55 @@ interface Message {
   relaxationLines?: string[]
   retry?: 'reanalyze' | 'resend'
   retryText?: string
+  followUpQuestions?: string[] // hiển thị sau kết quả matching
+}
+
+/** Trả về chuỗi hh:mm:ss dd/mm/yyyy cố định tại thời điểm snapshot (không phải đồng hồ động) */
+function nowVN(date = new Date()): string {
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  const ss = String(date.getSeconds()).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mo = String(date.getMonth() + 1).padStart(2, '0')
+  const yyyy = date.getFullYear()
+  return `${hh}:${mm}:${ss} ${dd}/${mo}/${yyyy}`
+}
+
+/** Chuyển đổi chuỗi prompt tiếng Anh sang thông điệp tiếng Việt thân thiện */
+function localizeRelaxationPrompt(prompt: string): string {
+  if (!prompt) return 'Chưa tìm được xưởng nghề đáp ứng toàn bộ tiêu chí trên 60/100 điểm.'
+  
+  // No Experience can take a group of X pax: the largest group an eligible Experience accepts is Y pax. You can split the group or reduce the number of guests.
+  const groupMatch = prompt.match(/No Experience can take a group of (\d+) pax: the largest group an eligible Experience accepts is (\d+) pax\./i)
+  if (groupMatch) {
+    return `Hiện chưa có xưởng nghề nào có sức chứa nhận đoàn ${groupMatch[1]} khách cùng lúc (sức chứa tối đa hiện tại là ${groupMatch[2]} khách). Bạn có thể cân nhắc chia thành 2 nhóm nhỏ hoặc điều chỉnh số lượng khách.`
+  }
+
+  // No Experience fits a budget of X VND per person. The lowest price that meets your other requirements is Y VND per person.
+  const budgetMatch = prompt.match(/No Experience fits a budget of ([\d,.]+) VND per person\. The lowest price that meets your other requirements is ([\d,.]+) VND per person\./i)
+  if (budgetMatch) {
+    return `Mức ngân sách ${budgetMatch[1]} đ/khách chưa đủ để tham gia các trải nghiệm phù hợp. Mức chi phí tối thiểu để đáp ứng yêu cầu của bạn là ${budgetMatch[2]} đ/khách.`
+  }
+
+  if (prompt.includes('No experiences currently meet all criteria')) {
+    return 'Chưa tìm được trải nghiệm nào đáp ứng toàn diện tiêu chí trên 60/100 điểm. Bạn có thể mở rộng ngân sách, khoảng cách di chuyển hoặc điều chỉnh số lượng khách để nhận thêm gợi ý.'
+  }
+
+  return prompt
+}
+
+/** Dịch các dòng gợi ý nới lỏng sang tiếng Việt */
+function localizeRelaxationLine(line: string): string {
+  if (line.startsWith('Distance:')) {
+    return line.replace(/^Distance:\s*/i, '📍 Khoảng cách: ').replace(/Expand radius by 15km to include outer craft villages/i, 'Mở rộng bán kính thêm 15 km để kết nối các làng nghề ngoại thành')
+  }
+  if (line.startsWith('Dates:')) {
+    return line.replace(/^Dates:\s*/i, '📅 Thời gian: ').replace(/Consider flexible dates \(\+\/- 2 days\)/i, 'Cân nhắc ngày linh hoạt (+/- 2 ngày)')
+  }
+  if (line.startsWith('Budget:')) {
+    return line.replace(/^Budget:\s*/i, '💰 Ngân sách: ').replace(/per person/i, '/ khách')
+  }
+  return line
 }
 
 export default function AiMatchingScreen() {
@@ -30,18 +79,26 @@ export default function AiMatchingScreen() {
   const [inputText, setInputText] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingDots, setLoadingDots] = useState('')
   const [quoteStatus, setQuoteStatus] = useState<Record<string, string>>({})
   const [chatStatus, setChatStatus] = useState<Record<string, string>>({})
   const [quotaInfo, setQuotaInfo] = useState<{ in_cooldown: boolean; remaining_seconds?: number } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionInitializationRef = useRef(false)
 
+  // Animated loading dots để user biết hệ thống đang hoạt động
+  useEffect(() => {
+    if (!loading) { setLoadingDots(''); return }
+    const frames = ['', '.', '..', '...']
+    let i = 0
+    const id = setInterval(() => { i = (i + 1) % frames.length; setLoadingDots(frames[i]) }, 500)
+    return () => clearInterval(id)
+  }, [loading])
+
   useEffect(() => {
     fetch('/api/ait/quota')
       .then(res => res.json())
-      .then(data => {
-        if (data.in_cooldown) setQuotaInfo(data)
-      })
+      .then(data => { if (data.in_cooldown) setQuotaInfo(data) })
       .catch(() => {})
   }, [])
 
@@ -96,13 +153,12 @@ export default function AiMatchingScreen() {
           {
             id: 'welcome',
             sender: 'Assistant',
-            text: 'Welcome to Hanoi Artisan Bridge AI Tour Matching. Describe your tour needs (group size, target date, artisan craft preferences, budget), and I will recommend verified local experiences.',
-            sent_at: new Date().toLocaleTimeString(),
+            text: 'Xin chào! Tôi là trợ lý ghép tour AI của Hanoi Artisan Bridge.\n\nHãy mô tả yêu cầu đoàn — số khách, ngày khởi hành, loại trải nghiệm thủ công, ngân sách — tôi sẽ ngay lập tức phân tích và đề xuất các xưởng nghề được xác minh phù hợp nhất.',
+            sent_at: nowVN(),
           },
         ])
       }
     } catch {
-      // Offline fallback for preview
       setSessionId(`session-local-${Date.now()}`)
     }
   }
@@ -136,7 +192,7 @@ export default function AiMatchingScreen() {
         >
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '24px', margin: '0 0 12px 0' }}>
-            Access Restricted to Tour Agencies
+            Chỉ dành cho Công ty Lữ hành
           </h2>
           <p style={{ color: '#94A3B8', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
             {RESTRICTED_TEXT}
@@ -156,7 +212,7 @@ export default function AiMatchingScreen() {
                 textDecoration: 'none',
               }}
             >
-              Sign In as Agency
+              Đăng nhập với tư cách Lữ hành
             </a>
           </div>
         </div>
@@ -167,7 +223,7 @@ export default function AiMatchingScreen() {
   const addAssistant = (message: Omit<Message, 'id' | 'sender' | 'sent_at'>) =>
     setMessages(prev => [
       ...prev,
-      { id: `assistant-${Date.now()}-${prev.length}`, sender: 'Assistant', sent_at: new Date().toLocaleTimeString(), ...message },
+      { id: `assistant-${Date.now()}-${prev.length}`, sender: 'Assistant', sent_at: nowVN(), ...message },
     ])
 
   const postJson = async (url: string, body: unknown): Promise<ApiResult> => {
@@ -199,12 +255,12 @@ export default function AiMatchingScreen() {
         addAssistant({ text: outcome.reply })
       } else if (outcome.kind === 'clarify') {
         addAssistant({
-          text: conversationalReply || 'I need a few more details to find the best craft match for your tour:',
+          text: conversationalReply || 'Vui lòng cung cấp thêm thông tin để tôi tìm xưởng nghề phù hợp nhất:',
           clarificationQuestions: outcome.questions,
           dateLine,
         })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile, dateLine, conversationalReply)
+        await fetchMatchingResults(outcome.profile, dateLine, conversationalReply, outcome.followUps)
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
@@ -217,7 +273,7 @@ export default function AiMatchingScreen() {
     const textToSend = customPrompt || inputText
     if (!textToSend.trim() || !sessionId) return
 
-    setMessages(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'Agency', text: textToSend, sent_at: new Date().toLocaleTimeString() }])
+    setMessages(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'Agency', text: textToSend, sent_at: nowVN() }])
     if (!customPrompt) setInputText('')
     await analyze({ sender: 'Agency', text: textToSend })
   }
@@ -226,7 +282,7 @@ export default function AiMatchingScreen() {
    * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
    * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
-  const fetchMatchingResults = async (profile: unknown, dateLine?: string, customIntro?: string) => {
+  const fetchMatchingResults = async (profile: unknown, dateLine?: string, customIntro?: string, followUps?: string[]) => {
     const result = await postJson('/api/ait/matching', { session_id: sessionId, tour_preference_profile: profile })
     if ('networkError' in result || !result.ok) {
       addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
@@ -235,15 +291,21 @@ export default function AiMatchingScreen() {
     const { top: topMatches, additional } = matchResultsView(result.body)
     if (topMatches.length > 0) {
       addAssistant({
-        text: customIntro || 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
+        text: customIntro || 'Tôi đã phân tích yêu cầu tour và đối soát với các xưởng nghề được xác minh. Đây là các đề xuất phù hợp nhất:',
         dateLine,
         recommendations: topMatches,
         additionalSuggestions: additional,
+        followUpQuestions: followUps,
       })
     } else {
       // No candidate reaches the constraints or 60/100 → relaxation suggestions (BR-011, FR-012)
       const view = noMatchView(result.body)
-      addAssistant({ text: view.prompt, relaxationLines: view.lines, dateLine })
+      const relaxationAdvice = localizeRelaxationPrompt(view.prompt)
+      // Ưu tiên phản hồi tự nhiên từ AI, ghép với lời khuyên nới lỏng tiêu chí nếu có
+      const textToDisplay = customIntro
+        ? `${customIntro}\n\n💡 Lưu ý điều phối: ${relaxationAdvice}`
+        : relaxationAdvice
+      addAssistant({ text: textToDisplay, relaxationLines: view.lines, dateLine, followUpQuestions: followUps })
     }
   }
 
@@ -251,7 +313,7 @@ export default function AiMatchingScreen() {
   const runHandoff = async (kind: 'quote' | 'chat', experienceId: string, statusKey: string) => {
     if (!sessionId) return
     const setStatus = kind === 'quote' ? setQuoteStatus : setChatStatus
-    setStatus(prev => ({ ...prev, [statusKey]: kind === 'quote' ? 'Requesting quote…' : 'Opening chat…' }))
+    setStatus(prev => ({ ...prev, [statusKey]: kind === 'quote' ? 'Đang kiểm tra suất trống…' : 'Đang mở chat…' }))
     const outcome = handoffOutcome(await postJson(`/api/ait/sessions/${sessionId}/${kind}`, { experience_id: experienceId }))
     if (outcome.kind === 'success') router.push(outcome.navigateTo)
     else setStatus(prev => ({ ...prev, [statusKey]: outcome.text }))
@@ -273,7 +335,7 @@ export default function AiMatchingScreen() {
                 id: `welcome-${Date.now()}`,
                 sender: 'Assistant',
                 text: 'Xin chào đội điều phối tour. Hãy mô tả đoàn dự kiến, sở thích văn hoá, ngân sách hoặc lịch trình. Tôi sẽ phân tích lịch trống của các xưởng bậc thầy đã xác minh, lộ trình di chuyển và hạn mức nghệ nhân chứng nhận theo thời gian thực.',
-                sent_at: new Date().toLocaleTimeString(),
+                sent_at: nowVN(),
               },
             ])
             setInputText('')
@@ -363,7 +425,7 @@ export default function AiMatchingScreen() {
             <div className="ait-header-title-row">
               <h1 className="ait-header-h1">AI Tour Matching</h1>
               <span className="ait-badge-pill ait-badge-session">Phiên AIM-8409</span>
-              <span className="ait-badge-pill ait-badge-tool">Công cụ ý định nghề v4.2</span>
+              <span className="ait-badge-pill ait-badge-tool">Phân tích ý định nghề v4.2</span>
               {quotaInfo?.in_cooldown && (
                 <span className="ait-badge-pill" style={{ backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }}>
                   🛡️ Bảo vệ hạn ngạch (Rule-based)
@@ -381,6 +443,7 @@ export default function AiMatchingScreen() {
           {messages.map(msg => (
             <div
               key={msg.id}
+              id={msg.id}
               className={msg.sender === 'Agency' ? 'ait-msg-agency' : 'ait-msg-assistant'}
             >
               {msg.sender === 'Assistant' ? (
@@ -395,14 +458,14 @@ export default function AiMatchingScreen() {
                     {/* #156: Ngày được trợ lý nhận diện */}
                     {msg.dateLine && (
                       <div id="understood-date" style={{ marginTop: '8px', fontSize: '13px', color: '#166534', fontWeight: 600 }}>
-                        {msg.dateLine}
+                        {msg.dateLine.replace(/^Tour date understood: ([^.]+)\. If this is wrong, send the correct date with the year\./i, '📅 Ngày tour được ghi nhận: $1. Nếu sai, bạn có thể gửi lại ngày kèm năm để điều chỉnh.')}
                       </div>
                     )}
 
                     {/* Gợi ý nới lỏng tiêu chí khi no-match */}
                     {msg.relaxationLines && msg.relaxationLines.length > 0 && (
                       <ul id="relaxation-suggestions" style={{ margin: '10px 0 0 0', paddingLeft: '18px', fontSize: '13px', color: '#B45309' }}>
-                        {msg.relaxationLines.map(line => <li key={line}>{line}</li>)}
+                        {msg.relaxationLines.map(line => <li key={line}>{localizeRelaxationLine(line)}</li>)}
                       </ul>
                     )}
 
@@ -419,7 +482,7 @@ export default function AiMatchingScreen() {
                       </button>
                     )}
 
-                    {/* Hộp câu hỏi làm rõ */}
+                    {/* Hộp câu hỏi làm rõ (khi chưa có kết quả) */}
                     {msg.clarificationQuestions && msg.clarificationQuestions.length > 0 && (
                       <div
                         id="clarification-box"
@@ -432,7 +495,7 @@ export default function AiMatchingScreen() {
                         }}
                       >
                         <strong style={{ color: '#92400E', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                          Cần bổ sung thêm thông tin cốt lõi:
+                          Vui lòng bổ sung để tôi tìm chính xác hơn:
                         </strong>
                         <ul style={{ margin: 0, paddingLeft: '18px', color: '#78350F', fontSize: '13px' }}>
                           {msg.clarificationQuestions.map((q, idx) => (
@@ -461,7 +524,7 @@ export default function AiMatchingScreen() {
                                 <div className="rec-card-price">
                                   <div className="rec-price-label">GIÁ B2B</div>
                                   <div className="rec-price-value">
-                                    {rec.price_per_person?.toLocaleString()} đ <span style={{ fontSize: '12px', fontWeight: 400, color: '#6B7280' }}>/ khách</span>
+                                    {rec.price_per_person?.toLocaleString('vi-VN')} đ <span style={{ fontSize: '12px', fontWeight: 400, color: '#6B7280' }}>/ khách</span>
                                   </div>
                                 </div>
                               </div>
@@ -543,12 +606,34 @@ export default function AiMatchingScreen() {
                         ))}
                       </div>
                     )}
+
+                    {/* Câu hỏi bổ sung hiển thị BÊN DƯỚI kết quả matching */}
+                    {msg.followUpQuestions && msg.followUpQuestions.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: '16px',
+                          padding: '12px 14px',
+                          backgroundColor: '#F0FDF4',
+                          borderLeft: '3px solid #17382B',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        <strong style={{ color: '#065F46', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                          💬 Để tinh chỉnh kết quả, bạn có thể bổ sung thêm:
+                        </strong>
+                        <ul style={{ margin: 0, paddingLeft: '18px', color: '#14532D', fontSize: '13px' }}>
+                          {msg.followUpQuestions.map((q, idx) => (
+                            <li key={idx} style={{ marginBottom: '4px' }}>{q}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
                 <>
                   <div className="ait-agency-header">
-                    09:15 TOUR AGENCY (ĐIỀU PHỐI)
+                    {msg.sent_at} · CÔNG TY LỮ HÀNH (ĐIỀU PHỐI)
                   </div>
                   <div className="ait-agency-bubble">
                     {msg.text}
@@ -559,9 +644,9 @@ export default function AiMatchingScreen() {
           ))}
 
           {loading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4B5563', fontSize: '13px', fontStyle: 'italic' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#17382B', animation: 'pulse 1s infinite' }} />
-              Trợ lý AI đang phân tích yêu cầu tour và đối soát các xưởng nghề phù hợp...
+            <div className="ait-loading-indicator">
+              <div className="ait-loading-spinner" />
+              <span>Trợ lý AI đang phân tích và đối soát xưởng nghề{loadingDots}</span>
             </div>
           )}
 
@@ -615,7 +700,7 @@ export default function AiMatchingScreen() {
                 value={inputText}
                 maxLength={2000}
                 onChange={e => setInputText(e.target.value)}
-                placeholder="Thêm yêu cầu về ăn uống, đi lại hoặc VIP (ví dụ: cần hướng dẫn viên tiếng Pháp, lối đi xe lăn, đồ ăn nhẹ không gluten)..."
+                placeholder="Thêm yêu cầu về ăn uống, đi lại hoặc VIP (ví dụ: hướng dẫn viên tiếng Pháp, lối đi xe lăn, không gluten)..."
                 className="ait-prompt-input"
               />
               <button
@@ -630,7 +715,7 @@ export default function AiMatchingScreen() {
           </form>
           <div className="ait-footer-hints">
             <span>Trợ lý AI đồng bộ với hạn mức Liên đoàn làng nghề Hà Nội</span>
-            <span>Phiên #AIM-8409 · {inputText.length} / 2000 ký tự</span>
+            <span>Phiên #AIM-8409 · {inputText.length} / 2.000 ký tự</span>
           </div>
         </footer>
       </section>

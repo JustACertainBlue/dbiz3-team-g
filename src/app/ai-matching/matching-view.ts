@@ -9,7 +9,7 @@ export type ApiResult = { networkError: true } | { ok: boolean; status: number; 
 export type MessageOutcome =
   | { kind: 'guidance'; reply: string }
   | { kind: 'clarify'; questions: string[] }
-  | { kind: 'match'; profile: unknown }
+  | { kind: 'match'; profile: unknown; followUps?: string[] }
   | { kind: 'failure'; text: string; retry: 'reanalyze' | 'resend' }
 
 export type HandoffOutcome =
@@ -32,7 +32,7 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
   const questions: string[] = extraction.follow_up_questions ?? []
   if (!extraction.is_complete) return questions.length > 0 ? { kind: 'clarify', questions } : AI_FAILURE
   const profile = result.body.tour_preference_profile
-  return profile ? { kind: 'match', profile } : AI_FAILURE
+  return profile ? { kind: 'match', profile, followUps: questions.length > 0 ? questions : undefined } : AI_FAILURE
 }
 
 export function handoffOutcome(result: ApiResult): HandoffOutcome {
@@ -52,7 +52,7 @@ const recommendationView = (m: any): RecommendationView => ({
   price_per_person: m.price_per_person, max_participants: m.max_participants, explanation: m.explanation,
 })
 
-/** FR-008 (#188): the Top 5 and up to 5 additional suggestions, both shown with the same card. */
+/** FR-008 (#188): top 5 và tối đa 5 gợi ý thêm, hiển thị cùng kiểu thẻ. */
 export function matchResultsView(body: any): { top: RecommendationView[]; additional: RecommendationView[] } {
   return {
     top: (body?.top_matches ?? []).map(recommendationView),

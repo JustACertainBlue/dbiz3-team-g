@@ -91,15 +91,21 @@ export class ConversationalAiService {
       const parsed = this.cleanAndParseJson(aiResponse.text)
       if (parsed && typeof parsed === 'object') {
         const tourContext = this.mapExtractedToTourContext(parsed.extracted_context, messages, now)
-        const isComplete = Boolean(parsed.is_tour_complete && tourContext.group_size && tourContext.target_date_or_range)
+        // Intent handling: platform guidance vs tour matching
+        const intent = parsed.intent || 'tour_matching'
+        const hasTourIntent = intent === 'tour_matching' || intent === 'mixed' || Object.keys(tourContext).length > 0
+        const isComplete = Boolean(
+          (parsed.is_tour_complete || (tourContext.group_size && tourContext.target_date_or_range)) &&
+          tourContext.group_size && tourContext.target_date_or_range
+        )
         const followUps = Array.isArray(parsed.follow_up_questions) ? parsed.follow_up_questions : []
 
         return {
-          intent: parsed.intent || 'tour_matching',
+          intent: hasTourIntent ? 'tour_matching' : 'platform_guidance',
           conversational_reply: parsed.conversational_reply || '',
           tour_context: tourContext,
           is_complete: isComplete,
-          follow_up_questions: isComplete ? [] : followUps,
+          follow_up_questions: followUps,
           quota_status: quotaStatus,
           usedLlm: true,
           modelUsed: aiResponse.modelUsed,

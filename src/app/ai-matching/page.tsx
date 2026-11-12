@@ -21,6 +21,8 @@ interface Message {
   retry?: 'reanalyze' | 'resend'
   retryText?: string
   followUpQuestions?: string[] // hiển thị sau kết quả matching
+  usedLlm?: boolean
+  modelUsed?: string
 }
 
 /** Trả về chuỗi hh:mm:ss dd/mm/yyyy cố định tại thời điểm snapshot (không phải đồng hồ động) */
@@ -251,16 +253,18 @@ export default function AiMatchingScreen() {
       const conversationalReply = 'body' in result && result.body && typeof result.body === 'object' && 'conversational_reply' in result.body
         ? String((result.body as Record<string, unknown>).conversational_reply || '')
         : undefined
+      const usedLlm = Boolean('body' in result && result.body && result.body.extraction && result.body.extraction.usedLlm)
       if (outcome.kind === 'guidance') {
-        addAssistant({ text: outcome.reply })
+        addAssistant({ text: outcome.reply, usedLlm })
       } else if (outcome.kind === 'clarify') {
         addAssistant({
           text: conversationalReply || 'Vui lòng cung cấp thêm thông tin để tôi tìm xưởng nghề phù hợp nhất:',
           clarificationQuestions: outcome.questions,
           dateLine,
+          usedLlm,
         })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile, dateLine, conversationalReply, outcome.followUps)
+        await fetchMatchingResults(outcome.profile, dateLine, conversationalReply, outcome.followUps, usedLlm)
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
@@ -282,7 +286,7 @@ export default function AiMatchingScreen() {
    * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
    * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
-  const fetchMatchingResults = async (profile: unknown, dateLine?: string, customIntro?: string, followUps?: string[]) => {
+  const fetchMatchingResults = async (profile: unknown, dateLine?: string, customIntro?: string, followUps?: string[], usedLlm?: boolean) => {
     const result = await postJson('/api/ait/matching', { session_id: sessionId, tour_preference_profile: profile })
     if ('networkError' in result || !result.ok) {
       addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
@@ -296,6 +300,7 @@ export default function AiMatchingScreen() {
         recommendations: topMatches,
         additionalSuggestions: additional,
         followUpQuestions: followUps,
+        usedLlm,
       })
     } else {
       // No candidate reaches the constraints or 60/100 → relaxation suggestions (BR-011, FR-012)
@@ -305,7 +310,7 @@ export default function AiMatchingScreen() {
       const textToDisplay = customIntro
         ? `${customIntro}\n\n💡 Lưu ý điều phối: ${relaxationAdvice}`
         : relaxationAdvice
-      addAssistant({ text: textToDisplay, relaxationLines: view.lines, dateLine, followUpQuestions: followUps })
+      addAssistant({ text: textToDisplay, relaxationLines: view.lines, dateLine, followUpQuestions: followUps, usedLlm })
     }
   }
 
@@ -451,6 +456,21 @@ export default function AiMatchingScreen() {
                   <div className="ait-assistant-header">
                     <span className="ait-assistant-avatar">AI</span>
                     <span className="ait-assistant-name">TRỢ LÝ HANOI ARTISAN · {msg.sent_at}</span>
+                    {msg.usedLlm && (
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          backgroundColor: '#DCFCE7',
+                          color: '#15803D',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          border: '1px solid #86EFAC',
+                        }}
+                      >
+                        ⚡ Cloudflare Workers AI
+                      </span>
+                    )}
                   </div>
                   <div className="ait-assistant-bubble">
                     <div style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</div>

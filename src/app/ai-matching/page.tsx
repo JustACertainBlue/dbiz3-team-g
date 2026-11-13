@@ -73,6 +73,49 @@ function localizeRelaxationLine(line: string): string {
   return line
 }
 
+/** Diễn đạt lý do phù hợp trên thẻ đề xuất bằng tiếng Việt tự nhiên, thân thiện */
+function localizeExplanation(explanation: string): string {
+  if (!explanation) return 'Đề xuất xưởng nghề phù hợp với tiêu chí và quy mô đoàn của bạn.'
+
+  let text = explanation
+
+  // 1. Điểm phù hợp
+  text = text.replace(/Match score ([\d.]+)\/100\./i, (_, score) => `Độ phù hợp đạt ${score}/100 điểm.`)
+
+  // 2. Ngành nghề thủ công
+  text = text.replace(/Matches your silk weaving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề dệt lụa tơ tằm truyền thống của đoàn.')
+  text = text.replace(/Matches your pottery preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề gốm sứ mỹ nghệ của đoàn.')
+  text = text.replace(/Matches your woodcarving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề chạm khắc mộc truyền thống của đoàn.')
+  text = text.replace(/Matches your bamboo and rattan weaving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề đan mây tre mỹ nghệ của đoàn.')
+  text = text.replace(/Matches your conical hat making preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề làm nón lá truyền thống của đoàn.')
+  text = text.replace(/Matches your lacquer and painting preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề tranh sơn mài truyền thống của đoàn.')
+  text = text.replace(/Matches your embroidery preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề thêu tay truyền thống của đoàn.')
+  text = text.replace(/Matches your food and cooking preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm văn hóa ẩm thực truyền thống của đoàn.')
+  text = text.replace(/Matches your ([a-zA-Z\s]+) preference \([^)]+\)\./i, 'Phù hợp với nguyện vọng trải nghiệm nghề thủ công của đoàn.')
+  text = text.replace(/Does not match your [a-zA-Z\s]+ preference\./i, 'Là trải nghiệm thủ công tiêu biểu có thể cân nhắc thêm cho đoàn.')
+
+  // 3. Loại hình trải nghiệm
+  text = text.replace(/A Workshop\/Hands-on experience, as requested\./i, 'Xưởng có hoạt động thực hành tay nghề (workshop) trực tiếp cùng nghệ nhân bậc thầy đúng theo yêu cầu.')
+  text = text.replace(/A Cultural Show experience, as requested\./i, 'Có suất diễn nghệ thuật văn hóa truyền thống đặc sắc theo yêu cầu.')
+  text = text.replace(/A Sightseeing experience, as requested\./i, 'Tuyến tham quan không gian xưởng và di sản làng nghề thuận tiện.')
+  text = text.replace(/A Culinary\/Tasting experience, as requested\./i, 'Trải nghiệm thưởng thức hương vị ẩm thực làng nghề truyền thống.')
+  text = text.replace(/Not a ([a-zA-Z\s\/]+) experience\./i, 'Trải nghiệm văn hóa làng nghề truyền thống.')
+
+  // 4. Quy mô đoàn & sức chứa
+  text = text.replace(/Takes up to (\d+) pax for your group of (\d+)\./i, (_, max, group) => `Sức chứa xưởng tối đa ${max} khách, vừa vặn và đảm bảo chất lượng hướng dẫn cho đoàn ${group} người.`)
+
+  // 5. Ngân sách & chi phí
+  text = text.replace(/([\d,.]+) VND per person, within your ([\d,.]+) VND budget\./i, (_, price, budget) => `Mức giá ${price} đ/khách, nằm trọn trong hạn mức ngân sách (${budget} đ) của đoàn.`)
+
+  // 6. Khoảng cách di chuyển
+  text = text.replace(/About ([\d.]+) km from (.+?) \(estimated\)\./i, (_, dist, origin) => {
+    const originLabel = origin === 'your starting point' ? 'điểm xuất phát của đoàn' : origin
+    return `Cách ${originLabel} khoảng ${dist} km, tuyến đường thuận tiện di chuyển trong ngày.`
+  })
+
+  return text
+}
+
 /** Render văn bản Markdown (định dạng in đậm) */
 function renderInlineText(text: string): React.ReactNode {
   if (!text || !text.includes('**')) return text
@@ -598,7 +641,11 @@ export default function AiMatchingScreen() {
                     )}
                   </div>
                   <div className="ait-assistant-bubble">
-                    {renderFormattedContent(msg.text)}
+                    {renderFormattedContent(
+                      msg.text === AI_FAILURE_TEXT
+                        ? 'Hệ thống AI tạm thời gián đoạn — chúng tôi chưa thể xử lý yêu cầu lúc này. Hội thoại của bạn đã được lưu lại an toàn.'
+                        : msg.text
+                    )}
 
                     {/* #156: Ngày được trợ lý nhận diện */}
                     {msg.dateLine && (
@@ -683,7 +730,7 @@ export default function AiMatchingScreen() {
                                 <div className="rec-card-reason-wrap">
                                   <div className="rec-card-reason-title">LÝ DO PHÙ HỢP</div>
                                   <p className="rec-card-reason-text">
-                                    {rec.explanation}
+                                    {localizeExplanation(rec.explanation)}
                                   </p>
                                 </div>
                                 <div className="rec-card-thumb">

@@ -87,34 +87,72 @@ export class ConversationalAiService {
     }
 
     // 8. Parse and validate LLM JSON response
+    let parsed: any = null
     try {
-      const parsed = this.cleanAndParseJson(aiResponse.text)
-      if (parsed && typeof parsed === 'object') {
-        const tourContext = this.mapExtractedToTourContext(parsed.extracted_context, messages, now)
-        // Intent handling: platform guidance vs tour matching
-        const intent = parsed.intent || 'tour_matching'
-        const isGuidance = intent === 'platform_guidance'
-        const hasTourIntent = !isGuidance && (intent === 'tour_matching' || intent === 'mixed' || Object.keys(tourContext).length > 0)
-        const isComplete = Boolean(
-          !isGuidance &&
-          (parsed.is_tour_complete || (tourContext.group_size && tourContext.target_date_or_range)) &&
-          tourContext.group_size && tourContext.target_date_or_range
-        )
-        const followUps = Array.isArray(parsed.follow_up_questions) ? parsed.follow_up_questions : []
+      parsed = this.cleanAndParseJson(aiResponse.text)
+    } catch (err) {
+      console.warn('[AIT] LLM returned non-JSON text. Using text as conversational_reply directly. Raw:', aiResponse.text?.slice(0, 200), err)
+    }
 
-        return {
-          intent: isGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
-          conversational_reply: parsed.conversational_reply || '',
-          tour_context: isGuidance ? {} : tourContext,
-          is_complete: isComplete,
-          follow_up_questions: isGuidance ? [] : followUps,
-          quota_status: quotaStatus,
-          usedLlm: true,
-          modelUsed: aiResponse.modelUsed,
+    const hasFaqIndicators = /(?:như thế nào|là gì|làm sao|cách nào|thế nào|giải thích|hướng dẫn|thang điểm|công thức|quy trình|cách ghép|how |what is|how to|explain|tell me about)/i.test(latestUserMsg)
+    const isExplicitTourAction = /(?:tìm|muốn ghép|cần tìm|tổ chức tour|book|đặt tour|find tour|looking for tour)/i.test(latestUserMsg)
+    const detectedGuidance = hasFaqIndicators && !isExplicitTourAction
+
+    if (parsed && typeof parsed === 'object') {
+      const tourContext = this.mapExtractedToTourContext(parsed.extracted_context, messages, now)
+      // Intent handling: platform guidance vs tour matching
+      const rawIntent = parsed.intent || 'tour_matching'
+      const isGuidance = rawIntent === 'platform_guidance' || detectedGuidance
+      const hasTourIntent = !isGuidance && (rawIntent === 'tour_matching' || rawIntent === 'mixed' || Object.keys(tourContext).length > 0)
+      const isComplete = Boolean(
+        !isGuidance &&
+        (parsed.is_tour_complete || (tourContext.group_size && tourContext.target_date_or_range)) &&
+        tourContext.group_size && tourContext.target_date_or_range
+      )
+      const followUps = Array.isArray(parsed.follow_up_questions) ? [...parsed.follow_up_questions] : []
+
+      // If incomplete tour matching has no follow-up questions from LLM, generate friendly questions
+      if (!isGuidance && !isComplete && followUps.length === 0) {
+        const isVi = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestUserMsg) || true
+        if (tourContext.group_size === undefined) {
+          followUps.push(isVi ? 'Quý khách vui lòng cho biết số lượng khách dự kiến tham gia đoàn?' : 'Could you please specify your expected group size?')
+        }
+        if (!tourContext.target_date_or_range) {
+          followUps.push(isVi ? 'Đoàn dự kiến khởi hành vào ngày nào (ví dụ: 25/11 hoặc Thứ Năm tuần tới)?' : 'What is your desired date or date range for the tour?')
+        }
+        if (!tourContext.craft_preference && !tourContext.experience_types?.length) {
+          followUps.push(isVi ? 'Đoàn quan tâm đến loại trải nghiệm thủ công nào (ví dụ: gốm Bát Tràng, lụa Vạn Phúc)?' : 'Which craft or type of experience are you looking for?')
         }
       }
-    } catch (err) {
-      console.warn('Failed to parse LLM structured output, using fallback analysis:', err)
+
+      return {
+        intent: isGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
+        conversational_reply: parsed.conversational_reply || (isGuidance && relevantKnowledge.length > 0 ? relevantKnowledge[0].contentVi : ''),
+        tour_context: isGuidance ? {} : tourContext,
+        is_complete: isComplete,
+        follow_up_questions: isGuidance ? [] : followUps,
+        quota_status: quotaStatus,
+        usedLlm: true,
+        modelUsed: aiResponse.modelUsed,
+      }
+    }
+
+    // JSON parse failed but we have a plain-text reply from the LLM — use it directly
+    // rather than falling back to AI failure.
+    if (aiResponse.text && aiResponse.text.trim().length > 5) {
+      console.warn('[AIT] Using plain-text LLM response as conversational_reply (non-JSON fallback).')
+      const tourContext = detectedGuidance ? {} : this.mapExtractedToTourContext({}, messages, now)
+      const isComplete = Boolean(!detectedGuidance && tourContext.group_size && tourContext.target_date_or_range)
+      return {
+        intent: detectedGuidance ? 'platform_guidance' : 'tour_matching',
+        conversational_reply: aiResponse.text.trim(),
+        tour_context: tourContext,
+        is_complete: isComplete,
+        follow_up_questions: [],
+        quota_status: quotaStatus,
+        usedLlm: true,
+        modelUsed: aiResponse.modelUsed,
+      }
     }
 
     return this.fallbackAnalysis(messages, quotaStatus, now)

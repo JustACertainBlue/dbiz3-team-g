@@ -250,10 +250,11 @@ export default function AiMatchingScreen() {
       const outcome = messageOutcome(result)
       // #156: show the date understood so the Agency can correct it.
       const dateLine = 'body' in result ? understoodDateLine(result.body) ?? undefined : undefined
-      const conversationalReply = 'body' in result && result.body && typeof result.body === 'object' && 'conversational_reply' in result.body
-        ? String((result.body as Record<string, unknown>).conversational_reply || '')
+      // conversational_reply is inside extraction (not top-level body)
+      const conversationalReply = 'body' in result && result.body?.extraction?.conversational_reply
+        ? String(result.body.extraction.conversational_reply)
         : undefined
-      const usedLlm = Boolean('body' in result && result.body && result.body.extraction && result.body.extraction.usedLlm)
+      const usedLlm = Boolean('body' in result && result.body?.extraction?.usedLlm)
       if (outcome.kind === 'guidance') {
         addAssistant({ text: outcome.reply, usedLlm })
       } else if (outcome.kind === 'clarify') {

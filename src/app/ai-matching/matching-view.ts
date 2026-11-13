@@ -23,14 +23,21 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
   // any server response means it was stored, so Retry re-analyzes (#33).
   if ('networkError' in result) return { kind: 'failure', text: AI_FAILURE_TEXT, retry: 'resend' }
   if (!result.ok) return AI_FAILURE
-  // Platform knowledge or general guidance questions
-  if (result.body?.intent === 'platform_guidance' && typeof result.body?.conversational_reply === 'string') {
-    return { kind: 'guidance', reply: result.body.conversational_reply }
-  }
   const extraction = result.body?.extraction
+  // Platform knowledge or general guidance questions — check extraction.intent (not top-level body.intent)
+  const intent = extraction?.intent ?? result.body?.intent
+  if (intent === 'platform_guidance' && typeof extraction?.conversational_reply === 'string' && extraction.conversational_reply) {
+    return { kind: 'guidance', reply: extraction.conversational_reply }
+  }
   if (!extraction || extraction.processing_status === 'Temporary AI Failure') return AI_FAILURE
   const questions: string[] = extraction.follow_up_questions ?? []
-  if (!extraction.is_complete) return questions.length > 0 ? { kind: 'clarify', questions } : AI_FAILURE
+  if (!extraction.is_complete) {
+    if (questions.length > 0) return { kind: 'clarify', questions }
+    if (typeof extraction.conversational_reply === 'string' && extraction.conversational_reply.trim()) {
+      return { kind: 'guidance', reply: extraction.conversational_reply.trim() }
+    }
+    return AI_FAILURE
+  }
   const profile = result.body.tour_preference_profile
   return profile ? { kind: 'match', profile, followUps: questions.length > 0 ? questions : undefined } : AI_FAILURE
 }

@@ -205,18 +205,18 @@ export class ConversationalAiService {
       if (fallbackDate) context.target_date_or_range = { start_date: fallbackDate }
     }
 
-    const detectedCraft = detectCraftPreference(fullText)
-    if (detectedCraft) {
-      context.craft_preference = detectedCraft
-    } else if (extracted?.craft_preference) {
+    if (extracted?.craft_preference) {
       context.craft_preference = String(extracted.craft_preference)
+    } else {
+      const detectedCraft = detectCraftPreference(fullText)
+      if (detectedCraft) context.craft_preference = detectedCraft
     }
 
-    const detectedTypes = detectExperienceTypes(fullText)
-    if (detectedTypes.length > 0) {
-      context.experience_types = detectedTypes
-    } else if (Array.isArray(extracted?.experience_types) && extracted.experience_types.length > 0) {
+    if (Array.isArray(extracted?.experience_types) && extracted.experience_types.length > 0) {
       context.experience_types = extracted.experience_types
+    } else {
+      const detectedTypes = detectExperienceTypes(fullText)
+      if (detectedTypes.length > 0) context.experience_types = detectedTypes
     }
 
     if (extracted?.origin) {
@@ -237,11 +237,27 @@ export class ConversationalAiService {
     const latestUserMsg = [...messages].reverse().find(m => m.sender?.toLowerCase() !== 'assistant')?.text || ''
     const isVi = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestUserMsg)
 
+    // Check if this is a greeting
+    const isGreeting = /^(?:xin chào|chào bạn|chào|hello|hi|hey|alo|good morning|good afternoon)[\s!.]*$/i.test(latestUserMsg.trim())
+    if (isGreeting) {
+      return {
+        intent: 'platform_guidance',
+        conversational_reply: isVi
+          ? 'Xin chào! Tôi là trợ lý AI của Hanoi Artisan Bridge. Tôi có thể giúp gì cho bạn hôm nay? Bạn có thể yêu cầu ghép tour cho đoàn khách hoặc hỏi về thông tin các làng nghề truyền thống Hà Nội.'
+          : 'Hello! I am the Hanoi Artisan Bridge AI Assistant. How can I help you today? You can request a tour match for your group or ask about traditional Hanoi craft villages.',
+        tour_context: {},
+        is_complete: false,
+        follow_up_questions: [],
+        quota_status: quotaStatus,
+        usedLlm: false,
+      }
+    }
+
     // Check if this is a platform guidance question (interrogative FAQ rather than tour search)
     const knowledgeMatches = queryKnowledgeBase(latestUserMsg)
-    const hasFaqIndicators = /(?:như thế nào|là gì|làm sao|cách nào|thế nào|giải thích|hướng dẫn|thang điểm|công thức|how |what is|how to|explain|tell me about)/i.test(latestUserMsg)
-    const isExplicitTourAction = /(?:tìm|muốn|cần|đoàn|khách|pax|ngày|tổ chức|book|đặt|find|want|need|organize|looking for)/i.test(latestUserMsg)
-    const isPlatformQuestion = knowledgeMatches.length > 0 && hasFaqIndicators && !isExplicitTourAction
+    const hasFaqIndicators = /(?:như thế nào|là gì|làm sao|cách nào|thế nào|giải thích|hướng dẫn|thang điểm|công thức|quy trình|cách ghép|how |what is|how to|explain|tell me about)/i.test(latestUserMsg)
+    const isExplicitTourAction = /(?:tìm|muốn|cần|tổ chức|book|đặt|find|want|need|organize|looking for)\s+(?:tour|xưởng|chỗ|trải nghiệm)/i.test(latestUserMsg)
+    const isPlatformQuestion = (knowledgeMatches.length > 0 || hasFaqIndicators) && hasFaqIndicators && !isExplicitTourAction
 
     if (isPlatformQuestion) {
       const best = knowledgeMatches[0]

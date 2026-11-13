@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HanoiArtisanBridgeCrawlSchema",
+  "description": "Authoritative machine-readable crawling schema for Google AI Studio and external crawlers feeding Hanoi Artisan Bridge database.",
+  "version": "1.0.0",
+  "entities": [
+    {
+      "entity_name": "ProviderRating",
+      "destination_table": "provider_ratings",
+      "description": "Aggregated rating snapshots of local artisan workshops from external public platforms.",
+      "fields": {
+        "rating_id": {
+          "data_type": "uuid",
+          "required": false,
+          "description": "System generated UUID v4 primary key. Can be omitted by crawler."
+        },
+        "provider_id": {
+          "data_type": "uuid",
+          "required": true,
+          "description": "Foreign key pointing to verified provider_profiles.provider_id."
+        },
+        "source_platform": {
+          "data_type": "varchar(80)",
+          "required": true,
+          "enum": [
+            "Google Maps",
+            "TripAdvisor",
+            "Klook",
+            "Traveloka",
+            "Agoda",
+            "Booking.com",
+            "Other"
+          ],
+          "description": "Exact platform where the rating was extracted. Note: Facebook is NOT an allowed source."
+        },
+        "rating_value": {
+          "data_type": "numeric(3,2)",
+          "required": true,
+          "min": 0.0,
+          "description": "Average rating score on the platform (e.g. 4.85)."
+        },
+        "rating_scale": {
+          "data_type": "numeric(3,1)",
+          "required": false,
+          "default": 5.0,
+          "enum": [5.0, 10.0],
+          "description": "Max rating scale of the platform."
+        },
+        "total_reviews": {
+          "data_type": "integer",
+          "required": true,
+          "min": 0,
+          "description": "Total count of reviews displayed on the platform."
+        },
+        "source_url": {
+          "data_type": "text",
+          "required": false,
+          "format": "uri",
+          "description": "Direct URL to provider page on the platform."
+        },
+        "crawled_at": {
+          "data_type": "timestamptz",
+          "required": true,
+          "format": "date-time",
+          "description": "Timestamp when the crawling execution occurred."
+        },
+        "is_latest": {
+          "data_type": "boolean",
+          "required": false,
+          "default": true,
+          "description": "Flags whether this is the newest snapshot for provider and platform. Enforced by unique partial index."
+        }
+      },
+      "relationships": [
+        {
+          "field": "provider_id",
+          "references_table": "provider_profiles",
+          "references_field": "provider_id",
+          "type": "many-to-one"
+        }
+      ],
+      "field_mapping": {
+        "crawled_rating": "rating_value",
+        "crawled_max_rating": "rating_scale",
+        "crawled_review_count": "total_reviews",
+        "crawled_platform_name": "source_platform",
+        "crawled_page_url": "source_url",
+        "timestamp": "crawled_at"
+      },
+      "validation_rules": [
+        "rating_value must be between 0.0 and rating_scale",
+        "total_reviews must be an integer greater than or equal to 0",
+        "source_platform must strictly match one of the allowed enum values (Facebook is prohibited)"
+      ],
+      "deduplication_rules": [
+        "Unique constraint provider_ratings_one_latest_uq strictly enforces only ONE latest record (is_latest = true) per provider_id and source_platform.",
+        "Unique constraint provider_ratings_snapshot_uq enforces unique (provider_id, source_platform, crawled_at) for historical records."
+      ]
+    },
+    {
+      "entity_name": "ProviderReview",
+      "destination_table": "provider_reviews",
+      "description": "Individual public customer review records for a local artisan workshop.",
+      "fields": {
+        "review_id": {
+          "data_type": "uuid",
+          "required": false,
+          "description": "System generated UUID v4 primary key. Can be omitted by crawler."
+        },
+        "provider_id": {
+          "data_type": "uuid",
+          "required": true,
+          "description": "Foreign key pointing to verified provider_profiles.provider_id."
+        },
+        "source_platform": {
+          "data_type": "varchar(80)",
+          "required": true,
+          "enum": [
+            "Google Maps",
+            "TripAdvisor",
+            "Klook",
+            "Traveloka",
+            "Agoda",
+            "Booking.com",
+            "Other"
+          ]
+        },
+        "external_review_id": {
+          "data_type": "varchar(255)",
+          "required": false,
+          "description": "Unique identifier from the source platform (used for deduplication)."
+        },
+        "rating_value": {
+          "data_type": "numeric(3,2)",
+          "required": false,
+          "min": 0.0,
+          "description": "Individual review rating if provided by the reviewer."
+        },
+        "rating_scale": {
+          "data_type": "numeric(3,1)",
+          "required": false,
+          "default": 5.0,
+          "enum": [5.0, 10.0]
+        },
+        "author_display_name": {
+          "data_type": "varchar(120)",
+          "required": false,
+          "description": "Sanitized public username/alias. Must NOT contain PII (email, phone, address)."
+        },
+        "original_language": {
+          "data_type": "varchar(10)",
+          "required": true,
+          "default": "vi",
+          "description": "ISO 639-1 two-letter language code (e.g. vi, en, fr, ja, ko)."
+        },
+        "cleaned_content": {
+          "data_type": "text",
+          "required": true,
+          "description": "Sanitized review body text free of tracking scripts, html tags, and rando boilerplate."
+        },
+        "published_at": {
+          "data_type": "timestamptz",
+          "required": false,
+          "format": "date-time",
+          "description": "When the review was posted on the platform."
+        },
+        "crawled_at": {
+          "data_type": "timestamptz",
+          "required": true,
+          "format": "date-time",
+          "description": "When the crawler scraped this review."
+        },
+        "review_url": {
+          "data_type": "text",
+          "required": false,
+          "format": "uri",
+          "description": "Direct permalink to the review."
+        }
+      },
+      "relationships": [
+        {
+          "field": "provider_id",
+          "references_table": "provider_profiles",
+          "references_field": "provider_id",
+          "type": "many-to-one"
+        }
+      ],
+      "field_mapping": {
+        "raw_text": "cleaned_content",
+        "review_score": "rating_value",
+        "author_name": "author_display_name",
+        "external_id": "external_review_id",
+        "post_date": "published_at",
+        "scrape_time": "crawled_at",
+        "lang": "original_language",
+        "url": "review_url"
+      },
+      "validation_rules": [
+        "cleaned_content must not be empty or whitespace only",
+        "author_display_name must be stripped of any phone numbers, email addresses, or national identity codes",
+        "original review content is strictly immutable and must not be altered during AI sentiment tagging"
+      ],
+      "deduplication_rules": [
+        "Unique constraint provider_reviews_dedup_idx on (provider_id, source_platform, external_review_id) when external_review_id is present.",
+        "Unique constraint provider_reviews_null_id_dedup_uq on (provider_id, source_platform, md5(cleaned_content), published_at) when external_review_id is null."
+      ]
+    },
+    {
+      "entity_name": "ReviewSentimentAnalysis",
+      "destination_table": "review_sentiment_analyses",
+      "description": "AI Sentiment extraction and aspect tagging output for individual customer reviews.",
+      "fields": {
+        "analysis_id": {
+          "data_type": "uuid",
+          "required": false,
+          "description": "System generated UUID v4 primary key."
+        },
+        "review_id": {
+          "data_type": "uuid",
+          "required": true,
+          "description": "Foreign key 1-1 linking to provider_reviews.review_id."
+        },
+        "sentiment": {
+          "data_type": "varchar(16)",
+          "required": true,
+          "enum": [
+            "Positive",
+            "Neutral",
+            "Negative"
+          ],
+          "description": "Overall sentiment classification of the review."
+        },
+        "sentiment_score": {
+          "data_type": "numeric(4,3)",
+          "required": true,
+          "min": -1.0,
+          "max": 1.0,
+          "description": "Continuous sentiment polarity score from -1.000 to +1.000."
+        },
+        "sentiment_tags": {
+          "data_type": "jsonb",
+          "required": true,
+          "description": "JSON array of aspect tags mentioned in the review.",
+          "extensible_sample_values": [
+            "artisan_guidance",
+            "hands_on_quality",
+            "workshop_space",
+            "product_quality",
+            "family_friendly",
+            "waiting_time",
+            "service_quality",
+            "scenic_view",
+            "cultural_depth",
+            "accessibility"
+          ]
+        },
+        "aspect_sentiments": {
+          "data_type": "jsonb",
+          "required": false,
+          "description": "Key-value mapping of each detected aspect tag to Positive/Neutral/Negative."
+        },
+        "confidence_score": {
+          "data_type": "numeric(4,3)",
+          "required": true,
+          "min": 0.0,
+          "max": 1.0,
+          "description": "Model confidence level for sentiment classification."
+        },
+        "ai_model_version": {
+          "data_type": "varchar(80)",
+          "required": true,
+          "description": "Exact AI model name and version used (e.g. gemini-1.5-pro, hab-sentiment-v1)."
+        },
+        "analyzed_at": {
+          "data_type": "timestamptz",
+          "required": false,
+          "format": "date-time"
+        }
+      },
+      "relationships": [
+        {
+          "field": "review_id",
+          "references_table": "provider_reviews",
+          "references_field": "review_id",
+          "type": "one-to-one"
+        }
+      ],
+      "field_mapping": {
+        "polarity": "sentiment",
+        "polarity_score": "sentiment_score",
+        "aspects": "sentiment_tags",
+        "aspect_details": "aspect_sentiments",
+        "model": "ai_model_version",
+        "confidence": "confidence_score"
+      },
+      "validation_rules": [
+        "sentiment must be one of 'Positive', 'Neutral', 'Negative'",
+        "sentiment_score must be between -1.000 and +1.000",
+        "sentiment_tags must be a valid JSON array of string tags",
+        "confidence_score must be between 0.000 and 1.000"
+      ],
+      "deduplication_rules": [
+        "One-to-one relationship with provider_reviews. Each review has exactly one active analysis row."
+      ]
+    }
+  ],
+  "origin_rules": {
+    "allowed_origins": [
+      "Google Maps",
+      "TripAdvisor",
+      "Klook",
+      "Traveloka",
+      "Agoda",
+      "Booking.com",
+      "Other"
+    ],
+    "prohibited_origins": [
+      "Facebook"
+    ],
+    "provenance_requirements": [
+      "Every crawl record MUST retain its original source_platform and source_url.",
+      "Ratings from separate platforms MUST NEVER be combined or aggregated into a single entry without origin traceability.",
+      "crawled_at must be an authentic UTC ISO 8601 timestamp representing the fetch execution time."
+    ]
+  },
+  "prohibited_actions": [
+    "NEVER crawl Facebook reviews (not an authorized OTA/travel platform source).",
+    "NEVER synthesize, fabricate, or hallucinate missing review content or ratings.",
+    "NEVER overwrite original cleaned_content with AI-generated summaries.",
+    "NEVER store personal phone numbers, emails, or personal identification details.",
+    "NEVER write directly to the database without validation through the agreed schema."
+  ]
+}

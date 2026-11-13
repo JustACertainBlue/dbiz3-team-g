@@ -1,0 +1,154 @@
+erDiagram
+    %% =========================================================================
+    %% HANOI ARTISAN BRIDGE (HAB) - UPDATED PHYSICAL ERD
+    %% Incorporates Provider Ratings, Customer Reviews, AI Sentiment, and Quality Scores
+    %% =========================================================================
+
+    roles ||--o{ user_accounts : assigns
+    roles ||--o{ role_permissions : grants
+    permissions ||--o{ role_permissions : included_in
+
+    villages ||--o{ ubnd_village_assignments : scopes
+    user_accounts ||--o| ubnd_village_assignments : receives
+    user_accounts ||--o{ sessions : opens
+    user_accounts ||--o{ password_reset_tokens : resets_password
+    user_accounts ||--o{ account_status_history : changes
+
+    agency_registration_requests ||--o{ registration_otp_challenges : verifies
+    agency_registration_requests ||--o{ registration_resubmission_tokens : authorizes
+    agency_registration_requests ||--o{ registration_submission_versions : versions
+    registration_submission_versions ||--o{ registration_documents : contains
+    stored_files ||--o{ registration_documents : backs
+    agency_registration_requests ||--o| agency_profiles : creates
+    user_accounts ||--o| agency_profiles : represents
+    agency_profiles ||--o{ agency_major_change_requests : proposes
+    registration_submission_versions ||--o{ agency_review_records : reviewed_by
+    agency_major_change_requests ||--o{ agency_review_records : reviewed_by
+
+    user_accounts ||--o| provider_profiles : represents
+    villages ||--o{ provider_profiles : contains
+    provider_profiles ||--o{ provider_profile_versions : versions
+    provider_profile_versions ||--o{ provider_verification_reviews : reviewed_by
+    provider_profile_versions ||--o{ provider_version_media : contains
+    stored_files ||--o{ provider_version_media : backs
+    provider_profiles ||--o{ provider_operating_hours : configures
+    provider_profiles ||--o{ experiences : offers
+    provider_profiles ||--o{ ai_description_drafts : drafts_profile_text
+    experiences ||--o{ ai_description_drafts : drafts_experience_text
+    experiences ||--o{ experience_discount_rules : prices
+    stored_files ||--o{ profile_media : backs
+    experiences ||--o{ profile_media : illustrates
+    agency_profiles ||--o{ profile_media : illustrates
+    provider_profiles ||--o{ profile_media : illustrates
+
+    %% -------------------------------------------------------------------------
+    %% NEW MODULE: PROVIDER RATINGS, REVIEWS & QUALITY SCORES (CRAWL & AI MATCHING)
+    %% -------------------------------------------------------------------------
+    provider_profiles ||--o{ provider_ratings : holds_ratings
+    provider_profiles ||--o{ provider_reviews : receives_reviews
+    provider_reviews ||--o| review_sentiment_analyses : analyzed_by
+    provider_profiles ||--o{ provider_quality_scores : calculates_scores
+
+    %% -------------------------------------------------------------------------
+    %% MATCHING, EXPLORE, BOOKING & CHAT
+    %% -------------------------------------------------------------------------
+    agency_profiles ||--o{ matching_sessions : starts
+    matching_sessions ||--o{ matching_messages : contains
+    matching_sessions ||--o| tour_preference_profiles : derives
+    matching_sessions ||--o{ recommendation_results : produces
+    experiences ||--o{ recommendation_results : recommends
+    agency_profiles ||--o| agency_preference_profiles : owns
+    agency_profiles ||--o{ preference_signals : emits
+    agency_profiles ||--o{ quote_requests : sends
+    experiences ||--o{ quote_requests : receives
+    agency_profiles ||--o{ explore_sessions : browses
+    explore_sessions ||--o{ explore_interactions : records
+    ranking_parameter_versions |o--o{ explore_sessions : served_in
+    ranking_parameter_versions ||--o{ ranking_quality_assessments : evaluated_by
+
+    agency_profiles ||--o{ bookings : attends
+    provider_profiles ||--o{ bookings : hosts
+    experiences ||--o{ bookings : reserves
+    bookings ||--o{ booking_status_history : transitions
+
+    agency_profiles ||--o{ chat_sessions : participates
+    provider_profiles ||--o{ chat_sessions : participates
+    chat_sessions ||--o{ chat_participants : authorizes
+    user_accounts ||--o{ chat_participants : joins
+    chat_sessions ||--o{ chat_messages : contains
+    chat_messages ||--o{ chat_attachments : carries
+    stored_files ||--o{ chat_attachments : backs
+    user_accounts ||--o{ notifications : receives
+    user_accounts ||--o{ audit_logs : acts
+    provider_profile_versions ||--o{ provider_version_documents : documented_by
+    stored_files ||--o{ provider_version_documents : backs
+
+    matching_sessions ||--o{ chat_sessions : originates
+    matching_sessions ||--o{ quote_requests : originates
+    experiences ||--o{ chat_sessions : primary_context
+    quote_requests ||--o{ chat_sessions : primary_context
+    bookings ||--o{ chat_sessions : primary_context
+    stored_files ||--o| user_accounts : avatar_of
+
+    %% =========================================================================
+    %% DETAILED ENTITY ATTRIBUTES FOR RATINGS & REVIEWS
+    %% =========================================================================
+
+    provider_ratings {
+        uuid rating_id PK
+        uuid provider_id FK "REFERENCES provider_profiles(provider_id)"
+        varchar source_platform "Google Maps, TripAdvisor, Klook, Traveloka, Agoda, Booking.com, Other"
+        numeric rating_value "e.g. 4.85"
+        numeric rating_scale "5.0 or 10.0"
+        numeric normalized_score_100 "Calculated: (rating_value / rating_scale) * 100"
+        integer total_reviews "Total review volume on platform"
+        text source_url "Direct URL to rating source"
+        timestamptz crawled_at "Crawl snapshot timestamp"
+        boolean is_latest "true if newest crawl snapshot"
+        timestamptz created_at
+    }
+
+    provider_reviews {
+        uuid review_id PK
+        uuid provider_id FK "REFERENCES provider_profiles(provider_id)"
+        varchar source_platform "Google Maps, TripAdvisor, Klook, Traveloka, Agoda, Booking.com, Other"
+        varchar external_review_id "Unique ID from source platform"
+        numeric rating_value "Individual review rating (0.0 - 5.0)"
+        numeric rating_scale "Scale (default 5.0)"
+        varchar author_display_name "Sanitized public name, NO PII"
+        varchar original_language "ISO 639-1 code: vi, en, fr, etc."
+        text cleaned_content "Cleaned review body text"
+        timestamptz published_at "Platform review publication date"
+        timestamptz crawled_at "Timestamp of crawl execution"
+        text review_url "URL of review"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    review_sentiment_analyses {
+        uuid analysis_id PK
+        uuid review_id FK "REFERENCES provider_reviews(review_id) UNIQUE"
+        varchar sentiment "Positive, Neutral, Negative"
+        numeric sentiment_score "Range: -1.000 to +1.000"
+        jsonb sentiment_tags "Array of aspects (e.g. artisan_guidance, workshop_space)"
+        jsonb aspect_sentiments "Key-value aspect to sentiment map"
+        numeric confidence_score "0.000 to 1.000"
+        varchar ai_model_version "e.g. gemini-1.5-pro"
+        timestamptz analyzed_at
+    }
+
+    provider_quality_scores {
+        uuid score_id PK
+        uuid provider_id FK "REFERENCES provider_profiles(provider_id)"
+        numeric bayesian_rating "Bayesian adjusted rating (0-100)"
+        numeric raw_average_rating "Aggregated raw average (0-5.0)"
+        integer total_reviews_count "Total review volume across sources"
+        numeric volume_score "Log-scaled volume score (0-100)"
+        numeric sentiment_score "Aggregated sentiment score (0-100)"
+        numeric recency_score "Time-decayed recency score (0-100)"
+        numeric final_quality_score "Weighted composite score (0-100)"
+        jsonb weight_configuration "Weights JSON: rating 50%, volume 20%, sentiment 20%, recency 10%"
+        timestamptz calculated_at
+        boolean is_current "true for currently active score"
+    }
+

@@ -1,6 +1,6 @@
 import { CloudflareAiClient, type CloudflareChatMessage } from './cloudflare-client'
 import { QuotaManager, type QuotaStatus } from './quota-manager'
-import { buildSystemPrompt, detectPromptInjection } from './prompt-templates'
+import { buildSystemPrompt, detectPromptInjection, detectUnauthorizedDataProbe } from './prompt-templates'
 import { queryKnowledgeBase } from './knowledge-base'
 import type { TourContext } from '@/lib/matching/types'
 import { extractTourDate } from './tour-date'
@@ -42,6 +42,21 @@ export class ConversationalAiService {
         conversational_reply: isVi
           ? 'Yêu cầu không hợp lệ. Vui lòng hỏi về các dịch vụ ghép tour hoặc thông tin làng nghề thủ công Hà Nội.'
           : 'Invalid request. Please ask about tour matching or verified Hanoi craft villages.',
+        tour_context: {},
+        is_complete: false,
+        follow_up_questions: [],
+        quota_status: quotaStatus,
+        usedLlm: false,
+      }
+    }
+
+    // 2.1 Railguards: Multi-tenant Agency Isolation & Admin Privacy Protection
+    const probe = detectUnauthorizedDataProbe(latestUserMsg)
+    if (probe.isBlocked) {
+      const isVi = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestUserMsg)
+      return {
+        intent: 'platform_guidance',
+        conversational_reply: isVi ? probe.messageVi! : probe.messageEn!,
         tour_context: {},
         is_complete: false,
         follow_up_questions: [],
@@ -104,26 +119,31 @@ export class ConversationalAiService {
       const rawIntent = parsed.intent || 'tour_matching'
       const isGuidance = rawIntent === 'platform_guidance' || detectedGuidance
       const hasTourIntent = !isGuidance && (rawIntent === 'tour_matching' || rawIntent === 'mixed' || Object.keys(tourContext).length > 0)
-      const isComplete = Boolean(
-        !isGuidance &&
-        (parsed.is_tour_complete || (tourContext.group_size && tourContext.target_date_or_range)) &&
-        tourContext.group_size && tourContext.target_date_or_range
-      )
       const followUps = Array.isArray(parsed.follow_up_questions) ? [...parsed.follow_up_questions] : []
 
-      // If incomplete tour matching has no follow-up questions from LLM, generate friendly questions
-      if (!isGuidance && !isComplete && followUps.length === 0) {
+      // Require all 4 core fields for a tour to be complete (BR-004, T035)
+      const hasPreference = Boolean(tourContext.craft_preference || (tourContext.experience_types && tourContext.experience_types.length > 0))
+      const hasOrigin = Boolean(tourContext.origin_or_route?.origin_address)
+      const hasGroupSize = tourContext.group_size !== undefined && tourContext.group_size > 0
+      const hasDate = Boolean(tourContext.target_date_or_range?.start_date)
+
+      if (!isGuidance && (!hasPreference || !hasOrigin || !hasGroupSize || !hasDate)) {
         const isVi = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestUserMsg) || true
-        if (tourContext.group_size === undefined) {
+        if (!hasGroupSize && !followUps.some(q => /số lượng khách|group size|pax|khách/i.test(q))) {
           followUps.push(isVi ? 'Quý khách vui lòng cho biết số lượng khách dự kiến tham gia đoàn?' : 'Could you please specify your expected group size?')
         }
-        if (!tourContext.target_date_or_range) {
+        if (!hasDate && !followUps.some(q => /ngày|date|khi nào/i.test(q))) {
           followUps.push(isVi ? 'Đoàn dự kiến khởi hành vào ngày nào (ví dụ: 25/11 hoặc Thứ Năm tuần tới)?' : 'What is your desired date or date range for the tour?')
         }
-        if (!tourContext.craft_preference && !tourContext.experience_types?.length) {
-          followUps.push(isVi ? 'Đoàn quan tâm đến loại trải nghiệm thủ công nào (ví dụ: gốm Bát Tràng, lụa Vạn Phúc)?' : 'Which craft or type of experience are you looking for?')
+        if (!hasOrigin && !followUps.some(q => /xuất phát|điểm đón|origin|from/i.test(q))) {
+          followUps.push(isVi ? 'Đoàn sẽ xuất phát từ khu vực nào tại Hà Nội (ví dụ: từ Hoàn Kiếm, phố cổ)?' : 'Where will the group start from (for example "from Hoàn Kiếm")?')
+        }
+        if (!hasPreference && !followUps.some(q => /nghề|craft|trải nghiệm|thủ công/i.test(q))) {
+          followUps.push(isVi ? 'Đoàn quan tâm đến loại trải nghiệm làng nghề nào (ví dụ: gốm Bát Tràng, lụa Vạn Phúc, mộc Chàng Sơn, mây tre Phú Vinh)?' : 'Which craft or type of experience are you looking for (for example pottery, silk weaving, woodcarving)?')
         }
       }
+
+      const isComplete = Boolean(!isGuidance && hasGroupSize && hasDate && hasOrigin && hasPreference && followUps.length === 0)
 
       return {
         intent: isGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),

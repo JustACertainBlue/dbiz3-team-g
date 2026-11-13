@@ -55,6 +55,36 @@ export const PLATFORM_KNOWLEDGE_BASE: KnowledgeItem[] = [
       'The platform connects verified Hanoi traditional craft villages:\n- Bat Trang (Gia Lâm) - Fine ceramics & ancient pottery kilns\n- Van Phuc (Ha Dong) - Traditional mulberry silk weaving\n- Chang Son & Son Dong (Thach That, Hoai Duc) - Traditional woodcarving, folk statue carving & architecture\n- Phu Vinh (Chuong My) - Bamboo & rattan weaving\n- Chuong (Thanh Oai) - Conical hat making\n- Quat Dong (Thuong Tin) - Traditional hand embroidery\n- Dinh Cong (Hoang Mai) - Silver filigree & jewelry\n- Cu Da (Thanh Oai) - Traditional noodles & soy sauce',
   },
   {
+    id: 'platform_scope_and_boundary',
+    topics: ['phạm vi', 'hoạt động ngoài trời', 'ngoài trời', 'thể thao', 'trồng cây', 'nông nghiệp', 'trekking', 'cắm trại', 'sóc sơn', 'ba vì', 'scope', 'outdoor'],
+    titleVi: 'Phạm vi dịch vụ & Ranh giới nền tảng Hanoi Artisan Bridge',
+    titleEn: 'Service Scope & Platform Boundaries of Hanoi Artisan Bridge',
+    contentVi:
+      'Hanoi Artisan Bridge là nền tảng B2B chuyên biệt CHỈ kết nối các tour văn hóa trải nghiệm tại các Làng nghề truyền thống & Xưởng thủ công được xác minh tại Hà Nội.\n- Nền tảng HỖ TRỢ: Các workshop làm nghề thủ công cùng nghệ nhân (nặn gốm Bát Tràng, dệt lụa Vạn Phúc, chạm gỗ Chàng Sơn, đan mây tre Phú Vinh, làm nón Chuông, vẽ tranh sơn mài Hạ Thái, thêu tay Quất Động, múa rối nước Đào Thục, ẩm thực Cự Đà).\n- Nền tảng KHÔNG CUNG CẤP: Các hoạt động thể thao ngoài trời (đá bóng, bóng chuyền), nông trại nông nghiệp (trồng rau, hái quả), cắm trại dã ngoại, trekking leo núi, hoặc các địa điểm nghỉ dưỡng sinh thái ngoài làng nghề (như Sóc Sơn, Ba Vì).\n- Khi khách hỏi về Sóc Sơn hoặc hoạt động dã ngoại ngoài trời: Trợ lý phải giải thích rõ nền tảng chỉ tập trung vào làng nghề truyền thống Hà Nội, và gợi ý các workshop làng nghề văn hóa phù hợp cho đoàn teambuilding gắn kết.',
+    contentEn:
+      'Hanoi Artisan Bridge exclusively connects B2B cultural craft village experiences and verified artisan workshops in Hanoi.\n- Supported: Hands-on craft workshops with master artisans (Bat Trang pottery, Van Phuc silk, Chang Son woodcarving, Phu Vinh bamboo, Chuong conical hats, Ha Thai lacquer, Quat Dong embroidery, Dao Thuc water puppetry, Cu Da culinary).\n- Not supported: General outdoor sports (football, volleyball), agro-farming (vegetable harvesting), camping, trekking, or general nature resorts outside craft villages (e.g. Soc Son, Ba Vi).\n- Inquiries about outdoor sports or non-craft locations: Clearly state the platform craft village focus and propose cultural artisan team challenges instead.',
+  },
+  {
+    id: 'teambuilding_cultural_craft',
+    topics: ['teambuilding', 'team building', 'làm việc nhóm', 'nhóm', 'đoàn đông', 'tập thể', 'hoạt động nhóm', 'thi đua'],
+    titleVi: 'Hoạt động Team Building văn hóa tại các xưởng thủ công',
+    titleEn: 'Cultural Team Building Workshops in Craft Villages',
+    contentVi:
+      'Các xưởng nghề trên Hanoi Artisan Bridge cung cấp các format Team Building văn hóa gắn kết tập thể đặc sắc:\n1. Bát Tràng (Gia Lâm): Thử thách làm gốm đồng đội (Team Pottery Challenge) - các nhóm tự tay nặn gốm, trang trí men và thuyết trình ý nghĩa sản phẩm của đội.\n2. Chàng Sơn (Thạch Thất): Workshop làm quạt nghệ thuật & chạm khắc tranh gỗ kỷ niệm - làm việc nhóm theo tổ 4 - 6 người dưới sự hướng dẫn của nghệ nhân.\n3. Phú Vinh (Chương Mỹ): Thi tài đan lát mây tre mỹ nghệ đồng đội.\n4. Đào Thục (Đông Anh): Trải nghiệm rối nước buồng trò - chia nhóm tập điều khiển con rối nước và biểu diễn tiểu phẩm dân gian hài hước.\n- Sức chứa: Phù hợp nhất cho đoàn từ 10 - 25 khách/lượt. Đoàn trên 25 khách có thể xoay vòng 2 trạm trải nghiệm.',
+    contentEn:
+      'Verified artisan workshops provide specialized cultural team building formats:\n1. Bat Trang: Team Pottery Challenge - teams sculpt and paint ceramic pieces and present their cultural stories.\n2. Chang Son: Traditional fan decorating & commemorative woodcarving in teams of 4-6 pax.\n3. Phu Vinh: Team bamboo weaving craftsmanship relay.\n4. Dao Thuc: Backstage water puppetry workshop - teams rehearse and perform folk puppet sketches.\n- Capacity: Best suited for 10-25 pax per session, or rotating stations for larger groups.',
+  },
+  {
+    id: 'data_isolation_and_privacy',
+    topics: ['agency khác', 'đại lý khác', 'công ty khác', 'báo giá bên khác', 'doanh thu sàn', 'admin', 'bảo mật', 'privacy', 'competitor'],
+    titleVi: 'Chính sách bảo mật dữ liệu đa người dùng & Dữ liệu quản trị',
+    titleEn: 'B2B Multi-Tenant Data Isolation & Admin Privacy Policy',
+    contentVi:
+      'Quy định bảo mật B2B nghiêm ngặt trên Hanoi Artisan Bridge:\n1. Cách ly dữ liệu Lữ hành (Agency Isolation): Mỗi công ty lữ hành chỉ được xem thông tin, báo giá, lịch sử tour và tin nhắn của chính mình. Tuyệt đối không tiết lộ dữ liệu báo giá, khách hàng hoặc giao dịch của bất kỳ đơn vị lữ hành nào khác.\n2. Bảo vệ dữ liệu Quản trị (Admin Protection): Doanh thu tổng thể của sàn (GMV), số lượng booking toàn sàn, tài khoản quản trị hệ thống, mã API và cơ sở dữ liệu chỉ dành riêng cho Ban quản trị (Admin / UBND / HĐT). AI Assistant không được phép cung cấp các số liệu này cho người dùng.',
+    contentEn:
+      'Strict B2B privacy policies on Hanoi Artisan Bridge:\n1. Agency Data Isolation: Tour agencies only access their own quotes, tours, and chats. Information from other agencies is strictly confidential.\n2. Admin Protection: Platform gross revenue (GMV), system-wide booking statistics, admin credentials, API keys, and database schemas are restricted to Platform Administrators.',
+  },
+  {
     id: 'wood_craft_villages',
     topics: ['làng mộc', 'mộc', 'gỗ', 'chàng sơn', 'sơn đồng', 'tạc tượng', 'chạm khắc gỗ', 'woodcarving'],
     titleVi: 'Làng mộc truyền thống Chàng Sơn & Sơn Đồng',

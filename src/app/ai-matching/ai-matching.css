@@ -779,6 +779,134 @@ body:has(.ait-container) #page-content {
   background-color: #F8FAFC;
 }
 
+.ait-action-btn-circle {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #FFFFFF;
+  color: #17382B;
+  border: 1.5px solid #CBD5E1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  padding: 0;
+  text-decoration: none;
+}
+
+.ait-action-btn-circle:hover {
+  background-color: #F0FDF4;
+  border-color: #17382B;
+  color: #17382B;
+  transform: scale(1.06);
+  box-shadow: 0 2px 6px rgba(23, 56, 43, 0.15);
+}
+
+.ait-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.ait-village-card,
+.ait-provider-card {
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  background: #FFFFFF;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ait-village-card:hover,
+.ait-provider-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.ait-card-banner {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.ait-card-content {
+  padding: 16px;
+}
+
+.ait-card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.ait-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 4px 0;
+}
+
+.ait-card-sub {
+  font-size: 13px;
+  color: #15803D;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ait-card-location {
+  font-size: 12.5px;
+  color: #64748B;
+  margin-bottom: 10px;
+}
+
+.ait-card-desc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #334155;
+  margin: 0 0 14px 0;
+}
+
+.ait-card-activities-wrap {
+  margin-bottom: 14px;
+  background: #F8FAFC;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+}
+
+.ait-activities-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #475569;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.ait-activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ait-activity-item {
+  font-size: 13px;
+  color: #1E293B;
+  display: flex;
+  justify-content: space-between;
+}
+
 /* RESPONSIVE TRÊN MÀN HÌNH NHỎ */
 @media (max-width: 860px) {
   .ait-sidebar {

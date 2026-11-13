@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
+import { resolveVillageCards, resolveProviderCards } from '@/lib/matching/card-resolver'
 
 async function authorize(request: Request, sessionId: string) {
   const actor = (await sessionContextFromRequest(request))
@@ -61,10 +62,29 @@ export async function POST(
       tourPreferenceProfile = await buildTourPreferenceProfile(extraction.tour_context)
     }
 
+    // Resolve rich interactive cards (Village cards, Local Provider cards)
+    const userText = String(body.text || '')
+    const replyText = typeof extraction.conversational_reply === 'string' ? extraction.conversational_reply : ''
+    const combined = `${userText} ${replyText}`
+
+    const providerCards = resolveProviderCards(userText)
+    const villageCards = providerCards.length === 0 ? resolveVillageCards(combined) : []
+
+    // Save assistant reply so subsequent turns maintain full bidirectional dialogue context (#33: Retry adds no message)
+    if (!isRetry && extraction.conversational_reply && typeof extraction.conversational_reply === 'string') {
+      try {
+        await addMessage(params.id, 'Assistant', extraction.conversational_reply.slice(0, 2000))
+      } catch (e) {
+        console.warn('[AIT] Could not save assistant response to message history:', e)
+      }
+    }
+
     return NextResponse.json({
       message,
       extraction,
       tour_preference_profile: tourPreferenceProfile,
+      village_cards: villageCards,
+      provider_cards: providerCards,
     }, { status: isRetry ? 200 : 201 })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal error' }, { status: 400 })

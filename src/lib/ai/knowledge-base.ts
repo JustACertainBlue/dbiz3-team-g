@@ -60,9 +60,9 @@ export const PLATFORM_KNOWLEDGE_BASE: KnowledgeItem[] = [
     titleVi: 'Phạm vi dịch vụ & Ranh giới nền tảng Hanoi Artisan Bridge',
     titleEn: 'Service Scope & Platform Boundaries of Hanoi Artisan Bridge',
     contentVi:
-      'Hanoi Artisan Bridge là nền tảng B2B chuyên biệt CHỈ kết nối các tour văn hóa trải nghiệm tại các Làng nghề truyền thống & Xưởng thủ công được xác minh tại Hà Nội.\n- Nền tảng HỖ TRỢ: Các workshop làm nghề thủ công cùng nghệ nhân (nặn gốm Bát Tràng, dệt lụa Vạn Phúc, chạm gỗ Chàng Sơn, đan mây tre Phú Vinh, làm nón Chuông, vẽ tranh sơn mài Hạ Thái, thêu tay Quất Động, múa rối nước Đào Thục, ẩm thực Cự Đà).\n- Nền tảng KHÔNG CUNG CẤP: Các hoạt động thể thao ngoài trời (đá bóng, bóng chuyền), nông trại nông nghiệp (trồng rau, hái quả), cắm trại dã ngoại, trekking leo núi, hoặc các địa điểm nghỉ dưỡng sinh thái ngoài làng nghề (như Sóc Sơn, Ba Vì).\n- Khi khách hỏi về Sóc Sơn hoặc hoạt động dã ngoại ngoài trời: Trợ lý phải giải thích rõ nền tảng chỉ tập trung vào làng nghề truyền thống Hà Nội, và gợi ý các workshop làng nghề văn hóa phù hợp cho đoàn teambuilding gắn kết.',
+      'Hanoi Artisan Bridge là nền tảng B2B chuyên biệt CHỈ kết nối các tour văn hóa trải nghiệm tại các Làng nghề truyền thống & Xưởng thủ công được xác minh tại Hà Nội.\n- Nền tảng HỖ TRỢ: Các workshop làm nghề thủ công cùng nghệ nhân (múa rối nước Đào Thục, nặn gốm Bát Tràng, dệt lụa Vạn Phúc, chạm gỗ Chàng Sơn, đan mây tre Phú Vinh, làm nón Chuông, vẽ tranh sơn mài Hạ Thái, thêu tay Quất Động, ẩm thực Cự Đà).\n- Nền tảng KHÔNG CUNG CẤP: Các hoạt động thể thao ngoài trời (đá bóng, bóng chuyền), nông trại nông nghiệp (trồng rau, trồng cây, hái quả), cắm trại dã ngoại, trekking leo núi, hoặc các địa điểm nghỉ dưỡng sinh thái ngoài làng nghề (như Sóc Sơn, Ba Vì).\n- Khi khách hỏi về Sóc Sơn hoặc hoạt động ngoài trời: Giải thích nền tảng chỉ tập trung vào làng nghề truyền thống Hà Nội, và giới thiệu các làng nghề nằm gần khu vực Sóc Sơn hoặc có không gian mở rất phù hợp cho đoàn teambuilding: 1) Làng múa rối nước Đào Thục (Đông Anh, sát cạnh Sóc Sơn chỉ ~20 phút) với hoạt động ngoài trời tại thuỷ đình làng, thi diễn tiểu phẩm rối và vẽ rối gỗ; 2) Làng gốm Bát Tràng (Gia Lâm) với sân lò rộng rãi, thi làm gốm đồng đội; 3) Làng mộc Chàng Sơn (Thạch Thất) với workshop làm quạt và điêu khắc tranh gỗ nhóm.',
     contentEn:
-      'Hanoi Artisan Bridge exclusively connects B2B cultural craft village experiences and verified artisan workshops in Hanoi.\n- Supported: Hands-on craft workshops with master artisans (Bat Trang pottery, Van Phuc silk, Chang Son woodcarving, Phu Vinh bamboo, Chuong conical hats, Ha Thai lacquer, Quat Dong embroidery, Dao Thuc water puppetry, Cu Da culinary).\n- Not supported: General outdoor sports (football, volleyball), agro-farming (vegetable harvesting), camping, trekking, or general nature resorts outside craft villages (e.g. Soc Son, Ba Vi).\n- Inquiries about outdoor sports or non-craft locations: Clearly state the platform craft village focus and propose cultural artisan team challenges instead.',
+      'Hanoi Artisan Bridge exclusively connects B2B cultural craft village experiences and verified artisan workshops in Hanoi.\n- Supported: Hands-on craft workshops with master artisans (Dao Thuc water puppetry, Bat Trang pottery, Van Phuc silk, Chang Son woodcarving, Phu Vinh bamboo, Chuong conical hats, Ha Thai lacquer, Quat Dong embroidery, Cu Da culinary).\n- Not supported: General outdoor sports (football, volleyball), agro-farming (vegetable harvesting, tree planting), camping, trekking, or general nature resorts outside craft villages (e.g. Soc Son, Ba Vi).\n- Inquiries about Soc Son or outdoor activities: Clearly state the craft village focus and introduce accessible nearby villages with open-air workshop spaces (Dao Thuc water puppetry ~20 mins from Soc Son, Bat Trang pottery team challenge, Chang Son woodcarving).',
   },
   {
     id: 'teambuilding_cultural_craft',
@@ -123,15 +123,22 @@ export function queryKnowledgeBase(queryText: string): KnowledgeItem[] {
   const normalized = queryText.toLowerCase()
   const words = normalized.split(/\s+/).filter(w => w.length > 2)
 
+  // STRICT: Only match fit score calculation if user explicitly asks for score formula or calculation
+  const asksFitScore = /(?:thang điểm|công thức|tính điểm|fit score|scoring|weights|trọng số|thuật toán tính)/i.test(normalized)
+
   const scored = PLATFORM_KNOWLEDGE_BASE.map(item => {
+    if (item.id === 'fit_score_calculation' && !asksFitScore) {
+      return { item, score: 0 }
+    }
+
     let score = 0
     for (const topic of item.topics) {
       if (normalized.includes(topic.toLowerCase())) {
-        score += 3
+        score += 5
       }
     }
     for (const word of words) {
-      if (item.contentVi.toLowerCase().includes(word) || item.contentEn.toLowerCase().includes(word)) {
+      if (item.id !== 'fit_score_calculation' && (item.contentVi.toLowerCase().includes(word) || item.contentEn.toLowerCase().includes(word))) {
         score += 1
       }
     }
@@ -139,7 +146,7 @@ export function queryKnowledgeBase(queryText: string): KnowledgeItem[] {
   })
 
   return scored
-    .filter(s => s.score > 2)
+    .filter(s => s.score >= 4)
     .sort((a, b) => b.score - a.score)
     .map(s => s.item)
 }

@@ -114,6 +114,7 @@ export class ConversationalAiService {
     const detectedGuidance = hasFaqIndicators && !isExplicitTourAction
 
     if (parsed && typeof parsed === 'object') {
+      const isVi = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestUserMsg) || true
       const tourContext = this.mapExtractedToTourContext(parsed.extracted_context, messages, now)
       // Intent handling: platform guidance vs tour matching
       const rawIntent = parsed.intent || 'tour_matching'
@@ -128,7 +129,6 @@ export class ConversationalAiService {
       const hasDate = Boolean(tourContext.target_date_or_range?.start_date)
 
       if (!isGuidance && (!hasPreference || !hasOrigin || !hasGroupSize || !hasDate)) {
-        const isVi = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(latestUserMsg) || true
         if (!hasGroupSize && !followUps.some(q => /số lượng khách|group size|pax|khách/i.test(q))) {
           followUps.push(isVi ? 'Quý khách vui lòng cho biết số lượng khách dự kiến tham gia đoàn?' : 'Could you please specify your expected group size?')
         }
@@ -143,11 +143,12 @@ export class ConversationalAiService {
         }
       }
 
-      const isComplete = Boolean(!isGuidance && hasGroupSize && hasDate && hasOrigin && hasPreference && followUps.length === 0)
+      // If user has all 4 core fields, mark complete and match right away, but STILL keep follow-up questions to refine!
+      const isComplete = Boolean(!isGuidance && hasGroupSize && hasDate && hasOrigin && hasPreference)
 
       return {
         intent: isGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
-        conversational_reply: parsed.conversational_reply || (isGuidance && relevantKnowledge.length > 0 ? relevantKnowledge[0].contentVi : ''),
+        conversational_reply: parsed.conversational_reply || (isVi ? 'Tôi đã tiếp nhận yêu cầu và đối soát các xưởng nghề phù hợp nhất cho đoàn:' : 'I have analyzed your request and found matching artisan workshops:'),
         tour_context: isGuidance ? (tourContext.craft_preference ? { craft_preference: tourContext.craft_preference } : {}) : tourContext,
         is_complete: isComplete,
         follow_up_questions: followUps,
@@ -200,11 +201,13 @@ export class ConversationalAiService {
    */
   private static mapExtractedToTourContext(
     extracted: any,
-    messages: Array<{ text: string }>,
+    messages: Array<{ text: string; sender?: string }>,
     now: () => Date
   ): TourContext {
     const context: TourContext = {}
-    const fullText = messages.map(m => m.text).join(' ')
+    const userMessages = messages.filter(m => m.sender?.toLowerCase() !== 'assistant')
+    const relevantMsgs = userMessages.length > 0 ? userMessages : messages
+    const fullText = relevantMsgs.map(m => m.text).join(' ')
 
     if (extracted?.group_size && typeof extracted.group_size === 'number' && extracted.group_size > 0) {
       context.group_size = extracted.group_size
@@ -229,7 +232,7 @@ export class ConversationalAiService {
       context.craft_preference = String(extracted.craft_preference)
     } else {
       // Scan messages from newest to oldest so latest craft intent takes precedence!
-      const reversed = [...messages].reverse()
+      const reversed = [...relevantMsgs].reverse()
       for (const m of reversed) {
         const detected = detectCraftPreference(m.text || '')
         if (detected) {
@@ -242,7 +245,7 @@ export class ConversationalAiService {
     if (Array.isArray(extracted?.experience_types) && extracted.experience_types.length > 0) {
       context.experience_types = extracted.experience_types
     } else {
-      const reversed = [...messages].reverse()
+      const reversed = [...relevantMsgs].reverse()
       for (const m of reversed) {
         const detected = detectExperienceTypes(m.text || '')
         if (detected.length > 0) {
@@ -254,6 +257,20 @@ export class ConversationalAiService {
 
     if (extracted?.origin) {
       context.origin_or_route = { origin_address: String(extracted.origin) }
+    } else {
+      for (const m of [...relevantMsgs].reverse()) {
+        const text = m.text || ''
+        const originMatch = text.match(/(?:from|near|xuất phát từ|tại khu vực|ở|khu vực)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at|vào ngày|ngày)\s|[,.;!?]|$)/iu)
+        if (originMatch) {
+          context.origin_or_route = { origin_address: originMatch[1].trim() }
+          break
+        }
+        const mLoc = text.match(/(hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|sóc sơn|đông anh|thạch thất|hoài đức|gia lâm|thanh oai|thường tín|chương mỹ|hà nội)/i)
+        if (mLoc) {
+          context.origin_or_route = { origin_address: mLoc[1] }
+          break
+        }
+      }
     }
 
     return context
@@ -288,12 +305,18 @@ export class ConversationalAiService {
 
     // Check if this is a platform guidance question (interrogative FAQ rather than tour search)
     const knowledgeMatches = queryKnowledgeBase(latestUserMsg)
-    const hasFaqIndicators = /(?:như thế nào|là gì|làm sao|cách nào|thế nào|giải thích|hướng dẫn|thang điểm|công thức|quy trình|cách ghép|how |what is|how to|explain|tell me about)/i.test(latestUserMsg)
     const isExplicitTourAction = /(?:tìm|muốn|cần|tổ chức|book|đặt|find|want|need|organize|looking for)\s+(?:tour|xưởng|chỗ|trải nghiệm)/i.test(latestUserMsg)
-    const isPlatformQuestion = (knowledgeMatches.length > 0 || hasFaqIndicators) && hasFaqIndicators && !isExplicitTourAction
+    const isFitScoreQuestion = /(?:thang điểm|công thức|tính điểm|fit score|scoring|weights)/i.test(latestUserMsg)
+    const isContactQuestion = /(?:liên hệ|nhắn tin|báo giá|chat|contact|how to contact|request quote)/i.test(latestUserMsg)
+    const isVillagesQuestion = /(?:những làng nghề nào|làng nghề nào được hỗ trợ|danh sách làng nghề|verified craft villages)/i.test(latestUserMsg)
+    const isPlatformQuestion = (isFitScoreQuestion || isContactQuestion || isVillagesQuestion) && !isExplicitTourAction
 
-    if (isPlatformQuestion) {
-      const best = knowledgeMatches[0]
+    if (isPlatformQuestion && knowledgeMatches.length > 0) {
+      const best = knowledgeMatches.find(k =>
+        isFitScoreQuestion ? k.id === 'fit_score_calculation' :
+        isContactQuestion ? k.id === 'contact_and_booking' :
+        k.id === 'verified_craft_villages'
+      ) || knowledgeMatches[0]
       const craft = detectCraftPreference(latestUserMsg)
       return {
         intent: 'platform_guidance',
@@ -398,9 +421,17 @@ export class ConversationalAiService {
 
     const isComplete = followUps.length === 0
     let conversationalReply = ''
-    if (isComplete) {
+    if (craftPref === 'woodcarving' || /(?:làng mộc|chàng sơn|sơn đồng)/i.test(latestUserMsg)) {
       conversationalReply = isVi
-        ? 'Tôi đã ghi nhận đầy đủ các yêu cầu cốt lõi của đoàn. Đang tiến hành đối soát và xếp hạng các xưởng nghề phù hợp nhất...'
+        ? 'Làng mộc Chàng Sơn (Thạch Thất) và Sơn Đồng (Hoài Đức) nổi tiếng với nghệ thuật chạm khắc gỗ cổ truyền, làm quạt và tạc tượng dân gian. Các nghệ nhân có thể tổ chức workshop thực hành chạm khắc hoa văn nhỏ cho đoàn.'
+        : 'Chang Son and Son Dong traditional woodcarving villages are renowned for timber architecture, folk statue carving, and traditional fans.'
+    } else if (/(?:sóc sơn|ngoài trời|teambuilding|team building)/i.test(latestUserMsg)) {
+      conversationalReply = isVi
+        ? 'Hanoi Artisan Bridge chuyên về du lịch văn hóa làng nghề truyền thống Hà Nội. Gần khu vực Sóc Sơn, chúng tôi có Làng múa rối nước Đào Thục (Đông Anh, cách khoảng 20-25 phút) với không gian thủy đình ngoài trời biểu diễn và thi đấu tiểu phẩm rối nước rất thích hợp cho teambuilding tập thể, cùng với các workshop gốm Bát Tràng và mộc Chàng Sơn.'
+        : 'Hanoi Artisan Bridge focuses on traditional Hanoi craft villages. Near Soc Son, Dao Thuc water puppetry village (~20 mins) features open-air puppet pavilion activities ideal for group cohesion.'
+    } else if (isComplete) {
+      conversationalReply = isVi
+        ? 'Tôi đã tiếp nhận yêu cầu và đối soát các xưởng nghề phù hợp nhất cho đoàn:'
         : 'I have gathered all the key requirements for your tour. Analyzing and ranking the best matching craft workshops now...'
     } else {
       conversationalReply = isVi

@@ -13,6 +13,7 @@ import { ChevronLeft, Paperclip } from 'lucide-react'
 import { hanoiClock } from '@/lib/time/hanoi-time'
 import { attachmentLine, chatActions, chatStatusLine, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
 import { usePolling } from '@/lib/client/use-polling'
+import { CATALOG_ACTIVITIES } from '@/lib/matching/card-resolver'
 import './chat-v9.css'
 
 // Screens COM048 (Tour Agency) and COM065 (Local Provider): F-CHAT-01..05 on /api/iac/chats (spec-IAC FR-001..005);
@@ -240,13 +241,148 @@ function MessagesContent() {
               const system = message.message_kind === 'Booking Update'
               // A message is the reader's own when it is not from the counterpart (participant_name, #22) or the system.
               const mine = !system && message.sender_name !== selected.participant_name
+              const activity = message.experience_id ? CATALOG_ACTIVITIES.find(a => a.experience_id === message.experience_id) : undefined
               return <article key={message.message_id} className={system ? 'ch9-msg ch9-msg--system' : mine ? 'ch9-msg ch9-msg--mine' : 'ch9-msg'}>
                 {!system && !mine && <small className="ch9-msg__sender">{message.sender_name}{message.message_kind !== 'User Text' ? ` · ${message.message_kind}` : ''}</small>}
                 {message.text && <p dangerouslySetInnerHTML={{ __html: renderChatMarkdown(message.text) }} />}
                 {message.attachments.map(file => <p key={file.attachment_id} className="ch9-file"><a href={`/api/iac/chats/${encodeURIComponent(history.chat_session_id)}/attachments/${encodeURIComponent(file.attachment_id)}`} download={file.file_name}>{attachmentLine(file)}</a> <span>· {typeLabel(file.file_name)}</span></p>)}
-                {(message.experience_id || message.booking_id) && <p className="ch9-context">
+                {activity && (
+                  <div
+                    className="ch9-activity-card"
+                    style={{
+                      marginTop: '12px',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      backgroundColor: mine ? 'rgba(255, 255, 255, 0.12)' : '#FFFFFF',
+                      border: mine ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #E2E8F0',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                      color: mine ? '#FFFFFF' : '#0F172A',
+                      maxWidth: '100%',
+                    }}
+                  >
+                    <div style={{ position: 'relative', width: '100%', height: '140px', overflow: 'hidden' }}>
+                      <img
+                        src={activity.image_url}
+                        alt={activity.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          left: '8px',
+                          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                          color: '#FFFFFF',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          backdropFilter: 'blur(4px)',
+                        }}
+                      >
+                        {activity.category}
+                      </span>
+                      {message.message_kind === 'Quote Request' && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            backgroundColor: '#059669',
+                            color: '#FFFFFF',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                          }}
+                        >
+                          📄 YÊU CẦU BÁO GIÁ
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ padding: '12px' }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 700, lineHeight: 1.3 }}>
+                        {activity.name}
+                      </h4>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '12.5px', opacity: 0.9 }}>
+                        🏛️ Làng {activity.village_name} · {activity.provider_name}
+                      </p>
+                      <div style={{ display: 'flex', gap: '10px', fontSize: '12px', opacity: 0.85, marginBottom: '8px' }}>
+                        <span>⏱️ {activity.duration_minutes} phút</span>
+                        <span>👥 Tối đa {activity.max_participants} khách</span>
+                      </div>
+                      <p style={{ margin: '0 0 10px 0', fontSize: '12px', opacity: 0.85, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {activity.description}
+                      </p>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          paddingTop: '8px',
+                          borderTop: mine ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid #F1F5F9',
+                        }}
+                      >
+                        <div>
+                          <span style={{ fontSize: '10.5px', opacity: 0.75, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Giá B2B</span>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: mine ? '#FEF08A' : '#B45309' }}>
+                            {activity.price_per_person.toLocaleString('vi-VN')} đ
+                          </span>
+                          <span style={{ fontSize: '11px', opacity: 0.75 }}> / khách</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <Link
+                            href={`/explore/experiences/${activity.experience_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                              backgroundColor: mine ? 'rgba(255, 255, 255, 0.25)' : '#F1F5F9',
+                              color: 'inherit',
+                              border: mine ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid #CBD5E1',
+                            }}
+                          >
+                            Chi tiết
+                          </Link>
+                          <Link
+                            href={`/village/${activity.village_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                              backgroundColor: mine ? 'rgba(255, 255, 255, 0.25)' : '#F1F5F9',
+                              color: 'inherit',
+                              border: mine ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid #CBD5E1',
+                            }}
+                          >
+                            Làng {activity.village_name}
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {(message.experience_id || message.booking_id) && !activity && <p className="ch9-context">
                   {message.experience_id && <Link href={`/explore/experiences/${message.experience_id}`}>Experience</Link>}
                   {message.booking_id && <Link href={isAgency ? `/agency/${session.agencyId}/bookings/${message.booking_id}` : `/provider/${session.providerId}/bookings/${message.booking_id}`}>Xem đặt chỗ</Link>}
+                </p>}
+                {message.booking_id && activity && <p className="ch9-context">
+                  <Link href={isAgency ? `/agency/${session.agencyId}/bookings/${message.booking_id}` : `/provider/${session.providerId}/bookings/${message.booking_id}`}>Xem đặt chỗ</Link>
                 </p>}
                 {!system && <time>{hanoiClock(message.sent_at)}</time>}
               </article>

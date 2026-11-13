@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
-import { resolveVillageCards, resolveProviderCards } from '@/lib/matching/card-resolver'
+import { resolveVillageCards, resolveProviderCards, resolveActivityCards, detectCardScope } from '@/lib/matching/card-resolver'
+import { saveAgencyPreferenceProfile } from '@/lib/preferences/preference-service'
 
 async function authorize(request: Request, sessionId: string) {
   const actor = (await sessionContextFromRequest(request))
@@ -62,13 +63,28 @@ export async function POST(
       tourPreferenceProfile = await buildTourPreferenceProfile(extraction.tour_context)
     }
 
-    // Resolve rich interactive cards (Village cards, Local Provider cards)
+    // Strictly scoped card resolution: only display what user explicitly asked for (e.g. asking for villages shows ONLY village cards)
     const userText = String(body.text || '')
     const replyText = typeof extraction.conversational_reply === 'string' ? extraction.conversational_reply : ''
     const combined = `${userText} ${replyText}`
 
-    const providerCards = resolveProviderCards(userText)
-    const villageCards = providerCards.length === 0 ? resolveVillageCards(combined) : []
+    const scope = detectCardScope(userText)
+
+    let activityCards: any[] = []
+    let providerCards: any[] = []
+    let villageCards: any[] = []
+
+    if (scope === 'village') {
+      villageCards = resolveVillageCards(combined)
+    } else if (scope === 'provider') {
+      providerCards = resolveProviderCards(combined)
+    } else if (scope === 'activity') {
+      activityCards = resolveActivityCards(combined)
+    } else if (scope === 'all') {
+      villageCards = resolveVillageCards(combined)
+      providerCards = resolveProviderCards(combined)
+      activityCards = resolveActivityCards(combined)
+    }
 
     // Save assistant reply so subsequent turns maintain full bidirectional dialogue context (#33: Retry adds no message)
     if (!isRetry && extraction.conversational_reply && typeof extraction.conversational_reply === 'string') {
@@ -79,10 +95,38 @@ export async function POST(
       }
     }
 
+    // Learning loop: Save or update agency preference profile when crafts or villages are detected
+    if (access.actor.agencyId) {
+      try {
+        const craftsFound: string[] = []
+        const textToAnalyze = `${userText} ${replyText}`.toLowerCase()
+        const craftKeywords = [
+          'gốm', 'lụa', 'mộc', 'mây', 'sơn mài', 'đồng', 'nón', 'bát tràng', 'vạn phúc', 'chàng sơn', 'phú vinh', 'hạ thái', 'đại bái', 'chuông'
+        ]
+        for (const kw of craftKeywords) {
+          if (textToAnalyze.includes(kw)) {
+            craftsFound.push(kw)
+          }
+        }
+        if (craftsFound.length > 0 || tourPreferenceProfile) {
+          await saveAgencyPreferenceProfile({
+            agencyId: access.actor.agencyId,
+            sessionId: params.id,
+            tourPreferenceProfile: tourPreferenceProfile || {
+              matching_attributes: craftsFound,
+            },
+          })
+        }
+      } catch (err) {
+        console.warn('[AIT] Failed to update preference profile for learning loop:', err)
+      }
+    }
+
     return NextResponse.json({
       message,
       extraction,
       tour_preference_profile: tourPreferenceProfile,
+      activity_cards: activityCards,
       village_cards: villageCards,
       provider_cards: providerCards,
     }, { status: isRetry ? 200 : 201 })

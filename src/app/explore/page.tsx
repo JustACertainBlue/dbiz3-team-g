@@ -10,6 +10,7 @@ import ExperienceActions from './ExperienceActions';
 import { hasQuoteRequest } from '../../lib/demo/commercial-handoff-service';
 import GuestLockedActions from './GuestLockedActions';
 import { currentServerSession } from '../../lib/auth/server-session';
+import { getAgencyPreferenceProfile, rerankExploreForAgency } from '../../lib/preferences/preference-service';
 import './explore-v9.css';
 import { categoryLabel, craftLabel } from '../../lib/explore/display-labels';
 
@@ -35,18 +36,68 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const session = (await currentServerSession());
   const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
+  const isAgency = viewer.kind === 'agency';
+
+  // Learning loop: 24-hour Recency Boost based on AI matching session history
+  let priorityVillages: string[] | undefined = undefined;
+  let personalizedRankOrder: string[] | undefined = undefined;
+
+  if (isAgency && viewer.agencyId) {
+    try {
+      const prefProfile = await getAgencyPreferenceProfile(viewer.agencyId);
+      if (prefProfile && prefProfile.affinity_tags) {
+        const updatedTime = prefProfile.updated_at ? new Date(prefProfile.updated_at).getTime() : 0;
+        const isWithin24h = (Date.now() - updatedTime) <= 24 * 60 * 60 * 1000;
+        if (isWithin24h) {
+          const affinities = Object.entries(prefProfile.affinity_tags)
+            .filter(([_, score]) => score > 0)
+            .sort((a, b) => b[1] - a[1]);
+
+          if (affinities.length > 0) {
+            const candidateVillages = ['Bát Tràng', 'Vạn Phúc', 'Chàng Sơn', 'Phú Vinh', 'Hạ Thái', 'Đại Bái', 'Chuông', 'Đông Hồ'];
+            priorityVillages = candidateVillages.filter(vName =>
+              affinities.some(([tag]) => {
+                const lowerTag = tag.toLowerCase();
+                const lowerV = vName.toLowerCase();
+                return lowerV.includes(lowerTag) || lowerTag.includes(lowerV) ||
+                  (lowerTag.includes('gốm') && vName === 'Bát Tràng') ||
+                  (lowerTag.includes('lụa') && vName === 'Vạn Phúc') ||
+                  (lowerTag.includes('mộc') && vName === 'Chàng Sơn') ||
+                  (lowerTag.includes('mây') && vName === 'Phú Vinh') ||
+                  (lowerTag.includes('sơn mài') && vName === 'Hạ Thái') ||
+                  (lowerTag.includes('đồng') && vName === 'Đại Bái') ||
+                  (lowerTag.includes('nón') && vName === 'Chuông');
+              })
+            );
+
+            const eligible = eligibleRows(seed);
+            const experiences = eligible.map(row => ({
+              experience_id: row.experience.experience_id,
+              category: row.experience.category,
+              village_name: row.village.name,
+              global_rank: 1,
+            }));
+            const reranked = await rerankExploreForAgency(viewer.agencyId, experiences);
+            personalizedRankOrder = reranked.map(r => r.experience_id);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Explore] Failed to load 24h AI matching preferences:', e);
+    }
+  }
+
   const engine=await demoRuntime();
   const tracked = await engine.sessionFor(cookies().get('explore_session')?.value ?? '');
-  const rankOrder = tracked && tracked.agency_id === (viewer.kind === 'agency' ? viewer.agencyId : null)
-    ? (await engine.resultsFor(tracked.session_id)).map(row => row.experience_id) : undefined;
+  const rankOrder = personalizedRankOrder || (tracked && tracked.agency_id === (viewer.kind === 'agency' ? viewer.agencyId : null)
+    ? (await engine.resultsFor(tracked.session_id)).map(row => row.experience_id) : undefined);
   const catalog = buildExplorePage(seed, { page, viewer, category: searchParams.category, rankOrder });
   const carry = searchParams.category ? `&category=${encodeURIComponent(searchParams.category)}` : '';
   const totalPages = Math.ceil(catalog.pagination.total_count / catalog.pagination.page_size);
   const categories = [...new Set(eligibleRows(seed).map(row => row.experience.category))].sort();
-  const strip = villageStrip(seed, viewer);
+  const strip = villageStrip(seed, viewer, priorityVillages);
   const heroImage = strip.find(item => item.card.images[0])?.card.images[0]?.storage_key;
 
-  const isAgency = viewer.kind === 'agency';
   // #204, FR-002 / FR-011: Agency cards offer Request Quote and Chat; Request Quote is hidden once sent.
   const quoteSent = new Set(isAgency
     ? (await Promise.all(catalog.experience_cards.map(async card => (await hasQuoteRequest(session, card.id)) ? card.id : ''))).filter(Boolean)

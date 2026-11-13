@@ -7,6 +7,22 @@ import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView
 import { RESTRICTED_TEXT } from './ai-matching-access'
 import './ai-matching.css'
 
+interface ActivityCardData {
+  experience_id: string
+  provider_id: string
+  provider_name: string
+  village_id: string
+  village_name: string
+  name: string
+  description: string
+  category: string
+  duration_minutes: number
+  price_per_person: number
+  max_participants: number
+  image_url: string
+  is_verified?: boolean
+}
+
 interface VillageCardData {
   village_id: string
   name: string
@@ -35,6 +51,7 @@ interface ProviderCardData {
   activities: ProviderActivity[]
   image_url: string
   primary_experience_id: string
+  is_verified?: boolean
 }
 
 interface Message {
@@ -52,6 +69,7 @@ interface Message {
   followUpQuestions?: string[] // hiển thị sau kết quả matching
   usedLlm?: boolean
   modelUsed?: string
+  activityCards?: ActivityCardData[]
   villageCards?: VillageCardData[]
   providerCards?: ProviderCardData[]
 }
@@ -159,8 +177,21 @@ function renderInlineText(text: string): React.ReactNode {
   })
 }
 
+/** Loại bỏ các đoạn debug kỹ thuật như "Extracted Context:" nếu LLM lỡ sinh ra trong phản hồi */
+function stripExtractedContext(text: string): string {
+  if (!text) return ''
+  return text
+    .replace(/(?:(?:\*{1,2})?(?:extracted\s+context|thông tin trích xuất)(?:\*{1,2})?:?[\s\S]*?(?=(?:\n\s*\n\s*[A-ZÀ-Ỹ0-9])|$))/gi, '')
+    .replace(/^[\s•\-\*]*`?(?:craft_preference|origin|experience_types|group_size|target_date|budget_per_person)`?\s*:.*$/gim, '')
+    .replace(/^[\s•\-\*]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 /** Render nội dung tin nhắn Markdown chuyên nghiệp (bảng, danh sách, in đậm) */
-function renderFormattedContent(text: string): React.ReactNode {
+function renderFormattedContent(rawText: string): React.ReactNode {
+  if (!rawText) return null
+  const text = stripExtractedContext(rawText)
   if (!text) return null
 
   // 1. Nếu có bảng Markdown (| Cột 1 | Cột 2 | ...)
@@ -271,12 +302,24 @@ function renderFormattedContent(text: string): React.ReactNode {
   )
 }
 
+interface StoredSession {
+  sessionId: string
+  title: string
+  subTitle: string
+  messages: Message[]
+  createdAt: number
+  updatedAt: number
+  lastPinnedMessageId?: string
+}
+
 export default function AiMatchingScreen() {
   const [role, setRole] = useState<'Agency' | 'Guest'>('Guest')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [agencyId, setAgencyId] = useState<string>('')
   const [inputText, setInputText] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
+  const [savedSessions, setSavedSessions] = useState<StoredSession[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingDots, setLoadingDots] = useState('')
   const [quoteStatus, setQuoteStatus] = useState<Record<string, string>>({})
@@ -314,6 +357,89 @@ export default function AiMatchingScreen() {
       .catch(() => setRole('Guest'))
   }, [])
 
+  // Load saved sessions on mount / agencyId ready
+  useEffect(() => {
+    if (agencyId) {
+      try {
+        const listKey = `hab_ait_sessions_list_${agencyId}`
+        const rawList = localStorage.getItem(listKey)
+        if (rawList) {
+          const parsed: StoredSession[] = JSON.parse(rawList)
+          // Xóa các chat rỗng: chỉ giữ lại session có ít nhất 1 tin nhắn từ Agency
+          const valid = parsed.filter(s => s && s.messages && s.messages.some(m => m.sender === 'Agency'))
+          setSavedSessions(valid)
+          if (valid.length !== parsed.length) {
+            localStorage.setItem(listKey, JSON.stringify(valid))
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load saved sessions', e)
+      }
+    }
+  }, [agencyId])
+
+  // Sync current active session to savedSessions list when messages change
+  useEffect(() => {
+    if (!sessionId || !agencyId) return
+
+    // Chỉ lưu vào danh sách lịch sử khi người dùng đã gửi ít nhất 1 tin nhắn (loại bỏ hoàn toàn chat rỗng)
+    const hasAgencyMsg = messages.some(m => m.sender === 'Agency')
+    if (!hasAgencyMsg) return
+
+    try {
+      const firstUserMsg = messages.find(m => m.sender === 'Agency')
+      const rawText = firstUserMsg?.text || 'Yêu cầu tour'
+      const title = rawText.length > 28 ? rawText.slice(0, 28) + '…' : rawText
+      const lastMsg = messages[messages.length - 1]
+      const now = new Date()
+      const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+
+      const lower = rawText.toLowerCase()
+      const craftTag = lower.includes('gốm') ? 'Gốm Bát Tràng'
+        : lower.includes('lụa') ? 'Lụa Vạn Phúc'
+        : lower.includes('mộc') ? 'Mộc Chàng Sơn'
+        : lower.includes('mây') ? 'Mây tre Phú Vinh'
+        : lower.includes('sơn mài') ? 'Sơn mài Hạ Thái'
+        : lower.includes('đồng') ? 'Đồng Đại Bái'
+        : lower.includes('nón') ? 'Nón Chuông'
+        : 'Yêu cầu tour'
+
+      const subTitle = `${craftTag} · ${timeStr} · #${sessionId.slice(0, 8)}`
+
+      setSavedSessions(prev => {
+        const existingIdx = prev.findIndex(s => s.sessionId === sessionId)
+        const updatedSession: StoredSession = {
+          sessionId,
+          title: existingIdx >= 0 ? prev[existingIdx].title : title,
+          subTitle,
+          messages,
+          createdAt: existingIdx >= 0 ? prev[existingIdx].createdAt : Date.now(),
+          updatedAt: Date.now(),
+          lastPinnedMessageId: lastMsg?.id,
+        }
+
+        let nextList: StoredSession[]
+        if (existingIdx >= 0) {
+          nextList = [...prev]
+          nextList[existingIdx] = updatedSession
+        } else {
+          nextList = [updatedSession, ...prev]
+        }
+
+        nextList = nextList.filter(s => s.messages && s.messages.some(m => m.sender === 'Agency'))
+
+        try {
+          localStorage.setItem(`hab_ait_sessions_list_${agencyId}`, JSON.stringify(nextList))
+          localStorage.setItem(`hab_ait_active_id_${agencyId}`, sessionId)
+        } catch {}
+
+        return nextList
+      })
+    } catch (e) {
+      console.warn('Could not sync session', e)
+    }
+  }, [sessionId, messages, agencyId])
+
   // Create a matching session only after the shared cookie session identifies an Agency.
   useEffect(() => {
     if (role === 'Agency' && agencyId) {
@@ -325,20 +451,48 @@ export default function AiMatchingScreen() {
 
   useEffect(() => {
     const lastMsg = messages[messages.length - 1]
-    if (lastMsg && lastMsg.sender === 'Assistant' && lastMsg.recommendations && lastMsg.recommendations.length > 0) {
-      // UX Fix: Khi có kết quả matching, cuộn đến đầu tin nhắn AI để hiện ngay Đề xuất #1, không bị trôi xuống đáy
+    if (lastMsg && lastMsg.sender === 'Assistant') {
+      // UX Fix: Giữ màn ở ngay đầu câu trả lời của AI để tiện cho người dùng đọc
       const timer = setTimeout(() => {
         const el = document.getElementById(lastMsg.id)
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
-      }, 50)
+      }, 100)
       return () => clearTimeout(timer)
+    } else if (lastMsg && lastMsg.sender === 'Agency') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [messages])
 
-  const initializeSession = async () => {
+  const initializeSession = async (forceNew = false) => {
+    if (!forceNew) {
+      try {
+        const listKey = `hab_ait_sessions_list_${agencyId || 'default'}`
+        const rawList = localStorage.getItem(listKey)
+        if (rawList) {
+          const parsed: StoredSession[] = JSON.parse(rawList)
+          const valid = parsed.filter(s => s && s.messages && s.messages.some(m => m.sender === 'Agency'))
+          if (valid.length > 0) {
+            setSavedSessions(valid)
+            const activeId = localStorage.getItem(`hab_ait_active_id_${agencyId || 'default'}`)
+            const target = valid.find(s => s.sessionId === activeId) || valid[0]
+            setSessionId(target.sessionId)
+            setMessages(target.messages)
+            if (target.lastPinnedMessageId) {
+              setTimeout(() => {
+                const el = document.getElementById(target.lastPinnedMessageId!)
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }, 200)
+            }
+            return
+          }
+        }
+      } catch (e) {
+        console.warn('Could not restore matching state', e)
+      }
+    }
+
     try {
       const res = await fetch('/api/ait/sessions', {
         method: 'POST',
@@ -347,18 +501,64 @@ export default function AiMatchingScreen() {
       })
       if (res.ok) {
         const data = await res.json()
-        setSessionId(data.matching_session_id || data.session_id)
-        setMessages([
+        const newSessionId = data.matching_session_id || data.session_id
+        const initialMessages: Message[] = [
           {
             id: 'welcome',
             sender: 'Assistant',
             text: 'Xin chào! Tôi là trợ lý ghép tour AI của Hanoi Artisan Bridge.\n\nHãy mô tả yêu cầu đoàn — số khách, ngày khởi hành, loại trải nghiệm thủ công, ngân sách — tôi sẽ ngay lập tức phân tích và đề xuất các xưởng nghề được xác minh phù hợp nhất.',
             sent_at: nowVN(),
           },
-        ])
+        ]
+        setSessionId(newSessionId)
+        setMessages(initialMessages)
+        try {
+          localStorage.setItem(`hab_ait_active_id_${agencyId || 'default'}`, newSessionId)
+        } catch {}
       }
     } catch {
-      setSessionId(`session-local-${Date.now()}`)
+      const fallbackId = `session-local-${Date.now()}`
+      setSessionId(fallbackId)
+      setMessages([
+        {
+          id: 'welcome',
+          sender: 'Assistant',
+          text: 'Xin chào! Tôi là trợ lý ghép tour AI của Hanoi Artisan Bridge.\n\nHãy mô tả yêu cầu đoàn — số khách, ngày khởi hành, loại trải nghiệm thủ công, ngân sách — tôi sẽ ngay lập tức phân tích và đề xuất các xưởng nghề được xác minh phù hợp nhất.',
+          sent_at: nowVN(),
+        },
+      ])
+    }
+  }
+
+  const handleSelectSession = (target: StoredSession) => {
+    if (target.sessionId === sessionId) return
+    setSessionId(target.sessionId)
+    setMessages(target.messages)
+    try {
+      localStorage.setItem(`hab_ait_active_id_${agencyId || 'default'}`, target.sessionId)
+    } catch {}
+    if (target.lastPinnedMessageId) {
+      setTimeout(() => {
+        const el = document.getElementById(target.lastPinnedMessageId!)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 150)
+    }
+  }
+
+  const handleDeleteSession = (e: React.MouseEvent, targetSessionId: string) => {
+    e.stopPropagation()
+    const updated = savedSessions.filter(s => s.sessionId !== targetSessionId)
+    setSavedSessions(updated)
+    try {
+      localStorage.setItem(`hab_ait_sessions_list_${agencyId || 'default'}`, JSON.stringify(updated))
+    } catch {}
+
+    if (sessionId === targetSessionId) {
+      if (updated.length > 0) {
+        handleSelectSession(updated[0])
+      } else {
+        initializeSession(true)
+      }
     }
   }
 
@@ -453,16 +653,18 @@ export default function AiMatchingScreen() {
         : undefined
       const usedLlm = Boolean('body' in result && result.body?.extraction?.usedLlm)
       // Rich card data resolved on the server
+      const activityCards: ActivityCardData[] = ('body' in result && Array.isArray(result.body?.activity_cards)) ? result.body.activity_cards : []
       const villageCards: VillageCardData[] = ('body' in result && Array.isArray(result.body?.village_cards)) ? result.body.village_cards : []
       const providerCards: ProviderCardData[] = ('body' in result && Array.isArray(result.body?.provider_cards)) ? result.body.provider_cards : []
       if (outcome.kind === 'guidance') {
-        addAssistant({ text: outcome.reply, usedLlm, villageCards, providerCards })
+        addAssistant({ text: outcome.reply, usedLlm, activityCards, villageCards, providerCards })
       } else if (outcome.kind === 'clarify') {
         addAssistant({
           text: conversationalReply || 'Vui lòng cung cấp thêm thông tin để tôi tìm xưởng nghề phù hợp nhất:',
           clarificationQuestions: outcome.questions,
           dateLine,
           usedLlm,
+          activityCards,
           villageCards,
           providerCards,
         })
@@ -517,35 +719,59 @@ export default function AiMatchingScreen() {
     }
   }
 
-  // Request Quote / Chat: open Messages (COM048) in a new tab (#31).
-  const runHandoff = async (kind: 'quote' | 'chat', experienceId: string, statusKey: string) => {
+  // Request Quote / Chat: tự động chuyển sang màn hình tin nhắn của hội thoại tương ứng
+  const runHandoff = async (kind: 'quote' | 'chat', experienceId: string, statusKey: string, isVerified = true) => {
     if (!sessionId) return
+
+    // Quy tắc BR-003: Chỉ xưởng đã xác minh mới mở cổng chat và nhận báo giá thương mại
+    if (!isVerified) {
+      const setStatus = kind === 'quote' ? setQuoteStatus : setChatStatus
+      setStatus(prev => ({
+        ...prev,
+        [statusKey]: '⚠️ Xưởng này đang trong quá trình xét duyệt hồ sơ xác minh của UBND/Hội đồng thôn (chưa đạt trạng thái Verified theo BR-003), nên chưa thể mở cổng chat và gửi báo giá. Vui lòng liên hệ xưởng đã xác minh (Bát Tràng, Vạn Phúc, Phú Vinh, Chuông, Quất Động).'
+      }))
+      return
+    }
+
+    // Mở trước tab mới đồng bộ trong sự kiện click để không bị trình duyệt chặn popup
+    const newTab = window.open('about:blank', '_blank')
     const setStatus = kind === 'quote' ? setQuoteStatus : setChatStatus
-    setStatus(prev => ({ ...prev, [statusKey]: kind === 'quote' ? 'Đang kiểm tra suất trống…' : 'Đang mở chat…' }))
-    const outcome = handoffOutcome(await postJson(`/api/ait/sessions/${sessionId}/${kind}`, { experience_id: experienceId }))
-    if (outcome.kind === 'success') window.open(outcome.navigateTo, '_blank', 'noopener')
-    else setStatus(prev => ({ ...prev, [statusKey]: outcome.text }))
+    setStatus(prev => ({ ...prev, [statusKey]: kind === 'quote' ? 'Đang gửi yêu cầu báo giá…' : 'Đang mở hội thoại…' }))
+    try {
+      const apiRes = await postJson(`/api/ait/sessions/${sessionId}/${kind}`, { experience_id: experienceId })
+      const outcome = handoffOutcome(apiRes)
+      if (outcome.kind === 'success') {
+        if (newTab) {
+          newTab.location.href = outcome.navigateTo
+        } else {
+          window.location.href = outcome.navigateTo
+        }
+        setStatus(prev => ({ ...prev, [statusKey]: 'Đã chuyển sang màn hình tin nhắn.' }))
+      } else {
+        if (newTab) newTab.close()
+        const errorMsg = 'body' in apiRes && apiRes.body?.error === 'Provider is not available'
+          ? '⚠️ Xưởng này đang trong quá trình xét duyệt hồ sơ xác minh của UBND/Hội đồng thôn (chưa đạt trạng thái Verified theo BR-003), nên chưa thể mở cổng chat và gửi báo giá. Vui lòng liên hệ xưởng đã xác minh (Bát Tràng, Vạn Phúc, Phú Vinh, Chuông, Quất Động).'
+          : outcome.text
+        setStatus(prev => ({ ...prev, [statusKey]: errorMsg }))
+      }
+    } catch {
+      if (newTab) newTab.close()
+      setStatus(prev => ({ ...prev, [statusKey]: 'Không thể kết nối máy chủ.' }))
+    }
   }
 
-  const handleRequestQuote = (experienceId: string) => runHandoff('quote', experienceId, experienceId)
-  const handleChat = (experienceId: string, providerId: string) => runHandoff('chat', experienceId, providerId)
+  const handleRequestQuote = (experienceId: string, isVerified = true) => runHandoff('quote', experienceId, experienceId, isVerified)
+  const handleChat = (experienceId: string, providerId: string, isVerified = true) => runHandoff('chat', experienceId, providerId, isVerified)
 
   return (
     <div className="ait-container">
-      {/* SIDEBAR BÊN TRÁI: LỊCH SỬ YÊU CẦU TOUR (Ảnh 2) */}
+      {/* SIDEBAR BÊN TRÁI: LỊCH SỬ YÊU CẦU TOUR */}
       <aside className="ait-sidebar">
         <button
           type="button"
           className="ait-btn-new-tour"
           onClick={() => {
-            setMessages([
-              {
-                id: `welcome-${Date.now()}`,
-                sender: 'Assistant',
-                text: 'Xin chào đội điều phối tour. Hãy mô tả đoàn dự kiến, sở thích văn hoá, ngân sách hoặc lịch trình. Tôi sẽ phân tích lịch trống của các xưởng bậc thầy đã xác minh, lộ trình di chuyển và hạn mức nghệ nhân chứng nhận theo thời gian thực.',
-                sent_at: nowVN(),
-              },
-            ])
+            initializeSession(true)
             setInputText('')
           }}
         >
@@ -558,70 +784,91 @@ export default function AiMatchingScreen() {
             type="text"
             className="ait-search-input"
             placeholder="Tìm lịch sử yêu cầu..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
 
         <div className="ait-sidebar-history">
-          <div className="ait-history-group">
-            <div className="ait-history-label">HÔM NAY</div>
-            <div className="ait-history-list">
-              <div className="ait-history-item active">
-                <div className="ait-history-item-title">
-                  <span>Đoàn Pháp 14 khách</span>
-                  <span className="ait-status-dot" />
-                </div>
-                <div className="ait-history-item-sub">Gốm & lụa · 09:15 · #AIM-8409</div>
-              </div>
-              <div className="ait-history-item">
-                <div className="ait-history-item-title">
-                  <span>Eco-tour VIP Thụy Sĩ 8 khách</span>
-                </div>
-                <div className="ait-history-item-sub">Sơn mài & mây tự nhiên Hạ Thái · 08:10</div>
-              </div>
-            </div>
-          </div>
+          {(() => {
+            const now = Date.now()
+            const oneDayMs = 24 * 60 * 60 * 1000
+            const sevenDaysMs = 7 * oneDayMs
 
-          <div className="ait-history-group">
-            <div className="ait-history-label">7 NGÀY TRƯỚC</div>
-            <div className="ait-history-list">
-              <div className="ait-history-item">
-                <div className="ait-history-item-title">
-                  <span>Đoàn học sinh 25 khách</span>
-                </div>
-                <div className="ait-history-item-sub">Lò gốm Bát Tràng · Nặn đất sét</div>
-              </div>
-              <div className="ait-history-item">
-                <div className="ait-history-item-title">
-                  <span>Hội kiến trúc Đức 18 khách</span>
-                </div>
-                <div className="ait-history-item-sub">Mộc truyền thống · Chàng Sơn</div>
-              </div>
-              <div className="ait-history-item">
-                <div className="ait-history-item-title">
-                  <span>Đầu bếp Michelin 6 khách</span>
-                </div>
-                <div className="ait-history-item-sub">Lụa Vạn Phúc & bún Cự Đà</div>
-              </div>
-            </div>
-          </div>
+            const filtered = savedSessions.filter(s =>
+              !searchQuery.trim() ||
+              s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              s.messages.some(m => m.text.toLowerCase().includes(searchQuery.toLowerCase()))
+            )
 
-          <div className="ait-history-group">
-            <div className="ait-history-label">30 NGÀY TRƯỚC</div>
-            <div className="ait-history-list">
-              <div className="ait-history-item">
-                <div className="ait-history-item-title">
-                  <span>Triển lãm thiết kế Tokyo 4 khách</span>
+            if (filtered.length === 0) {
+              return (
+                <div style={{ padding: '32px 14px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px', lineHeight: 1.6 }}>
+                  {savedSessions.length === 0
+                    ? 'Chưa có yêu cầu tour nào được lưu. Hãy gõ yêu cầu đầu tiên!'
+                    : 'Không tìm thấy yêu cầu khớp với từ khóa tìm kiếm.'}
                 </div>
-                <div className="ait-history-item-sub">Bạc chạm Định Công</div>
-              </div>
-              <div className="ait-history-item">
-                <div className="ait-history-item-title">
-                  <span>Hội đồng Anh 12 khách</span>
+              )
+            }
+
+            const today = filtered.filter(s => (now - s.updatedAt) <= oneDayMs)
+            const week = filtered.filter(s => (now - s.updatedAt) > oneDayMs && (now - s.updatedAt) <= sevenDaysMs)
+            const older = filtered.filter(s => (now - s.updatedAt) > sevenDaysMs)
+
+            const renderItem = (item: StoredSession) => {
+              const isActive = item.sessionId === sessionId
+              return (
+                <div
+                  key={item.sessionId}
+                  className={`ait-history-item ${isActive ? 'active' : ''}`}
+                  onClick={() => handleSelectSession(item)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="ait-history-item-title">
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }}>
+                      {item.title}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {isActive && <span className="ait-status-dot" />}
+                      <button
+                        type="button"
+                        className="ait-history-del-btn"
+                        title="Xóa phiên này"
+                        onClick={(e) => handleDeleteSession(e, item.sessionId)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  <div className="ait-history-item-sub">{item.subTitle}</div>
                 </div>
-                <div className="ait-history-item-sub">Mây tre đan Phú Vinh</div>
-              </div>
-            </div>
-          </div>
+              )
+            }
+
+            return (
+              <>
+                {today.length > 0 && (
+                  <div className="ait-history-group">
+                    <div className="ait-history-label">HÔM NAY ({today.length})</div>
+                    <div className="ait-history-list">{today.map(renderItem)}</div>
+                  </div>
+                )}
+                {week.length > 0 && (
+                  <div className="ait-history-group">
+                    <div className="ait-history-label">7 NGÀY QUA ({week.length})</div>
+                    <div className="ait-history-list">{week.map(renderItem)}</div>
+                  </div>
+                )}
+                {older.length > 0 && (
+                  <div className="ait-history-group">
+                    <div className="ait-history-label">CŨ HƠN ({older.length})</div>
+                    <div className="ait-history-list">{older.map(renderItem)}</div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </div>
       </aside>
 
@@ -632,7 +879,9 @@ export default function AiMatchingScreen() {
           <div>
             <div className="ait-header-title-row">
               <h1 className="ait-header-h1">AI Tour Matching</h1>
-              <span className="ait-badge-pill ait-badge-session">Phiên AIM-8409</span>
+              <span className="ait-badge-pill ait-badge-session">
+                Phiên #{sessionId ? sessionId.slice(0, 8) : 'Mới'}
+              </span>
               <span className="ait-badge-pill ait-badge-tool">Phân tích ý định nghề v4.2</span>
               {quotaInfo?.in_cooldown && (
                 <span className="ait-badge-pill" style={{ backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }}>
@@ -743,65 +992,59 @@ export default function AiMatchingScreen() {
                               </h4>
                             )}
                             <div className="rec-card">
-                              <div className="rec-card-header">
-                                <div className="rec-card-badges">
+                              {/* Ảnh banner đầy đầu card */}
+                              <div className="rec-card-img-wrap">
+                                {(() => {
+                                  const craftImgMap: Record<string, string> = {
+                                    'Vạn Phúc': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Van_Phuc_weaver_at_Jacquard_loom.jpg/1280px-Van_Phuc_weaver_at_Jacquard_loom.jpg',
+                                    'Bát Tràng': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Bat-Trang-Ceramic-Village11.jpg/1280px-Bat-Trang-Ceramic-Village11.jpg',
+                                    'Phú Vinh': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Handicraft_products_in_Phu_Vinh_bamboo_and_rattan_village%2CVietNam.jpg/1280px-Handicraft_products_in_Phu_Vinh_bamboo_and_rattan_village%2CVietNam.jpg',
+                                    'Chuông': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Hatter_Vietnam.jpg/1280px-Hatter_Vietnam.jpg',
+                                    'Quất Động': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Silk_embroidery_with_Tree_of_Life_motif_from_Vietnam.JPG/1280px-Silk_embroidery_with_Tree_of_Life_motif_from_Vietnam.JPG',
+                                    'Sơn Đồng': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/B%C3%ACnh_Phong_g%E1%BB%97.jpg/1280px-B%C3%ACnh_Phong_g%E1%BB%97.jpg',
+                                    'Hạ Thái': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Four_seasons%2C_lacquer_engraving_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi%2C_Vietnam_-_DSC05121.JPG/1280px-Four_seasons%2C_lacquer_engraving_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi%2C_Vietnam_-_DSC05121.JPG',
+                                    'Đào Thục': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Hanoi_Vietnam_Thang-Long-Water-Puppet-Theatre-01.jpg/1280px-Hanoi_Vietnam_Thang-Long-Water-Puppet-Theatre-01.jpg',
+                                  }
+                                  const imgSrc = craftImgMap[rec.village_name]
+                                  return imgSrc ? (
+                                    <img src={imgSrc} alt={rec.village_name} className="rec-card-img" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                                  ) : (
+                                    <div className="rec-card-img-placeholder">🏛️ {rec.village_name}</div>
+                                  )
+                                })()}
+                                {/* Badge nổi trên ảnh */}
+                                <div className="rec-card-img-badges">
                                   <span className="rec-badge-score">{rec.match_score}% PHÙ HỢP</span>
                                   <span className="rec-badge-tag">{index === 0 ? 'ĐỀ XUẤT TỐT NHẤT' : 'GẮN VỚI VĂN HOÁ CAO'}</span>
                                 </div>
-                                <div className="rec-card-price">
-                                  <div className="rec-price-label">GIÁ B2B</div>
-                                  <div className="rec-price-value">
-                                    {rec.price_per_person?.toLocaleString('vi-VN')} đ <span style={{ fontSize: '12px', fontWeight: 400, color: '#6B7280' }}>/ khách</span>
-                                  </div>
+                                <div className="rec-card-img-price">
+                                  <span className="rec-price-label-sm">GIÁ B2B</span>
+                                  <span className="rec-price-value-sm">{rec.price_per_person?.toLocaleString('vi-VN')} đ <span style={{ fontWeight: 400, opacity: 0.8 }}>/ khách</span></span>
                                 </div>
                               </div>
 
-                              <h3 className="rec-card-title">{rec.experience_name}</h3>
-                              <p className="rec-card-location">
-                                📍 Làng {rec.village_name} · {rec.distance_km ? `${rec.distance_km} km` : '13,2 km'} (khoảng 28 phút di chuyển)
-                              </p>
+                              <div className="rec-card-body-new">
+                                <h3 className="rec-card-title">{rec.experience_name}</h3>
+                                <p className="rec-card-location">
+                                  📍 Làng {rec.village_name} · {rec.distance_km ? `${rec.distance_km} km` : '13,2 km'} (khoảng 28 phút di chuyển)
+                                </p>
 
-                              <div className="rec-card-body">
                                 <div className="rec-card-reason-wrap">
                                   <div className="rec-card-reason-title">LÝ DO PHÙ HỢP</div>
                                   <p className="rec-card-reason-text">
                                     {localizeExplanation(rec.explanation)}
                                   </p>
                                 </div>
-                                <div className="rec-card-thumb">
-                                  {(() => {
-                                    const craftImgMap: Record<string, string> = {
-                                      'Vạn Phúc': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Van_Phuc_weaver_at_Jacquard_loom.jpg/640px-Van_Phuc_weaver_at_Jacquard_loom.jpg',
-                                      'Bát Tràng': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Bat-Trang-Ceramic-Village11.jpg/640px-Bat-Trang-Ceramic-Village11.jpg',
-                                      'Phú Vinh': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Handicraft_products_in_Phu_Vinh_bamboo_and_rattan_village%2CVietNam.jpg/640px-Handicraft_products_in_Phu_Vinh_bamboo_and_rattan_village%2CVietNam.jpg',
-                                      'Chuông': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Hatter_Vietnam.jpg/640px-Hatter_Vietnam.jpg',
-                                      'Quất Động': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Silk_embroidery_with_Tree_of_Life_motif_from_Vietnam.JPG/640px-Silk_embroidery_with_Tree_of_Life_motif_from_Vietnam.JPG',
-                                      'Sơn Đồng': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/B%C3%ACnh_Phong_g%E1%BB%97.jpg/640px-B%C3%ACnh_Phong_g%E1%BB%97.jpg',
-                                      'Hạ Thái': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Four_seasons%2C_lacquer_engraving_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi%2C_Vietnam_-_DSC05121.JPG/640px-Four_seasons%2C_lacquer_engraving_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi%2C_Vietnam_-_DSC05121.JPG',
-                                      'Đào Thục': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Hanoi_Vietnam_Thang-Long-Water-Puppet-Theatre-01.jpg/640px-Hanoi_Vietnam_Thang-Long-Water-Puppet-Theatre-01.jpg',
-                                    }
-                                    const imgSrc = craftImgMap[rec.village_name]
-                                    return imgSrc ? (
-                                      <img src={imgSrc} alt={rec.village_name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                                    ) : (
-                                      <>
-                                        <span style={{ fontSize: '20px', marginBottom: '4px' }}>🏛️</span>
-                                        <span>{rec.village_name}</span>
-                                        <span style={{ fontSize: '10px', opacity: 0.8 }}>Không gian xưởng</span>
-                                      </>
-                                    )
-                                  })()}
-                                </div>
                               </div>
 
                               <div className="rec-card-actions">
-                                {/* 1. Nút chính: Xin báo giá - opens messages in new tab */}
+                                {/* 1. Nút chính: Xin báo giá - chuyển hướng sang màn hình tin nhắn */}
                                 <button
                                   type="button"
                                   id={`quote-btn-${rec.experience_id}`}
                                   className="ait-action-btn ait-action-btn-primary"
                                   onClick={() => handleRequestQuote(rec.experience_id)}
-                                  title="Gửi yêu cầu báo giá chính thức cho xưởng"
+                                  title="Gửi yêu cầu báo giá và mở màn hình tin nhắn với xưởng"
                                 >
                                   <svg className="ait-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -812,8 +1055,8 @@ export default function AiMatchingScreen() {
                                   Xin báo giá ngay
                                 </button>
 
-                                {/* 2. Xem chi tiết trải nghiệm - new tab */}
-                                <a
+                                {/* 2. Xem chi tiết trải nghiệm */}
+                                <Link
                                   href={`/explore/experiences/${rec.experience_id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -825,11 +1068,23 @@ export default function AiMatchingScreen() {
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                   </svg>
                                   Chi tiết
-                                </a>
+                                </Link>
 
-                                {/* 3. Xem chi tiết làng nghề - new tab */}
-                                <a
-                                  href={`/explore?village=${encodeURIComponent(rec.village_name)}`}
+                                {/* 3. Xem chi tiết làng nghề */}
+                                <Link
+                                  href={`/village/${(() => {
+                                    const villageIdMap: Record<string, string> = {
+                                      'Vạn Phúc': 'c0d0d95f-d59c-5c35-946a-f397e380dd14',
+                                      'Bát Tràng': '20896522-6235-5699-aeaf-f48b8150d895',
+                                      'Phú Vinh': 'e482884e-7190-56cf-bc03-4e69614b1fe5',
+                                      'Chuông': '688d408b-9d98-5b66-bfa7-659a67462108',
+                                      'Quất Động': 'b1017646-ec89-58d1-aaa9-df783b1c2506',
+                                      'Sơn Đồng': '85ec7215-3ec1-5792-afcc-a72d89a3a214',
+                                      'Hạ Thái': '6dfbb5e9-f92e-58a0-b090-d67cea160f62',
+                                      'Đào Thục': '3527fadf-18ef-58d0-95c6-dc3729650f6a',
+                                    }
+                                    return villageIdMap[rec.village_name] ?? encodeURIComponent(rec.village_name)
+                                  })()}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="ait-action-btn ait-action-btn-secondary"
@@ -840,10 +1095,10 @@ export default function AiMatchingScreen() {
                                     <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"></path>
                                   </svg>
                                   Làng {rec.village_name}
-                                </a>
+                                </Link>
 
-                                {/* 4. Xem lịch trống xưởng (public schedule view) - new tab */}
-                                <a
+                                {/* 4. Lịch trống xưởng */}
+                                <Link
                                   href={`/explore/providers/${rec.provider_id}/schedule`}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -857,7 +1112,7 @@ export default function AiMatchingScreen() {
                                     <line x1="3" y1="10" x2="21" y2="10"></line>
                                   </svg>
                                   Lịch trống
-                                </a>
+                                </Link>
 
                                 {/* 5. Chat với xưởng - round circle icon button */}
                                 <button
@@ -922,132 +1177,224 @@ export default function AiMatchingScreen() {
                       </div>
                     )}
 
-                    {/* VILLAGE CARDS */}
-                    {msg.villageCards && msg.villageCards.length > 0 && (
-                      <div className="ait-cards-grid">
-                        {msg.villageCards.map(village => (
-                          <div key={village.village_id} className="ait-village-card">
-                            <img
-                              src={village.image_url}
-                              alt={village.name}
-                              className="ait-card-banner"
-                              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                            />
-                            <div className="ait-card-content">
-                              <h3 className="ait-card-title">{village.name}</h3>
-                              <div className="ait-card-sub">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                                {village.craft}
+                    {/* ACTIVITY CARDS (HOẠT ĐỘNG / TRẢI NGHIỆM CỤ THỂ) */}
+                    {msg.activityCards && msg.activityCards.length > 0 && (
+                      <div className="ait-card-section">
+                        <div className="ait-card-section-title">
+                          <span>🎨 Hoạt động trải nghiệm thủ công</span>
+                          <span className="ait-section-count">{msg.activityCards.length} hoạt động</span>
+                        </div>
+                        <div className="ait-cards-grid">
+                          {msg.activityCards.map(act => (
+                            <div key={act.experience_id} className="ait-activity-card">
+                              <div className="ait-card-banner-wrap">
+                                <img
+                                  src={act.image_url}
+                                  alt={act.name}
+                                  className="ait-card-banner"
+                                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                />
+                                <span className="ait-card-tag-badge">{act.category}</span>
                               </div>
-                              <p className="ait-card-location">
-                                📍 {village.district}
-                              </p>
-                              <p className="ait-card-desc">{village.description}</p>
-                              <div className="rec-card-actions" style={{ gap: '8px' }}>
-                                <a
-                                  href={`/village/${village.village_id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ait-action-btn ait-action-btn-primary"
-                                >
-                                  <svg className="ait-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                                  Xem chi tiết làng
-                                </a>
-                                <button
-                                  type="button"
-                                  className="ait-action-btn ait-action-btn-secondary"
-                                  onClick={() => handleSendMessage(`Xem danh sách xưởng tại làng ${village.name}`)}
-                                >
-                                  <svg className="ait-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                                  Xem danh sách xưởng
-                                </button>
+                              <div className="ait-card-content">
+                                <h3 className="ait-card-title">{act.name}</h3>
+                                <div className="ait-card-sub">
+                                  <span>🏛️ Làng {act.village_name}</span>
+                                  <span>· {act.provider_name}</span>
+                                </div>
+                                <div className="ait-card-facts">
+                                  <span>⏱️ {act.duration_minutes} phút</span>
+                                  <span>👥 Tối đa {act.max_participants} khách</span>
+                                </div>
+                                <p className="ait-card-desc">{act.description}</p>
+                                <div className="ait-card-price-row">
+                                  <span className="ait-card-price-label">Giá B2B</span>
+                                  <span className="ait-card-price-val">{act.price_per_person.toLocaleString('vi-VN')} đ <small>/ khách</small></span>
+                                </div>
+                                <div className="rec-card-actions" style={{ gap: '8px' }}>
+                                  <Link
+                                    href={`/explore/experiences/${act.experience_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ait-action-btn ait-action-btn-primary"
+                                  >
+                                    Chi tiết
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="ait-action-btn ait-action-btn-secondary"
+                                    onClick={() => handleRequestQuote(act.experience_id, act.is_verified ?? true)}
+                                  >
+                                    Báo giá
+                                  </button>
+                                  <Link
+                                    href={`/village/${act.village_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ait-action-btn ait-action-btn-secondary"
+                                  >
+                                    Làng {act.village_name}
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="ait-action-btn-circle"
+                                    onClick={() => handleChat(act.experience_id, act.provider_id, act.is_verified ?? true)}
+                                    title={act.is_verified === false ? "Xưởng đang chờ duyệt hồ sơ xác minh" : "Chat trực tiếp với xưởng"}
+                                  >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                  </button>
+                                </div>
+                                {quoteStatus[act.experience_id] && (
+                                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#1E40AF', backgroundColor: '#EFF6FF', padding: '6px 10px', borderRadius: '6px', lineHeight: 1.4 }}>
+                                    {quoteStatus[act.experience_id]}
+                                  </div>
+                                )}
+                                {chatStatus[act.provider_id] && (
+                                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#1E40AF', backgroundColor: '#EFF6FF', padding: '6px 10px', borderRadius: '6px', lineHeight: 1.4 }}>
+                                    {chatStatus[act.provider_id]}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    {/* PROVIDER CARDS */}
-                    {msg.providerCards && msg.providerCards.length > 0 && (
-                      <div className="ait-cards-grid">
-                        {msg.providerCards.map(provider => (
-                          <div key={provider.provider_id} className="ait-provider-card">
-                            <img
-                              src={provider.image_url}
-                              alt={provider.business_name}
-                              className="ait-card-banner"
-                              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                            />
-                            <div className="ait-card-content">
-                              <div className="ait-card-header-row">
-                                <div>
-                                  <h3 className="ait-card-title">{provider.business_name}</h3>
-                                  <div className="ait-card-sub">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                    {provider.village_name} · {provider.craft_type}
-                                  </div>
+                    {/* VILLAGE CARDS (LÀNG NGHỀ TRUYỀN THỐNG) */}
+                    {msg.villageCards && msg.villageCards.length > 0 && (
+                      <div className="ait-card-section">
+                        <div className="ait-card-section-title">
+                          <span>🏛️ Làng nghề truyền thống đã xác minh</span>
+                          <span className="ait-section-count">{msg.villageCards.length} làng nghề</span>
+                        </div>
+                        <div className="ait-cards-grid">
+                          {msg.villageCards.map(village => (
+                            <div key={village.village_id} className="ait-village-card">
+                              <div className="ait-card-banner-wrap">
+                                <img
+                                  src={village.image_url}
+                                  alt={village.name}
+                                  className="ait-card-banner"
+                                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                />
+                                <span className="ait-card-tag-badge">Làng nghề</span>
+                              </div>
+                              <div className="ait-card-content">
+                                <h3 className="ait-card-title">{village.name}</h3>
+                                <div className="ait-card-sub">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                  {village.craft}
                                 </div>
-                                {provider.artisan_name && (
-                                  <span style={{ fontSize: '12px', color: '#64748B', textAlign: 'right', flexShrink: 0 }}>
-                                    👤 {provider.artisan_name}
-                                  </span>
+                                <p className="ait-card-location">
+                                  📍 {village.district}
+                                </p>
+                                <p className="ait-card-desc">{village.description}</p>
+                                <div className="rec-card-actions" style={{ gap: '8px' }}>
+                                  <Link
+                                    href={`/village/${village.village_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ait-action-btn ait-action-btn-primary"
+                                  >
+                                    Xem chi tiết làng
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="ait-action-btn ait-action-btn-secondary"
+                                    onClick={() => handleSendMessage(`Xem danh sách xưởng tại làng ${village.name}`)}
+                                  >
+                                    Xem danh sách xưởng
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PROVIDER CARDS (LOCAL PROVIDER / XƯỞNG THỦ CÔNG) */}
+                    {msg.providerCards && msg.providerCards.length > 0 && (
+                      <div className="ait-card-section">
+                        <div className="ait-card-section-title">
+                          <span>🏠 Xưởng thủ công & nghệ nhân (Local Provider)</span>
+                          <span className="ait-section-count">{msg.providerCards.length} xưởng</span>
+                        </div>
+                        <div className="ait-cards-grid">
+                          {msg.providerCards.map(provider => (
+                            <div key={provider.provider_id} className="ait-provider-card">
+                              <div className="ait-card-banner-wrap">
+                                <img
+                                  src={provider.image_url}
+                                  alt={provider.business_name}
+                                  className="ait-card-banner"
+                                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                />
+                                <span className="ait-card-tag-badge">
+                                  {provider.is_verified === false ? 'Chờ duyệt hồ sơ' : 'Xưởng chứng nhận'}
+                                </span>
+                              </div>
+                              <div className="ait-card-content">
+                                <div className="ait-card-header-row">
+                                  <div>
+                                    <h3 className="ait-card-title">{provider.business_name}</h3>
+                                    <div className="ait-card-sub">
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                      {provider.village_name} · {provider.craft_type}
+                                    </div>
+                                  </div>
+                                  {provider.artisan_name && (
+                                    <span style={{ fontSize: '12px', color: '#64748B', textAlign: 'right', flexShrink: 0 }}>
+                                      👤 {provider.artisan_name}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="ait-card-location">📍 {provider.location_address}</p>
+                                <p className="ait-card-desc">{provider.description}</p>
+
+                                <div className="rec-card-actions" style={{ gap: '8px', alignItems: 'center' }}>
+                                  <Link
+                                    href={`/explore/providers/${provider.provider_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ait-action-btn ait-action-btn-primary"
+                                  >
+                                    Xem chi tiết xưởng
+                                  </Link>
+                                  <Link
+                                    href={`/explore/providers/${provider.provider_id}/schedule`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ait-action-btn ait-action-btn-secondary"
+                                  >
+                                    Lịch trống
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    id={`chat-btn-${provider.provider_id}`}
+                                    className="ait-action-btn-circle"
+                                    onClick={() => handleChat(provider.primary_experience_id, provider.provider_id, provider.is_verified ?? true)}
+                                    title={provider.is_verified === false ? "Xưởng đang chờ duyệt hồ sơ xác minh" : "Chat trực tiếp với xưởng"}
+                                  >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                  </button>
+                                </div>
+
+                                {chatStatus[provider.provider_id] && (
+                                  <div style={{ marginTop: '8px', fontSize: '12.5px', color: '#1E40AF', backgroundColor: '#EFF6FF', padding: '6px 12px', borderRadius: '6px' }}>
+                                    {chatStatus[provider.provider_id] === HANDOFF_FAILURE_TEXT ? (
+                                      <>
+                                        {HANDOFF_FAILURE_TEXT}{' '}
+                                        <button className="handoff-retry-btn" onClick={() => handleChat(provider.primary_experience_id, provider.provider_id, provider.is_verified ?? true)}>Thử lại</button>
+                                      </>
+                                    ) : chatStatus[provider.provider_id]}
+                                  </div>
                                 )}
                               </div>
-                              <p className="ait-card-location">📍 {provider.location_address}</p>
-                              <p className="ait-card-desc">{provider.description}</p>
-
-                              {provider.activities.length > 0 && (
-                                <div className="ait-card-activities-wrap">
-                                  <span className="ait-activities-label">Hoạt động tổ chức</span>
-                                  <div className="ait-activities-list">
-                                    {provider.activities.map(act => (
-                                      <div key={act.experience_id} className="ait-activity-item">
-                                        <span>🎨 {act.name}</span>
-                                        <span style={{ color: '#17382B', fontWeight: 600 }}>
-                                          {act.price ? `${act.price.toLocaleString('vi-VN')} đ/khách` : ''}
-                                          {act.duration_minutes ? ` · ${act.duration_minutes} phút` : ''}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="rec-card-actions" style={{ gap: '8px', alignItems: 'center' }}>
-                                <a
-                                  href={`/explore/providers/${provider.provider_id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ait-action-btn ait-action-btn-primary"
-                                >
-                                  <svg className="ait-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                  Xem chi tiết xưởng
-                                </a>
-                                <button
-                                  type="button"
-                                  id={`chat-btn-${provider.provider_id}`}
-                                  className="ait-action-btn-circle"
-                                  onClick={() => handleChat(provider.primary_experience_id, provider.provider_id)}
-                                  title="Chat với xưởng"
-                                >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                                </button>
-                              </div>
-
-                              {chatStatus[provider.provider_id] && (
-                                <div style={{ marginTop: '8px', fontSize: '12.5px', color: '#1E40AF', backgroundColor: '#EFF6FF', padding: '6px 12px', borderRadius: '6px' }}>
-                                  {chatStatus[provider.provider_id] === HANDOFF_FAILURE_TEXT ? (
-                                    <>
-                                      {HANDOFF_FAILURE_TEXT}{' '}
-                                      <button className="handoff-retry-btn" onClick={() => handleChat(provider.primary_experience_id, provider.provider_id)}>Thử lại</button>
-                                    </>
-                                  ) : chatStatus[provider.provider_id]}
-                                </div>
-                              )}
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

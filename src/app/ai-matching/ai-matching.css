@@ -138,11 +138,36 @@ body:has(.ait-container) #page-content {
 }
 
 .ait-history-item {
+  position: relative;
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   border: 1px solid transparent;
+}
+
+.ait-history-del-btn {
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ait-history-item:hover .ait-history-del-btn {
+  opacity: 1;
+}
+
+.ait-history-del-btn:hover {
+  color: #EF4444;
+  background-color: #FEE2E2;
 }
 
 .ait-history-item:hover {
@@ -813,7 +838,8 @@ body:has(.ait-container) #page-content {
 }
 
 .ait-village-card,
-.ait-provider-card {
+.ait-provider-card,
+.ait-activity-card {
   border: 1px solid #E2E8F0;
   border-radius: 12px;
   background: #FFFFFF;
@@ -823,8 +849,176 @@ body:has(.ait-container) #page-content {
 }
 
 .ait-village-card:hover,
-.ait-provider-card:hover {
+.ait-provider-card:hover,
+.ait-activity-card:hover {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.ait-card-banner-wrap {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background-color: #E2ECE5;
+}
+
+.ait-card-banner-wrap .ait-card-banner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ait-card-tag-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Card Sections */
+.ait-card-section {
+  margin-top: 18px;
+}
+
+.ait-card-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 750;
+  color: #1E293B;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #E2E8F0;
+  margin-bottom: 12px;
+}
+
+.ait-section-count {
+  font-size: 11px;
+  background: #F1F5F9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.ait-card-facts {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.ait-card-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: #F8FAFC;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #F1F5F9;
+}
+
+.ait-card-price-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.ait-card-price-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #17382B;
+}
+
+.ait-card-price-val small {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #64748B;
+}
+
+/* Recommendation Card Image Banner */
+.rec-card-img-wrap {
+  position: relative;
+  width: calc(100% + 48px);
+  margin: -20px -24px 16px -24px;
+  height: 220px;
+  overflow: hidden;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  background-color: #E2ECE5;
+}
+
+.rec-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rec-card-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #17382B;
+}
+
+.rec-card-img-badges {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.rec-card-img-price {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  color: #FFFFFF;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.rec-price-label-sm {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94A3B8;
+  letter-spacing: 0.5px;
+}
+
+.rec-price-value-sm {
+  font-size: 16px;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.rec-card-body-new {
+  margin-bottom: 14px;
 }
 
 .ait-card-banner {

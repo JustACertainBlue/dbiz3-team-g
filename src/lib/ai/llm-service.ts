@@ -18,6 +18,18 @@ export interface ConversationalAiResult {
   modelUsed?: string
 }
 
+export function sanitizeConversationalReply(text: string): string {
+  if (!text) return ''
+  const cleaned = text
+    .replace(/(?:(?:\*{1,2})?(?:extracted\s+context|thông tin trích xuất)(?:\*{1,2})?:?[\s\S]*?(?=(?:\n\s*\n\s*[A-ZÀ-Ỹ0-9])|$))/gi, '')
+    .replace(/^[\s•\-\*]*`?(?:craft_preference|origin|experience_types|group_size|target_date|budget_per_person)`?\s*:.*$/gim, '')
+    .replace(/^[\s•\-\*]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+  return cleaned || text.trim()
+}
+
 export class ConversationalAiService {
   private static client: CloudflareAiClient = new CloudflareAiClient()
 
@@ -148,7 +160,7 @@ export class ConversationalAiService {
 
       return {
         intent: isGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
-        conversational_reply: parsed.conversational_reply || (isVi ? 'Tôi đã tiếp nhận yêu cầu và đối soát các xưởng nghề phù hợp nhất cho đoàn:' : 'I have analyzed your request and found matching artisan workshops:'),
+        conversational_reply: sanitizeConversationalReply(parsed.conversational_reply || (isVi ? 'Tôi đã tiếp nhận yêu cầu và đối soát các xưởng nghề phù hợp nhất cho đoàn:' : 'I have analyzed your request and found matching artisan workshops:')),
         tour_context: isGuidance ? (tourContext.craft_preference ? { craft_preference: tourContext.craft_preference } : {}) : tourContext,
         is_complete: isComplete,
         follow_up_questions: followUps,
@@ -166,7 +178,7 @@ export class ConversationalAiService {
       const isComplete = Boolean(!detectedGuidance && tourContext.group_size && tourContext.target_date_or_range)
       return {
         intent: detectedGuidance ? 'platform_guidance' : 'tour_matching',
-        conversational_reply: aiResponse.text.trim(),
+        conversational_reply: sanitizeConversationalReply(aiResponse.text.trim()),
         tour_context: tourContext,
         is_complete: isComplete,
         follow_up_questions: [],

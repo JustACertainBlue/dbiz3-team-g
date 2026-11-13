@@ -40,3 +40,4 @@ The screen name is inconsistent between the sidebar navigation and the main cont
 
 **Expected Result:**
 The screen name should be consistent between the sidebar and the main page title. If this screen represents the list of workshop profiles awaiting UBND review, use `Hồ sơ chờ thẩm định` consistently.
+

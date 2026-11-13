@@ -128,10 +128,16 @@ export function findExperienceCard(seed: ExploreSeed, id: string, viewer: Viewer
  * published Experience (the same eligibility as the catalog), in village-name order. Decoration only:
  * each card links to that Experience's detail page; no new filter or search is implied (spec-EXP Q8, Q11).
  */
-export function villageStrip(seed: ExploreSeed, viewer: Viewer): Array<{ village_name: string; craft: string; card: ExperienceCard }> {
+export function villageStrip(seed: ExploreSeed, viewer: Viewer, priorityVillages?: string[]): Array<{ village_name: string; craft: string; card: ExperienceCard }> {
   const seen = new Set<string>()
   const strip: Array<{ village_name: string; craft: string; card: ExperienceCard }> = []
-  const rows = [...eligibleRows(seed)].sort((a, b) => a.village.name.localeCompare(b.village.name, 'vi'))
+  const priorityMap = new Map((priorityVillages || []).map((name, idx) => [name.toLowerCase().trim(), idx]))
+  const rows = [...eligibleRows(seed)].sort((a, b) => {
+    const aPriority = priorityMap.has(a.village.name.toLowerCase().trim()) ? priorityMap.get(a.village.name.toLowerCase().trim())! : Number.MAX_SAFE_INTEGER
+    const bPriority = priorityMap.has(b.village.name.toLowerCase().trim()) ? priorityMap.get(b.village.name.toLowerCase().trim())! : Number.MAX_SAFE_INTEGER
+    if (aPriority !== bPriority) return aPriority - bPriority
+    return a.village.name.localeCompare(b.village.name, 'vi')
+  })
   for (const row of rows) {
     if (seen.has(row.village.village_id)) continue
     seen.add(row.village.village_id)

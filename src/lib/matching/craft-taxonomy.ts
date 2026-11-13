@@ -19,15 +19,15 @@ interface CraftEntry {
 
 // Order matters only when one message names several crafts: the first entry wins.
 const CRAFTS: CraftEntry[] = [
-  { preference: 'silk', label: 'silk weaving', craftType: 'Silk/Textile', keywords: ['silk', 'lụa', 'textile'] },
-  { preference: 'embroidery', label: 'embroidery', craftType: 'Silk/Textile', keywords: ['embroidery', 'thêu'] },
-  { preference: 'pottery', label: 'pottery', craftType: 'Ceramics', keywords: ['pottery', 'ceramic', 'gốm'] },
-  { preference: 'woodcarving', label: 'woodcarving', craftType: 'Woodcarving', keywords: ['woodcarving', 'carving', 'wood', 'gỗ', 'tạc'] },
-  { preference: 'food', label: 'food and cooking', craftType: 'Food/Culinary', keywords: ['culinary', 'cooking', 'food', 'ẩm thực'] },
-  { preference: 'metalwork', label: 'metalwork', craftType: 'Metalwork', keywords: ['metal', 'bronze', 'đúc đồng', 'đồ đồng', 'đúc'] },
-  { preference: 'painting', label: 'lacquer and painting', craftType: 'Paper/Painting', keywords: ['lacquer', 'painting', 'paper', 'sơn mài', 'tranh'] },
-  { preference: 'conical hat', label: 'conical hat making', craftType: 'Other', keywords: ['conical hat', 'nón'] },
-  { preference: 'bamboo', label: 'bamboo and rattan weaving', craftType: 'Other', keywords: ['bamboo', 'rattan', 'mây', 'tre'] },
+  { preference: 'silk', label: 'silk weaving', craftType: 'Silk/Textile', keywords: ['silk', 'lụa', 'textile', 'vạn phúc', 'van phuc', 'nha xá'] },
+  { preference: 'embroidery', label: 'embroidery', craftType: 'Silk/Textile', keywords: ['embroidery', 'thêu', 'quất động', 'quat dong'] },
+  { preference: 'pottery', label: 'pottery', craftType: 'Ceramics', keywords: ['pottery', 'ceramic', 'gốm', 'bát tràng', 'bat trang', 'kim lan'] },
+  { preference: 'woodcarving', label: 'woodcarving', craftType: 'Woodcarving', keywords: ['woodcarving', 'carving', 'wood', 'gỗ', 'tạc', 'mộc', 'chàng sơn', 'chang son', 'sơn đồng', 'son dong'] },
+  { preference: 'food', label: 'food and cooking', craftType: 'Food/Culinary', keywords: ['culinary', 'cooking', 'food', 'ẩm thực', 'cự đà', 'cu da'] },
+  { preference: 'metalwork', label: 'metalwork', craftType: 'Metalwork', keywords: ['metal', 'bronze', 'đúc đồng', 'đồ đồng', 'đúc', 'định công', 'dinh cong', 'ngũ xã'] },
+  { preference: 'painting', label: 'lacquer and painting', craftType: 'Paper/Painting', keywords: ['lacquer', 'painting', 'paper', 'sơn mài', 'tranh', 'hạ thái', 'ha thai', 'điệp'] },
+  { preference: 'conical hat', label: 'conical hat making', craftType: 'Other', keywords: ['conical hat', 'nón', 'chuông', 'chuong'] },
+  { preference: 'bamboo', label: 'bamboo and rattan weaving', craftType: 'Other', keywords: ['bamboo', 'rattan', 'mây', 'tre', 'phú vinh', 'phu vinh'] },
 ]
 
 const EXPERIENCE_TYPES: { category: string; keywords: string[] }[] = [

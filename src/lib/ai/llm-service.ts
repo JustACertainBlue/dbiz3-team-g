@@ -128,9 +128,9 @@ export class ConversationalAiService {
       return {
         intent: isGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
         conversational_reply: parsed.conversational_reply || (isGuidance && relevantKnowledge.length > 0 ? relevantKnowledge[0].contentVi : ''),
-        tour_context: isGuidance ? {} : tourContext,
+        tour_context: isGuidance ? (tourContext.craft_preference ? { craft_preference: tourContext.craft_preference } : {}) : tourContext,
         is_complete: isComplete,
-        follow_up_questions: isGuidance ? [] : followUps,
+        follow_up_questions: followUps,
         quota_status: quotaStatus,
         usedLlm: true,
         modelUsed: aiResponse.modelUsed,
@@ -208,15 +208,28 @@ export class ConversationalAiService {
     if (extracted?.craft_preference) {
       context.craft_preference = String(extracted.craft_preference)
     } else {
-      const detectedCraft = detectCraftPreference(fullText)
-      if (detectedCraft) context.craft_preference = detectedCraft
+      // Scan messages from newest to oldest so latest craft intent takes precedence!
+      const reversed = [...messages].reverse()
+      for (const m of reversed) {
+        const detected = detectCraftPreference(m.text || '')
+        if (detected) {
+          context.craft_preference = detected
+          break
+        }
+      }
     }
 
     if (Array.isArray(extracted?.experience_types) && extracted.experience_types.length > 0) {
       context.experience_types = extracted.experience_types
     } else {
-      const detectedTypes = detectExperienceTypes(fullText)
-      if (detectedTypes.length > 0) context.experience_types = detectedTypes
+      const reversed = [...messages].reverse()
+      for (const m of reversed) {
+        const detected = detectExperienceTypes(m.text || '')
+        if (detected.length > 0) {
+          context.experience_types = detected
+          break
+        }
+      }
     }
 
     if (extracted?.origin) {
@@ -261,10 +274,11 @@ export class ConversationalAiService {
 
     if (isPlatformQuestion) {
       const best = knowledgeMatches[0]
+      const craft = detectCraftPreference(latestUserMsg)
       return {
         intent: 'platform_guidance',
         conversational_reply: isVi ? `${best.contentVi}` : `${best.contentEn}`,
-        tour_context: {},
+        tour_context: craft ? { craft_preference: craft } : {},
         is_complete: false,
         follow_up_questions: [],
         quota_status: quotaStatus,
@@ -273,46 +287,60 @@ export class ConversationalAiService {
     }
 
     // Otherwise, perform structured requirement extraction from conversation history
+    // scanning from newest to oldest so latest changes take precedence
     const tourContext: TourContext = {}
     let craftPref: string | undefined = undefined
 
-    for (const m of messages) {
+    for (const m of [...messages].reverse()) {
       const text = m.text || ''
 
-      const groupMatch = text.match(
-        /(?:group of|for)\s*(\d+)|\b(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists?|passengers?|kh\u00e1ch|ng\u01b0\u1eddi)/i
-      )
-      if (groupMatch) {
-        tourContext.group_size = parseInt(groupMatch[1] || groupMatch[2], 10)
+      if (!craftPref) {
+        const craft = detectCraftPreference(text)
+        if (craft) craftPref = craft
       }
 
-      const startDate = extractTourDate(text, now())
-      if (startDate) {
-        tourContext.target_date_or_range = { start_date: startDate }
+      if (tourContext.group_size === undefined) {
+        const groupMatch = text.match(
+          /(?:group of|for)\s*(\d+)|\b(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists?|passengers?|kh\u00e1ch|ng\u01b0\u1eddi)/i
+        )
+        if (groupMatch) {
+          tourContext.group_size = parseInt(groupMatch[1] || groupMatch[2], 10)
+        }
       }
 
-      const budgetMatch = text.match(
-        /(?:budget|ngân sách|dưới|under|around|tight budget|tầm|khoảng)\s*(\d+(?:[.,]\d{3})*|\d+)\s*(?:k|,\d{3}|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/pax)?|(\d+)[,.]000\s*(?:vnd|đ)/i
-      )
-      if (budgetMatch) {
-        let rawStr = (budgetMatch[1] || budgetMatch[2] || '').trim()
-        let cleanDigits = rawStr.replace(/[.,]/g, '')
-        let amount = parseInt(cleanDigits, 10)
-        if (amount < 1000) amount *= 1000
-        tourContext.budget = { max_per_person: amount, currency: 'VND' }
+      if (!tourContext.target_date_or_range) {
+        const startDate = extractTourDate(text, now())
+        if (startDate) {
+          tourContext.target_date_or_range = { start_date: startDate }
+        }
       }
 
-      const craft = detectCraftPreference(text)
-      if (craft) craftPref = craft
+      if (!tourContext.budget) {
+        const budgetMatch = text.match(
+          /(?:budget|ngân sách|dưới|under|around|tight budget|tầm|khoảng)\s*(\d+(?:[.,]\d{3})*|\d+)\s*(?:k|,\d{3}|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/pax)?|(\d+)[,.]000\s*(?:vnd|đ)/i
+        )
+        if (budgetMatch) {
+          let rawStr = (budgetMatch[1] || budgetMatch[2] || '').trim()
+          let cleanDigits = rawStr.replace(/[.,]/g, '')
+          let amount = parseInt(cleanDigits, 10)
+          if (amount < 1000) amount *= 1000
+          tourContext.budget = { max_per_person: amount, currency: 'VND' }
+        }
+      }
+
       const types = detectExperienceTypes(text)
-      if (types.length > 0) tourContext.experience_types = types
+      if (types.length > 0 && !tourContext.experience_types?.length) {
+        tourContext.experience_types = types
+      }
 
-      const originMatch = text.match(/(?:from|near|xuất phát từ)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at)\s|[,.;!?]|$)/iu)
-      if (originMatch) {
-        tourContext.origin_or_route = { origin_address: originMatch[1].trim() }
-      } else if (/(?:hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội)/i.test(text)) {
-        const mLoc = text.match(/(hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội)/i)
-        if (mLoc) tourContext.origin_or_route = { origin_address: mLoc[1] }
+      if (!tourContext.origin_or_route) {
+        const originMatch = text.match(/(?:from|near|xuất phát từ)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at)\s|[,.;!?]|$)/iu)
+        if (originMatch) {
+          tourContext.origin_or_route = { origin_address: originMatch[1].trim() }
+        } else if (/(?:hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội)/i.test(text)) {
+          const mLoc = text.match(/(hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội)/i)
+          if (mLoc) tourContext.origin_or_route = { origin_address: mLoc[1] }
+        }
       }
     }
 

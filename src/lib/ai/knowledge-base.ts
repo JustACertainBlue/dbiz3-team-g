@@ -50,9 +50,19 @@ export const PLATFORM_KNOWLEDGE_BASE: KnowledgeItem[] = [
     titleVi: 'Các làng nghề truyền thống trên hệ thống',
     titleEn: 'Verified Craft Villages on Hanoi Artisan Bridge',
     contentVi:
-      'Hệ thống hiện kết nối các làng nghề tiêu biểu của Hà Nội:\n- Làng gốm Bát Tràng (Gia Lâm) - Gốm sứ mỹ nghệ & lò nung cổ\n- Làng lụa Vạn Phúc (Hà Đông) - Dệt lụa tơ tằm truyền thống\n- Làng mộc Chàng Sơn (Thạch Thất) - Chạm khắc gỗ & kiến trúc cổ\n- Làng mây tre đan Phú Vinh (Chương Mỹ) - Mây tre đan mỹ nghệ\n- Làng nón Chuông (Thanh Oai) - Làm nón lá truyền thống\n- Làng thêu Quất Động (Thường Tín) - Thêu tay truyền thống\n- Làng kim hoàn Định Công (Hoàng Mai) - Bạc đậu mỹ nghệ\n- Làng bún & miến Cự Đà (Thanh Oai) - Ẩm thực truyền thống',
+      'Hệ thống hiện kết nối các làng nghề tiêu biểu của Hà Nội:\n- Làng gốm Bát Tràng (Gia Lâm) - Gốm sứ mỹ nghệ & lò nung cổ\n- Làng lụa Vạn Phúc (Hà Đông) - Dệt lụa tơ tằm truyền thống\n- Làng mộc Chàng Sơn (Thạch Thất) & Sơn Đồng (Hoài Đức) - Chạm khắc gỗ, tạc tượng dân gian & kiến trúc cổ\n- Làng mây tre đan Phú Vinh (Chương Mỹ) - Mây tre đan mỹ nghệ\n- Làng nón Chuông (Thanh Oai) - Làm nón lá truyền thống\n- Làng thêu Quất Động (Thường Tín) - Thêu tay truyền thống\n- Làng kim hoàn Định Công (Hoàng Mai) - Bạc đậu mỹ nghệ\n- Làng bún & miến Cự Đà (Thanh Oai) - Ẩm thực truyền thống',
     contentEn:
-      'The platform connects verified Hanoi traditional craft villages:\n- Bat Trang (Gia Lâm) - Fine ceramics & ancient pottery kilns\n- Van Phuc (Ha Dong) - Traditional mulberry silk weaving\n- Chang Son (Thach That) - Traditional woodcarving & timber architecture\n- Phu Vinh (Chuong My) - Bamboo & rattan weaving\n- Chuong (Thanh Oai) - Conical hat making\n- Quat Dong (Thuong Tin) - Traditional hand embroidery\n- Dinh Cong (Hoang Mai) - Silver filigree & jewelry\n- Cu Da (Thanh Oai) - Traditional noodles & soy sauce',
+      'The platform connects verified Hanoi traditional craft villages:\n- Bat Trang (Gia Lâm) - Fine ceramics & ancient pottery kilns\n- Van Phuc (Ha Dong) - Traditional mulberry silk weaving\n- Chang Son & Son Dong (Thach That, Hoai Duc) - Traditional woodcarving, folk statue carving & architecture\n- Phu Vinh (Chuong My) - Bamboo & rattan weaving\n- Chuong (Thanh Oai) - Conical hat making\n- Quat Dong (Thuong Tin) - Traditional hand embroidery\n- Dinh Cong (Hoang Mai) - Silver filigree & jewelry\n- Cu Da (Thanh Oai) - Traditional noodles & soy sauce',
+  },
+  {
+    id: 'wood_craft_villages',
+    topics: ['làng mộc', 'mộc', 'gỗ', 'chàng sơn', 'sơn đồng', 'tạc tượng', 'chạm khắc gỗ', 'woodcarving'],
+    titleVi: 'Làng mộc truyền thống Chàng Sơn & Sơn Đồng',
+    titleEn: 'Traditional Woodcarving Villages: Chang Son & Son Dong',
+    contentVi:
+      'Làng mộc Chàng Sơn (Thạch Thất) và Sơn Đồng (Hoài Đức) là hai cái nôi điêu khắc gỗ nổi tiếng xứ Đoài:\n- Hoạt động nổi bật: Tham quan xưởng mộc cổ truyền, quan sát nghệ nhân đục chạm hoa văn rồng phượng, tự tay thực hành chạm khắc hoa văn nhỏ trên gỗ mít/gỗ dổi dưới sự hướng dẫn của nghệ nhân bậc thầy, làm quạt Chàng Sơn.\n- Sức chứa xưởng: Nhóm từ 8 - 18 khách phù hợp nhất để được nghệ nhân hướng dẫn 1-1.\n- Thời gian di chuyển: Khoảng 35 - 45 phút từ trung tâm Hà Nội qua Đại lộ Thăng Long.',
+    contentEn:
+      'Chang Son (Thach That) and Son Dong (Hoai Duc) are Hanoi famous woodcarving heritage villages:\n- Key activities: Visit heritage timber workshops, observe master carvers, hands-on woodcarving practice on local timbers, and traditional Chang Son fan making.\n- Group capacity: 8 - 18 pax ideal for personalized master artisan instruction.\n- Travel time: 35 - 45 minutes from central Hanoi via Thang Long Avenue.',
   },
   {
     id: 'contact_and_booking',

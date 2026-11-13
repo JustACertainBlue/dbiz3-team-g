@@ -73,6 +73,130 @@ function localizeRelaxationLine(line: string): string {
   return line
 }
 
+/** Render văn bản Markdown (định dạng in đậm) */
+function renderInlineText(text: string): React.ReactNode {
+  if (!text || !text.includes('**')) return text
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} style={{ color: '#0F172A', fontWeight: 650 }}>{part.slice(2, -2)}</strong>
+    }
+    return part
+  })
+}
+
+/** Render nội dung tin nhắn Markdown chuyên nghiệp (bảng, danh sách, in đậm) */
+function renderFormattedContent(text: string): React.ReactNode {
+  if (!text) return null
+
+  // 1. Nếu có bảng Markdown (| Cột 1 | Cột 2 | ...)
+  if (text.includes('|') && text.includes('---')) {
+    const lines = text.split('\n')
+    const elements: React.ReactNode[] = []
+    let tableLines: string[] = []
+    let inTable = false
+
+    const flushTable = (keyIdx: number) => {
+      if (tableLines.length >= 2) {
+        const headerCells = tableLines[0].split('|').map(c => c.trim()).filter(Boolean)
+        const rowLines = tableLines.slice(2)
+        elements.push(
+          <div key={`table-${keyIdx}`} className="ait-table-wrap">
+            <table className="ait-markdown-table">
+              <thead>
+                <tr>
+                  {headerCells.map((h, i) => <th key={i}>{renderInlineText(h)}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {rowLines.map((row, rIdx) => {
+                  const cells = row.split('|').map(c => c.trim()).filter(Boolean)
+                  if (cells.length === 0) return null
+                  return (
+                    <tr key={rIdx}>
+                      {cells.map((c, cIdx) => <td key={cIdx}>{renderInlineText(c)}</td>)}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+      }
+      tableLines = []
+      inTable = false
+    }
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim()
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        inTable = true
+        tableLines.push(trimmed)
+      } else {
+        if (inTable) flushTable(idx)
+        if (trimmed) {
+          if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+            elements.push(
+              <div key={`b-${idx}`} className="ait-bullet-line">
+                <span className="ait-bullet-dot">•</span>
+                <span>{renderInlineText(trimmed.slice(2))}</span>
+              </div>
+            )
+          } else {
+            elements.push(
+              <p key={`p-${idx}`} className="ait-msg-paragraph">
+                {renderInlineText(trimmed)}
+              </p>
+            )
+          }
+        }
+      }
+    })
+    if (inTable) flushTable(lines.length)
+
+    return <div className="ait-formatted-body">{elements}</div>
+  }
+
+  // 2. Nội dung text thông thường với danh sách và in đậm
+  const paragraphs = text.split('\n\n')
+  return (
+    <div className="ait-formatted-body">
+      {paragraphs.map((p, pIdx) => {
+        const lines = p.split('\n')
+        return (
+          <div key={pIdx} className="ait-msg-paragraph">
+            {lines.map((l, lIdx) => {
+              const trimmed = l.trim()
+              if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+                return (
+                  <div key={lIdx} className="ait-bullet-line">
+                    <span className="ait-bullet-dot">•</span>
+                    <span>{renderInlineText(trimmed.slice(2))}</span>
+                  </div>
+                )
+              }
+              const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/)
+              if (numMatch) {
+                return (
+                  <div key={lIdx} className="ait-bullet-line">
+                    <span className="ait-bullet-num">{numMatch[1]}.</span>
+                    <span>{renderInlineText(numMatch[2])}</span>
+                  </div>
+                )
+              }
+              return (
+                <div key={lIdx} style={{ marginBottom: lIdx < lines.length - 1 ? '4px' : '0' }}>
+                  {renderInlineText(l)}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function AiMatchingScreen() {
   const router = useRouter()
   const [role, setRole] = useState<'Agency' | 'Guest'>('Guest')
@@ -474,7 +598,7 @@ export default function AiMatchingScreen() {
                     )}
                   </div>
                   <div className="ait-assistant-bubble">
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</div>
+                    {renderFormattedContent(msg.text)}
 
                     {/* #156: Ngày được trợ lý nhận diện */}
                     {msg.dateLine && (
@@ -570,34 +694,76 @@ export default function AiMatchingScreen() {
                               </div>
 
                               <div className="rec-card-actions">
-                                <button
-                                  type="button"
-                                  className="ait-btn-primary"
-                                  onClick={() => handleRequestQuote(rec.experience_id)}
-                                >
-                                  Kiểm tra suất trống ngay
-                                </button>
-                                <Link
-                                  href={`/explore/experiences/${rec.experience_id}`}
-                                  className="ait-btn-secondary"
-                                >
-                                  Xem chi tiết trải nghiệm &rarr;
-                                </Link>
+                                {/* 1. Nút chính: Xin báo giá */}
                                 <button
                                   type="button"
                                   id={`quote-btn-${rec.experience_id}`}
+                                  className="ait-action-btn ait-action-btn-primary"
                                   onClick={() => handleRequestQuote(rec.experience_id)}
-                                  className="ait-btn-secondary"
+                                  title="Gửi yêu cầu báo giá chính thức cho xưởng"
                                 >
-                                  Yêu cầu báo giá
+                                  <svg className="ait-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                  </svg>
+                                  Xin báo giá ngay
                                 </button>
+
+                                {/* 2. Xem chi tiết xưởng & trải nghiệm */}
+                                <Link
+                                  href={`/explore/experiences/${rec.experience_id}`}
+                                  className="ait-action-btn ait-action-btn-secondary"
+                                  title="Xem hình ảnh thực tế, nội dung và đánh giá xưởng"
+                                >
+                                  <svg className="ait-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                  </svg>
+                                  Chi tiết xưởng
+                                </Link>
+
+                                {/* 3. Xem chi tiết làng nghề */}
+                                <Link
+                                  href={`/explore?village=${encodeURIComponent(rec.village_name)}`}
+                                  className="ait-action-btn ait-action-btn-secondary"
+                                  title={`Khám phá toàn bộ xưởng và hoạt động tại Làng ${rec.village_name}`}
+                                >
+                                  <svg className="ait-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                    <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"></path>
+                                  </svg>
+                                  Làng {rec.village_name}
+                                </Link>
+
+                                {/* 4. Xem lịch trống xưởng (public schedule view) */}
+                                <Link
+                                  href={`/provider/${rec.provider_id}#schedule`}
+                                  className="ait-action-btn ait-action-btn-secondary"
+                                  title="Xem các khung giờ còn trống và lịch nghệ nhân"
+                                >
+                                  <svg className="ait-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                  </svg>
+                                  Lịch trống xưởng
+                                </Link>
+
+                                {/* 5. Chat với xưởng */}
                                 <button
                                   type="button"
                                   id={`chat-btn-${rec.provider_id}`}
+                                  className="ait-action-btn ait-action-btn-secondary"
                                   onClick={() => handleChat(rec.experience_id, rec.provider_id)}
-                                  className="ait-btn-text"
+                                  title="Nhắn tin trực tiếp với nghệ nhân xưởng"
                                 >
-                                  Nhắn tin
+                                  <svg className="ait-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                  </svg>
+                                  Chat với xưởng
                                 </button>
                               </div>
 

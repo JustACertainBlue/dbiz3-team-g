@@ -355,8 +355,10 @@ export class ConversationalAiService {
       }
 
       if (tourContext.group_size === undefined) {
+        // BR-004: group_size extraction — supports both accented (khách, người) and
+        // unaccented Vietnamese (khach, nguoi, nhom) for P7 no-diacritic input.
         const groupMatch = text.match(
-          /(?:group of|for)\s*(\d+)|\b(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists?|passengers?|kh\u00e1ch|ng\u01b0\u1eddi)/i
+          /(?:nh[oó]m|group\s+of?|for)\s*(\d+)|(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists?|passengers?|kh[aá]ch|ng[uư][oờ]i)/i
         )
         if (groupMatch) {
           tourContext.group_size = parseInt(groupMatch[1] || groupMatch[2], 10)
@@ -371,8 +373,9 @@ export class ConversationalAiService {
       }
 
       if (!tourContext.budget) {
+        // Supports accented (ngân sách, dưới, tầm, khoảng) and unaccented (ngan sach, duoi, tam, khoang).
         const budgetMatch = text.match(
-          /(?:budget|ngân sách|dưới|under|around|tight budget|tầm|khoảng)\s*(\d+(?:[.,]\d{3})*|\d+)\s*(?:k|,\d{3}|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/pax)?|(\d+)[,.]000\s*(?:vnd|đ)/i
+          /(?:budget|ng[aâ]n\s*s[aá]ch|ngan\s*sach|d[uư][oờ]i|dưới|under|around|tight\s*budget|t[aầ]m|kho[aả]ng)\s*(\d+(?:[.,]\d{3})*|\d+)\s*(?:k|[.,]\d{3}|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/nguoi|\/khach|\/pax)?|(\d+)[,.]000\s*(?:vnd|đ)/i
         )
         if (budgetMatch) {
           let rawStr = (budgetMatch[1] || budgetMatch[2] || '').trim()
@@ -389,11 +392,12 @@ export class ConversationalAiService {
       }
 
       if (!tourContext.origin_or_route) {
-        const originMatch = text.match(/(?:from|near|xuất phát từ)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at)\s|[,.;!?]|$)/iu)
+        // Supports accented (xuất phát từ) and unaccented (xuat phat tu, tu trung tam).
+        const originMatch = text.match(/(?:from|near|xu[aấ]t\s*ph[aá]t\s*t[uừ]|xuat\s*phat\s*tu)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at)\s|[,.;!?]|$)/iu)
         if (originMatch) {
           tourContext.origin_or_route = { origin_address: originMatch[1].trim() }
-        } else if (/(?:hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội)/i.test(text)) {
-          const mLoc = text.match(/(hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội)/i)
+        } else if (/(?:hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i.test(text)) {
+          const mLoc = text.match(/(hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i)
           if (mLoc) tourContext.origin_or_route = { origin_address: mLoc[1] }
         }
       }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   isTestPrompt,
+  isTestConversation,
   getTestCandidates,
   getTestAllExperiences,
   resolveTestVillageCards,
@@ -18,6 +19,18 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
     expect(isTestPrompt('test tour 15 người làng gốm')).toBe(true)
     expect(isTestPrompt('Tôi muốn tìm xưởng gốm')).toBe(false)
     expect(isTestPrompt('chuyến đi tốt đẹp')).toBe(false)
+  })
+
+  it('keeps test mode active on later turns in the same conversation', () => {
+    expect(isTestConversation([
+      { sender: 'Agency', text: 'test tour' },
+      { sender: 'Assistant', text: 'Please provide more details.' },
+      { sender: 'Agency', text: '10 pax from Hoàn Kiếm' },
+    ])).toBe(true)
+    expect(isTestConversation([
+      { sender: 'Assistant', text: 'Try the test tour' },
+      { sender: 'Agency', text: '10 pax from Hoàn Kiếm' },
+    ])).toBe(false)
   })
 
   it('loads test candidates solely from the test JSON file', () => {
@@ -41,6 +54,7 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
     const batTrang = candidates.find(c => c.experience_id === 'bat-trang-a01')
     expect(batTrang).toBeDefined()
     expect(batTrang?.village_name).toBe('Làng gốm Bát Tràng')
+    expect(batTrang?.image_url).toBe('/api/ait/test-media/activities/bat-trang-a01.jpg')
 
     const changSon = candidates.find(c => c.experience_id === 'chang-son-a01')
     expect(changSon).toBeDefined()
@@ -55,6 +69,7 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
     const villages = resolveTestVillageCards('gốm bát tràng')
     expect(villages.length).toBeGreaterThan(0)
     expect(villages[0].name).toContain('Bát Tràng')
+    expect(villages[0].image_url).toBe('/api/ait/test-media/villages/bat-trang.jpg')
 
     const providers = resolveTestProviderCards('quạt chàng sơn')
     expect(providers.length).toBeGreaterThan(0)
@@ -63,6 +78,12 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
     const activities = resolveTestActivityCards('rối nước')
     expect(activities.length).toBeGreaterThan(0)
     expect(activities[0].village_name).toContain('Đào Thục')
+
+    const batTrangProviders = resolveTestProviderCards('xưởng gốm Bát Tràng')
+    expect(batTrangProviders[0].image_url).toBe('/api/ait/test-media/providers/bat-trang-p01.jpg')
+
+    const batTrangActivities = resolveTestActivityCards('trải nghiệm gốm Bát Tràng')
+    expect(batTrangActivities[0].image_url).toBe('/api/ait/test-media/activities/bat-trang-a01.jpg')
   })
 
   it('executes full matching pipeline on test candidates without touching system seed data', async () => {
@@ -99,6 +120,7 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
     const recs = await buildRecommendations(ranked)
     expect(recs.top_matches.length).toBeGreaterThan(0)
     expect(recs.top_matches[0].experience_id).toBe(topMatch.experience_id)
+    expect(recs.top_matches[0].image_url).toMatch(/^\/api\/ait\/test-media\/activities\/.+\.jpg$/)
   })
 
   it('ranks activities from cheapest to highest when user requests low price', async () => {

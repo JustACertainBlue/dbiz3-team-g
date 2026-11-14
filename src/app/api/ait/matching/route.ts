@@ -97,13 +97,16 @@ export async function POST(request: Request) {
 
     const mapDisplayFields = (m: any) => {
       const match = ranked.find(r => r.experience_id === m.experience_id)
+      const { image_url: recommendationImageUrl, ...recommendation } = m
+      const imageUrl = recommendationImageUrl ?? match?.image_url
       return {
-        ...m,
+        ...recommendation,
         village_name: m.village_name || match?.village_name || '',
         price_per_person: m.price_per_person ?? match?.price_per_person,
         max_participants: m.max_participants ?? match?.max_participants,
         provider_name: m.provider_name || match?.provider_name || '',
         distance_km: m.distance_km ?? match?.distance_km,
+        ...(isTest && imageUrl ? { image_url: imageUrl } : {}),
       }
     }
 

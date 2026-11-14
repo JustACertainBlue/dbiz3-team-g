@@ -1,0 +1,2559 @@
+{
+  "meta": {
+    "batch": "1+2",
+    "collected_via": "Google Chế độ AI",
+    "collected_on": "2026-11-14",
+    "note": "null = 'Không tìm thấy' trong nguồn. Giá ghi nguyên văn trong price_raw. verified_status mặc định unverified, trừ khi đã được người xác nhận.",
+    "group_info_fields": [
+      "group_min",
+      "group_max",
+      "advance_notice",
+      "deposit",
+      "agency_commission",
+      "bus_parking",
+      "restroom",
+      "refreshments",
+      "guide_languages"
+    ],
+    "coordinates_note": "coordinates.status: from_plus_code = giải mã từ Plus Code (đã đối chiếu); ai_estimated = AI quy đổi từ địa chỉ, chưa kiểm chứng.",
+    "revisions": [
+      "Lần 2 (Chế độ AI): thêm tọa độ, cập nhật một số địa chỉ/nguồn",
+      "Lần 3: thay nguồn bằng URL thật, thêm làng Chàng Sơn; bỏ làng hương Quảng Phú Cầu",
+      "Lần 4: bỏ Kiêu Kỵ và Chuôn Ngọ",
+      "Lần 5: thay dữ liệu Chàng Sơn (bỏ Quạt Từ Tâm, thêm Dương Văn Mơ)",
+      "Lần 6: gộp 8 làng từ lang_nghe_ha_noi_schema.json (Vạn Phúc, Chuông, Phú Vinh, Bá Dương Nội, Sơn Đồng, Ngũ Xã, Phùng Xá, Đào Thục)"
+    ]
+  },
+  "villages": [
+    {
+      "village_id": "bat-trang",
+      "village_name": "Làng gốm Bát Tràng",
+      "district_raw": "Gia Lâm",
+      "providers": [
+        {
+          "provider_id": "bat-trang-p01",
+          "name": "Bảo tàng Gốm Bát Tràng (Trung tâm Tinh hoa Làng nghề Việt)",
+          "type": "museum_center",
+          "type_raw": "Bảo tàng / Trung tâm",
+          "address": "Số 28, thôn 5, làng cổ Bát Tràng, xã Bát Tràng, Gia Lâm, Hà Nội",
+          "phones": [
+            "0866 959 288"
+          ],
+          "contact_person": "Ms. Hà",
+          "contact_phone": "0902 466 568",
+          "contact_note": "Khách đoàn/Tour",
+          "zalo": null,
+          "email": null,
+          "website": "https://ceramuseum.com/",
+          "fanpage": "https://www.facebook.com/baotanggom/",
+          "source": "https://www.facebook.com/baotanggom/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ cách Lò Bầu Cổ ~3 km, nghi lệch, cần kiểm tra trên Maps"
+          ],
+          "coordinates": {
+            "lat": 21.00389,
+            "lng": 105.90889,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "media": [
+            {
+              "file": "media/providers/bat-trang-p01.jpg",
+              "image_url": "https://ceramuseum.com/UploadFile/Article/About.jpg",
+              "page_url": "https://ceramuseum.com/"
+            },
+            {
+              "file": "media/providers/bat-trang-p01_2.jpg",
+              "image_url": "https://ceramuseum.com/UploadFile/Doi-Tac/cuongnga.jpg",
+              "page_url": "https://ceramuseum.com/"
+            }
+          ],
+          "image_url": "media/providers/bat-trang-p01.jpg"
+        },
+        {
+          "provider_id": "bat-trang-p02",
+          "name": "Vigo Bát Tràng - Lạc Việt Gallery",
+          "type": "workshop_studio",
+          "type_raw": "Xưởng có workshop",
+          "address": "Cụm làng nghề tập trung xã Bát Tràng, Gia Lâm, Hà Nội",
+          "phones": [
+            "+84 333 985 225",
+            "+84 968 372 398"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": "Nhận đặt lịch Workshop Cá nhân & Doanh nghiệp",
+          "zalo": null,
+          "email": null,
+          "website": "https://www.vigobattrang.com/",
+          "fanpage": "https://www.facebook.com/vigobattrang2024/",
+          "source": "https://www.vigobattrang.com/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Địa chỉ chỉ ở mức cụm làng nghề, chưa có số nhà",
+            "Tọa độ nghi lệch (~2 km so với các cơ sở khác ở Bát Tràng), cần kiểm tra trên Maps"
+          ],
+          "coordinates": {
+            "lat": 20.9968,
+            "lng": 105.9135,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "media": [
+            {
+              "file": "media/providers/bat-trang-p02.jpg",
+              "image_url": "https://static.wixstatic.com/media/bf5ef8_e6eac6df95c041aab81d7fc4e7d4c94f~mv2.jpg/v1/fill/w_1737,h_1042,al_c/bf5ef8_e6eac6df95c041aab81d7fc4e7d4c94f~mv2.jpg",
+              "page_url": "https://www.vigobattrang.com/"
+            }
+          ],
+          "image_url": "media/providers/bat-trang-p02.jpg"
+        },
+        {
+          "provider_id": "bat-trang-p03",
+          "name": "Tí tách - Công xưởng gốm Bát Tràng",
+          "type": "workshop_studio",
+          "type_raw": "Xưởng có workshop",
+          "address": "XWH6+48C, Thôn 1, Bát Tràng, Gia Lâm, Hà Nội",
+          "phones": [
+            "+84 876 666 833"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/61570354648126/",
+          "source": "https://www.facebook.com/61570354648126/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Địa chỉ gồm Plus Code"
+          ],
+          "coordinates": {
+            "lat": 20.97781,
+            "lng": 105.91081,
+            "plus_code": "XWH6+48C",
+            "status": "from_plus_code"
+          },
+          "media": [
+            {
+              "file": "media/providers/bat-trang-p03.jpg",
+              "image_url": "https://instagram.fhan2-3.fna.fbcdn.net/v/t39.30808-6/833107337_122182699724678488_2622092739052931162_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&_nc_map=urlgen_bucketless&ig_cache_key=NDAwMDI5NjQ4MzY2MzQ5MDM3NA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkNBUk9VU0VMX0lURU0ueHBpZHMuOTYwLnNkci5yZWd1bGFyX3Bob3RvLkMzIn0%3D&_nc_ohc=sbRdy8gKyi8Q7kNvwH-57Ab&_nc_oc=AdqvKthrICccMsDwnklxkk5rryQGsWyn6TNSOmf5Qxx8kO1RQKsbIkoCSlYeeb1zIhk&_nc_zt=23&_nc_ht=instagram.fhan2-3.fna&_nc_gid=GgJYLQxmm6l2PRUSjf3Hbw&_nc_ss=7ba02&_nc_ct=RQosPBUIFQIlBAAAAA&oh=00_AQQv7wPX9EYsySGs_qlV5i8axGhDidUNoGptuIGwz7glTA&oe=6AFE779B",
+              "page_url": "https://www.instagram.com/titach.ceramics/p/DeD6HmCgXEn/"
+            }
+          ],
+          "image_url": "media/providers/bat-trang-p03.jpg"
+        },
+        {
+          "provider_id": "bat-trang-p04",
+          "name": "Lò Bầu Cổ",
+          "type": "attraction_workshop",
+          "type_raw": "Điểm tham quan / Xưởng",
+          "address": "Số 51 đường Bát Tràng, thôn 1 (Xóm 3), Bát Tràng, Gia Lâm, Hà Nội",
+          "phones": [
+            "+84 979 236 326"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/lobauco/",
+          "source": "https://www.facebook.com/lobauco/",
+          "verified_status": "verified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Đã xác nhận qua Facebook",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": 20.97735,
+            "lng": 105.91145,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "other_links": [
+            "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/",
+            "https://vinpearl.com/vi/du-lich-bat-trang-top-7-trai-nghiem-khong-nen-bo-lo",
+            "https://vietnam.vnanet.vn/vietnamese/long-form/bat-trang-phat-trien-nghe-gom-gan-voi-trai-nghiem-van-hoa-va-du-lich-467785.html",
+            "https://authenticbattrang.vn/tham-quan-xuong.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/bat-trang-p04.jpg",
+              "image_url": "https://static.vinwonders.com/production/lang-gom-bat-trang-top-banner.jpg",
+              "page_url": "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/"
+            },
+            {
+              "file": "media/providers/bat-trang-p04_2.jpg",
+              "image_url": "https://static.vinwonders.com/production/lang-gom-bat-trang-1.jpg",
+              "page_url": "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/"
+            }
+          ],
+          "image_url": "media/providers/bat-trang-p04.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "bat-trang-a01",
+          "provider_id": "bat-trang-p01",
+          "name": "Vé tham quan toàn Trung tâm",
+          "description": "Tự do khám phá không gian trưng bày từ tầng G đến tầng 5 của bảo tàng.",
+          "duration": null,
+          "price_raw": "150.000 VNĐ (Người lớn) / 75.000 VNĐ (Người cao tuổi) / Miễn phí (Trẻ em)",
+          "source": "https://langgom.vn/blogs/news/bao-tang-gom-bat-trang-gia-ve-lich-trinh",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/bat-trang-a01.jpg",
+              "image_url": "http://cdn.hstatic.net/files/200001055019/article/create_a_high-quality_commercial_banner_202606231507_e243fd7971284e30974f2a4e14ef7a0e.jpeg",
+              "page_url": "https://langgom.vn/blogs/news/bao-tang-gom-bat-trang-gia-ve-lich-trinh"
+            },
+            {
+              "file": "media/activities/bat-trang-a01_2.jpg",
+              "image_url": "https://cdn.hstatic.net/files/200001055019/file/mini_generated_image_1b3d3q1b3d3q1b3d_5d91a41caeda4a16b24f6538ead76524_1024x1024.png",
+              "page_url": "https://langgom.vn/blogs/news/bao-tang-gom-bat-trang-gia-ve-lich-trinh"
+            }
+          ],
+          "image_url": "media/activities/bat-trang-a01.jpg"
+        },
+        {
+          "activity_id": "bat-trang-a02",
+          "provider_id": "bat-trang-p01",
+          "name": "Vé tham quan + Trải nghiệm \"Tôi làm nghệ nhân\"",
+          "description": "Tham quan tầng 1, 2, 4 và trực tiếp trải nghiệm nặn gốm tại tầng G.",
+          "duration": null,
+          "price_raw": "130.000 VNĐ (Người lớn) / 100.000 VNĐ / 50.000 VNĐ (Trẻ em)",
+          "source": "https://langgom.vn/blogs/news/bao-tang-gom-bat-trang-gia-ve-lich-trinh",
+          "verified_status": "unverified",
+          "notes": [
+            "Nhãn đối tượng của mức 100.000 VNĐ không rõ, cần xác nhận"
+          ],
+          "media": [
+            {
+              "file": "media/activities/bat-trang-a02.jpg",
+              "image_url": "https://cdn.hstatic.net/files/200001055019/article/binh_hut_loc_bat_trang_giam_gia__1__c4ee93d6d1404b36867473e578d97f1e_1024x1024.png",
+              "page_url": "https://langgom.vn/blogs/news/bao-tang-gom-bat-trang-gia-ve-lich-trinh"
+            }
+          ],
+          "image_url": "media/activities/bat-trang-a02.jpg"
+        },
+        {
+          "activity_id": "bat-trang-a03",
+          "provider_id": "bat-trang-p01",
+          "name": "Vé trải nghiệm Ghi dấu nghệ thuật",
+          "description": "Tham quan tầng 1 đến tầng 5 và làm gốm/tô tượng tại tầng G.",
+          "duration": null,
+          "price_raw": "198.000 VNĐ (hoặc 220.000 VNĐ tùy đợt)",
+          "source": "http://tinhhoalangnghe.vn/vi/p/cap-nhap-gia-ve-moi-nhat-cua-bao-tang-gom-bat-trang-trung-tam-tinh-hoa-lang-nghe-viet-73905.html",
+          "verified_status": "unverified",
+          "notes": [
+            "Hai mức giá giữa các nguồn, cần xác nhận"
+          ],
+          "media": [
+            {
+              "file": "media/activities/bat-trang-a03.jpg",
+              "image_url": "http://tinhhoalangnghe.vn/content/uploads/cms/2022/12/10/3188024241954146763558402872289564759223868n.jpg",
+              "page_url": "http://tinhhoalangnghe.vn/vi/p/cap-nhap-gia-ve-moi-nhat-cua-bao-tang-gom-bat-trang-trung-tam-tinh-hoa-lang-nghe-viet-73905.html"
+            },
+            {
+              "file": "media/activities/bat-trang-a03_2.jpg",
+              "image_url": "http://tinhhoalangnghe.vn/content/uploads/cms/2022/06/27/z3476177076702df111e5c1e82556578ce5c83db7bdbd2.jpg",
+              "page_url": "http://tinhhoalangnghe.vn/vi/p/cap-nhap-gia-ve-moi-nhat-cua-bao-tang-gom-bat-trang-trung-tam-tinh-hoa-lang-nghe-viet-73905.html"
+            }
+          ],
+          "image_url": "media/activities/bat-trang-a03.jpg"
+        },
+        {
+          "activity_id": "bat-trang-a04",
+          "provider_id": "bat-trang-p02",
+          "name": "Vigo Workshop (Nặn - Vẽ - Ghép gốm Mosaic)",
+          "description": "Trải nghiệm sáng tạo gốm từ cơ bản đến nâng cao có người hướng dẫn chi tiết và mang thành phẩm về.",
+          "duration": null,
+          "price_raw": null,
+          "source": "https://www.vigobattrang.com/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/bat-trang-a04.jpg",
+              "image_url": "https://static.wixstatic.com/media/bf5ef8_e6eac6df95c041aab81d7fc4e7d4c94f~mv2.jpg/v1/fill/w_1737,h_1042,al_c/bf5ef8_e6eac6df95c041aab81d7fc4e7d4c94f~mv2.jpg",
+              "page_url": "https://www.vigobattrang.com/"
+            },
+            {
+              "file": "media/activities/bat-trang-a04_2.jpg",
+              "image_url": "https://www.vietnamairlines.com/content/dam/legacy-site-assets/SEO-images/2025 SEO/Thay Anh Traffic Tieng Viet/workshop lam gom ha noi/pottery-workshop.png",
+              "page_url": "https://www.vietnamairlines.com/go/vi/plan-book/travel/travel-guide/workshop-lam-gom-ha-noi"
+            }
+          ],
+          "image_url": "media/activities/bat-trang-a04.jpg"
+        },
+        {
+          "activity_id": "bat-trang-a05",
+          "provider_id": "bat-trang-p03",
+          "name": "Workshop làm gốm trọn gói",
+          "description": "Trải nghiệm làm gốm tại xưởng không phát sinh thêm chi phí.",
+          "duration": null,
+          "price_raw": "90.000 VNĐ/người",
+          "source": "https://www.facebook.com/61570354648126/posts/b%E1%BA%A1n-ch%E1%BB%89-c%E1%BA%A7n-c%E1%BA%A7m-90k-%C4%91i-tr%E1%BA%A3i-nghi%E1%BB%87m-workshop-kh%C3%B4ng-m%E1%BA%A5t-th%C3%AAm-1-chi-ph%C3%AD-n%C3%A0o-%E1%BB%9F-t%C3%AD-t%C3%A1/122184885806678488/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/bat-trang-a05.jpg",
+              "image_url": "https://static.vinwonders.com/production/optimize_workshop-lam-gom-ha-noi-01.jpg",
+              "page_url": "https://vinwonders.com/vi/wonderpedia/news/workshop-lam-gom-ha-noi/"
+            }
+          ],
+          "image_url": "media/activities/bat-trang-a05.jpg"
+        },
+        {
+          "activity_id": "bat-trang-a06",
+          "provider_id": "bat-trang-p04",
+          "name": "Tham quan Lò Bầu Cổ & làm gốm",
+          "description": "Tham quan kiến trúc lò bầu cổ nung gốm truyền thống và khu vực làm gốm trải nghiệm.",
+          "duration": null,
+          "price_raw": null,
+          "source": "https://www.facebook.com/lobauco/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/bat-trang-a06.jpg",
+              "image_url": "https://static.vinwonders.com/production/lang-gom-bat-trang-2.jpg",
+              "page_url": "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/"
+            },
+            {
+              "file": "media/activities/bat-trang-a06_2.jpg",
+              "image_url": "https://static.vinwonders.com/production/lang-gom-bat-trang-3.jpg",
+              "page_url": "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/"
+            }
+          ],
+          "image_url": "media/activities/bat-trang-a06.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/bat-trang.jpg",
+          "image_url": "https://ceramuseum.com/UploadFile/Article/About.jpg",
+          "page_url": "https://ceramuseum.com/"
+        }
+      ],
+      "image_url": "media/villages/bat-trang.jpg"
+    },
+    {
+      "village_id": "kim-lan",
+      "village_name": "Làng gốm cổ Kim Lan",
+      "district_raw": "Gia Lâm",
+      "providers": [
+        {
+          "provider_id": "kim-lan-p01",
+          "name": "Bảo tàng Gốm sứ và Lịch sử xã Kim Lan (Trung tâm trưng bày tinh hoa gốm sứ Kim Lan)",
+          "type": "museum_center",
+          "type_raw": "Bảo tàng / Trung tâm trưng bày",
+          "address": "XW73+GFX, Khu vực trung tâm thôn 1, xã Kim Lan, Gia Lâm, Hà Nội",
+          "phones": [
+            "+84 91 835 79 91"
+          ],
+          "contact_person": "Hội Gốm sứ Kim Lan",
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/Kimlanceramic/",
+          "source": "https://www.facebook.com/Kimlanceramic/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Số điện thoại định dạng bất thường (+84 91 835 79 91), cần kiểm tra",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": 20.96369,
+            "lng": 105.90369,
+            "plus_code": "XW73+GFX",
+            "status": "from_plus_code"
+          },
+          "other_links": [
+            "https://vov.vn/du-lich/mot-ngay-o-lang-gom-co-kim-lan-nghe-chuyen-nghin-nam-tu-dat-va-lua-post1339798.vov",
+            "https://vtcnews.vn/bao-tang-luu-giu-hon-300-co-vat-o-lang-gom-nghin-nam-tuoi-ben-song-hong-ar1047208.html",
+            "https://baomoi.com/lang-co-kim-lan-doi-song-doi-gom-c56451764.epi",
+            "https://tapchicongthuong.vn/lang-gom-co-kim-lan-12363.htm"
+          ],
+          "media": [
+            {
+              "file": "media/providers/kim-lan-p01.jpg",
+              "image_url": "https://cdn-i.vtcnews.vn/resize/1200x900/upload/2026/10/25/429a5d5d-cad7-456e-bea6-6c68a385905d-14130809.png",
+              "page_url": "https://vtcnews.vn/bao-tang-luu-giu-hon-300-co-vat-o-lang-gom-nghin-nam-tuoi-ben-song-hong-ar1047208.html"
+            },
+            {
+              "file": "media/providers/kim-lan-p01_2.jpg",
+              "image_url": "https://cdn-i.vtcnews.vn/resize/th/upload/2026/10/25/bando-13391628.png",
+              "page_url": "https://vtcnews.vn/bao-tang-luu-giu-hon-300-co-vat-o-lang-gom-nghin-nam-tuoi-ben-song-hong-ar1047208.html"
+            }
+          ],
+          "image_url": "media/providers/kim-lan-p01.jpg"
+        },
+        {
+          "provider_id": "kim-lan-p02",
+          "name": "Gốm Sứ Kim Lan Hà Nội",
+          "type": "workshop_studio",
+          "type_raw": "Xưởng / Cơ sở sản xuất đón khách",
+          "address": "Số 05, Ngõ 169, Kim Lan, Gia Lâm, Hà Nội",
+          "phones": [
+            "0962 334 368"
+          ],
+          "contact_person": "Ms. Hương / Mr. Phong",
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": "0962 334 368",
+          "email": null,
+          "website": "https://www.gomsukimlanhanoi.com/",
+          "fanpage": null,
+          "source": "https://www.gomsukimlanhanoi.com/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [],
+          "coordinates": {
+            "lat": 20.9605,
+            "lng": 105.9062,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "media": [
+            {
+              "file": "media/providers/kim-lan-p02.jpg",
+              "image_url": "https://static.wixstatic.com/media/c042ae_49650dabddb644dd9766f83155cd4d50~mv2.jpg/v1/fill/w_899,h_600,al_c/c042ae_49650dabddb644dd9766f83155cd4d50~mv2.jpg",
+              "page_url": "https://www.gomsukimlanhanoi.com/"
+            },
+            {
+              "file": "media/providers/kim-lan-p02_2.jpg",
+              "image_url": "https://static.wixstatic.com/media/c042ae_dc96c9c60e2041aba44409c44e778908~mv2.jpg/v1/fill/w_608,h_538,q_87,enc_avif,quality_auto/c042ae_dc96c9c60e2041aba44409c44e778908~mv2.jpg",
+              "page_url": "https://www.gomsukimlanhanoi.com/"
+            }
+          ],
+          "image_url": "media/providers/kim-lan-p02.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "kim-lan-a01",
+          "provider_id": "kim-lan-p01",
+          "name": "Tham quan Bảo tàng Gốm sứ Kim Lan & trải nghiệm gốm",
+          "description": "Tham quan gần 3.000 hiện vật gốm cổ khai quật tại bãi Hàm Rồng và tham gia các buổi workshop trải nghiệm gốm do Hội gốm sứ Kim Lan tổ chức.",
+          "duration": null,
+          "price_raw": null,
+          "source": "https://battrang.hanoi.gov.vn/van-hoa-xa-hoi/trai-nghiem-gom-ke-chuyen-em-voi-gom-kim-lan-gieo-mam-tinh-yeu-lang-nghe-trong-the-he-tre-2757260805103115029.htm",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/kim-lan-a01.jpg",
+              "image_url": "https://sqhx-hanoi.mediacdn.vn/91579363132710912/2026/8/5/dsc04439-1785900455274418968787-40-0-1640-2560-crop-1785900622845170964408.jpg",
+              "page_url": "https://battrang.hanoi.gov.vn/van-hoa-xa-hoi/trai-nghiem-gom-ke-chuyen-em-voi-gom-kim-lan-gieo-mam-tinh-yeu-lang-nghe-trong-the-he-tre-2757260805103115029.htm"
+            },
+            {
+              "file": "media/activities/kim-lan-a01_2.jpg",
+              "image_url": "https://datafiles.hanoi.gov.vn/gov-hni/1/Banner/quoc-huy-961881.png",
+              "page_url": "https://battrang.hanoi.gov.vn/van-hoa-xa-hoi/trai-nghiem-gom-ke-chuyen-em-voi-gom-kim-lan-gieo-mam-tinh-yeu-lang-nghe-trong-the-he-tre-2757260805103115029.htm"
+            }
+          ],
+          "image_url": "media/activities/kim-lan-a01.jpg"
+        },
+        {
+          "activity_id": "kim-lan-a02",
+          "provider_id": "kim-lan-p02",
+          "name": "Tham quan cơ sở sản xuất gốm",
+          "description": "Tham quan quy trình sản xuất gốm gia dụng truyền thống tại xưởng và các điểm di tích trong làng.",
+          "duration": null,
+          "price_raw": null,
+          "source": "https://www.gomsukimlanhanoi.com/tong-hop-cac-diem-check-in-hot-nhat-lang-gom",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/kim-lan-a02.jpg",
+              "image_url": "https://static.wixstatic.com/media/c042ae_50e6afae60da4deb95247b1a7f95da69~mv2.jpg/v1/fill/w_787,h_525,al_c/c042ae_50e6afae60da4deb95247b1a7f95da69~mv2.jpg",
+              "page_url": "https://www.gomsukimlanhanoi.com/tong-hop-cac-diem-check-in-hot-nhat-lang-gom"
+            },
+            {
+              "file": "media/activities/kim-lan-a02_2.jpg",
+              "image_url": "https://static.wixstatic.com/media/c042ae_1053cd80fe484e029b8cca4b73ed589e~mv2.jpg/v1/fill/w_787,h_525,q_90,enc_avif,quality_auto/c042ae_1053cd80fe484e029b8cca4b73ed589e~mv2.jpg",
+              "page_url": "https://www.gomsukimlanhanoi.com/tong-hop-cac-diem-check-in-hot-nhat-lang-gom"
+            }
+          ],
+          "image_url": "media/activities/kim-lan-a02.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/kim-lan.jpg",
+          "image_url": "https://cdn-i.vtcnews.vn/resize/1200x900/upload/2026/10/25/429a5d5d-cad7-456e-bea6-6c68a385905d-14130809.png",
+          "page_url": "https://vtcnews.vn/bao-tang-luu-giu-hon-300-co-vat-o-lang-gom-nghin-nam-tuoi-ben-song-hong-ar1047208.html"
+        }
+      ],
+      "image_url": "media/villages/kim-lan.jpg"
+    },
+    {
+      "village_id": "xuan-la",
+      "village_name": "Làng tò he Xuân La",
+      "district_raw": "Phú Xuyên",
+      "providers": [
+        {
+          "provider_id": "xuan-la-p01",
+          "name": "Làng Tò He - Crafting Traditions (Nhà Nghệ nhân Đặng Đình Hờn)",
+          "type": "artisan_workshop",
+          "type_raw": "Nhà nghệ nhân có workshop / Khu trưng bày",
+          "address": "Số 6 ngõ 7 Nguyễn Huệ (Xóm Thượng), Xuân La, Phượng Dực, Phú Xuyên, Hà Nội",
+          "phones": [
+            "0904 675 176",
+            "0988 088 590"
+          ],
+          "contact_person": "Nghệ nhân Đặng Đình Hờn",
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": "0904 675 176 / 0988 088 590",
+          "email": null,
+          "website": "http://langtohe.com/",
+          "fanpage": "https://www.facebook.com/langtohe/",
+          "source": "https://www.facebook.com/langtohe/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ là điểm ước lượng khu vực, cần kiểm tra trên Maps",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": 20.7421,
+            "lng": 105.8685,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "other_links": [
+            "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html",
+            "https://vietnamnews.vn/life-style/1780373/hands-on-tradition-at-dough-figurine-craft-village.html",
+            "https://vietnam.vnanet.vn/vietnamese/long-form/suc-song-moi-cua-lang-nghe-to-he-xuan-la-471940.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/xuan-la-p01.jpg",
+              "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/in_social/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172539.jpg?randTime=1794673310",
+              "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+            },
+            {
+              "file": "media/providers/xuan-la-p01_2.jpg",
+              "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172514.jpg?rt=20260120172541",
+              "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+            }
+          ],
+          "image_url": "media/providers/xuan-la-p01.jpg"
+        },
+        {
+          "provider_id": "xuan-la-p02",
+          "name": "Cơ sở Nghệ nhân Ưu tú Nguyễn Văn Thành",
+          "type": "artisan_workshop",
+          "type_raw": "Nhà nghệ nhân có workshop",
+          "address": "Thôn Xuân La, xã Phượng Dực, Phú Xuyên, Hà Nội",
+          "phones": [
+            "0985 092 677",
+            "0382 490 416"
+          ],
+          "contact_person": "Nghệ nhân Nguyễn Văn Thành",
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": "https://tohexuanla.vn/",
+          "fanpage": null,
+          "source": "https://tohexuanla.vn/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Địa chỉ chưa có số nhà",
+            "Tọa độ là điểm ước lượng khu vực, cần kiểm tra trên Maps"
+          ],
+          "coordinates": {
+            "lat": 20.7415,
+            "lng": 105.8679,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "media": [
+            {
+              "file": "media/providers/xuan-la-p02.jpg",
+              "image_url": "https://tohexuanla.vn/uploads/D%E1%BA%A1y%20n%E1%BA%B7n%20Tr%E1%BA%BB%20Em%20c%C3%A1c%20N%C6%B0%E1%BB%9Bc%20ASEAN.jpg",
+              "page_url": "https://tohexuanla.vn/"
+            },
+            {
+              "file": "media/providers/xuan-la-p02_2.jpg",
+              "image_url": "https://tohexuanla.vn/uploads/d%E1%BA%A1y%20n%E1%BA%B7n%20t%C3%B2%20he%20Sinh%20vi%C3%AAn%20n%C6%B0%E1%BB%9Bc%20ngo%C3%A0i(2).jpg",
+              "page_url": "https://tohexuanla.vn/"
+            }
+          ],
+          "image_url": "media/providers/xuan-la-p02.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "xuan-la-a01",
+          "provider_id": "xuan-la-p01",
+          "name": "Workshop Tò He Tại Nhà Nghệ Nhân",
+          "description": "Nghe nghệ nhân kể chuyện về lịch sử nghề tò he, tham quan khu trưng bày và tự tay nặn tạo hình tò he dưới sự hướng dẫn trực tiếp.",
+          "duration": null,
+          "price_raw": null,
+          "booking_note": "Cần đặt lịch trước",
+          "source": "https://www.facebook.com/langtohe/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/xuan-la-a01.jpg",
+              "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172520.jpg?rt=20260120173600",
+              "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+            },
+            {
+              "file": "media/activities/xuan-la-a01_2.jpg",
+              "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172524.jpg?rt=20260120173137",
+              "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+            }
+          ],
+          "image_url": "media/activities/xuan-la-a01.jpg"
+        },
+        {
+          "activity_id": "xuan-la-a02",
+          "provider_id": "xuan-la-p02",
+          "name": "Trải nghiệm nặn tò he tại gia đình nghệ nhân",
+          "description": "Khách về trực tiếp gia đình nghệ nhân để tìm hiểu và thực hành nặn tò he truyền thống.",
+          "duration": null,
+          "price_raw": null,
+          "source": "https://tohexuanla.vn/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/xuan-la-a02.jpg",
+              "image_url": "https://tohexuanla.vn/uploads/D%E1%BA%A1y%20N%E1%BA%B7n%20T%E1%BA%A1i%20TR%C6%B0%E1%BB%9Dng%20M%E1%BA%A7m%20Non%20SaKuRa(2).jpg",
+              "page_url": "https://tohexuanla.vn/"
+            },
+            {
+              "file": "media/activities/xuan-la-a02_2.jpg",
+              "image_url": "https://tohexuanla.vn/uploads/image/TinTuc/chitichhiephoilangnghethegioi.JPG",
+              "page_url": "https://tohexuanla.vn/"
+            }
+          ],
+          "image_url": "media/activities/xuan-la-a02.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/xuan-la.jpg",
+          "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/in_social/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172539.jpg?randTime=1794673310",
+          "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+        }
+      ],
+      "image_url": "media/villages/xuan-la.jpg"
+    },
+    {
+      "village_id": "ha-thai",
+      "village_name": "Làng sơn mài Hạ Thái",
+      "district_raw": "Thường Tín",
+      "providers": [
+        {
+          "provider_id": "ha-thai-p01",
+          "name": "Hạ Thái lacquer - Local touch",
+          "type": "workshop_studio",
+          "type_raw": "Xưởng có workshop",
+          "address": "Làng Hạ Thái, xã Duyên Thái (nay thuộc xã Hồng Vân), Thường Tín, Hà Nội",
+          "phones": [
+            "+84 962 490 801"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/langnghesonmai/",
+          "source": "https://www.facebook.com/langnghesonmai/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": 20.9032,
+            "lng": 105.8655,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "other_links": [
+            "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html",
+            "https://giaoduc.net.vn/ha-noi-du-khach-nuoc-ngoai-thich-thu-trai-nghiem-lam-tranh-son-mai-ha-thai-post245451.gd",
+            "https://baomoi.com/son-mai-ha-thai-khi-chat-lieu-truyen-thong-song-cung-nhip-tho-duong-dai-c56287127.epi",
+            "https://nongnghiepmoitruong.vn/son-mai-ha-thai--tinh-hoa-viet-trong-lang-nghe-thu-cong-d805009.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/ha-thai-p01.jpg",
+              "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/w_dsc09522_original-1833.jpg",
+              "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+            },
+            {
+              "file": "media/providers/ha-thai-p01_2.jpg",
+              "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/w_dsc09530_original-1835.jpg",
+              "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+            }
+          ],
+          "image_url": "media/providers/ha-thai-p01.jpg"
+        },
+        {
+          "provider_id": "ha-thai-p02",
+          "name": "Làng nghề sơn mài Hạ Thái (Phúc Cường Lacquer)",
+          "type": "workshop_studio",
+          "type_raw": "Xưởng sản xuất đón khách",
+          "address": "WV38+668, Hạ Thái, Thường Tín, Hà Nội",
+          "phones": [
+            "+84 377 849 519"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": "phuccuonglacquer@gmail.com",
+          "website": "http://lacquerpc.com/",
+          "fanpage": null,
+          "source": "Google Maps (Làng nghề sơn mài Hạ Thái)",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Địa chỉ là Plus Code"
+          ],
+          "coordinates": {
+            "lat": 20.90306,
+            "lng": 105.86556,
+            "plus_code": "WV38+668",
+            "status": "from_plus_code"
+          },
+          "media": [
+            {
+              "file": "media/providers/ha-thai-p02.jpg",
+              "image_url": "https://lacquerpc.com/uploads/0000/1/2023/05/14/logo-011.png",
+              "page_url": "http://lacquerpc.com/"
+            }
+          ],
+          "image_url": "media/providers/ha-thai-p02.jpg"
+        },
+        {
+          "provider_id": "ha-thai-p03",
+          "name": "Hathai Lacquer Art Co., Ltd",
+          "type": "workshop_shop",
+          "type_raw": "Xưởng / Cửa hàng",
+          "address": "Số 79 Đường Hạ Thái, Thường Tín, Hà Nội",
+          "phones": [
+            "+84 961 992 263"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": "https://hathailacquerart.com/",
+          "fanpage": null,
+          "source": "https://hathailacquerart.com/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": 20.9024,
+            "lng": 105.8648,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "other_links": [
+            "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html",
+            "https://giaoduc.net.vn/ha-noi-du-khach-nuoc-ngoai-thich-thu-trai-nghiem-lam-tranh-son-mai-ha-thai-post245451.gd",
+            "https://baomoi.com/son-mai-ha-thai-khi-chat-lieu-truyen-thong-song-cung-nhip-tho-duong-dai-c56287127.epi",
+            "https://nongnghiepmoitruong.vn/son-mai-ha-thai--tinh-hoa-viet-trong-lang-nghe-thu-cong-d805009.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/ha-thai-p03.jpg",
+              "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/2-1501999932842-1852.jpg",
+              "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+            },
+            {
+              "file": "media/providers/ha-thai-p03_2.jpg",
+              "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/24a07050-11-1853.jpg",
+              "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+            }
+          ],
+          "image_url": "media/providers/ha-thai-p03.jpg"
+        },
+        {
+          "provider_id": "ha-thai-p04",
+          "name": "Ha Thai bamboo lacquer (HTX Sơn mài Hạ Thái)",
+          "type": "workshop_cooperative",
+          "type_raw": "Xưởng / Hợp tác xã",
+          "address": "Làng Hạ Thái, Thường Tín, Hà Nội",
+          "phones": [
+            "+84 24 3999 1276"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": "http://lacquerhomevn.com/",
+          "fanpage": null,
+          "source": "Google Maps (Ha Thai bamboo lacquer)",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Cần kiểm tra số HTX 024 3999 1276",
+            "Địa chỉ chưa có số nhà"
+          ],
+          "coordinates": {
+            "lat": 20.9038,
+            "lng": 105.8662,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "media": [
+            {
+              "file": "media/providers/ha-thai-p04.jpg",
+              "image_url": "http://lacquerhomevn.com/wp-content/uploads/2014/09/BAMBOO-BG_CHUAN.jpg",
+              "page_url": "http://lacquerhomevn.com/"
+            },
+            {
+              "file": "media/providers/ha-thai-p04_2.jpg",
+              "image_url": "http://lacquerhomevn.com/wp-content/uploads/2014/11/Lacquer-box1.png",
+              "page_url": "http://lacquerhomevn.com/"
+            }
+          ],
+          "image_url": "media/providers/ha-thai-p04.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "ha-thai-a01",
+          "provider_id": "ha-thai-p01",
+          "name": "Workshop trải nghiệm làm tranh sơn mài tại xưởng",
+          "description": "Trực tiếp tham quan xưởng sản xuất, tìm hiểu quy trình làm tranh sơn mài từ A-Z và tự tay thực hành làm sản phẩm cùng nghệ nhân.",
+          "duration": null,
+          "price_raw": "Chỉ từ 150.000đ/khách",
+          "source": "https://www.facebook.com/langnghesonmai/posts/%C4%91%C4%83ng-k%C3%BD-tr%E1%BA%A3i-nghi%E1%BB%87m-l%C3%A0m-tranh-s%C6%A1n-m%C3%A0i-t%E1%BA%A1i-x%C6%B0%E1%BB%9Fngkh%C3%A1m-ph%C3%A1-c%C3%A1c-c%C3%B4ng-%C4%91o%E1%BA%A1n-t%E1%BA%A1o-n%C3%AAn-m%E1%BB%99/1384995765922190/",
+          "verified_status": "unverified",
+          "notes": [
+            "Giá 'chỉ từ', chưa rõ giá cụ thể"
+          ],
+          "media": [
+            {
+              "file": "media/activities/ha-thai-a01.jpg",
+              "image_url": "https://cdn.giaoduc.net.vn/images/TeTGi3RTDuGEHhh4N3ZDJdSpLWa2RYrwpk_xJzK8XbiMqHBMJ2vCn0nxeZKRkq9_5q3duTzB4UZTiGf_RYtEK1cF75BflqOKkdsj2XyCUYMT0TycNpf0QLgvemLoxrKxmPs189I81g7r7MnWXU2wrg/trai-nghiem-du-lich-lang-nghe-son-mai-4243-894.jpg.webp",
+              "page_url": "https://giaoduc.net.vn/ha-noi-du-khach-nuoc-ngoai-thich-thu-trai-nghiem-lam-tranh-son-mai-ha-thai-post245451.gd"
+            },
+            {
+              "file": "media/activities/ha-thai-a01_2.jpg",
+              "image_url": "https://t.ex-cdn.com/nongnghiepmoitruong.vn/800w/files/haxn76/2026/04/06/3649-son-mai-ha-thai-nongnghiep-193637.jpg",
+              "page_url": "https://nongnghiepmoitruong.vn/son-mai-ha-thai--tinh-hoa-viet-trong-lang-nghe-thu-cong-d805009.html"
+            }
+          ],
+          "image_url": "media/activities/ha-thai-a01.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/ha-thai.jpg",
+          "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/w_dsc09522_original-1833.jpg",
+          "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+        }
+      ],
+      "image_url": "media/villages/ha-thai.jpg"
+    },
+    {
+      "village_id": "yen-thai",
+      "village_name": "Làng giấy Dó Yên Thái",
+      "district_raw": "Tây Hồ",
+      "providers": [
+        {
+          "provider_id": "yen-thai-p01",
+          "name": "Zó Project (Không gian trưng bày nghề làm giấy Dó Yên Thái)",
+          "type": "exhibition_workshop",
+          "type_raw": "Trung tâm trưng bày / Xưởng có workshop",
+          "address": "Số 189 Trích Sài, phường Bưởi, quận Tây Hồ, Hà Nội",
+          "phones": [
+            "0388 463 728",
+            "+84 36 660 2928"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": "https://www.zoproject.com/vi",
+          "fanpage": "https://www.facebook.com/zoproject/",
+          "source": "https://www.facebook.com/Zopaper/posts/kh%C3%A1m-ph%C3%A1-ngh%E1%BB%87-thu%E1%BA%ADt-th%E1%BB%A7-c%C3%B4ng-vi%E1%BB%87t-workshop-tr%E1%BA%A3i-nghi%E1%BB%87m-l%C3%A0m-gi%E1%BA%A5y-d%C3%B3-b%E1%BA%A1n-%C4%91ang-t%C3%ACm-/1181041400714341/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Có thể trùng đơn vị với yen-thai-p02 (cùng địa chỉ)",
+            "Hai cơ sở Yên Thái trùng hoàn toàn tọa độ, củng cố khả năng là một đơn vị"
+          ],
+          "coordinates": {
+            "lat": 21.04945,
+            "lng": 105.81395,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "other_links": [
+            "https://www.facebook.com/Zopaper/"
+          ],
+          "media": [
+            {
+              "file": "media/providers/yen-thai-p01.jpg",
+              "image_url": "https://static.wixstatic.com/media/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png/v1/fit/w_2500,h_1330,al_c/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png",
+              "page_url": "https://www.zoproject.com/vi"
+            }
+          ],
+          "image_url": "media/providers/yen-thai-p01.jpg"
+        },
+        {
+          "provider_id": "yen-thai-p02",
+          "name": "Bảo tàng Giấy Dó Yên Thái",
+          "type": "museum_center",
+          "type_raw": "Bảo tàng / Không gian trải nghiệm",
+          "address": "Số 189 Trích Sài, Tây Hồ, Hà Nội (cùng khuôn viên cơ sở Zó tại Kẻ Bưởi)",
+          "phones": [],
+          "contact_person": "Đội ngũ Zó / Hà Nội Trải Nghiệm Mới",
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/hanoitrainghiemmoi/",
+          "source": "https://www.facebook.com/hanoitrainghiemmoi/posts/b%E1%BA%A3o-t%C3%A0ng-gi%E1%BA%A5y-d%C3%B3-khi-ti%E1%BA%BFng-ch%C3%A0y-y%C3%AAn-th%C3%A1i-tr%E1%BB%9F-l%E1%BA%A1i-gi%E1%BB%AFa-l%C3%B2ng-h%C3%A0-n%E1%BB%99i-gi%E1%BB%AFa-ph%E1%BB%91-th%E1%BB%8B-h/122184585956726617/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Có thể trùng đơn vị với yen-thai-p01 (Zó Project)",
+            "Cần kiểm tra 'Hà Nội Trải Nghiệm Mới' có phải đơn vị tour không",
+            "Trùng tọa độ với yen-thai-p01",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": 21.04945,
+            "lng": 105.81395,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "other_links": [
+            "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html",
+            "https://vietnamnet.vn/en/new-tourist-attraction-opens-in-hanoi-introducing-the-craft-of-making-do-paper-2281021.html",
+            "https://en.baoquocte.vn/zo-paper-from-local-craft-to-global-stage-386725.html",
+            "https://vntravellive.com/en/giay-do-va-hanh-trinh-hoi-sinh-mot-di-san-thu-cong-giua-thoi-hien-dai-d39026.html",
+            "https://vietcetera.com/vn/zo-project-luu-giu-net-dep-giay-do-viet"
+          ],
+          "media": [
+            {
+              "file": "media/providers/yen-thai-p02.jpg",
+              "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545176_IMG_20261114_132758.jpg",
+              "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+            },
+            {
+              "file": "media/providers/yen-thai-p02_2.jpg",
+              "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545169_sơn.jpg",
+              "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+            }
+          ],
+          "image_url": "media/providers/yen-thai-p02.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "yen-thai-a01",
+          "provider_id": "yen-thai-p01",
+          "name": "Workshop Cùng Zó làm sổ",
+          "description": "Trải nghiệm khâu và hoàn thiện một hoặc hai cuốn sổ tay từ giấy Dó thủ công tại không gian trưng bày.",
+          "duration": "Khoảng 1 giờ (thường tổ chức Chủ Nhật hàng tuần)",
+          "price_raw": null,
+          "source": "https://www.facebook.com/Zopaper/posts/kh%C3%A1m-ph%C3%A1-ngh%E1%BB%87-thu%E1%BA%ADt-th%E1%BB%A7-c%C3%B4ng-vi%E1%BB%87t-workshop-tr%E1%BA%A3i-nghi%E1%BB%87m-l%C3%A0m-gi%E1%BA%A5y-d%C3%B3-b%E1%BA%A1n-%C4%91ang-t%C3%ACm-/1181041400714341/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/yen-thai-a01.jpg",
+              "image_url": "https://static.wixstatic.com/media/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png/v1/fit/w_2500,h_1330,al_c/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png",
+              "page_url": "https://www.zoproject.com/vi"
+            },
+            {
+              "file": "media/activities/yen-thai-a01_2.jpg",
+              "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545176_IMG_20261114_132758.jpg",
+              "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+            }
+          ],
+          "image_url": "media/activities/yen-thai-a01.jpg"
+        },
+        {
+          "activity_id": "yen-thai-a02",
+          "provider_id": "yen-thai-p01",
+          "name": "Workshop seo giấy Dó thủ công",
+          "description": "Trực tiếp cầm khuôn tre nhúng vào bể bột dó, hớt lớp bột mỏng, trang trí hoa lá lên mặt giấy ướt và ép khô.",
+          "duration": "2 - 3 tiếng (mở theo đợt cuối tuần)",
+          "price_raw": null,
+          "booking_note": "Hỏi khi đặt lịch",
+          "source": "https://govietnam.travel/experience/zo-project-do-paper-workshop-hanoi/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/yen-thai-a02.jpg",
+              "image_url": "https://cdn.govietnam.travel/wp-content/uploads/og/46030-c0405a811c.jpg",
+              "page_url": "https://govietnam.travel/experience/zo-project-do-paper-workshop-hanoi/"
+            },
+            {
+              "file": "media/activities/yen-thai-a02_2.jpg",
+              "image_url": "https://cdn.govietnam.travel/wp-content/uploads/2026/07/san-pham-giay-do-trung-bay-tai-workshop-1742804483415349891108-1600x640.jpeg",
+              "page_url": "https://govietnam.travel/experience/zo-project-do-paper-workshop-hanoi/"
+            }
+          ],
+          "image_url": "media/activities/yen-thai-a02.jpg"
+        },
+        {
+          "activity_id": "yen-thai-a03",
+          "provider_id": "yen-thai-p01",
+          "name": "Workshop In Thủy Ấn trên giấy Dó",
+          "description": "Trải nghiệm làm mẫu tranh thủy ấn trên nền giấy Dó dưới sự hướng dẫn của nghệ nhân.",
+          "duration": null,
+          "price_raw": "150.000đ",
+          "source": "https://www.facebook.com/zoproject/posts/ch%E1%BB%89-c%C3%B2n-1-ng%C3%A0y-n%E1%BB%AFa-th%C3%B4i-workshop-in-th%E1%BB%A7y-%E1%BA%A5n-s%E1%BA%BD-di%E1%BB%85n-ra-t%E1%BA%A1i-c%C6%A1-s%E1%BB%9F-189-tr%C3%ADch-s%C3%A0i-c/466005452741993/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/yen-thai-a03.jpg",
+              "image_url": "https://static.wixstatic.com/media/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png/v1/fit/w_2500,h_1330,al_c/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png",
+              "page_url": "https://www.zoproject.com/vi"
+            },
+            {
+              "file": "media/activities/yen-thai-a03_2.jpg",
+              "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545176_IMG_20261114_132758.jpg",
+              "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+            }
+          ],
+          "image_url": "media/activities/yen-thai-a03.jpg"
+        },
+        {
+          "activity_id": "yen-thai-a04",
+          "provider_id": "yen-thai-p02",
+          "name": "Tham quan Bảo tàng & Workshop Diều Giấy Dó",
+          "description": "Tìm hiểu lịch sử nghề giấy Dó vùng Kẻ Bưởi, tham quan không gian bảo tàng và tự tay làm diều hoặc sổ giấy Dó.",
+          "duration": null,
+          "price_raw": null,
+          "source": "https://www.facebook.com/hanoitrainghiemmoi/posts/gi%E1%BA%A5y-d%C3%B3-t%E1%BB%AB-n%C3%A9t-ngh%E1%BB%81-x%C6%B0a-%C4%91%E1%BA%BFn-nh%E1%BB%AFng-tr%E1%BA%A3i-nghi%E1%BB%87m-h%C3%B4m-nay-c%C3%B3-nh%E1%BB%AFng-ch%E1%BA%A5t-li%E1%BB%87u-t%C6%B0%E1%BB%9Fng-c/122188550168726617/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/yen-thai-a04.jpg",
+              "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545153_x.jpg",
+              "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+            },
+            {
+              "file": "media/activities/yen-thai-a04_2.jpg",
+              "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545151_img_0464.jpg",
+              "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+            }
+          ],
+          "image_url": "media/activities/yen-thai-a04.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/yen-thai.jpg",
+          "image_url": "https://static.wixstatic.com/media/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png/v1/fit/w_2500,h_1330,al_c/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png",
+          "page_url": "https://www.zoproject.com/vi"
+        }
+      ],
+      "image_url": "media/villages/yen-thai.jpg"
+    },
+    {
+      "village_id": "chang-son",
+      "village_name": "Làng quạt giấy Chàng Sơn",
+      "district_raw": "Thạch Thất",
+      "providers": [
+        {
+          "provider_id": "chang-son-p01",
+          "name": "Quạt Chàng Sơn – Sắc Màu Xứ Đoài",
+          "type": "artisan_workshop",
+          "type_raw": "Xưởng nghệ nhân có workshop / Điểm tham quan",
+          "address": "Số 37, Xóm Đình, Thôn 3, làng Chàng Sơn, xã Tây Phương, Thạch Thất, Hà Nội",
+          "phones": [
+            "0947 288 111",
+            "0912 916 992",
+            "0327 049 132"
+          ],
+          "contact_person": "Chị Quỳnh",
+          "contact_phone": "0947 288 111",
+          "contact_note": "Đặt workshop, xưởng, sự kiện. Khác: Bà Tuấn (0912 916 992, nghệ nhân); Em Thái Sơn (0327 049 132)",
+          "zalo": null,
+          "email": null,
+          "website": "https://quatchangson.vn/",
+          "fanpage": "https://www.facebook.com/quatchangson.vn/",
+          "source": "https://www.facebook.com/quatchangson.vn/posts/1622595016227327",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "coordinates": {
+            "lat": 21.02815,
+            "lng": 105.60345,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "notes": [
+            "Tọa độ là điểm ước lượng, cần kiểm tra trên Maps",
+            "Bản trước ghi '(xã Chàng Sơn cũ)'; bản này bỏ"
+          ],
+          "other_links": [
+            "https://quatchangson.vn/vi"
+          ],
+          "media": [
+            {
+              "file": "media/providers/chang-son-p01.jpg",
+              "image_url": "https://quatchangson.vn/quatcs-media/thu-vien-anh/quat-chang-son.jpg",
+              "page_url": "https://quatchangson.vn/"
+            },
+            {
+              "file": "media/providers/chang-son-p01_2.jpg",
+              "image_url": "https://quatchangson.vn/quatcs-media/crop/634_612/thu-vien-anh/z5072273679238_db3e890d7611d6766624c72e3f4f75b1.jpg",
+              "page_url": "https://quatchangson.vn/"
+            }
+          ],
+          "image_url": "media/providers/chang-son-p01.jpg"
+        },
+        {
+          "provider_id": "chang-son-p02",
+          "name": "Cơ sở Quạt nghệ thuật Nghệ nhân Dương Văn Mơ",
+          "type": "artisan_workshop",
+          "type_raw": "Xưởng nghệ nhân / Điểm tham quan & trải nghiệm",
+          "address": "Thôn 3, xã Chàng Sơn (nay thuộc xã Tây Phương), huyện Thạch Thất, Hà Nội",
+          "phones": [
+            "0983 806 392",
+            "0365 811 268"
+          ],
+          "contact_person": "Nghệ nhân Dương Văn Mơ",
+          "contact_phone": null,
+          "contact_note": null,
+          "zalo": null,
+          "email": null,
+          "website": "https://quatchangson.com.vn",
+          "fanpage": null,
+          "source": "https://quatchangson.com.vn",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "coordinates": {
+            "lat": 21.0285,
+            "lng": 105.6038,
+            "plus_code": null,
+            "status": "ai_estimated"
+          },
+          "notes": [
+            "Tọa độ là điểm ước lượng, cần kiểm tra trên Maps",
+            "Domain quatchangson.com.vn gần giống quatchangson.vn của p01, cần kiểm tra có phải trang riêng của nghệ nhân không"
+          ],
+          "media": [
+            {
+              "file": "media/providers/chang-son-p02.jpg",
+              "image_url": "https://cdn.baoquocte.vn/stores/news_dataimages/2026/042026/21/08/linh-vat-world-cup-2026-175887978098778792313-copy20260421082729.jpg",
+              "page_url": "https://baoquocte.vn/quat-nghe-thuat-con-do-mot-nghe-nhan-7043.html"
+            },
+            {
+              "file": "media/providers/chang-son-p02_2.jpg",
+              "image_url": "https://cdn.baoquocte.vn/stores/news_dataimages/2026/072026/17/21/screenshot-2026-07-17-205907-copy20260717210012.jpg",
+              "page_url": "https://baoquocte.vn/quat-nghe-thuat-con-do-mot-nghe-nhan-7043.html"
+            }
+          ],
+          "image_url": "media/providers/chang-son-p02.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "chang-son-a01",
+          "provider_id": "chang-son-p01",
+          "name": "Workshop trải nghiệm làm quạt giấy Chàng Sơn",
+          "description": "Tham quan xưởng thủ công và tự tay thực hành vào nan dán giấy trang trí hoàn thiện một chiếc quạt truyền thống.",
+          "duration": null,
+          "price_raw": null,
+          "booking_note": "Liên hệ Chị Quỳnh 0947 288 111 để đặt lịch",
+          "source": "https://www.facebook.com/quatchangson.vn/posts/khi-chi%E1%BA%BFc-qu%E1%BA%A1t-tr%E1%BB%9F-v%E1%BB%81-v%E1%BB%9Bi-s%C3%A2n-%C4%91%C3%ACnh-m%E1%BB%99t-bu%E1%BB%95i-workshop-kh%C3%B4ng-ch%E1%BB%89-c%C3%B3-tre-gi%E1%BA%A5y-v%C3%A0-nh/1633130191840476/",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/chang-son-a01.jpg",
+              "image_url": "https://static.vietnampedia.com/themes/personal/givest/assets/img/shape/circle1.png",
+              "page_url": "https://quatchangson.vn/"
+            },
+            {
+              "file": "media/activities/chang-son-a01_2.jpg",
+              "image_url": "https://static.vietnampedia.com/themes/personal/givest/assets/img/shape/map2.png",
+              "page_url": "https://quatchangson.vn/"
+            }
+          ],
+          "image_url": "media/activities/chang-son-a01.jpg"
+        },
+        {
+          "activity_id": "chang-son-a02",
+          "provider_id": "chang-son-p02",
+          "name": "Tham quan xưởng & trải nghiệm làm quạt cùng Nghệ nhân Dương Văn Mơ",
+          "description": "Tham quan không gian trưng bày quạt cổ nghe kể chuyện nghề và trực tiếp trải nghiệm các công đoạn làm quạt giấy quạt lụa tại gia đình nghệ nhân.",
+          "duration": null,
+          "price_raw": null,
+          "booking_note": "Liên hệ trước để đặt lịch đón tiếp",
+          "source": "https://quatchangson.com.vn",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/chang-son-a02.jpg",
+              "image_url": "https://cdn.baoquocte.vn/stores/news_dataimages/2026/042026/21/08/linh-vat-world-cup-2026-175887978098778792313-copy20260421082729.jpg",
+              "page_url": "https://baoquocte.vn/quat-nghe-thuat-con-do-mot-nghe-nhan-7043.html"
+            },
+            {
+              "file": "media/activities/chang-son-a02_2.jpg",
+              "image_url": "https://cdn.baoquocte.vn/stores/news_dataimages/2026/072026/17/21/screenshot-2026-07-17-205907-copy20260717210012.jpg",
+              "page_url": "https://baoquocte.vn/quat-nghe-thuat-con-do-mot-nghe-nhan-7043.html"
+            }
+          ],
+          "image_url": "media/activities/chang-son-a02.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/chang-son.jpg",
+          "image_url": "https://quatchangson.vn/quatcs-media/thu-vien-anh/quat-chang-son.jpg",
+          "page_url": "https://quatchangson.vn/"
+        }
+      ],
+      "image_url": "media/villages/chang-son.jpg"
+    },
+    {
+      "village_id": "van-phuc",
+      "village_name": "Làng lụa Vạn Phúc",
+      "district_raw": "Hà Đông",
+      "providers": [
+        {
+          "provider_id": "van-phuc-p01",
+          "name": "Hợp tác xã Vụn Art",
+          "type": "community_experience_center",
+          "type_raw": "Xưởng / Trung tâm trải nghiệm cộng đồng",
+          "address": "Trung tâm bảo tồn lụa Vạn Phúc, Số 16 Phố Lụa (và Kiot 23 Phố Lụa), Vạn Phúc, Hà Đông, Hà Nội",
+          "phones": [
+            "+84 912 573 876",
+            "+84 38 837 1992",
+            "+84 93 621 2706"
+          ],
+          "contact_person": "Lê Việt Cường",
+          "contact_phone": null,
+          "contact_note": "Giám đốc; bộ phận điều phối trải nghiệm",
+          "zalo": null,
+          "email": null,
+          "website": "vunart.vn",
+          "fanpage": "https://www.facebook.com/htxvunart",
+          "source": "Trang Trải nghiệm Vụn Art",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở trên Google Maps"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "media": [
+            {
+              "file": "media/providers/van-phuc-p01.jpg",
+              "image_url": "https://vunart.vn/wp-content/uploads/2025/12/Tranh-00107-1024x752.jpg",
+              "page_url": "https://vunart.vn"
+            },
+            {
+              "file": "media/providers/van-phuc-p01_2.jpg",
+              "image_url": "https://vunart.vn/wp-content/uploads/2025/11/BetterImage_1762831558364-Photoroom-1.png",
+              "page_url": "https://vunart.vn"
+            }
+          ],
+          "image_url": "media/providers/van-phuc-p01.jpg"
+        },
+        {
+          "provider_id": "van-phuc-p02",
+          "name": "Xưởng Dệt Lụa Tơ Tằm Triệu Văn Mão",
+          "type": "production_workshop",
+          "type_raw": "Xưởng sản xuất / Điểm tham quan",
+          "address": "Số 10 Phố Lụa, làng Vạn Phúc, Hà Đông, Hà Nội",
+          "phones": [
+            "+84 24 3382 2805"
+          ],
+          "contact_person": "Nguyễn Thị Tâm",
+          "contact_phone": null,
+          "contact_note": "Nghệ nhân",
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/trieuvanmaohn/",
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở trên Google Maps",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "other_links": [
+            "https://tapchicongthuong.vn/lua-van-phuc-dep-mai-lang-nghe-44674.htm",
+            "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html",
+            "https://vov.vn/xa-hoi/nu-nghe-nhan-danh-ca-doi-giu-nghe-det-lua-van-phuc-ha-noi-post1313031.vov",
+            "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/van-phuc-p02.jpg",
+              "image_url": "https://imagevietnam.vnanet.vn/upload/Thumnail/2020/11/21/2111202009125453020.jpg",
+              "page_url": "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html"
+            },
+            {
+              "file": "media/providers/van-phuc-p02_2.jpg",
+              "image_url": "https://imagevietnam.vnanet.vn/Upload/2020/11/19/1911202010062566-1_resize.JPG",
+              "page_url": "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html"
+            }
+          ],
+          "image_url": "media/providers/van-phuc-p02.jpg"
+        },
+        {
+          "provider_id": "van-phuc-p03",
+          "name": "Xưởng dệt Triệu Bình Silk",
+          "type": "production_workshop",
+          "type_raw": "Xưởng sản xuất / Điểm tham quan",
+          "address": "Xưởng dệt chùa Khu, làng Vạn Phúc, Hà Đông, Hà Nội",
+          "phones": [
+            "+84 904 784 036"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": "Chủ xưởng Triệu Bình Silk",
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/profile.php?id=61585738776598",
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở trên Google Maps",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "other_links": [
+            "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html",
+            "https://baolaocai.vn/lang-lua-van-phuc-tu-di-san-truyen-thong-den-lang-nghe-thu-cong-the-gioi-post397330.html",
+            "https://baomoi.com/lang-lua-van-phuc-phat-huy-di-san-mo-huong-phat-trien-moi-c56073563.epi"
+          ],
+          "media": [
+            {
+              "file": "media/providers/van-phuc-p03.jpg",
+              "image_url": "https://i1-giadinh.vnecdn.net/2014/04/10/IMG-0095-1397115027.jpg?w=1200&h=675&q=100&dpr=1&fit=crop&s=x-LKMXFdtxSRa57Rnom5pw",
+              "page_url": "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+            },
+            {
+              "file": "media/providers/van-phuc-p03_2.jpg",
+              "image_url": "https://i1-giadinh.vnecdn.net/2014/04/10/IMG-0059-1397115023.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=2MeK5JK_BMG4tkSmUPCX_Q",
+              "page_url": "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+            }
+          ],
+          "image_url": "media/providers/van-phuc-p03.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "van-phuc-a01",
+          "provider_id": "van-phuc-p01",
+          "name": "Workshop ghép tranh / làm đồ thủ công từ vải vụn",
+          "description": "Khách tham quan xưởng, tìm hiểu tranh dân gian và tự tay ghép tranh, túi vải hoặc áo phông từ vải lụa vụn dưới sự hướng dẫn của thợ khuyết tật.",
+          "duration": "60 – 90 phút",
+          "price_raw": "Từ 100.000 đ",
+          "source": "Trang Trải nghiệm Vụn Art",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/van-phuc-a01.jpg",
+              "image_url": "https://vunart.vn/wp-content/uploads/2025/12/vunart18h.png",
+              "page_url": "https://vunart.vn"
+            },
+            {
+              "file": "media/activities/van-phuc-a01_2.jpg",
+              "image_url": "https://vunart.vn/wp-content/uploads/2025/12/vunart9h.png",
+              "page_url": "https://vunart.vn"
+            }
+          ],
+          "image_url": "media/activities/van-phuc-a01.jpg"
+        },
+        {
+          "activity_id": "van-phuc-a02",
+          "provider_id": "van-phuc-p02",
+          "name": "Tham quan quy trình dệt lụa cổ truyền",
+          "description": "Khách tham quan trực tiếp khu vực khung cửi dệt lụa tơ tằm truyền thống và xem quy trình tạo hoa văn trên lụa.",
+          "duration": null,
+          "price_raw": null,
+          "source": "Báo Dân Việt",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/van-phuc-a02.jpg",
+              "image_url": "https://imagevietnam.vnanet.vn/Upload/2020/11/19/19112020100625410-3_resize.JPG",
+              "page_url": "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html"
+            },
+            {
+              "file": "media/activities/van-phuc-a02_2.jpg",
+              "image_url": "https://imagevietnam.vnanet.vn/Upload/2020/11/19/19112020100625723-4_resize.JPG",
+              "page_url": "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html"
+            }
+          ],
+          "image_url": "media/activities/van-phuc-a02.jpg"
+        },
+        {
+          "activity_id": "van-phuc-a03",
+          "provider_id": "van-phuc-p03",
+          "name": "Tham quan xưởng dệt lụa tơ tằm",
+          "description": "Khách tham quan không gian xưởng dệt lụa thủ công truyền thống tại khu vực chùa Khu.",
+          "duration": null,
+          "price_raw": null,
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/van-phuc-a03.jpg",
+              "image_url": "https://i1-giadinh.vnecdn.net/2014/04/10/IMG-0082-1397115025.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=1_wNGTS4OYq8o35AU721YQ",
+              "page_url": "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+            },
+            {
+              "file": "media/activities/van-phuc-a03_2.jpg",
+              "image_url": "https://i1-giadinh.vnecdn.net/2014/04/10/IMG-0072-1397115025.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=oQsBahnL9fuPDHwyOpxkkg",
+              "page_url": "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+            }
+          ],
+          "image_url": "media/activities/van-phuc-a03.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/van-phuc.jpg",
+          "image_url": "https://vunart.vn/wp-content/uploads/2025/12/Tranh-00107-1024x752.jpg",
+          "page_url": "https://vunart.vn"
+        }
+      ],
+      "image_url": "media/villages/van-phuc.jpg"
+    },
+    {
+      "village_id": "non-chuong",
+      "village_name": "Làng nón Chuông",
+      "district_raw": "Thanh Oai",
+      "providers": [
+        {
+          "provider_id": "non-chuong-p01",
+          "name": "Nón Lá Thu Hương",
+          "type": "artisan_home_workshop",
+          "type_raw": "Xưởng / Nhà nghệ nhân có workshop",
+          "address": "RQG6+QPF, Làng Chuông, xã Phương Trung, huyện Thanh Oai, Hà Nội",
+          "phones": [
+            "+84 912 258 774"
+          ],
+          "contact_person": "Tạ Thu Hương",
+          "contact_phone": null,
+          "contact_note": "Nghệ nhân",
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/p/N%C3%B3n-L%C3%A1-L%C3%A0ng-Chu%C3%B4ng-Ngh%E1%BB%87-Nh%C3%A2n-T%E1%BA%A1-Thu-H%C6%B0%C6%A1ng-61558204420742/",
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Địa chỉ gồm Plus Code (đầy đủ: 7PF7RQG6+QPF)",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": 20.826937,
+            "lng": 105.761797,
+            "plus_code": "RQG6+QPF",
+            "status": "from_plus_code"
+          },
+          "other_links": [
+            "https://baomoi.com/nghe-nhan-ta-thu-huong-ben-bi-giu-nghe-lan-toa-hon-non-viet-c56384418.epi",
+            "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html",
+            "https://vovgiaothong.vn/non-la-lang-chuong-nghe-dan-lat-giu-hon-que-viet-ema54395.html",
+            "https://vov.vn/the-thao/dai-su-non-ta-thu-huong-yeu-manh-liet-non-la-lang-chuong-post1187168.vov",
+            "https://nhandan.vn/noi-niem-nghe-non-lang-chuong-post699562.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/non-chuong-p01.jpg",
+              "image_url": "https://t.ex-cdn.com/danviet.vn/800w/files/content/2026/06/19/anh-4-1729.jpg",
+              "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+            },
+            {
+              "file": "media/providers/non-chuong-p01_2.jpg",
+              "image_url": "https://i.ex-cdn.com/danviet.vn/files/content/2026/06/19/anh-1-2-1723.jpg",
+              "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+            }
+          ],
+          "image_url": "media/providers/non-chuong-p01.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "non-chuong-a01",
+          "provider_id": "non-chuong-p01",
+          "name": "Workshop trải nghiệm làm và vẽ nón lá truyền thống",
+          "description": "Du khách nghe nghệ nhân giới thiệu về nghề, trực tiếp thực hành các công đoạn làm nón hoặc vẽ trang trí lên nón lá để mang về làm kỷ niệm.",
+          "duration": "1 – 2 giờ",
+          "price_raw": null,
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/non-chuong-a01.jpg",
+              "image_url": "https://i.ex-cdn.com/danviet.vn/files/content/2026/06/19/2-1724.jpg",
+              "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+            },
+            {
+              "file": "media/activities/non-chuong-a01_2.jpg",
+              "image_url": "https://i.ex-cdn.com/danviet.vn/files/content/2026/06/19/3-1728.jpg",
+              "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+            }
+          ],
+          "image_url": "media/activities/non-chuong-a01.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/non-chuong.jpg",
+          "image_url": "https://t.ex-cdn.com/danviet.vn/800w/files/content/2026/06/19/anh-4-1729.jpg",
+          "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+        }
+      ],
+      "image_url": "media/villages/non-chuong.jpg"
+    },
+    {
+      "village_id": "phu-vinh",
+      "village_name": "Làng mây tre đan Phú Vinh",
+      "district_raw": "Chương Mỹ",
+      "providers": [
+        {
+          "provider_id": "phu-vinh-p01",
+          "name": "Mây Tre Đan Hân Hạnh",
+          "type": "production_workshop",
+          "type_raw": "Xưởng sản xuất / Cơ sở tổ chức trải nghiệm",
+          "address": "WJMX+6RP, Thôn Phú Vinh, xã Phú Nghĩa, huyện Chương Mỹ, Hà Nội",
+          "phones": [
+            "+84 964 619 241",
+            "+84 964 674 799"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": "Chị chủ xưởng Mây Tre Đan Hân Hạnh",
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/profile.php?id=100054360677990#",
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Địa chỉ gồm Plus Code (đầy đủ: 7PF7WJMX+6RP)",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": 20.933087,
+            "lng": 105.649578,
+            "plus_code": "WJMX+6RP",
+            "status": "from_plus_code"
+          },
+          "other_links": [
+            "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html",
+            "https://special.nhandan.vn/may-tre-dan-phu-vinh-noi-dai-dong-chay-lang-nghe/index.html",
+            "https://www.vietnamplus.vn/lang-nghe-may-tre-dan-phu-vinh-kham-pha-vung-dat-xu-may-cua-ha-noi-post1144487.vnp",
+            "https://baophapluat.vn/may-tre-dan-phu-vinh-tram-nam-giu-lay-cot-cach-lang-nghe-post373745.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/phu-vinh-p01.jpg",
+              "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/dVa2vtPZfM/cvpc-2560x1440.jpg",
+              "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+            },
+            {
+              "file": "media/providers/phu-vinh-p01_2.jpg",
+              "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/PrvAZiKT3H/fashion-style-quote-1080x1080.png",
+              "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+            }
+          ],
+          "image_url": "media/providers/phu-vinh-p01.jpg"
+        },
+        {
+          "provider_id": "phu-vinh-p02",
+          "name": "Cơ sở Mây Tre Đan Phú Vinh (Văn Giang)",
+          "type": "production_workshop",
+          "type_raw": "Xưởng sản xuất / Điểm tham quan",
+          "address": "Xóm Đầm Bung, thôn Phú Vinh, xã Phú Nghĩa, huyện Chương Mỹ, Hà Nội",
+          "phones": [
+            "+84 977 970 949",
+            "+84 835 719 709"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": "Chủ cơ sở / Bộ phận tư vấn",
+          "zalo": null,
+          "email": null,
+          "website": "https://maytrephuvinh.vn/",
+          "fanpage": "https://www.facebook.com/vangiang.maytrephuvinh/",
+          "source": "Website Mây tre Phú Vinh",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở trên Google Maps"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "media": [
+            {
+              "file": "media/providers/phu-vinh-p02.jpg",
+              "image_url": "http://maytrephuvinh.vn/wp-content/uploads/2025/03/may-tre-ban.jpg",
+              "page_url": "https://maytrephuvinh.vn/"
+            },
+            {
+              "file": "media/providers/phu-vinh-p02_2.jpg",
+              "image_url": "https://maytrephuvinh.vn/wp-content/uploads/2025/03/giuong-may-11.jpg",
+              "page_url": "https://maytrephuvinh.vn/"
+            }
+          ],
+          "image_url": "media/providers/phu-vinh-p02.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "phu-vinh-a01",
+          "provider_id": "phu-vinh-p01",
+          "name": "Một ngày trải nghiệm đan mây tre tại làng nghề",
+          "description": "Khách tham quan xưởng sản xuất, quan sát thợ thủ công làm việc tại sân xưởng và trực tiếp trải nghiệm đan mây tre.",
+          "duration": null,
+          "price_raw": null,
+          "source": "Facebook Mây tre đan Hân Hạnh",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/phu-vinh-a01.jpg",
+              "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/OfTV9VcNpm/le-quoc-vinh-2560-x-650-px-2560-x-750-px-2560-x-850-px-1-2560x850.png",
+              "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+            },
+            {
+              "file": "media/activities/phu-vinh-a01_2.jpg",
+              "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/VLobxZTNvD/hanam-7-1920x1280.jpg",
+              "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+            }
+          ],
+          "image_url": "media/activities/phu-vinh-a01.jpg"
+        },
+        {
+          "activity_id": "phu-vinh-a02",
+          "provider_id": "phu-vinh-p02",
+          "name": "Tham quan xưởng và khu trưng bày sản phẩm",
+          "description": "Du khách tham quan không gian sản xuất và tìm hiểu các sản phẩm thủ công đan tay tại thôn Phú Vinh.",
+          "duration": null,
+          "price_raw": null,
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/phu-vinh-a02.jpg",
+              "image_url": "https://maytrephuvinh.vn/wp-content/uploads/2025/03/giuong-may-3.jpg",
+              "page_url": "https://maytrephuvinh.vn/"
+            },
+            {
+              "file": "media/activities/phu-vinh-a02_2.jpg",
+              "image_url": "https://maytrephuvinh.vn/wp-content/uploads/2025/03/giuong-may-2.jpg",
+              "page_url": "https://maytrephuvinh.vn/"
+            }
+          ],
+          "image_url": "media/activities/phu-vinh-a02.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/phu-vinh.jpg",
+          "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/dVa2vtPZfM/cvpc-2560x1440.jpg",
+          "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+        }
+      ],
+      "image_url": "media/villages/phu-vinh.jpg"
+    },
+    {
+      "village_id": "ba-duong-noi",
+      "village_name": "Làng diều sáo Bá Dương Nội",
+      "district_raw": "Đan Phượng",
+      "providers": [
+        {
+          "provider_id": "ba-duong-noi-p01",
+          "name": "Câu lạc bộ Diều sáo Hồng Hà (Cơ sở nghệ nhân Nguyễn Văn Quyết)",
+          "type": "artisan_club",
+          "type_raw": "Câu lạc bộ / Nhà nghệ nhân hướng dẫn workshop",
+          "address": "Làng Bá Dương Nội, xã Hồng Hà, huyện Đan Phượng (nay thuộc xã Ô Diên), Hà Nội",
+          "phones": [],
+          "contact_person": "Nguyễn Văn Quyết",
+          "contact_phone": null,
+          "contact_note": "Chủ nhiệm CLB Diều sáo Hồng Hà",
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/p/CLB-Di%E1%BB%81u-S%C3%A1o-Truy%E1%BB%81n-Th%E1%BB%91ng-X%C3%A3-H%E1%BB%93ng-H%C3%A0-61562114229874/",
+          "source": "Báo Mới / Hà Nội Trải Nghiệm Mới",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở khu vực làng trên Google Maps",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "other_links": [
+            "https://baomoi.com/ha-noi-giu-hon-tieng-dieu-sao-lang-ba-duong-noi-c56309844.epi",
+            "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html",
+            "https://vietnamnews.vn/sunday/features/1782309/when-kites-sing-above-the-red-river.html",
+            "https://nhandan.vn/dieu-sao-phieu-du-post613661.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/ba-duong-noi-p01.jpg",
+              "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2545-194044_155-194118.jpg",
+              "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+            },
+            {
+              "file": "media/providers/ba-duong-noi-p01_2.jpg",
+              "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2548-194205_648-194216.jpg",
+              "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+            }
+          ],
+          "image_url": "media/providers/ba-duong-noi-p01.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "ba-duong-noi-a01",
+          "provider_id": "ba-duong-noi-p01",
+          "name": "Workshop làm diều giấy dó và tìm hiểu sáo diều",
+          "description": "Nghệ nhân chia sẻ lịch sử nghề diều và hướng dẫn trực tiếp các công đoạn vót khung tre, dán giấy dó, cân dây và lắp sáo diều.",
+          "duration": null,
+          "price_raw": null,
+          "source": "Facebook Hà Nội Trải Nghiệm Mới",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/ba-duong-noi-a01.jpg",
+              "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2641-194242_353-194300.jpg",
+              "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+            },
+            {
+              "file": "media/activities/ba-duong-noi-a01_2.jpg",
+              "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2666-194331_476-194352.jpg",
+              "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+            }
+          ],
+          "image_url": "media/activities/ba-duong-noi-a01.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/ba-duong-noi.jpg",
+          "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2548-194205_648-194216.jpg",
+          "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+        }
+      ],
+      "image_url": "media/villages/ba-duong-noi.jpg"
+    },
+    {
+      "village_id": "son-dong",
+      "village_name": "Làng điêu khắc mỹ nghệ Sơn Đồng",
+      "district_raw": "Hoài Đức",
+      "providers": [
+        {
+          "provider_id": "son-dong-p01",
+          "name": "Cơ sở điêu khắc Phúc Lâm Sơn Đồng",
+          "type": "production_workshop",
+          "type_raw": "Xưởng sản xuất / Điểm tham quan",
+          "address": "Số 7 - Số 9, thôn Rảnh, làng nghề Sơn Đồng, huyện Hoài Đức, Hà Nội",
+          "phones": [
+            "+84 967 978 951"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": "Bộ phận tư vấn / Hotline cơ sở",
+          "zalo": null,
+          "email": null,
+          "website": "phuclamsondong.com",
+          "fanpage": null,
+          "source": "Website Phúc Lâm Sơn Đồng",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở trên Google Maps",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "other_links": [
+            "https://tapchicongthuong.vn/lang--thoi-hon-vao-go-44796.htm",
+            "https://baophapluat.vn/noi-the-gioi-tuong-phat-do-tho-post156538.html",
+            "https://www.vietnamplus.vn/chuyen-doi-so-o-lang-nghe-son-dong-khi-hon-cot-truyen-thong-bat-nhip-tuong-lai-so-post1146124.vnp",
+            "https://nhandan.vn/chu-dong-dinh-vi-the-manh-thuc-day-du-lich-post999767.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/son-dong-p01.jpg",
+              "image_url": "https://s3.dungcaxinh.com/phuclamsondong.com/2022/03/z3230173628718_54581978fc09f812ce0f21395801ea64.jpg?v=hd2",
+              "page_url": "https://phuclamsondong.com"
+            },
+            {
+              "file": "media/providers/son-dong-p01_2.jpg",
+              "image_url": "https://s3.dungcaxinh.com/phuclamsondong.com/2022/10/Phuclam-banner-01-moi.webp?v=hd2",
+              "page_url": "https://phuclamsondong.com"
+            }
+          ],
+          "image_url": "media/providers/son-dong-p01.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "son-dong-a01",
+          "provider_id": "son-dong-p01",
+          "name": "Tham quan xưởng chế tác tượng và đồ thờ",
+          "description": "Khách đến tham quan không gian xưởng gia đình chế tác tượng Phật, tượng Thánh và đồ thờ sơn son thếp vàng.",
+          "duration": null,
+          "price_raw": null,
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/son-dong-a01.jpg",
+              "image_url": "https://media.vietnamplus.vn/images/wU9keeg-MVtM86KQbMalHktVH513hSAqwrBCcADla33OwVNPetqj2LgmRDPPSH6X/vnp_cover.png.webp",
+              "page_url": "https://www.vietnamplus.vn/chuyen-doi-so-o-lang-nghe-son-dong-khi-hon-cot-truyen-thong-bat-nhip-tuong-lai-so-post1146124.vnp"
+            },
+            {
+              "file": "media/activities/son-dong-a01_2.jpg",
+              "image_url": "https://cdn.nhandan.vn/images/IvCZyovHroGqKo00FqhL-F7jV0qm77B2aaACR8jOkORKcnO3YdFZ0-sj_a_0-kaz/3.jpg.webp",
+              "page_url": "https://nhandan.vn/chu-dong-dinh-vi-the-manh-thuc-day-du-lich-post999767.html"
+            }
+          ],
+          "image_url": "media/activities/son-dong-a01.jpg"
+        }
+      ],
+      "village_notes": [
+        "Không tìm thấy thông tin công khai về workshop trải nghiệm đục tượng/sơn thếp dành cho khách lẻ từ các xưởng truyền thống."
+      ],
+      "media": [
+        {
+          "file": "media/villages/son-dong.jpg",
+          "image_url": "https://s3.dungcaxinh.com/phuclamsondong.com/2022/03/z3230173628718_54581978fc09f812ce0f21395801ea64.jpg?v=hd2",
+          "page_url": "https://phuclamsondong.com"
+        }
+      ],
+      "image_url": "media/villages/son-dong.jpg"
+    },
+    {
+      "village_id": "ngu-xa",
+      "village_name": "Làng đúc đồng Ngũ Xã",
+      "district_raw": "Ba Đình",
+      "providers": [
+        {
+          "provider_id": "ngu-xa-p01",
+          "name": "Đúc Đồng Truyền Thống Ngũ Xã (Phòng trưng bày)",
+          "type": "showroom_heritage_site",
+          "type_raw": "Phòng trưng bày / Điểm tham quan lịch sử nghề",
+          "address": "178 Phố Trấn Vũ, phường Trúc Bạch, quận Ba Đình, Hà Nội",
+          "phones": [
+            "+84 946 594 486",
+            "+84 937 294 286",
+            "+84 936 774 531"
+          ],
+          "contact_person": null,
+          "contact_phone": null,
+          "contact_note": "Bộ phận tư vấn / Nghệ nhân xưởng",
+          "zalo": null,
+          "email": null,
+          "website": "https://ducdongnguxa.com",
+          "fanpage": "https://www.facebook.com/ducdongnguxa/",
+          "source": "https://ducdongnguxa.com/lien-he/",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở 178 Trấn Vũ trên Google Maps"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "media": [
+            {
+              "file": "media/providers/ngu-xa-p01.jpg",
+              "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/03/ducdongnguxa.png",
+              "page_url": "https://ducdongnguxa.com"
+            },
+            {
+              "file": "media/providers/ngu-xa-p01_2.jpg",
+              "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/03/dúc-dồng-ngũ-xã-hơn-400-năm-lịch-sử-phát-triển.jpg",
+              "page_url": "https://ducdongnguxa.com"
+            }
+          ],
+          "image_url": "media/providers/ngu-xa-p01.jpg"
+        },
+        {
+          "provider_id": "ngu-xa-p02",
+          "name": "Xưởng Làng Nghề Đúc Đồng Truyền Thống Ngũ Xã (Xưởng Nghệ nhân Nguyễn Văn Ứng)",
+          "type": "production_workshop",
+          "type_raw": "Xưởng sản xuất / Lò đúc đồng thủ công",
+          "address": "Số 15, Ngõ 5 Đường Hồng Hà, phường Yên Phụ, quận Tây Hồ (khu vực giáp ranh Ngũ Xã - Trúc Bạch), Hà Nội",
+          "phones": [
+            "+84 946 594 486"
+          ],
+          "contact_person": "Nguyễn Văn Ứng",
+          "contact_phone": null,
+          "contact_note": "Nghệ nhân Làng nghề Việt Nam",
+          "zalo": null,
+          "email": null,
+          "website": "https://ducdongnguxa.com",
+          "fanpage": "https://www.facebook.com/ducdongtruyenthongnguxa/?locale=vi_VN",
+          "source": "https://ducdongnguxa.com",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở trên Google Maps",
+            "Không có fanpage riêng, dùng chung fanpage với Đúc Đồng Truyền Thống Ngũ Xã",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "other_links": [
+            "https://nhandan.vn/post-793482.html",
+            "https://baolaocai.vn/500-nam-giu-lua-nghe-duc-dong-giua-long-ha-noi-post896071.html",
+            "https://vietnamnet.vn/en/ngu-xa-bronze-casting-preserving-an-age-old-artistic-legacy-2222502.html",
+            "https://www.anninhthudo.vn/suc-song-tu-nhung-doi-tay-vang-post190317.antd"
+          ],
+          "media": [
+            {
+              "file": "media/providers/ngu-xa-p02.jpg",
+              "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/03/Làng-Nghề-Dúc-Dồng-Ngũ-Xã-Ngày-nay.png",
+              "page_url": "https://ducdongnguxa.com"
+            },
+            {
+              "file": "media/providers/ngu-xa-p02_2.jpg",
+              "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/Lang-Nghe-Duc-Dong-Truyen-Thong-Ngu-Xa-Tuong-Duc-Lien-Hoa-Sinh-Cao-1m8-Thap-Mandala-Tay-Thien.png",
+              "page_url": "https://ducdongnguxa.com"
+            }
+          ],
+          "image_url": "media/providers/ngu-xa-p02.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "ngu-xa-a01",
+          "provider_id": "ngu-xa-p01",
+          "name": "Tham quan phòng trưng bày và nghe kể chuyện nghề đúc đồng",
+          "description": "Du khách tham quan không gian lưu giữ các tác phẩm tượng đồng, đồ thờ đạt chuẩn OCOP và nghe nghệ nhân giới thiệu lịch sử hơn 400 năm của làng nghề.",
+          "duration": null,
+          "price_raw": null,
+          "source": "https://google.com",
+          "verified_status": "unverified",
+          "notes": [
+            "Nguồn là link chung google.com, cần thay URL cụ thể"
+          ],
+          "media": [
+            {
+              "file": "media/activities/ngu-xa-a01.jpg",
+              "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/Den-Quan-Thanh-Duc-Huyen-Thien-Tran-Vu-Duc-Dong-Ngu-Xa-1.png",
+              "page_url": "https://ducdongnguxa.com"
+            },
+            {
+              "file": "media/activities/ngu-xa-a01_2.jpg",
+              "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/Tuong-Duc-Phat-A-Di-Da-Chua-Ngu-Xa-Duc-Dong-Ngu-xa.png",
+              "page_url": "https://ducdongnguxa.com"
+            }
+          ],
+          "image_url": "media/activities/ngu-xa-a01.jpg"
+        },
+        {
+          "activity_id": "ngu-xa-a02",
+          "provider_id": "ngu-xa-p02",
+          "name": "Tham quan xưởng lò đúc đồng thủ công của nghệ nhân",
+          "description": "Khách tham quan thực tế một trong hai lò đúc đồng đỏ lửa cuối cùng còn giữ nghề tại Ngũ Xã, quan sát các công đoạn làm khuôn, đúc và chạm khắc nguội.",
+          "duration": null,
+          "price_raw": null,
+          "source": "https://google.com",
+          "verified_status": "unverified",
+          "notes": [
+            "Nguồn là link chung google.com, cần thay URL cụ thể"
+          ],
+          "media": [
+            {
+              "file": "media/activities/ngu-xa-a02.jpg",
+              "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/Thien-su-Minh-Khong-Ly-Quoc-Su-ong-to-nghe-duc-dong-Duc-Dong-Ngu-Xa.png",
+              "page_url": "https://ducdongnguxa.com"
+            },
+            {
+              "file": "media/activities/ngu-xa-a02_2.jpg",
+              "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/chan-dung-bac-ho-van-phong-chu-tich-nuoc-lang-duc-dong-ngu-xa.png",
+              "page_url": "https://ducdongnguxa.com"
+            }
+          ],
+          "image_url": "media/activities/ngu-xa-a02.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/ngu-xa.jpg",
+          "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/03/ducdongnguxa.png",
+          "page_url": "https://ducdongnguxa.com"
+        }
+      ],
+      "image_url": "media/villages/ngu-xa.jpg"
+    },
+    {
+      "village_id": "phung-xa",
+      "village_name": "Làng dệt lụa tơ sen Phùng Xá",
+      "district_raw": "Mỹ Đức",
+      "providers": [
+        {
+          "provider_id": "phung-xa-p01",
+          "name": "Công ty TNHH Dâu Tằm Tơ Mỹ Đức (Thương hiệu SILK4WORLD)",
+          "type": "production_workshop",
+          "type_raw": "Xưởng sản xuất / Nhà nghệ nhân",
+          "address": "Đội 13, thôn Hạ, xã Phùng Xá (nay thuộc xã Hồng Sơn), huyện Mỹ Đức, Hà Nội",
+          "phones": [
+            "+84 962 004 939"
+          ],
+          "contact_person": "Phan Thị Thuận",
+          "contact_phone": null,
+          "contact_note": "Nghệ nhân Ưu tú; liên hệ đặt lịch tham quan",
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/silk4world.hn/",
+          "source": "Fanpage SILK4WORLD",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở khu vực trên Google Maps",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "other_links": [
+            "https://tapchicongthuong.vn/magazine/den-phung-xa-xem-van-tam-tu-det-chan-to-112600.htm",
+            "https://vnbusiness.vn/doc-dao-lua-lam-tu-cuong-sen.html",
+            "https://danviet.vn/nguoi-dan-ba-tuoi-70-vat-kiet-cuong-sen-det-nen-tam-lua-dat-gia-vang-danh-the-gioi-d1436770.html",
+            "https://thesaigontimes.vn/nguoi-vuc-day-nghe-det-lua-phung-xa/",
+            "https://www.silk4world.com.vn"
+          ],
+          "media": [
+            {
+              "file": "media/providers/phung-xa-p01.jpg",
+              "image_url": "https://imgcdn.tapchicongthuong.vn/tcct-media/23/10/20/anh-man-hinh-2023-10-20-luc-103827_6531f685a8f88.png",
+              "page_url": "https://tapchicongthuong.vn/magazine/den-phung-xa-xem-van-tam-tu-det-chan-to-112600.htm"
+            },
+            {
+              "file": "media/providers/phung-xa-p01_2.jpg",
+              "image_url": "https://media.vnbusiness.vn/files/uploads/2022/12/16/a-nh-3-1671156147.jpg?w=1200&h=630&mode=crop&anchor=top-center",
+              "page_url": "https://vnbusiness.vn/doc-dao-lua-lam-tu-cuong-sen.html"
+            }
+          ],
+          "image_url": "media/providers/phung-xa-p01.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "phung-xa-a01",
+          "provider_id": "phung-xa-p01",
+          "name": "Tham quan và trải nghiệm rút sợi tơ sen, dệt tơ tằm",
+          "description": "Du khách, học sinh tìm hiểu lịch sử nghề dệt, quan sát quy trình nuôi tằm, xem tằm tự dệt chăn và trực tiếp trải nghiệm công đoạn rút sợi tơ từ cuống sen.",
+          "duration": null,
+          "price_raw": null,
+          "source": "Fanpage SILK4WORLD",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/phung-xa-a01.jpg",
+              "image_url": "https://t.ex-cdn.com/danviet.vn/800w/files/news/2026/06/20/nghe-nhan-sen_cover-1452.jpg",
+              "page_url": "https://danviet.vn/nguoi-dan-ba-tuoi-70-vat-kiet-cuong-sen-det-nen-tam-lua-dat-gia-vang-danh-the-gioi-d1436770.html"
+            },
+            {
+              "file": "media/activities/phung-xa-a01_2.jpg",
+              "image_url": "https://i.ex-cdn.com/danviet.vn/files/content/2026/06/20/nghe-nhan-sen_01-1458.jpg",
+              "page_url": "https://danviet.vn/nguoi-dan-ba-tuoi-70-vat-kiet-cuong-sen-det-nen-tam-lua-dat-gia-vang-danh-the-gioi-d1436770.html"
+            }
+          ],
+          "image_url": "media/activities/phung-xa-a01.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/phung-xa.jpg",
+          "image_url": "https://imgcdn.tapchicongthuong.vn/tcct-media/23/10/20/anh-man-hinh-2023-10-20-luc-103827_6531f685a8f88.png",
+          "page_url": "https://tapchicongthuong.vn/magazine/den-phung-xa-xem-van-tam-tu-det-chan-to-112600.htm"
+        }
+      ],
+      "image_url": "media/villages/phung-xa.jpg"
+    },
+    {
+      "village_id": "dao-thuc",
+      "village_name": "Làng múa rối nước Đào Thục",
+      "district_raw": "Đông Anh",
+      "providers": [
+        {
+          "provider_id": "dao-thuc-p01",
+          "name": "Phường Múa Rối Nước Đào Thục",
+          "type": "performance_troupe",
+          "type_raw": "Đơn vị biểu diễn / Nhà Thủy đình / Xưởng chế tác rối",
+          "address": "Thôn Đào Thục, xã Thụy Lâm (nay thuộc xã Thư Lâm), huyện Đông Anh, Hà Nội",
+          "phones": [
+            "+84 983 469 922",
+            "+84 948 451 973",
+            "+84 989 896 167"
+          ],
+          "contact_person": "Nguyễn Thế Nghị",
+          "contact_phone": null,
+          "contact_note": "Trưởng phường; Nghệ nhân Nguyễn Văn Phi phụ trách xưởng tạo hình rối",
+          "zalo": null,
+          "email": null,
+          "website": null,
+          "fanpage": "https://www.facebook.com/roinuocdaothuc/",
+          "source": "Google Maps",
+          "verified_status": "unverified",
+          "group_info": {
+            "group_min": null,
+            "group_max": null,
+            "advance_notice": null,
+            "deposit": null,
+            "agency_commission": null,
+            "bus_parking": null,
+            "restroom": null,
+            "refreshments": null,
+            "guide_languages": null
+          },
+          "notes": [
+            "Tọa độ không tìm thấy, mở trên Google Maps",
+            "Đã thêm other_links (bài báo) để lấy ảnh; ảnh có thể là ảnh chung của làng/nghệ nhân, cần kiểm tra"
+          ],
+          "coordinates": {
+            "lat": null,
+            "lng": null,
+            "plus_code": null,
+            "status": "not_found"
+          },
+          "other_links": [
+            "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/",
+            "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/index.html",
+            "https://nhandan.vn/ocop/vu-dieu-roi-va-nuoc-o-dao-thuc-post921911.html",
+            "https://baovanhoa.vn/multimedia/cau-chuyen-phia-sau-tam-manh-tre-thuy-dinh-224126.html",
+            "https://nguoiquansat.vn/giac-mo-ve-nhung-con-roi-biet-cuoi-81926.html"
+          ],
+          "media": [
+            {
+              "file": "media/providers/dao-thuc-p01.jpg",
+              "image_url": "https://static.vinwonders.com/production/lang-roi-nuoc-dao-thuc-bia.jpg",
+              "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+            },
+            {
+              "file": "media/providers/dao-thuc-p01_2.jpg",
+              "image_url": "https://static.vinwonders.com/production/lang-roi-nuoc-dao-thuc-1.jpg",
+              "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+            }
+          ],
+          "image_url": "media/providers/dao-thuc-p01.jpg"
+        }
+      ],
+      "activities": [
+        {
+          "activity_id": "dao-thuc-a01",
+          "provider_id": "dao-thuc-p01",
+          "name": "Xem biểu diễn múa rối nước dân gian tại Thủy đình",
+          "description": "Khán giả thưởng thức các tích trò múa rối nước cổ truyền do các nghệ nhân biểu diễn trực tiếp trên mặt nước ao đình làng.",
+          "duration": null,
+          "price_raw": "Miễn phí (vào suất diễn cố định tối thứ 7 hàng tuần; các suất đặt riêng không tìm thấy giá niêm yết lẻ)",
+          "source": "Fanpage Rối nước Đào Thục",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/dao-thuc-a01.jpg",
+              "image_url": "https://static.vinwonders.com/production/lang-roi-nuoc-dao-thuc-2.jpg",
+              "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+            },
+            {
+              "file": "media/activities/dao-thuc-a01_2.jpg",
+              "image_url": "https://static.vinwonders.com/production/optimize_lang-roi-nuoc-dao-thuc-3.jpg",
+              "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+            }
+          ],
+          "image_url": "media/activities/dao-thuc-a01.jpg"
+        },
+        {
+          "activity_id": "dao-thuc-a02",
+          "provider_id": "dao-thuc-p01",
+          "name": "Tham quan buồng trò và trải nghiệm điều khiển, tô màu con rối",
+          "description": "Sau suất diễn, du khách xuống buồng trò học cách điều khiển con rối dưới nước hoặc tìm hiểu cách đục tạc, tô màu rối gỗ cùng nghệ nhân.",
+          "duration": null,
+          "price_raw": null,
+          "source": "Báo Người Hà Nội",
+          "verified_status": "unverified",
+          "notes": [],
+          "media": [
+            {
+              "file": "media/activities/dao-thuc-a02.jpg",
+              "image_url": "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/assets/xSTlc0aH3X/4-2048x1152.jpg",
+              "page_url": "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/index.html"
+            },
+            {
+              "file": "media/activities/dao-thuc-a02_2.jpg",
+              "image_url": "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/assets/fkrP5h8bTY/1-2048x1366.jpg",
+              "page_url": "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/index.html"
+            }
+          ],
+          "image_url": "media/activities/dao-thuc-a02.jpg"
+        }
+      ],
+      "media": [
+        {
+          "file": "media/villages/dao-thuc.jpg",
+          "image_url": "https://static.vinwonders.com/production/lang-roi-nuoc-dao-thuc-bia.jpg",
+          "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+        }
+      ],
+      "image_url": "media/villages/dao-thuc.jpg"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import type { TourPreferenceProfile } from '@/lib/matching/types'
 
 export interface CandidateExperience extends Experience {
   village_id: string
+  image_url?: string
   provider_status?: string
   max_capacity?: number
 }

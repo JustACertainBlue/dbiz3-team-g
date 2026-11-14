@@ -129,52 +129,6 @@ function cleanActivityName(name: string): string {
   return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : ''
 }
 
-/** Diễn đạt lý do phù hợp trên thẻ đề xuất bằng tiếng Việt tự nhiên, thân thiện */
-function localizeExplanation(explanation: string): string {
-  if (!explanation) return 'Đề xuất xưởng nghề phù hợp với tiêu chí và quy mô đoàn của bạn.'
-
-  let text = explanation
-
-  // 1. Điểm phù hợp — ẩn hoàn toàn, không hiển thị số điểm ra giao diện
-  text = text.replace(/Match score [\d.]+\/100\.?\s*/gi, '')
-  text = text.replace(/Độ phù hợp đạt [\d.]+(\/100)? điểm\.?\s*/gi, '')
-
-  // 2. Ngành nghề thủ công
-  text = text.replace(/Matches your silk weaving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề dệt lụa tơ tằm truyền thống của đoàn.')
-  text = text.replace(/Matches your pottery preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề gốm sứ mỹ nghệ của đoàn.')
-  text = text.replace(/Matches your woodcarving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề chạm khắc mộc truyền thống của đoàn.')
-  text = text.replace(/Matches your bamboo and rattan weaving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề đan mây tre mỹ nghệ của đoàn.')
-  text = text.replace(/Matches your conical hat making preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề làm nón lá truyền thống của đoàn.')
-  text = text.replace(/Matches your lacquer and painting preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề tranh sơn mài truyền thống của đoàn.')
-  text = text.replace(/Matches your embroidery preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề thêu tay truyền thống của đoàn.')
-  text = text.replace(/Matches your food and cooking preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm văn hóa ẩm thực truyền thống của đoàn.')
-  text = text.replace(/Matches your ([a-zA-Z\s]+) preference \([^)]+\)\./i, 'Phù hợp với nguyện vọng trải nghiệm nghề thủ công của đoàn.')
-  text = text.replace(/Does not match your [a-zA-Z\s]+ preference\./i, 'Chưa hoàn toàn trùng khớp với ngành nghề ưu tiên ban đầu, nhưng là hoạt động đặc sắc có thể cân nhắc mở rộng cho đoàn.')
-
-  // 3. Loại hình trải nghiệm
-  text = text.replace(/A Workshop\/Hands-on experience, as requested\./i, 'Xưởng có hoạt động thực hành tay nghề (workshop) trực tiếp cùng nghệ nhân đúng theo yêu cầu.')
-  text = text.replace(/A Cultural Show experience, as requested\./i, 'Có suất diễn nghệ thuật văn hóa truyền thống đặc sắc theo yêu cầu.')
-  text = text.replace(/A Sightseeing experience, as requested\./i, 'Tuyến tham quan không gian xưởng và di sản làng nghề thuận tiện.')
-  text = text.replace(/A Culinary\/Tasting experience, as requested\./i, 'Trải nghiệm thưởng thức hương vị ẩm thực làng nghề truyền thống.')
-  text = text.replace(/Not a Workshop\/Hands-on experience\./i, 'Hoạt động tham quan/biểu diễn (chưa bao gồm thực hành làm nghề thủ công trực tiếp).')
-  text = text.replace(/Not a Sightseeing experience\./i, 'Là hoạt động workshop thực hành tay nghề thay vì chỉ thuần túy tham quan.')
-  text = text.replace(/Not a ([a-zA-Z\s\/]+) experience\./i, 'Khác loại hình trải nghiệm ban đầu yêu cầu.')
-
-  // 4. Quy mô đoàn & sức chứa
-  text = text.replace(/Takes up to (\d+) pax for your group of (\d+)\./i, (_, max, group) => `Sức chứa xưởng tối đa ${max} khách, vừa vặn và đảm bảo chất lượng hướng dẫn cho đoàn ${group} người.`)
-
-  // 5. Ngân sách & chi phí
-  text = text.replace(/([\d,.]+) VND per person, within your ([\d,.]+) VND budget\./i, (_, price, budget) => `Mức giá ${price} đ/khách, nằm trọn trong hạn mức ngân sách (${budget} đ) của đoàn.`)
-
-  // 6. Khoảng cách di chuyển
-  text = text.replace(/About ([\d.]+) km from (.+?) \(estimated\)\./i, (_, dist, origin) => {
-    const originLabel = origin === 'your starting point' ? 'điểm xuất phát của đoàn' : origin
-    return `Cách ${originLabel} khoảng ${dist} km, tuyến đường thuận tiện di chuyển trong ngày.`
-  })
-
-  return text
-}
-
 /** Render văn bản Markdown (định dạng in đậm) */
 function renderInlineText(text: string): React.ReactNode {
   if (!text || !text.includes('**')) return text
@@ -1114,7 +1068,7 @@ export default function AiMatchingScreen() {
                                     'Hạ Thái': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Four_seasons%2C_lacquer_engraving_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi%2C_Vietnam_-_DSC05121.JPG/1280px-Four_seasons%2C_lacquer_engraving_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi%2C_Vietnam_-_DSC05121.JPG',
                                     'Đào Thục': 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Hanoi_Vietnam_Thang-Long-Water-Puppet-Theatre-01.jpg/1280px-Hanoi_Vietnam_Thang-Long-Water-Puppet-Theatre-01.jpg',
                                   }
-                                  const imgSrc = craftImgMap[rec.village_name]
+                                  const imgSrc = rec.image_url || craftImgMap[rec.village_name]
                                   return imgSrc ? (
                                     <img src={imgSrc} alt={rec.village_name} className="rec-card-img" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                                   ) : (

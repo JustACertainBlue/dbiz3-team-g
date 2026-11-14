@@ -2,6 +2,7 @@ import type { MatchFactors } from '@/lib/matching/scoring-engine'
 
 export interface RecommendationItem {
   experience_id: string
+  image_url?: string
   provider_id?: string
   experience_name?: string
   provider_name?: string
@@ -80,6 +81,7 @@ export async function buildRecommendations(
 
     return {
       experience_id: item.experience_id,
+      ...(typeof item.image_url === 'string' ? { image_url: item.image_url } : {}),
       provider_id: item.provider_id,
       experience_name: expName,
       provider_name: item.provider_name,

@@ -18,6 +18,42 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 52: 15/11 Copilot — connect AI Matching test media
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; test-mode AI Matching media integration. |
+| Scope | Make the fixture's downloaded media visible in test-only village/provider/activity cards and ranked recommendations; preserve normal matching images. |
+| Produced | Test mode now reads the fixture under `tests/fixtures/ai-matching/`; its relative media paths are served from an allowlisted JPEG-only route. Test mode persists across follow-up turns. Recommendation API/view now carries test `image_url` through to the card, which prefers it over the normal village fallback. |
+| Test-first | Before implementation, regression tests failed because test cards used the Wikimedia fallback, recommendation images were dropped, and the media route did not exist. |
+| Verification | `npm test -- tests/unit/ait-test-dataset-matching.test.ts tests/unit/ait121-additional-suggestions.test.ts tests/unit/ait-test-media-route.test.ts`: 17 tests passed. In localhost, all five Bát Tràng test activity-card images loaded (`naturalWidth > 0`); authenticated test matching returned HTTP 200 and local fixture URLs for top matches. `npm run lint` still reports two existing TS2345 errors in the same test file (price ordering, lines 140 and 158). The integration API suite was attempted but its legacy demo-cookie setup returned 401, so it is not counted as passing evidence. |
+| Boundaries | Only `is_test` responses use fixture images; ordinary recommendations retain their prior fallback images. No seed data or fixture contents changed. |
+| Commit / remote | No commit, push or merge performed in this run. |
+
+### Entry 51: 15/11 Copilot — fix AI Matching compile error
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; AI Matching local development fix. |
+| Scope | Resolve the duplicate `localizeExplanation` declaration reported by Next.js while compiling `/ai-matching`. |
+| Produced | Removed the stale page-local implementation; the page now uses the tested shared helper from `matching-view.ts`. |
+| Verification | `npm run lint` before the fix reproduced TS2440. After the fix TS2440 was gone, but lint still reports two unrelated existing type errors in `tests/unit/ait-test-dataset-matching.test.ts` (lines 118 and 136). `npm test -- tests/unit/ait121-additional-suggestions.test.ts`: 7 tests passed. Dev server recompiled `/ai-matching` and returned HTTP 200 after the fix. |
+| Boundaries | No tests or AI Matching behavior were changed; unrelated dataset-test type errors were not modified. |
+| Commit / remote | No commit, push or merge performed in this run. |
+
+### Entry 50: 15/11 Copilot — add isolated AI Matching media fixture
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local data-fixture preparation. |
+| Scope | Move the photo-enriched merged dataset out of Desktop into `tests/fixtures/ai-matching/`; do not change the live runtime or seed catalog. |
+| Human decision | User confirmed permission to include all photos, requested a move, chose a separate AI Matching fixture, selected both `media[]` and `image_url`, and requested moving the source JSON. |
+| Produced | `villages_providers_activities_merged.json` now has fixture-relative `image_url` and provenance-preserving `media[]` on all 14 villages, 28 providers and 30 activities. `media_manifest.json` uses fixture-relative file paths and retains original image/page URLs. Moved 125 JPEGs; one stale JPG is not referenced by the manifest or entity data. |
+| Verification | Parsed the fixture and manifest; all 124 mapped images exist and decode, all 125 JPEGs are present, all entity IDs map to media, and the moved source paths are absent. No application tests run because this fixture is not wired into the live catalog or test runner. |
+| Boundaries | `data/seed`, `src/` and live AI Matching data are unchanged. The fixture-relative `image_url` values are test-data paths, not app-served URLs. |
+| Commit / remote | No commit, push or merge performed in this run. |
+
+
 ### Entry 49: 07/11 Codex — Supabase development foundation (`codex/supabase-foundation`)
 
 | Field | Value |

@@ -5,7 +5,7 @@ import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extract
 import { resolveVillageCards, resolveProviderCards, resolveActivityCards, detectCardScope, detectPriceSortPreference } from '@/lib/matching/card-resolver'
 import { saveAgencyPreferenceProfile } from '@/lib/preferences/preference-service'
 import {
-  isTestPrompt,
+  isTestConversation,
   resolveTestVillageCards,
   resolveTestProviderCards,
   resolveTestActivityCards,
@@ -66,7 +66,7 @@ export async function POST(
     }
 
     const userText = String(body.text || '')
-    const isTest = body.is_test === true || isTestPrompt(userText)
+    const isTest = isTestConversation(allMessages, body.is_test === true)
 
     if (isTest) {
       if (!extraction.tour_context.experience_types || extraction.tour_context.experience_types.length === 0) {

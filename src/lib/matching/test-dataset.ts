@@ -1,4 +1,4 @@
-import rawData from '@/data/ai-matching/villages_providers_activities_merged.json'
+import rawData from '../../../tests/fixtures/ai-matching/villages_providers_activities_merged.json'
 import type { VillageCardData, ProviderCardData, ActivityCardData, ProviderActivity } from '@/lib/matching/card-resolver'
 import { CRAFT_MEDIA } from '@/lib/matching/card-resolver'
 import type { CandidateExperience } from '@/lib/matching/candidate-repo'
@@ -9,6 +9,8 @@ export interface TestVillageRaw {
   village_id: string
   village_name: string
   district_raw: string
+  image_url?: string
+  media?: Array<{ file: string }>
   providers: Array<{
     provider_id: string
     name: string
@@ -32,6 +34,8 @@ export interface TestVillageRaw {
       plus_code: string | null
       status: string
     }
+    image_url?: string
+    media?: Array<{ file: string }>
   }>
   activities: Array<{
     activity_id: string
@@ -44,6 +48,8 @@ export interface TestVillageRaw {
     verified_status?: string
     notes?: string[]
     booking_note?: string | null
+    image_url?: string
+    media?: Array<{ file: string }>
   }>
 }
 
@@ -53,6 +59,10 @@ export interface TestVillageRaw {
 export function isTestPrompt(text: string): boolean {
   if (!text) return false
   return /(?:^|[\s,.:;!?])test(?:$|[\s,.:;!?])/i.test(text.trim())
+}
+
+export function isTestConversation(messages: Array<{ sender: string; text: string }>, explicitTest = false): boolean {
+  return explicitTest || messages.some(message => message.sender === 'Agency' && isTestPrompt(message.text))
 }
 
 const VILLAGE_CRAFT_MAPPING: Record<string, { craftType: CraftType; craftName: string; mediaUrl: string; lat: number; lng: number; distKm: number }> = {
@@ -70,6 +80,23 @@ const VILLAGE_CRAFT_MAPPING: Record<string, { craftType: CraftType; craftName: s
   'ngu-xa': { craftType: 'Metalwork', craftName: 'Đúc đồng truyền thống Ngũ Xã', mediaUrl: 'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?w=800', lat: 21.0450, lng: 105.8420, distKm: 4 },
   'phung-xa': { craftType: 'Silk/Textile', craftName: 'Dệt lụa tơ sen độc bản Phùng Xá', mediaUrl: CRAFT_MEDIA.silk, lat: 20.6750, lng: 105.7830, distKm: 40 },
   'dao-thuc': { craftType: 'Other', craftName: 'Múa rối nước dân gian Đào Thục', mediaUrl: CRAFT_MEDIA.waterpuppets, lat: 21.1730, lng: 105.9250, distKm: 24 },
+}
+
+function testMediaUrl(
+  entity: { image_url?: string; media?: Array<{ file: string }> },
+  fallback?: string,
+): string | undefined {
+  const file = entity.image_url?.startsWith('media/')
+    ? entity.image_url
+    : entity.media?.find(media => media.file.startsWith('media/'))?.file
+
+  if (file) {
+    const path = file.slice('media/'.length).split('/').map(encodeURIComponent).join('/')
+    return `/api/ait/test-media/${path}`
+  }
+
+  if (entity.image_url && /^https?:\/\//i.test(entity.image_url)) return entity.image_url
+  return fallback
 }
 
 /**
@@ -164,7 +191,7 @@ export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExp
         travel_time_minutes: Math.round(meta.distKm * 2.2),
         historical_agency_preference_weight: 0.9,
         provider_quality_rating: 0.95,
-        image_url: meta.mediaUrl,
+        image_url: testMediaUrl(act, testMediaUrl(prov ?? {}, testMediaUrl(village, meta.mediaUrl))) ?? meta.mediaUrl,
         location: {
           lat,
           lng,
@@ -193,7 +220,7 @@ export function resolveTestVillageCards(text: string): VillageCardData[] {
       name: v.village_name,
       craft: meta?.craftName || v.village_name,
       district: v.district_raw,
-      image_url: meta?.mediaUrl || CRAFT_MEDIA.ceramics,
+      image_url: testMediaUrl(v, meta?.mediaUrl || CRAFT_MEDIA.ceramics)!,
       description: `${v.village_name} (${v.district_raw}) — gồm ${v.providers.length} cơ sở/xưởng nghề và ${v.activities.length} hoạt động trải nghiệm văn hóa.`,
     }
   })
@@ -251,7 +278,7 @@ export function resolveTestProviderCards(text: string): ProviderCardData[] {
         location_address: p.address,
         description: p.notes?.join('; ') || p.contact_note || `Xưởng thủ công uy tín tại ${v.village_name}`,
         activities: pActs,
-        image_url: meta?.mediaUrl || CRAFT_MEDIA.ceramics,
+        image_url: testMediaUrl(p, meta?.mediaUrl || CRAFT_MEDIA.ceramics)!,
         primary_experience_id: pActs[0]?.experience_id || `exp-${p.provider_id}`,
         is_verified: true,
       })
@@ -309,7 +336,7 @@ export function resolveTestActivityCards(text: string): ActivityCardData[] {
         duration_minutes: duration,
         price_per_person: price,
         max_participants: 25,
-        image_url: meta?.mediaUrl || CRAFT_MEDIA.ceramics,
+        image_url: testMediaUrl(a, meta?.mediaUrl || CRAFT_MEDIA.ceramics)!,
         is_verified: true,
       })
     }

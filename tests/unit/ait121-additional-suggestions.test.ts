@@ -26,6 +26,13 @@ describe('#188 | AIT121 shows additional suggestions (FR-008)', () => {
     expect(matchResultsView({ top_matches: [item(1)] }).additional).toEqual([])
   })
 
+  it('preserves the test-dataset image URL for the recommendation card', () => {
+    const view = matchResultsView({
+      top_matches: [{ ...item(1), image_url: '/api/ait/test-media/activities/bat-trang-a01.jpg' }],
+    })
+    expect(view.top[0].image_url).toBe('/api/ait/test-media/activities/bat-trang-a01.jpg')
+  })
+
   it('the page keeps them on the message and renders them under "Gợi ý thêm" with the same card actions', () => {
     const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
     expect(page).toContain('const { top: topMatches, additional } = matchResultsView(result.body)')

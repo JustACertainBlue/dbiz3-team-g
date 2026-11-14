@@ -1,0 +1,772 @@
+{
+  "villages": {
+    "bat-trang": [
+      {
+        "file": "media/villages/bat-trang.jpg",
+        "image_url": "https://ceramuseum.com/UploadFile/Article/About.jpg",
+        "page_url": "https://ceramuseum.com/"
+      }
+    ],
+    "kim-lan": [
+      {
+        "file": "media/villages/kim-lan.jpg",
+        "image_url": "https://cdn-i.vtcnews.vn/resize/1200x900/upload/2026/10/25/429a5d5d-cad7-456e-bea6-6c68a385905d-14130809.png",
+        "page_url": "https://vtcnews.vn/bao-tang-luu-giu-hon-300-co-vat-o-lang-gom-nghin-nam-tuoi-ben-song-hong-ar1047208.html"
+      }
+    ],
+    "xuan-la": [
+      {
+        "file": "media/villages/xuan-la.jpg",
+        "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/in_social/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172539.jpg?randTime=1794673310",
+        "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+      }
+    ],
+    "ha-thai": [
+      {
+        "file": "media/villages/ha-thai.jpg",
+        "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/w_dsc09522_original-1833.jpg",
+        "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+      }
+    ],
+    "yen-thai": [
+      {
+        "file": "media/villages/yen-thai.jpg",
+        "image_url": "https://static.wixstatic.com/media/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png/v1/fit/w_2500,h_1330,al_c/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png",
+        "page_url": "https://www.zoproject.com/vi"
+      }
+    ],
+    "chang-son": [
+      {
+        "file": "media/villages/chang-son.jpg",
+        "image_url": "https://quatchangson.vn/quatcs-media/thu-vien-anh/quat-chang-son.jpg",
+        "page_url": "https://quatchangson.vn/"
+      }
+    ],
+    "van-phuc": [
+      {
+        "file": "media/villages/van-phuc.jpg",
+        "image_url": "https://vunart.vn/wp-content/uploads/2025/12/Tranh-00107-1024x752.jpg",
+        "page_url": "https://vunart.vn"
+      }
+    ],
+    "non-chuong": [
+      {
+        "file": "media/villages/non-chuong.jpg",
+        "image_url": "https://t.ex-cdn.com/danviet.vn/800w/files/content/2026/06/19/anh-4-1729.jpg",
+        "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+      }
+    ],
+    "phu-vinh": [
+      {
+        "file": "media/villages/phu-vinh.jpg",
+        "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/dVa2vtPZfM/cvpc-2560x1440.jpg",
+        "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+      }
+    ],
+    "ba-duong-noi": [
+      {
+        "file": "media/villages/ba-duong-noi.jpg",
+        "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2548-194205_648-194216.jpg",
+        "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+      }
+    ],
+    "son-dong": [
+      {
+        "file": "media/villages/son-dong.jpg",
+        "image_url": "https://s3.dungcaxinh.com/phuclamsondong.com/2022/03/z3230173628718_54581978fc09f812ce0f21395801ea64.jpg?v=hd2",
+        "page_url": "https://phuclamsondong.com"
+      }
+    ],
+    "ngu-xa": [
+      {
+        "file": "media/villages/ngu-xa.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/03/ducdongnguxa.png",
+        "page_url": "https://ducdongnguxa.com"
+      }
+    ],
+    "phung-xa": [
+      {
+        "file": "media/villages/phung-xa.jpg",
+        "image_url": "https://imgcdn.tapchicongthuong.vn/tcct-media/23/10/20/anh-man-hinh-2023-10-20-luc-103827_6531f685a8f88.png",
+        "page_url": "https://tapchicongthuong.vn/magazine/den-phung-xa-xem-van-tam-tu-det-chan-to-112600.htm"
+      }
+    ],
+    "dao-thuc": [
+      {
+        "file": "media/villages/dao-thuc.jpg",
+        "image_url": "https://static.vinwonders.com/production/lang-roi-nuoc-dao-thuc-bia.jpg",
+        "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+      }
+    ]
+  },
+  "providers": {
+    "bat-trang-p01": [
+      {
+        "file": "media/providers/bat-trang-p01.jpg",
+        "image_url": "https://ceramuseum.com/UploadFile/Article/About.jpg",
+        "page_url": "https://ceramuseum.com/"
+      },
+      {
+        "file": "media/providers/bat-trang-p01_2.jpg",
+        "image_url": "https://ceramuseum.com/UploadFile/Doi-Tac/cuongnga.jpg",
+        "page_url": "https://ceramuseum.com/"
+      }
+    ],
+    "bat-trang-p02": [
+      {
+        "file": "media/providers/bat-trang-p02.jpg",
+        "image_url": "https://static.wixstatic.com/media/bf5ef8_e6eac6df95c041aab81d7fc4e7d4c94f~mv2.jpg/v1/fill/w_1737,h_1042,al_c/bf5ef8_e6eac6df95c041aab81d7fc4e7d4c94f~mv2.jpg",
+        "page_url": "https://www.vigobattrang.com/"
+      }
+    ],
+    "bat-trang-p03": [
+      {
+        "file": "media/providers/bat-trang-p03.jpg",
+        "image_url": "https://instagram.fhan2-3.fna.fbcdn.net/v/t39.30808-6/833107337_122182699724678488_2622092739052931162_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&_nc_map=urlgen_bucketless&ig_cache_key=NDAwMDI5NjQ4MzY2MzQ5MDM3NA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkNBUk9VU0VMX0lURU0ueHBpZHMuOTYwLnNkci5yZWd1bGFyX3Bob3RvLkMzIn0%3D&_nc_ohc=sbRdy8gKyi8Q7kNvwH-57Ab&_nc_oc=AdqvKthrICccMsDwnklxkk5rryQGsWyn6TNSOmf5Qxx8kO1RQKsbIkoCSlYeeb1zIhk&_nc_zt=23&_nc_ht=instagram.fhan2-3.fna&_nc_gid=GgJYLQxmm6l2PRUSjf3Hbw&_nc_ss=7ba02&_nc_ct=RQosPBUIFQIlBAAAAA&oh=00_AQQv7wPX9EYsySGs_qlV5i8axGhDidUNoGptuIGwz7glTA&oe=6AFE779B",
+        "page_url": "https://www.instagram.com/titach.ceramics/p/DeD6HmCgXEn/"
+      }
+    ],
+    "bat-trang-p04": [
+      {
+        "file": "media/providers/bat-trang-p04.jpg",
+        "image_url": "https://static.vinwonders.com/production/lang-gom-bat-trang-top-banner.jpg",
+        "page_url": "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/"
+      },
+      {
+        "file": "media/providers/bat-trang-p04_2.jpg",
+        "image_url": "https://static.vinwonders.com/production/lang-gom-bat-trang-1.jpg",
+        "page_url": "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/"
+      }
+    ],
+    "kim-lan-p01": [
+      {
+        "file": "media/providers/kim-lan-p01.jpg",
+        "image_url": "https://cdn-i.vtcnews.vn/resize/1200x900/upload/2026/10/25/429a5d5d-cad7-456e-bea6-6c68a385905d-14130809.png",
+        "page_url": "https://vtcnews.vn/bao-tang-luu-giu-hon-300-co-vat-o-lang-gom-nghin-nam-tuoi-ben-song-hong-ar1047208.html"
+      },
+      {
+        "file": "media/providers/kim-lan-p01_2.jpg",
+        "image_url": "https://cdn-i.vtcnews.vn/resize/th/upload/2026/10/25/bando-13391628.png",
+        "page_url": "https://vtcnews.vn/bao-tang-luu-giu-hon-300-co-vat-o-lang-gom-nghin-nam-tuoi-ben-song-hong-ar1047208.html"
+      }
+    ],
+    "kim-lan-p02": [
+      {
+        "file": "media/providers/kim-lan-p02.jpg",
+        "image_url": "https://static.wixstatic.com/media/c042ae_49650dabddb644dd9766f83155cd4d50~mv2.jpg/v1/fill/w_899,h_600,al_c/c042ae_49650dabddb644dd9766f83155cd4d50~mv2.jpg",
+        "page_url": "https://www.gomsukimlanhanoi.com/"
+      },
+      {
+        "file": "media/providers/kim-lan-p02_2.jpg",
+        "image_url": "https://static.wixstatic.com/media/c042ae_dc96c9c60e2041aba44409c44e778908~mv2.jpg/v1/fill/w_608,h_538,q_87,enc_avif,quality_auto/c042ae_dc96c9c60e2041aba44409c44e778908~mv2.jpg",
+        "page_url": "https://www.gomsukimlanhanoi.com/"
+      }
+    ],
+    "xuan-la-p01": [
+      {
+        "file": "media/providers/xuan-la-p01.jpg",
+        "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/in_social/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172539.jpg?randTime=1794673310",
+        "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+      },
+      {
+        "file": "media/providers/xuan-la-p01_2.jpg",
+        "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172514.jpg?rt=20260120172541",
+        "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+      }
+    ],
+    "xuan-la-p02": [
+      {
+        "file": "media/providers/xuan-la-p02.jpg",
+        "image_url": "https://tohexuanla.vn/uploads/D%E1%BA%A1y%20n%E1%BA%B7n%20Tr%E1%BA%BB%20Em%20c%C3%A1c%20N%C6%B0%E1%BB%9Bc%20ASEAN.jpg",
+        "page_url": "https://tohexuanla.vn/"
+      },
+      {
+        "file": "media/providers/xuan-la-p02_2.jpg",
+        "image_url": "https://tohexuanla.vn/uploads/d%E1%BA%A1y%20n%E1%BA%B7n%20t%C3%B2%20he%20Sinh%20vi%C3%AAn%20n%C6%B0%E1%BB%9Bc%20ngo%C3%A0i(2).jpg",
+        "page_url": "https://tohexuanla.vn/"
+      }
+    ],
+    "ha-thai-p01": [
+      {
+        "file": "media/providers/ha-thai-p01.jpg",
+        "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/w_dsc09522_original-1833.jpg",
+        "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+      },
+      {
+        "file": "media/providers/ha-thai-p01_2.jpg",
+        "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/w_dsc09530_original-1835.jpg",
+        "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+      }
+    ],
+    "ha-thai-p02": [
+      {
+        "file": "media/providers/ha-thai-p02.jpg",
+        "image_url": "https://lacquerpc.com/uploads/0000/1/2023/05/14/logo-011.png",
+        "page_url": "http://lacquerpc.com/"
+      }
+    ],
+    "ha-thai-p03": [
+      {
+        "file": "media/providers/ha-thai-p03.jpg",
+        "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/2-1501999932842-1852.jpg",
+        "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+      },
+      {
+        "file": "media/providers/ha-thai-p03_2.jpg",
+        "image_url": "https://i.ex-cdn.com/vovgiaothong.vn/files/content/2026/11/05/24a07050-11-1853.jpg",
+        "page_url": "https://vovgiaothong.vn/newsaudio/ve-ha-thai-trai-nghiem-workshop-son-mai-truyen-thong-d56560.html"
+      }
+    ],
+    "ha-thai-p04": [
+      {
+        "file": "media/providers/ha-thai-p04.jpg",
+        "image_url": "http://lacquerhomevn.com/wp-content/uploads/2014/09/BAMBOO-BG_CHUAN.jpg",
+        "page_url": "http://lacquerhomevn.com/"
+      },
+      {
+        "file": "media/providers/ha-thai-p04_2.jpg",
+        "image_url": "http://lacquerhomevn.com/wp-content/uploads/2014/11/Lacquer-box1.png",
+        "page_url": "http://lacquerhomevn.com/"
+      }
+    ],
+    "yen-thai-p01": [
+      {
+        "file": "media/providers/yen-thai-p01.jpg",
+        "image_url": "https://static.wixstatic.com/media/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png/v1/fit/w_2500,h_1330,al_c/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png",
+        "page_url": "https://www.zoproject.com/vi"
+      }
+    ],
+    "yen-thai-p02": [
+      {
+        "file": "media/providers/yen-thai-p02.jpg",
+        "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545176_IMG_20261114_132758.jpg",
+        "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+      },
+      {
+        "file": "media/providers/yen-thai-p02_2.jpg",
+        "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545169_sơn.jpg",
+        "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+      }
+    ],
+    "chang-son-p01": [
+      {
+        "file": "media/providers/chang-son-p01.jpg",
+        "image_url": "https://quatchangson.vn/quatcs-media/thu-vien-anh/quat-chang-son.jpg",
+        "page_url": "https://quatchangson.vn/"
+      },
+      {
+        "file": "media/providers/chang-son-p01_2.jpg",
+        "image_url": "https://quatchangson.vn/quatcs-media/crop/634_612/thu-vien-anh/z5072273679238_db3e890d7611d6766624c72e3f4f75b1.jpg",
+        "page_url": "https://quatchangson.vn/"
+      }
+    ],
+    "chang-son-p02": [
+      {
+        "file": "media/providers/chang-son-p02.jpg",
+        "image_url": "https://cdn.baoquocte.vn/stores/news_dataimages/2026/042026/21/08/linh-vat-world-cup-2026-175887978098778792313-copy20260421082729.jpg",
+        "page_url": "https://baoquocte.vn/quat-nghe-thuat-con-do-mot-nghe-nhan-7043.html"
+      },
+      {
+        "file": "media/providers/chang-son-p02_2.jpg",
+        "image_url": "https://cdn.baoquocte.vn/stores/news_dataimages/2026/072026/17/21/screenshot-2026-07-17-205907-copy20260717210012.jpg",
+        "page_url": "https://baoquocte.vn/quat-nghe-thuat-con-do-mot-nghe-nhan-7043.html"
+      }
+    ],
+    "van-phuc-p01": [
+      {
+        "file": "media/providers/van-phuc-p01.jpg",
+        "image_url": "https://vunart.vn/wp-content/uploads/2025/12/Tranh-00107-1024x752.jpg",
+        "page_url": "https://vunart.vn"
+      },
+      {
+        "file": "media/providers/van-phuc-p01_2.jpg",
+        "image_url": "https://vunart.vn/wp-content/uploads/2025/11/BetterImage_1762831558364-Photoroom-1.png",
+        "page_url": "https://vunart.vn"
+      }
+    ],
+    "van-phuc-p02": [
+      {
+        "file": "media/providers/van-phuc-p02.jpg",
+        "image_url": "https://imagevietnam.vnanet.vn/upload/Thumnail/2020/11/21/2111202009125453020.jpg",
+        "page_url": "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html"
+      },
+      {
+        "file": "media/providers/van-phuc-p02_2.jpg",
+        "image_url": "https://imagevietnam.vnanet.vn/Upload/2020/11/19/1911202010062566-1_resize.JPG",
+        "page_url": "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html"
+      }
+    ],
+    "van-phuc-p03": [
+      {
+        "file": "media/providers/van-phuc-p03.jpg",
+        "image_url": "https://i1-giadinh.vnecdn.net/2014/04/10/IMG-0095-1397115027.jpg?w=1200&h=675&q=100&dpr=1&fit=crop&s=x-LKMXFdtxSRa57Rnom5pw",
+        "page_url": "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+      },
+      {
+        "file": "media/providers/van-phuc-p03_2.jpg",
+        "image_url": "https://i1-giadinh.vnecdn.net/2014/04/10/IMG-0059-1397115023.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=2MeK5JK_BMG4tkSmUPCX_Q",
+        "page_url": "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+      }
+    ],
+    "non-chuong-p01": [
+      {
+        "file": "media/providers/non-chuong-p01.jpg",
+        "image_url": "https://t.ex-cdn.com/danviet.vn/800w/files/content/2026/06/19/anh-4-1729.jpg",
+        "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+      },
+      {
+        "file": "media/providers/non-chuong-p01_2.jpg",
+        "image_url": "https://i.ex-cdn.com/danviet.vn/files/content/2026/06/19/anh-1-2-1723.jpg",
+        "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+      }
+    ],
+    "phu-vinh-p01": [
+      {
+        "file": "media/providers/phu-vinh-p01.jpg",
+        "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/dVa2vtPZfM/cvpc-2560x1440.jpg",
+        "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+      },
+      {
+        "file": "media/providers/phu-vinh-p01_2.jpg",
+        "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/PrvAZiKT3H/fashion-style-quote-1080x1080.png",
+        "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+      }
+    ],
+    "phu-vinh-p02": [
+      {
+        "file": "media/providers/phu-vinh-p02.jpg",
+        "image_url": "http://maytrephuvinh.vn/wp-content/uploads/2025/03/may-tre-ban.jpg",
+        "page_url": "https://maytrephuvinh.vn/"
+      },
+      {
+        "file": "media/providers/phu-vinh-p02_2.jpg",
+        "image_url": "https://maytrephuvinh.vn/wp-content/uploads/2025/03/giuong-may-11.jpg",
+        "page_url": "https://maytrephuvinh.vn/"
+      }
+    ],
+    "ba-duong-noi-p01": [
+      {
+        "file": "media/providers/ba-duong-noi-p01.jpg",
+        "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2545-194044_155-194118.jpg",
+        "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+      },
+      {
+        "file": "media/providers/ba-duong-noi-p01_2.jpg",
+        "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2548-194205_648-194216.jpg",
+        "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+      }
+    ],
+    "son-dong-p01": [
+      {
+        "file": "media/providers/son-dong-p01.jpg",
+        "image_url": "https://s3.dungcaxinh.com/phuclamsondong.com/2022/03/z3230173628718_54581978fc09f812ce0f21395801ea64.jpg?v=hd2",
+        "page_url": "https://phuclamsondong.com"
+      },
+      {
+        "file": "media/providers/son-dong-p01_2.jpg",
+        "image_url": "https://s3.dungcaxinh.com/phuclamsondong.com/2022/10/Phuclam-banner-01-moi.webp?v=hd2",
+        "page_url": "https://phuclamsondong.com"
+      }
+    ],
+    "ngu-xa-p01": [
+      {
+        "file": "media/providers/ngu-xa-p01.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/03/ducdongnguxa.png",
+        "page_url": "https://ducdongnguxa.com"
+      },
+      {
+        "file": "media/providers/ngu-xa-p01_2.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/03/dúc-dồng-ngũ-xã-hơn-400-năm-lịch-sử-phát-triển.jpg",
+        "page_url": "https://ducdongnguxa.com"
+      }
+    ],
+    "ngu-xa-p02": [
+      {
+        "file": "media/providers/ngu-xa-p02.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/03/Làng-Nghề-Dúc-Dồng-Ngũ-Xã-Ngày-nay.png",
+        "page_url": "https://ducdongnguxa.com"
+      },
+      {
+        "file": "media/providers/ngu-xa-p02_2.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/Lang-Nghe-Duc-Dong-Truyen-Thong-Ngu-Xa-Tuong-Duc-Lien-Hoa-Sinh-Cao-1m8-Thap-Mandala-Tay-Thien.png",
+        "page_url": "https://ducdongnguxa.com"
+      }
+    ],
+    "phung-xa-p01": [
+      {
+        "file": "media/providers/phung-xa-p01.jpg",
+        "image_url": "https://imgcdn.tapchicongthuong.vn/tcct-media/23/10/20/anh-man-hinh-2023-10-20-luc-103827_6531f685a8f88.png",
+        "page_url": "https://tapchicongthuong.vn/magazine/den-phung-xa-xem-van-tam-tu-det-chan-to-112600.htm"
+      },
+      {
+        "file": "media/providers/phung-xa-p01_2.jpg",
+        "image_url": "https://media.vnbusiness.vn/files/uploads/2022/12/16/a-nh-3-1671156147.jpg?w=1200&h=630&mode=crop&anchor=top-center",
+        "page_url": "https://vnbusiness.vn/doc-dao-lua-lam-tu-cuong-sen.html"
+      }
+    ],
+    "dao-thuc-p01": [
+      {
+        "file": "media/providers/dao-thuc-p01.jpg",
+        "image_url": "https://static.vinwonders.com/production/lang-roi-nuoc-dao-thuc-bia.jpg",
+        "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+      },
+      {
+        "file": "media/providers/dao-thuc-p01_2.jpg",
+        "image_url": "https://static.vinwonders.com/production/lang-roi-nuoc-dao-thuc-1.jpg",
+        "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+      }
+    ]
+  },
+  "activities": {
+    "bat-trang-a01": [
+      {
+        "file": "media/activities/bat-trang-a01.jpg",
+        "image_url": "http://cdn.hstatic.net/files/200001055019/article/create_a_high-quality_commercial_banner_202606231507_e243fd7971284e30974f2a4e14ef7a0e.jpeg",
+        "page_url": "https://langgom.vn/blogs/news/bao-tang-gom-bat-trang-gia-ve-lich-trinh"
+      },
+      {
+        "file": "media/activities/bat-trang-a01_2.jpg",
+        "image_url": "https://cdn.hstatic.net/files/200001055019/file/mini_generated_image_1b3d3q1b3d3q1b3d_5d91a41caeda4a16b24f6538ead76524_1024x1024.png",
+        "page_url": "https://langgom.vn/blogs/news/bao-tang-gom-bat-trang-gia-ve-lich-trinh"
+      }
+    ],
+    "bat-trang-a02": [
+      {
+        "file": "media/activities/bat-trang-a02.jpg",
+        "image_url": "https://cdn.hstatic.net/files/200001055019/article/binh_hut_loc_bat_trang_giam_gia__1__c4ee93d6d1404b36867473e578d97f1e_1024x1024.png",
+        "page_url": "https://langgom.vn/blogs/news/bao-tang-gom-bat-trang-gia-ve-lich-trinh"
+      }
+    ],
+    "bat-trang-a03": [
+      {
+        "file": "media/activities/bat-trang-a03.jpg",
+        "image_url": "http://tinhhoalangnghe.vn/content/uploads/cms/2022/12/10/3188024241954146763558402872289564759223868n.jpg",
+        "page_url": "http://tinhhoalangnghe.vn/vi/p/cap-nhap-gia-ve-moi-nhat-cua-bao-tang-gom-bat-trang-trung-tam-tinh-hoa-lang-nghe-viet-73905.html"
+      },
+      {
+        "file": "media/activities/bat-trang-a03_2.jpg",
+        "image_url": "http://tinhhoalangnghe.vn/content/uploads/cms/2022/06/27/z3476177076702df111e5c1e82556578ce5c83db7bdbd2.jpg",
+        "page_url": "http://tinhhoalangnghe.vn/vi/p/cap-nhap-gia-ve-moi-nhat-cua-bao-tang-gom-bat-trang-trung-tam-tinh-hoa-lang-nghe-viet-73905.html"
+      }
+    ],
+    "bat-trang-a04": [
+      {
+        "file": "media/activities/bat-trang-a04.jpg",
+        "image_url": "https://static.wixstatic.com/media/bf5ef8_e6eac6df95c041aab81d7fc4e7d4c94f~mv2.jpg/v1/fill/w_1737,h_1042,al_c/bf5ef8_e6eac6df95c041aab81d7fc4e7d4c94f~mv2.jpg",
+        "page_url": "https://www.vigobattrang.com/"
+      },
+      {
+        "file": "media/activities/bat-trang-a04_2.jpg",
+        "image_url": "https://www.vietnamairlines.com/content/dam/legacy-site-assets/SEO-images/2025 SEO/Thay Anh Traffic Tieng Viet/workshop lam gom ha noi/pottery-workshop.png",
+        "page_url": "https://www.vietnamairlines.com/go/vi/plan-book/travel/travel-guide/workshop-lam-gom-ha-noi"
+      }
+    ],
+    "bat-trang-a05": [
+      {
+        "file": "media/activities/bat-trang-a05.jpg",
+        "image_url": "https://static.vinwonders.com/production/optimize_workshop-lam-gom-ha-noi-01.jpg",
+        "page_url": "https://vinwonders.com/vi/wonderpedia/news/workshop-lam-gom-ha-noi/"
+      }
+    ],
+    "bat-trang-a06": [
+      {
+        "file": "media/activities/bat-trang-a06.jpg",
+        "image_url": "https://static.vinwonders.com/production/lang-gom-bat-trang-2.jpg",
+        "page_url": "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/"
+      },
+      {
+        "file": "media/activities/bat-trang-a06_2.jpg",
+        "image_url": "https://static.vinwonders.com/production/lang-gom-bat-trang-3.jpg",
+        "page_url": "https://vinwonders.com/vi/bai-viet-du-lich/lang-gom-bat-trang-ha-noi/"
+      }
+    ],
+    "kim-lan-a01": [
+      {
+        "file": "media/activities/kim-lan-a01.jpg",
+        "image_url": "https://sqhx-hanoi.mediacdn.vn/91579363132710912/2026/8/5/dsc04439-1785900455274418968787-40-0-1640-2560-crop-1785900622845170964408.jpg",
+        "page_url": "https://battrang.hanoi.gov.vn/van-hoa-xa-hoi/trai-nghiem-gom-ke-chuyen-em-voi-gom-kim-lan-gieo-mam-tinh-yeu-lang-nghe-trong-the-he-tre-2757260805103115029.htm"
+      },
+      {
+        "file": "media/activities/kim-lan-a01_2.jpg",
+        "image_url": "https://datafiles.hanoi.gov.vn/gov-hni/1/Banner/quoc-huy-961881.png",
+        "page_url": "https://battrang.hanoi.gov.vn/van-hoa-xa-hoi/trai-nghiem-gom-ke-chuyen-em-voi-gom-kim-lan-gieo-mam-tinh-yeu-lang-nghe-trong-the-he-tre-2757260805103115029.htm"
+      }
+    ],
+    "kim-lan-a02": [
+      {
+        "file": "media/activities/kim-lan-a02.jpg",
+        "image_url": "https://static.wixstatic.com/media/c042ae_50e6afae60da4deb95247b1a7f95da69~mv2.jpg/v1/fill/w_787,h_525,al_c/c042ae_50e6afae60da4deb95247b1a7f95da69~mv2.jpg",
+        "page_url": "https://www.gomsukimlanhanoi.com/tong-hop-cac-diem-check-in-hot-nhat-lang-gom"
+      },
+      {
+        "file": "media/activities/kim-lan-a02_2.jpg",
+        "image_url": "https://static.wixstatic.com/media/c042ae_1053cd80fe484e029b8cca4b73ed589e~mv2.jpg/v1/fill/w_787,h_525,q_90,enc_avif,quality_auto/c042ae_1053cd80fe484e029b8cca4b73ed589e~mv2.jpg",
+        "page_url": "https://www.gomsukimlanhanoi.com/tong-hop-cac-diem-check-in-hot-nhat-lang-gom"
+      }
+    ],
+    "xuan-la-a01": [
+      {
+        "file": "media/activities/xuan-la-a01.jpg",
+        "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172520.jpg?rt=20260120173600",
+        "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+      },
+      {
+        "file": "media/activities/xuan-la-a01_2.jpg",
+        "image_url": "https://mekongasean.vn/stores/news_dataimages/2026/012026/20/17/to-he-bat-trend-giua-lo-ng-pho-thi-20260120172524.jpg?rt=20260120173137",
+        "page_url": "https://mekongasean.vn/to-he-bat-trend-giua-lo-ng-pho-thi-51024.html"
+      }
+    ],
+    "xuan-la-a02": [
+      {
+        "file": "media/activities/xuan-la-a02.jpg",
+        "image_url": "https://tohexuanla.vn/uploads/D%E1%BA%A1y%20N%E1%BA%B7n%20T%E1%BA%A1i%20TR%C6%B0%E1%BB%9Dng%20M%E1%BA%A7m%20Non%20SaKuRa(2).jpg",
+        "page_url": "https://tohexuanla.vn/"
+      },
+      {
+        "file": "media/activities/xuan-la-a02_2.jpg",
+        "image_url": "https://tohexuanla.vn/uploads/image/TinTuc/chitichhiephoilangnghethegioi.JPG",
+        "page_url": "https://tohexuanla.vn/"
+      }
+    ],
+    "ha-thai-a01": [
+      {
+        "file": "media/activities/ha-thai-a01.jpg",
+        "image_url": "https://cdn.giaoduc.net.vn/images/TeTGi3RTDuGEHhh4N3ZDJdSpLWa2RYrwpk_xJzK8XbiMqHBMJ2vCn0nxeZKRkq9_5q3duTzB4UZTiGf_RYtEK1cF75BflqOKkdsj2XyCUYMT0TycNpf0QLgvemLoxrKxmPs189I81g7r7MnWXU2wrg/trai-nghiem-du-lich-lang-nghe-son-mai-4243-894.jpg.webp",
+        "page_url": "https://giaoduc.net.vn/ha-noi-du-khach-nuoc-ngoai-thich-thu-trai-nghiem-lam-tranh-son-mai-ha-thai-post245451.gd"
+      },
+      {
+        "file": "media/activities/ha-thai-a01_2.jpg",
+        "image_url": "https://t.ex-cdn.com/nongnghiepmoitruong.vn/800w/files/haxn76/2026/04/06/3649-son-mai-ha-thai-nongnghiep-193637.jpg",
+        "page_url": "https://nongnghiepmoitruong.vn/son-mai-ha-thai--tinh-hoa-viet-trong-lang-nghe-thu-cong-d805009.html"
+      }
+    ],
+    "yen-thai-a01": [
+      {
+        "file": "media/activities/yen-thai-a01.jpg",
+        "image_url": "https://static.wixstatic.com/media/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png/v1/fit/w_2500,h_1330,al_c/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png",
+        "page_url": "https://www.zoproject.com/vi"
+      },
+      {
+        "file": "media/activities/yen-thai-a01_2.jpg",
+        "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545176_IMG_20261114_132758.jpg",
+        "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+      }
+    ],
+    "yen-thai-a02": [
+      {
+        "file": "media/activities/yen-thai-a02.jpg",
+        "image_url": "https://cdn.govietnam.travel/wp-content/uploads/og/46030-c0405a811c.jpg",
+        "page_url": "https://govietnam.travel/experience/zo-project-do-paper-workshop-hanoi/"
+      },
+      {
+        "file": "media/activities/yen-thai-a02_2.jpg",
+        "image_url": "https://cdn.govietnam.travel/wp-content/uploads/2026/07/san-pham-giay-do-trung-bay-tai-workshop-1742804483415349891108-1600x640.jpeg",
+        "page_url": "https://govietnam.travel/experience/zo-project-do-paper-workshop-hanoi/"
+      }
+    ],
+    "yen-thai-a03": [
+      {
+        "file": "media/activities/yen-thai-a03.jpg",
+        "image_url": "https://static.wixstatic.com/media/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png/v1/fit/w_2500,h_1330,al_c/42060a_55b0c5f2b7ec4e768931831362849d64%7Emv2.png",
+        "page_url": "https://www.zoproject.com/vi"
+      },
+      {
+        "file": "media/activities/yen-thai-a03_2.jpg",
+        "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545176_IMG_20261114_132758.jpg",
+        "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+      }
+    ],
+    "yen-thai-a04": [
+      {
+        "file": "media/activities/yen-thai-a04.jpg",
+        "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545153_x.jpg",
+        "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+      },
+      {
+        "file": "media/activities/yen-thai-a04_2.jpg",
+        "image_url": "https://image.vietnamnews.vn/uploadvnnews/Article/2026/11/14/545151_img_0464.jpg",
+        "page_url": "https://vietnamnews.vn/life-style/1730038/project-reviving-traditional-paper-attracts-youth.html"
+      }
+    ],
+    "chang-son-a01": [
+      {
+        "file": "media/activities/chang-son-a01.jpg",
+        "image_url": "https://static.vietnampedia.com/themes/personal/givest/assets/img/shape/circle1.png",
+        "page_url": "https://quatchangson.vn/"
+      },
+      {
+        "file": "media/activities/chang-son-a01_2.jpg",
+        "image_url": "https://static.vietnampedia.com/themes/personal/givest/assets/img/shape/map2.png",
+        "page_url": "https://quatchangson.vn/"
+      }
+    ],
+    "chang-son-a02": [
+      {
+        "file": "media/activities/chang-son-a02.jpg",
+        "image_url": "https://cdn.baoquocte.vn/stores/news_dataimages/2026/042026/21/08/linh-vat-world-cup-2026-175887978098778792313-copy20260421082729.jpg",
+        "page_url": "https://baoquocte.vn/quat-nghe-thuat-con-do-mot-nghe-nhan-7043.html"
+      },
+      {
+        "file": "media/activities/chang-son-a02_2.jpg",
+        "image_url": "https://cdn.baoquocte.vn/stores/news_dataimages/2026/072026/17/21/screenshot-2026-07-17-205907-copy20260717210012.jpg",
+        "page_url": "https://baoquocte.vn/quat-nghe-thuat-con-do-mot-nghe-nhan-7043.html"
+      }
+    ],
+    "van-phuc-a01": [
+      {
+        "file": "media/activities/van-phuc-a01.jpg",
+        "image_url": "https://vunart.vn/wp-content/uploads/2025/12/vunart18h.png",
+        "page_url": "https://vunart.vn"
+      },
+      {
+        "file": "media/activities/van-phuc-a01_2.jpg",
+        "image_url": "https://vunart.vn/wp-content/uploads/2025/12/vunart9h.png",
+        "page_url": "https://vunart.vn"
+      }
+    ],
+    "van-phuc-a02": [
+      {
+        "file": "media/activities/van-phuc-a02.jpg",
+        "image_url": "https://imagevietnam.vnanet.vn/Upload/2020/11/19/19112020100625410-3_resize.JPG",
+        "page_url": "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html"
+      },
+      {
+        "file": "media/activities/van-phuc-a02_2.jpg",
+        "image_url": "https://imagevietnam.vnanet.vn/Upload/2020/11/19/19112020100625723-4_resize.JPG",
+        "page_url": "https://vietnam.vnanet.vn/english/trieu-van-mao-silk-factory/477008.html"
+      }
+    ],
+    "van-phuc-a03": [
+      {
+        "file": "media/activities/van-phuc-a03.jpg",
+        "image_url": "https://i1-giadinh.vnecdn.net/2014/04/10/IMG-0082-1397115025.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=1_wNGTS4OYq8o35AU721YQ",
+        "page_url": "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+      },
+      {
+        "file": "media/activities/van-phuc-a03_2.jpg",
+        "image_url": "https://i1-giadinh.vnecdn.net/2014/04/10/IMG-0072-1397115025.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=oQsBahnL9fuPDHwyOpxkkg",
+        "page_url": "https://vnexpress.net/lang-det-lua-nghin-nam-tuoi-o-ha-noi-2975923.html"
+      }
+    ],
+    "non-chuong-a01": [
+      {
+        "file": "media/activities/non-chuong-a01.jpg",
+        "image_url": "https://i.ex-cdn.com/danviet.vn/files/content/2026/06/19/2-1724.jpg",
+        "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+      },
+      {
+        "file": "media/activities/non-chuong-a01_2.jpg",
+        "image_url": "https://i.ex-cdn.com/danviet.vn/files/content/2026/06/19/3-1728.jpg",
+        "page_url": "https://danviet.vn/nghe-nhan-ta-thu-huong-hon-nua-the-ky-nang-long-cung-non-la-lang-chuong-d1436538.html"
+      }
+    ],
+    "phu-vinh-a01": [
+      {
+        "file": "media/activities/phu-vinh-a01.jpg",
+        "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/OfTV9VcNpm/le-quoc-vinh-2560-x-650-px-2560-x-750-px-2560-x-850-px-1-2560x850.png",
+        "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+      },
+      {
+        "file": "media/activities/phu-vinh-a01_2.jpg",
+        "image_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/assets/VLobxZTNvD/hanam-7-1920x1280.jpg",
+        "page_url": "https://special.nhandan.vn/may-tre-dan-Phu-Vinh-hon-xua-voc-moi/index.html"
+      }
+    ],
+    "phu-vinh-a02": [
+      {
+        "file": "media/activities/phu-vinh-a02.jpg",
+        "image_url": "https://maytrephuvinh.vn/wp-content/uploads/2025/03/giuong-may-3.jpg",
+        "page_url": "https://maytrephuvinh.vn/"
+      },
+      {
+        "file": "media/activities/phu-vinh-a02_2.jpg",
+        "image_url": "https://maytrephuvinh.vn/wp-content/uploads/2025/03/giuong-may-2.jpg",
+        "page_url": "https://maytrephuvinh.vn/"
+      }
+    ],
+    "ba-duong-noi-a01": [
+      {
+        "file": "media/activities/ba-duong-noi-a01.jpg",
+        "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2641-194242_353-194300.jpg",
+        "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+      },
+      {
+        "file": "media/activities/ba-duong-noi-a01_2.jpg",
+        "image_url": "https://i.ex-cdn.com/nongnghiepmoitruong.vn/files/content/2025/04/12/_dsc2666-194331_476-194352.jpg",
+        "page_url": "https://nongnghiepmoitruong.vn/dieu-sao-ba-duong-noi-hon-dan-gian-giua-long-thu-do-i747901.html"
+      }
+    ],
+    "son-dong-a01": [
+      {
+        "file": "media/activities/son-dong-a01.jpg",
+        "image_url": "https://media.vietnamplus.vn/images/wU9keeg-MVtM86KQbMalHktVH513hSAqwrBCcADla33OwVNPetqj2LgmRDPPSH6X/vnp_cover.png.webp",
+        "page_url": "https://www.vietnamplus.vn/chuyen-doi-so-o-lang-nghe-son-dong-khi-hon-cot-truyen-thong-bat-nhip-tuong-lai-so-post1146124.vnp"
+      },
+      {
+        "file": "media/activities/son-dong-a01_2.jpg",
+        "image_url": "https://cdn.nhandan.vn/images/IvCZyovHroGqKo00FqhL-F7jV0qm77B2aaACR8jOkORKcnO3YdFZ0-sj_a_0-kaz/3.jpg.webp",
+        "page_url": "https://nhandan.vn/chu-dong-dinh-vi-the-manh-thuc-day-du-lich-post999767.html"
+      }
+    ],
+    "ngu-xa-a01": [
+      {
+        "file": "media/activities/ngu-xa-a01.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/Den-Quan-Thanh-Duc-Huyen-Thien-Tran-Vu-Duc-Dong-Ngu-Xa-1.png",
+        "page_url": "https://ducdongnguxa.com"
+      },
+      {
+        "file": "media/activities/ngu-xa-a01_2.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/Tuong-Duc-Phat-A-Di-Da-Chua-Ngu-Xa-Duc-Dong-Ngu-xa.png",
+        "page_url": "https://ducdongnguxa.com"
+      }
+    ],
+    "ngu-xa-a02": [
+      {
+        "file": "media/activities/ngu-xa-a02.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/Thien-su-Minh-Khong-Ly-Quoc-Su-ong-to-nghe-duc-dong-Duc-Dong-Ngu-Xa.png",
+        "page_url": "https://ducdongnguxa.com"
+      },
+      {
+        "file": "media/activities/ngu-xa-a02_2.jpg",
+        "image_url": "https://ducdongnguxa.com/wp-content/uploads/2023/02/chan-dung-bac-ho-van-phong-chu-tich-nuoc-lang-duc-dong-ngu-xa.png",
+        "page_url": "https://ducdongnguxa.com"
+      }
+    ],
+    "phung-xa-a01": [
+      {
+        "file": "media/activities/phung-xa-a01.jpg",
+        "image_url": "https://t.ex-cdn.com/danviet.vn/800w/files/news/2026/06/20/nghe-nhan-sen_cover-1452.jpg",
+        "page_url": "https://danviet.vn/nguoi-dan-ba-tuoi-70-vat-kiet-cuong-sen-det-nen-tam-lua-dat-gia-vang-danh-the-gioi-d1436770.html"
+      },
+      {
+        "file": "media/activities/phung-xa-a01_2.jpg",
+        "image_url": "https://i.ex-cdn.com/danviet.vn/files/content/2026/06/20/nghe-nhan-sen_01-1458.jpg",
+        "page_url": "https://danviet.vn/nguoi-dan-ba-tuoi-70-vat-kiet-cuong-sen-det-nen-tam-lua-dat-gia-vang-danh-the-gioi-d1436770.html"
+      }
+    ],
+    "dao-thuc-a01": [
+      {
+        "file": "media/activities/dao-thuc-a01.jpg",
+        "image_url": "https://static.vinwonders.com/production/lang-roi-nuoc-dao-thuc-2.jpg",
+        "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+      },
+      {
+        "file": "media/activities/dao-thuc-a01_2.jpg",
+        "image_url": "https://static.vinwonders.com/production/optimize_lang-roi-nuoc-dao-thuc-3.jpg",
+        "page_url": "https://vinwonders.com/vi/wonderpedia/news/lang-roi-nuoc-dao-thuc/"
+      }
+    ],
+    "dao-thuc-a02": [
+      {
+        "file": "media/activities/dao-thuc-a02.jpg",
+        "image_url": "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/assets/xSTlc0aH3X/4-2048x1152.jpg",
+        "page_url": "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/index.html"
+      },
+      {
+        "file": "media/activities/dao-thuc-a02_2.jpg",
+        "image_url": "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/assets/fkrP5h8bTY/1-2048x1366.jpg",
+        "page_url": "https://special.nhandan.vn/suc-song-moi-cua-cac-loai-hinh-nghe-thuat-trinh-dien-dan-gian/index.html"
+      }
+    ]
+  }
+}

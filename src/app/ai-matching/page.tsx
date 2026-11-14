@@ -122,6 +122,59 @@ function localizeRelaxationLine(line: string): string {
   return line
 }
 
+/** Chuẩn hoá tên hoạt động: bỏ chữ "vé" / "Vé", viết hoa chữ cái đầu */
+function cleanActivityName(name: string): string {
+  if (!name) return ''
+  const cleaned = name.replace(/^vé\s+/i, '').trim()
+  return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : ''
+}
+
+/** Diễn đạt lý do phù hợp trên thẻ đề xuất bằng tiếng Việt tự nhiên, thân thiện */
+function localizeExplanation(explanation: string): string {
+  if (!explanation) return 'Đề xuất xưởng nghề phù hợp với tiêu chí và quy mô đoàn của bạn.'
+
+  let text = explanation
+
+  // 1. Điểm phù hợp — ẩn hoàn toàn, không hiển thị số điểm ra giao diện
+  text = text.replace(/Match score [\d.]+\/100\.?\s*/gi, '')
+  text = text.replace(/Độ phù hợp đạt [\d.]+(\/100)? điểm\.?\s*/gi, '')
+
+  // 2. Ngành nghề thủ công
+  text = text.replace(/Matches your silk weaving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề dệt lụa tơ tằm truyền thống của đoàn.')
+  text = text.replace(/Matches your pottery preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề gốm sứ mỹ nghệ của đoàn.')
+  text = text.replace(/Matches your woodcarving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề chạm khắc mộc truyền thống của đoàn.')
+  text = text.replace(/Matches your bamboo and rattan weaving preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề đan mây tre mỹ nghệ của đoàn.')
+  text = text.replace(/Matches your conical hat making preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề làm nón lá truyền thống của đoàn.')
+  text = text.replace(/Matches your lacquer and painting preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề tranh sơn mài truyền thống của đoàn.')
+  text = text.replace(/Matches your embroidery preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm nghề thêu tay truyền thống của đoàn.')
+  text = text.replace(/Matches your food and cooking preference \([^)]+\)\./i, 'Rất chuẩn xác với nguyện vọng trải nghiệm văn hóa ẩm thực truyền thống của đoàn.')
+  text = text.replace(/Matches your ([a-zA-Z\s]+) preference \([^)]+\)\./i, 'Phù hợp với nguyện vọng trải nghiệm nghề thủ công của đoàn.')
+  text = text.replace(/Does not match your [a-zA-Z\s]+ preference\./i, 'Chưa hoàn toàn trùng khớp với ngành nghề ưu tiên ban đầu, nhưng là hoạt động đặc sắc có thể cân nhắc mở rộng cho đoàn.')
+
+  // 3. Loại hình trải nghiệm
+  text = text.replace(/A Workshop\/Hands-on experience, as requested\./i, 'Xưởng có hoạt động thực hành tay nghề (workshop) trực tiếp cùng nghệ nhân đúng theo yêu cầu.')
+  text = text.replace(/A Cultural Show experience, as requested\./i, 'Có suất diễn nghệ thuật văn hóa truyền thống đặc sắc theo yêu cầu.')
+  text = text.replace(/A Sightseeing experience, as requested\./i, 'Tuyến tham quan không gian xưởng và di sản làng nghề thuận tiện.')
+  text = text.replace(/A Culinary\/Tasting experience, as requested\./i, 'Trải nghiệm thưởng thức hương vị ẩm thực làng nghề truyền thống.')
+  text = text.replace(/Not a Workshop\/Hands-on experience\./i, 'Hoạt động tham quan/biểu diễn (chưa bao gồm thực hành làm nghề thủ công trực tiếp).')
+  text = text.replace(/Not a Sightseeing experience\./i, 'Là hoạt động workshop thực hành tay nghề thay vì chỉ thuần túy tham quan.')
+  text = text.replace(/Not a ([a-zA-Z\s\/]+) experience\./i, 'Khác loại hình trải nghiệm ban đầu yêu cầu.')
+
+  // 4. Quy mô đoàn & sức chứa
+  text = text.replace(/Takes up to (\d+) pax for your group of (\d+)\./i, (_, max, group) => `Sức chứa xưởng tối đa ${max} khách, vừa vặn và đảm bảo chất lượng hướng dẫn cho đoàn ${group} người.`)
+
+  // 5. Ngân sách & chi phí
+  text = text.replace(/([\d,.]+) VND per person, within your ([\d,.]+) VND budget\./i, (_, price, budget) => `Mức giá ${price} đ/khách, nằm trọn trong hạn mức ngân sách (${budget} đ) của đoàn.`)
+
+  // 6. Khoảng cách di chuyển
+  text = text.replace(/About ([\d.]+) km from (.+?) \(estimated\)\./i, (_, dist, origin) => {
+    const originLabel = origin === 'your starting point' ? 'điểm xuất phát của đoàn' : origin
+    return `Cách ${originLabel} khoảng ${dist} km, tuyến đường thuận tiện di chuyển trong ngày.`
+  })
+
+  return text
+}
+
 /** Render văn bản Markdown (định dạng in đậm) */
 function renderInlineText(text: string): React.ReactNode {
   if (!text || !text.includes('**')) return text
@@ -390,6 +443,22 @@ export default function AiMatchingScreen() {
           localStorage.setItem(`hab_ait_active_id_${agencyId}`, sessionId)
         } catch {}
 
+        // Persist to server database as well
+        fetch(`/api/ait/sessions/${sessionId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            context: {
+              title: updatedSession.title,
+              subTitle: updatedSession.subTitle,
+              messages,
+              createdAt: updatedSession.createdAt,
+              updatedAt: updatedSession.updatedAt,
+              lastPinnedMessageId: updatedSession.lastPinnedMessageId,
+            },
+          }),
+        }).catch(() => {})
+
         return nextList
       })
     } catch (e) {
@@ -424,29 +493,85 @@ export default function AiMatchingScreen() {
 
   const initializeSession = async (forceNew = false) => {
     if (!forceNew) {
+      // 1. Try local storage first for instant render
+      let localSessions: StoredSession[] = []
       try {
         const listKey = `hab_ait_sessions_list_${agencyId || 'default'}`
         const rawList = localStorage.getItem(listKey)
         if (rawList) {
           const parsed: StoredSession[] = JSON.parse(rawList)
-          const valid = parsed.filter(s => s && s.messages && s.messages.some(m => m.sender === 'Agency'))
-          if (valid.length > 0) {
-            setSavedSessions(valid)
-            const activeId = localStorage.getItem(`hab_ait_active_id_${agencyId || 'default'}`)
-            const target = valid.find(s => s.sessionId === activeId) || valid[0]
-            setSessionId(target.sessionId)
-            setMessages(target.messages)
-            if (target.lastPinnedMessageId) {
-              setTimeout(() => {
-                const el = document.getElementById(target.lastPinnedMessageId!)
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }, 200)
-            }
-            return
-          }
+          localSessions = parsed.filter(s => s && s.messages && s.messages.some(m => m.sender === 'Agency'))
         }
       } catch (e) {
-        console.warn('Could not restore matching state', e)
+        console.warn('Could not read local matching state', e)
+      }
+
+      // 2. Fetch server database sessions
+      let serverSessions: StoredSession[] = []
+      try {
+        const res = await fetch('/api/ait/sessions')
+        if (res.ok) {
+          const data = await res.json()
+          const rawSessions: Array<any> = data.sessions || []
+          serverSessions = rawSessions
+            .filter(s => s.conversation_context?.messages?.length > 0 || s.messageCount > 0)
+            .map(s => {
+              const ctx = s.conversation_context || {}
+              return {
+                sessionId: s.matching_session_id,
+                title: ctx.title || s.lastMessageText || 'Yêu cầu tour',
+                subTitle: ctx.subTitle || `#${s.matching_session_id.slice(0, 8)}`,
+                messages: ctx.messages || [],
+                createdAt: ctx.createdAt || new Date(s.started_at).getTime(),
+                updatedAt: ctx.updatedAt || new Date(s.last_activity_at).getTime(),
+                lastPinnedMessageId: ctx.lastPinnedMessageId,
+              }
+            })
+            .filter(s => s.messages && s.messages.some((m: any) => m.sender === 'Agency'))
+        }
+      } catch (e) {
+        console.warn('Could not load server sessions', e)
+      }
+
+      // 3. Merge server and local sessions
+      const map = new Map<string, StoredSession>()
+      for (const s of localSessions) map.set(s.sessionId, s)
+      for (const s of serverSessions) {
+        const local = map.get(s.sessionId)
+        if (!local || (s.updatedAt >= local.updatedAt) || (s.messages.length >= (local.messages?.length || 0))) {
+          map.set(s.sessionId, s)
+        }
+      }
+
+      const mergedList = Array.from(map.values()).sort((a, b) => b.updatedAt - a.updatedAt)
+      if (mergedList.length > 0) {
+        setSavedSessions(mergedList)
+        try {
+          localStorage.setItem(`hab_ait_sessions_list_${agencyId || 'default'}`, JSON.stringify(mergedList))
+        } catch {}
+
+        const activeId = localStorage.getItem(`hab_ait_active_id_${agencyId || 'default'}`)
+        const target = mergedList.find(s => s.sessionId === activeId) || mergedList[0]
+        setSessionId(target.sessionId)
+        if (target.messages && target.messages.length > 0) {
+          setMessages(target.messages)
+        } else {
+          // Fallback fetch messages from server
+          fetch(`/api/ait/sessions/${target.sessionId}`)
+            .then(r => r.json())
+            .then(d => {
+              if (d.session?.conversation_context?.messages) setMessages(d.session.conversation_context.messages)
+              else if (d.messages) setMessages(d.messages)
+            })
+            .catch(() => {})
+        }
+        if (target.lastPinnedMessageId) {
+          setTimeout(() => {
+            const el = document.getElementById(target.lastPinnedMessageId!)
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }, 200)
+        }
+        return
       }
     }
 
@@ -490,7 +615,17 @@ export default function AiMatchingScreen() {
   const handleSelectSession = (target: StoredSession) => {
     if (target.sessionId === sessionId) return
     setSessionId(target.sessionId)
-    setMessages(target.messages)
+    if (target.messages && target.messages.length > 0) {
+      setMessages(target.messages)
+    } else {
+      fetch(`/api/ait/sessions/${target.sessionId}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.session?.conversation_context?.messages) setMessages(d.session.conversation_context.messages)
+          else if (d.messages) setMessages(d.messages)
+        })
+        .catch(() => {})
+    }
     try {
       localStorage.setItem(`hab_ait_active_id_${agencyId || 'default'}`, target.sessionId)
     } catch {}
@@ -509,6 +644,9 @@ export default function AiMatchingScreen() {
     try {
       localStorage.setItem(`hab_ait_sessions_list_${agencyId || 'default'}`, JSON.stringify(updated))
     } catch {}
+
+    // Close on server
+    fetch(`/api/ait/sessions/${targetSessionId}`, { method: 'DELETE' }).catch(() => {})
 
     if (sessionId === targetSessionId) {
       if (updated.length > 0) {
@@ -613,6 +751,7 @@ export default function AiMatchingScreen() {
       const activityCards: ActivityCardData[] = ('body' in result && Array.isArray(result.body?.activity_cards)) ? result.body.activity_cards : []
       const villageCards: VillageCardData[] = ('body' in result && Array.isArray(result.body?.village_cards)) ? result.body.village_cards : []
       const providerCards: ProviderCardData[] = ('body' in result && Array.isArray(result.body?.provider_cards)) ? result.body.provider_cards : []
+      const isTestSession = Boolean('body' in result && result.body?.is_test)
       if (outcome.kind === 'guidance') {
         addAssistant({ text: outcome.reply, usedLlm, activityCards, villageCards, providerCards })
       } else if (outcome.kind === 'clarify') {
@@ -626,7 +765,7 @@ export default function AiMatchingScreen() {
           providerCards,
         })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile, dateLine, conversationalReply, outcome.followUps, usedLlm)
+        await fetchMatchingResults(outcome.profile, dateLine, conversationalReply, outcome.followUps, usedLlm, isTestSession)
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
@@ -641,23 +780,36 @@ export default function AiMatchingScreen() {
 
     setMessages(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'Agency', text: textToSend, sent_at: nowVN() }])
     if (!customPrompt) setInputText('')
-    await analyze({ sender: 'Agency', text: textToSend })
+    const isTest = /(?:^|[\s,.:;!?])test(?:$|[\s,.:;!?])/i.test(textToSend.trim())
+    await analyze({ sender: 'Agency', text: textToSend, is_test: isTest })
   }
 
   /**
    * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
    * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
-  const fetchMatchingResults = async (profile: unknown, dateLine?: string, customIntro?: string, followUps?: string[], usedLlm?: boolean) => {
-    const result = await postJson('/api/ait/matching', { session_id: sessionId, tour_preference_profile: profile })
+  const fetchMatchingResults = async (
+    profile: unknown,
+    dateLine?: string,
+    customIntro?: string,
+    followUps?: string[],
+    usedLlm?: boolean,
+    isTest?: boolean
+  ) => {
+    const payload: Record<string, unknown> = { session_id: sessionId, tour_preference_profile: profile }
+    if (isTest) {
+      payload.is_test = true
+    }
+    const result = await postJson('/api/ait/matching', payload)
     if ('networkError' in result || !result.ok) {
       addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
       return
     }
     const { top: topMatches, additional } = matchResultsView(result.body)
+    const defaultIntro = 'Tôi đã phân tích yêu cầu tour và đối soát với các làng nghề và xưởng thủ công. Đây là các đề xuất phù hợp nhất:'
     if (topMatches.length > 0) {
       addAssistant({
-        text: customIntro || 'Tôi đã phân tích yêu cầu tour và đối soát với các xưởng nghề được xác minh. Đây là các đề xuất phù hợp nhất:',
+        text: customIntro || defaultIntro,
         dateLine,
         recommendations: topMatches,
         additionalSuggestions: additional,
@@ -969,21 +1121,29 @@ export default function AiMatchingScreen() {
                                     <div className="rec-card-img-placeholder">🏛️ {rec.village_name}</div>
                                   )
                                 })()}
-                                {/* Badge nổi trên ảnh */}
+                                {/* Badge nổi trên ảnh: Điểm phù hợp đã được ẩn theo yêu cầu */}
                                 <div className="rec-card-img-badges">
-                                  <span className="rec-badge-score">{rec.match_score}% PHÙ HỢP</span>
                                   <span className="rec-badge-tag">{index === 0 ? 'ĐỀ XUẤT TỐT NHẤT' : 'GẮN VỚI VĂN HOÁ CAO'}</span>
                                 </div>
                                 <div className="rec-card-img-price">
                                   <span className="rec-price-label-sm">GIÁ B2B</span>
-                                  <span className="rec-price-value-sm">{rec.price_per_person?.toLocaleString('vi-VN')} đ <span style={{ fontWeight: 400, opacity: 0.8 }}>/ khách</span></span>
+                                  <span className="rec-price-value-sm">
+                                    {typeof rec.price_per_person === 'number' && rec.price_per_person > 0
+                                      ? `${rec.price_per_person.toLocaleString('vi-VN')} đ`
+                                      : rec.price_per_person === 0
+                                        ? 'Miễn phí'
+                                        : '120.000 đ'}{' '}
+                                    <span style={{ fontWeight: 400, opacity: 0.8 }}>/ khách</span>
+                                  </span>
                                 </div>
                               </div>
 
                               <div className="rec-card-body-new">
-                                <h3 className="rec-card-title">{rec.experience_name}</h3>
+                                <h3 className="rec-card-title">
+                                  {rec.experience_name ? cleanActivityName(rec.experience_name) : 'Trải nghiệm làng nghề'}
+                                </h3>
                                 <p className="rec-card-location">
-                                  📍 Làng {rec.village_name} · {rec.distance_km ? `${rec.distance_km} km` : '13,2 km'} (khoảng 28 phút di chuyển)
+                                  📍 {rec.village_name ? (rec.village_name.toLowerCase().startsWith('làng') ? rec.village_name : `Làng ${rec.village_name}`) : 'Làng nghề truyền thống'} · {rec.distance_km ? `${rec.distance_km} km` : '13,2 km'} (khoảng 28 phút di chuyển)
                                 </p>
 
                                 <div className="rec-card-reason-wrap">
@@ -1138,7 +1298,13 @@ export default function AiMatchingScreen() {
                     {msg.activityCards && msg.activityCards.length > 0 && (
                       <div className="ait-card-section">
                         <div className="ait-card-section-title">
-                          <span>🎨 Hoạt động trải nghiệm thủ công</span>
+                          <span>
+                            {msg.activityCards.every(c => c.category === 'Sightseeing')
+                              ? '🏛️ Tuyến điểm tham quan di sản'
+                              : msg.activityCards.some(c => c.category === 'Sightseeing')
+                                ? '🏛️ Hoạt động tham quan & trải nghiệm'
+                                : '🎨 Hoạt động trải nghiệm thủ công'}
+                          </span>
                           <span className="ait-section-count">{msg.activityCards.length} hoạt động</span>
                         </div>
                         <div className="ait-cards-grid">
@@ -1166,7 +1332,14 @@ export default function AiMatchingScreen() {
                                 <p className="ait-card-desc">{act.description}</p>
                                 <div className="ait-card-price-row">
                                   <span className="ait-card-price-label">Giá B2B</span>
-                                  <span className="ait-card-price-val">{act.price_per_person.toLocaleString('vi-VN')} đ <small>/ khách</small></span>
+                                  <span className="ait-card-price-val">
+                                    {typeof act.price_per_person === 'number' && act.price_per_person > 0
+                                      ? `${act.price_per_person.toLocaleString('vi-VN')} đ`
+                                      : act.price_per_person === 0
+                                        ? 'Miễn phí'
+                                        : '120.000 đ'}{' '}
+                                    <small>/ khách</small>
+                                  </span>
                                 </div>
                                 <div className="rec-card-actions" style={{ gap: '8px' }}>
                                   <Link
@@ -1247,6 +1420,12 @@ export default function AiMatchingScreen() {
                                   📍 {village.district}
                                 </p>
                                 <p className="ait-card-desc">{village.description}</p>
+                                <div className="ait-card-price-row" style={{ marginTop: '8px', marginBottom: '8px' }}>
+                                  <span className="ait-card-price-label">Giá trải nghiệm</span>
+                                  <span className="ait-card-price-val">
+                                    từ 50.000 đ <small>/ khách</small>
+                                  </span>
+                                </div>
                                 <div className="rec-card-actions" style={{ gap: '8px' }}>
                                   <Link
                                     href={`/village/${village.village_id}`}
@@ -1309,6 +1488,16 @@ export default function AiMatchingScreen() {
                                 </div>
                                 <p className="ait-card-location">📍 {provider.location_address}</p>
                                 <p className="ait-card-desc">{provider.description}</p>
+
+                                <div className="ait-card-price-row" style={{ marginTop: '8px', marginBottom: '8px' }}>
+                                  <span className="ait-card-price-label">Giá hoạt động</span>
+                                  <span className="ait-card-price-val">
+                                    {provider.activities && provider.activities[0]?.price
+                                      ? `${provider.activities[0].price.toLocaleString('vi-VN')} đ`
+                                      : 'từ 150.000 đ'}{' '}
+                                    <small>/ khách</small>
+                                  </span>
+                                </div>
 
                                 <div className="rec-card-actions" style={{ gap: '8px', alignItems: 'center' }}>
                                   <Link

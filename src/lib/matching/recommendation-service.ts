@@ -5,6 +5,10 @@ export interface RecommendationItem {
   provider_id?: string
   experience_name?: string
   provider_name?: string
+  village_name?: string
+  price_per_person?: number
+  max_participants?: number
+  distance_km?: number
   rank: number
   match_score: number
   explanation: string
@@ -35,9 +39,9 @@ export function applyScoreThreshold<T extends { match_score?: number }>(candidat
 const vnd = (amount: number) => amount.toLocaleString('en-US')
 
 // #25: only factors that the scoring actually evaluated (match_factors), never a craft the Agency did not ask for.
-function explain(item: any, score: number): string {
+function explain(item: any, _score: number): string {
   const f: MatchFactors = item.match_factors || {}
-  const parts = [`Match score ${score}/100.`]
+  const parts: string[] = []
   if (f.craft) {
     parts.push(f.craft.matched
       ? `Matches your ${f.craft.label} preference (${f.craft.craft_type}).`
@@ -55,6 +59,9 @@ function explain(item: any, score: number): string {
   }
   if (f.distance_km !== undefined) {
     parts.push(`About ${f.distance_km} km from ${f.origin ?? 'your starting point'} (estimated).`)
+  }
+  if (parts.length === 0) {
+    return 'A verified traditional craft experience matching your tour criteria.'
   }
   return parts.join(' ')
 }
@@ -76,6 +83,10 @@ export async function buildRecommendations(
       provider_id: item.provider_id,
       experience_name: expName,
       provider_name: item.provider_name,
+      village_name: item.village_name,
+      price_per_person: item.price_per_person,
+      max_participants: item.max_participants,
+      distance_km: item.distance_km,
       rank,
       match_score: score,
       explanation: explain(item, score),

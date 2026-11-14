@@ -60,7 +60,7 @@ export function detectCardScope(userText: string): CardScope {
   const lower = userText.toLowerCase().trim()
 
   const hasProvider = /(?:danh sách xưởng|xưởng tại|xưởng nghề|các xưởng|local providers?|cơ sở thủ công|nghệ nhân|tìm xưởng|thông tin xưởng|xưởng)/i.test(lower)
-  const hasActivity = /(?:hoạt động|trải nghiệm|workshop|làm gì|chơi gì|thực hành|học làm|khoá học|giá vé)/i.test(lower)
+  const hasActivity = /(?:hoạt động|trải nghiệm|workshop|tham quan|ngắm cảnh|làm gì|chơi gì|thực hành|học làm|khoá học|giá vé)/i.test(lower)
   const hasVillage = /(?:làng nghề|danh sách làng|các làng|làng nào|về làng|thông tin làng|ở làng|làng gốm|làng lụa|làng mộc|làng chuông|làng quất động|làng hạ thái|làng đào thục|làng phú vinh|làng|village)/i.test(lower)
 
   // Multiple scopes requested explicitly
@@ -220,6 +220,51 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     max_participants: 12,
     image_url: CRAFT_MEDIA.lacquer,
     is_verified: false,
+  },
+  {
+    experience_id: 'exp-bat-trang-sightseeing',
+    provider_id: '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374',
+    provider_name: 'Bảo tàng Gốm Bát Tràng',
+    village_id: '20896522-6235-5699-aeaf-f48b8150d895',
+    village_name: 'Bát Tràng',
+    name: 'Tham quan Bảo tàng Gốm Bát Tràng & Lò Bầu Cổ',
+    description: 'Khám phá kiến trúc bảo tàng gốm 7 tầng độc đáo hình bàn xoay, chiêm ngưỡng lò nung bầu cổ và không gian trưng bày tinh hoa di sản gốm Việt.',
+    category: 'Sightseeing',
+    duration_minutes: 90,
+    price_per_person: 60000,
+    max_participants: 35,
+    image_url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=800',
+    is_verified: true,
+  },
+  {
+    experience_id: 'exp-van-phuc-sightseeing',
+    provider_id: '70efa801-a908-5e16-8510-fd094fbdc020',
+    provider_name: 'Làng lụa Vạn Phúc',
+    village_id: 'c0d0d95f-d59c-5c35-946a-f397e380dd14',
+    village_name: 'Vạn Phúc',
+    name: 'Tham quan Tuyến phố Lụa Cổ & Miếu thờ Tổ nghề dệt',
+    description: 'Dạo bước con đường ô sắc màu rực rỡ, tham quan Đền thờ Tổ nghề dệt Lụa Vạn Phúc cổ kính và khám phá phố lụa tơ tằm di sản.',
+    category: 'Sightseeing',
+    duration_minutes: 75,
+    price_per_person: 50000,
+    max_participants: 40,
+    image_url: 'https://images.unsplash.com/photo-1528458876885-e7a0ec4ca040?w=800',
+    is_verified: true,
+  },
+  {
+    experience_id: 'exp-chang-son-sightseeing',
+    provider_id: 'c8e989d4-88be-5b00-8382-a41177c4c16d',
+    provider_name: 'Làng mộc Chàng Sơn',
+    village_id: '85ec7215-3ec1-5792-afcc-a72d89a3a214',
+    village_name: 'Chàng Sơn',
+    name: 'Tham quan Di tích Đình làng & Làng cổ Chàng Sơn',
+    description: 'Chiêm ngưỡng kiến trúc điêu khắc gỗ tinh xảo bậc nhất xứ Đoài tại Đình Chàng Sơn và tìm hiểu văn hóa làng quạt giấy truyền thống.',
+    category: 'Sightseeing',
+    duration_minutes: 60,
+    price_per_person: 40000,
+    max_participants: 30,
+    image_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800',
+    is_verified: true,
   },
 ]
 
@@ -595,13 +640,44 @@ export function resolveProviderCards(text: string): ProviderCardData[] {
 }
 
 /**
+ * Detects whether the user is explicitly requesting lowest price (cheapest) or highest price (premium).
+ */
+export function detectPriceSortPreference(text: string): 'lowest' | 'highest' | undefined {
+  if (!text) return undefined
+  const lower = text.toLowerCase()
+  if (/(?:giá rẻ|giá thấp|rẻ nhất|thấp nhất|chi phí thấp|tiết kiệm|bình dân|giá mềm|cheapest|lowest price|budget friendly)/i.test(lower)) {
+    return 'lowest'
+  }
+  if (/(?:giá cao|cao cấp|đắt nhất|đắt tiền|vip|luxury|premium|highest price|thượng lưu)/i.test(lower)) {
+    return 'highest'
+  }
+  return undefined
+}
+
+/**
  * Resolves Activity / Experience Cards relevant to text.
  * Strictly enforces budget ceilings (e.g. "dưới 150k" rejects activities > 150k).
  */
 export function resolveActivityCards(text: string): ActivityCardData[] {
   const lower = text.toLowerCase()
   const budgetConstraint = parseBudgetConstraint(text)
+  const priceSort = detectPriceSortPreference(text)
+  const isSightseeingOnly = /(?:chỉ muốn tham quan|chỉ tham quan|không trải nghiệm|không làm|không workshop|muốn tham quan thôi|chỉ ngắm|không làm đồ)/i.test(lower)
+  const isSightseeingRequested = /(?:tham quan|ngắm cảnh|vãn cảnh|đi dạo|bảo tàng|check-in)/i.test(lower)
   const matched = new Map<string, ActivityCardData>()
+
+  if (isSightseeingOnly) {
+    let pool = CATALOG_ACTIVITIES.filter(a => a.category === 'Sightseeing' && a.is_verified)
+    if (budgetConstraint) {
+      pool = pool.filter(a => a.price_per_person <= budgetConstraint.maxPrice)
+    }
+    if (priceSort === 'lowest') {
+      pool.sort((a, b) => a.price_per_person - b.price_per_person)
+    } else if (priceSort === 'highest') {
+      pool.sort((a, b) => b.price_per_person - a.price_per_person)
+    }
+    return pool.slice(0, 4)
+  }
 
   const check = (keywords: string[], expId: string) => {
     if (keywords.some(k => lower.includes(k))) {
@@ -623,13 +699,25 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
   check(['nón', 'chuông', 'nón lá'], 'b70bd0fa-6a81-5aec-9ff6-5303210b2fad')
   check(['thêu', 'quất động', 'thêu tay'], 'bad51dc8-1529-506a-8302-cb0b1d95954c')
   check(['sơn mài', 'hạ thái', 'vẽ tranh'], '800b5192-03c7-5953-849b-32a321e12a47')
+  check(['bảo tàng gốm', 'lò bầu', 'tham quan bát tràng'], 'exp-bat-trang-sightseeing')
+  check(['phố lụa', 'tham quan vạn phúc'], 'exp-van-phuc-sightseeing')
+  check(['đình chàng sơn', 'tham quan chàng sơn'], 'exp-chang-son-sightseeing')
 
   if (matched.size === 0) {
-    const isActivityQuery = /(?:hoạt động|trải nghiệm|workshop|làm gì|có gì chơi|thực hành|dưới|ngân sách|budget|<)/i.test(lower)
+    const isActivityQuery = /(?:hoạt động|trải nghiệm|workshop|tham quan|làm gì|có gì chơi|thực hành|dưới|ngân sách|budget|<|giá)/i.test(lower)
     if (isActivityQuery) {
       let pool = CATALOG_ACTIVITIES.filter(a => a.is_verified)
+      if (isSightseeingRequested) {
+        const sightPool = pool.filter(a => a.category === 'Sightseeing')
+        if (sightPool.length > 0) pool = sightPool
+      }
       if (budgetConstraint) {
         pool = pool.filter(a => a.price_per_person <= budgetConstraint.maxPrice)
+      }
+      if (priceSort === 'lowest') {
+        pool.sort((a, b) => a.price_per_person - b.price_per_person)
+      } else if (priceSort === 'highest') {
+        pool.sort((a, b) => b.price_per_person - a.price_per_person)
       }
       return pool.slice(0, 4)
     }
@@ -638,6 +726,11 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
   let finalCards = Array.from(matched.values())
   if (budgetConstraint) {
     finalCards = finalCards.filter(a => a.price_per_person <= budgetConstraint.maxPrice)
+  }
+  if (priceSort === 'lowest') {
+    finalCards.sort((a, b) => a.price_per_person - b.price_per_person)
+  } else if (priceSort === 'highest') {
+    finalCards.sort((a, b) => b.price_per_person - a.price_per_person)
   }
   return finalCards
 }

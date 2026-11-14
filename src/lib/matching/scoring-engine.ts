@@ -64,7 +64,26 @@ export async function scoreCandidate(
   const craftMatched = Boolean(wantedCraftType) && candidate.craft_type === wantedCraftType
 
   if (craftAttr) {
-    experienceFitScore = craftMatched ? 100 : 65
+    const baseFit = craftMatched ? 100 : 65
+    if (requestedTypes.length > 0) {
+      if (requestedTypes.includes(candidateType)) {
+        experienceFitScore = baseFit
+      } else if (requestedTypes.includes('Workshop/Hands-on') && candidateType === 'Sightseeing') {
+        experienceFitScore = Math.min(baseFit - 45, 50)
+      } else {
+        experienceFitScore = Math.min(baseFit - 25, 65)
+      }
+    } else {
+      experienceFitScore = baseFit
+    }
+  } else if (requestedTypes.length > 0) {
+    if (requestedTypes.includes(candidateType)) {
+      experienceFitScore = 88
+    } else if (requestedTypes.includes('Workshop/Hands-on') && candidateType === 'Sightseeing') {
+      experienceFitScore = 35
+    } else {
+      experienceFitScore = 45
+    }
   }
 
   // 2. Route Convenience Score (shorter distance -> higher score)
@@ -132,7 +151,33 @@ export async function rankCandidates(
 ): Promise<ScoredCandidate[]> {
   const scored = await Promise.all(candidates.map(c => scoreCandidate(c, profile)))
 
-  scored.sort((a, b) => b.match_score - a.match_score)
+  const matchingAttr = profile?.matching_attributes || []
+  const priceSortAttr = matchingAttr.find((a: any) => a.type === 'price_sort' || a.type === 'price_preference')?.value
+  const priceSort = profile?.price_sort || priceSortAttr
+
+  if (priceSort === 'asc' || priceSort === 'lowest' || priceSort === 'cheapest') {
+    // Sort from cheapest to highest; for identical price, sort by match_score descending
+    scored.sort((a, b) => {
+      const priceA = typeof a.price_per_person === 'number' ? a.price_per_person : 120000
+      const priceB = typeof b.price_per_person === 'number' ? b.price_per_person : 120000
+      if (priceA !== priceB) {
+        return priceA - priceB
+      }
+      return b.match_score - a.match_score
+    })
+  } else if (priceSort === 'desc' || priceSort === 'highest' || priceSort === 'premium') {
+    // Sort from highest to cheapest; for identical price, sort by match_score descending
+    scored.sort((a, b) => {
+      const priceA = typeof a.price_per_person === 'number' ? a.price_per_person : 120000
+      const priceB = typeof b.price_per_person === 'number' ? b.price_per_person : 120000
+      if (priceA !== priceB) {
+        return priceB - priceA
+      }
+      return b.match_score - a.match_score
+    })
+  } else {
+    scored.sort((a, b) => b.match_score - a.match_score)
+  }
 
   return scored.map((candidate, index) => ({
     ...candidate,

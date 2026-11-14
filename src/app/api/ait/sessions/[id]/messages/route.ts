@@ -2,8 +2,15 @@ import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
-import { resolveVillageCards, resolveProviderCards, resolveActivityCards, detectCardScope } from '@/lib/matching/card-resolver'
+import { resolveVillageCards, resolveProviderCards, resolveActivityCards, detectCardScope, detectPriceSortPreference } from '@/lib/matching/card-resolver'
 import { saveAgencyPreferenceProfile } from '@/lib/preferences/preference-service'
+import {
+  isTestPrompt,
+  resolveTestVillageCards,
+  resolveTestProviderCards,
+  resolveTestActivityCards,
+} from '@/lib/matching/test-dataset'
+import { detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
 
 async function authorize(request: Request, sessionId: string) {
   const actor = (await sessionContextFromRequest(request))
@@ -58,13 +65,62 @@ export async function POST(
       }, { status: 503 })
     }
 
-    let tourPreferenceProfile = null
-    if (extraction.is_complete) {
+    const userText = String(body.text || '')
+    const isTest = body.is_test === true || isTestPrompt(userText)
+
+    if (isTest) {
+      if (!extraction.tour_context.experience_types || extraction.tour_context.experience_types.length === 0) {
+        const detected = detectExperienceTypes(userText)
+        if (detected.length > 0) {
+          extraction.tour_context.experience_types = detected
+        }
+      }
+    }
+
+    const isBareTest = userText.trim().toLowerCase() === 'test'
+
+    let tourPreferenceProfile: any = null
+    if (isTest && (extraction.is_complete || isBareTest)) {
+      extraction.is_complete = true
+      tourPreferenceProfile = {
+        hard_constraints: {
+          group_size: extraction.tour_context.group_size || 10,
+          max_budget_per_person: extraction.tour_context.budget?.max_per_person || 200000,
+          target_date_or_range: extraction.tour_context.target_date_or_range || { date: '2026-11-20' },
+        },
+        matching_attributes: (extraction.tour_context.experience_types || []).map(t => ({ type: 'experience_type', value: t })),
+        inferred_preferences: ['Authentic Craft', 'Test Dataset'],
+        preference_weights: {
+          experience_fit: 0.4,
+          route_convenience: 0.25,
+          agency_preferences: 0.2,
+          provider_quality: 0.15,
+        },
+        is_test: true,
+      }
+      if (extraction.tour_context.craft_preference) {
+        tourPreferenceProfile.matching_attributes.push({
+          type: 'craft_preference',
+          value: extraction.tour_context.craft_preference,
+        })
+      }
+    } else if (extraction.is_complete) {
       tourPreferenceProfile = await buildTourPreferenceProfile(extraction.tour_context)
+      if (isTest && tourPreferenceProfile) {
+        tourPreferenceProfile.is_test = true
+      }
+    }
+
+    const pricePref = detectPriceSortPreference(userText)
+    if (pricePref && tourPreferenceProfile) {
+      tourPreferenceProfile.matching_attributes.push({
+        type: 'price_preference',
+        value: pricePref,
+      })
+      tourPreferenceProfile.price_sort = pricePref
     }
 
     // Strictly scoped card resolution: only display what user explicitly asked for (e.g. asking for villages shows ONLY village cards)
-    const userText = String(body.text || '')
     const replyText = typeof extraction.conversational_reply === 'string' ? extraction.conversational_reply : ''
     const combined = `${userText} ${replyText}`
 
@@ -74,16 +130,30 @@ export async function POST(
     let providerCards: any[] = []
     let villageCards: any[] = []
 
-    if (scope === 'village') {
-      villageCards = resolveVillageCards(combined)
-    } else if (scope === 'provider') {
-      providerCards = resolveProviderCards(combined)
-    } else if (scope === 'activity') {
-      activityCards = resolveActivityCards(combined)
-    } else if (scope === 'all') {
-      villageCards = resolveVillageCards(combined)
-      providerCards = resolveProviderCards(combined)
-      activityCards = resolveActivityCards(combined)
+    if (isTest) {
+      if (scope === 'village') {
+        villageCards = resolveTestVillageCards(combined)
+      } else if (scope === 'provider') {
+        providerCards = resolveTestProviderCards(combined)
+      } else if (scope === 'activity') {
+        activityCards = resolveTestActivityCards(combined)
+      } else if (scope === 'all') {
+        villageCards = resolveTestVillageCards(combined)
+        providerCards = resolveTestProviderCards(combined)
+        activityCards = resolveTestActivityCards(combined)
+      }
+    } else {
+      if (scope === 'village') {
+        villageCards = resolveVillageCards(combined)
+      } else if (scope === 'provider') {
+        providerCards = resolveProviderCards(combined)
+      } else if (scope === 'activity') {
+        activityCards = resolveActivityCards(combined)
+      } else if (scope === 'all') {
+        villageCards = resolveVillageCards(combined)
+        providerCards = resolveProviderCards(combined)
+        activityCards = resolveActivityCards(combined)
+      }
     }
 
     // Save assistant reply so subsequent turns maintain full bidirectional dialogue context (#33: Retry adds no message)
@@ -95,8 +165,8 @@ export async function POST(
       }
     }
 
-    // Learning loop: Save or update agency preference profile when crafts or villages are detected
-    if (access.actor.agencyId) {
+    // Learning loop: Save or update agency preference profile when crafts or villages are detected (skip during test mode)
+    if (!isTest && access.actor.agencyId) {
       try {
         const craftsFound: string[] = []
         const textToAnalyze = `${userText} ${replyText}`.toLowerCase()
@@ -124,6 +194,7 @@ export async function POST(
 
     return NextResponse.json({
       message,
+      is_test: isTest,
       extraction,
       tour_preference_profile: tourPreferenceProfile,
       activity_cards: activityCards,

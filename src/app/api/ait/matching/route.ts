@@ -21,6 +21,7 @@ import {
   buildRelaxationSuggestions,
 } from '@/lib/matching/recommendation-service'
 import { loadExperiences } from '@/lib/db/seed-loader'
+import { getTestCandidates, getTestAllExperiences } from '@/lib/matching/test-dataset'
 
 export async function POST(request: Request) {
   try {
@@ -45,17 +46,23 @@ export async function POST(request: Request) {
       )
     }
 
-    // 1. Retrieve verified candidates from seed catalog (BR-003)
-    const rawCandidates = await getVerifiedCandidates(profile)
+    const isTest = body.is_test === true || profile.is_test === true
 
-    // Enrich candidates with village_name for display (look up from experience location)
-    const allExperiences = await loadExperiences()
+    // 1. Retrieve candidates: When is_test is set, query strictly from the test dataset (zero system data)
+    const rawCandidates = isTest
+      ? getTestCandidates(profile)
+      : await getVerifiedCandidates(profile)
+
+    // Enrich candidates with village_name for display
+    const allExperiences = isTest
+      ? getTestAllExperiences()
+      : await loadExperiences()
     const expMap = new Map(allExperiences.map(e => [e.experience_id, e]))
 
     const enrichedCandidates = rawCandidates.map(c => {
       const exp = expMap.get(c.experience_id)
-      // Derive village name from experience_location_address (last 2 segments before city)
-      let village_name = exp?.experience_location_address?.split(',')[1]?.trim() ?? ''
+      // Derive village name from experience_location_address or pre-populated village_name
+      let village_name = c.village_name || (exp?.experience_location_address?.split(',')[1]?.trim() ?? '')
       return { ...c, village_name, provider_name: c.provider_name || '' }
     })
 
@@ -88,16 +95,22 @@ export async function POST(request: Request) {
     // 5. Build recommendation output (FR-008, BR-007, #25)
     const recs = await buildRecommendations(ranked)
 
-    return NextResponse.json({
-      top_matches: recs.top_matches.map(m => ({
+    const mapDisplayFields = (m: any) => {
+      const match = ranked.find(r => r.experience_id === m.experience_id)
+      return {
         ...m,
-        // Carry through display fields
-        village_name: ranked.find(r => r.experience_id === m.experience_id)?.village_name ?? '',
-        price_per_person: ranked.find(r => r.experience_id === m.experience_id)?.price_per_person,
-        max_participants: ranked.find(r => r.experience_id === m.experience_id)?.max_participants,
-        provider_name: ranked.find(r => r.experience_id === m.experience_id)?.provider_name ?? '',
-      })),
-      additional_suggestions: recs.additional_suggestions,
+        village_name: m.village_name || match?.village_name || '',
+        price_per_person: m.price_per_person ?? match?.price_per_person,
+        max_participants: m.max_participants ?? match?.max_participants,
+        provider_name: m.provider_name || match?.provider_name || '',
+        distance_km: m.distance_km ?? match?.distance_km,
+      }
+    }
+
+    return NextResponse.json({
+      is_test: isTest,
+      top_matches: recs.top_matches.map(mapDisplayFields),
+      additional_suggestions: recs.additional_suggestions.map(mapDisplayFields),
     })
   } catch (err: any) {
     return NextResponse.json(

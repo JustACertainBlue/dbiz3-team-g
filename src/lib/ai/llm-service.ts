@@ -781,6 +781,14 @@ export class ConversationalAiService {
       conversationalReply = isVi
         ? 'Hanoi Artisan Bridge chuyên về du lịch văn hóa làng nghề truyền thống Hà Nội. Gần khu vực Sóc Sơn, chúng tôi có Làng múa rối nước Đào Thục (Đông Anh, cách khoảng 20-25 phút) với không gian thủy đình ngoài trời biểu diễn và thi đấu tiểu phẩm rối nước rất thích hợp cho teambuilding tập thể, cùng với các workshop gốm Bát Tràng và mộc Chàng Sơn.'
         : 'Hanoi Artisan Bridge focuses on traditional Hanoi craft villages. Near Soc Son, Dao Thuc water puppetry village (~20 mins) features open-air puppet pavilion activities ideal for group cohesion.'
+    } else if (/(?:chỉ muốn tham quan|chỉ tham quan|không trải nghiệm|không làm đồ|tham quan thôi|đi ngắm cảnh|chỉ ngắm)/i.test(latestUserMsg)) {
+      conversationalReply = isVi
+        ? 'Rất sẵn lòng! Hanoi Artisan Bridge kết nối đầy đủ các tuyến tham quan di sản, làng cổ và bảo tàng làng nghề đặc sắc (như Bảo tàng Gốm Bát Tràng & Lò Bầu cổ, Tuyến phố lụa Vạn Phúc, Di tích đình làng Chàng Sơn...). Dưới đây là các điểm đến tham quan phù hợp cho bạn:'
+        : 'Certainly! Hanoi Artisan Bridge connects heritage sightseeing tours, ancient villages and craft museums. Here are the top destinations for your tour:'
+    } else if (isComplete) {
+      conversationalReply = isVi
+        ? 'Tôi đã tiếp nhận yêu cầu và đối soát các xưởng nghề phù hợp nhất cho đoàn:'
+        : 'I have gathered all the key requirements for your tour. Analyzing and ranking the best matching craft workshops now...'
     } else {
       // Build the reply from what this turn actually contains, so two different inputs never get the
       // same canned sentence (rules 12 and 13).

@@ -5,8 +5,8 @@
  *
  * Enforces:
  * - Free allocation only (10,000 Neurons/day).
- * - Primary model: @cf/zai-org/glm-4.7-flash
- * - Secondary free fallback: @cf/meta/llama-3.1-8b-instruct
+ * - Primary model: @cf/meta/llama-3.1-8b-instruct (docs/AIT-COMPREHENSIVE-RULES.md §III.1).
+ * - Free fallback model: @cf/zai-org/glm-4.7-flash, used when the primary fails or returns no text.
  * - Quota exhaustion classification.
  * - Zero paid fallback.
  */
@@ -97,7 +97,23 @@ export class CloudflareAiClient {
     }
 
     const modelToUse = options?.model || this.primaryModel
-    return this.executeRequest(modelToUse, messages, options)
+    const primary = await this.executeRequest(modelToUse, messages, options)
+
+    // The documented free fallback model is used only when the primary model itself failed.
+    // A confirmed quota exhaustion is account-wide, so a second model cannot help and is skipped.
+    // A timeout is skipped as well so one request never waits for two full timeouts.
+    const primaryFailed = !primary.success || !primary.text?.trim()
+    const timedOut = Boolean(primary.isNetworkError && /timed out/i.test(primary.error || ''))
+    if (!primaryFailed || primary.isQuotaExhausted || timedOut) return primary
+
+    const fallbackModel = this.fallbackModel
+    if (!fallbackModel || fallbackModel === modelToUse) return primary
+
+    const fallback = await this.executeRequest(fallbackModel, messages, options)
+    if (fallback.success && fallback.text?.trim()) return fallback
+
+    // Neither model produced text: report the primary failure so callers keep a single error path.
+    return primary
   }
 
   private async executeRequest(

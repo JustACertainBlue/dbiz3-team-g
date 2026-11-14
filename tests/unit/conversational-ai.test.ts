@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { ConversationalAiService } from '@/lib/ai/llm-service'
+import {
+  ConversationalAiService,
+  detectWaivers,
+  isRepeatedReply,
+  replySimilarity,
+  isVietnameseText,
+  resolveCraftPreference,
+  isOriginGroundedInUserText,
+} from '@/lib/ai/llm-service'
 import { QuotaManager } from '@/lib/ai/quota-manager'
 import { CloudflareAiClient } from '@/lib/ai/cloudflare-client'
 import { detectPromptInjection, buildSystemPrompt } from '@/lib/ai/prompt-templates'
@@ -194,6 +202,75 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
       expect(result.processing_status).toBe('Temporary AI Failure')
       expect(result.retry_available).toBe(true)
       expect(result.is_complete).toBe(false)
+    })
+  })
+
+  describe('6. Anti-Repetition, Waivers and Input-Aware Replies', () => {
+    it('detects the fields the Agency explicitly waived', () => {
+      const waivers = detectWaivers('tầm 15 khách, không có yêu cầu cụ thể về ngân sách hay thời gian')
+      expect(waivers.budget).toBe(true)
+      expect(waivers.date).toBe(true)
+      expect(waivers.origin).toBe(false)
+      expect(waivers.craft).toBe(false)
+    })
+
+    it('treats flexible wording as a waiver and ignores unrelated sentences', () => {
+      expect(detectWaivers('ngân sách tùy, thời gian linh hoạt').budget).toBe(true)
+      expect(detectWaivers('ngân sách tùy, thời gian linh hoạt').date).toBe(true)
+      expect(detectWaivers('Đoàn 15 khách đi Bát Tràng ngày 20/11').budget).toBe(false)
+      expect(detectWaivers('Đoàn 15 khách đi Bát Tràng ngày 20/11').date).toBe(false)
+    })
+
+    it('recognises Vietnamese with and without diacritics but not English', () => {
+      expect(isVietnameseText('Đoàn của tôi có 15 khách')).toBe(true)
+      expect(isVietnameseText('doan 15 khach')).toBe(true)
+      expect(isVietnameseText('We want a silk workshop for 10 people')).toBe(false)
+    })
+
+    it('canonicalises a free-phrase craft preference so scoring sees a known craft', () => {
+      // The model often returns "dệt lụa" instead of the canonical key; every candidate used to be
+      // reported as a mismatch because craftTypeForPreference("dệt lụa") is undefined.
+      expect(resolveCraftPreference('dệt lụa', [{ text: 'silk' }])).toBe('silk')
+      expect(resolveCraftPreference('làm gốm', [])).toBe('pottery')
+      expect(resolveCraftPreference(null, [{ text: 'lụa' }, { text: 'đúng' }])).toBe('silk')
+      // An unknown phrase is kept only when nothing canonical exists anywhere.
+      expect(resolveCraftPreference('nghề hiếm', [{ text: 'xin chào' }])).toBe('nghề hiếm')
+    })
+
+    it('accepts an origin only when the user actually wrote it', () => {
+      // The model echoed its own suggestion ("Vạn Phúc") as the origin; it must be rejected.
+      expect(isOriginGroundedInUserText('Vạn Phúc', 'silk đúng tầm 15 khách')).toBe(false)
+      expect(isOriginGroundedInUserText('Hoàn Kiếm', 'đoàn xuất phát từ Hoàn Kiếm')).toBe(true)
+      expect(isOriginGroundedInUserText('hoan kiem', 'from Hoan Kiem')).toBe(true)
+    })
+
+    it('scores a recycled sentence as highly similar and a fresh one as different', () => {
+      const repeated = 'Chúng tôi có thể kết nối bạn với các xưởng dệt lụa uy tín ở làng Vạn Phúc'
+      const copy = 'Chúng tôi có thể kết nối bạn với các xưởng dệt lụa uy tín ở làng Vạn Phúc'
+      const fresh = 'Đoàn 15 khách của bạn có thể bắt đầu làm gốm tại Bát Tràng vào buổi sáng'
+      expect(replySimilarity(repeated, copy)).toBeGreaterThan(0.9)
+      expect(isRepeatedReply(copy, [repeated])).toBe(true)
+      expect(isRepeatedReply(fresh, [repeated])).toBe(false)
+    })
+
+    it('answers the newest message instead of recycling the previous reply', async () => {
+      const messages = [
+        { sender: 'Agency', text: 'silk' },
+        { sender: 'Assistant', text: 'Bạn đang quan tâm đến làng dệt lụa truyền thống ở Vạn Phúc, đúng không?' },
+        { sender: 'Agency', text: 'đúng' },
+        { sender: 'Assistant', text: 'Bạn muốn tham gia trải nghiệm dệt lụa truyền thống ở làng Vạn Phúc, đúng không?' },
+        { sender: 'Agency', text: 'tầm 15 khách, không có yêu cầu cụ thể về ngân sách hay thời gian' },
+      ]
+
+      const result = await ConversationalAiService.processConversation(messages)
+      expect(result.usedLlm).toBe(false)
+      expect(result.tour_context.group_size).toBe(15)
+      // The waived date must not be asked again, and the bogus "15" must not become a budget.
+      expect(result.follow_up_questions.join(' ')).not.toMatch(/ngày|date/i)
+      expect(result.tour_context.budget).toBeUndefined()
+      // The reply must not repeat the earlier assistant sentence.
+      expect(result.conversational_reply).not.toContain('Bạn muốn tham gia trải nghiệm dệt lụa truyền thống ở làng Vạn Phúc')
+      expect(result.conversational_reply).toContain('15')
     })
   })
 })

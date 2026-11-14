@@ -76,6 +76,65 @@ export function noMatchView(body: any): { prompt: string; lines: string[] } {
   return { prompt: relaxation.conversation_prompt ?? '', lines }
 }
 
+/** Nhóm nghề tiếng Việt cho từng nhãn nghề mà bộ máy ghép tour phát ra */
+const CRAFT_FAMILY_VI: Record<string, string> = {
+  'silk weaving': 'dệt – may (lụa, thêu)',
+  embroidery: 'dệt – may (lụa, thêu)',
+  pottery: 'gốm sứ',
+  woodcarving: 'mộc – chạm khắc',
+  'bamboo and rattan weaving': 'mây tre đan',
+  'conical hat making': 'nón lá',
+  'food and cooking': 'ẩm thực',
+  metalwork: 'kim khí – đúc đồng',
+  'lacquer and painting': 'sơn mài',
+}
+
+/** Dịch một nhãn nghề (kể cả nhãn tiếng Việt lạ) sang nhóm nghề tiếng Việt dễ hiểu */
+function craftFamilyVi(label: string): string {
+  return CRAFT_FAMILY_VI[label.trim().toLowerCase()] ?? 'thủ công truyền thống'
+}
+
+/**
+ * Diễn đạt lý do phù hợp trên thẻ đề xuất bằng tiếng Việt tự nhiên, thân thiện.
+ * Nhãn nghề khớp mọi nhãn (kể cả tiếng Việt) vì bộ máy chấm điểm có thể trả về nhãn bất kỳ; lý do
+ * "không trực tiếp đúng nghề" được diễn đạt như một gợi ý mở rộng thay vì để lộ tiếng Anh.
+ */
+export function localizeExplanation(explanation: string): string {
+  if (!explanation) return 'Đề xuất xưởng nghề phù hợp với tiêu chí và quy mô đoàn của bạn.'
+
+  let text = explanation
+
+  // 1. Điểm phù hợp
+  text = text.replace(/Match score ([\d.]+)\/100\./i, (_, score) => `Độ phù hợp đạt ${score}/100 điểm.`)
+
+  // 2. Ngành nghề thủ công — nhãn có thể là tiếng Anh hoặc tiếng Việt nên phải khớp mọi nhãn
+  text = text.replace(/Matches your (.+?) preference \(([^)]+)\)\./i, (_, label) =>
+    `Đúng nhóm nghề ${craftFamilyVi(label)} mà đoàn đang quan tâm.`)
+  text = text.replace(/Does not match your (.+?) preference\./i, (_, label) =>
+    `Chưa trực tiếp thuộc nhóm nghề ${craftFamilyVi(label)} đoàn yêu cầu, nhưng là trải nghiệm thủ công tương đồng, có thể cân nhắc khi xưởng đúng nghề chưa đáp ứng đủ quy mô đoàn.`)
+
+  // 3. Loại hình trải nghiệm
+  text = text.replace(/A Workshop\/Hands-on experience, as requested\./i, 'Xưởng có hoạt động thực hành tay nghề (workshop) trực tiếp cùng nghệ nhân bậc thầy đúng theo yêu cầu.')
+  text = text.replace(/A Cultural Show experience, as requested\./i, 'Có suất diễn nghệ thuật văn hóa truyền thống đặc sắc theo yêu cầu.')
+  text = text.replace(/A Sightseeing experience, as requested\./i, 'Tuyến tham quan không gian xưởng và di sản làng nghề thuận tiện.')
+  text = text.replace(/A Culinary\/Tasting experience, as requested\./i, 'Trải nghiệm thưởng thức hương vị ẩm thực làng nghề truyền thống.')
+  text = text.replace(/Not a ([a-zA-Z\s\/]+) experience\./i, 'Trải nghiệm văn hóa làng nghề truyền thống.')
+
+  // 4. Quy mô đoàn & sức chứa
+  text = text.replace(/Takes up to (\d+) pax for your group of (\d+)\./i, (_, max, group) => `Sức chứa xưởng tối đa ${max} khách, vừa vặn và đảm bảo chất lượng hướng dẫn cho đoàn ${group} người.`)
+
+  // 5. Ngân sách & chi phí
+  text = text.replace(/([\d,.]+) VND per person, within your ([\d,.]+) VND budget\./i, (_, price, budget) => `Mức giá ${price} đ/khách, nằm trọn trong hạn mức ngân sách (${budget} đ) của đoàn.`)
+
+  // 6. Khoảng cách di chuyển
+  text = text.replace(/About ([\d.]+) km from (.+?) \(estimated\)\./i, (_, dist, origin) => {
+    const originLabel = origin === 'your starting point' ? 'điểm xuất phát của đoàn' : origin
+    return `Cách ${originLabel} khoảng ${dist} km, tuyến đường thuận tiện di chuyển trong ngày.`
+  })
+
+  return text
+}
+
 // #156: show the date the assistant understood, so the Agency can correct it with a new message
 // (a later message replaces it, FR-009 / BR-008).
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

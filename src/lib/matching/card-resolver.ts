@@ -498,16 +498,72 @@ export function resolveVillageCards(text: string): VillageCardData[] {
 }
 
 /**
+ * Extracts maximum budget per person from query text (e.g. "dưới 150k", "< 150k", "ngân sách 200k", "150k trở xuống").
+ */
+export function parseBudgetConstraint(text: string): { maxPrice: number; isStrictlyUnder: boolean } | null {
+  const lower = text.toLowerCase()
+
+  // 1. Dạng "dưới / under / <" kèm số
+  const strictMatch = lower.match(/(?:dưới|<|under)\s*(\d+(?:[.,]\d{3})*|\d+)\s*(k|nghìn|ngàn|tr|triệu|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/pax)?/i)
+  if (strictMatch) {
+    let rawStr = (strictMatch[1] || '').trim()
+    let cleanDigits = rawStr.replace(/[.,]/g, '')
+    let amount = parseInt(cleanDigits, 10)
+    const unit = (strictMatch[2] || '').toLowerCase()
+    if (unit === 'k' || unit === 'nghìn' || unit === 'ngàn') amount *= 1000
+    else if (unit === 'tr' || unit === 'triệu') amount *= 1000000
+    else if (amount < 1000) amount *= 1000
+    return { maxPrice: amount, isStrictlyUnder: true }
+  }
+
+  // 2. Dạng "ngân sách / budget / tối đa / tầm / khoảng / mức giá" kèm số
+  const budgetMatch = lower.match(/(?:budget|ngân sách|tối đa|tầm|khoảng|mức giá)\s*(\d+(?:[.,]\d{3})*|\d+)\s*(k|nghìn|ngàn|tr|triệu|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/pax|trở xuống)?/i)
+  if (budgetMatch) {
+    let rawStr = (budgetMatch[1] || '').trim()
+    let cleanDigits = rawStr.replace(/[.,]/g, '')
+    let amount = parseInt(cleanDigits, 10)
+    const unit = (budgetMatch[2] || '').toLowerCase()
+    if (unit === 'k' || unit === 'nghìn' || unit === 'ngàn') amount *= 1000
+    else if (unit === 'tr' || unit === 'triệu') amount *= 1000000
+    else if (amount < 1000) amount *= 1000
+    return { maxPrice: amount, isStrictlyUnder: false }
+  }
+
+  // 3. Dạng số đứng trước "trở xuống / đổ lại / quay đầu" (ví dụ: "150k trở xuống")
+  const suffixMatch = lower.match(/(\d+(?:[.,]\d{3})*|\d+)\s*(k|nghìn|ngàn|tr|triệu|\.000|000)?\s*(?:vnd|đ)?\s*(?:trở xuống|đổ lại|quay đầu)/i)
+  if (suffixMatch) {
+    let rawStr = (suffixMatch[1] || '').trim()
+    let cleanDigits = rawStr.replace(/[.,]/g, '')
+    let amount = parseInt(cleanDigits, 10)
+    const unit = (suffixMatch[2] || '').toLowerCase()
+    if (unit === 'k' || unit === 'nghìn' || unit === 'ngàn') amount *= 1000
+    else if (unit === 'tr' || unit === 'triệu') amount *= 1000000
+    else if (amount < 1000) amount *= 1000
+    return { maxPrice: amount, isStrictlyUnder: false }
+  }
+
+  return null
+}
+
+/**
  * Resolves Provider Cards (up to 5) for a requested village or craft query.
- * Strictly filters to ONLY verified providers per platform rule BR-003.
+ * Strictly respects budget constraints and verification.
  */
 export function resolveProviderCards(text: string): ProviderCardData[] {
   const lower = text.toLowerCase()
+  const budgetConstraint = parseBudgetConstraint(text)
   const matched = new Map<string, ProviderCardData>()
 
   const check = (keywords: string[], villageId: string) => {
     if (keywords.some(k => lower.includes(k))) {
-      CATALOG_PROVIDERS.filter(p => p.village_id === villageId && p.is_verified).forEach(p => matched.set(p.provider_id, p))
+      CATALOG_PROVIDERS.filter(p => p.village_id === villageId).forEach(p => {
+        if (budgetConstraint) {
+          const hasAffordable = p.activities.some(act => (act.price ?? 0) <= budgetConstraint.maxPrice)
+          if (hasAffordable) matched.set(p.provider_id, p)
+        } else {
+          matched.set(p.provider_id, p)
+        }
+      })
     }
   }
 
@@ -523,25 +579,39 @@ export function resolveProviderCards(text: string): ProviderCardData[] {
   if (matched.size === 0) {
     const isProviderList = /(?:danh sách xưởng|xưởng tại|xưởng nghề|local provider|cơ sở thủ công|nghệ nhân)/i.test(lower)
     if (isProviderList) {
-      return CATALOG_PROVIDERS.filter(p => p.is_verified).slice(0, 4)
+      let pool = CATALOG_PROVIDERS.filter(p => p.is_verified)
+      if (budgetConstraint) {
+        pool = pool.filter(p => p.activities.some(act => (act.price ?? 0) <= budgetConstraint.maxPrice))
+      }
+      return pool.slice(0, 4)
     }
   }
 
-  return Array.from(matched.values()).filter(p => p.is_verified)
+  let finalProviders = Array.from(matched.values())
+  if (budgetConstraint) {
+    finalProviders = finalProviders.filter(p => p.activities.some(act => (act.price ?? 0) <= budgetConstraint.maxPrice))
+  }
+  return finalProviders
 }
 
 /**
  * Resolves Activity / Experience Cards relevant to text.
- * Strictly filters to ONLY verified activities per platform rule BR-003.
+ * Strictly enforces budget ceilings (e.g. "dưới 150k" rejects activities > 150k).
  */
 export function resolveActivityCards(text: string): ActivityCardData[] {
   const lower = text.toLowerCase()
+  const budgetConstraint = parseBudgetConstraint(text)
   const matched = new Map<string, ActivityCardData>()
 
   const check = (keywords: string[], expId: string) => {
     if (keywords.some(k => lower.includes(k))) {
-      const act = CATALOG_ACTIVITIES.find(a => a.experience_id === expId && a.is_verified)
-      if (act) matched.set(act.experience_id, act)
+      const act = CATALOG_ACTIVITIES.find(a => a.experience_id === expId)
+      if (act) {
+        if (budgetConstraint && act.price_per_person > budgetConstraint.maxPrice) {
+          return
+        }
+        matched.set(act.experience_id, act)
+      }
     }
   }
 
@@ -555,11 +625,19 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
   check(['sơn mài', 'hạ thái', 'vẽ tranh'], '800b5192-03c7-5953-849b-32a321e12a47')
 
   if (matched.size === 0) {
-    const isActivityQuery = /(?:hoạt động|trải nghiệm|workshop|làm gì|có gì chơi|thực hành)/i.test(lower)
+    const isActivityQuery = /(?:hoạt động|trải nghiệm|workshop|làm gì|có gì chơi|thực hành|dưới|ngân sách|budget|<)/i.test(lower)
     if (isActivityQuery) {
-      return CATALOG_ACTIVITIES.filter(a => a.is_verified).slice(0, 4)
+      let pool = CATALOG_ACTIVITIES.filter(a => a.is_verified)
+      if (budgetConstraint) {
+        pool = pool.filter(a => a.price_per_person <= budgetConstraint.maxPrice)
+      }
+      return pool.slice(0, 4)
     }
   }
 
-  return Array.from(matched.values()).filter(a => a.is_verified)
+  let finalCards = Array.from(matched.values())
+  if (budgetConstraint) {
+    finalCards = finalCards.filter(a => a.price_per_person <= budgetConstraint.maxPrice)
+  }
+  return finalCards
 }

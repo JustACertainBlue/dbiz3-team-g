@@ -1,4 +1,5 @@
 import { CloudflareAiClient, type CloudflareChatMessage } from './cloudflare-client'
+import { OpenRouterClient } from './openrouter-client'
 import { QuotaManager, type QuotaStatus } from './quota-manager'
 import { buildSystemPrompt, detectPromptInjection, detectUnauthorizedDataProbe } from './prompt-templates'
 import { queryKnowledgeBase } from './knowledge-base'
@@ -32,9 +33,19 @@ export function sanitizeConversationalReply(text: string): string {
 
 export class ConversationalAiService {
   private static client: CloudflareAiClient = new CloudflareAiClient()
+  private static openRouterClient: OpenRouterClient = new OpenRouterClient()
 
   /**
-   * Processes a multi-turn conversation using Cloudflare Workers AI with persistent quota protection.
+   * Helper to set custom or mock clients (for testing or reconfiguration)
+   */
+  static setClients(cloudflare?: CloudflareAiClient, openRouter?: OpenRouterClient) {
+    if (cloudflare) this.client = cloudflare
+    if (openRouter) this.openRouterClient = openRouter
+  }
+
+  /**
+   * Processes a multi-turn conversation using Cloudflare Workers AI with fallback to OpenRouter AI,
+   * followed by intelligent rule-based heuristic extraction.
    */
   static async processConversation(
     messages: Array<{ sender?: string; text: string; sent_at?: string }>,
@@ -44,7 +55,7 @@ export class ConversationalAiService {
     const now = options?.now ?? systemClock
 
     // 1. Check persistent 24-hour quota cooldown
-    const quotaStatus = await QuotaManager.checkCooldown()
+    let quotaStatus = await QuotaManager.checkCooldown()
 
     // 2. Check for prompt injection attempts
     if (detectPromptInjection(latestUserMsg)) {
@@ -77,8 +88,13 @@ export class ConversationalAiService {
       }
     }
 
-    // 3. If in 24-hour cooldown or Cloudflare is not configured: use intelligent rule-based fallback
-    if (quotaStatus.inCooldown || !this.client.isConfigured()) {
+    // 3. Evaluate availability of LLM providers:
+    // Primary: Cloudflare Workers AI (10,000 free daily Neurons)
+    // Secondary fallback: OpenRouter AI (when Cloudflare is in cooldown, out of tokens, or fails)
+    const canUseCloudflare = !quotaStatus.inCooldown && this.client.isConfigured()
+    const canUseOpenRouter = this.openRouterClient.isConfigured()
+
+    if (!canUseCloudflare && !canUseOpenRouter) {
       return this.fallbackAnalysis(messages, quotaStatus, now)
     }
 
@@ -86,8 +102,8 @@ export class ConversationalAiService {
     const relevantKnowledge = queryKnowledgeBase(latestUserMsg)
     const systemPrompt = buildSystemPrompt(relevantKnowledge.length > 0 ? relevantKnowledge : undefined)
 
-    // Format messages for Cloudflare Workers AI
-    const cfMessages: CloudflareChatMessage[] = [
+    // Format messages for LLM chat completions
+    const chatMessages: CloudflareChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...messages.slice(-6).map(m => ({
         role: (m.sender?.toLowerCase() === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
@@ -95,20 +111,44 @@ export class ConversationalAiService {
       })),
     ]
 
-    // 5. Call Cloudflare Workers AI (@cf/zai-org/glm-4.7-flash)
-    const aiResponse = await this.client.runChat(cfMessages)
+    let aiResponse: {
+      success: boolean
+      text?: string
+      isQuotaExhausted?: boolean
+      modelUsed?: string
+      error?: string
+    } = { success: false }
 
-    // 6. Handle confirmed Quota Exhaustion
-    if (!aiResponse.success && aiResponse.isQuotaExhausted) {
-      console.warn('Daily 10,000 Neurons free quota exhausted. Activating 24-hour protective cooldown.')
-      const updatedCooldown = await QuotaManager.recordQuotaExhaustion(
-        aiResponse.error || 'Daily free 10,000 Neurons quota exhausted',
-        aiResponse.modelUsed
-      )
-      return this.fallbackAnalysis(messages, updatedCooldown, now)
+    // 5. Try Cloudflare Workers AI first if available
+    if (canUseCloudflare) {
+      aiResponse = await this.client.runChat(chatMessages)
+
+      // Handle confirmed Cloudflare Quota Exhaustion
+      if (!aiResponse.success && aiResponse.isQuotaExhausted) {
+        console.warn('Daily 10,000 Neurons free quota exhausted on Cloudflare. Activating 24-hour protective cooldown.')
+        quotaStatus = await QuotaManager.recordQuotaExhaustion(
+          aiResponse.error || 'Daily free 10,000 Neurons quota exhausted',
+          aiResponse.modelUsed
+        )
+      }
     }
 
-    // 7. Handle network or server errors by gracefully falling back
+    // 6. Secondary LLM Fallback: If Cloudflare failed, ran out of tokens, or is in cooldown, fallback to OpenRouter
+    if ((!aiResponse.success || !aiResponse.text) && canUseOpenRouter) {
+      console.info('[AIT] Cloudflare AI unavailable or quota exhausted. Falling back to OpenRouter API...')
+      const orResponse = await this.openRouterClient.runChat(chatMessages)
+      if (orResponse.success && orResponse.text) {
+        aiResponse = {
+          success: true,
+          text: orResponse.text,
+          modelUsed: `openrouter:${orResponse.modelUsed || 'default'}`,
+        }
+      } else {
+        console.warn('[AIT] OpenRouter fallback also failed:', orResponse.error)
+      }
+    }
+
+    // 7. If both LLM providers failed or are unavailable, fall back to intelligent rule-based analysis
     if (!aiResponse.success || !aiResponse.text) {
       return this.fallbackAnalysis(messages, quotaStatus, now)
     }

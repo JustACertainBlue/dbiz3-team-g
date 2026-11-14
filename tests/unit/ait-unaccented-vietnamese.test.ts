@@ -62,3 +62,4 @@ describe('TC08 | Heuristic fallback: unaccented Vietnamese (FR-003, BR-004)', ()
     expect(result.tour_context.budget?.max_per_person).toBe(150000)
   })
 })
+

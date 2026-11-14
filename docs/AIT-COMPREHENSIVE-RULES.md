@@ -13,6 +13,7 @@
 6. [VI. Quy tắc Quản lý Lịch sử Phiên & Loại bỏ Chat Rỗng (Session Management)](#vi-quy-tắc-quản-lý-lịch-sử-phiên--loại-bỏ-chat-rỗng-session-management)
 7. [VII. Đặc tả Tính năng Vòng lặp Học hỏi (Learning Loop) & Tối ưu Bố cục Explore](#vii-đặc-tả-tính-năng-vòng-lặp-học-hỏi-learning-loop--tối-ưu-bố-cục-explore)
 8. [VIII. Quy tắc Bắt buộc: Chỉ Gợi ý Xưởng đã được Xác minh (Verified Only Rule - BR-003)](#viii-quy-tắc-bắt-buộc-chỉ-gợi-ý-xưởng-đã-được-xác-minh-verified-only-rule---br-003)
+9. [IX. Quy tắc Ràng buộc Trần Ngân sách & Toàn vẹn Đơn giá (Budget Ceiling & Pricing Integrity - BR-005, BR-011)](#ix-quy-tắc-ràng-buộc-trần-ngân-sách--toàn-vẹn-đơn-giá-budget-ceiling--pricing-integrity---br-005-br-011)
 
 ---
 
@@ -188,6 +189,33 @@ Hệ thống kết hợp:
    - **Tầng Card Resolver (`card-resolver.ts`)**: Bộ lọc tự động loại trừ mọi cơ sở có `is_verified !== true`.
    - **Tầng Giao diện (`ai-matching/page.tsx`)**: Nếu người dùng cố tình thao tác, hệ thống hiển thị thông báo hướng dẫn rõ ràng: *"Cơ sở này đang trong quá trình hoàn thiện hồ sơ xác minh với cơ quan quản lý và chưa mở nhận báo giá trực tuyến"*, đồng thời chặn mở tab thương mại trắng.
    - **Tầng Mô hình LLM (`prompt-templates.ts`)**: Huấn luyện AI nhận biết và chỉ tập trung ghép tour vào 5 xưởng đạt chuẩn `Verified`. Nếu người dùng hỏi về hoạt động đồng đội / teambuilding ngoài trời, AI chủ động chuyển hướng sang các xưởng có không gian phù hợp đã đạt chuẩn như Bát Tràng (Team Pottery Challenge) hoặc Phú Vinh (Workshop đan lát nhà vườn).
+
+---
+
+## IX. QUY TẮC RÀNG BUỘC TRẦN NGÂN SÁCH & TOÀN VẸN ĐƠN GIÁ (BUDGET CEILING & PRICING INTEGRITY - BR-005, BR-011)
+
+1. **Bảng Đơn giá B2B Niêm yết Chuẩn của Toàn Sàn (Verified Activity Price Catalog)**:
+   Hệ thống Hanoi Artisan Bridge có mức giá trải nghiệm tính theo đầu khách (VNĐ/người) cụ thể cho từng làng nghề như sau:
+   - **Gốm sứ Bát Tràng**: `150.000 VNĐ / người` (*Mức giá khởi điểm thấp nhất trên toàn sàn*).
+   - **Dệt lụa tơ tằm Vạn Phúc**: `175.000 VNĐ / người`.
+   - **Mây tre đan Phú Vinh**: `200.000 VNĐ / người`.
+   - **Nón lá Làng Chuông**: `225.000 VNĐ / người`.
+   - **Thêu tay Quất Động**: `250.000 VNĐ / người`.
+   - **Mộc mỹ nghệ Sơn Đồng**: `275.000 VNĐ / người`.
+   - **Múa rối nước Đào Thục**: `300.000 VNĐ / người`.
+   - **Sơn mài Hạ Thái**: `325.000 VNĐ / người`.
+
+2. **Ràng buộc cứng về Trần Ngân sách (Hard Budget Ceiling - BR-005)**:
+   - Khi người dùng đưa ra giới hạn ngân sách (ví dụ: *"dưới 150k"*, *"ngân sách tối đa 200k"*, *"chi phí <= 180k"*):
+     - **Tầng Card Resolver (`card-resolver.ts`)**: Bộ giải quyết thẻ tự động bóc tách trần ngân sách (`parseBudgetConstraint`) và áp dụng bộ lọc tuyệt đối: `activity.price_per_person <= maxPrice`. Tuyệt đối không trả về bất kỳ Card hoạt động nào có đơn giá vượt trần ngân sách đã nêu (ví dụ: yêu cầu dưới 150k thì không bao giờ hiển thị thẻ 175k của Vạn Phúc hay 200k của Phú Vinh).
+     - **Tầng Mô hình LLM (`prompt-templates.ts`)**: Huấn luyện mô hình tuân thủ **Rule 12**: Cấm tuyệt đối việc tự ý gợi ý các hoạt động vượt trần ngân sách của khách hàng trong phần đàm thoại.
+
+3. **Quy tắc Nới lỏng Thông minh khi Ngân sách Dưới Sàn (Constraint Relaxation - BR-011)**:
+   - Vì mức giá thấp nhất trên toàn nền tảng hiện tại là **150.000 VNĐ/người (Gốm sứ Bát Tràng)**, nên trên sàn **KHÔNG CÓ hoạt động nào có đơn giá thực sự dưới 150.000 VNĐ**.
+   - Khi khách hàng yêu cầu *"dưới 150k"*:
+     - AI và hệ thống phải giải thích rõ ràng và minh bạch cho đại lý: *"Hiện tại mức giá trải nghiệm tối thiểu trên nền tảng là 150.000 VNĐ/khách (Workshop Gốm sứ Bát Tràng)"*.
+     - Chủ động đề xuất hoạt động gốm Bát Tràng (150.000 VNĐ) như phương án sát ngân sách nhất để đại lý cân nhắc, thay vì tự ý gợi ý các hoạt động đắt hơn (175k, 200k, 225k...).
+     - Card giải pháp kèm theo chỉ hiển thị duy nhất hoạt động Bát Tràng (150k), hoàn toàn loại bỏ các hoạt động có giá cao hơn.
 
 ---
 

@@ -45,3 +45,7 @@ Thiết lập vòng lặp học hỏi liên tục (Learning Loop) từ các phi�
 - Chỉ các xưởng nghề và trải nghiệm đã được thẩm định `Verified` mới được phép đưa vào danh sách ứng viên đề xuất và vòng lặp học hỏi để lên tour/báo giá.
 - Các xưởng chưa xác minh (`Draft`, `Pending Verification`, `Revision Required`) bị loại trừ khỏi luồng thương mại trực tiếp và không được gợi ý cho đại lý.
 
+### LL-07: Ràng buộc Trần Ngân sách & Đơn giá Tối thiểu (BR-005, BR-011)
+- Lọc triệt để theo trần ngân sách (`maxPrice`): Tuyệt đối không đề xuất hay hiển thị thẻ hoạt động vượt quá mức chi phí tối đa mà lữ hành yêu cầu.
+- Sàn đơn giá nền tảng là 150.000 VNĐ/khách (Bát Tràng). Khi yêu cầu ngân sách dưới 150.000 VNĐ, hệ thống thông tin rõ mức sàn thực tế và gợi ý hoạt động Bát Tràng thay vì đưa ra các hoạt động có giá cao hơn.
+

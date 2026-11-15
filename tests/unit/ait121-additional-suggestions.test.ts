@@ -34,7 +34,7 @@ describe('#188 | AIT121 shows additional suggestions (FR-008)', () => {
   })
 
   it('the page keeps them on the message and renders them under "Gợi ý thêm" with the same card actions', () => {
-    const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
+    const page = readFileSync('src/app/ai-matching/AiMatchingClient.tsx', 'utf8')
     expect(page).toContain('const { top: topMatches, additional } = matchResultsView(result.body)')
     expect(page).toContain('additionalSuggestions: additional,')
     expect(page).toContain('[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (')
@@ -44,7 +44,7 @@ describe('#188 | AIT121 shows additional suggestions (FR-008)', () => {
 
 describe('#188 | AIT121 sits inside the app shell (one header)', () => {
   it('has no own top bar and no fixed 100vh frame; the heading reads "AI Tour Matching"', () => {
-    const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
+    const page = readFileSync('src/app/ai-matching/AiMatchingClient.tsx', 'utf8')
     expect(page).not.toContain('Screen AIT121 — Conversational AI Tour Matching')
     expect(page).not.toMatch(/height: '100vh'/)
     expect(page).toMatch(/<h1[^>]*>\s*AI Tour Matching\s*<\/h1>/)

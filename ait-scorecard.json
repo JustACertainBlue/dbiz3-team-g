@@ -1,0 +1,98 @@
+{
+  "score": 100,
+  "gate": true,
+  "e2e_ran": false,
+  "gate_failures": [],
+  "groups": [
+    {
+      "group": "SCHEMA",
+      "label": "Schema phản hồi / profile / card (A.4, A.6, A.7)",
+      "weight": 10,
+      "pass": 13,
+      "total": 13,
+      "points": 10,
+      "failed": []
+    },
+    {
+      "group": "CARD",
+      "label": "Card, trust signal, tag, quy tắc null (A.7, A.9)",
+      "weight": 12,
+      "pass": 11,
+      "total": 11,
+      "points": 12,
+      "failed": []
+    },
+    {
+      "group": "PROFILE",
+      "label": "Profile patch + polarity (A.4)",
+      "weight": 8,
+      "pass": 8,
+      "total": 8,
+      "points": 8,
+      "failed": []
+    },
+    {
+      "group": "CONSTRAINTS",
+      "label": "Hard filter + lịch + exclude (A.5)",
+      "weight": 15,
+      "pass": 15,
+      "total": 15,
+      "points": 15,
+      "failed": []
+    },
+    {
+      "group": "SCORING",
+      "label": "Trọng số, ngưỡng, phạt null, tag (A.5, A.9)",
+      "weight": 10,
+      "pass": 13,
+      "total": 13,
+      "points": 10,
+      "failed": []
+    },
+    {
+      "group": "MESSAGE",
+      "label": "Câu dẫn, post-check, rò rỉ, mẫu từ chối (A.6, B.3, B.4)",
+      "weight": 10,
+      "pass": 18,
+      "total": 18,
+      "points": 10,
+      "failed": []
+    },
+    {
+      "group": "GUARD",
+      "label": "Router, sanitize, rate limit (A.2, B.3, B.6)",
+      "weight": 15,
+      "pass": 46,
+      "total": 46,
+      "points": 15,
+      "failed": []
+    },
+    {
+      "group": "EXPLORE",
+      "label": "Learning Loop trong sort Explore (C, E.2, E.3)",
+      "weight": 15,
+      "pass": 15,
+      "total": 15,
+      "points": 15,
+      "failed": []
+    },
+    {
+      "group": "SESSION",
+      "label": "Phiên từ Explore, quyền, profile nháp (E.4)",
+      "weight": 3,
+      "pass": 6,
+      "total": 6,
+      "points": 3,
+      "failed": []
+    },
+    {
+      "group": "TFIDF",
+      "label": "TF-IDF experience fit (A.5.3)",
+      "weight": 2,
+      "pass": 2,
+      "total": 2,
+      "points": 2,
+      "failed": []
+    }
+  ]
+}

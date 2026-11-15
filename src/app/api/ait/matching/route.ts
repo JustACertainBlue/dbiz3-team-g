@@ -1,11 +1,12 @@
 /**
  * POST /api/ait/matching
  *
- * Runs the real AI Tour Matching pipeline:
- *   getVerifiedCandidates → applyHardConstraints → rankCandidates → buildRecommendations
+ * Runs the AI Tour Matching pipeline per D.1(b):
+ *   profileSchema validate → getVerifiedCandidates → applyHardConstraints
+ *   → rankCandidates → buildRecommendations (or relaxation if none survive)
  *
- * If no candidates survive the hard-constraint filter (capacity, budget) the response
- * contains relaxation_suggestions instead of top_matches (BR-011, BR-020).
+ * If no candidates survive the hard-constraint filter the response contains
+ * relaxation_suggestions instead of top_matches (BR-011, BR-020).
  *
  * Body: { session_id?: string, tour_preference_profile: TourPreferenceProfile }
  */
@@ -22,10 +23,11 @@ import {
 } from '@/lib/matching/recommendation-service'
 import { loadExperiences } from '@/lib/db/seed-loader'
 import { getTestCandidates, getTestAllExperiences } from '@/lib/matching/test-dataset'
+import { profileSchema } from '@/lib/ait/schemas'
 
 export async function POST(request: Request) {
   try {
-    // Authorize before reading the body (contract: authorize → validate → read/write).
+    // Authorize before reading the body (D.1 contract: authorize → validate → read/write).
     const actor = (await sessionContextFromRequest(request))
     if (!actor.authenticated) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (actor.role !== 'Tour_Agency' || !actor.agencyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -37,21 +39,31 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Matching session access denied' }, { status: 403 })
       }
     }
-    const profile = body.tour_preference_profile
+    const rawProfile = body.tour_preference_profile
 
-    if (!profile) {
+    if (!rawProfile) {
       return NextResponse.json(
         { error: 'tour_preference_profile is required' },
         { status: 400 }
       )
     }
 
-    const isTest = body.is_test === true || profile.is_test === true
+    // D.1(b): validate profile with profileSchema; use rawProfile for downstream logic
+    // (profileSchema strips unknown fields like is_test; we keep rawProfile for isTest check)
+    const profileValidation = profileSchema.safeParse(rawProfile)
+    if (!profileValidation.success) {
+      return NextResponse.json(
+        { error: 'Invalid tour_preference_profile', issues: profileValidation.error.issues },
+        { status: 400 }
+      )
+    }
+
+    const isTest = body.is_test === true || rawProfile.is_test === true
 
     // 1. Retrieve candidates: When is_test is set, query strictly from the test dataset (zero system data)
     const rawCandidates = isTest
-      ? getTestCandidates(profile)
-      : await getVerifiedCandidates(profile)
+      ? getTestCandidates(rawProfile)
+      : await getVerifiedCandidates(rawProfile)
 
     // Enrich candidates with village_name for display
     const allExperiences = isTest
@@ -67,24 +79,25 @@ export async function POST(request: Request) {
     })
 
     // 2. Apply hard constraints: capacity + budget (BR-005)
-    const constraints = profile.hard_constraints || {}
+    const constraints = rawProfile.hard_constraints || {}
     const filtered = await applyHardConstraints(enrichedCandidates, constraints)
     const eligible = filtered.eligible_candidates
 
     // 3. Score + rank surviving candidates (FR-007) and drop those below 60/100 (BR-020, #30)
-    const ranked = applyScoreThreshold(await rankCandidates(eligible, profile))
+    const ranked = applyScoreThreshold(await rankCandidates(eligible, rawProfile))
 
     // 4. No candidate left → relaxation suggestions (BR-011, FR-012, #23, #24)
     if (ranked.length === 0) {
       const { max_budget_per_person: _budget, budget_per_person: _legacyBudget, ...withoutBudget } = constraints
       const budgetFree = await applyHardConstraints(enrichedCandidates, withoutBudget)
-      const budgetFreeRanked = await rankCandidates(budgetFree.eligible_candidates, profile)
+      const budgetFreeRanked = await rankCandidates(budgetFree.eligible_candidates, rawProfile)
       const largestGroup = enrichedCandidates.reduce((max, c) => Math.max(max, Number(c.max_participants) || 0), 0)
       const relaxation = await buildRelaxationSuggestions(budgetFreeRanked, constraints, {
         largest_group_size: enrichedCandidates.length > 0 ? largestGroup : undefined,
       })
       return NextResponse.json({
         top_matches: [],
+        additional_suggestions: [],
         relaxation_suggestions: {
           relaxation_suggestions: relaxation.relaxation_suggestions,
           conversation_prompt: relaxation.conversation_prompt,

@@ -34,6 +34,18 @@ export interface Experience {
   distance_km?: number
   travel_time_minutes?: number
   provider_quality_rating?: number
+  tags?: string[]
+  source_count?: number | null
+}
+
+const SEED_TAGS_MAP: Record<string, string[]> = {
+  'c8281688-2dc1-5cb1-9ff6-139df04ba562': ['vé miễn phí', 'thủ công truyền thống', 'lụa tơ tằm'],
+  'c9f9faf7-2987-5ae4-b1ed-95c095fcce69': ['workshop', 'làm gốm', 'quà lưu niệm'],
+  'b70bd0fa-6a81-5aec-9ff6-5303210b2fad': ['làm nón', 'trải nghiệm gia đình', 'vé miễn phí'],
+  'bad51dc8-1529-506a-8302-cb0b1d95954c': ['thêu tay', 'nghệ nhân'],
+  '8e485337-5a2c-5703-9fbf-5e0c6492cd87': ['múa rối nước', 'văn hóa dân gian'],
+  'd95bc77b-5e7b-53a6-a8af-5ccaabb485d8': ['mây tre đan', 'thủ công mỹ nghệ'],
+  '67a2cbab-850c-5f69-b496-59f2e9a5f594': ['điêu khắc gỗ', 'tạc tượng'],
 }
 
 
@@ -92,6 +104,12 @@ export async function loadExperiences(): Promise<Experience[]> {
         distance_km: 12,
         travel_time_minutes: 30,
         provider_quality_rating: 0.95,
+        tags: Array.isArray(row.tags)
+          ? row.tags
+          : typeof row.tags === 'string' && row.tags.startsWith('{')
+          ? row.tags.slice(1, -1).split(',').map((s: string) => s.trim().replace(/^"|"$/g, ''))
+          : SEED_TAGS_MAP[row.experience_id] || [],
+        source_count: row.source_count !== undefined && row.source_count !== null ? Number(row.source_count) : null,
       })
     }
   }

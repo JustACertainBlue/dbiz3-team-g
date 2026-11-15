@@ -40,7 +40,7 @@ export function applyScoreThreshold<T extends { match_score?: number }>(candidat
 const vnd = (amount: number) => amount.toLocaleString('en-US')
 
 // #25: only factors that the scoring actually evaluated (match_factors), never a craft the Agency did not ask for.
-function explain(item: any, _score: number): string {
+export function explain(item: any, _score: number): string {
   const f: MatchFactors = item.match_factors || {}
   const parts: string[] = []
   if (f.craft) {

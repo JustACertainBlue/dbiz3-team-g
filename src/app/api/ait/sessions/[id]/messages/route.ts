@@ -19,9 +19,12 @@ import {
 import { detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
 import { sanitizeInput, createRateLimiter } from '@/lib/ait/guard'
 import { routeByRules } from '@/lib/ait/router'
+import { classifyIntent } from '@/lib/ait/llm-router'
 import { refusalTemplate, buildResultsMessage } from '@/lib/ait/messages'
 import { postCheckMessage } from '@/lib/ait/postcheck'
 import { turnSchema } from '@/lib/ait/schemas'
+import fs from 'fs'
+import path from 'path'
 
 const rateLimiter = createRateLimiter({ limit: 20, windowMs: 60000 })
 
@@ -29,10 +32,11 @@ async function authorize(request: Request, sessionId: string) {
   const actor = await sessionContextFromRequest(request)
   const matchingSession = await getMatchingSession(sessionId)
   if (!actor.authenticated) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
-  if (actor.role !== 'Tour_Agency' || !actor.agencyId || matchingSession?.agency_id !== actor.agencyId) {
+  const agencyId = actor.agencyId
+  if (actor.role !== 'Tour_Agency' || !agencyId || matchingSession?.agency_id !== agencyId) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
-  return { actor, matchingSession }
+  return { agencyId }
 }
 
 export async function GET(
@@ -95,7 +99,7 @@ export async function POST(
     }
 
     // 2. Rate limit (20 req / min / agency)
-    const rateCheck = rateLimiter.check(access.actor.agencyId, Date.now())
+    const rateCheck = rateLimiter.check(access.agencyId, Date.now())
     if (!rateCheck.allowed) {
       return NextResponse.json(
         {
@@ -118,10 +122,16 @@ export async function POST(
       )
     }
 
-    // 3. Rule-based router: check for restricted requests and out of scope
+    // 3. Rule-based router and LLM router (A.2, B.3 Layer 1 & 2)
     if (!isRetry) {
       const routeResult = routeByRules(cleanText)
       if (routeResult?.intent === 'restricted_request') {
+        console.info('[AIT Router]', {
+          intent: 'restricted_request',
+          confidence: 1.0,
+          source: 'rules',
+          action_path: 'refusal_restricted',
+        })
         const tpl = refusalTemplate('restricted')
         const turn = {
           turn_type: 'refusal' as const,
@@ -146,6 +156,12 @@ export async function POST(
       }
 
       if (routeResult?.intent === 'out_of_scope') {
+        console.info('[AIT Router]', {
+          intent: 'out_of_scope',
+          confidence: 1.0,
+          source: 'rules',
+          action_path: 'refusal_out_of_scope',
+        })
         const tpl = refusalTemplate('out_of_scope')
         const turn = {
           turn_type: 'refusal' as const,
@@ -167,6 +183,197 @@ export async function POST(
           },
           { status: 200 }
         )
+      }
+
+      // LLM router fallback when rule-based router returns null
+      const llmClassification = await classifyIntent(cleanText, {
+        hasProfile: false,
+        hasResults: false,
+      })
+
+      if (llmClassification) {
+        if (llmClassification.intent === 'restricted_request') {
+          console.info('[AIT Router]', {
+            intent: 'restricted_request',
+            confidence: llmClassification.confidence,
+            source: llmClassification.source,
+            action_path: 'refusal_restricted',
+          })
+          const tpl = refusalTemplate('restricted')
+          const turn = {
+            turn_type: 'refusal' as const,
+            message: tpl.message,
+            top_matches: [],
+            additional_suggestions: [],
+            comparison: null,
+            quick_replies: tpl.quick_replies.map((label) => ({ label, patch: {} })),
+            follow_up_questions: [],
+            relaxation_suggestions: [],
+            sources: [],
+            used_llm: false,
+          }
+          return NextResponse.json(
+            {
+              turn,
+              message: { id: 'refused', sender: 'Assistant', text: tpl.message, created_at: new Date().toISOString() },
+              conversational_reply: tpl.message,
+            },
+            { status: 200 }
+          )
+        }
+
+        if (llmClassification.intent === 'out_of_scope') {
+          console.info('[AIT Router]', {
+            intent: 'out_of_scope',
+            confidence: llmClassification.confidence,
+            source: llmClassification.source,
+            action_path: 'refusal_out_of_scope',
+          })
+          const tpl = refusalTemplate('out_of_scope')
+          const turn = {
+            turn_type: 'refusal' as const,
+            message: tpl.message,
+            top_matches: [],
+            additional_suggestions: [],
+            comparison: null,
+            quick_replies: tpl.quick_replies.map((label) => ({ label, patch: {} })),
+            follow_up_questions: [],
+            relaxation_suggestions: [],
+            sources: [],
+            used_llm: false,
+          }
+          return NextResponse.json(
+            {
+              turn,
+              message: { id: 'refused', sender: 'Assistant', text: tpl.message, created_at: new Date().toISOString() },
+              conversational_reply: tpl.message,
+            },
+            { status: 200 }
+          )
+        }
+
+        if (llmClassification.intent === 'unclear') {
+          console.info('[AIT Router]', {
+            intent: 'unclear',
+            confidence: llmClassification.confidence,
+            source: llmClassification.source,
+            action_path: 'clarify',
+          })
+          const clarifyMsg = 'Bạn có thể nói rõ hơn yêu cầu cho chuyến đi không?'
+          const turn = {
+            turn_type: 'clarify' as const,
+            message: clarifyMsg,
+            top_matches: [],
+            additional_suggestions: [],
+            comparison: null,
+            quick_replies: [
+              { label: 'Đi trong ngày', patch: {} },
+              { label: 'Workshop làm gốm', patch: {} },
+            ],
+            follow_up_questions: [],
+            relaxation_suggestions: [],
+            sources: [],
+            used_llm: false,
+          }
+          return NextResponse.json(
+            {
+              turn,
+              message: { id: 'clarify', sender: 'Assistant', text: clarifyMsg, created_at: new Date().toISOString() },
+              conversational_reply: clarifyMsg,
+            },
+            { status: 200 }
+          )
+        }
+
+        if (llmClassification.intent === 'explain_method') {
+          console.info('[AIT Router]', {
+            intent: 'explain_method',
+            confidence: llmClassification.confidence,
+            source: llmClassification.source,
+            action_path: 'explain_method',
+          })
+          const docPath = path.resolve(process.cwd(), 'docs/ait/method.md')
+          let message = 'Tài liệu phương pháp tính điểm và ghép nối đang được cập nhật.'
+          if (fs.existsSync(docPath)) {
+            try {
+              message = fs.readFileSync(docPath, 'utf8').slice(0, 500)
+            } catch {
+              // fallback
+            }
+          }
+          const turn = {
+            turn_type: 'answer' as const,
+            message,
+            top_matches: [],
+            additional_suggestions: [],
+            comparison: null,
+            quick_replies: [],
+            follow_up_questions: [],
+            relaxation_suggestions: [],
+            sources: [{ type: 'method_doc', ref: 'docs/ait/method.md' }],
+            used_llm: false,
+          }
+          return NextResponse.json(
+            {
+              turn,
+              message: { id: 'answer_method', sender: 'Assistant', text: message, created_at: new Date().toISOString() },
+              conversational_reply: message,
+            },
+            { status: 200 }
+          )
+        }
+
+        if (llmClassification.intent === 'system_info') {
+          console.info('[AIT Router]', {
+            intent: 'system_info',
+            confidence: llmClassification.confidence,
+            source: llmClassification.source,
+            action_path: 'system_info',
+          })
+          const docPath = path.resolve(process.cwd(), 'docs/ait/about.md')
+          let message = 'Thông tin giới thiệu nền tảng đang được cập nhật.'
+          if (fs.existsSync(docPath)) {
+            try {
+              message = fs.readFileSync(docPath, 'utf8').slice(0, 500)
+            } catch {
+              // fallback
+            }
+          }
+          const turn = {
+            turn_type: 'answer' as const,
+            message,
+            top_matches: [],
+            additional_suggestions: [],
+            comparison: null,
+            quick_replies: [],
+            follow_up_questions: [],
+            relaxation_suggestions: [],
+            sources: [{ type: 'system_doc', ref: 'docs/ait/about.md' }],
+            used_llm: false,
+          }
+          return NextResponse.json(
+            {
+              turn,
+              message: { id: 'answer_system', sender: 'Assistant', text: message, created_at: new Date().toISOString() },
+              conversational_reply: message,
+            },
+            { status: 200 }
+          )
+        }
+
+        console.info('[AIT Router]', {
+          intent: llmClassification.intent,
+          confidence: llmClassification.confidence,
+          source: llmClassification.source,
+          action_path: 'extraction_pipeline',
+        })
+      } else {
+        console.info('[AIT Router]', {
+          intent: 'fallback',
+          confidence: 0,
+          source: 'fallback',
+          action_path: 'extraction_pipeline',
+        })
       }
     }
 
@@ -288,7 +495,7 @@ export async function POST(
       }
     }
 
-    if (!isTest && access.actor.agencyId) {
+    if (!isTest) {
       try {
         const craftsFound: string[] = []
         const textToAnalyze = `${userText} ${replyText}`.toLowerCase()
@@ -300,7 +507,7 @@ export async function POST(
         }
         if (craftsFound.length > 0 || tourPreferenceProfile) {
           await saveAgencyPreferenceProfile({
-            agencyId: access.actor.agencyId,
+            agencyId: access.agencyId,
             sessionId: params.id,
             tourPreferenceProfile: tourPreferenceProfile || { matching_attributes: craftsFound },
           })

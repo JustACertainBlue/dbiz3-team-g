@@ -99,6 +99,32 @@ export const matchCardSchema = z
   })
   .strip();
 
+export const AIT_INTENTS = [
+  'provide_requirements',
+  'refine_results',
+  'catalog_query',
+  'compare_items',
+  'explain_method',
+  'system_info',
+  'verification_info',
+  'result_followup',
+  'smalltalk',
+  'out_of_scope',
+  'restricted_request',
+  'unclear',
+] as const;
+
+export type AitIntent = (typeof AIT_INTENTS)[number];
+
+export const intentClassificationSchema = z
+  .object({
+    intent: z.enum(AIT_INTENTS),
+    confidence: z.number().min(0).max(1),
+  })
+  .strip();
+
+export type IntentClassification = z.infer<typeof intentClassificationSchema>;
+
 export const turnSchema = z
   .object({
     turn_type: z.enum([

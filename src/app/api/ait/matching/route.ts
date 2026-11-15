@@ -96,7 +96,7 @@ export async function POST(request: Request) {
         c.provider_status === 'Verified' || c.provider_verification_status === 'Approved'
           ? ('verified' as const)
           : ('unverified' as const),
-      published: c.has_published_profile_version ?? (c.archived_at == null),
+      published: c.has_published_profile_version,
       max_participants: c.max_participants ?? null,
       price_per_person: c.price_per_person ?? null,
       notice_period_hours: c.notice_period_hours ?? null,
@@ -144,14 +144,14 @@ export async function POST(request: Request) {
     }
 
     // 4. Score + rank surviving candidates (FR-007) and apply null penalties
-    const ranked = applyScoreThreshold(await rankCandidates(eligible, rawProfile))
+    const ranked = await rankCandidates(eligible, rawProfile)
     for (const c of ranked) {
       const flags = flagsMap.get(c.experience_id) || []
       c.flags = flags
       c.match_score = applyNullPenalty(c.match_score, flags)
     }
 
-    // 5. Select tiers (top, additional, dropped)
+    // 5. Select tiers: selectTiers is the single place for drop < 40 and top/additional tiering
     const { top, additional } = selectTiers(
       ranked.map(c => ({ id: c.experience_id, score: c.match_score, flags: c.flags }))
     )

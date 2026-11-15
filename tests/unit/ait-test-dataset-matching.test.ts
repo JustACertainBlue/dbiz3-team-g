@@ -12,6 +12,13 @@ import { applyHardConstraints } from '@/lib/matching/constraint-engine'
 import { rankCandidates } from '@/lib/matching/scoring-engine'
 import { buildRecommendations } from '@/lib/matching/recommendation-service'
 
+function priceOf(candidate: { price_per_person?: number }): number {
+  const price = candidate.price_per_person
+  expect(price).toEqual(expect.any(Number))
+  if (typeof price !== 'number') throw new Error('Expected ranked candidate to have a numeric price')
+  return price
+}
+
 describe('AI Matching with Test Dataset (villages_providers_activities_merged.json)', () => {
   it('identifies test prompt correctly', () => {
     expect(isTestPrompt('test')).toBe(true)
@@ -137,7 +144,7 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
 
     expect(ranked.length).toBeGreaterThan(1)
     for (let i = 0; i < ranked.length - 1; i++) {
-      expect(ranked[i].price_per_person).toBeLessThanOrEqual(ranked[i + 1].price_per_person)
+      expect(priceOf(ranked[i])).toBeLessThanOrEqual(priceOf(ranked[i + 1]))
     }
   })
 
@@ -155,7 +162,7 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
 
     expect(ranked.length).toBeGreaterThan(1)
     for (let i = 0; i < ranked.length - 1; i++) {
-      expect(ranked[i].price_per_person).toBeGreaterThanOrEqual(ranked[i + 1].price_per_person)
+      expect(priceOf(ranked[i])).toBeGreaterThanOrEqual(priceOf(ranked[i + 1]))
     }
   })
 })

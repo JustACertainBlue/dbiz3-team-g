@@ -29,3 +29,5 @@ CLAUDE.local.md
 
 # Local demo database (generated from committed synthetic seed data)
 .demo-data/
+
+ait-scorecard.json

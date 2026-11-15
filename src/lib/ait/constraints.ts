@@ -74,7 +74,8 @@ export function applyHardFilters({
     if (rangeStartMs !== null && rangeEndMs !== null) {
       const hasConflict = bookings.some((b: any) => {
         if (b.experience_id !== candidate.id) return false;
-        if (b.status === 'cancelled') return false;
+        const status = String(b.status || '').trim().toLowerCase();
+        if (status === 'cancelled') return false;
         const bStart = Date.parse(b.start_at);
         const bEnd = Date.parse(b.end_at);
         return bStart < rangeEndMs! && bEnd > rangeStartMs!;

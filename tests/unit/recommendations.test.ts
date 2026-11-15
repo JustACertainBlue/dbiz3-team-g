@@ -109,11 +109,11 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
   })
 })
 
-describe('T041 | 60/100 threshold (BR-020, #30)', () => {
-  it('drops candidates scoring below 60', async () => {
-    const ranked = [72, 59.9, 40].map((score, i) => ({ experience_id: `e${i}`, experience_name: `E${i}`, rank: i + 1, match_score: score, experience_fit_score: score }))
+describe('T041 | 40/100 threshold (BR-020, #30, F.2)', () => {
+  it('drops candidates scoring below 40', async () => {
+    const ranked = [72, 40, 39.9].map((score, i) => ({ experience_id: `e${i}`, experience_name: `E${i}`, rank: i + 1, match_score: score, experience_fit_score: score }))
     const result = await buildRecommendations(ranked)
-    expect(result.top_matches.map(m => m.match_score)).toEqual([72])
+    expect(result.top_matches.map(m => m.match_score)).toEqual([72, 40])
     expect(result.additional_suggestions).toEqual([])
   })
 })
@@ -122,16 +122,16 @@ describe('T043 | Useful relaxation suggestions (BR-011, FR-012, #23, #24)', () =
   const budget = (r: { relaxation_suggestions: { criterion: string; suggested_value: unknown }[] }) =>
     r.relaxation_suggestions.find(s => s.criterion === 'Budget')
 
-  it('#23: Budget = lowest price among non-budget-feasible candidates scoring ≥ 60', async () => {
+  it('#23: Budget = lowest price among non-budget-feasible candidates scoring ≥ 40', async () => {
     const result = await buildRelaxationSuggestions(
-      [{ price_per_person: 175000, match_score: 89.4 }, { price_per_person: 150000, match_score: 74.3 }, { price_per_person: 100000, match_score: 55 }],
+      [{ price_per_person: 175000, match_score: 89.4 }, { price_per_person: 150000, match_score: 74.3 }, { price_per_person: 100000, match_score: 35 }],
       { group_size: 10, max_budget_per_person: 20000 },
     )
     expect(budget(result)?.suggested_value).toBe(150000)
   })
 
-  it('#23 + #30: no Budget suggestion when no candidate would reach 60', async () => {
-    const result = await buildRelaxationSuggestions([{ price_per_person: 100000, match_score: 55 }], { group_size: 10, max_budget_per_person: 20000 })
+  it('#23 + #30: no Budget suggestion when no candidate would reach 40', async () => {
+    const result = await buildRelaxationSuggestions([{ price_per_person: 100000, match_score: 35 }], { group_size: 10, max_budget_per_person: 20000 })
     expect(budget(result)).toBeUndefined()
   })
 

@@ -1,4 +1,5 @@
 import type { MatchFactors } from '@/lib/matching/scoring-engine'
+import { selectTiers } from '@/lib/ait/scoring'
 
 export interface RecommendationItem {
   experience_id: string
@@ -30,8 +31,8 @@ export interface RelaxationOutput {
   conversation_prompt: string
 }
 
-// BR-020, #30: candidates scoring below the no-match threshold are never shown.
-export const SCORE_THRESHOLD = 60
+// BR-020, #30, F.2: candidates scoring below 40 are dropped; selectTiers partitions top and additional.
+export const SCORE_THRESHOLD = 40
 
 export function applyScoreThreshold<T extends { match_score?: number }>(candidates: T[]): T[] {
   return candidates.filter(candidate => candidate.match_score === undefined || candidate.match_score >= SCORE_THRESHOLD)
@@ -70,9 +71,13 @@ export function explain(item: any, _score: number): string {
 export async function buildRecommendations(
   rankedCandidates: any[]
 ): Promise<RecommendationOutput> {
-  const shown = applyScoreThreshold(rankedCandidates)
-  const topMatchesRaw = shown.slice(0, 5)
-  const additionalRaw = shown.slice(5, 10)
+  const scoredItems = rankedCandidates.map(c => ({
+    id: c.experience_id,
+    score: c.match_score ?? 85,
+    flags: c.flags || [],
+  }))
+  const { top, additional } = selectTiers(scoredItems)
+  const candMap = new Map(rankedCandidates.map(c => [c.experience_id, c]))
 
   const formatItem = (item: any, index: number, offset: number): RecommendationItem => {
     const expName = item.experience_name || item.name || `Experience ${item.experience_id}`
@@ -95,8 +100,8 @@ export async function buildRecommendations(
     }
   }
 
-  const top_matches = topMatchesRaw.map((item, idx) => formatItem(item, idx, 0))
-  const additional_suggestions = additionalRaw.map((item, idx) => formatItem(item, idx, 5))
+  const top_matches = top.map((id, idx) => formatItem(candMap.get(id), idx, 0))
+  const additional_suggestions = additional.map((id, idx) => formatItem(candMap.get(id), idx, top.length))
 
   return {
     top_matches,
@@ -138,7 +143,7 @@ export async function buildRelaxationSuggestions(
   const groupSize = criteria?.group_size
   const largest = options.largest_group_size
   let conversation_prompt =
-    'No experiences currently meet all criteria above 60/100. You can relax your budget or travel distance, or adjust group size to see more artisan options.'
+    'Hiện chưa có trải nghiệm nào phù hợp với toàn bộ yêu cầu của đoàn. Bạn có thể nới lỏng ngân sách, mở rộng khoảng cách hoặc điều chỉnh số lượng khách để xem thêm các lựa chọn làng nghề.'
   if (groupSize !== undefined && largest !== undefined && groupSize > largest) {
     conversation_prompt = `No Experience can take a group of ${groupSize} pax: the largest group an eligible Experience accepts is ${largest} pax. You can split the group or reduce the number of guests.`
   } else if (suggestions[0]?.criterion === 'Budget' && cheapest !== undefined) {

@@ -81,9 +81,9 @@ describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8
     const twoHundred = await turn(id, 'Change to 200 pax')
     expect(twoHundred.matching?.top_matches).toEqual([])
 
-    // T041 (route level): no recommendation below the 60/100 threshold (BR-020, #30).
+    // T041 (route level): no recommendation below the 40/100 threshold (BR-020, #30, F.2).
     for (const result of [ten, fifteen, thirteen]) {
-      for (const match of result.matching!.top_matches) expect(match.match_score).toBeGreaterThanOrEqual(60)
+      for (const match of result.matching!.top_matches) expect(match.match_score).toBeGreaterThanOrEqual(40)
     }
 
     const fresh = await openSession()

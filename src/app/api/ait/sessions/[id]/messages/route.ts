@@ -19,6 +19,7 @@ import {
 import { saveAgencyPreferenceProfile } from '@/lib/preferences/preference-service'
 import {
   isTestConversation,
+  getTestCandidates,
   resolveTestVillageCards,
   resolveTestProviderCards,
   resolveTestActivityCards,
@@ -798,7 +799,7 @@ export async function POST(
       // Execute matching call internally
       try {
         const [experiences, bookings, operatingHours, villages] = await Promise.all([
-          loadExperiences(),
+          isTest ? getTestCandidates(tourPreferenceProfile) : loadExperiences(),
           loadBookings(),
           loadOperatingHours(),
           loadVillages(),

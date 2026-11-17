@@ -186,6 +186,31 @@ describe('AIT geography pipeline through the real extractor', () => {
   })
 
   it.each([
+    [10, ['Bát Tràng', 'Kim Lan', 'Vạn Phúc']],
+    [9, ['Bát Tràng', 'Kim Lan']],
+  ] as const)('includes fixture experiences inside the %s km radius', async (radiusKm, expectedNames) => {
+    installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, `Tìm trải nghiệm dưới ${radiusKm} km`, true)
+    const matches = [
+      ...(response.json.turn.top_matches ?? []),
+      ...(response.json.turn.additional_suggestions ?? []),
+    ] as Json[]
+    const villageNames = matches.map(card => String(card.village_name))
+
+    expect(response.json.extraction.usedLlm).toBe(true)
+    for (const name of expectedNames) {
+      expect(villageNames.some(villageName => villageName.includes(name))).toBe(true)
+    }
+    const kimLan = matches.find(card => String(card.village_name).includes('Kim Lan'))
+    expect(kimLan?.distance_km).toBeCloseTo(8.850426, 5)
+    if (radiusKm === 9) {
+      expect(villageNames.some(villageName => villageName.includes('Vạn Phúc'))).toBe(false)
+    }
+  })
+
+  it.each([
     ['seed', false],
     ['fixture', true],
   ] as const)('uses verified villages only when primary facilities are missing (%s)', async (_source, isTest) => {

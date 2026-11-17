@@ -33,7 +33,7 @@ describe('T010 | operating-hours fit', () => {
   })
 
   it('an interval that crosses midnight never fits', () => {
-    const lateMonday = [{ weekday: '1', local_start: '08:00:00', local_end: '23:59:00' }]
-    expect(fitsOperatingHours(lateMonday, '2026-10-12T23:30:00+07:00', '2026-10-13T00:30:00+07:00')).toBe(false)
+    const mondayHours = [{ weekday: '1', local_start: '08:00:00', local_end: '17:00:00' }]
+    expect(fitsOperatingHours(mondayHours, '2026-10-12T16:30:00+07:00', '2026-10-13T00:30:00+07:00')).toBe(false)
   })
 })

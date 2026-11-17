@@ -3,7 +3,6 @@
 import csv
 import json
 import re
-import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -41,10 +40,6 @@ chats = {row["chat_session_id"]: row for row in rows("chat_sessions")}
 history = defaultdict(list)
 
 hour_rows = rows("provider_operating_hours")
-preserved_hour_ids = {
-    str(uuid.uuid5(uuid.UUID("b6aa71de-8e57-4fa3-9a40-8f8f46e50bb7"), f"hours:{index}"))
-    for index in range(len(providers))
-}
 allowed_hour_starts = {"07:00:00", "07:30:00", "08:00:00"}
 allowed_hour_ends = {"17:00:00", "17:30:00"}
 provider_weekdays = defaultdict(set)
@@ -61,9 +56,8 @@ for hour in hour_rows:
     assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", hour["local_start"]), hour
     assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", hour["local_end"]), hour
     assert hour["local_start"] < hour["local_end"], hour
-    if hour["operating_hour_id"] not in preserved_hour_ids:
-        assert hour["local_start"] in allowed_hour_starts, hour
-        assert hour["local_end"] in allowed_hour_ends, hour
+    assert hour["local_start"] in allowed_hour_starts, hour
+    assert hour["local_end"] in allowed_hour_ends, hour
     hour_pairs.add(pair)
     hour_ids.add(hour["operating_hour_id"])
     provider_weekdays[provider_id].add(weekday)

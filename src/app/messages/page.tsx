@@ -14,6 +14,7 @@ import { hanoiClock } from '@/lib/time/hanoi-time'
 import { attachmentLine, chatActions, chatStatusLine, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
 import { usePolling } from '@/lib/client/use-polling'
 import { CATALOG_ACTIVITIES } from '@/lib/matching/card-resolver'
+import { formatVillageName } from '@/lib/village-name'
 import './chat-v9.css'
 
 // Screens COM048 (Tour Agency) and COM065 (Local Provider): F-CHAT-01..05 on /api/iac/chats (spec-IAC FR-001..005);
@@ -308,7 +309,7 @@ function MessagesContent() {
                         {activity.name}
                       </h4>
                       <p style={{ margin: '0 0 6px 0', fontSize: '12.5px', opacity: 0.9 }}>
-                        🏛️ Làng {activity.village_name} · {activity.provider_name}
+                        🏛️ {formatVillageName(activity.village_name)} · {activity.provider_name}
                       </p>
                       <div style={{ display: 'flex', gap: '10px', fontSize: '12px', opacity: 0.85, marginBottom: '8px' }}>
                         <span>⏱️ {activity.duration_minutes} phút</span>
@@ -329,9 +330,9 @@ function MessagesContent() {
                         <div>
                           <span style={{ fontSize: '10.5px', opacity: 0.75, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Giá B2B</span>
                           <span style={{ fontSize: '14px', fontWeight: 700, color: mine ? '#FEF08A' : '#B45309' }}>
-                            {activity.price_per_person.toLocaleString('vi-VN')} đ
+                            {activity.price_per_person == null ? 'Chưa có dữ liệu giá' : `${activity.price_per_person.toLocaleString('vi-VN')} đ`}
                           </span>
-                          <span style={{ fontSize: '11px', opacity: 0.75 }}> / khách</span>
+                          {activity.price_per_person != null && <span style={{ fontSize: '11px', opacity: 0.75 }}> / khách</span>}
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <Link
@@ -370,7 +371,7 @@ function MessagesContent() {
                               border: mine ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid #CBD5E1',
                             }}
                           >
-                            Làng {activity.village_name}
+                            {formatVillageName(activity.village_name)}
                           </Link>
                         </div>
                       </div>

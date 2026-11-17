@@ -7,6 +7,7 @@ import { dashboardTitle, metricLabel, statusBreakdown, trendLine, trendTitle } f
 describe('dashboardTitle (SR-003 scope)', () => {
   it('names the village when the scope is one village (UBND, or HDT with a village filter)', () => {
     expect(dashboardTitle('Bát Tràng')).toBe('Dashboard làng Bát Tràng')
+    expect(dashboardTitle('Làng gốm Bát Tràng')).toBe('Dashboard Làng gốm Bát Tràng')
   })
   it('is city-wide when no village is selected (HDT)', () => {
     expect(dashboardTitle(null)).toBe('Dashboard toàn thành phố')

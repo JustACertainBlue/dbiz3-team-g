@@ -2,6 +2,8 @@
  * Card Resolver for Hanoi Artisan Bridge AI Matching
  * Provides structured Village Cards and Provider Cards with verified media and metadata.
  */
+import { formatVillageName } from '@/lib/village-name'
+import { villageStartingPrices } from '@/lib/village-starting-price'
 
 export interface VillageCardData {
   village_id: string
@@ -10,13 +12,14 @@ export interface VillageCardData {
   district: string
   image_url: string
   description: string
+  starting_price?: number | null
 }
 
 export interface ProviderActivity {
   experience_id: string
   name: string
-  price?: number
-  duration_minutes?: number
+  price?: number | null
+  duration_minutes?: number | null
 }
 
 export interface ProviderCardData {
@@ -43,14 +46,32 @@ export interface ActivityCardData {
   name: string
   description: string
   category: string
-  duration_minutes: number
-  price_per_person: number
-  max_participants: number
+  duration_minutes: number | null
+  price_per_person: number | null
+  max_participants: number | null
   image_url: string
   is_verified?: boolean
 }
 
 export type CardScope = 'village' | 'provider' | 'activity' | 'all' | 'none'
+
+const withVillageName = <T extends { village_name: string }>(item: T): T => ({
+  ...item,
+  village_name: formatVillageName(item.village_name),
+})
+
+function compareActivityPrice(a: ActivityCardData, b: ActivityCardData, ascending: boolean): number {
+  if (a.price_per_person == null) return b.price_per_person == null ? 0 : 1
+  if (b.price_per_person == null) return -1
+  return ascending
+    ? a.price_per_person - b.price_per_person
+    : b.price_per_person - a.price_per_person
+}
+
+const withVillageCardName = (item: VillageCardData): VillageCardData => ({
+  ...item,
+  name: formatVillageName(item.name),
+})
 
 /**
  * Detects the specific scope of cards the user wants based on user input.
@@ -110,9 +131,9 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     name: 'Nặn gốm thủ công Bát Tràng',
     description: 'Trải nghiệm vuốt gốm trên bàn xoay, trang trí men màu và nung sản phẩm thủ công cùng nghệ nhân.',
     category: 'Workshop/Hands-on',
-    duration_minutes: 60,
+    duration_minutes: 105,
     price_per_person: 150000,
-    max_participants: 12,
+    max_participants: 30,
     image_url: CRAFT_MEDIA.ceramics,
     is_verified: true,
   },
@@ -125,9 +146,9 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     name: 'Dệt lụa tơ tằm truyền thống',
     description: 'Khám phá quy trình ươm tơ dệt cửi, thực hành dệt lụa vân truyền thống trên khung dệt Jacquard.',
     category: 'Workshop/Hands-on',
-    duration_minutes: 75,
+    duration_minutes: 105,
     price_per_person: 175000,
-    max_participants: 13,
+    max_participants: 26,
     image_url: CRAFT_MEDIA.silk,
     is_verified: true,
   },
@@ -140,9 +161,9 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     name: 'Tạc tượng dân gian & Điêu khắc gỗ',
     description: 'Tìm hiểu nghệ thuật chạm khắc hoa văn cổ, thực hành đục đẽo và tạo hình sản phẩm gỗ lưu niệm.',
     category: 'Workshop/Hands-on',
-    duration_minutes: 135,
+    duration_minutes: 105,
     price_per_person: 275000,
-    max_participants: 17,
+    max_participants: 29,
     image_url: CRAFT_MEDIA.woodcarving,
     is_verified: false,
   },
@@ -155,9 +176,9 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     name: 'Điều khiển rối nước thủy đình',
     description: 'Trải nghiệm lội buồng trò, tự tay điều khiển con rối nước qua sào dây và tô vẽ rối gỗ truyền thống.',
     category: 'Cultural Show',
-    duration_minutes: 150,
+    duration_minutes: 75,
     price_per_person: 300000,
-    max_participants: 18,
+    max_participants: 45,
     image_url: CRAFT_MEDIA.waterpuppets,
     is_verified: false,
   },
@@ -170,9 +191,9 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     name: 'Đan mây tre thủ công mỹ nghệ',
     description: 'Thực hành chẻ nan, vót nan chuốt tơ mây và tự tay đan các vật phẩm mây tre lưu niệm mang về.',
     category: 'Workshop/Hands-on',
-    duration_minutes: 90,
+    duration_minutes: 165,
     price_per_person: 200000,
-    max_participants: 14,
+    max_participants: 15,
     image_url: CRAFT_MEDIA.bamboo,
     is_verified: true,
   },
@@ -185,9 +206,9 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     name: 'Làm nón lá truyền thống',
     description: 'Trải nghiệm là phẳng lá lụa, xếp nan tre và tự khâu nón lá 16 vành truyền thống cùng nghệ nhân.',
     category: 'Workshop/Hands-on',
-    duration_minutes: 105,
+    duration_minutes: 150,
     price_per_person: 225000,
-    max_participants: 15,
+    max_participants: 29,
     image_url: CRAFT_MEDIA.conicalhats,
     is_verified: true,
   },
@@ -200,7 +221,7 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     name: 'Thêu tay họa tiết truyền thống',
     description: 'Workshop phối chỉ tơ tằm, căng khung thêu và thực hành các đường kim thêu hoa văn tinh xảo.',
     category: 'Workshop/Hands-on',
-    duration_minutes: 120,
+    duration_minutes: 165,
     price_per_person: 250000,
     max_participants: 16,
     image_url: CRAFT_MEDIA.embroidery,
@@ -215,7 +236,7 @@ export const CATALOG_ACTIVITIES: ActivityCardData[] = [
     name: 'Vẽ & Mài tranh sơn mài mỹ nghệ',
     description: 'Trải nghiệm gắn vỏ trứng, rây bột bạc, quét sơn then và mài nước tạo tác phẩm sơn mài độc bản.',
     category: 'Workshop/Hands-on',
-    duration_minutes: 165,
+    duration_minutes: 135,
     price_per_person: 325000,
     max_participants: 12,
     image_url: CRAFT_MEDIA.lacquer,
@@ -350,7 +371,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
         experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69',
         name: 'Nặn gốm thủ công',
         price: 150000,
-        duration_minutes: 60,
+        duration_minutes: 105,
       },
     ],
     image_url: CRAFT_MEDIA.ceramics,
@@ -371,7 +392,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
         experience_id: 'c8281688-2dc1-5cb1-9ff6-139df04ba562',
         name: 'Dệt lụa truyền thống',
         price: 175000,
-        duration_minutes: 75,
+        duration_minutes: 105,
       },
     ],
     image_url: CRAFT_MEDIA.silk,
@@ -392,7 +413,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
         experience_id: '67a2cbab-850c-5f69-b496-59f2e9a5f594',
         name: 'Tạc tượng dân gian & Chạm khắc hoa văn gỗ',
         price: 275000,
-        duration_minutes: 135,
+        duration_minutes: 105,
       },
     ],
     image_url: CRAFT_MEDIA.woodcarving,
@@ -413,7 +434,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
         experience_id: '8e485337-5a2c-5703-9fbf-5e0c6492cd87',
         name: 'Điều khiển rối nước',
         price: 300000,
-        duration_minutes: 150,
+        duration_minutes: 75,
       },
     ],
     image_url: CRAFT_MEDIA.waterpuppets,
@@ -434,7 +455,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
         experience_id: 'd95bc77b-5e7b-53a6-a8af-5ccaabb485d8',
         name: 'Đan mây tre',
         price: 200000,
-        duration_minutes: 90,
+        duration_minutes: 165,
       },
     ],
     image_url: CRAFT_MEDIA.bamboo,
@@ -455,7 +476,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
         experience_id: 'b70bd0fa-6a81-5aec-9ff6-5303210b2fad',
         name: 'Làm nón lá',
         price: 225000,
-        duration_minutes: 105,
+        duration_minutes: 150,
       },
     ],
     image_url: CRAFT_MEDIA.conicalhats,
@@ -476,7 +497,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
         experience_id: 'bad51dc8-1529-506a-8302-cb0b1d95954c',
         name: 'Thêu họa tiết',
         price: 250000,
-        duration_minutes: 120,
+        duration_minutes: 165,
       },
     ],
     image_url: CRAFT_MEDIA.embroidery,
@@ -497,7 +518,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
         experience_id: '800b5192-03c7-5953-849b-32a321e12a47',
         name: 'Vẽ sơn mài',
         price: 325000,
-        duration_minutes: 165,
+        duration_minutes: 135,
       },
     ],
     image_url: CRAFT_MEDIA.lacquer,
@@ -512,6 +533,11 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
 export function resolveVillageCards(text: string): VillageCardData[] {
   const lower = text.toLowerCase()
   const matched = new Map<string, VillageCardData>()
+  const startingPrices = villageStartingPrices(CATALOG_ACTIVITIES)
+  const withStartingPrice = (village: VillageCardData): VillageCardData => ({
+    ...village,
+    starting_price: startingPrices.get(village.village_id) ?? null,
+  })
 
   const check = (keywords: string[], villageId: string) => {
     if (keywords.some(k => lower.includes(k))) {
@@ -533,13 +559,13 @@ export function resolveVillageCards(text: string): VillageCardData[] {
     const isGeneral = /(?:làng nghề|danh sách làng|gợi ý làng|tìm làng|các làng|gần sóc sơn|gần trung tâm|thủ công)/i.test(lower)
     if (isGeneral) {
       if (lower.includes('sóc sơn')) {
-        return CATALOG_VILLAGES.filter(v => ['3527fadf-18ef-58d0-95c6-dc3729650f6a', '20896522-6235-5699-aeaf-f48b8150d895', '85ec7215-3ec1-5792-afcc-a72d89a3a214'].includes(v.village_id))
+        return CATALOG_VILLAGES.filter(v => ['3527fadf-18ef-58d0-95c6-dc3729650f6a', '20896522-6235-5699-aeaf-f48b8150d895', '85ec7215-3ec1-5792-afcc-a72d89a3a214'].includes(v.village_id)).map(withStartingPrice).map(withVillageCardName)
       }
-      return CATALOG_VILLAGES.slice(0, 4)
+      return CATALOG_VILLAGES.slice(0, 4).map(withStartingPrice).map(withVillageCardName)
     }
   }
 
-  return Array.from(matched.values())
+  return Array.from(matched.values()).map(withStartingPrice).map(withVillageCardName)
 }
 
 /**
@@ -628,7 +654,7 @@ export function resolveProviderCards(text: string): ProviderCardData[] {
       if (budgetConstraint) {
         pool = pool.filter(p => p.activities.some(act => (act.price ?? 0) <= budgetConstraint.maxPrice))
       }
-      return pool.slice(0, 4)
+      return pool.slice(0, 4).map(withVillageName)
     }
   }
 
@@ -636,7 +662,7 @@ export function resolveProviderCards(text: string): ProviderCardData[] {
   if (budgetConstraint) {
     finalProviders = finalProviders.filter(p => p.activities.some(act => (act.price ?? 0) <= budgetConstraint.maxPrice))
   }
-  return finalProviders
+  return finalProviders.map(withVillageName)
 }
 
 /**
@@ -669,21 +695,21 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
   if (isSightseeingOnly) {
     let pool = CATALOG_ACTIVITIES.filter(a => a.category === 'Sightseeing' && a.is_verified)
     if (budgetConstraint) {
-      pool = pool.filter(a => a.price_per_person <= budgetConstraint.maxPrice)
+      pool = pool.filter(a => a.price_per_person != null && a.price_per_person <= budgetConstraint.maxPrice)
     }
     if (priceSort === 'lowest') {
-      pool.sort((a, b) => a.price_per_person - b.price_per_person)
+      pool.sort((a, b) => compareActivityPrice(a, b, true))
     } else if (priceSort === 'highest') {
-      pool.sort((a, b) => b.price_per_person - a.price_per_person)
+      pool.sort((a, b) => compareActivityPrice(a, b, false))
     }
-    return pool.slice(0, 4)
+    return pool.slice(0, 4).map(withVillageName)
   }
 
   const check = (keywords: string[], expId: string) => {
     if (keywords.some(k => lower.includes(k))) {
       const act = CATALOG_ACTIVITIES.find(a => a.experience_id === expId)
       if (act) {
-        if (budgetConstraint && act.price_per_person > budgetConstraint.maxPrice) {
+        if (budgetConstraint && (act.price_per_person == null || act.price_per_person > budgetConstraint.maxPrice)) {
           return
         }
         matched.set(act.experience_id, act)
@@ -712,25 +738,25 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
         if (sightPool.length > 0) pool = sightPool
       }
       if (budgetConstraint) {
-        pool = pool.filter(a => a.price_per_person <= budgetConstraint.maxPrice)
+        pool = pool.filter(a => a.price_per_person != null && a.price_per_person <= budgetConstraint.maxPrice)
       }
       if (priceSort === 'lowest') {
-        pool.sort((a, b) => a.price_per_person - b.price_per_person)
+        pool.sort((a, b) => compareActivityPrice(a, b, true))
       } else if (priceSort === 'highest') {
-        pool.sort((a, b) => b.price_per_person - a.price_per_person)
+        pool.sort((a, b) => compareActivityPrice(a, b, false))
       }
-      return pool.slice(0, 4)
+      return pool.slice(0, 4).map(withVillageName)
     }
   }
 
   let finalCards = Array.from(matched.values())
   if (budgetConstraint) {
-    finalCards = finalCards.filter(a => a.price_per_person <= budgetConstraint.maxPrice)
+    finalCards = finalCards.filter(a => a.price_per_person != null && a.price_per_person <= budgetConstraint.maxPrice)
   }
   if (priceSort === 'lowest') {
-    finalCards.sort((a, b) => a.price_per_person - b.price_per_person)
+    finalCards.sort((a, b) => compareActivityPrice(a, b, true))
   } else if (priceSort === 'highest') {
-    finalCards.sort((a, b) => b.price_per_person - a.price_per_person)
+    finalCards.sort((a, b) => compareActivityPrice(a, b, false))
   }
-  return finalCards
+  return finalCards.map(withVillageName)
 }

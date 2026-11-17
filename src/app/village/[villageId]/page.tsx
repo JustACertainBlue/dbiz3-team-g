@@ -4,10 +4,13 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import MediaImage from '@/app/components/MediaImage'
 import { refreshDemoSession, type CurrentUserRole } from '@/lib/prf/client-session'
+import { formatVillageName } from '@/lib/village-name'
+import { formatExperienceCapacity, formatExperienceDuration } from '@/lib/experience-facts'
 
 interface VillageResult {
   village: { village_id: string; source_code: string; name: string; district: string; city_province: string; is_active: boolean }
-  featured_experiences?:Array<{experience_id:string;name:string;category:string;duration_minutes:number;max_participants:number;provider_name:string;image:string|null;price_per_person?:number}>
+  starting_price: number | null
+  featured_experiences?:Array<{experience_id:string;name:string;category:string;duration_minutes:number|null;max_participants:number|null;provider_name:string;image:string|null;price_per_person?:number}>
   providers: Array<{ provider_id: string; business_name: string; craft_type: string; description: string; location_address: string; experience_count: number }>
 }
 
@@ -35,7 +38,7 @@ export default function VillageProfilePage({ params }: { params: { villageId: st
       <div className="prf-spec-header">
         <div>
           <span className="prf-spec-code">HỒ SƠ LÀNG NGHỀ</span>
-          <h1 className="prf-spec-title">Làng nghề {village.name}</h1>
+          <h1 className="prf-spec-title">{formatVillageName(village.name, 'Làng nghề')}</h1>
           <p className="prf-spec-subtitle">{village.district}, {village.city_province} · {village.is_active ? 'Đang hoạt động' : 'Tạm ngưng'}</p>
         </div>
         <Link href="/explore" className="prf-btn prf-btn-outline">← Khám phá</Link>
@@ -47,6 +50,13 @@ export default function VillageProfilePage({ params }: { params: { villageId: st
             <span className="prf-badge prf-badge-verified">DANH MỤC LÀNG NGHỀ ĐÃ XÁC MINH</span>
             <h2 style={{ margin: '0.75rem 0 0.4rem' }}>{village.name}</h2>
             <p style={{ margin: 0, color: '#64748b' }}>Dữ liệu danh mục do hệ thống quản lý; hồ sơ chỉ hiển thị Provider đã được xác minh.</p>
+            <p><strong>Giá chỉ từ: </strong>{role !== 'TourAgency'
+              ? 'Đăng nhập Agency để xem giá'
+              : result.starting_price == null
+                ? 'Chưa có dữ liệu giá'
+                : result.starting_price === 0
+                  ? 'Miễn phí'
+                  : `${result.starting_price.toLocaleString('vi-VN')} ₫/khách`}</p>
           </div>
           <div style={{ minWidth: 180, padding: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
             <strong>{providers.length}</strong> Provider đã xác minh<br />
@@ -77,7 +87,7 @@ export default function VillageProfilePage({ params }: { params: { villageId: st
         {item.image ? <MediaImage src={item.image} alt={item.name} /> : null}
         <h3>{item.name}</h3>
         <p style={{ margin: '0.25rem 0', color: '#64748b' }}>{item.provider_name}</p>
-        <p>{item.category} · {item.duration_minutes} phút · tối đa {item.max_participants} khách</p>
+        <p>{item.category} · {formatExperienceDuration(item.duration_minutes)} · {formatExperienceCapacity(item.max_participants)}</p>
         {item.price_per_person !== undefined && <p><strong>{item.price_per_person.toLocaleString('vi-VN')} ₫</strong>/khách</p>}
         <Link href={`/explore/experiences/${item.experience_id}`}>Xem trải nghiệm →</Link>
       </article>):<p>Chưa có trải nghiệm công khai.</p>}</div></section>

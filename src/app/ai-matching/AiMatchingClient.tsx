@@ -6,6 +6,8 @@ import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, localizeExplanation, matchResultsView, messageOutcome, noMatchView, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 import { aiMatchingView, authStateFromSessionCheck, type AuthState } from './ai-matching-auth'
+import { formatVillageName } from '@/lib/village-name'
+import { formatExperienceCapacity, formatExperienceDuration } from '@/lib/experience-facts'
 import AiMatchingSkeleton from './AiMatchingSkeleton'
 import './ai-matching.css'
 
@@ -18,9 +20,9 @@ interface ActivityCardData {
   name: string
   description: string
   category: string
-  duration_minutes: number
-  price_per_person: number
-  max_participants: number
+  duration_minutes: number | null
+  price_per_person: number | null
+  max_participants: number | null
   image_url: string
   is_verified?: boolean
 }
@@ -32,13 +34,14 @@ interface VillageCardData {
   district: string
   image_url: string
   description: string
+  starting_price?: number | null
 }
 
 interface ProviderActivity {
   experience_id: string
   name: string
-  price?: number
-  duration_minutes?: number
+  price?: number | null
+  duration_minutes?: number | null
 }
 
 interface ProviderCardData {
@@ -1123,17 +1126,17 @@ export default function AiMatchingScreen({
                                   )
                                 })()}
                                 {/* Badge nổi trên ảnh: Điểm phù hợp đã được ẩn theo yêu cầu */}
-                                <div className="rec-card-img-badges">
-                                  <span className="rec-badge-tag">{index === 0 ? 'ĐỀ XUẤT TỐT NHẤT' : 'GẮN VỚI VĂN HOÁ CAO'}</span>
-                                </div>
+                                {index === 0 && <div className="rec-card-img-badges">
+                                  <span className="rec-badge-tag">ĐỀ XUẤT TỐT NHẤT</span>
+                                </div>}
                                 <div className="rec-card-img-price">
-                                  <span className="rec-price-label-sm">GIÁ B2B</span>
+                                  <span className="rec-price-label-sm">GIÁ CHỈ TỪ</span>
                                   <span className="rec-price-value-sm">
-                                    {typeof rec.price_per_person === 'number' && rec.price_per_person > 0
-                                      ? `${rec.price_per_person.toLocaleString('vi-VN')} đ`
-                                      : rec.price_per_person === 0
+                                    {typeof rec.village_starting_price === 'number' && rec.village_starting_price > 0
+                                      ? `${rec.village_starting_price.toLocaleString('vi-VN')} đ`
+                                      : rec.village_starting_price === 0
                                         ? 'Miễn phí'
-                                        : '120.000 đ'}{' '}
+                                        : 'Chưa có dữ liệu giá'}{' '}
                                     <span style={{ fontWeight: 400, opacity: 0.8 }}>/ khách</span>
                                   </span>
                                 </div>
@@ -1144,7 +1147,7 @@ export default function AiMatchingScreen({
                                   {rec.experience_name ? cleanActivityName(rec.experience_name) : 'Trải nghiệm làng nghề'}
                                 </h3>
                                 <p className="rec-card-location">
-                                  📍 {rec.village_name ? (rec.village_name.toLowerCase().startsWith('làng') ? rec.village_name : `Làng ${rec.village_name}`) : 'Làng nghề truyền thống'} · {rec.distance_km ? `${rec.distance_km} km` : '13,2 km'} (khoảng 28 phút di chuyển)
+                                  📍 {formatVillageName(rec.village_name)} · {rec.distance_km ? `${rec.distance_km} km` : '13,2 km'} (khoảng 28 phút di chuyển)
                                 </p>
 
                                 <div className="rec-card-reason-wrap">
@@ -1206,13 +1209,13 @@ export default function AiMatchingScreen({
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="ait-action-btn ait-action-btn-secondary"
-                                  title={`Khám phá toàn bộ xưởng và hoạt động tại Làng ${rec.village_name}`}
+                                  title={`Khám phá toàn bộ xưởng và hoạt động tại ${formatVillageName(rec.village_name)}`}
                                 >
                                   <svg className="ait-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="10" r="3"></circle>
                                     <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"></path>
                                   </svg>
-                                  Làng {rec.village_name}
+                                  {formatVillageName(rec.village_name)}
                                 </Link>
 
                                 {/* 4. Lịch trống xưởng */}
@@ -1323,12 +1326,12 @@ export default function AiMatchingScreen({
                               <div className="ait-card-content">
                                 <h3 className="ait-card-title">{act.name}</h3>
                                 <div className="ait-card-sub">
-                                  <span>🏛️ Làng {act.village_name}</span>
+                                  <span>🏛️ {formatVillageName(act.village_name)}</span>
                                   <span>· {act.provider_name}</span>
                                 </div>
                                 <div className="ait-card-facts">
-                                  <span>⏱️ {act.duration_minutes} phút</span>
-                                  <span>👥 Tối đa {act.max_participants} khách</span>
+                                  <span>⏱️ {formatExperienceDuration(act.duration_minutes)}</span>
+                                  <span>👥 {formatExperienceCapacity(act.max_participants)}</span>
                                 </div>
                                 <p className="ait-card-desc">{act.description}</p>
                                 <div className="ait-card-price-row">
@@ -1338,8 +1341,8 @@ export default function AiMatchingScreen({
                                       ? `${act.price_per_person.toLocaleString('vi-VN')} đ`
                                       : act.price_per_person === 0
                                         ? 'Miễn phí'
-                                        : '120.000 đ'}{' '}
-                                    <small>/ khách</small>
+                                        : 'Chưa có dữ liệu giá'}{' '}
+                                    {act.price_per_person != null && <small>/ khách</small>}
                                   </span>
                                 </div>
                                 <div className="rec-card-actions" style={{ gap: '8px' }}>
@@ -1364,7 +1367,7 @@ export default function AiMatchingScreen({
                                     rel="noopener noreferrer"
                                     className="ait-action-btn ait-action-btn-secondary"
                                   >
-                                    Làng {act.village_name}
+                                    {formatVillageName(act.village_name)}
                                   </Link>
                                   <button
                                     type="button"
@@ -1424,7 +1427,12 @@ export default function AiMatchingScreen({
                                 <div className="ait-card-price-row" style={{ marginTop: '8px', marginBottom: '8px' }}>
                                   <span className="ait-card-price-label">Giá trải nghiệm</span>
                                   <span className="ait-card-price-val">
-                                    từ 50.000 đ <small>/ khách</small>
+                                    {typeof village.starting_price === 'number' && village.starting_price > 0
+                                      ? `Chỉ từ ${village.starting_price.toLocaleString('vi-VN')} đ`
+                                      : village.starting_price === 0
+                                        ? 'Miễn phí'
+                                        : 'Chưa có dữ liệu giá'}
+                                    {village.starting_price != null && <small> / khách</small>}
                                   </span>
                                 </div>
                                 <div className="rec-card-actions" style={{ gap: '8px' }}>
@@ -1493,10 +1501,12 @@ export default function AiMatchingScreen({
                                 <div className="ait-card-price-row" style={{ marginTop: '8px', marginBottom: '8px' }}>
                                   <span className="ait-card-price-label">Giá hoạt động</span>
                                   <span className="ait-card-price-val">
-                                    {provider.activities && provider.activities[0]?.price
-                                      ? `${provider.activities[0].price.toLocaleString('vi-VN')} đ`
-                                      : 'từ 150.000 đ'}{' '}
-                                    <small>/ khách</small>
+                                    {typeof provider.activities?.[0]?.price === 'number'
+                                      ? provider.activities[0].price > 0
+                                        ? `${provider.activities[0].price.toLocaleString('vi-VN')} đ`
+                                        : 'Miễn phí'
+                                      : 'Chưa có dữ liệu giá'}
+                                    {provider.activities?.[0]?.price != null && <small> / khách</small>}
                                   </span>
                                 </div>
 

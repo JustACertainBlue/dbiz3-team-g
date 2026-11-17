@@ -1,6 +1,8 @@
 import type { TourContext, TourPreferenceProfile } from '@/lib/matching/types'
 import { ConversationalAiService, type ConversationalAiResult } from './llm-service'
 import type { QuotaStatus } from './quota-manager'
+import type { AitConversationState } from '@/lib/ait/conversation-state'
+import { craftTypeForPreference } from '@/lib/matching/craft-taxonomy'
 
 export interface MessageInput {
   sender?: string
@@ -61,7 +63,8 @@ export async function extractTourContext(
 }
 
 export async function buildTourPreferenceProfile(
-  tourContext: TourContext
+  tourContext: TourContext,
+  state?: AitConversationState
 ): Promise<TourPreferenceProfile> {
   const hardConstraints = {
     group_size: tourContext.group_size,
@@ -70,7 +73,8 @@ export async function buildTourPreferenceProfile(
     origin: tourContext.origin_or_route,
   }
 
-  const matchingAttributes = (tourContext.experience_types || []).map(type => ({
+  const matchingAttributes: Array<{ type: string; value: string; polarity?: 'include' | 'exclude' }> =
+    (tourContext.experience_types || []).map(type => ({
     type: 'experience_type',
     value: type,
   }))
@@ -80,6 +84,23 @@ export async function buildTourPreferenceProfile(
       type: 'craft_preference',
       value: tourContext.craft_preference,
     })
+  }
+  for (const villageId of state?.exclusions.villages ?? []) {
+    matchingAttributes.push({
+      type: 'village_id',
+      value: villageId,
+      polarity: 'exclude',
+    })
+  }
+  for (const craft of state?.exclusions.crafts ?? []) {
+    const craftType = craftTypeForPreference(craft)
+    if (craftType) {
+      matchingAttributes.push({
+        type: 'craft_preference',
+        value: craftType,
+        polarity: 'exclude',
+      })
+    }
   }
 
   return {

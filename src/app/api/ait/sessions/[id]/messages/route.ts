@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
-import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/session-service'
+import {
+  addMessage,
+  getMatchingSession,
+  getMatchingSessionContext,
+  getMessages,
+  updateMatchingSessionContext,
+} from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
 import {
   resolveVillageCards,
@@ -26,10 +32,70 @@ import { classifyIntent } from '@/lib/ait/llm-router'
 import { refusalTemplate, buildResultsMessage } from '@/lib/ait/messages'
 import { postCheckMessage } from '@/lib/ait/postcheck'
 import { turnSchema } from '@/lib/ait/schemas'
+import {
+  applyConversationState,
+  emptyConversationState,
+  isAffirmativeReply,
+  isBookingHelpRequest,
+  isCompleteConversationState,
+  isExplicitConversationReset,
+  isFalsePositiveMealPhrase,
+  isShortPendingReply,
+  isSystemHelpRequest,
+  mergeConversationState,
+  missingQuestions,
+  nextPendingQuestion,
+  normalizeConversationState,
+  normalizePendingQuestion,
+  sanitizeUnsupportedFollowUpQuestions,
+  splitMixedMealRequest,
+} from '@/lib/ait/conversation-state'
 import fs from 'fs'
 import path from 'path'
 
 const rateLimiter = createRateLimiter({ limit: 20, windowMs: 60000 })
+
+async function outOfScopeResponse(
+  sessionId: string,
+  storedContext: Record<string, unknown>,
+  state: ReturnType<typeof normalizeConversationState>
+) {
+  const refusalCount = Number(storedContext.out_of_scope_refusal_count) || 0
+  const messages = [
+    refusalTemplate('out_of_scope').message,
+    'Xin lỗi, nội dung này nằm ngoài phạm vi nền tảng nên mình không thể hỗ trợ. Mình vẫn có thể giúp bạn tìm làng nghề hoặc trải nghiệm văn hóa trong dữ liệu. Bạn muốn tiếp tục theo hướng đó không?',
+    'Mình xin lỗi, mình không thể tư vấn yêu cầu này vì ngoài phạm vi hỗ trợ. Nếu bạn muốn, mình có thể gợi ý làng nghề, hoạt động văn hóa hoặc ghép tour phù hợp.',
+  ]
+  const message = messages[refusalCount % messages.length]
+  await updateMatchingSessionContext(sessionId, {
+    state,
+    pending_question: {
+      field: 'in_scope_offer',
+      text: 'Bạn có muốn xem gợi ý làng nghề hoặc trải nghiệm văn hóa trong dữ liệu không?',
+    },
+    out_of_scope_refusal_count: refusalCount + 1,
+  })
+  const turn = {
+    turn_type: 'refusal' as const,
+    message,
+    top_matches: [],
+    additional_suggestions: [],
+    comparison: null,
+    quick_replies: ['Bắt đầu ghép tour', 'Xem các làng nghề'].map((label) => ({ label, patch: {} })),
+    follow_up_questions: [],
+    relaxation_suggestions: [],
+    sources: [],
+    used_llm: false,
+  }
+  return NextResponse.json(
+    {
+      turn,
+      message: { id: 'refused', sender: 'Assistant', text: message, created_at: new Date().toISOString() },
+      conversational_reply: message,
+    },
+    { status: 200 }
+  )
+}
 
 async function authorize(request: Request, sessionId: string) {
   const actor = await sessionContextFromRequest(request)
@@ -100,6 +166,7 @@ export async function POST(
       }
       cleanText = sanitized.text
     }
+    const originalText = cleanText
 
     // 2. Rate limit (20 req / min / agency)
     const rateCheck = rateLimiter.check(access.agencyId, Date.now())
@@ -125,9 +192,25 @@ export async function POST(
       )
     }
 
+    const storedContext = await getMatchingSessionContext(params.id)
+    let conversationState = normalizeConversationState(storedContext.state)
+    const pendingQuestion = normalizePendingQuestion(storedContext.pending_question)
+    const isReset = !isRetry && isExplicitConversationReset(originalText)
+    const activePendingQuestion = isReset ? null : pendingQuestion
+    const mixedMeal = !isRetry && !isReset
+      ? splitMixedMealRequest(originalText)
+      : { inScopeText: originalText, hasMealRequest: false }
+    const routeText = mixedMeal.hasMealRequest ? mixedMeal.inScopeText : originalText
+    const acceptsInScopeOffer = activePendingQuestion?.field === 'in_scope_offer'
+      && isAffirmativeReply(originalText)
+    const answersPendingQuestion = Boolean(activePendingQuestion && isShortPendingReply(originalText))
+    const isHelpQuestion = isSystemHelpRequest(routeText) || isBookingHelpRequest(routeText)
+    const bypassClassifier = isRetry || isReset || acceptsInScopeOffer || answersPendingQuestion
+      || isHelpQuestion || isFalsePositiveMealPhrase(routeText) || mixedMeal.hasMealRequest
+
     // 3. Rule-based router and LLM router (A.2, B.3 Layer 1 & 2)
     if (!isRetry) {
-      const routeResult = routeByRules(cleanText)
+      const routeResult = bypassClassifier ? null : routeByRules(routeText)
       if (routeResult?.intent === 'restricted_request') {
         console.info('[AIT Router]', {
           intent: 'restricted_request',
@@ -165,34 +248,13 @@ export async function POST(
           source: 'rules',
           action_path: 'refusal_out_of_scope',
         })
-        const tpl = refusalTemplate('out_of_scope')
-        const turn = {
-          turn_type: 'refusal' as const,
-          message: tpl.message,
-          top_matches: [],
-          additional_suggestions: [],
-          comparison: null,
-          quick_replies: tpl.quick_replies.map((label) => ({ label, patch: {} })),
-          follow_up_questions: [],
-          relaxation_suggestions: [],
-          sources: [],
-          used_llm: false,
-        }
-        return NextResponse.json(
-          {
-            turn,
-            message: { id: 'refused', sender: 'Assistant', text: tpl.message, created_at: new Date().toISOString() },
-            conversational_reply: tpl.message,
-          },
-          { status: 200 }
-        )
+        return outOfScopeResponse(params.id, storedContext, conversationState)
       }
 
       // LLM router fallback when rule-based router returns null
-      const llmClassification = await classifyIntent(cleanText, {
-        hasProfile: false,
-        hasResults: false,
-      })
+      const llmClassification = bypassClassifier
+        ? null
+        : await classifyIntent(routeText, { hasProfile: false, hasResults: false })
 
       if (llmClassification) {
         if (llmClassification.intent === 'restricted_request') {
@@ -232,27 +294,7 @@ export async function POST(
             source: llmClassification.source,
             action_path: 'refusal_out_of_scope',
           })
-          const tpl = refusalTemplate('out_of_scope')
-          const turn = {
-            turn_type: 'refusal' as const,
-            message: tpl.message,
-            top_matches: [],
-            additional_suggestions: [],
-            comparison: null,
-            quick_replies: tpl.quick_replies.map((label) => ({ label, patch: {} })),
-            follow_up_questions: [],
-            relaxation_suggestions: [],
-            sources: [],
-            used_llm: false,
-          }
-          return NextResponse.json(
-            {
-              turn,
-              message: { id: 'refused', sender: 'Assistant', text: tpl.message, created_at: new Date().toISOString() },
-              conversational_reply: tpl.message,
-            },
-            { status: 200 }
-          )
+          return outOfScopeResponse(params.id, storedContext, conversationState)
         }
 
         if (llmClassification.intent === 'unclear') {
@@ -380,13 +422,25 @@ export async function POST(
       }
     }
 
-    // 4. Record message and proceed to AI extraction
-    const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', cleanText)
+    // 4. Record the original input, then extract only the current turn against persisted state.
+    const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', originalText)
     const allMessages = await getMessages(params.id)
+    const latestUserMessage = [...allMessages]
+      .reverse()
+      .find(item => item.sender.toLowerCase() !== 'assistant')
+    const analysisText = isRetry
+      ? latestUserMessage?.text ?? ''
+      : acceptsInScopeOffer
+        ? 'Những làng nghề nào được hỗ trợ?'
+        : routeText
+    const analysisMessages = [
+      ...(activePendingQuestion ? [{ sender: 'Assistant', text: activePendingQuestion.text }] : []),
+      ...(analysisText ? [{ sender: 'Agency', text: analysisText }] : []),
+    ]
 
     const extraction = await extractTourContext({
       sessionId: params.id,
-      messages: allMessages,
+      messages: analysisMessages,
     })
 
     if (extraction.processing_status === 'Temporary AI Failure') {
@@ -401,7 +455,48 @@ export async function POST(
       )
     }
 
-    const userText = cleanText
+    if (isReset) {
+      conversationState = emptyConversationState()
+    } else if (extraction.intent !== 'platform_guidance') {
+      conversationState = mergeConversationState(
+        conversationState,
+        analysisText,
+        extraction.tour_context,
+        new Date(),
+        activePendingQuestion?.field
+      )
+    }
+
+    extraction.tour_context = applyConversationState(extraction.tour_context, conversationState)
+    if (extraction.intent !== 'platform_guidance') {
+      extraction.is_complete = extraction.is_complete || isCompleteConversationState(conversationState)
+      const nextQuestion = extraction.is_complete ? null : nextPendingQuestion(conversationState)
+      extraction.follow_up_questions = extraction.is_complete
+        ? []
+        : missingQuestions(conversationState).map(question => question.text).slice(0, 3)
+
+      const reply = sanitizeUnsupportedFollowUpQuestions(extraction.conversational_reply || '')
+      if (nextQuestion) {
+        const prefix = reply.split(/[?？]/, 1)[0].trim()
+        extraction.conversational_reply = `${prefix ? `${prefix} ` : ''}${nextQuestion.text}`
+      } else {
+        extraction.conversational_reply = reply.split(/[?？]/, 1)[0].trim()
+      }
+
+      await updateMatchingSessionContext(params.id, {
+        state: conversationState,
+        pending_question: nextQuestion,
+        out_of_scope_refusal_count: 0,
+      })
+    } else {
+      await updateMatchingSessionContext(params.id, {
+        state: conversationState,
+        pending_question: isReset || acceptsInScopeOffer ? null : activePendingQuestion,
+        out_of_scope_refusal_count: 0,
+      })
+    }
+
+    const userText = analysisText
     const isTest = isTestConversation(allMessages, body.is_test === true)
 
     if (isTest) {
@@ -446,7 +541,7 @@ export async function POST(
         })
       }
     } else if (extraction.is_complete) {
-      tourPreferenceProfile = await buildTourPreferenceProfile(extraction.tour_context)
+      tourPreferenceProfile = await buildTourPreferenceProfile(extraction.tour_context, conversationState)
       if (isTest && tourPreferenceProfile) {
         tourPreferenceProfile.is_test = true
       }
@@ -463,8 +558,12 @@ export async function POST(
     }
 
     const replyText = typeof extraction.conversational_reply === 'string' ? extraction.conversational_reply : ''
-    const combined = `${userText} ${replyText}`
-    const scope = detectCardScope(userText)
+    const mixedScopeNotice = mixedMeal.hasMealRequest
+      ? 'Xin lỗi, mình không thể gợi ý chỗ ăn trưa vì yêu cầu đó nằm ngoài phạm vi; mình tiếp tục hỗ trợ yêu cầu làng nghề.'
+      : ''
+    const cardQueryText = acceptsInScopeOffer ? 'những làng nghề nào được hỗ trợ' : userText
+    const combined = `${cardQueryText} ${replyText}`
+    const scope = detectCardScope(cardQueryText)
 
     let activityCards: any[] = []
     let providerCards: any[] = []
@@ -496,7 +595,8 @@ export async function POST(
 
     if (!isRetry && extraction.conversational_reply && typeof extraction.conversational_reply === 'string') {
       try {
-        await addMessage(params.id, 'Assistant', extraction.conversational_reply.slice(0, 2000))
+        const assistantReply = [mixedScopeNotice, extraction.conversational_reply].filter(Boolean).join(' ')
+        await addMessage(params.id, 'Assistant', assistantReply.slice(0, 2000))
       } catch (e) {
         console.warn('[AIT] Could not save assistant response to message history:', e)
       }
@@ -535,7 +635,17 @@ export async function POST(
         const { selectTiers } = await import('@/lib/ait/scoring')
 
         const exps = await loadExperiences()
-        const ranked = await rankCandidates(exps, tourPreferenceProfile)
+        const exclusions = tourPreferenceProfile.matching_attributes.filter(
+          (attribute: { polarity?: string }) => attribute.polarity === 'exclude'
+        )
+        const eligibleExperiences = exps.filter(experience => !exclusions.some(
+          (attribute: { type: string; value: string }) => (
+            attribute.type === 'village_id' && experience.village_id === attribute.value
+          ) || (
+            attribute.type === 'craft_preference' && experience.craft_type === attribute.value
+          )
+        ))
+        const ranked = await rankCandidates(eligibleExperiences, tourPreferenceProfile)
         const scoredList = ranked.map((c) => ({ id: c.experience_id, score: c.match_score }))
         const { top, additional } = selectTiers(scoredList)
 
@@ -603,7 +713,7 @@ export async function POST(
             tourPreferenceProfile.hard_constraints?.group_size,
             tourPreferenceProfile.hard_constraints?.max_budget_per_person,
           ].filter(Boolean) as number[],
-          knownNames: exps.map((e) => e.name),
+          knownNames: eligibleExperiences.map((e) => e.name),
           allowedNames: [],
           cardNames: [...topCards, ...additionalCards].map((c) => c.experience_name),
           fallback: fallbackMsg,
@@ -626,6 +736,24 @@ export async function POST(
       }
     }
 
+    if (!turn && extraction.intent === 'platform_guidance' && (isHelpQuestion || acceptsInScopeOffer)) {
+      turn = {
+        turn_type: 'answer' as const,
+        message: (extraction.conversational_reply || 'Mình có thể hỗ trợ tìm hiểu làng nghề và ghép tour phù hợp.').slice(0, 500),
+        top_matches: [],
+        additional_suggestions: [],
+        comparison: null,
+        quick_replies: [],
+        follow_up_questions: [],
+        relaxation_suggestions: [],
+        sources: [{
+          type: 'knowledge_base',
+          ref: acceptsInScopeOffer ? 'verified_craft_villages' : 'contact_and_booking',
+        }],
+        used_llm: extraction.usedLlm ?? false,
+      }
+    }
+
     if (!turn) {
       const askMsg = (extraction.conversational_reply || 'Bạn có thể cung cấp thêm thông tin cho chuyến đi không?').slice(0, 500)
       turn = {
@@ -643,6 +771,10 @@ export async function POST(
         sources: [],
         used_llm: true,
       }
+    }
+
+    if (mixedScopeNotice) {
+      turn.message = `${mixedScopeNotice} ${turn.message}`.slice(0, 500)
     }
 
     const statusCode = isE2E ? 200 : isRetry ? 200 : 201

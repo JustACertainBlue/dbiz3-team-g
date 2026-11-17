@@ -651,7 +651,7 @@ export class ConversationalAiService {
     const isExplicitTourAction = /(?:tìm|muốn|cần|tổ chức|book|đặt|find|want|need|organize|looking for)\s+(?:tour|xưởng|chỗ|trải nghiệm)/i.test(latestUserMsg)
     const isFitScoreQuestion = /(?:thang điểm|công thức|tính điểm|fit score|scoring|weights)/i.test(latestUserMsg)
     const isSystemHelpQuestion = /(?:system_help|system help|cách (?:sử dụng|dùng)|hướng dẫn sử dụng|how (?:to use|do i use|does the system work))/i.test(latestUserMsg)
-    const isBookingHelpQuestion = /(?:book_now|book now|how (?:do i|to) book|cách đặt tour|đặt tour như thế nào|how to request a quote)/i.test(latestUserMsg)
+    const isBookingHelpQuestion = /(?:book_now|book now|how (?:do i|to) book|cách đặt tour|đặt (?:tour|lịch) (?:thế nào|như thế nào)|how to request a quote)/i.test(latestUserMsg)
     const isContactQuestion = /(?:liên hệ|nhắn tin|báo giá|chat|contact|how to contact|request quote)/i.test(latestUserMsg)
       || isSystemHelpQuestion
       || isBookingHelpQuestion

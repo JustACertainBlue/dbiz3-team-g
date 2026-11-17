@@ -662,7 +662,7 @@ t('MESSAGE', 'từ chối ngoài phạm vi đáp ứng tiêu chí B.4 và chip t
   expect(refusal.message).toMatch(/xin lỗi/i);
   expect(refusal.message).toMatch(/không thể trả lời/i);
   expect(refusal.message).toMatch(/ngoài phạm vi/i);
-  expect(refusal.message).toMatch(/mình có thể (?:gợi ý trải nghiệm văn hóa có trong dữ liệu|giúp ghép tour làng nghề)[^.]*\.$/i);
+  expect(refusal.message).toMatch(/(?:gợi ý trải nghiệm văn hóa có trong dữ liệu|ghép tour làng nghề)[^?]*\?$/i);
   expect(refusal.message).not.toMatch(/bận|thử lại sau|tạm thời/i);
   expect(refusal.quick_replies).toEqual(['Bắt đầu ghép tour', 'Xem các làng nghề']);
   expect(f('restricted')).toEqual({

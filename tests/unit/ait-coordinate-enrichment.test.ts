@@ -252,13 +252,12 @@ describe('origin and radius uncertainty', () => {
           radius_status: 'unconfirmed',
         },
       ],
-      origin: 'mặc định là trung tâm Hà Nội (Hồ Gươm)',
       radiusKm: 10,
     })
 
-    expect(message).toContain('mặc định là trung tâm Hà Nội (Hồ Gươm)')
-    expect(message).toContain('khoảng 1.3 km')
-    expect(message).toContain('khoảng 13 km, ước tính theo huyện')
+    expect(message).toContain('Khoảng cách tính từ trung tâm Hà Nội (Hồ Gươm).')
+    expect(message).toContain('Cách trung tâm Hà Nội (Hồ Gươm) khoảng 1.3 km (đường chim bay)')
+    expect(message).toContain('khoảng 13 km (ước tính theo huyện)')
     expect(message).toContain('chưa xác nhận bán kính')
     expect(message).not.toContain('chưa có dữ liệu khoảng cách')
   })

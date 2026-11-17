@@ -12,7 +12,10 @@
  */
 import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
-import { getMatchingSession } from '@/lib/matching/session-service'
+import {
+  getMatchingSession,
+  updateMatchingSessionContext,
+} from '@/lib/matching/session-service'
 import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
 import { rankCandidates } from '@/lib/matching/scoring-engine'
 import {
@@ -28,6 +31,7 @@ import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import { loadOperatingHours } from '@/lib/prf/seed-reader'
 import { runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
+import { matchingContextResults } from '@/lib/ait/match-reasons'
 
 export async function POST(request: Request) {
   try {
@@ -120,6 +124,12 @@ export async function POST(request: Request) {
       ) {
         const origin = constraints.origin?.origin_address || constraints.origin?.address
         const from = typeof origin === 'string' ? ` tính từ ${origin}` : ''
+        if (body.session_id) {
+          await updateMatchingSessionContext(
+            body.session_id,
+            matchingContextResults([], JSON.stringify(rawProfile.matching_attributes ?? []))
+          )
+        }
         return NextResponse.json({
           is_test: isTest,
           top_matches: [],
@@ -141,6 +151,12 @@ export async function POST(request: Request) {
       const relaxation = await buildRelaxationSuggestions(budgetFreeRanked, constraints, {
         largest_group_size: enrichedCandidates.length > 0 ? largestGroup : undefined,
       })
+      if (body.session_id) {
+        await updateMatchingSessionContext(
+          body.session_id,
+          matchingContextResults([], JSON.stringify(rawProfile.matching_attributes ?? []))
+        )
+      }
       return NextResponse.json({
         top_matches: [],
         additional_suggestions: [],
@@ -169,6 +185,15 @@ export async function POST(request: Request) {
     }
     const topMatches = matching.topMatches.map(addRouteDetails)
     const additionalMatches = matching.additionalMatches.map(addRouteDetails)
+    if (body.session_id) {
+      await updateMatchingSessionContext(
+        body.session_id,
+        matchingContextResults(
+          [...topMatches, ...additionalMatches],
+          JSON.stringify(rawProfile.matching_attributes ?? [])
+        )
+      )
+    }
 
     return NextResponse.json({
       is_test: isTest,

@@ -493,6 +493,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       ...(matching.json.top_matches ?? []),
       ...(matching.json.additional_suggestions ?? []),
     ]
+    const storedResults = await getContext(sessionId)
 
     expect(chat.status).toBe(201)
     expect(matching.status).toBe(200)
@@ -503,6 +504,14 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       .map((card) => [card.experience_id, card.price_per_person, card.distance_km])
       .sort((left, right) => String(left[0]).localeCompare(String(right[0])))
     expect(comparableCards(chatCards)).toEqual(comparableCards(matchingCards))
+    expect(storedResults.last_matching_results).toEqual(matchingCards.map((card: Json) => ({
+      experience_id: card.experience_id,
+      experience_name: card.experience_name,
+      price_per_person: card.price_per_person,
+      rank: card.rank,
+    })))
+    expect(storedResults.match_reasons.map((item: Json) => item.experience_id).sort())
+      .toEqual(matchingCards.map((card: Json) => card.experience_id).sort())
     for (const [route, cards] of [['chat', chatCards], ['matching', matchingCards]] as const) {
       expect(cards.map((card: Json) => card.village_name)).not.toContain('Bát Tràng')
       const prices = cards.map((card: Json) => card.price_per_person).filter((price: number | null) => price !== null)
@@ -573,6 +582,81 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     expect(message).not.toContain('01/01/2030')
     expect(message).not.toContain('Nặn gốm thủ công')
     expect(cards.map((card: Json) => card.village_name)).not.toContain('Bát Tràng')
+  })
+
+  it('stores per-result match reasons and explains the real price from the latest results (T13)', async () => {
+    const sessionId = await openSession()
+    vi.spyOn(extractor, 'extractTourContext').mockResolvedValueOnce({
+      is_complete: true,
+      processing_status: 'Success',
+      retry_available: false,
+      follow_up_questions: [],
+      conversational_reply: 'Mình đã tìm các trải nghiệm phù hợp.',
+      tour_context: {
+        craft_preference: 'silk',
+        group_size: 10,
+        target_date_or_range: { start_date: '2028-07-12' },
+        origin_or_route: { origin_address: 'Hoàn Kiếm' },
+      },
+    })
+    vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
+      intent: 'provide_requirements',
+      confidence: 1,
+      source: 'llm',
+    })
+
+    const results = await send(
+      sessionId,
+      'Tìm trải nghiệm dệt lụa nhẹ nhàng, hạng sang cho 10 khách ngày 12/07/2028 từ Hoàn Kiếm'
+    )
+    const cards = [
+      ...(results.json.turn.top_matches ?? []),
+      ...(results.json.turn.additional_suggestions ?? []),
+    ]
+    const context = await getContext(sessionId)
+
+    expect(cards.length).toBeGreaterThan(0)
+    expect(context.last_matching_results).toEqual(cards.map((card: Json) => ({
+      experience_id: card.experience_id,
+      experience_name: card.experience_name,
+      price_per_person: card.price_per_person,
+      rank: card.rank,
+    })))
+    const firstReasons = context.match_reasons.find(
+      (item: Json) => item.experience_id === cards[0].experience_id
+    ).reasons
+    expect(firstReasons).toContainEqual(expect.objectContaining({ key: 'craft' }))
+    expect(firstReasons).toContainEqual(expect.objectContaining({
+      key: 'soft_criterion',
+      text: expect.stringMatching(/hạng sang.*chưa có dữ liệu/i),
+    }))
+    expect(firstReasons).toContainEqual(expect.objectContaining({
+      key: 'soft_criterion',
+      text: expect.stringMatching(/nhẹ nhàng.*chưa có dữ liệu/i),
+    }))
+
+    const explanation = await send(sessionId, 'Tại sao đề xuất này tốt nhất?')
+    expect(explanation.json.turn.turn_type).toBe('answer')
+    expect(explanation.json.turn.message).toContain(cards[0].experience_name)
+    expect(explanation.json.turn.message).toContain(firstReasons[0].text)
+    expect(explanation.json.turn.message).toContain(
+      `${String(cards[0].price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người`
+    )
+
+    const priceExplanation = await send(
+      sessionId,
+      `Tại sao giá của ${cards[0].experience_name}?`
+    )
+    expect(priceExplanation.json.turn.turn_type).toBe('answer')
+    expect(priceExplanation.json.turn.message).toContain(cards[0].experience_name)
+    expect(priceExplanation.json.turn.message).toContain(
+      `${String(cards[0].price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người`
+    )
+
+    const unavailable = await send(sessionId, 'Tại sao giá của workshop làm robot?')
+    expect(unavailable.json.turn.turn_type).toBe('answer')
+    expect(unavailable.json.turn.message).toMatch(/chưa có dữ liệu.*robot/i)
+    expect(unavailable.json.turn.message).not.toContain(cards[0].experience_name)
   })
 
   it('clears state only for an explicit reset and answers booking help without losing state (T22, T23)', async () => {

@@ -81,6 +81,16 @@ export function buildMatchCard({
     }
   }
 
+  if (factors.experience_type) {
+    const requested = factors.experience_type.requested.join(', ')
+    reasons.push({
+      key: 'experience_type',
+      text: factors.experience_type.matched
+        ? `Đúng loại trải nghiệm ${requested}`
+        : `Loại trải nghiệm ${factors.experience_type.value} chưa khớp yêu cầu ${requested}`,
+    })
+  }
+
   // 2. Capacity
   if (factors.capacity) {
     if (factors.capacity.matched) {

@@ -55,6 +55,13 @@ function cardFactors(candidate: ScoredCandidate): Record<string, unknown> {
       value: matchFactors.craft.preference || matchFactors.craft.label || '',
     }
   }
+  if (matchFactors.experience_types) {
+    factors.experience_type = {
+      matched: Boolean(matchFactors.experience_types.matched),
+      requested: matchFactors.experience_types.requested,
+      value: candidate.experience_type || candidate.category || '',
+    }
+  }
   if (matchFactors.group_size !== undefined && candidate.max_participants != null) {
     factors.capacity = {
       matched: true,

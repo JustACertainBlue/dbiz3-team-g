@@ -39,6 +39,11 @@ import {
   resultEndingCandidate,
 } from '@/lib/ait/messages'
 import { postCheckMessage } from '@/lib/ait/postcheck'
+import {
+  explainStoredMatch,
+  isMatchExplanationRequest,
+  matchingContextResults,
+} from '@/lib/ait/match-reasons'
 import { turnSchema } from '@/lib/ait/schemas'
 import {
   applyConversationState,
@@ -239,6 +244,24 @@ export async function POST(
     }
 
     const storedContext = await getMatchingSessionContext(params.id)
+    if (!isRetry && isMatchExplanationRequest(originalText)) {
+      const knownExperienceNames = (await loadExperiences()).map(experience => experience.name)
+      const answer = explainStoredMatch(originalText, storedContext, knownExperienceNames)
+      const turn = {
+        turn_type: 'answer' as const,
+        message: answer,
+        top_matches: [],
+        additional_suggestions: [],
+        comparison: null,
+        quick_replies: [],
+        follow_up_questions: [],
+        relaxation_suggestions: [],
+        sources: [{ type: 'matching_result', ref: 'last_matching_results' }],
+        used_llm: false,
+      }
+      return NextResponse.json({ turn, conversational_reply: answer }, { status: 200 })
+    }
+
     let conversationState = normalizeConversationState(storedContext.state)
     const pendingQuestion = normalizePendingQuestion(storedContext.pending_question)
     const isReset = !isRetry && isExplicitConversationReset(originalText)
@@ -551,6 +574,7 @@ export async function POST(
         state: conversationState,
         pending_question: nextQuestion,
         out_of_scope_refusal_count: 0,
+        ...(isReset ? matchingContextResults([], '') : {}),
       })
     } else {
       await updateMatchingSessionContext(params.id, {
@@ -798,6 +822,10 @@ export async function POST(
             ? checkedNarration.message
             : optionalInvite,
         })
+        await updateMatchingSessionContext(
+          params.id,
+          matchingContextResults(cards, originalText)
+        )
 
         turn = {
           turn_type: totalCount > 0 ? ('results' as const) : ('no_results' as const),

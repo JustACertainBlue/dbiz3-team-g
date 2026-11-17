@@ -133,18 +133,24 @@ export function localizeExplanation(explanation: string): string {
   text = text.replace(/Not a ([a-zA-Z\s\/]+) experience\./i, 'Trải nghiệm văn hóa làng nghề truyền thống.')
 
   // 4. Quy mô đoàn & sức chứa
+  text = text.replace(/Takes up to null pax for your group of \d+\./i, '')
   text = text.replace(/Takes up to (\d+) pax for your group of (\d+)\./i, (_, max, group) => `Sức chứa xưởng tối đa ${max} khách, vừa vặn và đảm bảo chất lượng hướng dẫn cho đoàn ${group} người.`)
 
   // 5. Ngân sách & chi phí
   text = text.replace(/([\d,.]+) VND per person, within your ([\d,.]+) VND budget\./i, (_, price, budget) => `Mức giá ${price} đ/khách, nằm trọn trong hạn mức ngân sách (${budget} đ) của đoàn.`)
 
   // 6. Khoảng cách di chuyển
+  text = text.replace(/About ([\d.]+) km straight-line from (.+?)\./i, (_, dist, origin) => {
+    const originLabel = /^(hoàn kiếm|your starting point)$/i.test(origin)
+      ? 'trung tâm Hà Nội (Hồ Gươm)'
+      : origin
+    return `Cách ${originLabel} khoảng ${dist} km (đường chim bay).`
+  })
   text = text.replace(/About ([\d.]+) km from (.+?) \(estimated\)\./i, (_, dist, origin) => {
-    const originLabel = origin === 'your starting point' ? 'điểm xuất phát của đoàn' : origin
-    return `Cách ${originLabel} khoảng ${dist} km, tuyến đường thuận tiện di chuyển trong ngày.`
+    return `Khoảng ${Math.round(Number(dist))} km (ước tính theo huyện).`
   })
 
-  return text
+  return text.trim()
 }
 
 // #156: show the date the assistant understood, so the Agency can correct it with a new message

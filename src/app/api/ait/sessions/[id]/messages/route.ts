@@ -35,7 +35,7 @@ import {
   runAitMatchingPipeline,
   runVillageCardPipeline,
 } from '@/lib/ait/matching-pipeline'
-import { originDisplayNotice } from '@/lib/matching/geo'
+import { originDisplayLabel, originDisplayNotice } from '@/lib/matching/geo'
 import {
   fallbackMissingPrimary,
   normalizeMissingPrimary,
@@ -848,9 +848,11 @@ export async function POST(
         const craftPreference = tourPreferenceProfile.matching_attributes.find(
           (attribute: any) => attribute.type === 'craft_preference' && attribute.polarity !== 'exclude'
         )?.value
-        const requestedOrigin = conversationState.origin
+        const rawOrigin = conversationState.origin
           || tourPreferenceProfile.hard_constraints?.origin?.origin_address
           || tourPreferenceProfile.hard_constraints?.origin?.address
+        const requestedOrigin = originDisplayLabel(rawOrigin)
+          || (typeof rawOrigin === 'string' ? rawOrigin : undefined)
         const originNotice = originDisplayNotice(tourPreferenceProfile.hard_constraints?.origin)
         const originUnresolved = originNotice?.startsWith('Chưa xác định được')
           ? originNotice
@@ -951,11 +953,13 @@ export async function POST(
     if (scope === 'village' && conversationState.radius_km !== undefined) {
       const origin = conversationState.origin || extraction.tour_context.origin_or_route
       const originNotice = originDisplayNotice(origin)
+      const originLabel = originDisplayLabel(origin)
+        || (typeof origin === 'string' ? origin : undefined)
       turn = {
         ...turn,
         turn_type: villageCards.length > 0 ? 'results' : 'no_results',
         message: [
-          buildVillageCardResultsMessage(villageCards, conversationState.radius_km),
+          buildVillageCardResultsMessage(villageCards, conversationState.radius_km, originLabel),
           ...(originNotice?.startsWith('Chưa xác định được') ? [originNotice] : []),
         ].join('\n\n'),
         top_matches: [],

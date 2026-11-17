@@ -1169,8 +1169,10 @@ export default function AiMatchingScreen({
                                   📍 {formatVillageName(rec.village_name)}
                                   {rec.distance_source === 'haversine' && typeof rec.distance_km === 'number'
                                     ? ` · ${rec.location_source === 'district_fallback'
-                                      ? `khoảng ${Math.round(rec.distance_km)} km, ước tính theo huyện`
-                                      : `khoảng ${rec.distance_km.toFixed(1)} km`}${rec.radius_status === 'unconfirmed' ? ' · Chưa xác nhận bán kính' : ''}${rec.distance_origin_label ? ` · từ ${rec.distance_origin_label}` : ''}`
+                                      ? `khoảng ${Math.round(rec.distance_km)} km (ước tính theo huyện)`
+                                      : rec.location_source === 'approximate'
+                                        ? `khoảng ${Math.round(rec.distance_km)} km (tọa độ xấp xỉ)`
+                                        : `Cách ${rec.distance_origin_label || 'trung tâm Hà Nội (Hồ Gươm)'} khoảng ${rec.distance_km.toFixed(1)} km (đường chim bay)`}${rec.radius_status === 'unconfirmed' ? ' · Chưa xác nhận bán kính' : ''}`
                                     : rec.radius_status === 'unconfirmed'
                                       ? ' · Chưa xác nhận bán kính'
                                       : rec.distance_requested

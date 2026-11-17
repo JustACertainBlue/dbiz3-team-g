@@ -5,6 +5,7 @@ import { rankCandidates, type ScoredCandidate } from '@/lib/matching/scoring-eng
 import {
   filterCandidateByRadius,
   haversineDistanceKm,
+  originDisplayLabel,
   resolveOriginCoordinates,
 } from '@/lib/matching/geo'
 import type { VillageCardData } from '@/lib/matching/card-resolver'
@@ -173,9 +174,7 @@ export async function runAitMatchingPipeline({
   const radiusRequested = typeof profile?.hard_constraints?.radius_km === 'number'
     && profile.hard_constraints.radius_km > 0
   const distanceRequested = hasExplicitOrigin || radiusRequested
-  const distanceOriginLabel = !hasExplicitOrigin
-    ? 'trung tâm Hà Nội (Hồ Gươm, mặc định)'
-    : undefined
+  const distanceOriginLabel = originDisplayLabel(profile?.hard_constraints?.origin)
   const enrichedCandidates = candidates.map((candidate) => {
     const distanceKm = (
       candidate.location_source === 'from_plus_code'

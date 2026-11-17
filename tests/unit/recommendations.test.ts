@@ -98,8 +98,7 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
   it('unknown coordinates → no craft or distance is invented', async () => {
     const text = await explain(profileWith())
     expect(text).not.toMatch(/silk|lụa|pottery|weaving/i)
-    expect(text).toMatch(/up to 13/)
-    expect(text).toMatch(/group of 10/)
+    expect(text).toMatch(/Sức chứa tối đa 13 khách cho đoàn 10 khách/)
     expect(text).not.toMatch(/km|estimated|Hoàn Kiếm/i)
   })
 
@@ -113,19 +112,19 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
       distance_km: 5,
       distance_source: 'haversine',
     })
-    expect(result.top_matches[0].explanation).toContain('5.0 km straight-line from Hoàn Kiếm')
+    expect(result.top_matches[0].explanation).toContain('Cách Hoàn Kiếm khoảng 5.0 km (đường chim bay)')
     expect(result.top_matches[0].explanation).not.toMatch(/estimated/i)
   })
 
   it('silk preference → the preference is named', async () => {
-    expect(await explain(profileWith({}, [{ type: 'craft_preference', value: 'silk' }]))).toMatch(/silk/i)
+    expect(await explain(profileWith({}, [{ type: 'craft_preference', value: 'silk' }]))).toContain('dệt lụa')
   })
 
   it('budget given → price against budget is stated', async () => {
     const text = await explain(profileWith({ max_budget_per_person: 200000 }))
-    expect(text).toMatch(/175,000/)
-    expect(text).toMatch(/200,000/)
-    expect(text).toMatch(/budget/i)
+    expect(text).toMatch(/175\.000/)
+    expect(text).toMatch(/200\.000/)
+    expect(text).toContain('ngân sách')
   })
 })
 

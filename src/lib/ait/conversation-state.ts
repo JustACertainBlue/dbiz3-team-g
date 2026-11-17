@@ -182,6 +182,9 @@ export function mergeConversationState(
   pendingField?: PendingQuestionField
 ): AitConversationState {
   const next = normalizeConversationState(current)
+  delete next.budget_per_person
+  delete next.origin
+  delete next.radius_km
   const craftExclusion = excludedCraft(text)
   const newVillageExclusions = excludedVillageIds(text)
 

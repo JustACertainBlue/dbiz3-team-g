@@ -1,5 +1,6 @@
 import type { MatchFactors } from '@/lib/matching/scoring-engine'
 import { selectTiers } from '@/lib/ait/scoring'
+import { DEFAULT_HANOI_ORIGIN_LABEL, originDisplayLabel } from '@/lib/matching/geo'
 
 export interface RecommendationItem {
   experience_id: string
@@ -39,32 +40,63 @@ export function applyScoreThreshold<T extends { match_score?: number }>(candidat
   return candidates.filter(candidate => candidate.match_score === undefined || candidate.match_score >= SCORE_THRESHOLD)
 }
 
-const vnd = (amount: number) => amount.toLocaleString('en-US')
+const vnd = (amount: number) => amount.toLocaleString('vi-VN')
+
+const CRAFT_LABELS_VI: Record<string, string> = {
+  silk: 'dệt lụa',
+  embroidery: 'thêu tay',
+  pottery: 'làm gốm',
+  woodcarving: 'điêu khắc gỗ',
+  food: 'ẩm thực',
+  metalwork: 'đúc đồng',
+  painting: 'sơn mài',
+  'conical hat': 'làm nón',
+  bamboo: 'đan mây tre',
+}
+
+const EXPERIENCE_LABELS_VI: Record<string, string> = {
+  'Workshop/Hands-on': 'thực hành tại xưởng',
+  'Cultural Show': 'biểu diễn văn hóa',
+  Sightseeing: 'tham quan',
+  'Culinary/Tasting': 'ẩm thực',
+  Combo: 'combo trải nghiệm',
+}
 
 // #25: only factors that the scoring actually evaluated (match_factors), never a craft the Agency did not ask for.
 export function explain(item: any, _score: number): string {
   const f: MatchFactors = item.match_factors || {}
   const parts: string[] = []
   if (f.craft) {
+    const craft = CRAFT_LABELS_VI[f.craft.preference] || f.craft.preference
     parts.push(f.craft.matched
-      ? `Matches your ${f.craft.label} preference (${f.craft.craft_type}).`
-      : `Does not match your ${f.craft.label} preference.`)
+      ? `Phù hợp với sở thích nghề ${craft} của đoàn.`
+      : `Chưa khớp với yêu cầu nghề ${craft} của đoàn.`)
   }
   if (f.experience_types) {
-    const types = f.experience_types.requested.join(' / ')
-    parts.push(f.experience_types.matched ? `A ${types} experience, as requested.` : `Not a ${types} experience.`)
+    const types = f.experience_types.requested
+      .map(type => EXPERIENCE_LABELS_VI[type] || type)
+      .join(' / ')
+    parts.push(f.experience_types.matched
+      ? `Đúng loại trải nghiệm ${types} theo yêu cầu.`
+      : `Chưa đúng loại trải nghiệm ${types} theo yêu cầu.`)
   }
-  if (f.max_participants !== undefined && f.group_size !== undefined) {
-    parts.push(`Takes up to ${f.max_participants} pax for your group of ${f.group_size}.`)
+  if (typeof f.max_participants === 'number' && typeof f.group_size === 'number') {
+    parts.push(`Sức chứa tối đa ${f.max_participants} khách cho đoàn ${f.group_size} khách.`)
   }
-  if (f.budget_per_person !== undefined && typeof f.price_per_person === 'number') {
-    parts.push(`${vnd(f.price_per_person)} VND per person, within your ${vnd(f.budget_per_person)} VND budget.`)
+  if (typeof f.budget_per_person === 'number' && typeof f.price_per_person === 'number') {
+    parts.push(`${vnd(f.price_per_person)}đ/người, trong ngân sách ${vnd(f.budget_per_person)}đ/người.`)
   }
-  if (f.distance_km !== undefined) {
-    parts.push(`About ${f.distance_km.toFixed(1)} km straight-line from ${f.origin ?? 'your starting point'}.`)
+  if (typeof f.distance_km === 'number' && Number.isFinite(f.distance_km)) {
+    if (item.location_source === 'district_fallback') {
+      parts.push(`Khoảng ${Math.round(f.distance_km)} km (ước tính theo huyện).`)
+    } else if (item.location_source === 'approximate') {
+      parts.push(`Khoảng ${Math.round(f.distance_km)} km (tọa độ xấp xỉ).`)
+    } else {
+      parts.push(`Cách ${originDisplayLabel(f.origin) || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${f.distance_km.toFixed(1)} km (đường chim bay).`)
+    }
   }
   if (parts.length === 0) {
-    return 'A verified traditional craft experience matching your tour criteria.'
+    return 'Trải nghiệm làng nghề đã xác minh, phù hợp với tiêu chí tour.'
   }
   return parts.join(' ')
 }

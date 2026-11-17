@@ -5,6 +5,7 @@ import { CloudflareAiClient } from '@/lib/ai/cloudflare-client'
 import * as llmRouter from '@/lib/ait/llm-router'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
+import * as matchingRoute from '@/app/api/ait/matching/route'
 import { DEFAULT_HANOI_ORIGIN, resolveOriginCoordinates } from '@/lib/matching/geo'
 
 type Handler = (request: never, context?: never) => Promise<Response>
@@ -12,6 +13,7 @@ type Json = Record<string, any>
 
 const POST_SESSIONS = (sessionsRoute as unknown as { POST: Handler }).POST
 const POST_MESSAGES = (messagesRoute as unknown as { POST: Handler }).POST
+const POST_MATCHING = (matchingRoute as unknown as { POST: Handler }).POST
 let rateWindowStart = 1_800_000_000_000
 
 async function call(handler: Handler, path: string, body: unknown, params?: Json) {
@@ -101,6 +103,8 @@ describe('AIT geography pipeline through the real extractor', () => {
       expect(villageNames.some(name => name.includes(forbidden))).toBe(false)
     }
     expect(response.json.turn.message).not.toContain('Bát Tràng cách 4 km')
+    expect(response.json.turn.message).toContain('tính từ trung tâm Hà Nội (Hồ Gươm)')
+    expect(response.json.turn.message.match(/tính từ trung tâm Hà Nội \(Hồ Gươm\)/g)).toHaveLength(1)
     for (const card of villageCards) {
       expect(card.distance_km).toEqual(expect.any(Number))
       expect(card.distance_source).toBe('haversine')
@@ -137,6 +141,7 @@ describe('AIT geography pipeline through the real extractor', () => {
 
     expect(response.json.extraction.usedLlm).toBe(true)
     expect(response.json.turn.message).toContain('Chưa xác định được điểm xuất phát')
+    expect(response.json.turn.message).not.toContain('Khoảng cách tính từ trung tâm Hà Nội (Hồ Gươm)')
   })
 
   it.each([
@@ -177,10 +182,12 @@ describe('AIT geography pipeline through the real extractor', () => {
 
     expect(villageCards.some(card => String(card.name).includes('Bát Tràng'))).toBe(true)
     expect(message).not.toContain('Bát Tràng cách 4 km')
+    expect(message).toContain('tính từ trung tâm Hà Nội (Hồ Gươm)')
+    expect(message.match(/tính từ trung tâm Hà Nội \(Hồ Gươm\)/g)).toHaveLength(1)
     for (const card of villageCards) {
       const distance = card.location_source === 'district_fallback'
-        ? `khoảng ${Math.round(Number(card.distance_km))} km`
-        : `khoảng ${Number(card.distance_km).toFixed(1)} km`
+        ? `khoảng ${Math.round(Number(card.distance_km))} km (ước tính theo huyện)`
+        : `Cách trung tâm Hà Nội (Hồ Gươm) khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
       expect(message).toContain(distance)
     }
   })
@@ -264,6 +271,60 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(villageCards.length).toBeLessThanOrEqual(3)
     for (const card of villageCards) {
       expect(message).toContain(String(card.name))
+    }
+  })
+
+  it('does not carry an unstated radius or budget into the next Vietnamese turn', async () => {
+    installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
+    const sessionId = await openSession()
+    await send(sessionId, 'Tìm trải nghiệm dưới 9 km', true)
+
+    const response = await send(sessionId, 'làng dệt lụa gần Hà Nội', true)
+    const constraints = response.json.tour_preference_profile.hard_constraints
+
+    expect(response.json.extraction.usedLlm).toBe(true)
+    expect(constraints.radius_km).toBeUndefined()
+    expect(constraints.max_budget_per_person).toBeUndefined()
+    expect(response.json.turn.message).not.toContain('bán kính 9 km')
+    expect(response.json.turn.message).not.toContain('Chưa xác định được điểm xuất phát')
+  })
+
+  it('does not carry an unstated origin into the next Vietnamese turn', async () => {
+    installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
+    const sessionId = await openSession()
+    await send(sessionId, 'Tìm làng nghề cách Ba Đình dưới 9 km', true)
+
+    const response = await send(sessionId, 'làng dệt lụa', true)
+
+    expect(response.json.extraction.usedLlm).toBe(true)
+    expect(response.json.tour_preference_profile.hard_constraints.origin).toBeUndefined()
+  })
+
+  it('omits null capacity and localizes verified distance explanations', async () => {
+    installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
+    const sessionId = await openSession()
+    const chat = await send(sessionId, 'Tìm trải nghiệm cho 10 khách dưới 10 km', true)
+    const matching = await call(POST_MATCHING, '/api/ait/matching', {
+      session_id: sessionId,
+      is_test: true,
+      tour_preference_profile: chat.json.tour_preference_profile,
+    })
+    const cards = [
+      ...(matching.json.top_matches ?? []),
+      ...(matching.json.additional_suggestions ?? []),
+    ] as Json[]
+
+    expect(chat.json.extraction.usedLlm).toBe(true)
+    expect(cards.length).toBeGreaterThan(0)
+    for (const card of cards) {
+      expect(String(card.explanation)).not.toContain('null')
+      expect(String(card.explanation)).not.toMatch(/Takes up to|About .* km|straight-line|your starting point/i)
+      if (card.distance_source === 'haversine') {
+        const distance = card.location_source === 'district_fallback'
+          ? `Khoảng ${Math.round(Number(card.distance_km))} km (ước tính theo huyện)`
+          : `Cách trung tâm Hà Nội (Hồ Gươm) khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
+        expect(String(card.explanation)).toContain(distance)
+      }
     }
   })
 })

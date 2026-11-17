@@ -1,3 +1,5 @@
+import { DEFAULT_HANOI_ORIGIN_LABEL, originDisplayLabel } from '@/lib/matching/geo'
+
 function formatVND(n: number): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
@@ -82,8 +84,14 @@ export function buildResultsMessage({
     : undefined;
   const missingPrimaryNotes = (missingPrimary ?? [])
     .map(field => `Chưa có dữ liệu về ${field}.`)
+  const displayOrigin = originDisplayLabel(origin)
+  const isDefaultOrigin = !origin || displayOrigin === DEFAULT_HANOI_ORIGIN_LABEL
+  const defaultOriginNote = isDefaultOrigin
+    && matches?.some(match => match.distance_source === 'haversine' && typeof match.distance_km === 'number')
+    ? `Khoảng cách tính từ ${DEFAULT_HANOI_ORIGIN_LABEL}.`
+    : undefined
   const withNotices = (message: string) =>
-    [message, ...missingPrimaryNotes, dateScheduleNote, originUnresolved, ending?.trim()]
+    [message, defaultOriginNote, ...missingPrimaryNotes, dateScheduleNote, originUnresolved, ending?.trim()]
       .filter((line): line is string => Boolean(line))
       .join('\n\n')
   const hasCompleteDistances = Boolean(
@@ -123,7 +131,11 @@ export function buildResultsMessage({
           : `Có trải nghiệm chưa xác nhận bán kính ${radiusKm} km do sai số ước tính theo huyện.`
         : undefined
   if (radiusKm != null && count === 0 && noResultsWithinRadius) {
-    const from = origin ? ` tính từ ${origin}` : '';
+    const from = isDefaultOrigin
+      ? ` tính từ ${DEFAULT_HANOI_ORIGIN_LABEL}`
+      : displayOrigin
+        ? ` tính từ ${displayOrigin}`
+        : '';
     return withNotices(`Không tìm thấy trải nghiệm nào phù hợp trong bán kính ${radiusKm} km${from}. Mình không tự mở rộng bán kính.`);
   }
   if (count === 0) {
@@ -141,7 +153,7 @@ export function buildResultsMessage({
     }
   }
   if (max_budget_per_person != null) criteria.push(`ngân sách tối đa ${formatVND(max_budget_per_person)}đ/người`);
-  if (origin) criteria.push(`điểm xuất phát ${origin}`);
+  if (origin && !isDefaultOrigin) criteria.push(`điểm xuất phát ${origin}`);
   if (radiusKm != null && hasCompleteDistances && !hasUnconfirmedRadius) criteria.push(`bán kính ${radiusKm} km`);
 
   const group = group_size != null ? ` cho nhóm ${group_size} khách` : '';
@@ -171,7 +183,7 @@ export function buildResultsMessage({
           ? ` (khoảng ${Math.round(match.distance_km)} km, ước tính theo huyện)`
           : match.location_source === 'approximate'
             ? ` (khoảng ${Math.round(match.distance_km)} km, tọa độ xấp xỉ)`
-            : ` (khoảng ${match.distance_km.toFixed(1)} km)`
+            : ` (Cách ${origin || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${match.distance_km.toFixed(1)} km (đường chim bay))`
         : ''
       lines.push(`${index + 1}. ${match.experience_name}${price}${distance}`);
     });
@@ -193,22 +205,32 @@ export function buildVillageCardResultsMessage(
     radius_status?: 'confirmed' | 'unconfirmed'
   }>,
   radiusKm?: number,
+  origin?: string,
 ): string {
+  const displayOrigin = originDisplayLabel(origin)
   if (cards.length === 0) {
     return radiusKm == null
       ? 'Chưa tìm thấy làng nghề phù hợp trong dữ liệu.'
-      : `Chưa tìm thấy làng nghề phù hợp trong bán kính ${radiusKm} km.`
+      : `Chưa tìm thấy làng nghề phù hợp trong bán kính ${radiusKm} km${displayOrigin ? ` tính từ ${displayOrigin}` : ''}.`
   }
 
+  const hasDistances = cards.some(card =>
+    card.distance_source === 'haversine'
+    && typeof card.distance_km === 'number'
+    && Number.isFinite(card.distance_km)
+  )
   const lines = [`Mình tìm thấy ${cards.length} làng nghề phù hợp.`]
+  if ((radiusKm != null || hasDistances) && displayOrigin) {
+    lines.push(`Khoảng cách tính từ ${displayOrigin}.`)
+  }
   cards.forEach((card, index) => {
     const hasDistance = card.distance_source === 'haversine'
       && typeof card.distance_km === 'number'
       && Number.isFinite(card.distance_km)
     const distance = hasDistance
       ? card.location_source === 'district_fallback'
-        ? ` (khoảng ${Math.round(card.distance_km!)} km, ước tính theo huyện)`
-        : ` (khoảng ${card.distance_km!.toFixed(1)} km)`
+        ? ` (khoảng ${Math.round(card.distance_km!)} km (ước tính theo huyện))`
+        : ` (Cách ${displayOrigin || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${card.distance_km!.toFixed(1)} km (đường chim bay))`
       : ''
     const radiusWarning = card.radius_status === 'unconfirmed'
       ? ' — chưa xác nhận bán kính'

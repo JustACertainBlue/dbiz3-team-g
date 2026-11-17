@@ -2,6 +2,7 @@ import { resolveHanoiDistrictCenter, type Coordinates } from './hanoi-district-c
 
 export type OriginCoordinates = Coordinates
 
+export const DEFAULT_HANOI_ORIGIN_LABEL = 'trung tâm Hà Nội (Hồ Gươm)'
 export const DEFAULT_HANOI_ORIGIN: OriginCoordinates = {
   lat: 21.0285,
   lng: 105.8542,
@@ -12,6 +13,7 @@ export const APPROXIMATE_COORDINATE_UNCERTAINTY_KM = 3
 const DEFAULT_HANOI_ORIGIN_LABELS = new Set([
   'ho guom',
   'trung tam ha noi',
+  'trung tam ha noi ho guom',
   'ha noi',
   'gan ha noi',
 ])
@@ -142,6 +144,29 @@ export function resolveOriginCoordinates(origin: unknown): OriginCoordinates | u
     : resolveHanoiDistrictCenter(address)
 }
 
+export function originDisplayLabel(origin: unknown): string | undefined {
+  if (origin == null || origin === '') return DEFAULT_HANOI_ORIGIN_LABEL
+  const coordinates = resolveOriginCoordinates(origin)
+  if (!coordinates) return undefined
+  if (
+    coordinates.lat === DEFAULT_HANOI_ORIGIN.lat
+    && coordinates.lng === DEFAULT_HANOI_ORIGIN.lng
+  ) {
+    return DEFAULT_HANOI_ORIGIN_LABEL
+  }
+  if (typeof origin === 'string') return origin
+  if (typeof origin === 'object') {
+    const record = origin as Record<string, unknown>
+    const address = typeof record.origin_address === 'string'
+      ? record.origin_address
+      : typeof record.address === 'string'
+        ? record.address
+        : undefined
+    if (address?.trim()) return address.trim()
+  }
+  return 'điểm xuất phát đã cung cấp'
+}
+
 export function originDisplayNotice(origin: unknown): string | undefined {
   const coordinates = validCoordinates(origin)
   if (coordinates) return undefined
@@ -156,7 +181,7 @@ export function originDisplayNotice(origin: unknown): string | undefined {
         ? record.address.trim()
         : ''
   if (!address && !record?.lat && !record?.lng) {
-    return 'Điểm xuất phát mặc định: trung tâm Hà Nội (Hồ Gươm).'
+    return `Khoảng cách tính từ ${DEFAULT_HANOI_ORIGIN_LABEL}.`
   }
   if (address && !resolveOriginCoordinates(origin)) {
     return `Chưa xác định được điểm xuất phát “${address}”; không đoán và chưa tính khoảng cách.`

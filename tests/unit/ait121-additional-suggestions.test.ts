@@ -71,6 +71,12 @@ describe('AIT121 match reason is Vietnamese and context-aware', () => {
     expect(mismatch).toContain('cân nhắc')
   })
 
+  it('omits null capacity and uses Vietnamese center-origin distance wording', () => {
+    expect(localizeExplanation(
+      'Takes up to null pax for your group of 10. About 8.9 km straight-line from Hoàn Kiếm.'
+    )).toBe('Cách trung tâm Hà Nội (Hồ Gươm) khoảng 8.9 km (đường chim bay).')
+  })
+
   it('keeps an unknown craft label readable in Vietnamese', () => {
     expect(localizeExplanation('Does not match your kim hoàn preference.')).toContain('thủ công truyền thống')
   })

@@ -17,6 +17,9 @@ import {
   resolveTestActivityCards,
 } from '@/lib/matching/test-dataset'
 import { detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
+import { withVillageStartingPrices } from '@/lib/village-starting-price'
+import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
+import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import { sanitizeInput, createRateLimiter } from '@/lib/ait/guard'
 import { routeByRules } from '@/lib/ait/router'
 import { classifyIntent } from '@/lib/ait/llm-router'
@@ -485,6 +488,10 @@ export async function POST(
         providerCards = resolveProviderCards(combined)
         activityCards = resolveActivityCards(combined)
       }
+    }
+
+    if (!isTest && villageCards.length > 0) {
+      villageCards = withVillageStartingPrices(villageCards, eligibleVillageStartingPrices(await loadExploreRuntime()))
     }
 
     if (!isRetry && extraction.conversational_reply && typeof extraction.conversational_reply === 'string') {

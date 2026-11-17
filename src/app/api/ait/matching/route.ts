@@ -26,6 +26,9 @@ import { profileSchema } from '@/lib/ait/schemas'
 import { applyHardFilters } from '@/lib/ait/constraints'
 import { selectTiers, applyNullPenalty, resolveDisplayGroups } from '@/lib/ait/scoring'
 import { buildMatchCard } from '@/lib/ait/card'
+import { villageStartingPrices } from '@/lib/village-starting-price'
+import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
+import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 
 export async function POST(request: Request) {
   try {
@@ -71,6 +74,9 @@ export async function POST(request: Request) {
       ? getTestAllExperiences()
       : await loadExperiences()
     const expMap = new Map(allExperiences.map(e => [e.experience_id, e]))
+    const villagePrices = isTest
+      ? villageStartingPrices(allExperiences)
+      : eligibleVillageStartingPrices(await loadExploreRuntime())
 
     const enrichedCandidates = rawCandidates.map(c => {
       const exp = expMap.get(c.experience_id)
@@ -125,7 +131,7 @@ export async function POST(request: Request) {
     // 3. No candidate left → relaxation suggestions (BR-011, FR-012, #23, #24)
     if (eligible.length === 0) {
       const budgetFree = enrichedCandidates.filter(c => {
-        if (reqGroupSize > 0 && c.max_participants < reqGroupSize) return false
+        if (reqGroupSize > 0 && c.max_participants != null && c.max_participants < reqGroupSize) return false
         return true
       })
       const budgetFreeRanked = await rankCandidates(budgetFree, rawProfile)
@@ -223,6 +229,7 @@ export async function POST(request: Request) {
         provider_name: c.provider_name || card.provider_name,
         price_per_person: c.price_per_person ?? card.price_per_person,
         max_participants: c.max_participants ?? card.max_participants,
+        village_starting_price: c.village_id ? villagePrices.get(c.village_id) ?? null : null,
         ...(isTest && c.image_url ? { image_url: c.image_url } : {}),
       }
     }

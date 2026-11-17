@@ -1,3 +1,5 @@
+import { villageStartingPrices } from '../village-starting-price'
+
 export type CsvRow = Record<string, string>;
 
 export interface ExploreSeed {
@@ -30,10 +32,16 @@ export interface ExperienceCard {
   provider_name: string;
   images: Array<{ storage_key: string }>;
   description: string;
-  duration_minutes: number;
-  capacity: { min_pax: 1; max_pax: number };
+  duration_minutes: number | null;
+  capacity: { min_pax: 1; max_pax: number | null };
   price: number | null;
   actions: { view_details: true; request_quote: boolean; chat: boolean };
+}
+
+function optionalNumber(value: string | null | undefined): number | null {
+  if (value == null || value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 export interface ExplorePage {
@@ -67,6 +75,13 @@ export function eligibleRows(seed: ExploreSeed): Array<{ experience: CsvRow; pro
   }).sort((a, b) => a.experience.name.localeCompare(b.experience.name, 'vi') || a.experience.experience_id.localeCompare(b.experience.experience_id));
 }
 
+export function eligibleVillageStartingPrices(seed: ExploreSeed): Map<string, number | null> {
+  return villageStartingPrices(eligibleRows(seed).map(({ experience, village }) => ({
+    village_id: village.village_id,
+    price_per_person: optionalNumber(experience.price_per_person),
+  })))
+}
+
 export function toCard(seed: ExploreSeed, row: ReturnType<typeof eligibleRows>[number], viewer: Viewer): ExperienceCard {
   const { experience, version, village } = row;
   const files = new Map(seed.stored_files.map(file => [file.file_id, file]));
@@ -84,9 +99,9 @@ export function toCard(seed: ExploreSeed, row: ReturnType<typeof eligibleRows>[n
     provider_name: version.business_name,
     images,
     description: experience.description,
-    duration_minutes: Number(experience.duration_minutes),
-    capacity: { min_pax: 1, max_pax: Number(experience.max_participants) },
-    price: isAgency ? Number(experience.price_per_person) : null,
+    duration_minutes: optionalNumber(experience.duration_minutes),
+    capacity: { min_pax: 1, max_pax: optionalNumber(experience.max_participants) },
+    price: isAgency ? optionalNumber(experience.price_per_person) : null,
     actions: { view_details: true, request_quote: isAgency, chat: isAgency }
   };
 }

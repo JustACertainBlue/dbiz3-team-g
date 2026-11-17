@@ -50,13 +50,15 @@ export function handoffOutcome(result: ApiResult): HandoffOutcome {
 
 export interface RecommendationView {
   experience_id: string; provider_id: string; experience_name: string; provider_name: string; village_name: string
-  rank: number; match_score: number; price_per_person: number; max_participants: number; explanation: string; image_url?: string
+  rank: number; match_score: number; price_per_person: number | null; max_participants: number | null
+  village_starting_price: number | null; explanation: string; image_url?: string
 }
 
 const recommendationView = (m: any): RecommendationView => ({
   experience_id: m.experience_id, provider_id: m.provider_id, experience_name: m.experience_name || m.name,
   provider_name: m.provider_name, village_name: m.village_name, rank: m.rank, match_score: m.match_score,
-  price_per_person: m.price_per_person, max_participants: m.max_participants, explanation: m.explanation,
+  price_per_person: m.price_per_person ?? null, max_participants: m.max_participants ?? null,
+  village_starting_price: m.village_starting_price ?? null, explanation: m.explanation,
   ...(typeof m.image_url === 'string' ? { image_url: m.image_url } : {}),
 })
 

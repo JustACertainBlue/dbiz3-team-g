@@ -28,10 +28,17 @@ describe('#227 | VIL030 Experience cards follow the F-EXPLORE-02 card', () => {
       expect(card.image === null || typeof card.image === 'string').toBe(true)
       expect(card.price_per_person).toBe(Number(row.price_per_person))
     }
+    const listedProviderIds = new Set(body.providers.map((provider: { provider_id: string }) => provider.provider_id))
+    const actualPrices = repo.all('experiences')
+      .filter(row => listedProviderIds.has(row.provider_id) && !row.archived_at)
+      .map(row => Number(row.price_per_person))
+      .filter(Number.isFinite)
+    expect(body.starting_price).toBe(Math.min(...actualPrices))
   })
 
   it('a Guest gets the image and workshop name but no price', async () => {
     const body = await call()
+    expect(body.starting_price).toBeNull()
     expect(body.featured_experiences.length).toBeGreaterThan(0)
     for (const card of body.featured_experiences) {
       expect(card).toHaveProperty('provider_name')
@@ -44,6 +51,8 @@ describe('#227 | VIL030 Experience cards follow the F-EXPLORE-02 card', () => {
     const page = readFileSync('src/app/village/[villageId]/page.tsx', 'utf8')
     expect(page).toContain('<MediaImage src={item.image} alt={item.name} />')
     expect(page).toContain('{item.provider_name}')
+    expect(page).toContain('starting_price')
+    expect(page).toContain('Giá chỉ từ')
     expect(page).toMatch(/item\.price_per_person !== undefined && .*\/khách/)
   })
 })

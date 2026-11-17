@@ -84,6 +84,22 @@ describe('EXP US-1 catalog rules', () => {
     });
   });
 
+  it('keeps missing duration, capacity and price unknown instead of converting blanks to zero', () => {
+    const seed = fixture();
+    seed.experiences[0].duration_minutes = '';
+    seed.experiences[0].max_participants = '';
+    seed.experiences[0].price_per_person = '';
+
+    const card = buildExplorePage(seed, { viewer: { kind: 'agency', agencyId } }).experience_cards
+      .find(item => item.id === 'exp-1');
+
+    expect(card).toMatchObject({
+      duration_minutes: null,
+      capacity: { max_pax: null },
+      price: null,
+    });
+  });
+
   it('AC4 continues to browse when an optional Agency Preference Profile exists', () => {
     const seed = fixture();
     seed.agency_preference_profiles.push({ agency_id: agencyId, preference_weights: '{"culture":0.7,"price":0.3}' });

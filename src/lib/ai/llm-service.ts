@@ -568,12 +568,12 @@ export class ConversationalAiService {
     } else {
       for (const m of [...relevantMsgs].reverse()) {
         const text = m.text || ''
-        const originMatch = text.match(/(?:from|near|xuất phát từ|tại khu vực|ở|khu vực)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at|vào ngày|ngày)\s|[,.;!?]|$)/iu)
+        const originMatch = text.match(/(?:from|near|xuất phát từ|từ|cách|gần|tại khu vực|ở|khu vực)\s+(.+?)(?=\s+(?:under|below|dưới|trong|không quá|tối đa|on|with|for|budget|looking|and|to|in|at|vào ngày|ngày|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu)
         if (originMatch) {
           context.origin_or_route = { origin_address: originMatch[1].trim() }
           break
         }
-        const mLoc = text.match(/(hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|sóc sơn|đông anh|thạch thất|hoài đức|gia lâm|thanh oai|thường tín|chương mỹ|hà nội)/i)
+        const mLoc = text.match(/(hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|sóc sơn|đông anh|thạch thất|hoài đức|gia lâm|thanh oai|thường tín|chương mỹ|hà nội)/i)
         if (mLoc) {
           context.origin_or_route = { origin_address: mLoc[1] }
           break
@@ -737,11 +737,11 @@ export class ConversationalAiService {
 
       if (!tourContext.origin_or_route) {
         // Supports accented (xuất phát từ) and unaccented (xuat phat tu, tu trung tam).
-        const originMatch = text.match(/(?:from|near|xu[aấ]t\s*ph[aá]t\s*t[uừ]|xuat\s*phat\s*tu)\s+(.+?)(?=\s+(?:under|on|with|for|budget|looking|and|to|in|at)\s|[,.;!?]|$)/iu)
+        const originMatch = text.match(/(?:from|near|xu[aấ]t\s*ph[aá]t\s*t[uừ]|xuat\s*phat\s*tu|từ|cách|gần)\s+(.+?)(?=\s+(?:under|below|dưới|trong|không quá|tối đa|on|with|for|budget|looking|and|to|in|at|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu)
         if (originMatch) {
           tourContext.origin_or_route = { origin_address: originMatch[1].trim() }
-        } else if (/(?:hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i.test(text)) {
-          const mLoc = text.match(/(hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i)
+        } else if (/(?:hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i.test(text)) {
+          const mLoc = text.match(/(hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i)
           if (mLoc) tourContext.origin_or_route = { origin_address: mLoc[1] }
         }
       }

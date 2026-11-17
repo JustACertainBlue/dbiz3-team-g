@@ -938,10 +938,15 @@ export async function POST(
     }
 
     if (scope === 'village' && conversationState.radius_km !== undefined) {
+      const origin = conversationState.origin || extraction.tour_context.origin_or_route
+      const originNotice = originDisplayNotice(origin)
       turn = {
         ...turn,
         turn_type: villageCards.length > 0 ? 'results' : 'no_results',
-        message: buildVillageCardResultsMessage(villageCards, conversationState.radius_km),
+        message: [
+          buildVillageCardResultsMessage(villageCards, conversationState.radius_km),
+          ...(originNotice?.startsWith('Chưa xác định được') ? [originNotice] : []),
+        ].join('\n\n'),
         top_matches: [],
         additional_suggestions: [],
       }

@@ -5,6 +5,7 @@ import { CloudflareAiClient } from '@/lib/ai/cloudflare-client'
 import * as llmRouter from '@/lib/ait/llm-router'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
+import { DEFAULT_HANOI_ORIGIN, resolveOriginCoordinates } from '@/lib/matching/geo'
 
 type Handler = (request: never, context?: never) => Promise<Response>
 type Json = Record<string, any>
@@ -104,5 +105,37 @@ describe('AIT geography pipeline through the real extractor', () => {
       expect(card.distance_km).toEqual(expect.any(Number))
       expect(card.distance_source).toBe('haversine')
     }
+  })
+
+  it.each([
+    ['Hồ Gươm', 'làng nghề cách Hồ Gươm dưới 5 km', false],
+    ['Hồ Gươm', 'không quá 20 km từ Hồ Gươm', true],
+    ['trung tâm Hà Nội', 'làng nghề cách trung tâm Hà Nội dưới 5 km', false],
+    ['trung tâm Hà Nội', 'làng nghề cách trung tâm Hà Nội dưới 5 km', true],
+    ['Hà Nội', 'làng nghề cách Hà Nội dưới 5 km', false],
+    ['Hà Nội', 'làng nghề cách Hà Nội dưới 5 km', true],
+    ['gần Hà Nội', 'làng nghề gần Hà Nội dưới 5 km', false],
+    ['gần Hà Nội', 'làng nghề gần Hà Nội dưới 5 km', true],
+  ] as const)('uses the default origin when the user says %s (%s)', async (_label, text, isTest) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, text, isTest)
+    const origin = response.json.extraction.tour_context.origin_or_route
+
+    expect(response.json.extraction.usedLlm).toBe(true)
+    expect(origin, JSON.stringify(response.json.extraction)).toBeDefined()
+    expect(resolveOriginCoordinates(origin)).toEqual(DEFAULT_HANOI_ORIGIN)
+    expect(response.json.turn.message).not.toContain('Chưa xác định được điểm xuất phát')
+  })
+
+  it.each([false, true])('reports an explicitly named origin that cannot be resolved (fixture=%s)', async (isTest) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.', 'Sao Hỏa')
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'làng nghề cách Sao Hỏa dưới 5 km', isTest)
+
+    expect(response.json.extraction.usedLlm).toBe(true)
+    expect(response.json.turn.message).toContain('Chưa xác định được điểm xuất phát')
   })
 })

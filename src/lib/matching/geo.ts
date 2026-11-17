@@ -9,6 +9,26 @@ export const DEFAULT_HANOI_ORIGIN: OriginCoordinates = {
 
 export const DISTRICT_FALLBACK_UNCERTAINTY_KM = 10
 export const APPROXIMATE_COORDINATE_UNCERTAINTY_KM = 3
+const DEFAULT_HANOI_ORIGIN_LABELS = new Set([
+  'ho guom',
+  'trung tam ha noi',
+  'ha noi',
+  'gan ha noi',
+])
+
+function normalizeOriginLabel(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function isDefaultHanoiOriginLabel(value: string): boolean {
+  return DEFAULT_HANOI_ORIGIN_LABELS.has(normalizeOriginLabel(value))
+}
 
 export interface RadiusFilterCandidate {
   distance_km?: number | null
@@ -103,7 +123,11 @@ export function resolveOriginCoordinates(origin: unknown): OriginCoordinates | u
   const explicitCoordinates = validCoordinates(origin)
   if (explicitCoordinates) return explicitCoordinates
   if (origin == null || origin === '') return DEFAULT_HANOI_ORIGIN
-  if (typeof origin === 'string') return resolveHanoiDistrictCenter(origin)
+  if (typeof origin === 'string') {
+    return isDefaultHanoiOriginLabel(origin)
+      ? DEFAULT_HANOI_ORIGIN
+      : resolveHanoiDistrictCenter(origin)
+  }
   if (typeof origin !== 'object') return undefined
 
   const record = origin as Record<string, unknown>
@@ -112,7 +136,10 @@ export function resolveOriginCoordinates(origin: unknown): OriginCoordinates | u
     : typeof record.address === 'string'
       ? record.address
       : undefined
-  return address?.trim() ? resolveHanoiDistrictCenter(address) : DEFAULT_HANOI_ORIGIN
+  if (!address?.trim()) return DEFAULT_HANOI_ORIGIN
+  return isDefaultHanoiOriginLabel(address)
+    ? DEFAULT_HANOI_ORIGIN
+    : resolveHanoiDistrictCenter(address)
 }
 
 export function originDisplayNotice(origin: unknown): string | undefined {

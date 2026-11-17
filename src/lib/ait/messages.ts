@@ -7,30 +7,60 @@ function toDDMM(d: string): string {
   return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : d;
 }
 
+function toDDMMYYYY(d: string): string {
+  const parts = d.split('-');
+  return parts.length >= 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d;
+}
+
+interface ResultMessageMatch {
+  experience_name: string;
+  price_per_person: number | null;
+  distance_km?: number | null;
+}
+
 export function buildResultsMessage({
   count,
   group_size,
   start_date,
   end_date,
   max_budget_per_person,
+  matches,
+  lead,
 }: {
   count: number;
   group_size?: number;
   start_date?: string;
   end_date?: string;
   max_budget_per_person?: number;
+  matches?: ResultMessageMatch[];
+  lead?: string;
 }): string {
-  let msg = `Tìm thấy ${count} đề xuất`;
+  const summary = `Tìm thấy ${count} đề xuất`;
+  let msg = lead?.trim() ? `${lead.trim()} ${summary}` : summary;
+  if (matches) {
+    const items = matches.map((match) => {
+      const price = match.price_per_person == null
+        ? 'chưa có dữ liệu giá'
+        : `${formatVND(match.price_per_person)}đ/người`;
+      const distance = match.distance_km == null
+        ? 'chưa có dữ liệu khoảng cách'
+        : `khoảng ${Math.round(match.distance_km)} km`;
+      return `${match.experience_name} — ${price}, ${distance}`;
+    })
+    msg += `: ${items.join('; ')}`;
+  }
+
   if (group_size != null) {
-    msg += ` cho đoàn ${group_size} người`;
+    msg += matches ? `; đoàn ${group_size} người` : ` cho đoàn ${group_size} người`;
   }
 
   const clauses: string[] = [];
   if (start_date) {
+    const formatDate = matches ? toDDMMYYYY : toDDMM;
     if (end_date && end_date !== start_date) {
-      clauses.push(`từ ${toDDMM(start_date)} đến ${toDDMM(end_date)}`);
+      clauses.push(`từ ${formatDate(start_date)} đến ${formatDate(end_date)}`);
     } else {
-      clauses.push(`ngày ${toDDMM(start_date)}`);
+      clauses.push(`ngày ${formatDate(start_date)}`);
     }
   }
 
@@ -39,7 +69,7 @@ export function buildResultsMessage({
   }
 
   if (clauses.length > 0) {
-    msg += ', ' + clauses.join(', ');
+    msg += matches ? `; ${clauses.join(', ')}` : ', ' + clauses.join(', ');
   }
 
   return msg + '.';

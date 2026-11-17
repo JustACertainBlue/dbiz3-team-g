@@ -654,32 +654,41 @@ export async function POST(
         const additionalCards = matching.additionalMatches
 
         const totalCount = topCards.length + additionalCards.length
-        const fallbackMsg = buildResultsMessage({
+        const cards = [...topCards, ...additionalCards]
+        const narration = (extraction.conversational_reply || '').trim().slice(0, 120)
+        const checkedNarration = postCheckMessage({
+          turnType: 'results',
+          message: narration,
+          allowedNumbers: [],
+          knownNames: experiences.flatMap((experience) => [
+            experience.name,
+            experience.experience_name,
+            experience.village_name,
+            experience.provider_name,
+          ]).filter((name): name is string => Boolean(name)),
+          allowedNames: [],
+          cardNames: cards.map((card) => card.experience_name),
+          fallback: '',
+        })
+        const resultMessage = buildResultsMessage({
           count: totalCount,
           group_size: tourPreferenceProfile.hard_constraints?.group_size,
           start_date: tourPreferenceProfile.hard_constraints?.target_date_or_range?.start_date,
           end_date: tourPreferenceProfile.hard_constraints?.target_date_or_range?.end_date,
           max_budget_per_person: tourPreferenceProfile.hard_constraints?.max_budget_per_person,
-        })
-
-        // Post-check message
-        const checked = postCheckMessage({
-          turnType: 'results',
-          message: fallbackMsg,
-          allowedNumbers: [
-            totalCount,
-            tourPreferenceProfile.hard_constraints?.group_size,
-            tourPreferenceProfile.hard_constraints?.max_budget_per_person,
-          ].filter(Boolean) as number[],
-          knownNames: matching.eligibleCandidates.map((experience) => experience.name),
-          allowedNames: [],
-          cardNames: [...topCards, ...additionalCards].map((c) => c.experience_name),
-          fallback: fallbackMsg,
+          matches: cards.length > 0
+            ? cards.map((card) => ({
+              experience_name: card.experience_name,
+              price_per_person: card.price_per_person,
+              distance_km: card.distance_km,
+            }))
+            : undefined,
+          lead: cards.length > 0 && checkedNarration.ok ? checkedNarration.message : undefined,
         })
 
         turn = {
           turn_type: totalCount > 0 ? ('results' as const) : ('no_results' as const),
-          message: checked.message,
+          message: resultMessage,
           top_matches: topCards,
           additional_suggestions: additionalCards,
           comparison: null,

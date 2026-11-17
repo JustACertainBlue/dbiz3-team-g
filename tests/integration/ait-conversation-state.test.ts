@@ -4,6 +4,7 @@ import * as extractor from '@/lib/ai/extractor'
 import * as llmRouter from '@/lib/ait/llm-router'
 import { updateMatchingSessionContext } from '@/lib/matching/session-service'
 import { normalizeConversationState } from '@/lib/ait/conversation-state'
+import { loadExperiences } from '@/lib/db/seed-loader'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
@@ -383,11 +384,76 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     expect(chatCards.length).toBeGreaterThan(0)
     expect(chatCards.map((card: Json) => card.experience_id).sort())
       .toEqual(matchingCards.map((card: Json) => card.experience_id).sort())
+    const comparableCards = (cards: Json[]) => cards
+      .map((card) => [card.experience_id, card.price_per_person, card.distance_km])
+      .sort((left, right) => String(left[0]).localeCompare(String(right[0])))
+    expect(comparableCards(chatCards)).toEqual(comparableCards(matchingCards))
     for (const [route, cards] of [['chat', chatCards], ['matching', matchingCards]] as const) {
       expect(cards.map((card: Json) => card.village_name)).not.toContain('Bát Tràng')
       const prices = cards.map((card: Json) => card.price_per_person).filter((price: number | null) => price !== null)
       expect(prices, `${route} prices`).toEqual([...prices].sort((a: number, b: number) => b - a))
     }
+  })
+
+  it('renders result facts from cards and state, rejecting fabricated LLM details', async () => {
+    const sessionId = await openSession()
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2028-01-01T00:00:00Z'))
+    await updateMatchingSessionContext(sessionId, {
+      state: normalizeConversationState({
+        exclusions: { villages: [BAT_TRANG_ID], crafts: [] },
+      }),
+    })
+    vi.spyOn(extractor, 'extractTourContext').mockResolvedValueOnce({
+      is_complete: true,
+      processing_status: 'Success',
+      retry_available: false,
+      follow_up_questions: [],
+      conversational_reply:
+        'Nặn gốm thủ công giá 999.000đ cho 200 khách ngày 01/01/2030 cách 999 km.',
+      tour_context: {
+        group_size: 10,
+        budget: { max_per_person: 200000, currency: 'VND' },
+        target_date_or_range: { start_date: '2028-07-12' },
+      },
+    })
+    vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
+      intent: 'provide_requirements',
+      confidence: 1,
+      source: 'llm',
+    })
+
+    const response = await send(sessionId, 'Tìm trải nghiệm cho đoàn')
+    const cards = [
+      ...(response.json.turn.top_matches ?? []),
+      ...(response.json.turn.additional_suggestions ?? []),
+    ]
+    const message = response.json.turn.message as string
+
+    expect(response.status).toBe(201)
+    expect(cards.length).toBeGreaterThan(0)
+    expect(message).toContain(`Tìm thấy ${cards.length} đề xuất`)
+    for (const card of cards) {
+      expect(message).toContain(card.experience_name)
+      if (card.price_per_person != null) {
+        expect(message).toContain(
+          `${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người`
+        )
+      }
+      if (typeof card.distance_km === 'number') {
+        expect(message).toContain(`${Math.round(card.distance_km)} km`)
+      }
+    }
+    const knownActivityNames = (await loadExperiences()).map((experience) => experience.name)
+    expect(knownActivityNames.filter((name) => message.includes(name)).sort())
+      .toEqual(cards.map((card: Json) => card.experience_name).sort())
+    expect(message).toContain('200.000đ/người')
+    expect(message).toContain('10 người')
+    expect(message).toContain('12/07/2028')
+    expect(message).not.toContain('999')
+    expect(message).not.toContain('200 khách')
+    expect(message).not.toContain('01/01/2030')
+    expect(message).not.toContain('Nặn gốm thủ công')
+    expect(cards.map((card: Json) => card.village_name)).not.toContain('Bát Tràng')
   })
 
   it('clears state only for an explicit reset and answers booking help without losing state (T22, T23)', async () => {

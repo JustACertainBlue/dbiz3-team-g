@@ -129,6 +129,7 @@ export function buildMatchCard({
     provider_name: candidate.provider_name,
     village_name: candidate.village_name,
     price_per_person: candidate.price_per_person ?? null,
+    distance_km: candidate.distance_km ?? null,
     max_participants: candidate.max_participants ?? null,
     notice_period_hours: candidate.notice_period_hours ?? null,
     image_url: candidate.image_url ?? null,

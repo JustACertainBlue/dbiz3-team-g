@@ -757,6 +757,15 @@ export async function POST(
         origin: conversationState.origin || extraction.tour_context.origin_or_route,
       })
     }
+    villageCards = villageCards
+      .sort((left, right) => {
+        const leftDistance = typeof left.distance_km === 'number' ? left.distance_km : undefined
+        const rightDistance = typeof right.distance_km === 'number' ? right.distance_km : undefined
+        if (leftDistance === undefined) return rightDistance === undefined ? 0 : 1
+        if (rightDistance === undefined) return -1
+        return leftDistance - rightDistance
+      })
+      .slice(0, 3)
 
     if (
       !isRetry
@@ -968,7 +977,6 @@ export async function POST(
     }
 
     if (extraction.missing_primary.length > 0) {
-      villageCards = villageCards.slice(0, 3)
       const missingPrimaryMessage = buildMissingPrimaryMessage(
         extraction.missing_primary,
         villageCards.map((card) => card.name),

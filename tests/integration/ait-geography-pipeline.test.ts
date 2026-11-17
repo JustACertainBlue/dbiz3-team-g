@@ -193,6 +193,19 @@ describe('AIT geography pipeline through the real extractor', () => {
   })
 
   it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('limits village-card results to three on %s data', async (_source, isTest) => {
+    installLlmMock('Mình tìm thấy các làng nghề phù hợp.')
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'làng nghề dưới 10 km', isTest)
+
+    expect(response.json.extraction.usedLlm).toBe(true)
+    expect(response.json.village_cards.length).toBeLessThanOrEqual(3)
+  })
+
+  it.each([
     [10, ['Bát Tràng', 'Kim Lan', 'Vạn Phúc']],
     [9, ['Bát Tràng', 'Kim Lan']],
   ] as const)('includes fixture experiences inside the %s km radius', async (radiusKm, expectedNames) => {

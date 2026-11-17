@@ -21,26 +21,24 @@ const makeRankedCandidates = (count: number) =>
   }))
 
 describe('T020 | Recommendations & Relaxation Suggestions (FR-008, FR-012, BR-007, BR-020)', () => {
-  it('FR-008: returns at most 5 top_matches', async () => {
+  it('P2: returns at most three recommendation cards in total', async () => {
     const ranked = makeRankedCandidates(8)
     const result = await buildRecommendations(ranked)
-    expect(result.top_matches.length).toBeLessThanOrEqual(5)
+    expect(result.top_matches.length + result.additional_suggestions.length).toBeLessThanOrEqual(3)
   })
 
-  it('FR-008: top_matches are the highest-ranked 5', async () => {
+  it('P2: visible top_matches are the highest-ranked recommendations', async () => {
     const ranked = makeRankedCandidates(8)
     const result = await buildRecommendations(ranked)
     expect(result.top_matches[0].rank).toBe(1)
-    expect(result.top_matches[result.top_matches.length - 1].rank).toBeLessThanOrEqual(5)
+    expect(result.top_matches[result.top_matches.length - 1].rank).toBeLessThanOrEqual(3)
   })
 
-  it('FR-008: additional_suggestions contains up to 5 results after top 5', async () => {
+  it('P2: additional_suggestions fit inside the three-card total', async () => {
     const ranked = makeRankedCandidates(9)
     const result = await buildRecommendations(ranked)
-    expect(result.additional_suggestions.length).toBeLessThanOrEqual(5)
-    if (result.additional_suggestions.length > 0) {
-      expect(result.additional_suggestions[0].rank).toBe(6)
-    }
+    expect(result.top_matches.length + result.additional_suggestions.length).toBeLessThanOrEqual(3)
+    expect(result.additional_suggestions.every(item => item.rank > result.top_matches.length)).toBe(true)
   })
 
   it('BR-007: each top_match has a non-empty explanation string', async () => {

@@ -465,6 +465,10 @@ body:has(.ait-container) #page-content {
   line-height: 1.55;
   color: #374151;
   margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .rec-card-thumb {

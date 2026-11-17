@@ -73,9 +73,12 @@ const recommendationView = (m: any): RecommendationView => ({
 
 /** FR-008 (#188): top 5 và tối đa 5 gợi ý thêm, hiển thị cùng kiểu thẻ. */
 export function matchResultsView(body: any): { top: RecommendationView[]; additional: RecommendationView[] } {
+  const top = (body?.top_matches ?? []).slice(0, 3).map(recommendationView)
   return {
-    top: (body?.top_matches ?? []).map(recommendationView),
-    additional: (body?.additional_suggestions ?? []).slice(0, 5).map(recommendationView),
+    top,
+    additional: (body?.additional_suggestions ?? [])
+      .slice(0, Math.max(0, 3 - top.length))
+      .map(recommendationView),
   }
 }
 

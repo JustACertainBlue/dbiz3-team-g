@@ -110,6 +110,8 @@ export async function buildRecommendations(
     flags: c.flags || [],
   }))
   const { top, additional } = selectTiers(scoredItems)
+  const visibleTop = top.slice(0, 3)
+  const visibleAdditional = additional.slice(0, Math.max(0, 3 - visibleTop.length))
   const candMap = new Map(rankedCandidates.map(c => [c.experience_id, c]))
 
   const formatItem = (item: any, index: number, offset: number): RecommendationItem => {
@@ -135,8 +137,8 @@ export async function buildRecommendations(
     }
   }
 
-  const top_matches = top.map((id, idx) => formatItem(candMap.get(id), idx, 0))
-  const additional_suggestions = additional.map((id, idx) => formatItem(candMap.get(id), idx, top.length))
+  const top_matches = visibleTop.map((id, idx) => formatItem(candMap.get(id), idx, 0))
+  const additional_suggestions = visibleAdditional.map((id, idx) => formatItem(candMap.get(id), idx, visibleTop.length))
 
   return {
     top_matches,

@@ -66,7 +66,8 @@ describe('T016 | POST /api/bkg/bookings', () => {
   })
 
   it('rejects group_size above max_participants with VALIDATION_ERROR', async () => {
-    const { status, json } = await call('provider', { ...body, group_size: 13 })
+    // L7 raises this Experience's max capacity to 30; 31 remains invalid.
+    const { status, json } = await call('provider', { ...body, group_size: 31 })
     expect(status).toBe(400)
     expect(json.error?.code).toBe('VALIDATION_ERROR')
   })

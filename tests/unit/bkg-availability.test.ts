@@ -7,7 +7,7 @@ import { buildCalendarBlocks, calculateAvailability } from '@/lib/booking/availa
 
 // T007–T008: F-SCHED-09 (US-2; FR-009; #32, #72, #77; AC-BKG-HOURS; SC-003).
 const PROVIDER = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374' // Monday 08:00–17:00
-const BOOKED = '4bf17b30-9819-5c47-b745-06be7171087b'  // Mon 2026-10-05 09:00–10:00
+const BOOKED = '4bf17b30-9819-5c47-b745-06be7171087b'  // Mon 2026-10-05 09:00–10:45 after L7 duration update
 const seedNow = { now: () => new Date(SEED_NOW) }
 const t = (date: string, hhmm: string) => `${date}T${hhmm}:00+07:00`
 const hours = () => demoRepository().all('provider_operating_hours').filter(row => row.provider_id === PROVIDER)
@@ -20,8 +20,8 @@ describe('T007 | buildCalendarBlocks (#72)', () => {
     expect(buildCalendarBlocks(hours(), bookings(), '2026-10-05', '2026-10-05', 'owner')).toEqual([
       { start_at: t('2026-10-05', '00:00'), end_at: t('2026-10-05', '08:00'), status: 'Unavailable' },
       { start_at: t('2026-10-05', '08:00'), end_at: t('2026-10-05', '09:00'), status: 'Available' },
-      { start_at: t('2026-10-05', '09:00'), end_at: t('2026-10-05', '10:00'), status: 'Booked', booking_id: BOOKED },
-      { start_at: t('2026-10-05', '10:00'), end_at: t('2026-10-05', '17:00'), status: 'Available' },
+      { start_at: t('2026-10-05', '09:00'), end_at: t('2026-10-05', '10:45'), status: 'Booked', booking_id: BOOKED },
+      { start_at: t('2026-10-05', '10:45'), end_at: t('2026-10-05', '17:00'), status: 'Available' },
       { start_at: t('2026-10-05', '17:00'), end_at: t('2026-10-06', '00:00'), status: 'Unavailable' },
     ])
   })
@@ -35,7 +35,7 @@ describe('T007 | buildCalendarBlocks (#72)', () => {
   it('a Booking outside the hours is still occupied (#32)', () => {
     const blocks = buildCalendarBlocks(hours(), bookings(), '2026-10-10', '2026-10-10', 'owner')
     expect(blocks.map(block => [block.start_at.slice(11, 16), block.end_at.slice(11, 16), block.status])).toEqual([
-      ['00:00', '09:00', 'Unavailable'], ['09:00', '10:00', 'Booked'], ['10:00', '00:00', 'Unavailable'],
+      ['00:00', '09:00', 'Unavailable'], ['09:00', '10:45', 'Booked'], ['10:45', '00:00', 'Unavailable'],
     ])
   })
 
@@ -80,9 +80,9 @@ describe('T008 | calculateAvailability (#77, SC-003)', () => {
     expect(result.availability_calendar).toEqual(buildCalendarBlocks(hours(), bookings(), '2026-10-05', '2026-10-05', 'owner'))
     expect(result.available_slots).toEqual([
       { start_at: t('2026-10-05', '08:00'), end_at: t('2026-10-05', '09:00') },
-      { start_at: t('2026-10-05', '10:00'), end_at: t('2026-10-05', '17:00') },
+      { start_at: t('2026-10-05', '10:45'), end_at: t('2026-10-05', '17:00') },
     ])
-    expect(result.occupied_slots).toEqual([{ booking_id: BOOKED, start_at: t('2026-10-05', '09:00'), end_at: t('2026-10-05', '10:00'), status: 'Booked' }])
+    expect(result.occupied_slots).toEqual([{ booking_id: BOOKED, start_at: t('2026-10-05', '09:00'), end_at: t('2026-10-05', '10:45'), status: 'Booked' }])
     expect(result.calculated_at).toBe(hanoiTimestamp(now.getTime()))
   })
 

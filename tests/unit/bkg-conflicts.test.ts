@@ -3,7 +3,7 @@ import { demoRepository } from '@/lib/demo/json-repository'
 import { findConflict } from '@/lib/booking/conflicts'
 
 // T011: BR-005, spec #40, #41, OQ #32. Rows come from the seed (volatile repository).
-const BAT_TRANG = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374' // Booked 4bf17b30… Mon 2026-10-05 09:00–10:00
+const BAT_TRANG = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374' // Booked 4bf17b30… Mon 2026-10-05 09:00–10:45 after L7 duration update
 const PROVIDER_70E = '70efa801-a908-5e16-8510-fd094fbdc020' // On hold 54d7a276… Sun 2026-10-11 09:00–10:15, hold expired 2026-10-01
 const PROVIDER_085 = '0858b5e8-89e1-577f-904a-562150c4fe4f' // Cancelled f55711e1… Mon 2026-10-12 09:00–10:30
 
@@ -17,7 +17,8 @@ describe('T011 | conflict check', () => {
   })
 
   it('#41: an interval that only touches an existing Booking does not conflict', () => {
-    expect(findConflict(bookings(), BAT_TRANG, '2026-10-05T10:00:00+07:00', '2026-10-05T11:00:00+07:00')).toBeUndefined()
+    // L7 extends the seeded Booking to 10:45; test the half-open boundary there.
+    expect(findConflict(bookings(), BAT_TRANG, '2026-10-05T10:45:00+07:00', '2026-10-05T11:45:00+07:00')).toBeUndefined()
     expect(findConflict(bookings(), BAT_TRANG, '2026-10-05T08:00:00+07:00', '2026-10-05T09:00:00+07:00')).toBeUndefined()
   })
 

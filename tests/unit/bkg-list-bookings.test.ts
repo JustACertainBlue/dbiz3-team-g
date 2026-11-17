@@ -73,7 +73,8 @@ describe('T008 | row shape and JSON numbers (§5.1 FR-010)', () => {
       experience_name: 'Nặn gốm thủ công',
       agency_name: 'Công ty Du lịch Hồng Hà',
       start_at: '2026-10-05T09:00:00+07:00',
-      end_at: '2026-10-05T10:00:00+07:00',
+      // L7's 105-minute seeded duration moves this Booking's end to 10:45.
+      end_at: '2026-10-05T10:45:00+07:00',
       group_size: 6,
       status: 'Booked',
       requires_action: false,

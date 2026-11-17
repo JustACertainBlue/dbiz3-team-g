@@ -1,0 +1,202 @@
+{
+  "by_village_id": {
+    "20896522-6235-5699-aeaf-f48b8150d895": {
+      "geo": {
+        "lat": 20.97781,
+        "lng": 105.91081,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "3527fadf-18ef-58d0-95c6-dc3729650f6a": {
+      "geo": {
+        "lat": 21.1713382,
+        "lng": 105.848178,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    },
+    "688d408b-9d98-5b66-bfa7-659a67462108": {
+      "geo": {
+        "lat": 20.826937,
+        "lng": 105.761797,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "6dfbb5e9-f92e-58a0-b090-d67cea160f62": {
+      "geo": {
+        "lat": 20.90306,
+        "lng": 105.86556,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "85ec7215-3ec1-5792-afcc-a72d89a3a214": {
+      "geo": {
+        "lat": 21.0228962,
+        "lng": 105.7035484,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    },
+    "b1017646-ec89-58d1-aaa9-df783b1c2506": {
+      "geo": {
+        "lat": 20.8725948,
+        "lng": 105.8674129,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    },
+    "c0d0d95f-d59c-5c35-946a-f397e380dd14": {
+      "geo": {
+        "lat": 20.97976,
+        "lng": 105.77402,
+        "precision": "manual_gmaps",
+        "source": "manual",
+        "verified_status": "verified"
+      }
+    },
+    "e482884e-7190-56cf-bc03-4e69614b1fe5": {
+      "geo": {
+        "lat": 20.933087,
+        "lng": 105.649578,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "bat-trang": {
+      "geo": {
+        "lat": 20.97781,
+        "lng": 105.91081,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "kim-lan": {
+      "geo": {
+        "lat": 20.96369,
+        "lng": 105.90369,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "xuan-la": {
+      "geo": {
+        "lat": 20.7633442,
+        "lng": 105.9226694,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    },
+    "ha-thai": {
+      "geo": {
+        "lat": 20.90306,
+        "lng": 105.86556,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "yen-thai": {
+      "geo": {
+        "lat": 21.0682703,
+        "lng": 105.8239615,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    },
+    "chang-son": {
+      "geo": {
+        "lat": 21.0666388,
+        "lng": 105.5617779,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    },
+    "van-phuc": {
+      "geo": {
+        "lat": 20.97976,
+        "lng": 105.77402,
+        "precision": "manual_gmaps",
+        "source": "manual",
+        "verified_status": "verified"
+      }
+    },
+    "non-chuong": {
+      "geo": {
+        "lat": 20.826937,
+        "lng": 105.761797,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "phu-vinh": {
+      "geo": {
+        "lat": 20.933087,
+        "lng": 105.649578,
+        "precision": "plus_code",
+        "source": "plus_code",
+        "verified_status": "verified"
+      }
+    },
+    "ba-duong-noi": {
+      "geo": {
+        "lat": 21.13333,
+        "lng": 105.7,
+        "precision": "manual_gmaps",
+        "source": "manual",
+        "verified_status": "verified"
+      }
+    },
+    "son-dong": {
+      "geo": {
+        "lat": 21.0228962,
+        "lng": 105.7035484,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    },
+    "ngu-xa": {
+      "geo": {
+        "lat": 21.0347091,
+        "lng": 105.8245193,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    },
+    "phung-xa": {
+      "geo": {
+        "lat": 20.72611,
+        "lng": 105.70667,
+        "precision": "manual_gmaps",
+        "source": "manual",
+        "verified_status": "verified"
+      }
+    },
+    "dao-thuc": {
+      "geo": {
+        "lat": 21.1713382,
+        "lng": 105.848178,
+        "precision": "district_centroid",
+        "source": "© OpenStreetMap contributors (ODbL), Photon (komoot)",
+        "verified_status": "unverified"
+      }
+    }
+  }
+}

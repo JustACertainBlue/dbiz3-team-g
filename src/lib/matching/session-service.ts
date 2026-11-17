@@ -19,6 +19,20 @@ export interface ConversationMessage {
   sent_at: string
 }
 
+export interface MatchingConversationContext extends Record<string, unknown> {
+  state?: unknown
+  pending_question?: unknown
+}
+
+function parseConversationContext(value: unknown): MatchingConversationContext {
+  if (value == null || value === '') return {}
+  const parsed = typeof value === 'string' ? JSON.parse(value) : value
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Matching session conversation context is invalid.')
+  }
+  return parsed as MatchingConversationContext
+}
+
 export async function createMatchingSession(
   input: string | { agencyId: string }
 ): Promise<MatchingSession> {
@@ -38,7 +52,10 @@ export async function createMatchingSession(
   ;(await demoRepository().insert('matching_sessions', {
     matching_session_id: id,
     agency_id: agencyId,
-    conversation_context: '{}',
+    conversation_context: JSON.stringify({
+      state: { exclusions: { villages: [], crafts: [] } },
+      pending_question: null,
+    }),
     started_at: now.toISOString(),
     last_activity_at: now.toISOString(),
     status: 'active',
@@ -58,6 +75,17 @@ export async function getMatchingSession(sessionId: string): Promise<MatchingSes
     last_activity_at: new Date(row.last_activity_at),
     status: row.status === 'closed' ? 'closed' : 'active',
   }
+}
+
+export async function getMatchingSessionContext(
+  sessionId: string
+): Promise<MatchingConversationContext> {
+  const row = await demoRepository().find(
+    'matching_sessions',
+    item => item.matching_session_id === sessionId
+  )
+  if (!row) throw new Error('Matching session not found')
+  return parseConversationContext(row.conversation_context)
 }
 
 export async function addMessage(
@@ -152,12 +180,7 @@ export async function updateMatchingSessionContext(
   const existing = await repository.find('matching_sessions', row => row.matching_session_id === sessionId)
   if (!existing) return
 
-  let currentContext: any = {}
-  try {
-    currentContext = typeof existing.conversation_context === 'string'
-      ? JSON.parse(existing.conversation_context)
-      : (existing.conversation_context || {})
-  } catch {}
+  const currentContext = parseConversationContext(existing.conversation_context)
 
   const merged = { ...currentContext, ...context }
   const now = new Date().toISOString()

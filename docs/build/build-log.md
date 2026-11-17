@@ -18,6 +18,29 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 56: 17/11 Copilot — AIT budget retention and assistant-question post-check
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`. |
+| Scope | Verify T1–T10/T18–T26 coverage, retain budget when later extraction omits it, enforce supported follow-up questions in route code, and mutation-test merge, pending routing, refusal-state, exclusions and whitelist behavior. |
+| Produced | Added a dedicated L16 regression for a 200,000 VND budget omitted by the next extraction. Added route-level cases for six unsupported self-asked topics and a classifier-bypass assertion for short replies. Added a post-check that removes unsupported assistant questions before appending the next state-derived supported question. Updated the existing B.4 grading assertion from obsolete exact-copy wording to the already-approved behavior-compatible in-scope offer. |
+| Test-first | Before the post-check, 4/6 prohibited-topic cases failed (`chỗ ăn`, `khách sạn`, `xe`, `thời tiết`); the other two were caught by a narrower pre-existing prefix check. All six pass with the post-check. L16 passes with the route's persisted state even though the second mocked extraction returns an empty `tour_context`. |
+| Mutation checks | Removing merge made the multi-turn state test fail. Removing the pending short-answer bypass initially escaped the old test; a dedicated test then failed because the mocked classifier was called and returned `out_of_scope`. Replacing refusal state with an empty state failed the state-invariance assertion. Removing exclusion filtering returned `Nặn gốm thủ công` and failed T20. Removing the whitelist post-check failed all six prohibited-topic cases. Mutations were reverted by restoring only the changed hunks, preserving all other local work. |
+| Verification | `npx.cmd vitest run --config vitest.config.ts --maxWorkers=1 --minWorkers=1`: 258 files passed, 5 skipped; 1,735 tests passed, 30 skipped. `npm.cmd run lint`: passed. `npm.cmd run build`: passed; Next printed a dynamic-server-usage diagnostic for `/ai-matching` during static-page generation but completed page generation and build. The first requested `--maxWorkers=1` run conflicted with Vitest's configured minimum; rerun with both worker limits set to 1. |
+| Boundaries | No push, no `.claude/`, `.env.local`, `data/`, or planning-inputs edits. No changes to the AIT planning-inputs document. |
+
+### Entry 55: 17/11 Copilot — AIT conversation state and pending questions
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`. |
+| Scope | Persist structured AIT state across turns, map short replies to the active question, keep scope refusals from changing state, retain exclusions/radius, and avoid unrelated cards. No push or commit. |
+| Produced | Added normalized state `{craft, group_size, budget_per_person, date, origin, exclusions, radius_km}` and pending-question persistence in matching-session context. Each turn merges extracted fields into prior state; exclusions are applied to AIT matching, while radius is stored only. Out-of-scope refusals preserve state; supported system/booking guidance does not erase it. Removed the unrelated-activity card fallback. |
+| Test-first | Added route-level regressions before implementation for multi-turn field retention, short answers, repeated refusals, mixed meal/tour requests, exclusions, help/reset, technical-vs-scope errors, and no-card behavior. Initial run exposed missing persistence/routing; a later T035 assertion exposed that the origin question lacked the expected origin wording, which was corrected without weakening the assertion. |
+| Verification | `npx.cmd vitest run --config vitest.config.ts tests/integration/ait-conversation-state.test.ts tests/integration/ait-matching-api.test.ts tests/integration/ait-failure-api.test.ts tests/integration/multi-turn-api.test.ts tests/unit/conversational-ai.test.ts tests/ait/llm-router.test.ts tests/ait/router.extra.test.ts tests/unit/village-display-name.test.ts`: 8 files, 126 tests passed. `npm.cmd run lint`: passed. `git diff --check`: passed. Full suite, production build and browser smoke test were not run. |
+| Boundaries | No `data/`, `.env.local` or `.claude/` edits; no commit or push. Existing unrelated worktree changes were left in place. |
+
 ### Entry 54: 15/11 Copilot — AIT refusal, backend errors and post-L7 test alignment
 
 | Field | Value |

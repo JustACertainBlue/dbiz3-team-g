@@ -415,7 +415,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--manual-coords",
         type=Path,
-        help="Manual coordinate CSV; defaults to src/lib/matching/manual_village_coords.csv.",
+        help="Manual coordinate CSV; defaults to data/manual_village_coords.csv.",
     )
     args = parser.parse_args(argv)
 
@@ -446,7 +446,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.output is not None and len(unique_sources) != 1:
         raise ValueError("--output can only be used with exactly one source.")
 
-    manual_path = args.manual_coords or repo / "src" / "lib" / "matching" / "manual_village_coords.csv"
+    manual_path = args.manual_coords or repo / "data" / "manual_village_coords.csv"
     manual_coordinates = load_manual_village_coordinates(manual_path)
     cache_path = Path(os.environ.get(
         "HAB_PHOTON_CACHE",

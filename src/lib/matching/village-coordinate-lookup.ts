@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import rawLookup from './village-coordinate-lookup.json'
+import rawLookup from '../../../data/village-coordinate-lookup.json'
 
 export type VillageCoordinatePrecision =
   | 'plus_code'
@@ -152,9 +152,7 @@ function parseManualCoordinates(csv: string): Record<string, ManualVillageCoordi
 function loadManualCoordinates(): Record<string, ManualVillageCoordinate> {
   const manualPath = path.join(
     process.cwd(),
-    'src',
-    'lib',
-    'matching',
+    'data',
     'manual_village_coords.csv',
   )
   return parseManualCoordinates(readFileSync(manualPath, 'utf8'))

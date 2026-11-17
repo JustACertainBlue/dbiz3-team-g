@@ -14,6 +14,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '@ait': resolve(__dirname, './src/lib/ait'),
     },
   },
 })

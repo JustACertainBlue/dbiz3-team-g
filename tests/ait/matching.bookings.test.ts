@@ -4,6 +4,7 @@ import { applyHardFilters } from '@/lib/ait/constraints';
 describe('Booking status mapping in applyHardFilters', () => {
   const candidate = {
     id: 'exp-1',
+    provider_id: 'provider-1',
     verification_status: 'verified' as const,
     published: true,
     max_participants: 20,
@@ -126,5 +127,20 @@ describe('Booking status mapping in applyHardFilters', () => {
 
     expect(result.rejected).toHaveLength(0);
     expect(result.passed.map((p) => p.id)).toEqual(['exp-1']);
+  });
+
+  it('rejects a candidate with no operating-hours row for the requested weekday', () => {
+    const result = applyHardFilters({
+      candidates: [candidate],
+      profile,
+      bookings: [],
+      operatingHours: [
+        { provider_id: 'provider-1', weekday: 1, local_start: '08:00:00', local_end: '17:00:00' },
+      ],
+      now,
+    });
+
+    expect(result.passed).toHaveLength(0);
+    expect(result.rejected).toEqual([{ id: 'exp-1', reason: 'operating_hours' }]);
   });
 });

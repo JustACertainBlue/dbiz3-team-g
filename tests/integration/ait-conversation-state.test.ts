@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { demoRepository } from '@/lib/demo/json-repository'
 import * as extractor from '@/lib/ai/extractor'
 import * as llmRouter from '@/lib/ait/llm-router'
+import { updateMatchingSessionContext } from '@/lib/matching/session-service'
+import { normalizeConversationState } from '@/lib/ait/conversation-state'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
@@ -338,6 +340,54 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       .not.toContain('Bát Tràng')
     expect(cards.map((card: Json) => card.experience_name), `Transcript: ${JSON.stringify(transcript)}`)
       .not.toContain('Nặn gốm thủ công')
+  })
+
+  it('uses the same excluded, highest-price results in chat and matching routes', async () => {
+    const sessionId = await openSession()
+    await updateMatchingSessionContext(sessionId, {
+      state: normalizeConversationState({
+        exclusions: { villages: [BAT_TRANG_ID], crafts: [] },
+      }),
+    })
+    vi.spyOn(extractor, 'extractTourContext').mockResolvedValueOnce({
+      is_complete: true,
+      processing_status: 'Success',
+      retry_available: false,
+      follow_up_questions: [],
+      tour_context: {},
+    })
+    vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
+      intent: 'provide_requirements',
+      confidence: 1,
+      source: 'llm',
+    })
+
+    const chat = await send(sessionId, 'Tìm tour có giá cao nhất')
+    const profile = chat.json.tour_preference_profile
+    const matching = await call(
+      POST_MATCHING,
+      '/api/ait/matching',
+      { session_id: sessionId, tour_preference_profile: profile }
+    )
+    const chatCards = [
+      ...(chat.json.turn.top_matches ?? []),
+      ...(chat.json.turn.additional_suggestions ?? []),
+    ]
+    const matchingCards = [
+      ...(matching.json.top_matches ?? []),
+      ...(matching.json.additional_suggestions ?? []),
+    ]
+
+    expect(chat.status).toBe(201)
+    expect(matching.status).toBe(200)
+    expect(chatCards.length).toBeGreaterThan(0)
+    expect(chatCards.map((card: Json) => card.experience_id).sort())
+      .toEqual(matchingCards.map((card: Json) => card.experience_id).sort())
+    for (const [route, cards] of [['chat', chatCards], ['matching', matchingCards]] as const) {
+      expect(cards.map((card: Json) => card.village_name)).not.toContain('Bát Tràng')
+      const prices = cards.map((card: Json) => card.price_per_person).filter((price: number | null) => price !== null)
+      expect(prices, `${route} prices`).toEqual([...prices].sort((a: number, b: number) => b - a))
+    }
   })
 
   it('clears state only for an explicit reset and answers booking help without losing state (T22, T23)', async () => {

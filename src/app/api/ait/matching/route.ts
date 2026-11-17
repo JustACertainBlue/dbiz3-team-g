@@ -20,15 +20,14 @@ import {
   buildRelaxationSuggestions,
   explain,
 } from '@/lib/matching/recommendation-service'
-import { loadExperiences, loadBookings } from '@/lib/db/seed-loader'
+import { loadExperiences, loadBookings, loadVillages } from '@/lib/db/seed-loader'
 import { getTestCandidates, getTestAllExperiences } from '@/lib/matching/test-dataset'
 import { profileSchema } from '@/lib/ait/schemas'
-import { applyHardFilters } from '@/lib/ait/constraints'
-import { selectTiers, applyNullPenalty, resolveDisplayGroups } from '@/lib/ait/scoring'
-import { buildMatchCard } from '@/lib/ait/card'
 import { villageStartingPrices } from '@/lib/village-starting-price'
 import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
+import { loadOperatingHours } from '@/lib/prf/seed-reader'
+import { runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
 
 export async function POST(request: Request) {
   try {
@@ -94,27 +93,14 @@ export async function POST(request: Request) {
     const constraints = rawProfile.hard_constraints || {}
     const reqGroupSize = constraints.group_size || 0
 
-    // 2. Load bookings and apply hard filters (capacity, budget, dates, notice, exclusions)
-    const bookings = await loadBookings()
-    const candidateInputs = enrichedCandidates.map(c => ({
-      id: c.experience_id,
-      village_id: c.village_id,
-      verification_status:
-        c.provider_status === 'Verified' || c.provider_verification_status === 'Approved'
-          ? ('verified' as const)
-          : ('unverified' as const),
-      published: c.has_published_profile_version,
-      max_participants: c.max_participants ?? null,
-      price_per_person: c.price_per_person ?? null,
-      notice_period_hours: c.notice_period_hours ?? null,
-      category: c.category,
-      experience_type: c.experience_type || c.category,
-      craft: c.craft_type || null,
-      tags: c.tags || [],
-    }))
-
-    const hardFilterResult = applyHardFilters({
-      candidates: candidateInputs,
+    // Both matching routes use the same hard filters, ranking and card builder.
+    const [bookings, operatingHours, villages] = await Promise.all([
+      loadBookings(),
+      loadOperatingHours(),
+      loadVillages(),
+    ])
+    const matching = await runAitMatchingPipeline({
+      candidates: enrichedCandidates,
       profile: rawProfile,
       bookings: bookings.map(b => ({
         experience_id: b.experience_id,
@@ -122,15 +108,12 @@ export async function POST(request: Request) {
         end_at: b.end_at || b.start_at,
         status: b.status,
       })),
-      now: Date.now(),
+      operatingHours,
+      villageNames: new Map(villages.map(village => [village.village_id, village.village_name])),
     })
 
-    const passedIds = new Set(hardFilterResult.passed.map(p => p.id))
-    const flagsMap = new Map(hardFilterResult.passed.map(p => [p.id, p.flags]))
-    const eligible = enrichedCandidates.filter(c => passedIds.has(c.experience_id))
-
     // 3. No candidate left → relaxation suggestions (BR-011, FR-012, #23, #24)
-    if (eligible.length === 0) {
+    if (matching.eligibleCandidates.length === 0) {
       const budgetFree = enrichedCandidates.filter(c => {
         if (reqGroupSize > 0 && c.max_participants != null && c.max_participants < reqGroupSize) return false
         return true
@@ -150,94 +133,23 @@ export async function POST(request: Request) {
       })
     }
 
-    // 4. Score + rank surviving candidates (FR-007) and apply null penalties
-    const ranked = await rankCandidates(eligible, rawProfile)
-    for (const c of ranked) {
-      const flags = flagsMap.get(c.experience_id) || []
-      c.flags = flags
-      c.match_score = applyNullPenalty(c.match_score, flags)
-    }
-
-    // 5. Select tiers: selectTiers is the single place for drop < 40 and top/additional tiering
-    const { top, additional } = selectTiers(
-      ranked.map(c => ({ id: c.experience_id, score: c.match_score, flags: c.flags }))
-    )
-
-    const candMap = new Map(ranked.map(c => [c.experience_id, c]))
-
-    // 6. Build match cards with buildMatchCard
-    const buildCard = (expId: string, rankNum: number) => {
-      const c = candMap.get(expId)!
-      const matchFactors = c.match_factors || {}
-      const factors: any = {}
-      if (matchFactors.craft) {
-        factors.craft = {
-          matched: Boolean(matchFactors.craft.matched),
-          value: matchFactors.craft.preference || matchFactors.craft.label || '',
-        }
-      }
-      if (matchFactors.group_size !== undefined && c.max_participants != null) {
-        factors.capacity = {
-          matched: true,
-          max: c.max_participants,
-          group: matchFactors.group_size,
-        }
-      }
-      if (matchFactors.budget_per_person !== undefined && c.price_per_person != null) {
-        factors.budget = {
-          matched: true,
-          price: c.price_per_person,
-          max: matchFactors.budget_per_person,
-        }
-      }
-      if (c.distance_km != null) {
-        factors.distance = { km: c.distance_km }
-      }
-      if (Array.isArray(c.tags) && c.tags.length > 0) {
-        factors.tags = { matched: c.tags }
-      }
-
-      const card = buildMatchCard({
-        candidate: {
-          id: c.experience_id,
-          provider_id: c.provider_id,
-          name: c.name || c.experience_name || '',
-          provider_name: c.provider_name || '',
-          village_name: c.village_name || '',
-          price_per_person: c.price_per_person ?? null,
-          max_participants: c.max_participants ?? null,
-          notice_period_hours: c.notice_period_hours ?? null,
-          image_url: c.image_url ?? null,
-          verification_status:
-            c.provider_status === 'Verified' || c.provider_verification_status === 'Approved'
-              ? 'verified'
-              : 'from_source_only',
-          tags: c.tags || [],
-        },
-        rank: rankNum,
-        score: c.match_score,
-        factors,
-        sourceCount: c.source_count ?? null,
-      })
-
-      const expText = explain(c, c.match_score)
-
+    const rankedById = new Map(matching.rankedCandidates.map(candidate => [candidate.experience_id, candidate]))
+    const addRouteDetails = (card: (typeof matching.topMatches)[number]) => {
+      const candidate = rankedById.get(card.experience_id)!
       return {
         ...card,
-        explanation: expText,
-        distance_km: c.distance_km,
-        village_name: c.village_name || card.village_name,
-        provider_name: c.provider_name || card.provider_name,
-        price_per_person: c.price_per_person ?? card.price_per_person,
-        max_participants: c.max_participants ?? card.max_participants,
-        village_starting_price: c.village_id ? villagePrices.get(c.village_id) ?? null : null,
-        ...(isTest && c.image_url ? { image_url: c.image_url } : {}),
+        explanation: explain(candidate, candidate.match_score),
+        distance_km: candidate.distance_km,
+        village_name: candidate.village_name || card.village_name,
+        provider_name: candidate.provider_name || card.provider_name,
+        price_per_person: candidate.price_per_person ?? card.price_per_person,
+        max_participants: candidate.max_participants ?? card.max_participants,
+        village_starting_price: candidate.village_id ? villagePrices.get(candidate.village_id) ?? null : null,
+        ...(isTest && candidate.image_url ? { image_url: candidate.image_url } : {}),
       }
     }
-
-    const displayGroups = resolveDisplayGroups({ top, additional })
-    const topMatches = displayGroups.primary.map((id, idx) => buildCard(id, idx + 1))
-    const additionalMatches = displayGroups.secondary.map((id, idx) => buildCard(id, topMatches.length + idx + 1))
+    const topMatches = matching.topMatches.map(addRouteDetails)
+    const additionalMatches = matching.additionalMatches.map(addRouteDetails)
 
     return NextResponse.json({
       is_test: isTest,

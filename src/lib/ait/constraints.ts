@@ -11,11 +11,18 @@ export function applyHardFilters({
   candidates,
   profile,
   bookings = [],
+  operatingHours = [],
   now = Date.now(),
 }: {
   candidates: any[];
   profile: any;
   bookings?: any[];
+  operatingHours?: {
+    provider_id: string;
+    weekday: string | number;
+    local_start: string;
+    local_end: string;
+  }[];
   now?: number;
 }): {
   passed: { id: string; flags: string[] }[];
@@ -27,6 +34,10 @@ export function applyHardFilters({
   const targetDateRange = profile?.hard_constraints?.target_date_or_range;
   const startDateStr = targetDateRange?.start_date;
   const endDateStr = targetDateRange?.end_date ?? startDateStr;
+  const dateParts = typeof startDateStr === 'string' ? startDateStr.split('-').map(Number) : [];
+  const targetWeekday = dateParts.length === 3
+    ? new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2])).getUTCDay() || 7
+    : null;
 
   let rangeStartMs: number | null = null;
   let rangeEndMs: number | null = null;
@@ -92,6 +103,20 @@ export function applyHardFilters({
       const noticeMs = candidate.notice_period_hours * 3600 * 1000;
       if (rangeStartMs - now < noticeMs) {
         rejected.push({ id: candidate.id, reason: 'notice' });
+        continue;
+      }
+    }
+
+    // A provider with known weekly hours must have a window on the requested weekday.
+    if (targetWeekday !== null && candidate.provider_id) {
+      const providerHours = operatingHours.filter(
+        (hours) => hours.provider_id === candidate.provider_id
+      );
+      if (
+        providerHours.length > 0
+        && !providerHours.some((hours) => Number(hours.weekday) === targetWeekday)
+      ) {
+        rejected.push({ id: candidate.id, reason: 'operating_hours' });
         continue;
       }
     }

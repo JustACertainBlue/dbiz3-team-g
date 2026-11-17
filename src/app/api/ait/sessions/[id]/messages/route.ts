@@ -26,6 +26,9 @@ import { detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
 import { withVillageStartingPrices } from '@/lib/village-starting-price'
 import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
+import { loadBookings, loadExperiences, loadVillages } from '@/lib/db/seed-loader'
+import { loadOperatingHours } from '@/lib/prf/seed-reader'
+import { runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
 import { sanitizeInput, createRateLimiter } from '@/lib/ait/guard'
 import { routeByRules } from '@/lib/ait/router'
 import { classifyIntent } from '@/lib/ait/llm-router'
@@ -629,71 +632,26 @@ export async function POST(
     if (tourPreferenceProfile && extraction.is_complete) {
       // Execute matching call internally
       try {
-        const { loadExperiences } = await import('@/lib/db/seed-loader')
-        const { rankCandidates } = await import('@/lib/matching/scoring-engine')
-        const { buildMatchCard } = await import('@/lib/ait/card')
-        const { selectTiers } = await import('@/lib/ait/scoring')
-
-        const exps = await loadExperiences()
-        const exclusions = tourPreferenceProfile.matching_attributes.filter(
-          (attribute: { polarity?: string }) => attribute.polarity === 'exclude'
-        )
-        const eligibleExperiences = exps.filter(experience => !exclusions.some(
-          (attribute: { type: string; value: string }) => (
-            attribute.type === 'village_id' && experience.village_id === attribute.value
-          ) || (
-            attribute.type === 'craft_preference' && experience.craft_type === attribute.value
-          )
-        ))
-        const ranked = await rankCandidates(eligibleExperiences, tourPreferenceProfile)
-        const scoredList = ranked.map((c) => ({ id: c.experience_id, score: c.match_score }))
-        const { top, additional } = selectTiers(scoredList)
-
-        const topCards = top.map((id, idx) => {
-          const c = ranked.find((r) => r.experience_id === id)!
-          return buildMatchCard({
-            candidate: {
-              id: c.experience_id,
-              provider_id: c.provider_id,
-              name: c.name || c.experience_name || '',
-              provider_name: c.provider_name || '',
-              village_name: c.village_name || '',
-              price_per_person: c.price_per_person ?? null,
-              max_participants: c.max_participants ?? null,
-              notice_period_hours: c.notice_period_hours ?? null,
-              image_url: c.image_url ?? null,
-              verification_status: 'verified',
-              tags: c.tags || [],
-            },
-            rank: idx + 1,
-            score: c.match_score,
-            factors: c.match_factors || {},
-            sourceCount: null,
-          })
+        const [experiences, bookings, operatingHours, villages] = await Promise.all([
+          loadExperiences(),
+          loadBookings(),
+          loadOperatingHours(),
+          loadVillages(),
+        ])
+        const matching = await runAitMatchingPipeline({
+          candidates: experiences,
+          profile: tourPreferenceProfile,
+          bookings: bookings.map(booking => ({
+            experience_id: booking.experience_id,
+            start_at: booking.start_at,
+            end_at: booking.end_at || booking.start_at,
+            status: booking.status,
+          })),
+          operatingHours,
+          villageNames: new Map(villages.map(village => [village.village_id, village.village_name])),
         })
-
-        const additionalCards = additional.map((id, idx) => {
-          const c = ranked.find((r) => r.experience_id === id)!
-          return buildMatchCard({
-            candidate: {
-              id: c.experience_id,
-              provider_id: c.provider_id,
-              name: c.name || c.experience_name || '',
-              provider_name: c.provider_name || '',
-              village_name: c.village_name || '',
-              price_per_person: c.price_per_person ?? null,
-              max_participants: c.max_participants ?? null,
-              notice_period_hours: c.notice_period_hours ?? null,
-              image_url: c.image_url ?? null,
-              verification_status: 'verified',
-              tags: c.tags || [],
-            },
-            rank: topCards.length + idx + 1,
-            score: c.match_score,
-            factors: c.match_factors || {},
-            sourceCount: null,
-          })
-        })
+        const topCards = matching.topMatches
+        const additionalCards = matching.additionalMatches
 
         const totalCount = topCards.length + additionalCards.length
         const fallbackMsg = buildResultsMessage({
@@ -713,7 +671,7 @@ export async function POST(
             tourPreferenceProfile.hard_constraints?.group_size,
             tourPreferenceProfile.hard_constraints?.max_budget_per_person,
           ].filter(Boolean) as number[],
-          knownNames: eligibleExperiences.map((e) => e.name),
+          knownNames: matching.eligibleCandidates.map((experience) => experience.name),
           allowedNames: [],
           cardNames: [...topCards, ...additionalCards].map((c) => c.experience_name),
           fallback: fallbackMsg,

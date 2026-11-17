@@ -16,7 +16,7 @@ python tools\preview_hanoi_geocoding.py --source csv --source json --output-dir 
 `src/data/ai-matching/`. A custom CSV or JSON source can be repeated as `--source
 "C:\path\to\villages.json"`. Each source gets its own CSV in the selected output directory.
 `--output` is allowed only with one source. The default manual-coordinate file is
-`src/lib/matching/manual_village_coords.csv`.
+`data/manual_village_coords.csv`.
 
 The script uses Photon (komoot), requests up to five English-language results, biases searches
 to latitude `21.03`, longitude `105.85`, and waits at least one second between uncached requests.
@@ -37,7 +37,7 @@ priority over Plus Code and Photon data; its columns are `normalized_key,lat,lng
 
 ## Shared runtime enrichment
 
-`src/lib/matching/village-coordinate-lookup.json` is the ID-keyed enrichment read by both the
+`data/village-coordinate-lookup.json` is the ID-keyed enrichment read by both the
 seed loader and test-dataset adapter. Approved seed and fixture coordinates are stored in its
 `by_village_id` map. A record uses `{ "geo": { "lat": ..., "lng": ..., "precision": ..., "source": ...,
 "verified_status": ... },

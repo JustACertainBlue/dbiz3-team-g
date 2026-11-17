@@ -138,4 +138,29 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(response.json.extraction.usedLlm).toBe(true)
     expect(response.json.turn.message).toContain('Chưa xác định được điểm xuất phát')
   })
+
+  it.each([
+    ['làng nghề cách Hồ Gươm dưới 10 km', undefined, 10],
+    ['làng nghề dưới 9 km', undefined, 9],
+    ['làng nghề dưới 5 km', undefined, 5],
+    ['làng nghề không quá 20 km', undefined, 20],
+    ['làng nghề 10k/khách', 10000, undefined],
+    ['làng nghề 150.000đ', 150000, undefined],
+  ] as const)(
+    'parses radius and explicit money separately for %s on seed and fixture',
+    async (text, expectedBudget, expectedRadius) => {
+      for (const isTest of [false, true]) {
+        installLlmMock('Mình đang tìm làng nghề phù hợp.')
+        const sessionId = await openSession()
+
+        const response = await send(sessionId, text, isTest)
+        const budget = response.json.extraction.tour_context.budget?.max_per_person
+
+        expect(response.json.extraction.usedLlm).toBe(true)
+        expect(budget).toBe(expectedBudget)
+        expect(response.json.tour_preference_profile?.hard_constraints.radius_km).toBe(expectedRadius)
+        expect(response.json.turn.message).not.toContain('Mức giá 0 đ')
+      }
+    }
+  )
 })

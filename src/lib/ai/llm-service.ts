@@ -8,6 +8,7 @@ import { extractTourDate } from './tour-date'
 import { detectCraftPreference, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
 import { systemClock } from '@/lib/booking/clock'
 import { fallbackMissingPrimary, normalizeMissingPrimary } from './missing-primary'
+import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
 
 export interface ConversationalAiResult {
   intent: 'tour_matching' | 'platform_guidance' | 'mixed'
@@ -526,8 +527,9 @@ export class ConversationalAiService {
       }
     }
 
-    if (extracted?.budget_per_person && typeof extracted.budget_per_person === 'number' && extracted.budget_per_person > 0) {
-      context.budget = { max_per_person: extracted.budget_per_person, currency: 'VND' }
+    const explicitBudget = parseExplicitBudgetAmount(fullText)
+    if (explicitBudget !== undefined) {
+      context.budget = { max_per_person: explicitBudget, currency: 'VND' }
     }
 
     if (extracted?.target_date) {
@@ -716,17 +718,9 @@ export class ConversationalAiService {
       }
 
       if (!tourContext.budget && !waivers.budget) {
-        // Supports accented (ngân sách, dưới, tầm, khoảng) and unaccented (ngan sach, duoi, tam, khoang)
-        // Vietnamese, and rejects a number that is really a group size ("tầm 15 khách") rather than a budget.
-        const budgetMatch = text.match(
-          /(?:budget|ng[aâ]n\s*s[aá]ch|ngan\s*sach|d[uư][oờ]i|dưới|under|around|tight\s*budget|t[aầ]m|kho[aả]ng)\s*(\d+(?:[.,]\d{3})*)(?![\d.,])(?!\s*(?:kh[aá]ch|ng[uư][oờ]i|pax|guests?|people|tourists?|passengers?))\s*(?:k|[.,]\d{3}|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/nguoi|\/khach|\/pax)?|(\d+)[,.]000\s*(?:vnd|đ)/i
-        )
-        if (budgetMatch) {
-          let rawStr = (budgetMatch[1] || budgetMatch[2] || '').trim()
-          let cleanDigits = rawStr.replace(/[.,]/g, '')
-          let amount = parseInt(cleanDigits, 10)
-          if (amount < 1000) amount *= 1000
-          tourContext.budget = { max_per_person: amount, currency: 'VND' }
+        const explicitBudget = parseExplicitBudgetAmount(text)
+        if (explicitBudget !== undefined) {
+          tourContext.budget = { max_per_person: explicitBudget, currency: 'VND' }
         }
       }
 

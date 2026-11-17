@@ -66,9 +66,9 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     const sessionId = await openSession()
     const transcript: string[] = []
     const turns = [
-      'Tìm trải nghiệm làm gốm cho 10 khách, ngân sách 300000, ngày 20/11/2026, xuất phát từ Hoàn Kiếm',
+      'Tìm trải nghiệm làm gốm cho 10 khách, ngân sách 300000đ, ngày 20/11/2026, xuất phát từ Hoàn Kiếm',
       'Đổi sang dệt lụa',
-      'Đổi ngân sách thành 450000',
+      'Đổi ngân sách thành 450000đ',
       'Đổi sang nón lá',
       'Đổi ngày sang 25/11/2026',
       'Xuất phát từ Ba Đình',
@@ -585,7 +585,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       source: 'llm',
     })
 
-    const response = await send(sessionId, 'Tìm trải nghiệm cho đoàn, giá cao nhất')
+    const response = await send(sessionId, 'Tìm trải nghiệm cho đoàn, giá cao nhất, ngân sách tối đa 200.000đ/người')
     const cards = [
       ...(response.json.turn.top_matches ?? []),
       ...(response.json.turn.additional_suggestions ?? []),

@@ -4,6 +4,7 @@
  */
 import { formatVillageName } from '@/lib/village-name'
 import { villageStartingPrices } from '@/lib/village-starting-price'
+import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
 
 export interface VillageCardData {
   village_id: string
@@ -573,52 +574,13 @@ export function resolveVillageCards(text: string, includeAll = false): VillageCa
   return Array.from(matched.values()).map(withStartingPrice).map(withVillageCardName)
 }
 
-/**
- * Extracts maximum budget per person from query text (e.g. "dưới 150k", "< 150k", "ngân sách 200k", "150k trở xuống").
- */
+/** Extracts a budget only when the amount has an explicit currency or scale unit. */
 export function parseBudgetConstraint(text: string): { maxPrice: number; isStrictlyUnder: boolean } | null {
-  const lower = text.toLowerCase()
-
-  // 1. Dạng "dưới / under / <" kèm số
-  const strictMatch = lower.match(/(?:dưới|<|under)\s*(\d+(?:[.,]\d{3})*|\d+)\s*(k|nghìn|ngàn|tr|triệu|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/pax)?/i)
-  if (strictMatch) {
-    let rawStr = (strictMatch[1] || '').trim()
-    let cleanDigits = rawStr.replace(/[.,]/g, '')
-    let amount = parseInt(cleanDigits, 10)
-    const unit = (strictMatch[2] || '').toLowerCase()
-    if (unit === 'k' || unit === 'nghìn' || unit === 'ngàn') amount *= 1000
-    else if (unit === 'tr' || unit === 'triệu') amount *= 1000000
-    else if (amount < 1000) amount *= 1000
-    return { maxPrice: amount, isStrictlyUnder: true }
-  }
-
-  // 2. Dạng "ngân sách / budget / tối đa / tầm / khoảng / mức giá" kèm số
-  const budgetMatch = lower.match(/(?:budget|ngân sách|tối đa|tầm|khoảng|mức giá)\s*(\d+(?:[.,]\d{3})*|\d+)\s*(k|nghìn|ngàn|tr|triệu|\.000|000)?\s*(?:vnd|đ|\/người|\/khách|\/pax|trở xuống)?/i)
-  if (budgetMatch) {
-    let rawStr = (budgetMatch[1] || '').trim()
-    let cleanDigits = rawStr.replace(/[.,]/g, '')
-    let amount = parseInt(cleanDigits, 10)
-    const unit = (budgetMatch[2] || '').toLowerCase()
-    if (unit === 'k' || unit === 'nghìn' || unit === 'ngàn') amount *= 1000
-    else if (unit === 'tr' || unit === 'triệu') amount *= 1000000
-    else if (amount < 1000) amount *= 1000
-    return { maxPrice: amount, isStrictlyUnder: false }
-  }
-
-  // 3. Dạng số đứng trước "trở xuống / đổ lại / quay đầu" (ví dụ: "150k trở xuống")
-  const suffixMatch = lower.match(/(\d+(?:[.,]\d{3})*|\d+)\s*(k|nghìn|ngàn|tr|triệu|\.000|000)?\s*(?:vnd|đ)?\s*(?:trở xuống|đổ lại|quay đầu)/i)
-  if (suffixMatch) {
-    let rawStr = (suffixMatch[1] || '').trim()
-    let cleanDigits = rawStr.replace(/[.,]/g, '')
-    let amount = parseInt(cleanDigits, 10)
-    const unit = (suffixMatch[2] || '').toLowerCase()
-    if (unit === 'k' || unit === 'nghìn' || unit === 'ngàn') amount *= 1000
-    else if (unit === 'tr' || unit === 'triệu') amount *= 1000000
-    else if (amount < 1000) amount *= 1000
-    return { maxPrice: amount, isStrictlyUnder: false }
-  }
-
-  return null
+  const maxPrice = parseExplicitBudgetAmount(text)
+  if (maxPrice === undefined) return null
+  const isStrictlyUnder = /(?:dưới|under|<)\s*\d+(?:[.,]\d{3})*(?:[.,]\d+)?\s*(?:k\b(?!m)|nghìn|ngàn|triệu|đ|vnd)(?![\p{L}])/iu
+    .test(text)
+  return { maxPrice, isStrictlyUnder }
 }
 
 /**

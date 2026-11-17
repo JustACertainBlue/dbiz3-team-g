@@ -3,6 +3,7 @@ import { resolveCraftPreference } from '@/lib/ai/llm-service'
 import { extractTourDate } from '@/lib/ai/tour-date'
 import { CATALOG_VILLAGES } from '@/lib/matching/card-resolver'
 import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
+import { parseExplicitBudgetAmount } from './budget'
 
 export interface AitConversationState {
   craft?: string
@@ -173,16 +174,6 @@ function excludedCraft(text: string): string | undefined {
   return detectCraftPreference(text)
 }
 
-function parseBudget(text: string): number | undefined {
-  const match = text.match(
-    /(?:ngân sách|budget|under|dưới|tầm|khoảng)\s*(?:thành|là|tối đa)?\s*(\d{1,3}(?:[.,]\d{3})+|\d+)\s*(k|000)?(?:\s*(?:vnd|đ|\/người|\/khách|\/pax))?/i
-  )
-  if (!match) return undefined
-  const amount = Number(match[1].replace(/[.,]/g, ''))
-  if (!Number.isFinite(amount) || amount <= 0) return undefined
-  return match[2]?.toLowerCase() === 'k' && amount < 1000 ? amount * 1000 : amount
-}
-
 export function mergeConversationState(
   current: AitConversationState,
   text: string,
@@ -210,7 +201,7 @@ export function mergeConversationState(
     next.group_size = extracted.group_size
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'group_size')
   }
-  const budget = parseBudget(text) ?? extracted.budget?.max_per_person
+  const budget = parseExplicitBudgetAmount(text)
   if (budget !== undefined) {
     next.budget_per_person = budget
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'budget_per_person')

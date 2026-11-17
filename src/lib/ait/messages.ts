@@ -46,6 +46,7 @@ export function buildResultsMessage({
   craft,
   origin,
   radiusKm,
+  dateScheduleUnconfirmed = false,
   noResultsWithinRadius = false,
   excludedVillages = [],
   excludedCrafts = [],
@@ -61,6 +62,7 @@ export function buildResultsMessage({
   craft?: string;
   origin?: string;
   radiusKm?: number;
+  dateScheduleUnconfirmed?: boolean;
   noResultsWithinRadius?: boolean;
   excludedVillages?: string[];
   excludedCrafts?: string[];
@@ -69,6 +71,11 @@ export function buildResultsMessage({
   ending?: string;
 }): string {
   const criteria: string[] = [];
+  const dateScheduleNote = dateScheduleUnconfirmed
+    ? 'Chưa có dữ liệu về lịch ngày này, gồm ngày nghỉ hoặc đóng cửa đặc biệt; bạn nên xác nhận với nhà cung cấp.'
+    : undefined;
+  const withNotices = (message: string) =>
+    [message, dateScheduleNote, ending?.trim()].filter((line): line is string => Boolean(line)).join('\n\n');
   const hasCompleteDistances = Boolean(
     matches
     && matches.length > 0
@@ -81,10 +88,10 @@ export function buildResultsMessage({
   );
   if (radiusKm != null && count === 0 && noResultsWithinRadius) {
     const from = origin ? ` tính từ ${origin}` : '';
-    return `Không tìm thấy trải nghiệm nào phù hợp trong bán kính ${radiusKm} km${from}. Mình không tự mở rộng bán kính.`;
+    return withNotices(`Không tìm thấy trải nghiệm nào phù hợp trong bán kính ${radiusKm} km${from}. Mình không tự mở rộng bán kính.`);
   }
   if (count === 0) {
-    return 'Không tìm thấy trải nghiệm nào phù hợp với các tiêu chí hiện tại.';
+    return withNotices('Không tìm thấy trải nghiệm nào phù hợp với các tiêu chí hiện tại.');
   }
   if (craft) criteria.push(`nghề ${craft}`);
   if (start_date) {
@@ -129,6 +136,7 @@ export function buildResultsMessage({
     });
   }
 
+  if (dateScheduleNote) lines.push('', dateScheduleNote);
   if (ending?.trim()) lines.push('', ending.trim());
   return lines.join('\n');
 }

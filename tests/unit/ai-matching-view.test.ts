@@ -31,6 +31,26 @@ describe('T047 | messageOutcome never shows fabricated results (FR-003, BR-017, 
     const outcome = messageOutcome({ ok: true, status: 201, body: { extraction: { is_complete: true, follow_up_questions: [] }, tour_preference_profile: profile } } as never)
     expect(outcome).toEqual({ kind: 'match', profile })
   })
+
+  it('partial matching with server results → match and preserves its data-rendered summary', () => {
+    const profile = { hard_constraints: { group_size: 10 } }
+    const summary = 'Mình tìm được 1 trải nghiệm.\n\n1. Dệt lụa: 175.000đ/người\n\nTôi có thể tư vấn cụ thể hơn nếu bạn cho biết ngày đi.'
+    const outcome = messageOutcome({
+      ok: true,
+      status: 201,
+      body: {
+        extraction: { is_complete: false, follow_up_questions: ['Tôi có thể tư vấn cụ thể hơn nếu bạn cho biết ngày đi.'] },
+        tour_preference_profile: profile,
+        turn: { turn_type: 'results', message: summary },
+      },
+    } as never)
+
+    expect(outcome).toEqual({
+      kind: 'match',
+      profile,
+      intro: summary,
+    })
+  })
 })
 
 describe('T047 / T049 | handoffOutcome (FR-011, #27, #31)', () => {

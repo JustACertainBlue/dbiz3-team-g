@@ -227,6 +227,95 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       .toMatch(/^\d{4}-11-20$/)
   })
 
+  it('T14: returns partial matching results, invites for the date, then maps "20/11" to that pending field', async () => {
+    const sessionId = await openSession()
+    vi.spyOn(extractor, 'extractTourContext')
+      .mockResolvedValueOnce({
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        conversational_reply: 'Mình đã ghi nhận yêu cầu.',
+        intent: 'tour_matching',
+        tour_context: {
+          craft_preference: 'silk',
+          group_size: 10,
+          origin_or_route: { origin_address: 'Hoàn Kiếm' },
+        },
+      })
+      .mockResolvedValueOnce({
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        conversational_reply: 'Mình đã ghi nhận ngày đi.',
+        intent: 'tour_matching',
+        tour_context: {},
+      })
+
+    const first = await send(sessionId, 'Tìm trải nghiệm dệt lụa cho 10 khách, xuất phát từ Hoàn Kiếm')
+    const contextAfterFirst = await getContext(sessionId)
+    const reply = await send(sessionId, '20/11')
+    const stateAfterReply = (await getContext(sessionId)).state
+
+    expect(first.json.tour_preference_profile).not.toBeNull()
+    expect(first.json.turn.turn_type).toBe('results')
+    expect(first.json.turn.top_matches.length + first.json.turn.additional_suggestions.length).toBeGreaterThan(0)
+    expect(first.json.turn.message).toMatch(/Mình tìm được \d+ trải nghiệm/)
+    expect(first.json.turn.message).toMatch(/Tôi có thể.*ngày đi/i)
+    expect(first.json.extraction.follow_up_questions).toHaveLength(1)
+    expect(contextAfterFirst.pending_question.field).toBe('date')
+    expect(reply.json.extraction.tour_context.target_date_or_range.start_date).toMatch(/^\d{4}-11-20$/)
+    expect(stateAfterReply.date).toMatch(/^\d{4}-11-20$/)
+    expect((await getContext(sessionId)).pending_question).toBeNull()
+  })
+
+  it('T14b: clears a skipped optional invitation and does not repeat it later', async () => {
+    const sessionId = await openSession()
+    vi.spyOn(extractor, 'extractTourContext')
+      .mockResolvedValueOnce({
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        conversational_reply: 'Mình đã ghi nhận yêu cầu.',
+        intent: 'tour_matching',
+        tour_context: {
+          craft_preference: 'silk',
+          group_size: 10,
+          origin_or_route: { origin_address: 'Hoàn Kiếm' },
+        },
+      })
+      .mockResolvedValueOnce({
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        conversational_reply: 'Mình đã ghi nhận nghề bạn muốn đổi.',
+        intent: 'tour_matching',
+        tour_context: { craft_preference: 'conical hat' },
+      })
+      .mockResolvedValueOnce({
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        conversational_reply: 'Mình đã ghi nhận yêu cầu.',
+        intent: 'tour_matching',
+        tour_context: {},
+      })
+
+    await send(sessionId, 'Tìm trải nghiệm dệt lụa cho 10 khách, xuất phát từ Hoàn Kiếm')
+    const skipped = await send(sessionId, 'Đổi sang nón lá')
+    const later = await send(sessionId, 'Xem thêm trải nghiệm')
+
+    expect((await getContext(sessionId)).pending_question).toBeNull()
+    expect((await getContext(sessionId)).state.dismissed_questions).toContain('date')
+    expect(skipped.json.extraction.follow_up_questions).toEqual([])
+    expect(later.json.extraction.follow_up_questions).toEqual([])
+    expect(later.json.turn.message).not.toMatch(/ngày đi|khởi hành vào ngày/i)
+  })
+
   it('does not route a short reply as a standalone intent while a supported question is pending (T10, T19)', async () => {
     const sessionId = await openSession()
     await send(sessionId, 'Tìm workshop dệt lụa')

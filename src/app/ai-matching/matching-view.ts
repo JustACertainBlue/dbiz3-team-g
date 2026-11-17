@@ -9,7 +9,7 @@ export type ApiResult = { networkError: true } | { ok: boolean; status: number; 
 export type MessageOutcome =
   | { kind: 'guidance'; reply: string }
   | { kind: 'clarify'; questions: string[] }
-  | { kind: 'match'; profile: unknown; followUps?: string[] }
+  | { kind: 'match'; profile: unknown; followUps?: string[]; intro?: string }
   | { kind: 'failure'; text: string; retry: 'reanalyze' | 'resend' }
 
 export type HandoffOutcome =
@@ -31,6 +31,16 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
   }
   if (!extraction || extraction.processing_status === 'Temporary AI Failure') return AI_FAILURE
   const questions: string[] = extraction.follow_up_questions ?? []
+  const profile = result.body.tour_preference_profile
+  const turn = result.body.turn
+  if (
+    !extraction.is_complete
+    && profile
+    && (turn?.turn_type === 'results' || turn?.turn_type === 'no_results')
+    && typeof turn.message === 'string'
+  ) {
+    return { kind: 'match', profile, intro: turn.message }
+  }
   if (!extraction.is_complete) {
     if (questions.length > 0) return { kind: 'clarify', questions }
     if (typeof extraction.conversational_reply === 'string' && extraction.conversational_reply.trim()) {
@@ -38,7 +48,6 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
     }
     return AI_FAILURE
   }
-  const profile = result.body.tour_preference_profile
   return profile ? { kind: 'match', profile, followUps: questions.length > 0 ? questions : undefined } : AI_FAILURE
 }
 

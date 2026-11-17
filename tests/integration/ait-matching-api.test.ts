@@ -66,7 +66,10 @@ describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8
     const silk = await turn(id, 'Silk weaving')
     expect(silk.message.status).toBe(201)
     expect(silk.message.json.extraction.is_complete).toBe(false)
-    expect(silk.message.json.tour_preference_profile).toBeNull()
+    expect(silk.message.json.tour_preference_profile).not.toBeNull()
+    expect(silk.message.json.tour_preference_profile.matching_attributes).toContainEqual(
+      expect.objectContaining({ type: 'craft_preference', value: 'silk' })
+    )
 
     const ten = await turn(id, '10 pax on 2026-11-20 from Hoàn Kiếm')
     expect(villages(ten.matching)).toEqual(['Vạn Phúc'])
@@ -203,11 +206,11 @@ describe('T055 | D11 Quote / Chat authorize before validate (BR-001, BR-002, les
 describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34, #35)', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('T035: no profile until origin and an Experience preference are stated', async () => {
+  it('T035: partial profiles answer with available criteria and invite missing origin', async () => {
     const noOriginSession = await openSession()
     const noOrigin = await send(noOriginSession, 'silk weaving, 10 pax on 2026-11-20')
     expect(noOrigin.json.extraction.is_complete).toBe(false)
-    expect(noOrigin.json.tour_preference_profile).toBeNull()
+    expect(noOrigin.json.tour_preference_profile).not.toBeNull()
     expect(noOrigin.json.extraction.follow_up_questions[0]).not.toMatch(/\borigin\b/i)
     const sessionRow = await demoRepository().find(
       'matching_sessions',
@@ -224,7 +227,7 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
 
     const noPreference = await send(await openSession(), '10 pax on 2026-11-20 from Hoàn Kiếm')
     expect(noPreference.json.extraction.is_complete).toBe(false)
-    expect(noPreference.json.tour_preference_profile).toBeNull()
+    expect(noPreference.json.tour_preference_profile).not.toBeNull()
 
     const workshop = await send(await openSession(), 'workshop, 10 pax on 2026-11-20 from Hoàn Kiếm')
     expect(workshop.json.extraction.is_complete).toBe(true)

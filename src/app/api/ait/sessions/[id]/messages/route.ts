@@ -63,12 +63,50 @@ import path from 'path'
 
 const rateLimiter = createRateLimiter({ limit: 20, windowMs: 60000 })
 
+function pendingQuestionSatisfied(
+  field: string,
+  state: ReturnType<typeof normalizeConversationState>
+): boolean {
+  switch (field) {
+    case 'craft': return state.craft !== undefined
+    case 'group_size': return state.group_size !== undefined
+    case 'budget_per_person': return state.budget_per_person !== undefined
+    case 'date': return state.date !== undefined
+    case 'origin': return state.origin !== undefined
+    case 'radius_km': return state.radius_km !== undefined
+    default: return false
+  }
+}
+
+function changedKnownTourCriteria(
+  before: ReturnType<typeof normalizeConversationState>,
+  after: ReturnType<typeof normalizeConversationState>
+): boolean {
+  return (
+    (before.craft !== undefined && before.craft !== after.craft)
+    || (before.group_size !== undefined && before.group_size !== after.group_size)
+    || (before.budget_per_person !== undefined && before.budget_per_person !== after.budget_per_person)
+    || (before.date !== undefined && before.date !== after.date)
+    || (before.origin !== undefined && before.origin !== after.origin)
+    || (before.radius_km !== undefined && before.radius_km !== after.radius_km)
+    || JSON.stringify(before.exclusions) !== JSON.stringify(after.exclusions)
+  )
+}
+
 async function outOfScopeResponse(
   sessionId: string,
   storedContext: Record<string, unknown>,
   state: ReturnType<typeof normalizeConversationState>
 ) {
   const refusalCount = Number(storedContext.out_of_scope_refusal_count) || 0
+  const skippedQuestion = normalizePendingQuestion(storedContext.pending_question)
+  if (
+    skippedQuestion
+    && skippedQuestion.field !== 'in_scope_offer'
+    && !pendingQuestionSatisfied(skippedQuestion.field, state)
+  ) {
+    state.dismissed_questions = [...new Set([...state.dismissed_questions, skippedQuestion.field])]
+  }
   const messages = [
     refusalTemplate('out_of_scope').message,
     'Xin lỗi, nội dung này nằm ngoài phạm vi nền tảng nên mình không thể hỗ trợ. Mình vẫn có thể giúp bạn tìm làng nghề hoặc trải nghiệm văn hóa trong dữ liệu. Bạn muốn tiếp tục theo hướng đó không?',
@@ -463,6 +501,8 @@ export async function POST(
       )
     }
 
+    let optionalInvite: string | undefined
+    const stateBeforeExtraction = conversationState
     if (isReset) {
       conversationState = emptyConversationState()
     } else if (extraction.intent !== 'platform_guidance') {
@@ -475,13 +515,29 @@ export async function POST(
       )
     }
 
+    const skippedPendingQuestion = Boolean(
+      activePendingQuestion
+      && activePendingQuestion.field !== 'in_scope_offer'
+      && !answersPendingQuestion
+      && !pendingQuestionSatisfied(activePendingQuestion.field, conversationState)
+      && changedKnownTourCriteria(stateBeforeExtraction, conversationState)
+    )
+    if (skippedPendingQuestion && activePendingQuestion) {
+      conversationState.dismissed_questions = [
+        ...new Set([...conversationState.dismissed_questions, activePendingQuestion.field]),
+      ]
+    }
+
     extraction.tour_context = applyConversationState(extraction.tour_context, conversationState)
     if (extraction.intent !== 'platform_guidance') {
       extraction.is_complete = extraction.is_complete || isCompleteConversationState(conversationState)
-      const nextQuestion = extraction.is_complete ? null : nextPendingQuestion(conversationState)
+      const nextQuestion = extraction.is_complete || skippedPendingQuestion
+        ? null
+        : nextPendingQuestion(conversationState)
+      optionalInvite = nextQuestion?.text
       extraction.follow_up_questions = extraction.is_complete
         ? []
-        : missingQuestions(conversationState).map(question => question.text).slice(0, 3)
+        : nextQuestion ? [nextQuestion.text] : []
 
       const reply = sanitizeUnsupportedFollowUpQuestions(extraction.conversational_reply || '')
       if (nextQuestion) {
@@ -517,6 +573,33 @@ export async function POST(
     }
 
     const isBareTest = userText.trim().toLowerCase() === 'test'
+    const specificActivityTerms = [
+      ...userText.matchAll(/\b(?:làm|chế\s+tạo|chế\s+tác)\s+([\p{L}]+)/giu),
+      ...userText.matchAll(/\bworkshop\s+([\p{L}]+)/giu),
+    ].map((match) => match[1].toLowerCase())
+    const genericActivityTerms = new Set([
+      'gì', 'nào', 'khác', 'mới', 'làm', 'đồ', 'thử', 'này', 'đó', 'phù', 'hợp',
+    ])
+    const hasUnmatchedSpecificActivity = detectCardScope(userText) === 'activity'
+      && resolveActivityCards(userText).length === 0
+      && specificActivityTerms.some(term => !genericActivityTerms.has(term))
+    const hasTourDetails = Boolean(
+      extraction.tour_context.craft_preference
+      || extraction.tour_context.experience_types?.length
+      || extraction.tour_context.group_size
+      || extraction.tour_context.budget?.max_per_person
+      || extraction.tour_context.target_date_or_range?.start_date
+      || extraction.tour_context.origin_or_route?.origin_address
+      || conversationState.exclusions.villages.length
+      || conversationState.exclusions.crafts.length
+    )
+    const shouldBuildTourProfile = extraction.is_complete
+      || (
+        !hasUnmatchedSpecificActivity
+        &&
+        extraction.intent !== 'platform_guidance'
+        && (extraction.intent === 'tour_matching' || extraction.intent === 'mixed' || hasTourDetails)
+      )
 
     let tourPreferenceProfile: any = null
     if (isTest && (extraction.is_complete || isBareTest)) {
@@ -550,7 +633,7 @@ export async function POST(
           polarity: 'include',
         })
       }
-    } else if (extraction.is_complete) {
+    } else if (shouldBuildTourProfile) {
       tourPreferenceProfile = await buildTourPreferenceProfile(extraction.tour_context, conversationState)
       if (isTest && tourPreferenceProfile) {
         tourPreferenceProfile.is_test = true
@@ -636,7 +719,7 @@ export async function POST(
 
     // 5. Build turn structure for turnSchema
     let turn: any = null
-    if (tourPreferenceProfile && extraction.is_complete) {
+    if (tourPreferenceProfile) {
       // Execute matching call internally
       try {
         const [experiences, bookings, operatingHours, villages] = await Promise.all([
@@ -695,6 +778,7 @@ export async function POST(
           craft: typeof craftPreference === 'string' ? craftLabelVi(craftPreference) : undefined,
           origin: conversationState.origin,
           radiusKm: conversationState.radius_km,
+          dateScheduleUnconfirmed: /^\d{4}-\d{2}-\d{2}$/.test(conversationState.date || ''),
           noResultsWithinRadius:
             totalCount === 0
             && conversationState.radius_km !== undefined
@@ -710,7 +794,9 @@ export async function POST(
               distance_source: card.distance_source,
             }))
             : undefined,
-          ending: cards.length > 0 && checkedNarration.ok ? checkedNarration.message : undefined,
+          ending: extraction.is_complete && cards.length > 0 && checkedNarration.ok
+            ? checkedNarration.message
+            : optionalInvite,
         })
 
         turn = {
@@ -720,7 +806,7 @@ export async function POST(
           additional_suggestions: additionalCards,
           comparison: null,
           quick_replies: [],
-          follow_up_questions: [],
+          follow_up_questions: optionalInvite ? [optionalInvite] : [],
           relaxation_suggestions: [],
           sources: [],
           used_llm: false,

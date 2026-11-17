@@ -769,7 +769,14 @@ export default function AiMatchingScreen({
           providerCards,
         })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile, dateLine, conversationalReply, outcome.followUps, usedLlm, isTestSession)
+        await fetchMatchingResults(
+          outcome.profile,
+          dateLine,
+          outcome.intro ?? conversationalReply,
+          outcome.followUps,
+          usedLlm,
+          isTestSession
+        )
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }

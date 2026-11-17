@@ -10,6 +10,7 @@ export interface AitConversationState {
   budget_per_person?: number
   date?: string
   origin?: string
+  dismissed_questions: PendingQuestionField[]
   exclusions: {
     villages: string[]
     crafts: string[]
@@ -49,7 +50,7 @@ export function normalizePendingQuestion(value: unknown): PendingQuestion | null
 }
 
 export function emptyConversationState(): AitConversationState {
-  return { exclusions: { villages: [], crafts: [] } }
+  return { dismissed_questions: [], exclusions: { villages: [], crafts: [] } }
 }
 
 export function normalizeConversationState(value: unknown): AitConversationState {
@@ -59,6 +60,15 @@ export function normalizeConversationState(value: unknown): AitConversationState
     ? raw.exclusions as Record<string, unknown>
     : {}
   const state = emptyConversationState()
+  const pendingFields: PendingQuestionField[] = [
+    'craft',
+    'group_size',
+    'budget_per_person',
+    'date',
+    'origin',
+    'radius_km',
+    'in_scope_offer',
+  ]
 
   if (typeof raw.craft === 'string') state.craft = raw.craft
   if (typeof raw.group_size === 'number' && Number.isInteger(raw.group_size) && raw.group_size > 0) {
@@ -72,6 +82,11 @@ export function normalizeConversationState(value: unknown): AitConversationState
   if (typeof raw.radius_km === 'number' && Number.isFinite(raw.radius_km) && raw.radius_km > 0) {
     state.radius_km = raw.radius_km
   }
+  state.dismissed_questions = Array.isArray(raw.dismissed_questions)
+    ? [...new Set(raw.dismissed_questions.filter(
+      (field): field is PendingQuestionField => typeof field === 'string' && pendingFields.includes(field as PendingQuestionField)
+    ))]
+    : []
   state.exclusions = {
     villages: Array.isArray(exclusions.villages)
       ? exclusions.villages.filter((item): item is string => typeof item === 'string')
@@ -179,25 +194,42 @@ export function mergeConversationState(
     if (next.craft === craftExclusion) delete next.craft
   } else {
     const craft = resolveCraftPreference(extracted.craft_preference, [{ text }])
-    if (craft) next.craft = craft
+    if (craft) {
+      next.craft = craft
+      next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'craft')
+    }
   }
 
   next.exclusions.villages = [...new Set([...next.exclusions.villages, ...newVillageExclusions])]
-  if (extracted.group_size !== undefined) next.group_size = extracted.group_size
+  if (extracted.group_size !== undefined) {
+    next.group_size = extracted.group_size
+    next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'group_size')
+  }
   const budget = parseBudget(text) ?? extracted.budget?.max_per_person
-  if (budget !== undefined) next.budget_per_person = budget
+  if (budget !== undefined) {
+    next.budget_per_person = budget
+    next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'budget_per_person')
+  }
 
   const date = extracted.target_date_or_range?.start_date ?? extractTourDate(text, now)
-  if (date) next.date = date
+  if (date) {
+    next.date = date
+    next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'date')
+  }
   else if (pendingField === 'date' && /^(?:mai|ngày mai|cuối tuần|cuối tuần này|tomorrow|this weekend|weekend)[.!? ]*$/i.test(text.trim())) {
     next.date = text.trim()
+    next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'date')
   }
   if (extracted.origin_or_route?.origin_address) {
     next.origin = extracted.origin_or_route.origin_address
+    next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'origin')
   }
 
   const radius = text.match(/(?:radius|bán kính|trong phạm vi)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?)\b/i)
-  if (radius) next.radius_km = Number(radius[1].replace(',', '.'))
+  if (radius) {
+    next.radius_km = Number(radius[1].replace(',', '.'))
+    next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'radius_km')
+  }
 
   return next
 }
@@ -219,18 +251,18 @@ export function applyConversationState(context: TourContext, state: AitConversat
 export function missingQuestions(state: AitConversationState): PendingQuestion[] {
   const questions: PendingQuestion[] = []
   if (state.group_size === undefined) {
-    questions.push({ field: 'group_size', text: 'Quý khách vui lòng cho biết số lượng khách dự kiến tham gia đoàn?' })
+    questions.push({ field: 'group_size', text: 'Tôi có thể tư vấn cụ thể hơn nếu bạn muốn chia sẻ số khách dự kiến.' })
   }
   if (state.date === undefined) {
-    questions.push({ field: 'date', text: 'Đoàn dự kiến khởi hành vào ngày nào (ví dụ: 25/11 hoặc Thứ Năm tuần tới)?' })
+    questions.push({ field: 'date', text: 'Tôi có thể tư vấn lịch phù hợp hơn nếu bạn cho biết ngày đi.' })
   }
   if (state.origin === undefined) {
-    questions.push({ field: 'origin', text: 'Đoàn sẽ xuất phát từ khu vực nào tại Hà Nội (ví dụ: từ Hoàn Kiếm)?' })
+    questions.push({ field: 'origin', text: 'Tôi có thể gợi ý lộ trình phù hợp hơn nếu bạn cho biết điểm xuất phát.' })
   }
   if (state.craft === undefined && state.exclusions.crafts.length === 0) {
-    questions.push({ field: 'craft', text: 'Đoàn quan tâm đến loại trải nghiệm làng nghề nào?' })
+    questions.push({ field: 'craft', text: 'Tôi có thể gợi ý sát hơn nếu bạn cho biết nghề hoặc trải nghiệm muốn thử.' })
   }
-  return questions
+  return questions.filter(question => !state.dismissed_questions.includes(question.field))
 }
 
 export function sanitizeUnsupportedFollowUpQuestions(reply: string): string {

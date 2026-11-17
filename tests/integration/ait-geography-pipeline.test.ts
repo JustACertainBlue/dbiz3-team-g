@@ -167,6 +167,27 @@ describe('AIT geography pipeline through the real extractor', () => {
   it.each([
     ['seed', false],
     ['fixture', true],
+  ] as const)('renders village distances from card fields on %s data', async (_source, isTest) => {
+    installLlmMock('Bát Tràng cách 4 km.')
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'làng nghề dưới 10 km', isTest)
+    const villageCards = response.json.village_cards as Json[]
+    const message = String(response.json.turn.message)
+
+    expect(villageCards.some(card => String(card.name).includes('Bát Tràng'))).toBe(true)
+    expect(message).not.toContain('Bát Tràng cách 4 km')
+    for (const card of villageCards) {
+      const distance = card.location_source === 'district_fallback'
+        ? `khoảng ${Math.round(Number(card.distance_km))} km`
+        : `khoảng ${Number(card.distance_km).toFixed(1)} km`
+      expect(message).toContain(distance)
+    }
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
   ] as const)('uses verified villages only when primary facilities are missing (%s)', async (_source, isTest) => {
     installLlmMock(
       'Bát Tràng có homestay. Chàng Sơn có homestay. Phú Vinh sắp xếp bể bơi gần đó.',

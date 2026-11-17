@@ -28,4 +28,17 @@ describe('AIT booking-claim post-check', () => {
     expect(result.ok).toBe(true)
     expect(result.violations).toEqual([])
   })
+
+  it('rejects unsupported facility claims when the source cards do not verify them', () => {
+    const result = postCheckMessage({
+      turnType: 'answer',
+      message: 'Bát Tràng có homestay. Phú Vinh sắp xếp bể bơi gần đó.',
+      verifiedFacts: ['Bát Tràng có trải nghiệm làm gốm.'],
+      fallback: 'Hiện chưa có dữ liệu về homestay và bể bơi.',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.violations).toContain('facility_claim')
+    expect(result.message).toBe('Hiện chưa có dữ liệu về homestay và bể bơi.')
+  })
 })

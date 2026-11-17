@@ -40,7 +40,7 @@ async function send(sessionId: string, text: string, isTest = false) {
   )
 }
 
-function installLlmMock(reply: string, origin?: string) {
+function installLlmMock(reply: string, origin?: string, missingPrimary: string[] = []) {
   vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', 'test-account')
   vi.stubEnv('CLOUDFLARE_API_TOKEN', 'test-token')
   vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockResolvedValue({
@@ -53,7 +53,7 @@ function installLlmMock(reply: string, origin?: string) {
         budget_per_person: 5000,
       },
       follow_up_questions: [],
-      missing_primary: [],
+      missing_primary: missingPrimary,
     }),
     isQuotaExhausted: false,
     isNetworkError: false,
@@ -163,4 +163,34 @@ describe('AIT geography pipeline through the real extractor', () => {
       }
     }
   )
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('uses verified villages only when primary facilities are missing (%s)', async (_source, isTest) => {
+    installLlmMock(
+      'Bát Tràng có homestay. Chàng Sơn có homestay. Phú Vinh sắp xếp bể bơi gần đó.',
+      undefined,
+      ['homestay', 'bể bơi']
+    )
+    const sessionId = await openSession()
+
+    const response = await send(
+      sessionId,
+      'làng nghề có homestay qua đêm, có bể bơi, ăn tối ngon',
+      isTest
+    )
+    const message = String(response.json.turn.message)
+    const villageCards = response.json.village_cards as Json[]
+
+    expect(response.json.extraction.usedLlm).toBe(true)
+    expect(message).toMatch(/^Hiện chưa có dữ liệu về homestay và bể bơi\./)
+    expect(message).not.toContain('ăn tối')
+    expect(message).not.toContain('có homestay')
+    expect(message).not.toContain('sắp xếp bể bơi')
+    expect(villageCards.length).toBeLessThanOrEqual(3)
+    for (const card of villageCards) {
+      expect(message).toContain(String(card.name))
+    }
+  })
 })

@@ -44,6 +44,29 @@ export function hasAffirmativeBookingClaim(text: string): boolean {
     .test(text)
 }
 
+function normalizeClaimText(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+}
+
+const FACILITY_TERMS = [
+  'homestay',
+  'bể bơi',
+  'hồ bơi',
+  'swimming pool',
+  'ăn trưa',
+  'ăn tối',
+  'nhà hàng',
+  'chỗ ăn',
+  'lunch',
+  'dinner',
+  'restaurant',
+  'guesthouse',
+]
+
 function extractNumbers(text: string): number[] {
   const numbers: number[] = [];
 
@@ -78,6 +101,7 @@ export function postCheckMessage({
   knownNames = [],
   allowedNames = [],
   cardNames = [],
+  verifiedFacts = [],
   fallback,
 }: {
   turnType: string;
@@ -86,13 +110,14 @@ export function postCheckMessage({
   knownNames?: string[];
   allowedNames?: string[];
   cardNames?: string[];
+  verifiedFacts?: string[];
   fallback: string;
 }): {
   ok: boolean;
   message: string;
-  violations: ('number' | 'card_name' | 'name' | 'leak' | 'booking_claim')[];
+  violations: ('number' | 'card_name' | 'name' | 'leak' | 'booking_claim' | 'facility_claim')[];
 } {
-  const violations: ('number' | 'card_name' | 'name' | 'leak' | 'booking_claim')[] = [];
+  const violations: ('number' | 'card_name' | 'name' | 'leak' | 'booking_claim' | 'facility_claim')[] = [];
 
   // Check 1: Numbers
   const numbersInMsg = extractNumbers(message);
@@ -118,6 +143,15 @@ export function postCheckMessage({
 
   if (hasAffirmativeBookingClaim(message)) {
     violations.push('booking_claim')
+  }
+
+  const normalizedMessage = normalizeClaimText(message)
+  const normalizedVerifiedFacts = normalizeClaimText(verifiedFacts.join(' '))
+  if (FACILITY_TERMS.some(term =>
+    normalizedMessage.includes(normalizeClaimText(term))
+    && !normalizedVerifiedFacts.includes(normalizeClaimText(term))
+  )) {
+    violations.push('facility_claim')
   }
 
   // Check 3: Known names not in allowedNames

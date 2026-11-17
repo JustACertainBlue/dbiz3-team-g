@@ -45,6 +45,7 @@ import { routeByRules } from '@/lib/ait/router'
 import { classifyIntent } from '@/lib/ait/llm-router'
 import {
   buildResultsMessage,
+  buildMissingPrimaryMessage,
   buildVillageCardResultsMessage,
   craftLabelVi,
   refusalTemplate,
@@ -560,8 +561,8 @@ export async function POST(
     }
 
     extraction.missing_primary = [...new Set([
-      ...normalizeMissingPrimary(extraction.missing_primary, originalText),
-      ...fallbackMissingPrimary(originalText),
+      ...normalizeMissingPrimary(extraction.missing_primary, routeText),
+      ...fallbackMissingPrimary(routeText),
     ])]
     extraction.conversational_reply = stripMissingDataClaims(extraction.conversational_reply ?? '')
 
@@ -756,7 +757,12 @@ export async function POST(
       })
     }
 
-    if (!isRetry && extraction.conversational_reply && typeof extraction.conversational_reply === 'string') {
+    if (
+      !isRetry
+      && extraction.missing_primary.length === 0
+      && extraction.conversational_reply
+      && typeof extraction.conversational_reply === 'string'
+    ) {
       try {
         await addMessage(params.id, 'Assistant', extraction.conversational_reply.slice(0, 2000))
       } catch (e) {
@@ -827,6 +833,10 @@ export async function POST(
           ]).filter((name): name is string => Boolean(name)),
           allowedNames: [],
           cardNames: cards.map((card) => card.experience_name),
+          verifiedFacts: experiences.flatMap((experience) => [
+            experience.description,
+            ...(Array.isArray(experience.tags) ? experience.tags : []),
+          ]).filter((fact): fact is string => typeof fact === 'string'),
           fallback: '',
         })
         const excludedVillageNames = conversationState.exclusions.villages
@@ -949,6 +959,28 @@ export async function POST(
         ].join('\n\n'),
         top_matches: [],
         additional_suggestions: [],
+      }
+    }
+
+    if (extraction.missing_primary.length > 0) {
+      villageCards = villageCards.slice(0, 3)
+      const missingPrimaryMessage = buildMissingPrimaryMessage(
+        extraction.missing_primary,
+        villageCards.map((card) => card.name),
+      )
+      turn = {
+        ...turn,
+        turn_type: 'answer',
+        message: missingPrimaryMessage,
+        top_matches: [],
+        additional_suggestions: [],
+      }
+      if (!isRetry) {
+        try {
+          await addMessage(params.id, 'Assistant', missingPrimaryMessage)
+        } catch (e) {
+          console.warn('[AIT] Could not save missing-data response to message history:', e)
+        }
       }
     }
 

@@ -225,6 +225,22 @@ export function buildVillageCardResultsMessage(
   return lines.join('\n')
 }
 
+export function buildMissingPrimaryMessage(
+  missingPrimary: string[],
+  villageNames: string[],
+): string {
+  const missing = missingPrimary.length === 1
+    ? missingPrimary[0]
+    : `${missingPrimary.slice(0, -1).join(', ')} và ${missingPrimary[missingPrimary.length - 1]}`
+  const lines = [`Hiện chưa có dữ liệu về ${missing}.`]
+  const suggestions = villageNames.slice(0, 3)
+  if (suggestions.length > 0) {
+    lines.push('', 'Một số làng nghề có thông tin trong hệ thống:')
+    suggestions.forEach((name, index) => lines.push(`${index + 1}. ${name}`))
+  }
+  return lines.join('\n')
+}
+
 export function refusalTemplate(
   kind: string,
   options: { field?: string } = {}

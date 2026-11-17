@@ -18,6 +18,18 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 61: 20/11 Copilot — finish AIT radius, reply-safety, and result-limit checks
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`. |
+| Scope | Complete the approved AIT P1 conversation/output behavior and P2 three-card limit; do not push. |
+| Produced | Radius, budget, and origin no longer carry into a new turn unless explicitly retained. Distance and capacity text is localized and card-grounded. AIT village cards and recommendation explanations are limited to three results, with card reasons clamped to two lines. Updated the default-origin distance assertion. Local commits: `1ae9ad7`, `758d6ff`, `c7a915d`, `88ad1e6`. |
+| Test-first and mutation checks | P1 conversation and output regressions and P2 result-limit regressions were added before their fixes. The exact-radius boundary and an added tolerance mutation were both caught by tests; mutations were restored. Route-level checks use Vietnamese input through the real extractor; LLM responses are mocked, including the hallucinated homestay/pool response used to verify post-LLM rejection. |
+| Scenario results | On seed and fixture, “dưới 5 km” excludes the named out-of-radius precise-coordinate villages; fixture retains Ngũ Xã and Yên Thái only as district estimates marked “chưa xác nhận bán kính,” while seed has no village card. “Dưới 9 km” fixture experience matching includes Bát Tràng and Kim Lan but excludes Vạn Phúc; the under-10 experience test includes Bát Tràng, Kim Lan, and Vạn Phúc. The missing-facility response starts “Hiện chưa có dữ liệu về homestay và bể bơi.” and rejects the mock's unsupported claims. These route tests use mocked LLM output, not a live model. |
+| Verification | Focused `npx.cmd vitest run tests/unit/ait-coordinate-enrichment.test.ts -t "renders source-specific distance precision"`: passed. Final full `npm.cmd test`: 264 files passed, 1 failed, 5 skipped; 1,837 tests passed, 1 failed, 30 skipped. The sole failure is `tests/unit/village-display-name.test.ts` for `resolveVillageCards("lang gom bat trang")`, previously reproduced on clean HEAD and unrelated to this work. Final `npm.cmd run lint`: passed. `npm.cmd run build`: passed before the final test-assertion-only update; Next.js reported `/ai-matching` as dynamic. |
+| Boundaries | Local only; no push. Preserved the existing unrelated `.claude/settings.json` modification and untracked `docs/build/ait-matching-planning-inputs.md`; neither was included in these commits. |
+
 ### Entry 60: 20/11 Copilot — load approved AIT village coordinates
 
 | Field | Value |

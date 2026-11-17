@@ -11,6 +11,7 @@ export interface RecommendationItem {
   price_per_person?: number | null
   max_participants?: number | null
   distance_km?: number
+  distance_source?: 'haversine'
   rank: number
   match_score: number
   explanation: string
@@ -60,7 +61,7 @@ export function explain(item: any, _score: number): string {
     parts.push(`${vnd(f.price_per_person)} VND per person, within your ${vnd(f.budget_per_person)} VND budget.`)
   }
   if (f.distance_km !== undefined) {
-    parts.push(`About ${f.distance_km} km from ${f.origin ?? 'your starting point'} (estimated).`)
+    parts.push(`About ${f.distance_km} km from ${f.origin ?? 'your starting point'}.`)
   }
   if (parts.length === 0) {
     return 'A verified traditional craft experience matching your tour criteria.'
@@ -93,7 +94,9 @@ export async function buildRecommendations(
       village_name: item.village_name,
       price_per_person: item.price_per_person,
       max_participants: item.max_participants,
-      distance_km: item.distance_km,
+      ...(item.distance_source === 'haversine' && typeof item.distance_km === 'number'
+        ? { distance_km: item.distance_km, distance_source: 'haversine' as const }
+        : {}),
       rank,
       match_score: score,
       explanation: explain(item, score),

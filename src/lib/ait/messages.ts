@@ -2,11 +2,6 @@ function formatVND(n: number): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-function toDDMM(d: string): string {
-  const parts = d.split('-');
-  return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : d;
-}
-
 function toDDMMYYYY(d: string): string {
   const parts = d.split('-');
   return parts.length >= 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d;
@@ -18,61 +13,99 @@ interface ResultMessageMatch {
   distance_km?: number | null;
 }
 
+const CRAFT_LABELS_VI: Record<string, string> = {
+  silk: 'dệt lụa',
+  embroidery: 'thêu tay',
+  pottery: 'làm gốm',
+  woodcarving: 'điêu khắc gỗ',
+  food: 'ẩm thực',
+  metalwork: 'đồ kim hoàn',
+  painting: 'sơn mài',
+  'conical hat': 'làm nón lá',
+  bamboo: 'đan mây tre',
+};
+
+export function craftLabelVi(preference: string): string {
+  return CRAFT_LABELS_VI[preference.toLowerCase()] ?? preference;
+}
+
+export function resultEndingCandidate(reply: string): string {
+  const sentences = reply.match(/[^.!?？]+[.!?？]*/gu)?.map(sentence => sentence.trim()).filter(Boolean) ?? [];
+  const ending = sentences[sentences.length - 1] ?? '';
+  if (/^(?:dưới đây|mình tìm(?: được| thấy)?|tìm thấy|here are|i found)\b/i.test(ending)) return '';
+  return ending;
+}
+
 export function buildResultsMessage({
   count,
   group_size,
   start_date,
   end_date,
   max_budget_per_person,
+  craft,
+  origin,
+  radiusKm,
+  excludedVillages = [],
+  excludedCrafts = [],
+  priceSort,
   matches,
-  lead,
+  ending,
 }: {
   count: number;
   group_size?: number;
   start_date?: string;
   end_date?: string;
   max_budget_per_person?: number;
+  craft?: string;
+  origin?: string;
+  radiusKm?: number;
+  excludedVillages?: string[];
+  excludedCrafts?: string[];
+  priceSort?: 'asc' | 'desc';
   matches?: ResultMessageMatch[];
-  lead?: string;
+  ending?: string;
 }): string {
-  const summary = `Tìm thấy ${count} đề xuất`;
-  let msg = lead?.trim() ? `${lead.trim()} ${summary}` : summary;
-  if (matches) {
-    const items = matches.map((match) => {
+  const criteria: string[] = [];
+  if (craft) criteria.push(`nghề ${craft}`);
+  if (start_date) {
+    if (end_date && end_date !== start_date) {
+      criteria.push(`từ ${toDDMMYYYY(start_date)} đến ${toDDMMYYYY(end_date)}`);
+    } else {
+      criteria.push(`ngày ${toDDMMYYYY(start_date)}`);
+    }
+  }
+  if (max_budget_per_person != null) criteria.push(`ngân sách tối đa ${formatVND(max_budget_per_person)}đ/người`);
+  if (origin) criteria.push(`điểm xuất phát ${origin}`);
+  if (radiusKm != null) criteria.push(`bán kính ${radiusKm} km`);
+
+  const group = group_size != null ? ` cho nhóm ${group_size} khách` : '';
+  const qualifier = criteria.length > 0 ? ` (${criteria.join(', ')})` : '';
+  const lines = [`Mình tìm được ${count} trải nghiệm${group}${qualifier}.`];
+  const exclusions = [
+    ...excludedVillages,
+    ...excludedCrafts.map(excludedCraft => `nghề ${excludedCraft}`),
+  ].filter(Boolean);
+  const actions: string[] = [];
+  if (exclusions.length > 0) actions.push(`Đã loại ${exclusions.join(', ')}`);
+  if (priceSort === 'desc') actions.push('sắp xếp giá từ cao xuống thấp');
+  if (priceSort === 'asc') actions.push('sắp xếp giá từ thấp lên cao');
+  if (actions.length > 0) lines.push(`${actions.join(' và ')}.`);
+
+  if (matches && matches.length > 0) {
+    lines.push('');
+    matches.forEach((match, index) => {
       const price = match.price_per_person == null
         ? 'chưa có dữ liệu giá'
         : `${formatVND(match.price_per_person)}đ/người`;
-      const distance = match.distance_km == null
-        ? 'chưa có dữ liệu khoảng cách'
-        : `khoảng ${Math.round(match.distance_km)} km`;
-      return `${match.experience_name} — ${price}, ${distance}`;
-    })
-    msg += `: ${items.join('; ')}`;
+      const distance = typeof match.distance_km === 'number' && Number.isFinite(match.distance_km)
+        ? ` (khoảng ${Math.round(match.distance_km)} km)`
+        : '';
+      lines.push(`${index + 1}. ${match.experience_name}: ${price}${distance}`);
+    });
   }
 
-  if (group_size != null) {
-    msg += matches ? `; đoàn ${group_size} người` : ` cho đoàn ${group_size} người`;
-  }
-
-  const clauses: string[] = [];
-  if (start_date) {
-    const formatDate = matches ? toDDMMYYYY : toDDMM;
-    if (end_date && end_date !== start_date) {
-      clauses.push(`từ ${formatDate(start_date)} đến ${formatDate(end_date)}`);
-    } else {
-      clauses.push(`ngày ${formatDate(start_date)}`);
-    }
-  }
-
-  if (max_budget_per_person != null) {
-    clauses.push(`ngân sách tối đa ${formatVND(max_budget_per_person)}đ/người`);
-  }
-
-  if (clauses.length > 0) {
-    msg += matches ? `; ${clauses.join(', ')}` : ', ' + clauses.join(', ');
-  }
-
-  return msg + '.';
+  if (ending?.trim()) lines.push('', ending.trim());
+  return lines.join('\n');
 }
 
 export function refusalTemplate(

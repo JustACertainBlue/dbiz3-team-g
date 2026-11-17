@@ -88,13 +88,26 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
   })
   const explain = async (p: Record<string, unknown>) => (await buildRecommendations(await rankCandidates([vanPhuc], p))).top_matches[0].explanation
 
-  it('no craft preference → no craft named; capacity, group and estimated distance are stated', async () => {
+  it('unknown coordinates → no craft or distance is invented', async () => {
     const text = await explain(profileWith())
     expect(text).not.toMatch(/silk|lụa|pottery|weaving/i)
     expect(text).toMatch(/up to 13/)
     expect(text).toMatch(/group of 10/)
-    expect(text).toMatch(/estimated/i)
-    expect(text).toMatch(/Hoàn Kiếm/)
+    expect(text).not.toMatch(/km|estimated|Hoàn Kiếm/i)
+  })
+
+  it('verified Haversine distance is included without an estimated label', async () => {
+    const ranked = await rankCandidates([
+      { ...vanPhuc, distance_km: 5, distance_source: 'haversine' as const },
+    ], profileWith())
+    const result = await buildRecommendations(ranked)
+
+    expect(result.top_matches[0]).toMatchObject({
+      distance_km: 5,
+      distance_source: 'haversine',
+    })
+    expect(result.top_matches[0].explanation).toContain('5 km from Hoàn Kiếm')
+    expect(result.top_matches[0].explanation).not.toMatch(/estimated/i)
   })
 
   it('silk preference → the preference is named', async () => {

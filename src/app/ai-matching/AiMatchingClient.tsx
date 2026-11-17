@@ -1147,7 +1147,10 @@ export default function AiMatchingScreen({
                                   {rec.experience_name ? cleanActivityName(rec.experience_name) : 'Trải nghiệm làng nghề'}
                                 </h3>
                                 <p className="rec-card-location">
-                                  📍 {formatVillageName(rec.village_name)} · {rec.distance_km ? `${rec.distance_km} km` : '13,2 km'} (khoảng 28 phút di chuyển)
+                                  📍 {formatVillageName(rec.village_name)}
+                                  {rec.distance_source === 'haversine' && typeof rec.distance_km === 'number'
+                                    ? ` · ${Math.round(rec.distance_km)} km`
+                                    : ''}
                                 </p>
 
                                 <div className="rec-card-reason-wrap">

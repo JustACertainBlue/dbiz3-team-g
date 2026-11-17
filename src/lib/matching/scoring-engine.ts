@@ -8,6 +8,7 @@ export interface MatchFactors {
   budget_per_person?: number
   price_per_person?: number | null
   distance_km?: number
+  distance_source?: 'haversine'
   origin?: string
 }
 
@@ -87,20 +88,26 @@ export async function scoreCandidate(
   }
 
   // 2. Route Convenience Score (shorter distance -> higher score)
-  let distanceKm = candidate.distance_km ?? 15
-  if (villageName.includes('vạn phúc') || expName.includes('lụa')) {
-    distanceKm = 12
-  } else if (villageName.includes('bát tràng') || expName.includes('gốm')) {
-    distanceKm = 14
-  } else if (villageName.includes('phú vinh') || expName.includes('mây')) {
-    distanceKm = 24
-  } else if (villageName.includes('quất động') || expName.includes('thêu')) {
-    distanceKm = 28
-  } else if (villageName.includes('chuông') || expName.includes('nón')) {
-    distanceKm = 30
+  const actualDistanceKm = candidate.distance_source === 'haversine'
+    && typeof candidate.distance_km === 'number'
+    ? candidate.distance_km
+    : undefined
+  let distanceKmForScore = actualDistanceKm ?? (candidate.distance_km ?? 15)
+  if (actualDistanceKm === undefined) {
+    if (villageName.includes('vạn phúc') || expName.includes('lụa')) {
+      distanceKmForScore = 12
+    } else if (villageName.includes('bát tràng') || expName.includes('gốm')) {
+      distanceKmForScore = 14
+    } else if (villageName.includes('phú vinh') || expName.includes('mây')) {
+      distanceKmForScore = 24
+    } else if (villageName.includes('quất động') || expName.includes('thêu')) {
+      distanceKmForScore = 28
+    } else if (villageName.includes('chuông') || expName.includes('nón')) {
+      distanceKmForScore = 30
+    }
   }
 
-  const routeScore = Math.max(20, Math.min(100, 100 - distanceKm * 2))
+  const routeScore = Math.max(20, Math.min(100, 100 - distanceKmForScore * 2))
 
   // 3. Agency Preferences Score
   const agencyPrefScore = (candidate.historical_agency_preference_weight ?? 0.8) * 100
@@ -133,12 +140,14 @@ export async function scoreCandidate(
     max_participants: candidate.max_participants ?? candidate.max_capacity,
     budget_per_person: hard.max_budget_per_person,
     price_per_person: candidate.price_per_person,
-    distance_km: distanceKm,
+    distance_km: actualDistanceKm,
     origin: hard.origin?.origin_address,
   }
 
   return {
     ...candidate,
+    distance_km: actualDistanceKm,
+    ...(actualDistanceKm !== undefined ? { distance_source: 'haversine' as const } : { distance_source: undefined }),
     match_score: normalizedScore,
     experience_fit_score: experienceFitScore,
     match_factors: matchFactors,

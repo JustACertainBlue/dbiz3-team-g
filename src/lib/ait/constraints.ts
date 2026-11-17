@@ -1,3 +1,5 @@
+import { matchesCraftPreference } from '@/lib/matching/craft-taxonomy'
+
 function getNextDayUTC7(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d + 1));
@@ -79,6 +81,20 @@ export function applyHardFilters({
         rejected.push({ id: candidate.id, reason: 'budget' });
         continue;
       }
+    }
+
+    const includedCraft = matchingAttrs.find(
+      (attr: any) => attr.type === 'craft_preference' && attr.polarity !== 'exclude' && attr.value !== 'all'
+    )
+    if (includedCraft && !matchesCraftPreference(includedCraft.value, {
+      craft_type: candidate.craft_type ?? candidate.craft,
+      name: candidate.name,
+      experience_name: candidate.experience_name,
+      village_name: candidate.village_name,
+      provider_name: candidate.provider_name,
+    })) {
+      rejected.push({ id: candidate.id, reason: 'craft_preference' });
+      continue;
     }
 
     // 5. Date conflict check

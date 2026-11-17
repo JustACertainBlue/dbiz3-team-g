@@ -139,7 +139,8 @@ export async function POST(request: Request) {
       return {
         ...card,
         explanation: explain(candidate, candidate.match_score),
-        distance_km: candidate.distance_km,
+        distance_km: candidate.distance_source === 'haversine' ? candidate.distance_km : null,
+        ...(candidate.distance_source === 'haversine' ? { distance_source: 'haversine' as const } : {}),
         village_name: candidate.village_name || card.village_name,
         provider_name: candidate.provider_name || card.provider_name,
         price_per_person: candidate.price_per_person ?? card.price_per_person,

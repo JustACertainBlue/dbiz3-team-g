@@ -98,17 +98,38 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
   it('T2: updates the craft preference to the latest choice across repeated changes', async () => {
     const sessionId = await openSession()
     const choices = [
-      ['Tìm trải nghiệm làm gốm', 'pottery'],
-      ['Đổi sang dệt lụa', 'silk'],
-      ['Đổi sang nón lá', 'conical hat'],
-      ['Đổi sang gốm', 'pottery'],
+      ['Tìm trải nghiệm làm gốm', 'pottery', 'Nặn gốm thủ công'],
+      ['Đổi sang dệt lụa', 'silk', 'Dệt lụa truyền thống'],
+      ['Đổi sang nón lá', 'conical hat', 'Làm nón lá'],
+      ['Đổi sang gốm', 'pottery', 'Nặn gốm thủ công'],
     ]
+    const extraction = vi.spyOn(extractor, 'extractTourContext')
 
-    for (const [text, expectedCraft] of choices) {
+    for (const [text, expectedCraft, expectedExperience] of choices) {
+      extraction.mockResolvedValueOnce({
+        is_complete: true,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        conversational_reply: 'Mình đã ghi nhận nghề bạn chọn.',
+        tour_context: {
+          craft_preference: expectedCraft,
+          group_size: 10,
+          target_date_or_range: { start_date: '2028-07-12' },
+          origin_or_route: { origin_address: 'Hoàn Kiếm' },
+        },
+      })
       const response = await send(sessionId, text)
+      const cards = [
+        ...(response.json.turn.top_matches ?? []),
+        ...(response.json.turn.additional_suggestions ?? []),
+      ]
+
       expect(response.status).toBe(201)
       expect(response.json.extraction.tour_context.craft_preference).toBe(expectedCraft)
       expect((await getContext(sessionId)).state.craft).toBe(expectedCraft)
+      expect(response.json.turn.turn_type).toBe('results')
+      expect(cards.map((card: Json) => card.experience_name)).toEqual([expectedExperience])
     }
   })
 
@@ -347,6 +368,11 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     const sessionId = await openSession()
     await updateMatchingSessionContext(sessionId, {
       state: normalizeConversationState({
+        craft: 'silk',
+        group_size: 10,
+        budget_per_person: 200000,
+        date: '2028-07-12',
+        origin: 'Hoàn Kiếm',
         exclusions: { villages: [BAT_TRANG_ID], crafts: [] },
       }),
     })
@@ -409,11 +435,13 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       retry_available: false,
       follow_up_questions: [],
       conversational_reply:
-        'Nặn gốm thủ công giá 999.000đ cho 200 khách ngày 01/01/2030 cách 999 km.',
+        'Dưới đây là một số lựa chọn phù hợp. Nặn gốm thủ công giá 999.000đ cho 200 khách ngày 01/01/2030 cách 999 km. Chúc đoàn có trải nghiệm vui vẻ.',
       tour_context: {
+        craft_preference: 'silk',
         group_size: 10,
         budget: { max_per_person: 200000, currency: 'VND' },
         target_date_or_range: { start_date: '2028-07-12' },
+        origin_or_route: { origin_address: 'Hoàn Kiếm' },
       },
     })
     vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
@@ -422,7 +450,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       source: 'llm',
     })
 
-    const response = await send(sessionId, 'Tìm trải nghiệm cho đoàn')
+    const response = await send(sessionId, 'Tìm trải nghiệm cho đoàn, giá cao nhất')
     const cards = [
       ...(response.json.turn.top_matches ?? []),
       ...(response.json.turn.additional_suggestions ?? []),
@@ -431,24 +459,26 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
     expect(response.status).toBe(201)
     expect(cards.length).toBeGreaterThan(0)
-    expect(message).toContain(`Tìm thấy ${cards.length} đề xuất`)
+    expect(message).not.toMatch(/\bkm\b/i)
     for (const card of cards) {
-      expect(message).toContain(card.experience_name)
-      if (card.price_per_person != null) {
-        expect(message).toContain(
-          `${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người`
-        )
-      }
-      if (typeof card.distance_km === 'number') {
-        expect(message).toContain(`${Math.round(card.distance_km)} km`)
-      }
+      expect(card.distance_km).toBeNull()
     }
+    expect(message).toMatch(new RegExp(`^Mình tìm được ${cards.length} trải nghiệm`))
+    expect(message).toContain('Đã loại Bát Tràng và sắp xếp giá từ cao xuống thấp.')
+    expect(message).toContain('nghề dệt lụa')
+    expect(message).toContain('ngày 12/07/2028')
+    expect(message).toContain('ngân sách tối đa 200.000đ/người')
+    expect(message).toContain('Chúc đoàn có trải nghiệm vui vẻ.')
+    expect(message).not.toContain('Dưới đây')
+    const activityLines = message.split('\n').filter((line: string) => /^\d+\.\s/.test(line))
+    expect(activityLines).toHaveLength(cards.length)
+    expect(activityLines).toEqual(cards.map((card: Json, index: number) =>
+      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người`
+    ))
     const knownActivityNames = (await loadExperiences()).map((experience) => experience.name)
     expect(knownActivityNames.filter((name) => message.includes(name)).sort())
       .toEqual(cards.map((card: Json) => card.experience_name).sort())
-    expect(message).toContain('200.000đ/người')
-    expect(message).toContain('10 người')
-    expect(message).toContain('12/07/2028')
+    expect(message).toContain('nhóm 10 khách')
     expect(message).not.toContain('999')
     expect(message).not.toContain('200 khách')
     expect(message).not.toContain('01/01/2030')

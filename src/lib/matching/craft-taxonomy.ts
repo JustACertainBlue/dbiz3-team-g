@@ -52,6 +52,38 @@ export function craftTypeForPreference(preference: string): CraftType | undefine
   return CRAFTS.find(entry => entry.preference === preference.toLowerCase())?.craftType
 }
 
+export function matchesCraftPreference(
+  preference: string,
+  candidate: { craft_type?: string | null; name?: string; experience_name?: string; village_name?: string; provider_name?: string }
+): boolean {
+  const expectedType = craftTypeForPreference(preference)
+  if (!expectedType || candidate.craft_type !== expectedType) return false
+
+  const text = [
+    candidate.name,
+    candidate.experience_name,
+    candidate.village_name,
+    candidate.provider_name,
+  ].filter(Boolean).join(' ')
+
+  if (preference === 'silk') {
+    return ['silk', 'lụa', 'vạn phúc', 'nha xá'].some(term => hasWord(text, term))
+      && !['thêu', 'embroidery', 'quất động'].some(term => hasWord(text, term))
+  }
+  if (preference === 'embroidery') {
+    return ['thêu', 'embroidery', 'quất động'].some(term => hasWord(text, term))
+  }
+  if (preference === 'conical hat') {
+    return ['nón', 'conical hat', 'chuông'].some(term => hasWord(text, term))
+      && !['mây', 'tre', 'bamboo', 'rattan', 'phú vinh'].some(term => hasWord(text, term))
+  }
+  if (preference === 'bamboo') {
+    return ['mây', 'tre', 'bamboo', 'rattan', 'phú vinh'].some(term => hasWord(text, term))
+  }
+
+  return true
+}
+
 export function craftLabel(preference: string): string {
   return CRAFTS.find(entry => entry.preference === preference.toLowerCase())?.label ?? preference
 }

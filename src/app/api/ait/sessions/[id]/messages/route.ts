@@ -28,11 +28,16 @@ import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import { loadBookings, loadExperiences, loadVillages } from '@/lib/db/seed-loader'
 import { loadOperatingHours } from '@/lib/prf/seed-reader'
-import { runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
+import { priceSortDirection, runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
 import { sanitizeInput, createRateLimiter } from '@/lib/ait/guard'
 import { routeByRules } from '@/lib/ait/router'
 import { classifyIntent } from '@/lib/ait/llm-router'
-import { refusalTemplate, buildResultsMessage } from '@/lib/ait/messages'
+import {
+  buildResultsMessage,
+  craftLabelVi,
+  refusalTemplate,
+  resultEndingCandidate,
+} from '@/lib/ait/messages'
 import { postCheckMessage } from '@/lib/ait/postcheck'
 import { turnSchema } from '@/lib/ait/schemas'
 import {
@@ -655,7 +660,7 @@ export async function POST(
 
         const totalCount = topCards.length + additionalCards.length
         const cards = [...topCards, ...additionalCards]
-        const narration = (extraction.conversational_reply || '').trim().slice(0, 120)
+        const narration = resultEndingCandidate(extraction.conversational_reply || '').slice(0, 120)
         const checkedNarration = postCheckMessage({
           turnType: 'results',
           message: narration,
@@ -670,12 +675,27 @@ export async function POST(
           cardNames: cards.map((card) => card.experience_name),
           fallback: '',
         })
+        const excludedVillageNames = conversationState.exclusions.villages
+          .map(villageId => villages.find(village => village.village_id === villageId)?.village_name)
+          .filter((name): name is string => Boolean(name))
+          .map(name => name.replace(/^(?:làng(?: nghề)?|xưởng)\s+/i, ''))
+        const excludedCraftNames = conversationState.exclusions.crafts.map(craftLabelVi)
+        const craftPreference = tourPreferenceProfile.matching_attributes.find(
+          (attribute: any) => attribute.type === 'craft_preference' && attribute.polarity !== 'exclude'
+        )?.value
         const resultMessage = buildResultsMessage({
           count: totalCount,
-          group_size: tourPreferenceProfile.hard_constraints?.group_size,
-          start_date: tourPreferenceProfile.hard_constraints?.target_date_or_range?.start_date,
-          end_date: tourPreferenceProfile.hard_constraints?.target_date_or_range?.end_date,
-          max_budget_per_person: tourPreferenceProfile.hard_constraints?.max_budget_per_person,
+          group_size: conversationState.group_size,
+          start_date: /^\d{4}-\d{2}-\d{2}$/.test(conversationState.date || '')
+            ? conversationState.date
+            : undefined,
+          max_budget_per_person: conversationState.budget_per_person,
+          craft: typeof craftPreference === 'string' ? craftLabelVi(craftPreference) : undefined,
+          origin: conversationState.origin,
+          radiusKm: conversationState.radius_km,
+          excludedVillages: excludedVillageNames,
+          excludedCrafts: excludedCraftNames,
+          priceSort: priceSortDirection(tourPreferenceProfile),
           matches: cards.length > 0
             ? cards.map((card) => ({
               experience_name: card.experience_name,
@@ -683,7 +703,7 @@ export async function POST(
               distance_km: card.distance_km,
             }))
             : undefined,
-          lead: cards.length > 0 && checkedNarration.ok ? checkedNarration.message : undefined,
+          ending: cards.length > 0 && checkedNarration.ok ? checkedNarration.message : undefined,
         })
 
         turn = {

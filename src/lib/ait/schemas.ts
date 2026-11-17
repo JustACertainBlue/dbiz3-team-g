@@ -64,6 +64,7 @@ export const matchCardSchema = z
     village_name: z.string(),
     price_per_person: z.number().nullable(),
     distance_km: z.number().nullable().optional(),
+    distance_source: z.literal('haversine').optional(),
     max_participants: z.number().nullable(),
     notice_period_hours: z.number().nullable().optional(),
     image_url: z.string().nullable(),

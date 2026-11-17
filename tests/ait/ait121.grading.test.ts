@@ -582,15 +582,41 @@ t('CARD', 'verificationText: đúng cách nói, không diễn giải quá mức'
 t('MESSAGE', 'câu dẫn kết quả: đủ điều kiện (mẫu A.6)', async () => {
   const f = await ex('messages', 'buildResultsMessage');
   expect(f({ count: 5, group_size: 20, start_date: '2026-11-25', max_budget_per_person: 300000 }))
-    .toBe('Tìm thấy 5 đề xuất cho đoàn 20 người, ngày 25/11, ngân sách tối đa 300.000đ/người.');
+    .toBe('Mình tìm được 5 trải nghiệm cho nhóm 20 khách (ngày 25/11/2026, ngân sách tối đa 300.000đ/người).');
 });
 t('MESSAGE', 'câu dẫn: khoảng ngày, thiếu trường, start=end', async () => {
   const f = await ex('messages', 'buildResultsMessage');
   expect(f({ count: 2, group_size: 20, start_date: '2026-11-25', end_date: '2026-11-27', max_budget_per_person: 300000 }))
-    .toBe('Tìm thấy 2 đề xuất cho đoàn 20 người, từ 25/11 đến 27/11, ngân sách tối đa 300.000đ/người.');
-  expect(f({ count: 3, group_size: 10 })).toBe('Tìm thấy 3 đề xuất cho đoàn 10 người.');
-  expect(f({ count: 4 })).toBe('Tìm thấy 4 đề xuất.');
-  expect(f({ count: 1, group_size: 8, start_date: '2026-11-25', end_date: '2026-11-25' })).toBe('Tìm thấy 1 đề xuất cho đoàn 8 người, ngày 25/11.');
+    .toBe('Mình tìm được 2 trải nghiệm cho nhóm 20 khách (từ 25/11/2026 đến 27/11/2026, ngân sách tối đa 300.000đ/người).');
+  expect(f({ count: 3, group_size: 10 })).toBe('Mình tìm được 3 trải nghiệm cho nhóm 10 khách.');
+  expect(f({ count: 4 })).toBe('Mình tìm được 4 trải nghiệm.');
+  expect(f({ count: 1, group_size: 8, start_date: '2026-11-25', end_date: '2026-11-25' }))
+    .toBe('Mình tìm được 1 trải nghiệm cho nhóm 8 khách (ngày 25/11/2026).');
+});
+t('MESSAGE', 'result list is one activity per line and omits unavailable distance', async () => {
+  const f = await ex('messages', 'buildResultsMessage');
+  expect(f({
+    count: 2,
+    group_size: 10,
+    start_date: '2028-07-12',
+    max_budget_per_person: 200000,
+    craft: 'dệt lụa',
+    excludedVillages: ['Bát Tràng'],
+    priceSort: 'desc',
+    matches: [
+      { experience_name: 'Dệt lụa truyền thống', price_per_person: 175000, distance_km: null },
+      { experience_name: 'Thêu họa tiết', price_per_person: 150000, distance_km: 5 },
+    ],
+    ending: 'Chúc đoàn có trải nghiệm vui vẻ.',
+  })).toBe([
+    'Mình tìm được 2 trải nghiệm cho nhóm 10 khách (nghề dệt lụa, ngày 12/07/2028, ngân sách tối đa 200.000đ/người).',
+    'Đã loại Bát Tràng và sắp xếp giá từ cao xuống thấp.',
+    '',
+    '1. Dệt lụa truyền thống: 175.000đ/người',
+    '2. Thêu họa tiết: 150.000đ/người (khoảng 5 km)',
+    '',
+    'Chúc đoàn có trải nghiệm vui vẻ.',
+  ].join('\n'));
 });
 const PC = async (o: any = {}) =>
   (await ex('postcheck', 'postCheckMessage'))({

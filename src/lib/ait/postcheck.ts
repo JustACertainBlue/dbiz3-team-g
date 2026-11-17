@@ -90,7 +90,7 @@ export function postCheckMessage({
 }): {
   ok: boolean;
   message: string;
-  violations: ('number' | 'card_name' | 'name' | 'leak')[];
+  violations: ('number' | 'card_name' | 'name' | 'leak' | 'booking_claim')[];
 } {
   const violations: ('number' | 'card_name' | 'name' | 'leak' | 'booking_claim')[] = [];
 

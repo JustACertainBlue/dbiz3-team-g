@@ -650,9 +650,14 @@ export class ConversationalAiService {
     const knowledgeMatches = queryKnowledgeBase(latestUserMsg)
     const isExplicitTourAction = /(?:tìm|muốn|cần|tổ chức|book|đặt|find|want|need|organize|looking for)\s+(?:tour|xưởng|chỗ|trải nghiệm)/i.test(latestUserMsg)
     const isFitScoreQuestion = /(?:thang điểm|công thức|tính điểm|fit score|scoring|weights)/i.test(latestUserMsg)
+    const isSystemHelpQuestion = /(?:system_help|system help|cách (?:sử dụng|dùng)|hướng dẫn sử dụng|how (?:to use|do i use|does the system work))/i.test(latestUserMsg)
+    const isBookingHelpQuestion = /(?:book_now|book now|how (?:do i|to) book|cách đặt tour|đặt tour như thế nào|how to request a quote)/i.test(latestUserMsg)
     const isContactQuestion = /(?:liên hệ|nhắn tin|báo giá|chat|contact|how to contact|request quote)/i.test(latestUserMsg)
+      || isSystemHelpQuestion
+      || isBookingHelpQuestion
     const isVillagesQuestion = /(?:những làng nghề nào|làng nghề nào được hỗ trợ|danh sách làng nghề|verified craft villages)/i.test(latestUserMsg)
-    const isPlatformQuestion = (isFitScoreQuestion || isContactQuestion || isVillagesQuestion) && !isExplicitTourAction
+    const isPlatformQuestion = isSystemHelpQuestion || isBookingHelpQuestion
+      || ((isFitScoreQuestion || isContactQuestion || isVillagesQuestion) && !isExplicitTourAction)
 
     if (isPlatformQuestion && knowledgeMatches.length > 0) {
       const best = knowledgeMatches.find(k =>

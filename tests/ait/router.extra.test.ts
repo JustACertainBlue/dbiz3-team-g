@@ -105,6 +105,14 @@ describe('Router Extra Test Suite — Generalized Rules', () => {
       expected: 'out_of_scope',
     },
     {
+      text: 'Đoàn mình cần nhà hàng gần Bát Tràng để ăn trưa',
+      expected: 'out_of_scope',
+    },
+    {
+      text: 'Nền tảng có cung cấp dịch vụ ăn trưa không?',
+      expected: 'out_of_scope',
+    },
+    {
       text: 'Ngày mai trời có mưa không và nhiệt độ hôm nay thế nào?',
       expected: 'out_of_scope',
     },
@@ -131,6 +139,7 @@ describe('Router Extra Test Suite — Generalized Rules', () => {
     'Đoàn 30 học sinh trung học muốn tham quan làng gốm',
     'Bên mình tự dẫn đoàn nên không cần hướng dẫn viên',
     'Làng Hạ Thái có hoạt động trải nghiệm làm tranh sơn mài không?',
+    'Cái số 2 có ăn trưa không?',
   ];
 
   describe('Blocked cases (≥15 cases)', () => {

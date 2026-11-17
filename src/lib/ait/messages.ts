@@ -53,7 +53,7 @@ export function refusalTemplate(
     case 'out_of_scope':
       return {
         message:
-          'Mình hỗ trợ ghép tour làng nghề tại Hà Nội nên chưa trả lời được câu này. Bạn muốn mình gợi ý tour theo số người, ngày và ngân sách không?',
+          'Xin lỗi, mình không thể trả lời yêu cầu này vì nằm ngoài phạm vi nền tảng. Mình có thể gợi ý trải nghiệm văn hóa có trong dữ liệu hoặc giúp ghép tour làng nghề theo số khách, ngày và ngân sách.',
         quick_replies: ['Bắt đầu ghép tour', 'Xem các làng nghề'],
       };
     case 'restricted':

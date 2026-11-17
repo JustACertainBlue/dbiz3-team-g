@@ -96,13 +96,18 @@ export const PLATFORM_KNOWLEDGE_BASE: KnowledgeItem[] = [
   },
   {
     id: 'contact_and_booking',
-    topics: ['liên hệ', 'báo giá', 'đặt chỗ', 'chat', 'nhắn tin', 'quote', 'contact', 'booking'],
+    topics: [
+      'liên hệ', 'báo giá', 'đặt chỗ', 'chat', 'nhắn tin', 'quote', 'contact', 'booking',
+      'system_help', 'system help', 'book_now', 'book now', 'cách sử dụng hệ thống',
+      'cách dùng hệ thống', 'cách sử dụng', 'how to use the system', 'how do i use',
+      'how does the system work', 'cách đặt tour', 'how do i book',
+    ],
     titleVi: 'Cách thức liên hệ và đặt chỗ với xưởng',
     titleEn: 'How to Contact and Book with Providers',
     contentVi:
-      'Từ kết quả đề xuất AI Matching, Đại lý du lịch có thể:\n1. Bấm "Yêu cầu báo giá": Tạo yêu cầu báo giá thương mại chính thức gửi đến xưởng, đồng thời mở kênh hội thoại trao đổi.\n2. Bấm "Nhắn tin": Mở ngay phiên chat B2B trực tiếp với đại diện xưởng để trao đổi yêu cầu riêng (ngôn ngữ HDV, ăn uống, lối đi xe lăn).\n3. Bấm "Xem chi tiết trải nghiệm": Xem ảnh chụp thực tế xưởng (không gian, hoạt động, sản phẩm) và bảng giá chiết khấu theo số lượng khách.',
+      'Trên card đề xuất AI Matching, Đại lý du lịch có thể:\n1. Bấm "Xin báo giá ngay" để gửi yêu cầu báo giá; khi thao tác thành công, hệ thống chuyển đến màn hình tin nhắn.\n2. Bấm "Chi tiết" để mở trang chi tiết trải nghiệm.\n3. Dùng thao tác chat trên card để mở hội thoại với Provider.\nAI chỉ hỗ trợ tìm và gợi ý trải nghiệm; AI không tự đặt hoặc xác nhận tour.\nTODO: Xác minh đầu mối liên hệ và các bước tiếp theo sau khi gửi yêu cầu báo giá.',
     contentEn:
-      'From the AI Matching recommendations, Tour Agencies can:\n1. Click "Request Quote": Submits a formal B2B quote request to the workshop and initializes communication.\n2. Click "Chat": Opens a real-time B2B chat channel directly with the workshop manager for custom requests (French guide, dietary, wheelchair access).\n3. Click "View Experience Details": Reviews certified photos (Space, Activity, Product) and tiered group discount schedules.',
+      'On an AI Matching recommendation card, a Tour Agency can:\n1. Click "Xin báo giá ngay" to send a quote request; after a successful action, the app opens the Messages screen.\n2. Click "Chi tiết" to open the experience details page.\n3. Use the card chat action to open a conversation with the Provider.\nThe AI helps find and suggest experiences; it does not place or confirm tours.\nTODO: Verify the contact point and the steps after a quote request is sent.',
   },
   {
     id: 'requirements_guide',

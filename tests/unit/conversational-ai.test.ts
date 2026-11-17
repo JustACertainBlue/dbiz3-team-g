@@ -112,6 +112,44 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
       expect(results.length).toBeGreaterThan(0)
       expect(results.some(r => r.id === 'verified_craft_villages')).toBe(true)
     })
+
+    it('routes system help and booking help to verified UI guidance', () => {
+      expect(queryKnowledgeBase('system_help').some(item => item.id === 'contact_and_booking')).toBe(true)
+      expect(queryKnowledgeBase('book_now').some(item => item.id === 'contact_and_booking')).toBe(true)
+
+      const booking = PLATFORM_KNOWLEDGE_BASE.find(item => item.id === 'contact_and_booking')!
+      expect(booking.contentVi).toContain('"Xin báo giá ngay"')
+      expect(booking.contentVi).toMatch(/AI không tự đặt hoặc xác nhận tour/i)
+      expect(booking.contentVi).toContain('TODO')
+    })
+
+    it('uses the booking help route when the fallback receives a book-now question', () => {
+      const result = ConversationalAiService.fallbackAnalysis(
+        [{ sender: 'Agency', text: 'How do I book now?' }],
+        { inCooldown: false, provider: 'test', model: 'test' },
+        () => new Date('2026-11-17T00:00:00Z')
+      )
+
+      expect(result.intent).toBe('platform_guidance')
+      expect(result.conversational_reply).toContain('"Xin báo giá ngay"')
+    })
+
+    it('uses the system-help route for a how-to-use question', () => {
+      const result = ConversationalAiService.fallbackAnalysis(
+        [{ sender: 'Agency', text: 'How do I use the system?' }],
+        { inCooldown: false, provider: 'test', model: 'test' },
+        () => new Date('2026-11-17T00:00:00Z')
+      )
+
+      expect(result.intent).toBe('platform_guidance')
+      expect(result.conversational_reply).toContain('"Xin báo giá ngay"')
+    })
+
+    it('does not prompt the assistant to ask about meals or refreshments', () => {
+      const prompt = buildSystemPrompt()
+      expect(prompt).not.toMatch(/lunch\/refreshment needs/i)
+      expect(prompt).toMatch(/do not proactively suggest or ask about lunch/i)
+    })
   })
 
   describe('3. Security & Guardrails (Prompt Injection Defenses)', () => {

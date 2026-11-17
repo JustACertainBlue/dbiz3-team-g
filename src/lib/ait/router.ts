@@ -141,6 +141,23 @@ export function routeByRules(
     }
   }
 
+  const mealServiceRequest =
+    /\b(?:nha\s+hang|quan\s+an|cho\s+an|dia\s+diem\s+an|dich\s+vu\s+an\s+uong|an\s+(?:sang|trua|toi)|dat\s+ban|restaurant|place\s+to\s+eat|meal\s+service|lunch|dinner)\b/i;
+  const culinaryExperienceRequest =
+    /\b(?:trai\s+nghiem|hoat\s+dong)\b.{0,40}\b(?:am\s+thuc|culinary|food\s+tasting|thuong\s+thuc|nem\s+thu|lop\s+nau\s+an|cooking\s+class)\b|\b(?:am\s+thuc|culinary|food\s+tasting|thuong\s+thuc|nem\s+thu|lop\s+nau\s+an|cooking\s+class)\b.{0,40}\b(?:trai\s+nghiem|hoat\s+dong)\b/i;
+  const asksAboutSelectedExperience =
+    /\b(?:cai\s+so\s+\d+|(?:hoat\s+dong|trai\s+nghiem|tour)\s+(?:nay|so\s+\d+))\b/i.test(safe)
+    && /\b(?:co|bao\s+gom|kem)\b.{0,24}\b(?:an\s+(?:sang|trua|toi)|lunch|dinner)\b/i.test(safe);
+  const asksForMealVenue =
+    /\b(?:nha\s+hang|quan\s+an|cho\s+an|dia\s+diem\s+an|dat\s+ban|restaurant|place\s+to\s+eat)\b/i.test(safe);
+  if (
+    matchesAny(mealServiceRequest)
+    && !matchesAny(culinaryExperienceRequest)
+    && !(asksAboutSelectedExperience && !asksForMealVenue)
+  ) {
+    return { intent: 'out_of_scope', confidence: 0.95 };
+  }
+
   // -------------------------------------------------------------
   // SMALLTALK & MULTI-INTENT CHECK
   // -------------------------------------------------------------

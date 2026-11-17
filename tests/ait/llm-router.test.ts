@@ -238,6 +238,27 @@ describe('AIT LLM Router (A.2, B.3 Layer 2)', () => {
       expect(mockCallLlm).toHaveBeenCalledTimes(1);
     });
 
+    it('refuses meal-service requests directly without calling the LLM', async () => {
+      const mockCallLlm = vi.fn();
+      setDefaultLlmRouterDeps({ callLlm: mockCallLlm });
+
+      const res = await call(
+        POST_MESSAGES,
+        `/api/ait/sessions/${sessionId}/messages`,
+        'agency',
+        { sender: 'Agency', text: 'Đoàn mình cần nhà hàng gần Bát Tràng để ăn trưa' },
+        { id: sessionId }
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.json.turn.turn_type).toBe('refusal');
+      expect(res.json.turn.message).toMatch(/xin lỗi/i);
+      expect(res.json.turn.message).toMatch(/không thể trả lời yêu cầu này/i);
+      expect(res.json.turn.message).toMatch(/gợi ý.*làng nghề|ghép tour/i);
+      expect(res.json.turn.message).not.toMatch(/bận|thử lại/i);
+      expect(mockCallLlm).not.toHaveBeenCalled();
+    });
+
     it('invokes LLM router and returns clarify for unclear intent', async () => {
       const mockCallLlm = vi.fn().mockResolvedValue({
         success: true,

@@ -509,7 +509,10 @@ t('CARD', 'reasons sinh trực tiếp tiếng Việt, đúng thứ tự khóa cr
     { key: 'budget', text: '175.000đ/người, trong ngân sách 300.000đ' },
     { key: 'tags', text: 'Có vé miễn phí' },
   ]);
-  expect(c.caveats).toEqual([{ key: 'distance', text: 'Khoảng 12.4 km' }]);
+  expect(c.caveats).toEqual([{
+    key: 'distance',
+    text: 'Cách trung tâm Hà Nội (Hồ Gươm) khoảng 12.4 km (đường chim bay)',
+  }]);
 });
 t('CARD', 'yếu tố không khớp chỉ vào caveats, không bao giờ vào reasons', async () => {
   const c = await BC({ factors: { craft: { matched: false, value: 'gốm' } } });
@@ -613,7 +616,9 @@ t('MESSAGE', 'result list is one activity per line and omits unavailable distanc
     'Đã loại Bát Tràng và sắp xếp giá từ cao xuống thấp.',
     '',
     '1. Dệt lụa truyền thống: 175.000đ/người',
-    '2. Thêu họa tiết: 150.000đ/người (khoảng 5.0 km)',
+    '2. Thêu họa tiết: 150.000đ/người (Cách trung tâm Hà Nội (Hồ Gươm) khoảng 5.0 km (đường chim bay))',
+    '',
+    'Khoảng cách tính từ trung tâm Hà Nội (Hồ Gươm).',
     '',
     'Chúc đoàn có trải nghiệm vui vẻ.',
   ].join('\n'));

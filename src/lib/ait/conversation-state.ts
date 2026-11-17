@@ -182,9 +182,13 @@ export function mergeConversationState(
   pendingField?: PendingQuestionField
 ): AitConversationState {
   const next = normalizeConversationState(current)
-  delete next.budget_per_person
-  delete next.origin
-  delete next.radius_km
+  const keepsPreviousCriteria = /(?:như (?:lúc nãy|trước)|giữ nguyên(?: các)? tiêu chí|keep (?:them|the same))/i
+    .test(text)
+  if (!keepsPreviousCriteria) {
+    delete next.budget_per_person
+    delete next.origin
+    delete next.radius_km
+  }
   const craftExclusion = excludedCraft(text)
   const newVillageExclusions = excludedVillageIds(text)
 

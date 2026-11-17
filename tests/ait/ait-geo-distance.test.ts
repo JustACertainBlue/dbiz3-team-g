@@ -53,7 +53,7 @@ describe('AIT distance calculations', () => {
     expect(resultAtTen.rankedCandidates[0].distance_km).toBeCloseTo(9.932198, 5)
     expect(resultAtTen.topMatches[0].caveats).toContainEqual({
       key: 'distance',
-      text: 'Khoảng 9.9 km',
+      text: 'Cách trung tâm Hà Nội (Hồ Gươm) khoảng 9.9 km (đường chim bay)',
     })
     expect(resultAtTen.rejected).toEqual([])
     expect(resultBelowDistance.rejected).toContainEqual({ id: 'van-phuc', reason: 'radius' })
@@ -82,7 +82,7 @@ describe('AIT distance calculations', () => {
     })
     expect(result.topMatches[0].caveats).toContainEqual({
       key: 'distance',
-      text: 'Khoảng 20 km, tọa độ xấp xỉ',
+      text: 'Khoảng 20 km (tọa độ xấp xỉ)',
     })
     expect(result.topMatches[0].caveats).toContainEqual({
       key: 'radius',
@@ -116,7 +116,7 @@ describe('AIT distance calculations', () => {
     })
     expect(result.topMatches[0].caveats).toContainEqual({
       key: 'distance',
-      text: 'Khoảng 20 km, tọa độ xấp xỉ',
+      text: 'Khoảng 20 km (tọa độ xấp xỉ)',
     })
     expect(result.topMatches[0].caveats).not.toContainEqual({
       key: 'radius',
@@ -246,7 +246,7 @@ describe('AIT distance calculations', () => {
     })
     expect(result.topMatches[0].caveats).toContainEqual({
       key: 'distance',
-      text: 'Khoảng 1 km, ước tính theo huyện',
+      text: 'Khoảng 1 km (ước tính theo huyện)',
     })
 
     const districtMatch = {
@@ -262,7 +262,7 @@ describe('AIT distance calculations', () => {
       radiusKm: 10,
       matches: [districtMatch],
     })
-    expect(message).toContain('khoảng 1 km, ước tính theo huyện')
+    expect(message).toContain('khoảng 1 km (ước tính theo huyện)')
     expect(message).toContain('chưa xác nhận bán kính')
   })
 

@@ -180,7 +180,7 @@ export function buildResultsMessage({
         && typeof match.distance_km === 'number'
         && Number.isFinite(match.distance_km)
         ? match.location_source === 'district_fallback'
-          ? ` (khoảng ${Math.round(match.distance_km)} km, ước tính theo huyện)`
+          ? ` (khoảng ${Math.round(match.distance_km)} km (ước tính theo huyện))`
           : match.location_source === 'approximate'
             ? ` (khoảng ${Math.round(match.distance_km)} km, tọa độ xấp xỉ)`
             : ` (Cách ${origin || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${match.distance_km.toFixed(1)} km (đường chim bay))`
@@ -192,6 +192,7 @@ export function buildResultsMessage({
   if (missingPrimaryNotes.length > 0) lines.push('', ...missingPrimaryNotes)
   if (dateScheduleNote) lines.push('', dateScheduleNote);
   if (originUnresolved) lines.push('', originUnresolved)
+  if (defaultOriginNote) lines.push('', defaultOriginNote)
   if (ending?.trim()) lines.push('', ending.trim());
   return lines.join('\n');
 }

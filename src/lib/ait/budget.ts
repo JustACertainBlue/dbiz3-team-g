@@ -1,5 +1,5 @@
 const EXPLICIT_MONEY_AMOUNT =
-  /(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?|\d+)\s*(k\b(?!m)|nghìn|ngàn|triệu|đ|vnd)(?![\p{L}])/iu
+  /(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?|\d+)\s*(k\b(?!m)|nghìn|ngàn|triệu|đồng|đ|vnd)(?![\p{L}])/iu
 
 export function parseExplicitBudgetAmount(text: string): number | undefined {
   const match = EXPLICIT_MONEY_AMOUNT.exec(text)

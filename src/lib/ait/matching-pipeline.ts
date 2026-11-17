@@ -2,7 +2,16 @@ import { applyHardFilters } from './constraints'
 import { applyNullPenalty, resolveDisplayGroups, selectTiers } from './scoring'
 import { buildMatchCard } from './card'
 import { rankCandidates, type ScoredCandidate } from '@/lib/matching/scoring-engine'
-import { haversineDistanceKm, resolveOriginCoordinates } from '@/lib/matching/geo'
+import {
+  filterCandidateByRadius,
+  haversineDistanceKm,
+  resolveOriginCoordinates,
+} from '@/lib/matching/geo'
+import type { VillageCardData } from '@/lib/matching/card-resolver'
+import {
+  DEFAULT_VILLAGE_COORDINATE_LOOKUP,
+  resolveVillageCoordinate,
+} from '@/lib/matching/village-coordinate-lookup'
 
 interface OperatingHoursRow {
   provider_id: string
@@ -33,6 +42,42 @@ export interface AitMatchingPipelineResult {
   rejected: { id: string; reason: string }[]
   topMatches: ReturnType<typeof buildMatchCard>[]
   additionalMatches: ReturnType<typeof buildMatchCard>[]
+}
+
+export function runVillageCardPipeline({
+  cards,
+  radiusKm,
+  origin,
+}: {
+  cards: VillageCardData[]
+  radiusKm?: number
+  origin?: unknown
+}): VillageCardData[] {
+  const originCoordinates = resolveOriginCoordinates(origin)
+  return cards.flatMap((card) => {
+    const assignment = resolveVillageCoordinate(
+      { id: card.village_id, name: card.name },
+      DEFAULT_VILLAGE_COORDINATE_LOOKUP,
+    )
+    const distanceKm = assignment?.location && originCoordinates
+      ? haversineDistanceKm(originCoordinates, assignment.location)
+      : undefined
+    const distanceSource = distanceKm !== undefined ? 'haversine' as const : undefined
+    const radiusDecision = filterCandidateByRadius({
+      distance_km: distanceKm,
+      distance_source: distanceSource,
+      location_source: assignment?.location_source,
+    }, radiusKm)
+    if (!radiusDecision.include) return []
+
+    return [{
+      ...card,
+      distance_km: distanceKm ?? null,
+      ...(distanceSource ? { distance_source: distanceSource } : {}),
+      ...(assignment?.location_source ? { location_source: assignment.location_source } : {}),
+      ...(radiusDecision.status ? { radius_status: radiusDecision.status } : {}),
+    }]
+  })
 }
 
 export function priceSortDirection(profile: any): 'asc' | 'desc' | undefined {

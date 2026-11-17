@@ -184,6 +184,47 @@ export function buildResultsMessage({
   return lines.join('\n');
 }
 
+export function buildVillageCardResultsMessage(
+  cards: Array<{
+    name: string
+    distance_km?: number | null
+    distance_source?: 'haversine'
+    location_source?: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate'
+    radius_status?: 'confirmed' | 'unconfirmed'
+  }>,
+  radiusKm?: number,
+): string {
+  if (cards.length === 0) {
+    return radiusKm == null
+      ? 'Chưa tìm thấy làng nghề phù hợp trong dữ liệu.'
+      : `Chưa tìm thấy làng nghề phù hợp trong bán kính ${radiusKm} km.`
+  }
+
+  const lines = [`Mình tìm thấy ${cards.length} làng nghề phù hợp.`]
+  cards.forEach((card, index) => {
+    const hasDistance = card.distance_source === 'haversine'
+      && typeof card.distance_km === 'number'
+      && Number.isFinite(card.distance_km)
+    const distance = hasDistance
+      ? card.location_source === 'district_fallback'
+        ? ` (khoảng ${Math.round(card.distance_km!)} km, ước tính theo huyện)`
+        : ` (khoảng ${card.distance_km!.toFixed(1)} km)`
+      : ''
+    const radiusWarning = card.radius_status === 'unconfirmed'
+      ? ' — chưa xác nhận bán kính'
+      : ''
+    lines.push(`${index + 1}. ${card.name}${distance}${radiusWarning}`)
+  })
+  if (radiusKm != null && cards.some(card =>
+    card.distance_source !== 'haversine'
+    || typeof card.distance_km !== 'number'
+    || !Number.isFinite(card.distance_km)
+  )) {
+    lines.push(`Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${radiusKm} km.`)
+  }
+  return lines.join('\n')
+}
+
 export function refusalTemplate(
   kind: string,
   options: { field?: string } = {}

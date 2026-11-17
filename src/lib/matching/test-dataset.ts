@@ -242,7 +242,7 @@ export const getTestAllExperiences = getTestCandidates
 /**
  * Resolves Village cards strictly from test dataset
  */
-export function resolveTestVillageCards(text: string): VillageCardData[] {
+export function resolveTestVillageCards(text: string, includeAll = false): VillageCardData[] {
   const villages = (rawData as { villages: TestVillageRaw[] }).villages || []
   const lower = text.toLowerCase()
   const startingPrices = villageStartingPrices(getTestCandidates())
@@ -279,6 +279,7 @@ export function resolveTestVillageCards(text: string): VillageCardData[] {
   })
 
   if (matched.length > 0) return matched
+  if (includeAll) return cards
   // Return top 4 test villages if no specific one mentioned
   return cards.slice(0, 4)
 }

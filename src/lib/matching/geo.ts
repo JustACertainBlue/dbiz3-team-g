@@ -10,12 +10,50 @@ export const DEFAULT_HANOI_ORIGIN: OriginCoordinates = {
 export const DISTRICT_FALLBACK_UNCERTAINTY_KM = 10
 export const APPROXIMATE_COORDINATE_UNCERTAINTY_KM = 3
 
+export interface RadiusFilterCandidate {
+  distance_km?: number | null
+  distance_source?: 'haversine'
+  location_source?: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate'
+}
+
+export interface RadiusFilterDecision {
+  include: boolean
+  missingDistance: boolean
+  status?: 'confirmed' | 'unconfirmed'
+}
+
 export function locationUncertaintyKm(
   locationSource: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate' | undefined,
 ): number {
   if (locationSource === 'district_fallback') return DISTRICT_FALLBACK_UNCERTAINTY_KM
   if (locationSource === 'approximate') return APPROXIMATE_COORDINATE_UNCERTAINTY_KM
   return 0
+}
+
+export function filterCandidateByRadius(
+  candidate: RadiusFilterCandidate,
+  radiusKm: number | undefined,
+): RadiusFilterDecision {
+  if (typeof radiusKm !== 'number' || !Number.isFinite(radiusKm) || radiusKm <= 0) {
+    return { include: true, missingDistance: false }
+  }
+  if (
+    candidate.distance_source !== 'haversine'
+    || typeof candidate.distance_km !== 'number'
+    || !Number.isFinite(candidate.distance_km)
+  ) {
+    return { include: true, missingDistance: true, status: 'unconfirmed' }
+  }
+
+  const uncertaintyKm = locationUncertaintyKm(candidate.location_source)
+  if (candidate.distance_km - uncertaintyKm > radiusKm) {
+    return { include: false, missingDistance: false }
+  }
+  return {
+    include: true,
+    missingDistance: false,
+    status: candidate.distance_km + uncertaintyKm <= radiusKm ? 'confirmed' : 'unconfirmed',
+  }
 }
 
 function validCoordinates(value: unknown): Coordinates | undefined {

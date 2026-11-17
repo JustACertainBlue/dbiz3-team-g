@@ -1,6 +1,6 @@
 import {
+  filterCandidateByRadius,
   haversineDistanceKm,
-  locationUncertaintyKm,
   resolveOriginCoordinates,
 } from './geo'
 
@@ -90,17 +90,15 @@ export async function applyHardConstraints(
       && radiusKm > 0
     let radiusStatus: RouteFeasibleCandidate['radius_status']
     if (hasRadius) {
-      if (distanceKm === undefined) {
-        radiusStatus = 'unconfirmed'
-      } else {
-        const uncertaintyKm = locationUncertaintyKm(c.location_source)
-        if (distanceKm - uncertaintyKm > radiusKm) {
-          continue
-        }
-        radiusStatus = distanceKm + uncertaintyKm <= radiusKm
-          ? 'confirmed'
-          : 'unconfirmed'
+      const radiusDecision = filterCandidateByRadius({
+        distance_km: distanceKm,
+        distance_source: distanceKm !== undefined ? 'haversine' : undefined,
+        location_source: c.location_source,
+      }, radiusKm)
+      if (!radiusDecision.include) {
+        continue
       }
+      radiusStatus = radiusDecision.status
     }
 
     eligible.push({

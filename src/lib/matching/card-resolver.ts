@@ -13,6 +13,10 @@ export interface VillageCardData {
   image_url: string
   description: string
   starting_price?: number | null
+  distance_km?: number | null
+  distance_source?: 'haversine'
+  location_source?: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate'
+  radius_status?: 'confirmed' | 'unconfirmed'
 }
 
 export interface ProviderActivity {
@@ -530,7 +534,7 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
 /**
  * Resolves Village Cards relevant to user query or AI response.
  */
-export function resolveVillageCards(text: string): VillageCardData[] {
+export function resolveVillageCards(text: string, includeAll = false): VillageCardData[] {
   const lower = text.toLowerCase()
   const matched = new Map<string, VillageCardData>()
   const startingPrices = villageStartingPrices(CATALOG_ACTIVITIES)
@@ -558,6 +562,7 @@ export function resolveVillageCards(text: string): VillageCardData[] {
   if (matched.size === 0) {
     const isGeneral = /(?:làng nghề|danh sách làng|gợi ý làng|tìm làng|các làng|gần sóc sơn|gần trung tâm|thủ công)/i.test(lower)
     if (isGeneral) {
+      if (includeAll) return CATALOG_VILLAGES.map(withStartingPrice).map(withVillageCardName)
       if (lower.includes('sóc sơn')) {
         return CATALOG_VILLAGES.filter(v => ['3527fadf-18ef-58d0-95c6-dc3729650f6a', '20896522-6235-5699-aeaf-f48b8150d895', '85ec7215-3ec1-5792-afcc-a72d89a3a214'].includes(v.village_id)).map(withStartingPrice).map(withVillageCardName)
       }

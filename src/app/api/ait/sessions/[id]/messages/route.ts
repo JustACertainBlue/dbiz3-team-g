@@ -29,7 +29,11 @@ import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import { loadBookings, loadExperiences, loadVillages } from '@/lib/db/seed-loader'
 import { loadOperatingHours } from '@/lib/prf/seed-reader'
-import { priceSortDirection, runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
+import {
+  priceSortDirection,
+  runAitMatchingPipeline,
+  runVillageCardPipeline,
+} from '@/lib/ait/matching-pipeline'
 import { originDisplayNotice } from '@/lib/matching/geo'
 import {
   fallbackMissingPrimary,
@@ -41,6 +45,7 @@ import { routeByRules } from '@/lib/ait/router'
 import { classifyIntent } from '@/lib/ait/llm-router'
 import {
   buildResultsMessage,
+  buildVillageCardResultsMessage,
   craftLabelVi,
   refusalTemplate,
   resultEndingCandidate,
@@ -650,6 +655,7 @@ export async function POST(
       || extraction.tour_context.budget?.max_per_person
       || extraction.tour_context.target_date_or_range?.start_date
       || extraction.tour_context.origin_or_route?.origin_address
+      || conversationState.radius_km !== undefined
       || conversationState.exclusions.villages.length
       || conversationState.exclusions.crafts.length
     )
@@ -720,20 +726,20 @@ export async function POST(
     let villageCards: any[] = []
 
     if (isTest) {
-      if (scope === 'village') villageCards = resolveTestVillageCards(combined)
+      if (scope === 'village') villageCards = resolveTestVillageCards(cardQueryText, conversationState.radius_km !== undefined)
       else if (scope === 'provider') providerCards = resolveTestProviderCards(combined)
       else if (scope === 'activity') activityCards = resolveTestActivityCards(combined)
       else if (scope === 'all') {
-        villageCards = resolveTestVillageCards(combined)
+        villageCards = resolveTestVillageCards(cardQueryText, conversationState.radius_km !== undefined)
         providerCards = resolveTestProviderCards(combined)
         activityCards = resolveTestActivityCards(combined)
       }
     } else {
-      if (scope === 'village') villageCards = resolveVillageCards(combined)
+      if (scope === 'village') villageCards = resolveVillageCards(cardQueryText, conversationState.radius_km !== undefined)
       else if (scope === 'provider') providerCards = resolveProviderCards(combined)
       else if (scope === 'activity') activityCards = resolveActivityCards(combined)
       else if (scope === 'all') {
-        villageCards = resolveVillageCards(combined)
+        villageCards = resolveVillageCards(cardQueryText, conversationState.radius_km !== undefined)
         providerCards = resolveProviderCards(combined)
         activityCards = resolveActivityCards(combined)
       }
@@ -741,6 +747,13 @@ export async function POST(
 
     if (!isTest && villageCards.length > 0) {
       villageCards = withVillageStartingPrices(villageCards, eligibleVillageStartingPrices(await loadExploreRuntime()))
+    }
+    if (scope === 'village') {
+      villageCards = runVillageCardPipeline({
+        cards: villageCards,
+        radiusKm: conversationState.radius_km,
+        origin: conversationState.origin || extraction.tour_context.origin_or_route,
+      })
     }
 
     if (!isRetry && extraction.conversational_reply && typeof extraction.conversational_reply === 'string') {
@@ -921,6 +934,16 @@ export async function POST(
         relaxation_suggestions: [],
         sources: [],
         used_llm: true,
+      }
+    }
+
+    if (scope === 'village' && conversationState.radius_km !== undefined) {
+      turn = {
+        ...turn,
+        turn_type: villageCards.length > 0 ? 'results' : 'no_results',
+        message: buildVillageCardResultsMessage(villageCards, conversationState.radius_km),
+        top_matches: [],
+        additional_suggestions: [],
       }
     }
 

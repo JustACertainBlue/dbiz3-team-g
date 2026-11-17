@@ -70,7 +70,8 @@ describe('A2 | #40 FR-003 profile data comes from the Provider data', () => {
     const forAgency = await getProviderProfile(BAT_TRANG, agency)
     expect(forAgency?.experiences).toEqual([{
       experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69', name: 'Nặn gốm thủ công', category: 'Workshop/Hands-on',
-      duration_minutes: 60, max_participants: 12, price_per_person: 150000,
+      // L7 seed now sets this workshop to 105 minutes and max 30.
+      duration_minutes: 105, max_participants: 30, price_per_person: 150000,
     }])
     expect((await getProviderProfile(BAT_TRANG, guestSession()))?.experiences).toBeUndefined()
   })

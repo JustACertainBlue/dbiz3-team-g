@@ -68,7 +68,8 @@ describe('T049/T051 | A4 + A5 metric cards time basis', () => {
 
   it('A4: Agency and Provider totals are snapshots at the end date (none existed before 2026-09-03)', async () => {
     const p1 = await calculateMetricCards(session, P1)
-    expect(value(p1, 'Total Agencies')).toBe(8)
+    // Three synthetic Agency accounts were added to the seed.
+    expect(value(p1, 'Total Agencies')).toBe(11)
     expect(value(p1, 'Total Providers')).toBe(8)
     const empty = await calculateMetricCards(session, EMPTY)
     expect(value(empty, 'Total Agencies')).toBe(0)

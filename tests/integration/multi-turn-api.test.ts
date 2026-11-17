@@ -62,14 +62,13 @@ describe('Multi-Turn Session & API Flow Verification', () => {
     profile = await buildTourPreferenceProfile(extraction.tour_context)
     filtered = await applyHardConstraints(candidates, profile.hard_constraints)
 
-    // Only candidates with max_participants >= 15 survive (Chuông 15, Quất Động 16)
-    // Bát Tràng (12), Vạn Phúc (13), and Phú Vinh (14) must be excluded
+    // L7 capacities now allow Bát Tràng, Vạn Phúc, and Phú Vinh for 15 guests.
     const survivingNames = filtered.eligible_candidates.map(c => c.name)
     expect(survivingNames).toContain('Làm nón lá')
     expect(survivingNames).toContain('Thêu họa tiết')
-    expect(survivingNames).not.toContain('Nặn gốm thủ công')
-    expect(survivingNames).not.toContain('Dệt lụa truyền thống')
-    expect(survivingNames).not.toContain('Đan mây tre')
+    expect(survivingNames).toContain('Nặn gốm thủ công')
+    expect(survivingNames).toContain('Dệt lụa truyền thống')
+    expect(survivingNames).toContain('Đan mây tre')
 
     // Turn 4: Agency changes group size to 13
     await addMessage(sessionId, 'Agency', '13 tourists')
@@ -80,14 +79,14 @@ describe('Multi-Turn Session & API Flow Verification', () => {
     profile = await buildTourPreferenceProfile(extraction.tour_context)
     filtered = await applyHardConstraints(candidates, profile.hard_constraints)
     const cap13Names = filtered.eligible_candidates.map(c => c.name)
-    // 12 (Bát Tràng) excluded, 13 (Vạn Phúc), 14 (Phú Vinh), 15 (Chuông), 16 (Quất Động) included
-    expect(cap13Names).not.toContain('Nặn gốm thủ công')
+    // L7 capacity keeps Bát Tràng and Vạn Phúc eligible for a group of 13.
+    expect(cap13Names).toContain('Nặn gốm thủ công')
     expect(cap13Names).toContain('Dệt lụa truyền thống')
     expect(cap13Names).toContain('Đan mây tre')
   })
 
   it('triggers relaxation suggestions on impossible group size (200 pax) and tiny budget (20k VND)', async () => {
-    // 200 tourists: all seed capacities are <= 16
+    // 200 tourists: all L7 seed capacities are at most 50.
     await addMessage(sessionId, 'Agency', 'Group of 200 tourists on 2026-11-20, under 500,000 VND per person')
     let history = await getMessages(sessionId)
     let extraction = await extractTourContext({ sessionId, messages: history })

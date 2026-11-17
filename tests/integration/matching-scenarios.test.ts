@@ -14,16 +14,16 @@ import { scoreAndRankCandidates } from '@/lib/matching/scoring-engine'
 import { buildRecommendations, buildRelaxationSuggestions } from '@/lib/matching/recommendation-service'
 
 // Seed capacities (from data/seed/experiences.csv):
-// Bát Tràng  "Nặn gốm"   → max_participants = 12
-// Vạn Phúc   "Dệt lụa"   → max_participants = 13
+// Bát Tràng  "Nặn gốm"   → max_participants = 30
+// Vạn Phúc   "Dệt lụa"   → max_participants = 26
 // Chuông     "Làm nón lá" → max_participants = 15
 // Quất Động  "Thêu họa tiết" → max_participants = 16
 
 describe('T031 | Matching Scenarios — Seed-Data Assertions (AS-5/6/8/9)', () => {
   // -------------------------------------------------------------------------
-  // AS-5 / AS-6 / BR-005 : 15-guest group → Bát Tràng (12) and Vạn Phúc (13) must be excluded
+  // AS-5 / AS-6 / BR-005 : L7 capacities now allow Bát Tràng and Vạn Phúc for a group of 15.
   // -------------------------------------------------------------------------
-  it('AS-5/BR-005: group of 15 → Bát Tràng (cap 12) and Vạn Phúc (cap 13) are eliminated', async () => {
+  it('AS-5/BR-005: group of 15 → Bát Tràng and Vạn Phúc remain capacity-eligible', async () => {
     const extraction = await extractTourContext([
       { sender: 'Agency', text: '15 tourists, pottery ceramic, date 2026-11-15, budget 500000 VND, from Hoàn Kiếm' },
     ])
@@ -36,11 +36,9 @@ describe('T031 | Matching Scenarios — Seed-Data Assertions (AS-5/6/8/9)', () =
 
     const ids = filtered.eligible_candidates.map(c => c.experience_id)
 
-    // Bát Tràng (max 12 < 15) must be excluded
-    expect(ids).not.toContain('c9f9faf7-2987-5ae4-b1ed-95c095fcce69')
-
-    // Vạn Phúc (max 13 < 15) must be excluded
-    expect(ids).not.toContain('c8281688-2dc1-5cb1-9ff6-139df04ba562')
+    // L7 updates these seeded workshops to capacities 30 and 26, respectively.
+    expect(ids).toContain('c9f9faf7-2987-5ae4-b1ed-95c095fcce69')
+    expect(ids).toContain('c8281688-2dc1-5cb1-9ff6-139df04ba562')
 
     // Chuông (max 15 >= 15) must remain
     expect(ids).toContain('b70bd0fa-6a81-5aec-9ff6-5303210b2fad')
@@ -62,7 +60,7 @@ describe('T031 | Matching Scenarios — Seed-Data Assertions (AS-5/6/8/9)', () =
   // -------------------------------------------------------------------------
   // AS-6 / AS-9 / BR-011 / BR-020 : 200 guests → no candidate passes → fallback
   // -------------------------------------------------------------------------
-  it('AS-6: group of 200 → no experience passes capacity filter (all seed max ≤ 20)', async () => {
+  it('AS-6: group of 200 → no experience passes capacity filter (all L7 seed max ≤ 50)', async () => {
     const profile = await buildTourPreferenceProfile({
       group_size: 200,
       target_date_or_range: { start_date: '2026-12-25' },

@@ -18,8 +18,9 @@ describe('#188 | AIT121 shows additional suggestions (FR-008)', () => {
     const view = matchResultsView({ top_matches: [item(1), item(2)], additional_suggestions: [6, 7, 8, 9, 10, 11].map(item) })
     expect(view.top.map(r => r.experience_id)).toEqual(['e1', 'e2'])
     expect(view.additional.map(r => r.experience_id)).toEqual(['e6', 'e7', 'e8', 'e9', 'e10'])
+    // L8 adds the backend-computed village starting price to every recommendation.
     expect(view.additional[0]).toEqual({ experience_id: 'e6', provider_id: 'p6', experience_name: 'Exp 6', provider_name: 'Prov 6', village_name: 'Bát Tràng',
-      rank: 6, match_score: 84, price_per_person: 100000, max_participants: 20, explanation: 'why 6' })
+      rank: 6, match_score: 84, price_per_person: 100000, max_participants: 20, explanation: 'why 6', village_starting_price: null })
   })
 
   it('no additional_suggestions → an empty list', () => {

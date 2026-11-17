@@ -98,6 +98,7 @@ export async function POST(request: Request) {
     const bookings = await loadBookings()
     const candidateInputs = enrichedCandidates.map(c => ({
       id: c.experience_id,
+      village_id: c.village_id,
       verification_status:
         c.provider_status === 'Verified' || c.provider_verification_status === 'Approved'
           ? ('verified' as const)

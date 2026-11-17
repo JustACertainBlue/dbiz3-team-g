@@ -109,6 +109,10 @@ export function applyHardFilters({
         isExcluded = true;
         break;
       }
+      if (attr.type === 'village_id' && candidate.village_id === attr.value) {
+        isExcluded = true;
+        break;
+      }
       if (attr.type === 'craft_preference') {
         if (attr.value === 'all') {
           if (candidate.craft !== null && candidate.craft !== undefined && candidate.craft !== '') {

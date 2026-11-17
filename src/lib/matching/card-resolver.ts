@@ -689,7 +689,6 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
   const budgetConstraint = parseBudgetConstraint(text)
   const priceSort = detectPriceSortPreference(text)
   const isSightseeingOnly = /(?:chỉ muốn tham quan|chỉ tham quan|không trải nghiệm|không làm|không workshop|muốn tham quan thôi|chỉ ngắm|không làm đồ)/i.test(lower)
-  const isSightseeingRequested = /(?:tham quan|ngắm cảnh|vãn cảnh|đi dạo|bảo tàng|check-in)/i.test(lower)
   const matched = new Map<string, ActivityCardData>()
 
   if (isSightseeingOnly) {
@@ -728,26 +727,6 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
   check(['bảo tàng gốm', 'lò bầu', 'tham quan bát tràng'], 'exp-bat-trang-sightseeing')
   check(['phố lụa', 'tham quan vạn phúc'], 'exp-van-phuc-sightseeing')
   check(['đình chàng sơn', 'tham quan chàng sơn'], 'exp-chang-son-sightseeing')
-
-  if (matched.size === 0) {
-    const isActivityQuery = /(?:hoạt động|trải nghiệm|workshop|tham quan|làm gì|có gì chơi|thực hành|dưới|ngân sách|budget|<|giá)/i.test(lower)
-    if (isActivityQuery) {
-      let pool = CATALOG_ACTIVITIES.filter(a => a.is_verified)
-      if (isSightseeingRequested) {
-        const sightPool = pool.filter(a => a.category === 'Sightseeing')
-        if (sightPool.length > 0) pool = sightPool
-      }
-      if (budgetConstraint) {
-        pool = pool.filter(a => a.price_per_person != null && a.price_per_person <= budgetConstraint.maxPrice)
-      }
-      if (priceSort === 'lowest') {
-        pool.sort((a, b) => compareActivityPrice(a, b, true))
-      } else if (priceSort === 'highest') {
-        pool.sort((a, b) => compareActivityPrice(a, b, false))
-      }
-      return pool.slice(0, 4).map(withVillageName)
-    }
-  }
 
   let finalCards = Array.from(matched.values())
   if (budgetConstraint) {

@@ -473,7 +473,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     const activityLines = message.split('\n').filter((line: string) => /^\d+\.\s/.test(line))
     expect(activityLines).toHaveLength(cards.length)
     expect(activityLines).toEqual(cards.map((card: Json, index: number) =>
-      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người`
+      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người${card.distance_source === 'haversine' && typeof card.distance_km === 'number' ? ` (khoảng ${Math.round(card.distance_km)} km đường chim bay)` : ' (chưa có dữ liệu khoảng cách)'}`
     ))
     const knownActivityNames = (await loadExperiences()).map((experience) => experience.name)
     expect(knownActivityNames.filter((name) => message.includes(name)).sort())

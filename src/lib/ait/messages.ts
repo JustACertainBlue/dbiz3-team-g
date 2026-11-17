@@ -11,6 +11,7 @@ interface ResultMessageMatch {
   experience_name: string;
   price_per_person: number | null;
   distance_km?: number | null;
+  distance_source?: 'haversine';
 }
 
 const CRAFT_LABELS_VI: Record<string, string> = {
@@ -45,6 +46,7 @@ export function buildResultsMessage({
   craft,
   origin,
   radiusKm,
+  noResultsWithinRadius = false,
   excludedVillages = [],
   excludedCrafts = [],
   priceSort,
@@ -59,6 +61,7 @@ export function buildResultsMessage({
   craft?: string;
   origin?: string;
   radiusKm?: number;
+  noResultsWithinRadius?: boolean;
   excludedVillages?: string[];
   excludedCrafts?: string[];
   priceSort?: 'asc' | 'desc';
@@ -66,6 +69,23 @@ export function buildResultsMessage({
   ending?: string;
 }): string {
   const criteria: string[] = [];
+  const hasCompleteDistances = Boolean(
+    matches
+    && matches.length > 0
+    && matches.length === count
+    && matches.every(match =>
+      match.distance_source === 'haversine'
+      && typeof match.distance_km === 'number'
+      && Number.isFinite(match.distance_km)
+    )
+  );
+  if (radiusKm != null && count === 0 && noResultsWithinRadius) {
+    const from = origin ? ` tính từ ${origin}` : '';
+    return `Không tìm thấy trải nghiệm nào phù hợp trong bán kính ${radiusKm} km${from}. Mình không tự mở rộng bán kính.`;
+  }
+  if (count === 0) {
+    return 'Không tìm thấy trải nghiệm nào phù hợp với các tiêu chí hiện tại.';
+  }
   if (craft) criteria.push(`nghề ${craft}`);
   if (start_date) {
     if (end_date && end_date !== start_date) {
@@ -76,11 +96,14 @@ export function buildResultsMessage({
   }
   if (max_budget_per_person != null) criteria.push(`ngân sách tối đa ${formatVND(max_budget_per_person)}đ/người`);
   if (origin) criteria.push(`điểm xuất phát ${origin}`);
-  if (radiusKm != null) criteria.push(`bán kính ${radiusKm} km`);
+  if (radiusKm != null && hasCompleteDistances) criteria.push(`bán kính ${radiusKm} km`);
 
   const group = group_size != null ? ` cho nhóm ${group_size} khách` : '';
   const qualifier = criteria.length > 0 ? ` (${criteria.join(', ')})` : '';
   const lines = [`Mình tìm được ${count} trải nghiệm${group}${qualifier}.`];
+  if (radiusKm != null && !hasCompleteDistances) {
+    lines.push(`Chưa thể xác nhận bán kính ${radiusKm} km vì chưa có dữ liệu khoảng cách cho tất cả trải nghiệm.`);
+  }
   const exclusions = [
     ...excludedVillages,
     ...excludedCrafts.map(excludedCraft => `nghề ${excludedCraft}`),
@@ -97,9 +120,11 @@ export function buildResultsMessage({
       const price = match.price_per_person == null
         ? 'chưa có dữ liệu giá'
         : `${formatVND(match.price_per_person)}đ/người`;
-      const distance = typeof match.distance_km === 'number' && Number.isFinite(match.distance_km)
-        ? ` (khoảng ${Math.round(match.distance_km)} km)`
-        : '';
+      const distance = match.distance_source === 'haversine'
+        && typeof match.distance_km === 'number'
+        && Number.isFinite(match.distance_km)
+        ? ` (khoảng ${Math.round(match.distance_km)} km đường chim bay)`
+        : ' (chưa có dữ liệu khoảng cách)';
       lines.push(`${index + 1}. ${match.experience_name}: ${price}${distance}`);
     });
   }

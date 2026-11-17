@@ -116,8 +116,10 @@ export function buildMatchCard({
   if (factors.distance?.km != null) {
     caveats.push({
       key: 'distance',
-      text: `Khoảng ${Math.round(factors.distance.km)} km (ước tính)`,
+      text: `Khoảng ${Math.round(factors.distance.km)} km đường chim bay`,
     });
+  } else {
+    caveats.push({ key: 'distance', text: 'Chưa có dữ liệu khoảng cách' });
   }
 
   return {

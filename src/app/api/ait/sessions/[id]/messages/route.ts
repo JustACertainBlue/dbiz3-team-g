@@ -526,6 +526,8 @@ export async function POST(
           group_size: extraction.tour_context.group_size || 10,
           max_budget_per_person: extraction.tour_context.budget?.max_per_person || 200000,
           target_date_or_range: extraction.tour_context.target_date_or_range || { start_date: '2026-11-20' },
+          origin: extraction.tour_context.origin_or_route,
+          radius_km: conversationState.radius_km,
         },
         matching_attributes: (extraction.tour_context.experience_types || []).map((t) => ({
           type: 'experience_type',
@@ -693,6 +695,10 @@ export async function POST(
           craft: typeof craftPreference === 'string' ? craftLabelVi(craftPreference) : undefined,
           origin: conversationState.origin,
           radiusKm: conversationState.radius_km,
+          noResultsWithinRadius:
+            totalCount === 0
+            && conversationState.radius_km !== undefined
+            && matching.rejected.some(({ reason }) => reason === 'radius'),
           excludedVillages: excludedVillageNames,
           excludedCrafts: excludedCraftNames,
           priceSort: priceSortDirection(tourPreferenceProfile),
@@ -701,6 +707,7 @@ export async function POST(
               experience_name: card.experience_name,
               price_per_person: card.price_per_person,
               distance_km: card.distance_km,
+              distance_source: card.distance_source,
             }))
             : undefined,
           ending: cards.length > 0 && checkedNarration.ok ? checkedNarration.message : undefined,

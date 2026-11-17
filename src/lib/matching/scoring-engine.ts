@@ -60,7 +60,6 @@ export async function scoreCandidate(
   // Craft preference alignment by the Provider's published craft_type (#26, #32)
   const craftAttr = matchingAttr.find((a: any) => a.type === 'craft_preference')?.value?.toLowerCase()
   const expName = (candidate.name || candidate.experience_name || '').toLowerCase()
-  const villageName = (candidate.village_name || '').toLowerCase()
   const wantedCraftType = craftAttr ? craftTypeForPreference(craftAttr) : undefined
   const craftMatched = Boolean(wantedCraftType) && candidate.craft_type === wantedCraftType
 
@@ -90,24 +89,13 @@ export async function scoreCandidate(
   // 2. Route Convenience Score (shorter distance -> higher score)
   const actualDistanceKm = candidate.distance_source === 'haversine'
     && typeof candidate.distance_km === 'number'
+    && Number.isFinite(candidate.distance_km)
+    && candidate.distance_km >= 0
     ? candidate.distance_km
     : undefined
-  let distanceKmForScore = actualDistanceKm ?? (candidate.distance_km ?? 15)
-  if (actualDistanceKm === undefined) {
-    if (villageName.includes('vạn phúc') || expName.includes('lụa')) {
-      distanceKmForScore = 12
-    } else if (villageName.includes('bát tràng') || expName.includes('gốm')) {
-      distanceKmForScore = 14
-    } else if (villageName.includes('phú vinh') || expName.includes('mây')) {
-      distanceKmForScore = 24
-    } else if (villageName.includes('quất động') || expName.includes('thêu')) {
-      distanceKmForScore = 28
-    } else if (villageName.includes('chuông') || expName.includes('nón')) {
-      distanceKmForScore = 30
-    }
-  }
-
-  const routeScore = Math.max(20, Math.min(100, 100 - distanceKmForScore * 2))
+  const routeScore = actualDistanceKm === undefined
+    ? 70
+    : Math.max(20, Math.min(100, 100 - actualDistanceKm * 2))
 
   // 3. Agency Preferences Score
   const agencyPrefScore = (candidate.historical_agency_preference_weight ?? 0.8) * 100

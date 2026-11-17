@@ -31,6 +31,7 @@ export interface Experience {
   provider_verification_status: string
   has_published_profile_version: boolean
   location?: { lat: number; lng: number }
+  location_source?: 'from_plus_code'
   distance_km?: number
   travel_time_minutes?: number
   provider_quality_rating?: number
@@ -104,9 +105,6 @@ export async function loadExperiences(): Promise<Experience[]> {
         experience_location_address: row.experience_location_address,
         provider_verification_status: 'Approved',
         has_published_profile_version: true,
-        location: { lat: 20.9994, lng: 105.8888 },
-        distance_km: 12,
-        travel_time_minutes: 30,
         provider_quality_rating: 0.95,
         tags: Array.isArray(row.tags)
           ? row.tags

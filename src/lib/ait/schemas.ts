@@ -30,6 +30,7 @@ export const profileSchema = z
       .object({
         group_size: z.number().int().min(1).max(1000).nullable().optional(),
         max_budget_per_person: z.number().positive().nullable().optional(),
+        radius_km: z.number().positive().nullable().optional(),
         target_date_or_range: dateRangeSchema.nullable().optional(),
         origin: z.any().optional(),
       })

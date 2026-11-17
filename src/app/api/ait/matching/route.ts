@@ -114,6 +114,24 @@ export async function POST(request: Request) {
 
     // 3. No candidate left → relaxation suggestions (BR-011, FR-012, #23, #24)
     if (matching.eligibleCandidates.length === 0) {
+      if (
+        typeof constraints.radius_km === 'number'
+        && matching.rejected.some(({ reason }) => reason === 'radius')
+      ) {
+        const origin = constraints.origin?.origin_address || constraints.origin?.address
+        const from = typeof origin === 'string' ? ` tính từ ${origin}` : ''
+        return NextResponse.json({
+          is_test: isTest,
+          top_matches: [],
+          additional_suggestions: [],
+          relaxation_suggestions: {
+            relaxation_suggestions: [],
+            conversation_prompt:
+            `Không tìm thấy trải nghiệm nào phù hợp trong bán kính ${constraints.radius_km} km${from}. Mình không tự mở rộng bán kính.`,
+          },
+        })
+      }
+
       const budgetFree = enrichedCandidates.filter(c => {
         if (reqGroupSize > 0 && c.max_participants != null && c.max_participants < reqGroupSize) return false
         return true

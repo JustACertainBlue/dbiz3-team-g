@@ -61,7 +61,7 @@ export function explain(item: any, _score: number): string {
     parts.push(`${vnd(f.price_per_person)} VND per person, within your ${vnd(f.budget_per_person)} VND budget.`)
   }
   if (f.distance_km !== undefined) {
-    parts.push(`About ${f.distance_km} km from ${f.origin ?? 'your starting point'}.`)
+    parts.push(`About ${f.distance_km} km straight-line from ${f.origin ?? 'your starting point'}.`)
   }
   if (parts.length === 0) {
     return 'A verified traditional craft experience matching your tour criteria.'
@@ -136,19 +136,15 @@ export async function buildRelaxationSuggestions(
   }
 
   suggestions.push({
-    criterion: 'Distance',
-    suggested_value: 'Expand radius by 15km to include outer craft villages',
-  })
-
-  suggestions.push({
     criterion: 'Dates',
     suggested_value: 'Consider flexible dates (+/- 2 days)',
   })
 
   const groupSize = criteria?.group_size
   const largest = options.largest_group_size
-  let conversation_prompt =
-    'Hiện chưa có trải nghiệm nào phù hợp với toàn bộ yêu cầu của đoàn. Bạn có thể nới lỏng ngân sách, mở rộng khoảng cách hoặc điều chỉnh số lượng khách để xem thêm các lựa chọn làng nghề.'
+  let conversation_prompt = criteria?.radius_km == null
+    ? 'Hiện chưa có trải nghiệm nào phù hợp với toàn bộ yêu cầu của đoàn. Bạn có thể nới lỏng ngân sách, mở rộng khoảng cách hoặc điều chỉnh số lượng khách để xem thêm các lựa chọn làng nghề.'
+    : 'Hiện chưa có trải nghiệm phù hợp với toàn bộ yêu cầu. Mình giữ nguyên bán kính đã chọn; bạn có thể điều chỉnh ngân sách, ngày hoặc số khách.'
   if (groupSize !== undefined && largest !== undefined && groupSize > largest) {
     conversation_prompt = `No Experience can take a group of ${groupSize} pax: the largest group an eligible Experience accepts is ${largest} pax. You can split the group or reduce the number of guests.`
   } else if (suggestions[0]?.criterion === 'Budget' && cheapest !== undefined) {

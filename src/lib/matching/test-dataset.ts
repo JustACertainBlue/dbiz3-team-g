@@ -66,21 +66,21 @@ export function isTestConversation(messages: Array<{ sender: string; text: strin
   return explicitTest || messages.some(message => message.sender === 'Agency' && isTestPrompt(message.text))
 }
 
-const VILLAGE_CRAFT_MAPPING: Record<string, { craftType: CraftType; craftName: string; mediaUrl: string; lat: number; lng: number; distKm: number }> = {
-  'bat-trang': { craftType: 'Ceramics', craftName: 'Gốm sứ mỹ nghệ Bát Tràng', mediaUrl: CRAFT_MEDIA.ceramics, lat: 20.97735, lng: 105.91145, distKm: 14 },
-  'kim-lan': { craftType: 'Ceramics', craftName: 'Gốm sứ cổ truyền Kim Lan', mediaUrl: CRAFT_MEDIA.ceramics, lat: 20.96369, lng: 105.90369, distKm: 16 },
-  'xuan-la': { craftType: 'Other', craftName: 'Nghệ thuật nặn Tò He Xuân La', mediaUrl: 'https://images.unsplash.com/photo-1582560475093-ba66accbc424?w=800', lat: 20.7421, lng: 105.8685, distKm: 32 },
-  'ha-thai': { craftType: 'Paper/Painting', craftName: 'Sơn mài mỹ nghệ Hạ Thái', mediaUrl: CRAFT_MEDIA.lacquer, lat: 20.9032, lng: 105.8655, distKm: 18 },
-  'yen-thai': { craftType: 'Paper/Painting', craftName: 'Làm giấy Dó truyền thống Yên Thái', mediaUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800', lat: 21.04945, lng: 105.81395, distKm: 6 },
-  'chang-son': { craftType: 'Other', craftName: 'Làm quạt giấy & điêu khắc Chàng Sơn', mediaUrl: CRAFT_MEDIA.woodcarving, lat: 21.02815, lng: 105.60345, distKm: 30 },
-  'van-phuc': { craftType: 'Silk/Textile', craftName: 'Dệt lụa tơ tằm Vạn Phúc', mediaUrl: CRAFT_MEDIA.silk, lat: 20.9785, lng: 105.7725, distKm: 12 },
-  'non-chuong': { craftType: 'Other', craftName: 'Làm nón lá làng Chuông', mediaUrl: CRAFT_MEDIA.conicalhats, lat: 20.8269, lng: 105.7618, distKm: 30 },
-  'phu-vinh': { craftType: 'Other', craftName: 'Mây tre đan mỹ nghệ Phú Vinh', mediaUrl: CRAFT_MEDIA.bamboo, lat: 20.9331, lng: 105.6496, distKm: 25 },
-  'ba-duong-noi': { craftType: 'Other', craftName: 'Làm diều sáo truyền thống Bá Dương Nội', mediaUrl: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=800', lat: 21.1120, lng: 105.6980, distKm: 22 },
-  'son-dong': { craftType: 'Woodcarving', craftName: 'Điêu khắc mỹ nghệ & tạc tượng Sơn Đồng', mediaUrl: CRAFT_MEDIA.woodcarving, lat: 21.0340, lng: 105.7120, distKm: 20 },
-  'ngu-xa': { craftType: 'Metalwork', craftName: 'Đúc đồng truyền thống Ngũ Xã', mediaUrl: 'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?w=800', lat: 21.0450, lng: 105.8420, distKm: 4 },
-  'phung-xa': { craftType: 'Silk/Textile', craftName: 'Dệt lụa tơ sen độc bản Phùng Xá', mediaUrl: CRAFT_MEDIA.silk, lat: 20.6750, lng: 105.7830, distKm: 40 },
-  'dao-thuc': { craftType: 'Other', craftName: 'Múa rối nước dân gian Đào Thục', mediaUrl: CRAFT_MEDIA.waterpuppets, lat: 21.1730, lng: 105.9250, distKm: 24 },
+const VILLAGE_CRAFT_MAPPING: Record<string, { craftType: CraftType; craftName: string; mediaUrl: string }> = {
+  'bat-trang': { craftType: 'Ceramics', craftName: 'Gốm sứ mỹ nghệ Bát Tràng', mediaUrl: CRAFT_MEDIA.ceramics },
+  'kim-lan': { craftType: 'Ceramics', craftName: 'Gốm sứ cổ truyền Kim Lan', mediaUrl: CRAFT_MEDIA.ceramics },
+  'xuan-la': { craftType: 'Other', craftName: 'Nghệ thuật nặn Tò He Xuân La', mediaUrl: 'https://images.unsplash.com/photo-1582560475093-ba66accbc424?w=800' },
+  'ha-thai': { craftType: 'Paper/Painting', craftName: 'Sơn mài mỹ nghệ Hạ Thái', mediaUrl: CRAFT_MEDIA.lacquer },
+  'yen-thai': { craftType: 'Paper/Painting', craftName: 'Làm giấy Dó truyền thống Yên Thái', mediaUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800' },
+  'chang-son': { craftType: 'Other', craftName: 'Làm quạt giấy & điêu khắc Chàng Sơn', mediaUrl: CRAFT_MEDIA.woodcarving },
+  'van-phuc': { craftType: 'Silk/Textile', craftName: 'Dệt lụa tơ tằm Vạn Phúc', mediaUrl: CRAFT_MEDIA.silk },
+  'non-chuong': { craftType: 'Other', craftName: 'Làm nón lá làng Chuông', mediaUrl: CRAFT_MEDIA.conicalhats },
+  'phu-vinh': { craftType: 'Other', craftName: 'Mây tre đan mỹ nghệ Phú Vinh', mediaUrl: CRAFT_MEDIA.bamboo },
+  'ba-duong-noi': { craftType: 'Other', craftName: 'Làm diều sáo truyền thống Bá Dương Nội', mediaUrl: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=800' },
+  'son-dong': { craftType: 'Woodcarving', craftName: 'Điêu khắc mỹ nghệ & tạc tượng Sơn Đồng', mediaUrl: CRAFT_MEDIA.woodcarving },
+  'ngu-xa': { craftType: 'Metalwork', craftName: 'Đúc đồng truyền thống Ngũ Xã', mediaUrl: 'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?w=800' },
+  'phung-xa': { craftType: 'Silk/Textile', craftName: 'Dệt lụa tơ sen độc bản Phùng Xá', mediaUrl: CRAFT_MEDIA.silk },
+  'dao-thuc': { craftType: 'Other', craftName: 'Múa rối nước dân gian Đào Thục', mediaUrl: CRAFT_MEDIA.waterpuppets },
 }
 
 function testMediaUrl(
@@ -157,9 +157,6 @@ export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExp
       craftType: 'Other' as CraftType,
       craftName: village.village_name,
       mediaUrl: CRAFT_MEDIA.ceramics,
-      lat: 21.0285,
-      lng: 105.8542,
-      distKm: 15,
     }
 
     const providerMap = new Map(village.providers.map(p => [p.provider_id, p]))
@@ -172,8 +169,14 @@ export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExp
       const duration = parseDurationMinutes(act.duration)
       const category = getExperienceCategory(cleanName)
 
-      const lat = prov?.coordinates?.lat || meta.lat
-      const lng = prov?.coordinates?.lng || meta.lng
+      const coordinates = prov?.coordinates
+      const location = coordinates?.status === 'from_plus_code'
+        && typeof coordinates.lat === 'number'
+        && Number.isFinite(coordinates.lat)
+        && typeof coordinates.lng === 'number'
+        && Number.isFinite(coordinates.lng)
+        ? { lat: coordinates.lat, lng: coordinates.lng }
+        : undefined
 
       candidates.push({
         experience_id: act.activity_id,
@@ -196,12 +199,13 @@ export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExp
         provider_verification_status: 'Approved',
         has_published_profile_version: true,
         experience_location_address: prov?.address || `${village.village_name}, ${village.district_raw}, Hà Nội`,
-        distance_km: meta.distKm,
-        travel_time_minutes: Math.round(meta.distKm * 2.2),
         historical_agency_preference_weight: 0.9,
         provider_quality_rating: 0.95,
         image_url: testMediaUrl(act, testMediaUrl(prov ?? {}, testMediaUrl(village, meta.mediaUrl))) ?? meta.mediaUrl,
-        location: { lat, lng },
+        ...(location ? {
+          location,
+          location_source: 'from_plus_code' as const,
+        } : {}),
       })
     }
   }

@@ -67,6 +67,15 @@ describe('T019 | Multi-Factor Scoring (FR-007, BR-006)', () => {
     const ranked = await rankCandidates(candidates, profile)
     expect(ranked[0].rank).toBe(1)
   })
+
+  it('does not use an unsourced distance to rank or expose a candidate', async () => {
+    const nearer = await scoreCandidate({ ...candidate, distance_km: 1 }, profile)
+    const farther = await scoreCandidate({ ...candidate, distance_km: 100 }, profile)
+
+    expect(nearer.match_score).toBe(farther.match_score)
+    expect(nearer.distance_km).toBeUndefined()
+    expect(farther.distance_km).toBeUndefined()
+  })
 })
 
 // T037 (Round 3, D5): craft preference matched by the Provider's published craft_type (#26, #32).

@@ -71,6 +71,7 @@ export async function buildTourPreferenceProfile(
     max_budget_per_person: tourContext.budget?.max_per_person,
     target_date_or_range: tourContext.target_date_or_range,
     origin: tourContext.origin_or_route,
+    radius_km: state?.radius_km,
   }
 
   const matchingAttributes: Array<{ type: string; value: string; polarity?: 'include' | 'exclude' }> =

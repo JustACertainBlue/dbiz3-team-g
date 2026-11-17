@@ -72,6 +72,13 @@ describe('T020 | Recommendations & Relaxation Suggestions (FR-008, FR-012, BR-00
     expect(typeof suggestions.conversation_prompt).toBe('string')
     expect(suggestions.conversation_prompt.length).toBeGreaterThan(0)
   })
+
+  it('does not suggest expanding a radius that was already requested', async () => {
+    const suggestions = await buildRelaxationSuggestions([], { radius_km: 5 })
+    expect(suggestions.relaxation_suggestions.map(suggestion => suggestion.criterion))
+      .not.toContain('Distance')
+    expect(suggestions.conversation_prompt).not.toMatch(/mở rộng khoảng cách|expand radius/i)
+  })
 })
 
 // Round 3: T039 (D4, #25), T041 (D3, #30), T043 (D2, #23, #24).
@@ -106,7 +113,7 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
       distance_km: 5,
       distance_source: 'haversine',
     })
-    expect(result.top_matches[0].explanation).toContain('5 km from Hoàn Kiếm')
+    expect(result.top_matches[0].explanation).toContain('5 km straight-line from Hoàn Kiếm')
     expect(result.top_matches[0].explanation).not.toMatch(/estimated/i)
   })
 

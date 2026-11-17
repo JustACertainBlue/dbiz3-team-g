@@ -60,7 +60,7 @@ const commercialRows = () => JSON.stringify(['quote_requests', 'chat_sessions', 
 describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8, BR-005)', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('one session: Silk → 10 → 15 → 13 → 200 pax updates the results every turn', async () => {
+  it('one session: Silk → 10 → 15 → 13 → 200 pax keeps the latest craft and capacity', async () => {
     const id = await openSession()
 
     const silk = await turn(id, 'Silk weaving')
@@ -69,18 +69,16 @@ describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8
     expect(silk.message.json.tour_preference_profile).toBeNull()
 
     const ten = await turn(id, '10 pax on 2026-11-20 from Hoàn Kiếm')
-    expect(villages(ten.matching)).toHaveLength(5)
-    expect(villages(ten.matching)[0]).toBe('Vạn Phúc')
+    expect(villages(ten.matching)).toEqual(['Vạn Phúc'])
 
     const fifteen = await turn(id, 'Change to 15 pax')
-    expect(villages(fifteen.matching)).toContain('Quất Động')
-    expect(villages(fifteen.matching)).toContain('Chuông')
+    expect(villages(fifteen.matching)).toEqual(['Vạn Phúc'])
     for (const match of fifteen.matching!.top_matches) {
       expect(match.max_participants == null || match.max_participants >= 15).toBe(true)
     }
 
     const thirteen = await turn(id, 'Change to 13 pax')
-    expect(villages(thirteen.matching)).toContain('Bát Tràng')
+    expect(villages(thirteen.matching)).toEqual(['Vạn Phúc'])
     for (const match of thirteen.matching!.top_matches) {
       expect(match.max_participants == null || match.max_participants >= 13).toBe(true)
     }
@@ -244,13 +242,14 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
     for (const match of result.matching!.top_matches) {
       expect(match.explanation).not.toMatch(/silk|pottery|ceramic|embroider|conical|bamboo|lụa|gốm/i)
       expect(match.explanation).toMatch(/group of 10/)
-      expect(match.explanation).toMatch(/estimated/i)
+      expect(match.distance_km).toBeNull()
+      expect(match.explanation).not.toMatch(/estimated|\bkm\b/i)
     }
   })
 
   it('T043: 20,000 VND budget → Budget suggestion 150000 that then gives a match; 200 pax → capacity named, no Budget', async () => {
     const id = await openSession()
-    await turn(id, 'Silk weaving')
+    await turn(id, 'Pottery')
     await turn(id, '10 pax on 2026-11-20 from Hoàn Kiếm')
     const tight = await turn(id, 'Change to 10 pax, budget 20,000 VND per person')
     expect(tight.matching!.top_matches).toEqual([])
@@ -261,7 +260,7 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
     const batTrang = relaxed.matching!.top_matches.find((match: Json) => match.village_name === 'Bát Tràng')
     expect(batTrang?.village_starting_price).toBe(150000)
 
-    const large = await turn(await openSession(), 'Silk weaving, 200 pax on 2026-11-20 from Hoàn Kiếm')
+    const large = await turn(await openSession(), 'Pottery, 200 pax on 2026-11-20 from Hoàn Kiếm')
     expect(large.matching!.top_matches).toEqual([])
     expect(budgetSuggestion(large.matching)).toBeUndefined()
     expect(large.matching!.relaxation_suggestions.conversation_prompt).toMatch(/largest group an eligible Experience accepts is \d+ pax/)

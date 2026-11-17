@@ -1,3 +1,5 @@
+import { haversineDistanceKm, resolveOriginCoordinates } from './geo'
+
 export interface LocationCoord {
   lat: number
   lng: number
@@ -20,6 +22,7 @@ export interface HardConstraintsInput {
     lat?: number
     lng?: number
   }
+  radius_km?: number
 }
 
 export interface RouteFeasibleCandidate {
@@ -32,8 +35,9 @@ export interface RouteFeasibleCandidate {
   experience_type?: string
   price_per_person: number | null
   max_participants: number | null
-  distance_km: number
-  travel_time_minutes: number
+  distance_km?: number
+  distance_source?: 'haversine'
+  travel_time_minutes?: number
   location?: LocationCoord
   provider_verification_status?: string
   has_published_profile_version?: boolean
@@ -42,24 +46,6 @@ export interface RouteFeasibleCandidate {
 
 export interface FilterResult extends Array<RouteFeasibleCandidate> {
   eligible_candidates: RouteFeasibleCandidate[]
-}
-
-function calculateDistance(
-  loc1?: LocationCoord,
-  loc2?: { lat?: number; lng?: number }
-): { distance_km: number; travel_time_minutes: number } {
-  if (!loc1 || !loc2 || loc1.lat === undefined || loc2.lat === undefined) {
-    return { distance_km: 15, travel_time_minutes: 35 }
-  }
-
-  const dLat = Math.abs(loc1.lat - (loc2.lat || 0))
-  const dLng = Math.abs(loc1.lng - (loc2.lng || 0))
-  // Approximate distance in km for Hanoi region
-  const approxKm = Math.round(Math.sqrt(dLat * dLat + dLng * dLng) * 111)
-  const dist = approxKm > 0 ? approxKm : 10
-  const time = Math.round(dist * 2.5) // ~25-30 km/h average traffic
-
-  return { distance_km: dist, travel_time_minutes: time }
 }
 
 export async function applyHardConstraints(
@@ -83,13 +69,23 @@ export async function applyHardConstraints(
     }
 
     // 3. Route / Distance calculation
-    const route = calculateDistance(c.location, constraints.origin)
+    const distanceKm = haversineDistanceKm(c.location, resolveOriginCoordinates(constraints.origin))
+    if (
+      distanceKm !== undefined
+      && typeof constraints.radius_km === 'number'
+      && Number.isFinite(constraints.radius_km)
+      && constraints.radius_km > 0
+      && distanceKm > constraints.radius_km
+    ) {
+      continue
+    }
 
     eligible.push({
       ...c,
       max_capacity: c.max_capacity ?? c.max_participants,
-      distance_km: c.distance_km ?? route.distance_km,
-      travel_time_minutes: c.travel_time_minutes ?? route.travel_time_minutes,
+      distance_km: distanceKm,
+      distance_source: distanceKm !== undefined ? 'haversine' as const : undefined,
+      travel_time_minutes: distanceKm !== undefined ? Math.round(distanceKm * 2.5) : undefined,
     })
   }
 

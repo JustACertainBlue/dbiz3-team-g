@@ -51,6 +51,7 @@ export function applyHardFilters({
 
   const groupSize = profile?.hard_constraints?.group_size;
   const maxBudget = profile?.hard_constraints?.max_budget_per_person;
+  const radiusKm = profile?.hard_constraints?.radius_km;
   const matchingAttrs = profile?.matching_attributes ?? [];
 
   for (const candidate of candidates) {
@@ -81,6 +82,19 @@ export function applyHardFilters({
         rejected.push({ id: candidate.id, reason: 'budget' });
         continue;
       }
+    }
+
+    if (
+      typeof radiusKm === 'number'
+      && Number.isFinite(radiusKm)
+      && radiusKm > 0
+      && candidate.distance_source === 'haversine'
+      && typeof candidate.distance_km === 'number'
+      && Number.isFinite(candidate.distance_km)
+      && candidate.distance_km > radiusKm
+    ) {
+      rejected.push({ id: candidate.id, reason: 'radius' });
+      continue;
     }
 
     const includedCraft = matchingAttrs.find(

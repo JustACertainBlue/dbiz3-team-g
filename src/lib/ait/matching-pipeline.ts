@@ -2,6 +2,7 @@ import { applyHardFilters } from './constraints'
 import { applyNullPenalty, resolveDisplayGroups, selectTiers } from './scoring'
 import { buildMatchCard } from './card'
 import { rankCandidates, type ScoredCandidate } from '@/lib/matching/scoring-engine'
+import { haversineDistanceKm, resolveOriginCoordinates } from '@/lib/matching/geo'
 
 interface OperatingHoursRow {
   provider_id: string
@@ -107,16 +108,25 @@ export async function runAitMatchingPipeline({
   villageNames,
   now = Date.now(),
 }: AitMatchingPipelineInput): Promise<AitMatchingPipelineResult> {
-  const enrichedCandidates = candidates.map((candidate) => ({
-    ...candidate,
-    village_name:
-      candidate.village_name
-      || (candidate.village_id ? villageNames?.get(candidate.village_id) : undefined)
-      || candidate.experience_location_address?.split(',')[1]?.trim()
-      || '',
-    provider_name: candidate.provider_name || '',
-    tags: candidate.tags || [],
-  }))
+  const originCoordinates = resolveOriginCoordinates(profile?.hard_constraints?.origin)
+  const enrichedCandidates = candidates.map((candidate) => {
+    const distanceKm = candidate.location_source === 'from_plus_code'
+      ? haversineDistanceKm(originCoordinates, candidate.location)
+      : undefined
+
+    return {
+      ...candidate,
+      distance_km: distanceKm,
+      distance_source: distanceKm !== undefined ? 'haversine' : undefined,
+      village_name:
+        candidate.village_name
+        || (candidate.village_id ? villageNames?.get(candidate.village_id) : undefined)
+        || candidate.experience_location_address?.split(',')[1]?.trim()
+        || '',
+      provider_name: candidate.provider_name || '',
+      tags: candidate.tags || [],
+    }
+  })
   const hardFilterResult = applyHardFilters({
     candidates: enrichedCandidates.map((candidate) => ({
       ...candidate,

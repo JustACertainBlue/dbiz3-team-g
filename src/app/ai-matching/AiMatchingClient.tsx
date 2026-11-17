@@ -116,7 +116,7 @@ function localizeRelaxationPrompt(prompt: string): string {
 /** Dịch các dòng gợi ý nới lỏng sang tiếng Việt */
 function localizeRelaxationLine(line: string): string {
   if (line.startsWith('Distance:')) {
-    return line.replace(/^Distance:\s*/i, '📍 Khoảng cách: ').replace(/Expand radius by 15km to include outer craft villages/i, 'Mở rộng bán kính thêm 15 km để kết nối các làng nghề ngoại thành')
+    return line.replace(/^Distance:\s*/i, '📍 Khoảng cách: ')
   }
   if (line.startsWith('Dates:')) {
     return line.replace(/^Dates:\s*/i, '📅 Thời gian: ').replace(/Consider flexible dates \(\+\/- 2 days\)/i, 'Cân nhắc ngày linh hoạt (+/- 2 ngày)')
@@ -1149,8 +1149,8 @@ export default function AiMatchingScreen({
                                 <p className="rec-card-location">
                                   📍 {formatVillageName(rec.village_name)}
                                   {rec.distance_source === 'haversine' && typeof rec.distance_km === 'number'
-                                    ? ` · ${Math.round(rec.distance_km)} km`
-                                    : ''}
+                                    ? ` · ${Math.round(rec.distance_km)} km đường chim bay`
+                                    : ' · Chưa có dữ liệu khoảng cách'}
                                 </p>
 
                                 <div className="rec-card-reason-wrap">

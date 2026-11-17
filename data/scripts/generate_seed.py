@@ -6,6 +6,8 @@ from datetime import datetime, timedelta, timezone
 OUT = Path(os.environ.get("SEED_OUT", str(Path(__file__).resolve().parents[1] / "seed")))
 OUT.mkdir(parents=True, exist_ok=True)
 NS = uuid.UUID("b6aa71de-8e57-4fa3-9a40-8f8f46e50bb7")
+OPERATING_HOUR_STARTS = ("07:00:00", "07:30:00", "08:00:00")
+OPERATING_HOUR_ENDS = ("17:00:00", "17:30:00")
 
 def uid(kind, n): return str(uuid.uuid5(NS, f"{kind}:{n}"))
 def ts(day, hour=8): return f"2026-09-{day:02d}T{hour:02d}:00:00+07:00"
@@ -166,6 +168,7 @@ CRAFT=["Ceramics","Silk/Textile","Other","Other","Silk/Textile","Woodcarving","C
 CRAFT=["Ceramics","Silk/Textile","Other","Other","Silk/Textile","Woodcarving","Other","Paper/Painting"]
 providers=[]; pversions=[]; preveiws=[]; hours=[]; pvdocs=[]
 pstatuses=["Verified","Verified","Verified","Verified","Verified","Draft","Revision Required","Pending Verification"]
+next_hour_id = 8
 for i in range(8):
     vs=pstatuses[i]
     providers.append({"provider_id":uid("provider",i),"user_id":uid("user",18+i),"village_id":uid("village",i),"current_version_no":"1","published_version_no":"1" if vs=="Verified" else "","verification_status":vs,"created_at":ts(3+i),"updated_at":ts(18+i%5)})
@@ -173,6 +176,14 @@ for i in range(8):
     pversions.append({"provider_id":uid("provider",i),"version_no":"1","version_status":vs,"business_registration_number":"" if is_draft else f"HKD-HN-{20260001+i}","business_name":"" if is_draft else f"Xưởng thủ công {villages[i][1]}","craft_type":"" if is_draft else CRAFT[i],"artisan_names":"" if is_draft else j([names[18+i]]),"location_address":"" if is_draft else f"Thôn nghề truyền thống, {villages[i][1]}, {villages[i][2]}, Hà Nội","description":"Không gian trải nghiệm nghề truyền thống dành cho đoàn khách.","contact_information":"" if is_draft else j({"phone_number":f"+8496{3000000+i:07d}","business_email":f"langnghe{i+1}@example.invalid"}),"booking_conditions":j({"notice_hours":24}),"submitted_at":ts(10+i%5) if vs!="Draft" else "","published_at":ts(15+i%5) if vs=="Verified" else ""})
     preveiws.append({"review_id":uid("provider-review",i),"provider_id":uid("provider",i),"version_no":"1","reviewer_user_id":uid("user",i),"decision":"Request Revision" if i==6 else "Approve","revision_comments":"Bổ sung ảnh khu vực đón khách" if i==6 else "","reviewed_at":ts(16+i%5)})
     hours.append({"operating_hour_id":uid("hours",i),"provider_id":uid("provider",i),"weekday":str(i%7+1),"local_start":"08:00:00","local_end":"17:00:00" if i<7 else "23:59:00"})
+    for weekday in range(1, 8):
+        if weekday == i % 7 + 1:
+            continue
+        digest = hashlib.sha256(f"{uid('provider', i)}:{weekday}".encode("utf-8")).digest()
+        local_start = OPERATING_HOUR_STARTS[int.from_bytes(digest[:8], "big") % len(OPERATING_HOUR_STARTS)]
+        local_end = OPERATING_HOUR_ENDS[int.from_bytes(digest[8:16], "big") % len(OPERATING_HOUR_ENDS)]
+        hours.append({"operating_hour_id":uid("hours",next_hour_id),"provider_id":uid("provider",i),"weekday":str(weekday),"local_start":local_start,"local_end":local_end})
+        next_hour_id += 1
     if not is_draft:
         fid=add_file(f"provdoc-{i}", f"provdoc-{i}", uid("user",18+i), 9+i%5, image=False)
         pvdocs.append({"provider_id":uid("provider",i),"version_no":"1","file_id":fid,"document_type":"Business Registration Certificate"})

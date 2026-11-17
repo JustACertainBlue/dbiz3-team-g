@@ -28,7 +28,7 @@
     "provider_profile_versions.csv": 8,
     "provider_verification_reviews.csv": 8,
     "provider_version_documents.csv": 7,
-    "provider_operating_hours.csv": 8,
+    "provider_operating_hours.csv": 56,
     "experiences.csv": 8,
     "experience_discount_rules.csv": 8,
     "profile_media.csv": 24,

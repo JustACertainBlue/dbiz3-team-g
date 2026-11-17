@@ -3,6 +3,7 @@
 import csv
 import json
 import re
+import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -38,6 +39,38 @@ providers = {row["provider_id"]: row for row in rows("provider_profiles")}
 experiences = {row["experience_id"]: row for row in rows("experiences")}
 chats = {row["chat_session_id"]: row for row in rows("chat_sessions")}
 history = defaultdict(list)
+
+hour_rows = rows("provider_operating_hours")
+preserved_hour_ids = {
+    str(uuid.uuid5(uuid.UUID("b6aa71de-8e57-4fa3-9a40-8f8f46e50bb7"), f"hours:{index}"))
+    for index in range(len(providers))
+}
+allowed_hour_starts = {"07:00:00", "07:30:00", "08:00:00"}
+allowed_hour_ends = {"17:00:00", "17:30:00"}
+provider_weekdays = defaultdict(set)
+hour_pairs = set()
+hour_ids = set()
+for hour in hour_rows:
+    provider_id = hour["provider_id"]
+    weekday = int(hour["weekday"])
+    pair = (provider_id, weekday)
+    assert provider_id in providers, provider_id
+    assert 1 <= weekday <= 7, pair
+    assert pair not in hour_pairs, pair
+    assert hour["operating_hour_id"] not in hour_ids, hour["operating_hour_id"]
+    assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", hour["local_start"]), hour
+    assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", hour["local_end"]), hour
+    assert hour["local_start"] < hour["local_end"], hour
+    if hour["operating_hour_id"] not in preserved_hour_ids:
+        assert hour["local_start"] in allowed_hour_starts, hour
+        assert hour["local_end"] in allowed_hour_ends, hour
+    hour_pairs.add(pair)
+    hour_ids.add(hour["operating_hour_id"])
+    provider_weekdays[provider_id].add(weekday)
+
+assert len(hour_rows) == len(providers) * 7
+for provider_id in providers:
+    assert provider_weekdays[provider_id] == set(range(1, 8)), provider_id
 
 activity_limits = {
     "Workshop/Hands-on": (90, 180, 10, 30),
@@ -144,4 +177,4 @@ for session in rows("explore_sessions"):
         assert session["ranking_version_id"] == active[0]["version_id"]
         assert all(item["rank"] >= 1 for snapshot in json.loads(session["ranked_results"]) for item in snapshot["results"])
 
-print("PASS: 47 CSVs/load headers; Booking lifecycle, eligibility, chronology, snapshots, scopes and ranking audit")
+print("PASS: 47 CSVs/load headers; seven operating weekdays per provider; Booking lifecycle, eligibility, chronology, snapshots, scopes and ranking audit")

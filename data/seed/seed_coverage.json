@@ -222,7 +222,7 @@
   {
     "entity": "provider_operating_hours",
     "csv_file": "provider_operating_hours.csv",
-    "row_count": 8,
+    "row_count": 56,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",

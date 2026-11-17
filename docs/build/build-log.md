@@ -18,6 +18,19 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 54: 15/11 Copilot — AIT refusal, backend errors and post-L7 test alignment
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`. |
+| Scope | Compare the five existing commits against `HEAD~5`; make the default Vitest config resolve `@ait/*`; grade out-of-scope refusals by behavior; prevent Chat handoff errors from exposing backend messages; update assertions made stale by L7/L8 and the three synthetic Agency accounts. |
+| Produced | Added the `@ait` alias. Updated B.4/F and both AIT grading tests to require a direct refusal, reason, final in-scope offer, no temporary/busy wording, and in-scope quick replies while keeping the former sentence as a reference example. The AIT Chat handoff now returns a friendly technical error for unknown/5xx failures while retaining safe client-side `HandoffError` responses. Updated non-BKG seed assertions for revised L7 capacity/duration, L8 starting-price shape, and 11 Agencies; after the owner approved, aligned seven BKG assertions to the new 105-minute/max-30 pottery fixture. |
+| Test-first | The new handoff regression first failed with the raw `Demo database is busy. Retry the operation.` string; it passed after the route change and also verified a separate out-of-scope refusal. Seed-dependent assertions were updated only after confirming the corresponding fixture changes; no Booking over-capacity or active schedule overlap was found in the eight seeded Bookings. |
+| Verification | `npx.cmd vitest run --maxWorkers=1 --minWorkers=1 --config vitest.config.ts`: 257 files passed, 5 skipped; 1,716 tests passed, 30 skipped. `npx.cmd vitest run --config vitest.ait.config.ts`: 147 passed, 6 skipped; score 100/100, E2E not run because AIT endpoint/cookie/session environment variables were absent. `npm.cmd run lint`: passed. A concurrent full-suite run hit one Windows `EPERM` in `json-durable-sync.test.ts`; that test passed alone, and the final serial full suite passed. |
+| Baseline | Worktree at `HEAD~5` (`3d4c661`) had 1 failed file, 252 passed files, 5 skipped; all 147 failures were unresolved `@ait/*` imports. The baseline worktree was removed after comparison. |
+| Boundaries | No push, no data/seed or `.env.local` edits. The pre-existing `.claude/settings.json` modification and `docs/build/ait-matching-planning-inputs.md` untracked file were left untouched. |
+| Commit / remote | Local commits: `5b9664f` (Vitest alias), `72d62ad` (safe Chat errors), `fe16137` (non-BKG seed assertions), `2fa155c` (approved BKG assertions), `3e11d1d` (refusal criteria). No push or merge. |
+
 ### Entry 53: 15/11 Copilot — AIT scope, seed accounts and shared starting prices
 
 | Field | Value |

@@ -213,6 +213,33 @@ describe('AIT geography pipeline through the real extractor', () => {
   it.each([
     ['seed', false],
     ['fixture', true],
+  ] as const)('keeps district-fallback villages with an unconfirmed radius on %s data', async (_source, isTest) => {
+    installLlmMock('Mình tìm thấy các làng nghề phù hợp.')
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'làng nghề dưới 10 km', isTest)
+    const villageCards = response.json.village_cards as Json[]
+
+    expect(response.json.extraction.usedLlm).toBe(true)
+    if (isTest) {
+      for (const name of ['Ngũ Xã', 'Yên Thái']) {
+        const card = villageCards.find(item => String(item.name).includes(name))
+        expect(card).toMatchObject({
+          location_source: 'district_fallback',
+          radius_status: 'unconfirmed',
+        })
+        expect(Number(card?.distance_km)).toBeLessThan(10)
+      }
+      expect(response.json.turn.message.match(/chưa xác nhận bán kính/gi)?.length).toBeGreaterThanOrEqual(2)
+    } else {
+      expect(villageCards.some(card => String(card.name).includes('Ngũ Xã'))).toBe(false)
+      expect(villageCards.some(card => String(card.name).includes('Yên Thái'))).toBe(false)
+    }
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
   ] as const)('uses verified villages only when primary facilities are missing (%s)', async (_source, isTest) => {
     installLlmMock(
       'Bát Tràng có homestay. Chàng Sơn có homestay. Phú Vinh sắp xếp bể bơi gần đó.',

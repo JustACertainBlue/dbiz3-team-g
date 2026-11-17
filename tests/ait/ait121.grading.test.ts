@@ -656,12 +656,15 @@ t('MESSAGE', 'detectLeak không báo oan: giá tiền, ngày, số lượng', as
     expect(await f(ok), ok).toEqual([]);
   }
 });
-t('MESSAGE', 'mẫu từ chối: nội dung đúng B.4 và chip đi kèm', async () => {
+t('MESSAGE', 'từ chối ngoài phạm vi đáp ứng tiêu chí B.4 và chip trong scope', async () => {
   const f = await ex('messages', 'refusalTemplate');
-  expect(f('out_of_scope')).toEqual({
-    message: 'Mình hỗ trợ ghép tour làng nghề tại Hà Nội nên chưa trả lời được câu này. Bạn muốn mình gợi ý tour theo số người, ngày và ngân sách không?',
-    quick_replies: ['Bắt đầu ghép tour', 'Xem các làng nghề'],
-  });
+  const refusal = f('out_of_scope');
+  expect(refusal.message).toMatch(/xin lỗi/i);
+  expect(refusal.message).toMatch(/không thể trả lời/i);
+  expect(refusal.message).toMatch(/ngoài phạm vi/i);
+  expect(refusal.message).toMatch(/mình có thể (?:gợi ý trải nghiệm văn hóa có trong dữ liệu|giúp ghép tour làng nghề)[^.]*\.$/i);
+  expect(refusal.message).not.toMatch(/bận|thử lại sau|tạm thời/i);
+  expect(refusal.quick_replies).toEqual(['Bắt đầu ghép tour', 'Xem các làng nghề']);
   expect(f('restricted')).toEqual({
     message: 'Mình không chia sẻ được thông tin của agency khác hoặc cấu hình hệ thống. Mình có thể giúp bạn với yêu cầu tour của riêng bạn.',
     quick_replies: ['Bắt đầu ghép tour'],

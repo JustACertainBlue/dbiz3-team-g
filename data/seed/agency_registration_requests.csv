@@ -1,6 +1,9 @@
 registration_request_id,email,pending_password_hash,current_status,agency_user_id,current_version_no,created_at,updated_at
+115600a4-c0ab-5642-a560-c016ea2563a7,t-an-agency@example.invalid,,Approved,d9bab255-789a-5187-b7b2-ad2faa810ae2,1,2026-09-19T08:00:00+07:00,2026-09-20T08:00:00+07:00
+287124bf-7aa2-503b-95d2-98769b697a48,t-binh-agency@example.invalid,,Approved,754dc53e-c885-5808-8470-31c7d492d295,1,2026-09-19T08:00:00+07:00,2026-09-20T08:00:00+07:00
 4bbf44e8-604d-5b3e-b1bd-324091eea2fb,doanhnghiep6@example.invalid,,Approved,242e10ad-ff4d-5aa3-a3be-9e3f6d710235,1,2026-09-02T08:00:00+07:00,2026-09-14T08:00:00+07:00
 5a7bc99a-7afb-5178-8f93-5afbe0bf4d45,doanhnghiep7@example.invalid,,Approved,fbf87ace-4c0c-5328-8a89-ef827480c778,1,2026-09-03T08:00:00+07:00,2026-09-15T08:00:00+07:00
+6b890766-7f4b-51e4-b2fa-65caecfadcb1,t-chi-agency@example.invalid,,Approved,6530c5f2-f725-5467-a39d-bd2a34f484c3,1,2026-09-19T08:00:00+07:00,2026-09-20T08:00:00+07:00
 71b447ee-90e3-517d-8002-e6cc70bbd445,doanhnghiep4@example.invalid,,Approved,29251258-a536-5808-a0b9-73d113cf81d9,1,2026-09-05T08:00:00+07:00,2026-09-17T08:00:00+07:00
 73486519-b01f-5ad7-b0e4-71af96acfc21,doanhnghiep1@example.invalid,,Approved,1982c065-3ebc-5628-a4ae-413427aeba5a,1,2026-09-02T08:00:00+07:00,2026-09-14T08:00:00+07:00
 7848ba81-2436-58fb-95c6-eb49f9026fe6,doanhnghiep5@example.invalid,,Approved,c98ef93a-456d-58e2-8848-da451cd8664f,1,2026-09-06T08:00:00+07:00,2026-09-18T08:00:00+07:00

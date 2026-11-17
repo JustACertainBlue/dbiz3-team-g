@@ -18,6 +18,19 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 53: 15/11 Copilot — AIT scope, seed accounts and shared starting prices
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local AIT conversation/UI and L7/L8 data alignment. |
+| Scope | Keep meal-service requests out of scope while retaining data-backed food experiences; normalize village labels; remove the unsupported culture label; extend the existing static knowledge base; populate L7 facts; share L8 starting prices across Explore and AIT; add the three approved synthetic Agency seed accounts. No new RAG or runtime authentication special cases. |
+| Produced | Removed proactive lunch/refreshment prompting and added meal-service refusal rules; updated knowledge-base guidance and intent routes; centralized village display names; removed the first-result culture badge; generated deterministic L7 values while preserving Quất Động's manual capacity; retained missing facts as null; calculated eligible village minimum prices once and used the same Explore source for village API and AIT responses. Added three bcrypt-backed Agency accounts plus their registration, profile, review and preference seed rows. |
+| Test-first | Focused regressions for meal-service routing, village names, null experience facts, seed constraints, starting prices and linked Agency records were added before their changes; the new account regression first failed because the three accounts were absent. The AIT route suite exposed outdated fixed-capacity assertions after L7 values changed; updated them to check capacity constraints and seed-derived largest-group wording. |
+| Verification | `npx.cmd vitest run --config vitest.config.ts tests/ait/router.extra.test.ts tests/ait/llm-router.test.ts tests/unit/conversational-ai.test.ts tests/unit/village-display-name.test.ts tests/unit/experience-facts.test.ts tests/unit/village-starting-price.test.ts tests/unit/explore-catalog.test.ts tests/integration/ait-matching-api.test.ts tests/integration/seed-agency-test-accounts.test.ts tests/prf/integration/vil030-experience-cards.test.ts tests/unit/seed-data.test.ts tests/prf/unit/experience-service.test.ts tests/prf/seed/prf-seed.test.ts tests/unit/bkg-create-validation.test.ts tests/unit/bkg-update-booking.test.ts`: 15 files, 194 tests passed, with synthetic passwords supplied only through a process environment variable for the login/quote/chat route test. `npm.cmd run lint`: passed. `python data/scripts/validate_seed.py`: passed. Re-running `python data/scripts/generate_seed.py` preserved SHA-256 for the account, registration, preference, L7 and manifest CSV/JSON outputs. `npx.cmd vitest run tests/ait`: 147 failed because the default config cannot resolve `@ait/*`; 6 skipped. With `vitest.ait.config.ts`, 146 passed, 1 grading assertion failed because it expects the former refusal copy, and 6 were skipped. |
+| Not verified / pending | The browser login against the existing `.demo-data/runtime.json` returned 401 because it predates the new seed accounts. The human declined `npm run demo:reset`, so no browser walkthrough, page console check, or detail-page verification was performed; chat/quote handoffs were verified through isolated route tests instead. The grading failure's expected refusal copy was not changed. |
+| Boundaries | Only bcrypt hashes are stored in seed; synthetic passwords were not written to repository files or `.env.local`. No commit, push or merge. Existing user changes to `.claude/hooks/block-git-push.py` were inspected and left untouched. PreToolUse was restored from the temporary diagnostic wrapper to `py -3 .claude/hooks/block-git-push.py`; the temporary `diag.py` was removed, and no `debug.log` existed. |
+| Commit / remote | No commit, push or merge performed in this run. |
+
 ### Entry 52: 15/11 Copilot — connect AI Matching test media
 
 | Field | Value |

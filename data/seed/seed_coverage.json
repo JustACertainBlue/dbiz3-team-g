@@ -42,7 +42,7 @@
   {
     "entity": "user_accounts",
     "csv_file": "user_accounts.csv",
-    "row_count": 26,
+    "row_count": 29,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "account with no active session",
@@ -92,7 +92,7 @@
   {
     "entity": "agency_registration_requests",
     "csv_file": "agency_registration_requests.csv",
-    "row_count": 10,
+    "row_count": 13,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
@@ -122,7 +122,7 @@
   {
     "entity": "registration_submission_versions",
     "csv_file": "registration_submission_versions.csv",
-    "row_count": 10,
+    "row_count": 13,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
@@ -152,7 +152,7 @@
   {
     "entity": "agency_profiles",
     "csv_file": "agency_profiles.csv",
-    "row_count": 8,
+    "row_count": 11,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "agency row with no dependent matching requirement",
@@ -172,7 +172,7 @@
   {
     "entity": "agency_review_records",
     "csv_file": "agency_review_records.csv",
-    "row_count": 8,
+    "row_count": 11,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",
@@ -322,7 +322,7 @@
   {
     "entity": "agency_preference_profiles",
     "csv_file": "agency_preference_profiles.csv",
-    "row_count": 8,
+    "row_count": 11,
     "ordinary_rows": "5+",
     "boundary_row": "N/A: no declared scalar boundary for this entity",
     "empty_case": "N/A: association/event row; empty state is represented by its parent",

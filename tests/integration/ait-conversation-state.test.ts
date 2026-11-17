@@ -92,6 +92,23 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     })
   })
 
+  it('T2: updates the craft preference to the latest choice across repeated changes', async () => {
+    const sessionId = await openSession()
+    const choices = [
+      ['Tìm trải nghiệm làm gốm', 'pottery'],
+      ['Đổi sang dệt lụa', 'silk'],
+      ['Đổi sang nón lá', 'conical hat'],
+      ['Đổi sang gốm', 'pottery'],
+    ]
+
+    for (const [text, expectedCraft] of choices) {
+      const response = await send(sessionId, text)
+      expect(response.status).toBe(201)
+      expect(response.json.extraction.tour_context.craft_preference).toBe(expectedCraft)
+      expect((await getContext(sessionId)).state.craft).toBe(expectedCraft)
+    }
+  })
+
   it('retains a 200,000 VND budget when a later extraction omits it (L16)', async () => {
     const sessionId = await openSession()
     const extraction = vi.spyOn(extractor, 'extractTourContext')
@@ -241,6 +258,36 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     expect(accepted.json.turn.turn_type, `Transcript: ${JSON.stringify(transcript)}`).not.toBe('refusal')
     expect(accepted.json.turn.message, `Transcript: ${JSON.stringify(transcript)}`).not.toMatch(/ăn trưa|nhà hàng|chỗ ăn/i)
     expect(accepted.json.village_cards?.length, `Transcript: ${JSON.stringify(transcript)}`).toBeGreaterThan(0)
+  })
+
+  it('T26: starts with a meal refusal, then honors “có” with in-scope suggestions', async () => {
+    const sessionId = await openSession()
+    const refusal = await send(sessionId, 'Ăn trưa')
+
+    expect(refusal.status).toBe(200)
+    expect(refusal.json.turn.turn_type).toBe('refusal')
+    expect(refusal.json.turn.message).toMatch(/xin lỗi/i)
+    expect(refusal.json.turn.message).toMatch(/ngoài phạm vi/i)
+    expect(refusal.json.turn.message).toMatch(/làng nghề|trải nghiệm văn hóa/i)
+
+    const classifyIntent = vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
+      intent: 'out_of_scope',
+      confidence: 1,
+      source: 'llm',
+    })
+    const accepted = await send(sessionId, 'có')
+    const suggestions = [
+      ...(accepted.json.village_cards ?? []),
+      ...(accepted.json.activity_cards ?? []),
+      ...(accepted.json.provider_cards ?? []),
+    ]
+    expect(accepted.status).toBe(201)
+    expect(classifyIntent).not.toHaveBeenCalled()
+    expect(accepted.json.turn.turn_type).not.toBe('refusal')
+    expect(suggestions.length).toBeGreaterThan(0)
+    expect(
+      `${accepted.json.turn.message} ${accepted.json.conversational_reply ?? ''}`
+    ).not.toMatch(/ăn trưa|nhà hàng|chỗ ăn|lunch/i)
   })
 
   it('processes the in-scope part of a mixed tour and lunch request (T9)', async () => {

@@ -225,7 +225,7 @@ export function missingQuestions(state: AitConversationState): PendingQuestion[]
     questions.push({ field: 'date', text: 'Đoàn dự kiến khởi hành vào ngày nào (ví dụ: 25/11 hoặc Thứ Năm tuần tới)?' })
   }
   if (state.origin === undefined) {
-    questions.push({ field: 'origin', text: 'Đoàn sẽ xuất phát từ khu vực nào tại Hà Nội (origin, ví dụ: từ Hoàn Kiếm)?' })
+    questions.push({ field: 'origin', text: 'Đoàn sẽ xuất phát từ khu vực nào tại Hà Nội (ví dụ: từ Hoàn Kiếm)?' })
   }
   if (state.craft === undefined && state.exclusions.crafts.length === 0) {
     questions.push({ field: 'craft', text: 'Đoàn quan tâm đến loại trải nghiệm làng nghề nào?' })

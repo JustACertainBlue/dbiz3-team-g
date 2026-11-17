@@ -206,10 +206,19 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
   beforeEach(() => demoRepository().reset())
 
   it('T035: no profile until origin and an Experience preference are stated', async () => {
-    const noOrigin = await send(await openSession(), 'silk weaving, 10 pax on 2026-11-20')
+    const noOriginSession = await openSession()
+    const noOrigin = await send(noOriginSession, 'silk weaving, 10 pax on 2026-11-20')
     expect(noOrigin.json.extraction.is_complete).toBe(false)
     expect(noOrigin.json.tour_preference_profile).toBeNull()
-    expect(noOrigin.json.extraction.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(true)
+    expect(noOrigin.json.extraction.follow_up_questions[0]).not.toMatch(/\borigin\b/i)
+    const sessionRow = await demoRepository().find(
+      'matching_sessions',
+      row => row.matching_session_id === noOriginSession
+    )
+    const context = typeof sessionRow?.conversation_context === 'string'
+      ? JSON.parse(sessionRow.conversation_context)
+      : sessionRow?.conversation_context
+    expect(context?.pending_question?.field).toBe('origin')
 
     const destinationOnly = await send(await openSession(), 'pottery workshop in Bat Trang, 10 pax on 2026-11-20')
     expect(destinationOnly.json.extraction.is_complete).toBe(false)

@@ -7,6 +7,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { loadVillages, loadExperiences } from '@/lib/db/seed-loader'
+import { CATALOG_ACTIVITIES, CATALOG_PROVIDERS } from '@/lib/matching/card-resolver'
 
 describe('T004 | Seed Data Loader Verification', () => {
   // villages.csv has 8 rows
@@ -63,24 +64,70 @@ describe('T004 | Seed Data Loader Verification', () => {
     expect(experiences.length).toBeGreaterThanOrEqual(4)
   })
 
-  it('Bát Tràng "Nặn gốm" has max_participants=12 as in seed', async () => {
+  it('Bát Tràng "Nặn gốm" has max_participants=30 as in seed', async () => {
     const experiences = await loadExperiences()
     const exp = experiences.find(e => e.experience_id === 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69')
     expect(exp).toBeDefined()
-    expect(exp!.max_participants).toBe(12)
+    expect(exp!.max_participants).toBe(30)
+    expect(exp!.duration_minutes).toBe(105)
   })
 
-  it('Vạn Phúc "Dệt lụa" has max_participants=13 as in seed', async () => {
+  it('Vạn Phúc "Dệt lụa" has max_participants=26 as in seed', async () => {
     const experiences = await loadExperiences()
     const exp = experiences.find(e => e.experience_id === 'c8281688-2dc1-5cb1-9ff6-139df04ba562')
     expect(exp).toBeDefined()
-    expect(exp!.max_participants).toBe(13)
+    expect(exp!.max_participants).toBe(26)
   })
 
-  it('Chuông "Làm nón lá" has max_participants=15 as in seed', async () => {
+  it('Chuông "Làm nón lá" has max_participants=29 as in seed', async () => {
     const experiences = await loadExperiences()
     const exp = experiences.find(e => e.experience_id === 'b70bd0fa-6a81-5aec-9ff6-5303210b2fad')
     expect(exp).toBeDefined()
-    expect(exp!.max_participants).toBe(15)
+    expect(exp!.max_participants).toBe(29)
+    expect(exp!.duration_minutes).toBe(150)
+  })
+
+  it('Quất Động keeps its manually set capacity of 16', async () => {
+    const experiences = await loadExperiences()
+    const exp = experiences.find(e => e.experience_id === 'bad51dc8-1529-506a-8302-cb0b1d95954c')
+    expect(exp).toBeDefined()
+    expect(exp!.max_participants).toBe(16)
+  })
+
+  it('seeded activity facts follow the approved duration and capacity ranges', async () => {
+    const limits: Record<string, { duration: [number, number]; capacity: [number, number] }> = {
+      'Workshop/Hands-on': { duration: [90, 180], capacity: [10, 30] },
+      Sightseeing: { duration: [45, 90], capacity: [20, 50] },
+      'Cultural Show': { duration: [45, 90], capacity: [20, 60] },
+    }
+
+    for (const experience of await loadExperiences()) {
+      const rule = limits[experience.category]
+      expect(rule).toBeDefined()
+      const duration = experience.duration_minutes
+      const capacity = experience.max_participants
+      expect(duration).not.toBeNull()
+      expect(capacity).not.toBeNull()
+      if (duration == null || capacity == null) continue
+      expect(duration).toBeGreaterThanOrEqual(rule.duration[0])
+      expect(duration).toBeLessThanOrEqual(rule.duration[1])
+      expect(duration % 15).toBe(0)
+      expect(capacity).toBeGreaterThanOrEqual(rule.capacity[0])
+      expect(capacity).toBeLessThanOrEqual(rule.capacity[1])
+    }
+  })
+
+  it('AI matching cards use the same duration and capacity as the seed', async () => {
+    const experiences = await loadExperiences()
+    for (const experience of experiences) {
+      const card = CATALOG_ACTIVITIES.find(item => item.experience_id === experience.experience_id)
+      expect(card).toBeDefined()
+      expect(card!.duration_minutes).toBe(experience.duration_minutes)
+      expect(card!.max_participants).toBe(experience.max_participants)
+      const providerActivity = CATALOG_PROVIDERS
+        .find(item => item.provider_id === experience.provider_id)
+        ?.activities.find(item => item.experience_id === experience.experience_id)
+      expect(providerActivity?.duration_minutes).toBe(experience.duration_minutes)
+    }
   })
 })

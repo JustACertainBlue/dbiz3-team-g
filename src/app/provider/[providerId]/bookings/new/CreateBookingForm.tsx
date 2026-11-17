@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { useMemo, useState } from 'react'
+import { formatExperienceCapacity, formatExperienceDuration } from '@/lib/experience-facts'
 
 export interface ExperienceOption {
   experience_id: string
   name: string
-  duration_minutes: number
-  max_participants: number
-  price_per_person: number
+  duration_minutes: number | null
+  max_participants: number | null
+  price_per_person: number | null
   conditions: { notice_period: number; cancellation_policy: Record<string, unknown> }
 }
 
@@ -34,7 +35,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
   const [experienceId, setExperienceId] = useState(first?.experience_id ?? '')
   const [agencyId, setAgencyId] = useState(agencies[0]?.agency_id ?? '')
   const [startLocal, setStartLocal] = useState('')
-  const [duration, setDuration] = useState(first?.duration_minutes ?? 60)
+  const [duration, setDuration] = useState<number | ''>(first?.duration_minutes ?? '')
   const [groupSize, setGroupSize] = useState(1)
   const [agreedPrice, setAgreedPrice] = useState(0)
   const [noticePeriod, setNoticePeriod] = useState(first?.conditions.notice_period ?? 0)
@@ -49,7 +50,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
     setExperienceId(id)
     const next = experiences.find(row => row.experience_id === id)
     if (!next) return
-    setDuration(next.duration_minutes)
+    setDuration(next.duration_minutes ?? '')
     setNoticePeriod(next.conditions.notice_period)
     setPolicyText(JSON.stringify(next.conditions.cancellation_policy))
   }
@@ -104,7 +105,8 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
         {experiences.map(row => <option key={row.experience_id} value={row.experience_id}>{row.name}</option>)}
       </select>
     </label>
-    {experience && <div className="bkg-panel">Sức chứa tối đa: {experience.max_participants} khách · Thời lượng gợi ý: {experience.duration_minutes} phút</div>}
+    {experience && <div className="bkg-panel">Sức chứa: {formatExperienceCapacity(experience.max_participants)} · Thời lượng gợi ý: {formatExperienceDuration(experience.duration_minutes)}</div>}
+    {experience?.max_participants == null && <p role="alert" className="bkg-error">Không thể tạo Booking khi chưa có dữ liệu sức chứa.</p>}
     <label>Agency
       <select value={agencyId} onChange={event => setAgencyId(event.target.value)} required>
         {agencies.map(row => <option key={row.agency_id} value={row.agency_id}>{row.company_name}</option>)}
@@ -115,16 +117,18 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
         <input type="datetime-local" value={startLocal} onChange={event => setStartLocal(event.target.value)} required />
       </label>
       <label>Thời lượng (phút)
-        <input type="number" min={1} step={1} value={duration} onChange={event => setDuration(Number(event.target.value))} required />
+        <input type="number" min={1} step={1} value={duration} onChange={event => setDuration(event.target.value === '' ? '' : Number(event.target.value))} required />
       </label>
       <label>Số khách
-        <input type="number" min={1} max={experience?.max_participants} step={1} value={groupSize} onChange={event => setGroupSize(Number(event.target.value))} required />
+        <input type="number" min={1} max={experience?.max_participants ?? undefined} step={1} value={groupSize} onChange={event => setGroupSize(Number(event.target.value))} required />
       </label>
       <label>Giá thỏa thuận cho cả đoàn (VND)
         <input type="number" min={1} step="any" value={agreedPrice} onChange={event => setAgreedPrice(Number(event.target.value))} required />
       </label>
     </div>
-    {experience && <div className="bkg-panel">Gợi ý: {formatVnd(experience.price_per_person)} × {groupSize} khách = {formatVnd(experience.price_per_person * groupSize)}. Giá thỏa thuận vẫn có thể sửa.</div>}
+    {experience && <div className="bkg-panel">{experience.price_per_person == null
+      ? 'Chưa có dữ liệu giá / khách.'
+      : `Gợi ý: ${formatVnd(experience.price_per_person)} × ${groupSize} khách = ${formatVnd(experience.price_per_person * groupSize)}. Giá thỏa thuận vẫn có thể sửa.`}</div>}
     <div className="bkg-grid">
       <label>Notice period (giờ)
         <input type="number" min={0} step={1} value={noticePeriod} onChange={event => setNoticePeriod(Number(event.target.value))} required />
@@ -135,7 +139,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
     </div>
     {error && <p className="bkg-error" role="alert">{error}</p>}
     <div className="bkg-actions">
-      <button type="submit" disabled={saving}>{saving ? 'Đang tạo…' : 'Create On hold'}</button>
+      <button type="submit" disabled={saving || experience?.max_participants == null}>{saving ? 'Đang tạo…' : 'Create On hold'}</button>
       <Link href={`/provider/${providerId}/bookings`}>Cancel</Link>
     </div>
   </form>

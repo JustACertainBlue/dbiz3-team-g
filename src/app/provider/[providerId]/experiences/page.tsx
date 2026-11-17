@@ -3,15 +3,16 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { readSessionContext } from '@/lib/auth/client-session'
+import { formatExperienceCapacity, formatExperienceDuration } from '@/lib/experience-facts'
 
 interface ExperienceItem {
   archived_at?: string
   experience_id: string
   name: string
   category: string
-  duration_minutes: number
-  price_per_person: number
-  max_participants: number
+  duration_minutes: number | null
+  price_per_person: number | null
+  max_participants: number | null
   notice_period_hours?: number
   has_active_bookings?: boolean
 }
@@ -142,7 +143,7 @@ export default function ExperienceManagementPage({
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
                 <span className="prf-badge prf-badge-verified">{exp.category}</span>
                 <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  ⏱️ {exp.duration_minutes} phút
+                  ⏱️ {formatExperienceDuration(exp.duration_minutes)}
                 </span>
                 {exp.has_active_bookings && (
                   <span className="prf-badge prf-badge-warning">
@@ -159,11 +160,11 @@ export default function ExperienceManagementPage({
                 <div>
                   <strong>Giá niêm yết:</strong>{' '}
                   <span style={{ color: '#b84c24', fontWeight: 700 }}>
-                    {exp.price_per_person.toLocaleString('vi-VN')} VND / khách
+                    {exp.price_per_person == null ? 'Chưa có dữ liệu' : `${exp.price_per_person.toLocaleString('vi-VN')} VND / khách`}
                   </span>
                 </div>
                 <div>
-                  <strong>Sức chứa tối đa:</strong> {exp.max_participants} người / lượt
+                  <strong>Sức chứa:</strong> {formatExperienceCapacity(exp.max_participants)}
                 </div>
                 <div>
                   <strong>Thời gian báo trước:</strong> {exp.notice_period_hours} giờ

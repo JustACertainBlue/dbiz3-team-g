@@ -7,6 +7,7 @@ import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
 import ExploreTracker from '../../ExploreTracker';
 import { currentServerSession } from '../../../../lib/auth/server-session';
 import ProviderChatAction from '../../ProviderChatAction';
+import { formatExperienceDuration } from '../../../../lib/experience-facts';
 
 export default async function ProviderPage({ params }: { params: { id: string } }) {
   const seed = (await loadExploreRuntime());
@@ -41,7 +42,7 @@ export default async function ProviderPage({ params }: { params: { id: string } 
       {detail.private_contact && <section className="agency-contact-banner"><div><p className="section-number">Thông tin hợp tác</p><h2>Kết nối trực tiếp với đơn vị</h2><p>Thông tin này chỉ hiển thị cho doanh nghiệp du lịch đã được xác minh.</p></div><div><strong>{detail.private_contact.phone}</strong><span>{detail.private_contact.email}</span><ProviderChatAction choices={detail.experiences.map(item=>({id:item.id,name:item.name}))} /></div></section>}
 
       <section id="experiences" className="provider-experiences"><div className="section-heading"><div><p className="eyebrow">Danh mục của xưởng</p><h2>Trải nghiệm đang cung cấp</h2></div><span>{detail.experiences.length} trải nghiệm</span></div>
-        <div className="provider-experience-grid">{!detail.experiences.length&&<p>Chưa có trải nghiệm đang cung cấp.</p>}{detail.experiences.map((card, index) => <article key={card.id} className="provider-experience-card"><MediaImage src={card.images[0]?.storage_key} alt={card.name}/><div className="provider-experience-card__body"><p className="card-kicker"><span>{card.duration_minutes} phút</span><span>1–{card.capacity.max_pax} khách</span></p><h3>{card.name}</h3><p>{card.description}</p><div><strong>{card.price === null ? 'Giá dành cho Agency' : `${card.price.toLocaleString('vi-VN')} ₫ / khách`}</strong><Link href={`/explore/experiences/${card.id}`}>Chi tiết →</Link></div></div></article>)}</div>
+        <div className="provider-experience-grid">{!detail.experiences.length&&<p>Chưa có trải nghiệm đang cung cấp.</p>}{detail.experiences.map((card, index) => <article key={card.id} className="provider-experience-card"><MediaImage src={card.images[0]?.storage_key} alt={card.name}/><div className="provider-experience-card__body"><p className="card-kicker"><span>{formatExperienceDuration(card.duration_minutes)}</span><span>{card.capacity.max_pax == null ? 'Chưa có dữ liệu' : `1–${card.capacity.max_pax} khách`}</span></p><h3>{card.name}</h3><p>{card.description}</p><div><strong>{card.price === null ? 'Giá dành cho Agency' : `${card.price.toLocaleString('vi-VN')} ₫ / khách`}</strong><Link href={`/explore/experiences/${card.id}`}>Chi tiết →</Link></div></div></article>)}</div>
       </section>
 
       {!isAgency && <section className="guest-cta"><div><p className="eyebrow">Dành cho công ty du lịch</p><h2>Cần giá B2B, lịch đoàn hoặc trao đổi trực tiếp?</h2><p>Đăng nhập để mở khóa thông tin hợp tác đã được xác minh.</p></div><div><Link className="button" href="/login">Đăng nhập Agency</Link><Link className="button button--secondary" href="/register">Đăng ký tài khoản</Link></div></section>}

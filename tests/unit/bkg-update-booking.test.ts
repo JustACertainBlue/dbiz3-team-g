@@ -73,7 +73,7 @@ describe('T010 | updateBooking (F-SCHED-04)', () => {
 
   it('#7 and #42: group_size <= max_participants and conditions keep the schema shape', async () => {
     const id = await onHold()
-    await rejects(updateBooking(provider, id, { group_size: 13 }, options), 'VALIDATION_ERROR')
+    await rejects(updateBooking(provider, id, { group_size: 31 }, options), 'VALIDATION_ERROR')
     await rejects(updateBooking(provider, id, { booking_conditions: { notice_period: -1, cancellation_policy: { a: 1 } } }, options), 'VALIDATION_ERROR')
     await rejects(updateBooking(provider, id, { booking_conditions: { notice_period: 24, cancellation_policy: {} } }, options), 'VALIDATION_ERROR')
     expect(row(id).group_size).toBe('10')

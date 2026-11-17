@@ -7,6 +7,12 @@ import CreateBookingForm, { type AgencyOption, type ExperienceOption } from './C
 
 export const dynamic = 'force-dynamic'
 
+function optionalNumber(value: string): number | null {
+  if (!value.trim()) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 // Screen BKG134 Create Booking (F-SCHED-03).
 export default async function CreateBookingPage({ params }: { params: { providerId: string } }) {
   const session = (await currentServerSession())
@@ -20,9 +26,9 @@ export default async function CreateBookingPage({ params }: { params: { provider
     .map(row => ({
       experience_id: row.experience_id,
       name: row.name,
-      duration_minutes: Number(row.duration_minutes),
-      max_participants: Number(row.max_participants),
-      price_per_person: Number(row.price_per_person),
+      duration_minutes: optionalNumber(row.duration_minutes),
+      max_participants: optionalNumber(row.max_participants),
+      price_per_person: optionalNumber(row.price_per_person),
       conditions: bookingConditionsFromExperience(row),
     }))
   const approvedUsers = new Set((await repository.all('user_accounts')).filter(row => row.account_status === 'Approved').map(row => row.user_id))

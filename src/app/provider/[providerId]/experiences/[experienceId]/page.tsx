@@ -10,6 +10,7 @@ import MediaImage from '@/app/components/MediaImage'
 import { cancellationLines } from '@/lib/prf/experience-terms'
 import { EXPERIENCE_IMAGE_CATEGORIES } from '@/lib/prf/experience-images'
 import { closeLightbox, nextImage, openLightbox, previousImage, type LightboxState } from '@/lib/prf/lightbox'
+import { formatExperienceCapacity, formatExperienceDuration } from '@/lib/experience-facts'
 
 interface ExperienceImage {
   url?: string
@@ -25,9 +26,9 @@ interface ExperienceDetail {
   name: string
   category: string
   description: string
-  duration_minutes: number
-  price_per_person: number
-  max_participants: number
+  duration_minutes: number | null
+  price_per_person: number | null
+  max_participants: number | null
   notice_period_hours?: number
   experience_location_address?: string
   cancellation_policy?: unknown
@@ -88,9 +89,9 @@ export default function ExperienceDetailPage({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', background: '#fafaf9', padding: '1rem', marginBottom: '1.5rem' }}>
-        <div><div style={{ fontSize: '0.75rem', color: '#78716c' }}>Thời lượng</div><strong>{experience.duration_minutes} phút</strong></div>
-        <div><div style={{ fontSize: '0.75rem', color: '#78716c' }}>Giá / người</div><strong>{experience.price_per_person.toLocaleString('vi-VN')} ₫</strong></div>
-        <div><div style={{ fontSize: '0.75rem', color: '#78716c' }}>Sức chứa</div><strong>{experience.max_participants} người</strong></div>
+        <div><div style={{ fontSize: '0.75rem', color: '#78716c' }}>Thời lượng</div><strong>{formatExperienceDuration(experience.duration_minutes)}</strong></div>
+        <div><div style={{ fontSize: '0.75rem', color: '#78716c' }}>Giá / người</div><strong>{experience.price_per_person == null ? 'Chưa có dữ liệu' : `${experience.price_per_person.toLocaleString('vi-VN')} ₫`}</strong></div>
+        <div><div style={{ fontSize: '0.75rem', color: '#78716c' }}>Sức chứa</div><strong>{formatExperienceCapacity(experience.max_participants)}</strong></div>
       </div>
 
       <p style={{ lineHeight: 1.6 }}>{experience.description}</p>

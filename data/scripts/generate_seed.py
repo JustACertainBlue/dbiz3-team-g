@@ -1,4 +1,4 @@
-import csv, json, uuid, os
+import csv, hashlib, json, random, uuid, os
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -10,6 +10,28 @@ NS = uuid.UUID("b6aa71de-8e57-4fa3-9a40-8f8f46e50bb7")
 def uid(kind, n): return str(uuid.uuid5(NS, f"{kind}:{n}"))
 def ts(day, hour=8): return f"2026-09-{day:02d}T{hour:02d}:00:00+07:00"
 def j(value): return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+ACTIVITY_L7_RANGES = {
+    "Workshop/Hands-on": (90, 180, 10, 30),
+    "Sightseeing": (45, 90, 20, 50),
+    "Cultural Show": (45, 90, 20, 60),
+}
+MANUAL_ACTIVITY_CAPACITIES = {uid("experience", 4): 16}
+
+def activity_l7_values(experience_id, category):
+    limits = ACTIVITY_L7_RANGES.get(category)
+    if limits is None:
+        return "", ""
+
+    min_duration, max_duration, min_capacity, max_capacity = limits
+    seed = int.from_bytes(hashlib.sha256(f"{experience_id}:{category}:L7".encode()).digest()[:8], "big")
+    rng = random.Random(seed)
+    duration = rng.choice(range(min_duration, max_duration + 1, 15))
+    capacity = MANUAL_ACTIVITY_CAPACITIES.get(experience_id)
+    if capacity is None:
+        capacity = rng.randint(min_capacity, max_capacity)
+    return str(duration), str(capacity)
+
 def write(name, fields, rows):
     path = OUT / f"{name}.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
@@ -34,7 +56,7 @@ def add_file(key, kind, uploader, day, image=True):
     })
     return fid
 
-names = ["Nguyễn Minh Anh","Trần Thu Hà","Lê Hoàng Nam","Phạm Ngọc Lan","Đỗ Quang Huy","Vũ Thanh Mai","Bùi Đức Long","Hoàng Thùy Linh","Ngô Hải Đăng","Dương Khánh Vy","Đặng Tuấn Kiệt","Hồ Bảo Châu","Lý Gia Hân","Mai Thành Công","Tạ Phương Thảo","Chu Nhật Minh","Cao Kim Oanh","Đinh Quốc Bảo","Kiều Anh Thư","Lương Việt Dũng","Quách Minh Tâm","Nông Thu Trang","Hà Đức Anh","La Mỹ Duyên","Triệu Trung Hiếu","Thái Ngọc Ánh"]
+names = ["Nguyễn Minh Anh","Trần Thu Hà","Lê Hoàng Nam","Phạm Ngọc Lan","Đỗ Quang Huy","Vũ Thanh Mai","Bùi Đức Long","Hoàng Thùy Linh","Ngô Hải Đăng","Dương Khánh Vy","Đặng Tuấn Kiệt","Hồ Bảo Châu","Lý Gia Hân","Mai Thành Công","Tạ Phương Thảo","Chu Nhật Minh","Cao Kim Oanh","Đinh Quốc Bảo","Kiều Anh Thư","Lương Việt Dũng","Quách Minh Tâm","Nông Thu Trang","Hà Đức Anh","La Mỹ Duyên","Triệu Trung Hiếu","Thái Ngọc Ánh","Test Agency An","Test Agency Binh","Test Agency Chi"]
 villages = [
  ("DEMO-HN-BATTRANG","Bát Tràng","Gia Lâm"),("DEMO-HN-VANPHUC","Vạn Phúc","Hà Đông"),
  ("DEMO-HN-PHU-VINH","Phú Vinh","Chương Mỹ"),("DEMO-HN-CHUONG","Chuông","Thanh Oai"),
@@ -71,6 +93,14 @@ for i,(role,atype) in enumerate(roles):
     status="Approved" if role=="Tour_Agency" else "Active"
     if i in (17,25): status="Disabled"
     users.append({"user_id":uid("user",i),"email":f"thanhvien{i+1}@example.invalid","password_hash":f"$2b$12$seedhash{i:02d}giuChoDuDoDai","role_code":role,"admin_type":atype,"account_status":status,"full_name":names[i],"title":"Chuyên viên" if role=="ADMIN" else "Đại diện đơn vị","phone":f"+8491{1000000+i:07d}","avatar_file_id":"","must_change_password":"true" if i==0 else "false","password_changed_at":"" if i==0 else ts(11+i%5,9),"last_login":"" if i in (7,17,25) else ts(20+i%5,9),"created_at":ts(1+i%8),"updated_at":ts(10+i%8)})
+test_agencies = [
+    {"index":0,"email":"t-an-agency@example.invalid","hash":"$2b$10$.9XASaxSy/.AUrsDqIjBdOBUetdBfnppE8oc7ZXNUBjkJLkZfEJmy","company":"T-An Agency","tax_id":"9999999999001","team_size":"3"},
+    {"index":1,"email":"t-binh-agency@example.invalid","hash":"$2b$10$ZdRQwr7fvPKP4Cmj67XBE.A3jOoBSL6wZi5LlXEHbDefv5mXgZQ.2","company":"T-Binh Agency","tax_id":"9999999999002","team_size":"5"},
+    {"index":2,"email":"t-chi-agency@example.invalid","hash":"$2b$10$M6bTcUigoe4AavZ90WuhGeWmmn4EkEKipXPhp9ug.X0U800zFkcoK","company":"T-Chi Agency","tax_id":"9999999999003","team_size":"7"},
+]
+for fixture in test_agencies:
+    i=26+fixture["index"]
+    users.append({"user_id":uid("user",i),"email":fixture["email"],"password_hash":fixture["hash"],"role_code":"Tour_Agency","admin_type":"","account_status":"Approved","full_name":names[i],"title":"Đại diện đơn vị","phone":"","avatar_file_id":"","must_change_password":"false","password_changed_at":ts(20,9),"last_login":"","created_at":ts(19),"updated_at":ts(20)})
 write("user_accounts",ufields,users)
 hist=[]
 for i in range(8): hist.append({"history_id":uid("account-history",i),"user_id":uid("user",10+i),"from_status":"Pending Approval" if i<7 else "Approved","to_status":"Approved" if i<7 else "Disabled","changed_by":uid("user",8),"changed_at":ts(12+i),"reason":"Đã duyệt hồ sơ" if i<7 else "Tạm khóa theo yêu cầu đơn vị"})
@@ -93,6 +123,12 @@ for i in range(10):
     if i<8:
         otps.append({"challenge_id":uid("otp",i),"registration_request_id":uid("registration",i),"email":f"doanhnghiep{i+1}@example.invalid","otp_verifier":f"otp-verifier-{i+1}","issued_at":f"2026-09-{2+i:02d}T08:00:00+07:00","expires_at":f"2026-09-{2+i:02d}T08:10:00+07:00","used_at":f"2026-09-{2+i:02d}T08:05:00+07:00" if i<6 else "","invalidated_at":f"2026-09-{2+i:02d}T08:10:00+07:00" if i>=6 else "","attempt_count":str(5 if i==7 else i%3),"resend_sequence":str(3 if i==7 else i%2)})
         retokens.append({"token_id":uid("resubmit",i),"registration_request_id":uid("registration",i),"token_verifier":f"resubmit-verifier-{uid('resubmit',i)}","issued_at":ts(10+i%5),"expires_at":f"2026-09-{11+i%5:02d}T08:00:00+07:00","used_at":ts(10+i%5,12) if i<5 else "","invalidated_at":ts(10+i%5,13) if i==7 else ""})
+for fixture in test_agencies:
+    i=fixture["index"]
+    user_id=uid("user",26+i)
+    registration_id=uid("registration",10+i)
+    regs.append({"registration_request_id":registration_id,"email":fixture["email"],"pending_password_hash":"","current_status":"Approved","agency_user_id":user_id,"current_version_no":"1","created_at":ts(19),"updated_at":ts(20)})
+    subs.append({"registration_request_id":registration_id,"version_no":"1","submitted_at":ts(19),"submitted_by":user_id,"full_name":names[26+i],"company_name":fixture["company"],"company_type":"Travel Agency","tax_id":fixture["tax_id"],"location":j({"street":"Địa chỉ demo","ward":"Demo","district":"Hoàn Kiếm","city_province":"Hà Nội"}),"contact_information":j({"contact_person_name":names[26+i],"phone_number":"","business_email":fixture["email"]}),"team_size":fixture["team_size"],"tour_types":j([TT["Văn hóa"],TT["Làng nghề"]])})
 write("agency_registration_requests",list(regs[0]),regs); write("registration_submission_versions",list(subs[0]),subs)
 write("registration_otp_challenges",list(otps[0]),otps); write("registration_resubmission_tokens",list(retokens[0]),retokens)
 
@@ -103,6 +139,12 @@ for i in range(10):
 write("registration_documents",list(docs[0]),docs)
 agencies=[]
 for i in range(8): agencies.append({"agency_id":uid("agency",i),"user_id":uid("user",10+i),"registration_request_id":uid("registration",i),"company_name":subs[i]["company_name"],"company_type":subs[i]["company_type"],"tax_id":subs[i]["tax_id"],"location":subs[i]["location"],"description":"Đơn vị tổ chức tour trải nghiệm văn hóa và làng nghề tại Hà Nội.","contact_info":subs[i]["contact_information"],"team_size":subs[i]["team_size"],"tour_types":subs[i]["tour_types"],"created_at":ts(15),"updated_at":ts(20)})
+for fixture in test_agencies:
+    i=fixture["index"]
+    agency_id=uid("agency",8+i)
+    user_id=uid("user",26+i)
+    registration_id=uid("registration",10+i)
+    agencies.append({"agency_id":agency_id,"user_id":user_id,"registration_request_id":registration_id,"company_name":fixture["company"],"company_type":"Travel Agency","tax_id":fixture["tax_id"],"location":j({"street":"Địa chỉ demo","ward":"Demo","district":"Hoàn Kiếm","city_province":"Hà Nội"}),"description":"Synthetic test Agency account for local prototype verification.","contact_info":j({"contact_person_name":names[26+i],"phone_number":"","business_email":fixture["email"]}),"team_size":fixture["team_size"],"tour_types":j([TT["Văn hóa"],TT["Làng nghề"]]),"created_at":ts(19),"updated_at":ts(20)})
 write("agency_profiles",list(agencies[0]),agencies)
 major=[]
 for i in range(8):
@@ -113,6 +155,9 @@ reviews=[]
 for i in range(8):
     dec="Reject" if i==7 else "Approve"
     reviews.append({"review_id":uid("agency-review",i),"registration_request_id":uid("registration",i),"registration_version_no":"1","major_change_id":"","hdt_user_id":uid("user",8+i%2),"decision":dec,"comments":"Hồ sơ không đáp ứng điều kiện" if dec=="Reject" else "","decided_at":ts(14+i%5)})
+for fixture in test_agencies:
+    i=fixture["index"]
+    reviews.append({"review_id":uid("agency-review",8+i),"registration_request_id":uid("registration",10+i),"registration_version_no":"1","major_change_id":"","hdt_user_id":uid("user",8+i%2),"decision":"Approve","comments":"","decided_at":ts(20)})
 write("agency_review_records",list(reviews[0]),reviews)
 
 # Provider and experience
@@ -137,7 +182,8 @@ write("provider_version_documents",list(pvdocs[0]),pvdocs)
 experiences=[]; discounts=[]
 excat=["Workshop/Hands-on","Workshop/Hands-on","Workshop/Hands-on","Workshop/Hands-on","Workshop/Hands-on","Workshop/Hands-on","Cultural Show","Workshop/Hands-on"]
 for i in range(8):
-    experiences.append({"experience_id":uid("experience",i),"provider_id":uid("provider",i),"name":["Nặn gốm thủ công","Dệt lụa truyền thống","Đan mây tre","Làm nón lá","Thêu họa tiết","Tạc tượng dân gian","Điều khiển rối nước","Vẽ sơn mài"][i],"description":"Trải nghiệm có hướng dẫn, vật liệu và sản phẩm mang về cho khách tham gia.","category":excat[i],"duration_minutes":str(60+i*15),"price_per_person":f"{150000+i*25000}.00","max_participants":str(1 if i==7 else 12+i),"notice_period_hours":str(0 if i==7 else 24),"experience_location_address":f"Thôn nghề truyền thống, {villages[i][1]}, {villages[i][2]}, Hà Nội","cancellation_policy":j({"before_hours":24,"refund_percent":80}),"archived_at":ts(25) if i==7 else "","created_at":ts(16),"updated_at":ts(22)})
+    duration, capacity = activity_l7_values(uid("experience", i), excat[i])
+    experiences.append({"experience_id":uid("experience",i),"provider_id":uid("provider",i),"name":["Nặn gốm thủ công","Dệt lụa truyền thống","Đan mây tre","Làm nón lá","Thêu họa tiết","Tạc tượng dân gian","Điều khiển rối nước","Vẽ sơn mài"][i],"description":"Trải nghiệm có hướng dẫn, vật liệu và sản phẩm mang về cho khách tham gia.","category":excat[i],"duration_minutes":duration,"price_per_person":f"{150000+i*25000}.00","max_participants":capacity,"notice_period_hours":str(0 if i==7 else 24),"experience_location_address":f"Thôn nghề truyền thống, {villages[i][1]}, {villages[i][2]}, Hà Nội","cancellation_policy":j({"before_hours":24,"refund_percent":80}),"archived_at":ts(25) if i==7 else "","created_at":ts(16),"updated_at":ts(22)})
     discounts.append({"rule_id":uid("discount",i),"experience_id":uid("experience",i),"rule_kind":"Group Discount" if i<7 else "Special Rate","pax_threshold":str(5+i),"discount_percentage":str(0 if i==7 else 5+i)})
 write("experiences",list(experiences[0]),experiences); write("experience_discount_rules",list(discounts[0]),discounts)
 media=[]; pvmedia=[]
@@ -165,6 +211,8 @@ for i in range(8):
     rr.append({"result_id":uid("recommendation",i),"matching_session_id":uid("matching",i),"run_no":"1","experience_id":uid("experience",eligible),"rank":"1","match_score":str(0 if i==7 else 82+i)+".00","experience_fit_score":str(100 if i==6 else 80+i)+".00","explanation":"Phù hợp ngân sách, chủ đề và quy mô đoàn.","created_at":ts(20,10)})
     app.append({"agency_id":uid("agency",i),"preference_weights":j({"culture":0.7,"price":0.3}),"updated_at":ts(21)})
     signals.append({"signal_id":uid("signal",i),"agency_id":uid("agency",i),"matching_session_id":uid("matching",i) if i<7 else "","experience_id":uid("experience",eligible),"signal_type":SIG[0] if i<7 else SIG[1],"signal_value":j({"selected":i<7}),"confidence_score":"1.000" if i==7 else "0.850","base_weight":"0.00000" if i==7 else "1.00000","captured_at":ts(21,9)})
+for fixture in test_agencies:
+    app.append({"agency_id":uid("agency",8+fixture["index"]),"preference_weights":j({"culture":0.7,"price":0.3}),"updated_at":ts(21)})
 write("matching_sessions",list(ms[0]),ms); write("matching_messages",list(mm[0]),mm); write("tour_preference_profiles",list(tp[0]),tp)
 write("recommendation_results",list(rr[0]),rr); write("agency_preference_profiles",list(app[0]),app); write("preference_signals",list(signals[0]),signals)
 quotes=[]; es=[]; ei=[]
@@ -191,6 +239,8 @@ bst=["Booked","Booked","Completed","Completed","Cancelled","Booked","On hold","C
 CHATSRC=["AI Matching","Explore","Provider Profile","Booking"]
 for i in range(8):
     eligible=i if i<5 else i-5
+    if not experiences[eligible]["duration_minutes"]:
+        continue
     start=(f"2026-09-{24+i:02d}T09:00:00+07:00" if bst[i]=="Completed" else f"2026-10-{5+i:02d}T09:00:00+07:00")
     created=ts(28 if bst[i]=="On hold" else 23)
     dur=int(experiences[eligible]["duration_minutes"])

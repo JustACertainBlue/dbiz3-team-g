@@ -38,6 +38,31 @@ providers = {row["provider_id"]: row for row in rows("provider_profiles")}
 experiences = {row["experience_id"]: row for row in rows("experiences")}
 chats = {row["chat_session_id"]: row for row in rows("chat_sessions")}
 history = defaultdict(list)
+
+activity_limits = {
+    "Workshop/Hands-on": (90, 180, 10, 30),
+    "Sightseeing": (45, 90, 20, 50),
+    "Cultural Show": (45, 90, 20, 60),
+}
+for experience in rows("experiences"):
+    limits = activity_limits.get(experience["category"])
+    duration = experience["duration_minutes"]
+    capacity = experience["max_participants"]
+    if limits is None:
+        assert not duration and not capacity, experience["experience_id"]
+        continue
+
+    min_duration, max_duration, min_capacity, max_capacity = limits
+    assert duration and capacity, experience["experience_id"]
+    duration_value = int(duration)
+    capacity_value = int(capacity)
+    assert min_duration <= duration_value <= max_duration, experience["experience_id"]
+    assert duration_value % 15 == 0, experience["experience_id"]
+    assert min_capacity <= capacity_value <= max_capacity, experience["experience_id"]
+    assert 1 <= capacity_value, experience["experience_id"]
+
+assert experiences["bad51dc8-1529-506a-8302-cb0b1d95954c"]["max_participants"] == "16"
+
 for entry in rows("booking_status_history"):
     history[entry["booking_id"]].append(entry)
 

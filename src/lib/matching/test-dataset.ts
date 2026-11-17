@@ -4,6 +4,7 @@ import { CRAFT_MEDIA } from '@/lib/matching/card-resolver'
 import type { CandidateExperience } from '@/lib/matching/candidate-repo'
 import type { TourPreferenceProfile } from '@/lib/matching/types'
 import type { CraftType } from '@/lib/matching/craft-taxonomy'
+import { villageStartingPrices } from '@/lib/village-starting-price'
 
 export interface TestVillageRaw {
   village_id: string
@@ -108,25 +109,33 @@ export function cleanActivityName(name: string): string {
   return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : ''
 }
 
-function parsePriceFromRaw(priceRaw: string | null | undefined): number {
-  if (!priceRaw) return 120000
+function parsePriceFromRaw(priceRaw: string | null | undefined): number | null {
+  if (!priceRaw) return null
   const clean = priceRaw.toLowerCase().replace(/\./g, '').replace(/,/g, '')
   const match = clean.match(/(\d{4,8})/)
   if (match) {
     return parseInt(match[1], 10)
   }
   if (clean.includes('miễn phí')) return 0
-  return 120000
+  return null
 }
 
-function parseDurationMinutes(durationRaw: string | null | undefined): number {
-  if (!durationRaw) return 75
+function parseDurationMinutes(durationRaw: string | null | undefined): number | null {
+  if (!durationRaw) return null
   const lower = durationRaw.toLowerCase()
   if (lower.includes('2 - 3 tiếng') || lower.includes('3 tiếng')) return 150
   if (lower.includes('1 – 2') || lower.includes('1-2') || lower.includes('2 tiếng')) return 90
   if (lower.includes('60 – 90') || lower.includes('60-90')) return 75
   if (lower.includes('1 giờ') || lower.includes('1 tiếng') || lower.includes('60')) return 60
-  return 75
+  return null
+}
+
+function compareActivityPrice(a: ActivityCardData, b: ActivityCardData, ascending: boolean): number {
+  if (a.price_per_person == null) return b.price_per_person == null ? 0 : 1
+  if (b.price_per_person == null) return -1
+  return ascending
+    ? a.price_per_person - b.price_per_person
+    : b.price_per_person - a.price_per_person
 }
 
 function getExperienceCategory(name: string): string {
@@ -178,8 +187,8 @@ export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExp
         experience_type: category,
         craft_type: meta.craftType,
         price_per_person: price,
-        max_participants: 25,
-        max_capacity: 25,
+        max_participants: null,
+        max_capacity: null,
         notice_period_hours: 24,
         duration_minutes: duration,
         provider_name: provName,
@@ -192,12 +201,8 @@ export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExp
         historical_agency_preference_weight: 0.9,
         provider_quality_rating: 0.95,
         image_url: testMediaUrl(act, testMediaUrl(prov ?? {}, testMediaUrl(village, meta.mediaUrl))) ?? meta.mediaUrl,
-        location: {
-          lat,
-          lng,
-          address: prov?.address || `${village.village_name}, ${village.district_raw}, Hà Nội`,
-        },
-      } as CandidateExperience)
+        location: { lat, lng },
+      })
     }
   }
 
@@ -212,6 +217,7 @@ export const getTestAllExperiences = getTestCandidates
 export function resolveTestVillageCards(text: string): VillageCardData[] {
   const villages = (rawData as { villages: TestVillageRaw[] }).villages || []
   const lower = text.toLowerCase()
+  const startingPrices = villageStartingPrices(getTestCandidates())
 
   const cards: VillageCardData[] = villages.map(v => {
     const meta = VILLAGE_CRAFT_MAPPING[v.village_id]
@@ -222,6 +228,7 @@ export function resolveTestVillageCards(text: string): VillageCardData[] {
       district: v.district_raw,
       image_url: testMediaUrl(v, meta?.mediaUrl || CRAFT_MEDIA.ceramics)!,
       description: `${v.village_name} (${v.district_raw}) — gồm ${v.providers.length} cơ sở/xưởng nghề và ${v.activities.length} hoạt động trải nghiệm văn hóa.`,
+      starting_price: startingPrices.get(v.village_id) ?? null,
     }
   })
 
@@ -335,7 +342,7 @@ export function resolveTestActivityCards(text: string): ActivityCardData[] {
         category,
         duration_minutes: duration,
         price_per_person: price,
-        max_participants: 25,
+        max_participants: null,
         image_url: testMediaUrl(a, meta?.mediaUrl || CRAFT_MEDIA.ceramics)!,
         is_verified: true,
       })
@@ -348,9 +355,9 @@ export function resolveTestActivityCards(text: string): ActivityCardData[] {
   if (isSightseeingOnly) {
     let sightPool = activityCards.filter(a => a.category === 'Sightseeing' || a.name.toLowerCase().includes('tham quan'))
     if (isLowPrice) {
-      sightPool.sort((a, b) => a.price_per_person - b.price_per_person)
+      sightPool.sort((a, b) => compareActivityPrice(a, b, true))
     } else if (isHighPrice) {
-      sightPool.sort((a, b) => b.price_per_person - a.price_per_person)
+      sightPool.sort((a, b) => compareActivityPrice(a, b, false))
     }
     if (sightPool.length > 0) return sightPool.slice(0, 4)
   }
@@ -370,11 +377,11 @@ export function resolveTestActivityCards(text: string): ActivityCardData[] {
   })
 
   if (isLowPrice) {
-    matched.sort((a, b) => a.price_per_person - b.price_per_person)
-    activityCards.sort((a, b) => a.price_per_person - b.price_per_person)
+    matched.sort((a, b) => compareActivityPrice(a, b, true))
+    activityCards.sort((a, b) => compareActivityPrice(a, b, true))
   } else if (isHighPrice) {
-    matched.sort((a, b) => b.price_per_person - a.price_per_person)
-    activityCards.sort((a, b) => b.price_per_person - a.price_per_person)
+    matched.sort((a, b) => compareActivityPrice(a, b, false))
+    activityCards.sort((a, b) => compareActivityPrice(a, b, false))
   }
 
   if (matched.length > 0) return matched.slice(0, 5)

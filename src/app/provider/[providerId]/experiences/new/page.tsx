@@ -27,12 +27,22 @@ export default function AddExperiencePage({
   const [aiDraft, setAiDraft] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    category: string
+    duration_minutes: number | ''
+    price_per_person: number
+    max_participants: number | ''
+    notice_period_hours: number
+    experience_location_address: string
+    cancellation_rules_text: string
+    description: string
+  }>({
     name: '',
     category: 'Workshop/Hands-on',
-    duration_minutes: 90,
+    duration_minutes: '',
     price_per_person: 150000,
-    max_participants: 25,
+    max_participants: '',
     notice_period_hours: 24,
     experience_location_address: '',
     cancellation_rules_text: '',
@@ -85,6 +95,12 @@ export default function AddExperiencePage({
 
     if (!authorized) {
       setError('Lỗi phân quyền: Chỉ tài khoản Local Provider mới có quyền tạo mới trải nghiệm.')
+      setSaving(false)
+      return
+    }
+
+    if (formData.duration_minutes === '' || formData.max_participants === '') {
+      setError('Hãy nhập thời lượng và sức chứa của trải nghiệm.')
       setSaving(false)
       return
     }
@@ -259,7 +275,7 @@ export default function AddExperiencePage({
                     required
                     min={15}
                     value={formData.duration_minutes}
-                    onChange={e => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
+                    onChange={e => setFormData({ ...formData, duration_minutes: e.target.value === '' ? '' : Number(e.target.value) })}
                     className="prf-input"
                   />
                 </div>
@@ -402,7 +418,7 @@ export default function AddExperiencePage({
                   required
                   min={1}
                   value={formData.max_participants}
-                  onChange={e => setFormData({ ...formData, max_participants: Number(e.target.value) })}
+                  onChange={e => setFormData({ ...formData, max_participants: e.target.value === '' ? '' : Number(e.target.value) })}
                   className="prf-input"
                 />
               </div>

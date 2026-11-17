@@ -5,7 +5,7 @@ import { SEED_NOW } from '@/lib/booking/clock'
 import { bookingConditionsFromExperience, createBooking } from '@/lib/booking/create-booking'
 
 // T012: US-4 AS-1..AS-5, BR-003/004/005/019/020, BR-009 (public block), spec #36.
-const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69' // Bát Tràng, 60 min, max 12, notice 24 h
+const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69' // Bát Tràng, 105 min, max 30, notice 24 h
 const AGENCY = '02e568d8-d65e-54b1-a554-b411150d1dcb' // Approved
 const HOUR = 3_600_000
 const provider = DEMO_IDENTITIES.provider

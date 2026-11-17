@@ -5,7 +5,8 @@ export interface CandidateExperience extends Experience {
   village_id: string
   image_url?: string
   provider_status?: string
-  max_capacity?: number
+  max_capacity?: number | null
+  historical_agency_preference_weight?: number
 }
 
 export async function retrieveCandidates(

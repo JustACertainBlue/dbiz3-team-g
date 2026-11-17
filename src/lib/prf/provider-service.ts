@@ -115,8 +115,10 @@ export async function getProviderProfile(
   const experiences = allExperiences.filter(e => e.provider_id === providerId)
   // spec-PRF #34: lowest price and largest capacity among the non-archived Experiences; empty without one.
   const activeExperiences = experiences.filter(exp => !exp.archived_at)
-  const pricing = activeExperiences.length > 0 ? Math.min(...activeExperiences.map(exp => exp.price_per_person)) : undefined
-  const capacity = activeExperiences.length > 0 ? Math.max(...activeExperiences.map(exp => exp.max_participants)) : undefined
+  const prices = activeExperiences.flatMap(exp => exp.price_per_person == null ? [] : [exp.price_per_person])
+  const capacities = activeExperiences.flatMap(exp => exp.max_participants == null ? [] : [exp.max_participants])
+  const pricing = prices.length > 0 ? Math.min(...prices) : undefined
+  const capacity = capacities.length > 0 ? Math.max(...capacities) : undefined
 
   // Village metadata from villages.csv
   const villages = await loadVillages()

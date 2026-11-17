@@ -4,9 +4,9 @@ export interface MatchFactors {
   craft?: { preference: string; label: string; craft_type?: string; matched: boolean }
   experience_types?: { requested: string[]; matched: boolean }
   group_size?: number
-  max_participants?: number
+  max_participants?: number | null
   budget_per_person?: number
-  price_per_person?: number
+  price_per_person?: number | null
   distance_km?: number
   origin?: string
 }
@@ -20,7 +20,7 @@ export interface ScoredCandidate {
   provider_name?: string
   category?: string
   experience_type?: string
-  price_per_person?: number
+  price_per_person?: number | null
   distance_km?: number
   travel_time_minutes?: number
   match_score: number
@@ -158,8 +158,8 @@ export async function rankCandidates(
   if (priceSort === 'asc' || priceSort === 'lowest' || priceSort === 'cheapest') {
     // Sort from cheapest to highest; for identical price, sort by match_score descending
     scored.sort((a, b) => {
-      const priceA = typeof a.price_per_person === 'number' ? a.price_per_person : 120000
-      const priceB = typeof b.price_per_person === 'number' ? b.price_per_person : 120000
+      const priceA = typeof a.price_per_person === 'number' ? a.price_per_person : Number.POSITIVE_INFINITY
+      const priceB = typeof b.price_per_person === 'number' ? b.price_per_person : Number.POSITIVE_INFINITY
       if (priceA !== priceB) {
         return priceA - priceB
       }
@@ -168,8 +168,8 @@ export async function rankCandidates(
   } else if (priceSort === 'desc' || priceSort === 'highest' || priceSort === 'premium') {
     // Sort from highest to cheapest; for identical price, sort by match_score descending
     scored.sort((a, b) => {
-      const priceA = typeof a.price_per_person === 'number' ? a.price_per_person : 120000
-      const priceB = typeof b.price_per_person === 'number' ? b.price_per_person : 120000
+      const priceA = typeof a.price_per_person === 'number' ? a.price_per_person : Number.NEGATIVE_INFINITY
+      const priceB = typeof b.price_per_person === 'number' ? b.price_per_person : Number.NEGATIVE_INFINITY
       if (priceA !== priceB) {
         return priceB - priceA
       }

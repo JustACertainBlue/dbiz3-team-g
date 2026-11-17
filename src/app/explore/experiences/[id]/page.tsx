@@ -13,11 +13,7 @@ import { hasQuoteRequest } from '../../../../lib/demo/commercial-handoff-service
 import { Lock, ShieldCheck } from 'lucide-react';
 import '../../explore-v9.css';
 import { categoryLabel } from '../../../../lib/explore/display-labels';
-
-function durationLabel(minutes: number) {
-  const h = Math.floor(minutes / 60), m = minutes % 60;
-  return h && m ? `${h} giờ ${m} phút` : h ? `${h} giờ` : `${m} phút`;
-}
+import { formatExperienceCapacity, formatExperienceDuration } from '../../../../lib/experience-facts';
 
 function slotLabel(value: string) {
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
@@ -46,8 +42,8 @@ export default async function ExperienceEntry({ params }: { params: { id: string
           <p className="xv-detail__provider"><span>{card.provider_name} — {card.location.village_name}</span><span className="xv-verified xv-verified--inline"><ShieldCheck aria-hidden="true" size={16} />Đã xác minh</span></p>
           <dl className="xv-detail__facts">
             <div><dt>Giá</dt><dd>{isAgency && detail.pricing_breakdown ? <>{detail.pricing_breakdown.price_per_person.toLocaleString('vi-VN')} ₫/khách</> : <span className="xv-price--locked"><Lock aria-hidden="true" size={16} />Đăng nhập để xem giá</span>}</dd></div>
-            <div><dt>Sức chứa</dt><dd>Tối đa {card.capacity.max_pax} khách</dd></div>
-            <div><dt>Thời lượng</dt><dd>{durationLabel(card.duration_minutes)}</dd></div>
+            <div><dt>Sức chứa</dt><dd>{formatExperienceCapacity(card.capacity.max_pax)}</dd></div>
+            <div><dt>Thời lượng</dt><dd>{formatExperienceDuration(card.duration_minutes)}</dd></div>
             <div><dt>Loại hoạt động</dt><dd>{categoryLabel(card.type)}</dd></div>
           </dl>
           {isAgency
@@ -78,7 +74,7 @@ export default async function ExperienceEntry({ params }: { params: { id: string
       </div>
 
       <section className="related-section"><div className="section-heading"><div><p className="eyebrow">Tiếp tục khám phá</p><h2>Trải nghiệm liên quan</h2></div><Link href={back}>Xem tất cả →</Link></div>
-        {detail.related_experiences.length ? <div className="related-grid">{detail.related_experiences.slice(0, 3).map((related, index) => <Link className="related-card" key={related.id} href={`/explore/experiences/${related.id}`}><div className={`related-card__art related-card__art--${index}`}><MediaImage src={related.images[0]?.storage_key} alt={related.name}/><span>{related.type}</span></div><div><small>{related.location.village_name}</small><strong>{related.name}</strong><span>{related.duration_minutes} phút · tối đa {related.capacity.max_pax} khách</span></div></Link>)}</div> : <p>Chưa có trải nghiệm liên quan.</p>}
+        {detail.related_experiences.length ? <div className="related-grid">{detail.related_experiences.slice(0, 3).map((related, index) => <Link className="related-card" key={related.id} href={`/explore/experiences/${related.id}`}><div className={`related-card__art related-card__art--${index}`}><MediaImage src={related.images[0]?.storage_key} alt={related.name}/><span>{related.type}</span></div><div><small>{related.location.village_name}</small><strong>{related.name}</strong><span>{formatExperienceDuration(related.duration_minutes)} · {formatExperienceCapacity(related.capacity.max_pax)}</span></div></Link>)}</div> : <p>Chưa có trải nghiệm liên quan.</p>}
       </section>
     </main>
     <footer className="explore-footer"><div><strong>Hanoi Artisan Bridge</strong><p>Nơi di sản trở thành hành trình đáng nhớ.</p></div><Link href={back}>Quay lại Explore</Link></footer>

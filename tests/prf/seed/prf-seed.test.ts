@@ -99,10 +99,10 @@ describe('T008 | PRF Seed Data Smoke Test', () => {
       expect(nanGom!.price_per_person).toBe(150000)
     })
 
-    it('"Nặn gốm thủ công" has max_participants = 12 as stated in seed', async () => {
+    it('"Nặn gốm thủ công" has max_participants = 30 as stated in seed', async () => {
       const experiences = await loadExperiences()
       const nanGom = experiences.find(e => e.experience_id === 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69')
-      expect(nanGom!.max_participants).toBe(12)
+      expect(nanGom!.max_participants).toBe(30)
     })
 
     it('"Làm nón lá" (b70bd0fa) has price_per_person = 225000 VND as stated in seed', async () => {

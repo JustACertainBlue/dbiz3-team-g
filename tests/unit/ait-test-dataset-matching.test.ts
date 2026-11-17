@@ -12,7 +12,7 @@ import { applyHardConstraints } from '@/lib/matching/constraint-engine'
 import { rankCandidates } from '@/lib/matching/scoring-engine'
 import { buildRecommendations } from '@/lib/matching/recommendation-service'
 
-function priceOf(candidate: { price_per_person?: number }): number {
+function priceOf(candidate: { price_per_person?: number | null }): number {
   const price = candidate.price_per_person
   expect(price).toEqual(expect.any(Number))
   if (typeof price !== 'number') throw new Error('Expected ranked candidate to have a numeric price')
@@ -52,7 +52,6 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
       expect(c.village_name).toBeTruthy()
       expect(c.name).toBeTruthy()
       expect(c.category).toBeTruthy()
-      expect(typeof c.price_per_person).toBe('number')
       expect(c.provider_status).toBe('Verified')
       expect(c.has_published_profile_version).toBe(true)
     }
@@ -70,6 +69,33 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
     const daoThuc = candidates.find(c => c.experience_id === 'dao-thuc-a01')
     expect(daoThuc).toBeDefined()
     expect(daoThuc?.village_name).toBe('Làng múa rối nước Đào Thục')
+
+    const activityWithUnknownFacts = candidates.find(c => c.experience_id === 'bat-trang-a04')
+    expect(activityWithUnknownFacts?.duration_minutes).toBeNull()
+    expect(activityWithUnknownFacts?.price_per_person).toBeNull()
+    expect(activityWithUnknownFacts?.max_participants).toBeNull()
+  })
+
+  it('shows a test village starting price from its known activity prices only', () => {
+    const candidate = getTestCandidates().find(c => c.village_id === 'bat-trang')
+    expect(candidate).toBeDefined()
+    const knownPrices = getTestCandidates()
+      .filter(c => c.village_id === 'bat-trang' && typeof c.price_per_person === 'number')
+      .flatMap(c => typeof c.price_per_person === 'number' ? [c.price_per_person] : [])
+    expect(knownPrices.length).toBeGreaterThan(0)
+    expect(resolveTestVillageCards('Bát Tràng')[0].starting_price).toBe(Math.min(...knownPrices))
+  })
+
+  it('keeps missing facts on test activity cards instead of defaulting capacity, duration or price', () => {
+    const source = getTestCandidates().find(candidate =>
+      candidate.duration_minutes == null && candidate.price_per_person == null,
+    )
+    expect(source).toBeDefined()
+    const activity = resolveTestActivityCards(source!.name)
+      .find(card => card.experience_id === source!.experience_id)
+    expect(activity?.duration_minutes).toBeNull()
+    expect(activity?.max_participants).toBeNull()
+    expect(activity?.price_per_person).toBeNull()
   })
 
   it('resolves test village, provider and activity cards from test dataset', () => {
@@ -131,7 +157,7 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
   })
 
   it('ranks activities from cheapest to highest when user requests low price', async () => {
-    const candidates = getTestCandidates()
+    const candidates = getTestCandidates().filter(c => typeof c.price_per_person === 'number')
     const profile = {
       price_sort: 'lowest',
       hard_constraints: { group_size: 10, max_budget_per_person: 500000 },
@@ -149,7 +175,7 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
   })
 
   it('ranks activities from highest to cheapest when user requests high price / premium', async () => {
-    const candidates = getTestCandidates()
+    const candidates = getTestCandidates().filter(c => typeof c.price_per_person === 'number')
     const profile = {
       price_sort: 'highest',
       hard_constraints: { group_size: 10, max_budget_per_person: 500000 },

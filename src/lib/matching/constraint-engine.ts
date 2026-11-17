@@ -30,8 +30,8 @@ export interface RouteFeasibleCandidate {
   experience_name?: string
   category?: string
   experience_type?: string
-  price_per_person: number
-  max_participants: number
+  price_per_person: number | null
+  max_participants: number | null
   distance_km: number
   travel_time_minutes: number
   location?: LocationCoord
@@ -73,12 +73,12 @@ export async function applyHardConstraints(
 
   for (const c of candidates) {
     // 1. Capacity constraint
-    if (reqGroupSize > 0 && c.max_participants < reqGroupSize) {
+    if (reqGroupSize > 0 && c.max_participants != null && c.max_participants < reqGroupSize) {
       continue
     }
 
     // 2. Budget constraint
-    if (maxBudget !== undefined && c.price_per_person > maxBudget) {
+    if (maxBudget !== undefined && c.price_per_person != null && c.price_per_person > maxBudget) {
       continue
     }
 

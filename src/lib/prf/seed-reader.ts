@@ -20,9 +20,9 @@ export interface SeedExperience {
   name: string
   description: string
   category: string
-  duration_minutes: number
-  price_per_person: number
-  max_participants: number
+  duration_minutes: number | null
+  price_per_person: number | null
+  max_participants: number | null
   notice_period_hours: number
   archived_at?: string | null
   [key: string]: unknown
@@ -64,12 +64,18 @@ export async function loadExperiences(): Promise<SeedExperience[]> {
     name: r.title || r.name,
     description: r.description,
     category: r.category,
-    duration_minutes: Number(r.duration_minutes || 0),
-    price_per_person: Number(r.price_per_person || 0),
-    max_participants: Number(r.max_participants || 0),
+    duration_minutes: optionalNumber(r.duration_minutes),
+    price_per_person: optionalNumber(r.price_per_person),
+    max_participants: optionalNumber(r.max_participants),
     notice_period_hours: Number(r.notice_period_hours || 0),
     archived_at: r.archived_at || null,
   }))
+}
+
+function optionalNumber(value: string | null | undefined): number | null {
+  if (value == null || value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 export async function loadOperatingHours(): Promise<SeedOperatingHours[]> {

@@ -72,11 +72,17 @@ describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8
     expect(villages(ten.matching)[0]).toBe('Vạn Phúc')
 
     const fifteen = await turn(id, 'Change to 15 pax')
-    expect(villages(fifteen.matching)).toEqual(['Quất Động', 'Chuông'])
+    expect(villages(fifteen.matching)).toContain('Quất Động')
+    expect(villages(fifteen.matching)).toContain('Chuông')
+    for (const match of fifteen.matching!.top_matches) {
+      expect(match.max_participants == null || match.max_participants >= 15).toBe(true)
+    }
 
     const thirteen = await turn(id, 'Change to 13 pax')
-    expect(villages(thirteen.matching)).toHaveLength(4)
-    expect(villages(thirteen.matching)).not.toContain('Bát Tràng')
+    expect(villages(thirteen.matching)).toContain('Bát Tràng')
+    for (const match of thirteen.matching!.top_matches) {
+      expect(match.max_participants == null || match.max_participants >= 13).toBe(true)
+    }
 
     const twoHundred = await turn(id, 'Change to 200 pax')
     expect(twoHundred.matching?.top_matches).toEqual([])
@@ -226,11 +232,13 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
 
     const relaxed = await turn(id, 'Change budget to 150,000 VND per person')
     expect(villages(relaxed.matching)).toContain('Bát Tràng')
+    const batTrang = relaxed.matching!.top_matches.find((match: Json) => match.village_name === 'Bát Tràng')
+    expect(batTrang?.village_starting_price).toBe(150000)
 
     const large = await turn(await openSession(), 'Silk weaving, 200 pax on 2026-11-20 from Hoàn Kiếm')
     expect(large.matching!.top_matches).toEqual([])
     expect(budgetSuggestion(large.matching)).toBeUndefined()
-    expect(large.matching!.relaxation_suggestions.conversation_prompt).toMatch(/16/)
+    expect(large.matching!.relaxation_suggestions.conversation_prompt).toMatch(/largest group an eligible Experience accepts is \d+ pax/)
     expect(JSON.stringify(large.matching)).not.toContain('600000')
   })
 })

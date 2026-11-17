@@ -4,8 +4,10 @@ import {
   updateExperience,
   deleteExperience,
   getExperienceById,
+  listProviderExperiences,
   type ExperienceInput,
 } from '@/lib/prf/experience-service'
+import { demoRepository } from '@/lib/db/application-store'
 import {
   providerSession,
   guestSession,
@@ -18,6 +20,37 @@ const OTHER_PROVIDER_ID = SEED_IDS.providerDraft
 describe('T024 | Experience Service Unit Tests (US-5)', () => {
   const ownerSession = providerSession(VERIFIED_PROVIDER_ID, SEED_IDS.provider1VerifiedUserId)
   const anotherProviderSession = providerSession(OTHER_PROVIDER_ID, SEED_IDS.providerDraftUserId)
+
+  it('preserves missing duration and capacity as null in experience reads', async () => {
+    const repository = demoRepository()
+    const experienceId = 'f9999999-9999-4999-8999-999999999999'
+    await repository.insert('experiences', {
+      experience_id: experienceId,
+      provider_id: VERIFIED_PROVIDER_ID,
+      name: 'Missing facts fixture',
+      description: '',
+      category: 'Unmapped',
+      duration_minutes: '',
+      price_per_person: '',
+      max_participants: '',
+      notice_period_hours: '',
+      experience_location_address: '',
+      archived_at: '',
+    })
+
+    try {
+      await expect(getExperienceById(experienceId)).resolves.toMatchObject({
+        duration_minutes: null,
+        price_per_person: null,
+        max_participants: null,
+      })
+      await expect(listProviderExperiences(VERIFIED_PROVIDER_ID, ownerSession)).resolves.toContainEqual(
+        expect.objectContaining({ experience_id: experienceId, duration_minutes: null, max_participants: null }),
+      )
+    } finally {
+      await repository.remove('experiences', row => row.experience_id === experienceId)
+    }
+  })
 
   const validNewExperience: ExperienceInput = {
     name: 'Nặn gốm vuốt tay nâng cao',

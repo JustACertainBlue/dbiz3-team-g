@@ -13,14 +13,15 @@ import { providerPageView } from '@/lib/prf/provider-page-view'
 import { providerBkgLinks } from '@/lib/booking/nav-links'
 import StatusBadge from '@/app/components/StatusBadge'
 import { statusLabel } from '@/lib/status-labels'
+import { formatExperienceCapacity, formatExperienceDuration } from '@/lib/experience-facts'
 
 interface ProviderExperience {
   experience_id: string
   name: string
   category?: string
-  duration_minutes?: number
-  max_participants?: number
-  price_per_person?: number
+  duration_minutes?: number | null
+  max_participants?: number | null
+  price_per_person?: number | null
 }
 
 interface ProviderData {
@@ -45,7 +46,9 @@ interface ProviderData {
   experiences?: ProviderExperience[]
 }
 
-const vnd = (value?: number) => (value ?? 0).toLocaleString('vi-VN')
+const vnd = (value?: number | null) => value == null
+  ? 'Chưa có dữ liệu'
+  : value.toLocaleString('vi-VN')
 
 export default function ProviderProfilePage({
   params,
@@ -189,10 +192,10 @@ export default function ProviderProfilePage({
                 <div key={exp.experience_id} className="spec-exp-card">
                   <div className="spec-exp-body">
                     <div className="spec-exp-header-tag"><span>{exp.category}</span></div>
-                    <div className="spec-exp-specs">🕒 {exp.duration_minutes} phút · 👥 Tối đa {exp.max_participants} khách</div>
+                    <div className="spec-exp-specs">🕒 {formatExperienceDuration(exp.duration_minutes)} · 👥 {formatExperienceCapacity(exp.max_participants)}</div>
                     <div className="spec-exp-title">{exp.name}</div>
                     <div className="spec-exp-pricing-box">
-                      <span className="spec-exp-b2b-rate">{vnd(exp.price_per_person)} ₫ <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>/ khách</span></span>
+                      <span className="spec-exp-b2b-rate">{vnd(exp.price_per_person)}{exp.price_per_person == null ? '' : <> ₫ <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>/ khách</span></>}</span>
                     </div>
                     <div className="spec-exp-actions">
                       <Link href={experienceHref(exp.experience_id)} style={{ fontSize: '0.78rem', color: '#111827', fontWeight: 700 }}>Xem chi tiết</Link>

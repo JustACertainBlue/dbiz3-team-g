@@ -23,9 +23,9 @@ export interface Experience {
   category: string
   experience_type?: string
   craft_type?: string
-  duration_minutes: number
-  price_per_person: number
-  max_participants: number
+  duration_minutes: number | null
+  price_per_person: number | null
+  max_participants: number | null
   notice_period_hours: number
   experience_location_address: string
   provider_verification_status: string
@@ -48,7 +48,11 @@ const SEED_TAGS_MAP: Record<string, string[]> = {
   '67a2cbab-850c-5f69-b496-59f2e9a5f594': ['điêu khắc gỗ', 'tạc tượng'],
 }
 
-
+function optionalNumber(value: string | null | undefined): number | null {
+  if (value == null || value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
 
 export async function loadVillages(): Promise<Village[]> {
   const rows = (await demoRepository().all('villages'))
@@ -93,9 +97,9 @@ export async function loadExperiences(): Promise<Experience[]> {
         description: row.description,
         category: row.category,
         experience_type: row.category,
-        duration_minutes: parseInt(row.duration_minutes || '60', 10),
-        price_per_person: parseFloat(row.price_per_person || '0'),
-        max_participants: parseInt(row.max_participants || '20', 10),
+        duration_minutes: optionalNumber(row.duration_minutes),
+        price_per_person: optionalNumber(row.price_per_person),
+        max_participants: optionalNumber(row.max_participants),
         notice_period_hours: parseInt(row.notice_period_hours || '24', 10),
         experience_location_address: row.experience_location_address,
         provider_verification_status: 'Approved',

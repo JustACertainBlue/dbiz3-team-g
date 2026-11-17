@@ -50,6 +50,12 @@ export class ExperienceError extends Error {
 
 const DEFAULT_OWNER_ID = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
 
+function optionalNumber(value: string | null | undefined): number | null {
+  if (value == null || value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 async function assertUploadedImage(image: ExperienceImageInput, uploadedBy: string) {
   const id=image.url.match(/^\/api\/prf\/media\/([0-9a-f-]{36})$/i)?.[1]
   if (!id) return
@@ -392,9 +398,9 @@ export async function getExperienceById(experienceId: string): Promise<unknown> 
     }))).flat()
   return {
     ...row,
-    duration_minutes: Number(row.duration_minutes),
-    price_per_person: Number(row.price_per_person),
-    max_participants: Number(row.max_participants),
+    duration_minutes: optionalNumber(row.duration_minutes),
+    price_per_person: optionalNumber(row.price_per_person),
+    max_participants: optionalNumber(row.max_participants),
     notice_period_hours: Number(row.notice_period_hours),
     has_active_bookings: bookings.some(booking => booking.status === 'On hold' || booking.status === 'Booked'),
     deletion_outcome: bookings.some(booking => ['On hold','Booked'].includes(booking.status)) ? 'blocked' : bookings.length ? 'archive' : 'delete',
@@ -415,9 +421,9 @@ export async function listProviderExperiences(providerId: string, actorSession: 
     .filter(row => row.provider_id === providerId && (includeArchived || !row.archived_at))
     .map(row => ({
       ...row,
-      duration_minutes: Number(row.duration_minutes),
-      price_per_person: Number(row.price_per_person),
-      max_participants: Number(row.max_participants),
+      duration_minutes: optionalNumber(row.duration_minutes),
+      price_per_person: optionalNumber(row.price_per_person),
+      max_participants: optionalNumber(row.max_participants),
       notice_period_hours: Number(row.notice_period_hours),
       has_active_bookings: bookings.some(booking => booking.experience_id === row.experience_id && (booking.status === 'On hold' || booking.status === 'Booked')),
     }))

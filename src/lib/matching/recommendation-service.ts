@@ -8,8 +8,8 @@ export interface RecommendationItem {
   experience_name?: string
   provider_name?: string
   village_name?: string
-  price_per_person?: number
-  max_participants?: number
+  price_per_person?: number | null
+  max_participants?: number | null
   distance_km?: number
   rank: number
   match_score: number
@@ -56,7 +56,7 @@ export function explain(item: any, _score: number): string {
   if (f.max_participants !== undefined && f.group_size !== undefined) {
     parts.push(`Takes up to ${f.max_participants} pax for your group of ${f.group_size}.`)
   }
-  if (f.budget_per_person !== undefined && f.price_per_person !== undefined) {
+  if (f.budget_per_person !== undefined && typeof f.price_per_person === 'number') {
     parts.push(`${vnd(f.price_per_person)} VND per person, within your ${vnd(f.budget_per_person)} VND budget.`)
   }
   if (f.distance_km !== undefined) {
@@ -120,7 +120,9 @@ export async function buildRelaxationSuggestions(
 ): Promise<RelaxationOutput> {
   const suggestions: RelaxationSuggestion[] = []
   const budget = criteria?.max_budget_per_person
-  const prices = applyScoreThreshold(candidates || []).map(c => Number(c.price_per_person)).filter(price => Number.isFinite(price))
+  const prices = applyScoreThreshold(candidates || [])
+    .map(c => c.price_per_person)
+    .filter((price): price is number => typeof price === 'number' && Number.isFinite(price))
   const cheapest = prices.length > 0 ? Math.min(...prices) : undefined
 
   if (budget !== undefined && cheapest !== undefined && cheapest > budget) {

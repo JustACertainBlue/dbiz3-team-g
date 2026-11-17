@@ -5,7 +5,7 @@ import { SEED_NOW } from '@/lib/booking/clock'
 import { createBooking } from '@/lib/booking/create-booking'
 
 // T014: OQ #7, OQ #8, duration > 0, spec #38, #42, Clarification #30, required fields.
-const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69' // 60 min, max 12, notice 24 h
+const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69' // 105 min, max 30, notice 24 h
 const AGENCY = '02e568d8-d65e-54b1-a554-b411150d1dcb'
 const provider = DEMO_IDENTITIES.provider
 const options = { now: () => new Date(SEED_NOW) }
@@ -30,9 +30,9 @@ const rejectsWith = (body: Record<string, unknown>, code = 'VALIDATION_ERROR') =
 describe('T014 | createBooking input validation', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('OQ #7: group_size must be 1..max_participants (12)', async () => {
+  it('OQ #7: group_size must be 1..max_participants (30)', async () => {
     await expect(createBooking(provider, input({ group_size: 12 }), options)).resolves.toMatchObject({ status: 'On hold' })
-    await rejectsWith(input({ group_size: 13, start_at: '2026-10-12T11:00:00+07:00' }))
+    await rejectsWith(input({ group_size: 31, start_at: '2026-10-12T11:00:00+07:00' }))
     await rejectsWith(input({ group_size: 0, start_at: '2026-10-12T11:00:00+07:00' }))
     await rejectsWith(input({ group_size: 2.5, start_at: '2026-10-12T11:00:00+07:00' }))
   })

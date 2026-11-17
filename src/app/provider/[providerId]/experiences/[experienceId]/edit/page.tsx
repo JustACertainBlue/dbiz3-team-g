@@ -31,12 +31,22 @@ export default function EditExperiencePage({
 
   const [hasActiveBookings, setHasActiveBookings] = useState(false)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    category: string
+    duration_minutes: number | ''
+    price_per_person: number
+    max_participants: number | ''
+    notice_period_hours: number
+    experience_location_address: string
+    cancellation_rules_text: string
+    description: string
+  }>({
     name: '',
     category: 'Workshop/Hands-on',
-    duration_minutes: 90,
+    duration_minutes: '',
     price_per_person: 150000,
-    max_participants: 25,
+    max_participants: '',
     notice_period_hours: 24,
     experience_location_address: '',
     cancellation_rules_text: '',
@@ -57,8 +67,10 @@ export default function EditExperiencePage({
         setInitialPolicy(readCancellationPolicy(data.cancellation_policy)); setPolicy(readCancellationPolicy(data.cancellation_policy)); setGroup(data.group_discounts || []); setSpecial(data.special_rates || [])
         setFormData({
           name: data.name || '', category: data.category || 'Workshop/Hands-on',
-          duration_minutes: Number(data.duration_minutes || 60), price_per_person: Number(data.price_per_person || 0),
-          max_participants: Number(data.max_participants || 1), notice_period_hours: Number(data.notice_period_hours ?? 24),
+          duration_minutes: data.duration_minutes == null || data.duration_minutes === '' ? '' : Number(data.duration_minutes),
+          price_per_person: Number(data.price_per_person || 0),
+          max_participants: data.max_participants == null || data.max_participants === '' ? '' : Number(data.max_participants),
+          notice_period_hours: Number(data.notice_period_hours ?? 24),
           experience_location_address: data.experience_location_address || '',
           cancellation_rules_text: (() => {
             try { return JSON.parse(data.cancellation_policy || '{}').notes || '' } catch { return data.cancellation_policy || '' }
@@ -123,9 +135,9 @@ export default function EditExperiencePage({
         notice_period_hours: Number(formData.notice_period_hours),
         experience_location_address: formData.experience_location_address,
         ...(!hasActiveBookings ? {
-          duration_minutes: Number(formData.duration_minutes),
+          ...(formData.duration_minutes === '' ? {} : { duration_minutes: Number(formData.duration_minutes) }),
           price_per_person: Number(formData.price_per_person),
-          max_participants: Number(formData.max_participants),
+          ...(formData.max_participants === '' ? {} : { max_participants: Number(formData.max_participants) }),
         } : {}),
         ...cancellationPatch(initialPolicy, policy),
         group_discounts: group, special_rates: special,
@@ -311,7 +323,7 @@ export default function EditExperiencePage({
                     type="number"
                     disabled={hasActiveBookings}
                     value={formData.duration_minutes}
-                    onChange={e => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
+                    onChange={e => setFormData({ ...formData, duration_minutes: e.target.value === '' ? '' : Number(e.target.value) })}
                     className="prf-input prf-input-locked"
                   />
                 </div>
@@ -436,7 +448,7 @@ export default function EditExperiencePage({
                   type="number"
                   disabled={hasActiveBookings}
                   value={formData.max_participants}
-                  onChange={e => setFormData({ ...formData, max_participants: Number(e.target.value) })}
+                  onChange={e => setFormData({ ...formData, max_participants: e.target.value === '' ? '' : Number(e.target.value) })}
                   className="prf-input prf-input-locked"
                 />
               </div>

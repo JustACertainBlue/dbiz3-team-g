@@ -13,6 +13,7 @@ import { currentServerSession } from '../../lib/auth/server-session';
 import { getAgencyPreferenceProfile, rerankExploreForAgency } from '../../lib/preferences/preference-service';
 import './explore-v9.css';
 import { categoryLabel, craftLabel } from '../../lib/explore/display-labels';
+import { formatExperienceCapacity, formatExperienceDuration } from '../../lib/experience-facts';
 
 // Rendered per request (cookies, searchParams, live catalog). Without this, `next build` tries to
 // prerender the page and opens a database connection before noticing it is dynamic.
@@ -24,10 +25,6 @@ type Params = { page?: string; category?: string };
 // (no slider: screen-spec §9 "no new feature implied by decorative mockup copy"), one ranked list with the
 // permitted filter and pagination (no search: spec-EXP Q8/Q11), Guest analytics consent kept (EXP120 #2, SR-004),
 // AI Matching for Agency only (EXP120 SR-003), no booking button (BKG BR-002).
-function durationLabel(minutes: number) {
-  const h = Math.floor(minutes / 60), m = minutes % 60;
-  return h && m ? `${h} giờ ${m} phút` : h ? `${h} giờ` : `${m} phút`;
-}
 const vnd = (value: number) => `${value.toLocaleString('vi-VN')} ₫`;
 
 export default async function ExplorePage({ searchParams }: { searchParams: Params }) {
@@ -154,7 +151,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
                 {card.images[0] ? <MediaImage src={card.images[0].storage_key} alt={card.name} /> : <span className="xv-placeholder" aria-hidden="true"><ImageIcon size={28} /></span>}
               </div>
               <div className="xv-card__body">
-                <p className="xv-card__meta"><span className="xv-tag">{card.location.village_name}</span><span>{durationLabel(card.duration_minutes)} · Tối đa {card.capacity.max_pax} khách</span></p>
+                <p className="xv-card__meta"><span className="xv-tag">{card.location.village_name}</span><span>{formatExperienceDuration(card.duration_minutes)} · {formatExperienceCapacity(card.capacity.max_pax)}</span></p>
                 <h3>{card.name}</h3>
                 <p className="xv-card__provider"><span className="xv-verified xv-verified--inline"><ShieldCheck aria-hidden="true" size={14} />Đã xác minh</span><Link href={`/explore/providers/${card.provider_id}`}>{card.provider_name}</Link></p>
                 <p className="xv-card__desc">{card.description}</p>

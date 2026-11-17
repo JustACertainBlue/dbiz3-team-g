@@ -39,6 +39,11 @@ export function detectLeak(
   return Array.from(leaks);
 }
 
+export function hasAffirmativeBookingClaim(text: string): boolean {
+  return /(?<![\p{L}\p{N}])(?:đã\s+(?:được\s+)?(?:đặt|xác\s*nhận|chốt)(?:\s+(?:tour|lịch|chuyến))?|(?:tour|lịch|chuyến)\s+đã\s+(?:được\s+)?(?:đặt|xác\s*nhận|chốt)|your\s+tour\s+(?:is\s+)?(?:booked|confirmed))(?![\p{L}\p{N}])/iu
+    .test(text)
+}
+
 function extractNumbers(text: string): number[] {
   const numbers: number[] = [];
 
@@ -87,7 +92,7 @@ export function postCheckMessage({
   message: string;
   violations: ('number' | 'card_name' | 'name' | 'leak')[];
 } {
-  const violations: ('number' | 'card_name' | 'name' | 'leak')[] = [];
+  const violations: ('number' | 'card_name' | 'name' | 'leak' | 'booking_claim')[] = [];
 
   // Check 1: Numbers
   const numbersInMsg = extractNumbers(message);
@@ -109,6 +114,10 @@ export function postCheckMessage({
         break;
       }
     }
+  }
+
+  if (hasAffirmativeBookingClaim(message)) {
+    violations.push('booking_claim')
   }
 
   // Check 3: Known names not in allowedNames

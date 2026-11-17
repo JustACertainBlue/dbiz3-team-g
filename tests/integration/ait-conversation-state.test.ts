@@ -659,6 +659,58 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     expect(unavailable.json.turn.message).not.toContain(cards[0].experience_name)
   })
 
+  it('refuses to claim that the AI placed or finalized a tour and gives verified next steps (T12)', async () => {
+    const sessionId = await openSession()
+    const extraction = vi.spyOn(extractor, 'extractTourContext')
+    const classifier = vi.spyOn(llmRouter, 'classifyIntent')
+
+    for (const text of ['Đặt luôn cho tôi', 'Chốt tour này']) {
+      const response = await send(sessionId, text)
+      const message = response.json.turn.message as string
+
+      expect(response.status).toBe(200)
+      expect(response.json.turn.turn_type).toBe('answer')
+      expect(response.json.turn.sources).toContainEqual({
+        type: 'knowledge_base',
+        ref: 'contact_and_booking',
+      })
+      expect(message).toMatch(/không thể tự đặt, xác nhận hoặc chốt tour/i)
+      expect(message.length).toBeLessThanOrEqual(500)
+      expect(message).toContain('"Xin báo giá ngay"')
+      expect(message).toContain('"Chi tiết"')
+      expect(message).toMatch(/TODO: Xác minh đầu mối liên hệ/i)
+      expect(message).not.toMatch(/(?:đã\s+(?:đặt|xác nhận|chốt)\s+tour|tour\s+đã\s+(?:đặt|xác nhận|chốt))/i)
+    }
+
+    expect(extraction).not.toHaveBeenCalled()
+    expect(classifier).not.toHaveBeenCalled()
+  })
+
+  it('replaces an LLM-generated affirmative booking claim with verified guidance', async () => {
+    const sessionId = await openSession()
+    vi.spyOn(extractor, 'extractTourContext').mockResolvedValueOnce({
+      is_complete: false,
+      processing_status: 'Success',
+      retry_available: false,
+      follow_up_questions: [],
+      conversational_reply: 'Tour đã đặt thành công.',
+      tour_context: {},
+    })
+    vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
+      intent: 'provide_requirements',
+      confidence: 1,
+      source: 'llm',
+    })
+
+    const response = await send(sessionId, 'Tôi muốn xem thông tin')
+
+    expect(response.json.turn.message).not.toMatch(/(?:đã\s+(?:đặt|xác nhận|chốt)\s+tour|tour\s+đã\s+(?:đặt|xác nhận|chốt))/i)
+    expect(response.json.turn.turn_type).toBe('answer')
+    expect(response.json.turn.message).toMatch(/không thể tự đặt, xác nhận hoặc chốt tour/i)
+    expect(response.json.turn.message.length).toBeLessThanOrEqual(500)
+    expect(response.json.turn.message).toContain('"Xin báo giá ngay"')
+  })
+
   it('clears state only for an explicit reset and answers booking help without losing state (T22, T23)', async () => {
     const sessionId = await openSession()
     await send(sessionId, 'Tìm trải nghiệm dệt lụa cho 10 khách, ngày 20/11/2026, xuất phát từ Hoàn Kiếm')

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
+import { PLATFORM_KNOWLEDGE_BASE } from '@/lib/ai/knowledge-base'
 import {
   addMessage,
   getMatchingSession,
@@ -38,7 +39,7 @@ import {
   refusalTemplate,
   resultEndingCandidate,
 } from '@/lib/ait/messages'
-import { postCheckMessage } from '@/lib/ait/postcheck'
+import { hasAffirmativeBookingClaim, postCheckMessage } from '@/lib/ait/postcheck'
 import {
   explainStoredMatch,
   isMatchExplanationRequest,
@@ -49,6 +50,7 @@ import {
   applyConversationState,
   emptyConversationState,
   isAffirmativeReply,
+  isBookingActionRequest,
   isBookingHelpRequest,
   isCompleteConversationState,
   isExplicitConversationReset,
@@ -67,6 +69,23 @@ import fs from 'fs'
 import path from 'path'
 
 const rateLimiter = createRateLimiter({ limit: 20, windowMs: 60000 })
+
+function bookingGuidanceTurn() {
+  const knowledge = PLATFORM_KNOWLEDGE_BASE.find(item => item.id === 'contact_and_booking')
+  if (!knowledge) throw new Error('Booking guidance is missing from the knowledge base.')
+  return {
+    turn_type: 'answer' as const,
+    message: `Mình không thể tự đặt, xác nhận hoặc chốt tour.\n\n${knowledge.contentVi}`,
+    top_matches: [],
+    additional_suggestions: [],
+    comparison: null,
+    quick_replies: [],
+    follow_up_questions: [],
+    relaxation_suggestions: [],
+    sources: [{ type: 'knowledge_base', ref: knowledge.id }],
+    used_llm: false,
+  }
+}
 
 function pendingQuestionSatisfied(
   field: string,
@@ -244,6 +263,11 @@ export async function POST(
     }
 
     const storedContext = await getMatchingSessionContext(params.id)
+    if (!isRetry && isBookingActionRequest(originalText)) {
+      const turn = bookingGuidanceTurn()
+      return NextResponse.json({ turn, conversational_reply: turn.message }, { status: 200 })
+    }
+
     if (!isRetry && isMatchExplanationRequest(originalText)) {
       const knownExperienceNames = (await loadExperiences()).map(experience => experience.name)
       const answer = explainStoredMatch(originalText, storedContext, knownExperienceNames)
@@ -883,6 +907,9 @@ export async function POST(
 
     if (mixedScopeNotice) {
       turn.message = `${mixedScopeNotice} ${turn.message}`.slice(0, 500)
+    }
+    if (hasAffirmativeBookingClaim(turn.message)) {
+      turn = bookingGuidanceTurn()
     }
 
     const statusCode = isE2E ? 200 : isRetry ? 200 : 201

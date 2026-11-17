@@ -110,6 +110,11 @@ export function isBookingHelpRequest(text: string): boolean {
   return /(?:đặt\s+(?:tour|lịch)\s+(?:thế nào|như thế nào)|cách\s+đặt\s+tour|how\s+(?:do i|to)\s+book|book\s+now|request\s+a\s+quote)/i.test(text)
 }
 
+export function isBookingActionRequest(text: string): boolean {
+  return /(?:đặt\s+(?:luôn|ngay)(?:\s+(?:cho tôi|giúp tôi))?|(?:chốt|xác nhận)\s+(?:tour|lịch|chuyến)(?:\s+này)?|book\s+(?:it|this|now)|confirm\s+(?:this\s+)?tour)/i
+    .test(text)
+}
+
 export function isAffirmativeReply(text: string): boolean {
   return /^(?:có|ok|okay|ừ|ừm|được|đúng|đồng ý|yes|sure|yep)[!. ]*$/i.test(text.trim())
 }

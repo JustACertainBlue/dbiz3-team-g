@@ -24,7 +24,12 @@ export async function POST(
     }
     // spec-IAC #19: source AI Matching with the checked Matching Session.
     return NextResponse.json(await createChatHandoff(actor, experienceId, { source: 'AI Matching', matchingSessionId: params.id }), { status: 200 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: err instanceof HandoffError ? err.statusCode : 500 })
+  } catch (err: unknown) {
+    const statusCode = err instanceof HandoffError ? err.statusCode : 500
+    const isSafeHandoffError = err instanceof HandoffError && err.statusCode < 500
+    const error = isSafeHandoffError
+      ? err.message
+      : 'Đã xảy ra lỗi kỹ thuật khi mở Chat. Vui lòng thử lại sau.'
+    return NextResponse.json({ error }, { status: statusCode })
   }
 }

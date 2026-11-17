@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { createMatchingSession } from '@/lib/matching/session-service'
+import * as handoffService from '@/lib/demo/commercial-handoff-service'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
@@ -121,6 +122,22 @@ describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8
     expect(otherOne.json.chat_session_id).not.toBe(chatOne.json.chat_session_id)
 
     expect(demoRepository().all('bookings').length).toBe(bookingsBefore)
+  })
+
+  it('distinguishes a technical Chat failure from an out-of-scope refusal', async () => {
+    const id = await openSession()
+    const refusal = await send(id, 'Can you recommend a restaurant?')
+    const createChat = vi.spyOn(handoffService, 'createChatHandoff')
+      .mockRejectedValue(new Error('Demo database is busy. Retry the operation.'))
+    const technical = await call(POST_CHAT, `/api/ait/sessions/${id}/chat`, 'agency', { experience_id: VAN_PHUC }, { id })
+    createChat.mockRestore()
+
+    expect(refusal.status).toBe(200)
+    expect(refusal.json.turn.message).toMatch(/ngoài phạm vi/i)
+    expect(technical.status).toBe(500)
+    expect(technical.json.error).toBe('Đã xảy ra lỗi kỹ thuật khi mở Chat. Vui lòng thử lại sau.')
+    expect(technical.json.error).not.toContain('Demo database is busy')
+    expect(technical.json.error).not.toBe(refusal.json.turn.message)
   })
 
   it('Guest → 401 and non-Agency → 403 on sessions, messages and matching (BR-001, BR-002)', async () => {

@@ -147,6 +147,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     'replaces unsupported AI follow-up questions about "%s" with a supported missing-field question',
     async (unsupportedTopic) => {
       const sessionId = await openSession()
+      await send(sessionId, 'Tìm trải nghiệm dệt lụa cho 10 khách, ngày 20/11/2026')
       vi.spyOn(extractor, 'extractTourContext').mockResolvedValueOnce({
         is_complete: false,
         processing_status: 'Success',
@@ -158,14 +159,15 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
       const response = await send(sessionId, 'Tìm trải nghiệm dệt lụa')
       const answer = response.json.extraction.conversational_reply
+      const pendingQuestion = (await getContext(sessionId)).pending_question
 
       expect(answer).not.toMatch(/ăn\s*trưa|nhà\s*hàng|chỗ\s*ăn|khách\s*sạn|\bxe\b|thời\s*tiết/i)
-      expect(answer).toMatch(/số lượng khách/i)
-      expect(response.json.extraction.follow_up_questions).toEqual([
-        'Quý khách vui lòng cho biết số lượng khách dự kiến tham gia đoàn?',
-        'Đoàn dự kiến khởi hành vào ngày nào (ví dụ: 25/11 hoặc Thứ Năm tuần tới)?',
-        'Đoàn sẽ xuất phát từ khu vực nào tại Hà Nội (origin, ví dụ: từ Hoàn Kiếm)?',
-      ])
+      expect(pendingQuestion.field).toBe('origin')
+      expect(pendingQuestion.text).toMatch(/xuất phát/i)
+      expect(pendingQuestion.text).not.toMatch(/\borigin\b/i)
+      expect(answer).toContain(pendingQuestion.text)
+      expect(answer).not.toMatch(/\borigin\b/i)
+      expect(response.json.extraction.follow_up_questions).toEqual([pendingQuestion.text])
     }
   )
 

@@ -1,4 +1,8 @@
-import { haversineDistanceKm, resolveOriginCoordinates } from './geo'
+import {
+  haversineDistanceKm,
+  locationUncertaintyKm,
+  resolveOriginCoordinates,
+} from './geo'
 
 export interface LocationCoord {
   lat: number
@@ -37,6 +41,8 @@ export interface RouteFeasibleCandidate {
   max_participants: number | null
   distance_km?: number
   distance_source?: 'haversine'
+  location_source?: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate'
+  radius_status?: 'confirmed' | 'unconfirmed'
   travel_time_minutes?: number
   location?: LocationCoord
   provider_verification_status?: string
@@ -69,15 +75,32 @@ export async function applyHardConstraints(
     }
 
     // 3. Route / Distance calculation
-    const distanceKm = haversineDistanceKm(c.location, resolveOriginCoordinates(constraints.origin))
-    if (
-      distanceKm !== undefined
-      && typeof constraints.radius_km === 'number'
-      && Number.isFinite(constraints.radius_km)
-      && constraints.radius_km > 0
-      && distanceKm > constraints.radius_km
-    ) {
-      continue
+    const hasReviewedLocation = (
+      c.location_source === 'from_plus_code'
+      || c.location_source === 'district_fallback'
+      || c.location_source === 'manual_gmaps'
+      || c.location_source === 'approximate'
+    )
+    const distanceKm = hasReviewedLocation
+      ? haversineDistanceKm(resolveOriginCoordinates(constraints.origin), c.location)
+      : undefined
+    const radiusKm = constraints.radius_km
+    const hasRadius = typeof radiusKm === 'number'
+      && Number.isFinite(radiusKm)
+      && radiusKm > 0
+    let radiusStatus: RouteFeasibleCandidate['radius_status']
+    if (hasRadius) {
+      if (distanceKm === undefined) {
+        radiusStatus = 'unconfirmed'
+      } else {
+        const uncertaintyKm = locationUncertaintyKm(c.location_source)
+        if (distanceKm - uncertaintyKm > radiusKm) {
+          continue
+        }
+        radiusStatus = distanceKm + uncertaintyKm <= radiusKm
+          ? 'confirmed'
+          : 'unconfirmed'
+      }
     }
 
     eligible.push({
@@ -85,6 +108,7 @@ export async function applyHardConstraints(
       max_capacity: c.max_capacity ?? c.max_participants,
       distance_km: distanceKm,
       distance_source: distanceKm !== undefined ? 'haversine' as const : undefined,
+      ...(radiusStatus ? { radius_status: radiusStatus } : {}),
       travel_time_minutes: distanceKm !== undefined ? Math.round(distanceKm * 2.5) : undefined,
     })
   }

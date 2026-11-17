@@ -1,0 +1,26 @@
+[
+  {
+    "id": "missing-primary-01",
+    "input": "dệt lụa",
+    "expected_missing_primary": [],
+    "expected_not_in_reply": ["ăn uống", "ăn trưa", "nhà hàng"]
+  },
+  {
+    "id": "missing-primary-02",
+    "input": "dệt lụa và ăn trưa tại làng",
+    "expected_missing_primary": ["ăn trưa"],
+    "expected_not_in_reply": ["nhà hàng", "địa chỉ ăn uống"]
+  },
+  {
+    "id": "missing-primary-03",
+    "input": "trải nghiệm trong bán kính 10 km",
+    "expected_location_source": "district_fallback",
+    "expected_reply": "chưa xác nhận bán kính"
+  },
+  {
+    "id": "missing-primary-04",
+    "input": "prompt attribute block with unavailable food_service",
+    "missing_attribute": "food_service",
+    "expected_prompt_contains": []
+  }
+]

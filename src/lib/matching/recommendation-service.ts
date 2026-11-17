@@ -61,7 +61,7 @@ export function explain(item: any, _score: number): string {
     parts.push(`${vnd(f.price_per_person)} VND per person, within your ${vnd(f.budget_per_person)} VND budget.`)
   }
   if (f.distance_km !== undefined) {
-    parts.push(`About ${f.distance_km} km straight-line from ${f.origin ?? 'your starting point'}.`)
+    parts.push(`About ${f.distance_km.toFixed(1)} km straight-line from ${f.origin ?? 'your starting point'}.`)
   }
   if (parts.length === 0) {
     return 'A verified traditional craft experience matching your tour criteria.'

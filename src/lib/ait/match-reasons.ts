@@ -86,7 +86,8 @@ export function explainStoredMatch(
 
   const targetMatch = text.match(/(?:giá|hoạt động|trải nghiệm|tour)\s+(?:của\s+)?(.+?)[?!.]*$/i)
   const explicitTarget = targetMatch?.[1]?.trim().replace(/[?!.]+$/, '')
-  if (!selected && explicitTarget) {
+  const genericReference = /^(?:này|đó|ấy|vừa rồi|ở trên)$/i.test(explicitTarget ?? '')
+  if (!selected && explicitTarget && !genericReference) {
     const normalizedTarget = normalizeText(explicitTarget)
     const knownName = knownExperienceNames.find(name =>
       normalizedTarget.includes(normalizeText(name))

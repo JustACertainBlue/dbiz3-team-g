@@ -130,4 +130,41 @@ describe('T004 | Seed Data Loader Verification', () => {
       expect(providerActivity?.duration_minutes).toBe(experience.duration_minutes)
     }
   })
+
+  it('attaches only shared-lookup village coordinates and leaves missing villages unknown', async () => {
+    const villageIdWithCoordinates = 'c0d0d95f-d59c-5c35-946a-f397e380dd14'
+    const coordinateLookup = {
+      by_village_id: {
+        [villageIdWithCoordinates]: {
+          lat: 21.0123456,
+          lng: 105.7654321,
+          precision: 'district_centroid' as const,
+        },
+      },
+      by_normalized_name: {},
+    }
+
+    const enrichedLookup = {
+      by_village_id: {
+        [villageIdWithCoordinates]: {
+          geo: coordinateLookup.by_village_id[villageIdWithCoordinates],
+        },
+      },
+      by_normalized_name: {},
+    }
+    const experiences = await loadExperiences(enrichedLookup)
+    const geocoded = experiences.filter((experience) => experience.village_id === villageIdWithCoordinates)
+    const withoutCoordinates = experiences.filter((experience) => experience.village_id !== villageIdWithCoordinates)
+
+    expect(geocoded.length).toBeGreaterThan(0)
+    expect(geocoded.map((experience) => experience.location_source))
+      .toEqual(geocoded.map(() => 'district_fallback'))
+    expect(geocoded.map((experience) => experience.location))
+      .toEqual(geocoded.map(() => ({ lat: 21.0123456, lng: 105.7654321 })))
+    expect(withoutCoordinates.length).toBeGreaterThan(0)
+    expect(withoutCoordinates.map((experience) => experience.location_source))
+      .toEqual(withoutCoordinates.map(() => undefined))
+    expect(withoutCoordinates.map((experience) => experience.location))
+      .toEqual(withoutCoordinates.map(() => undefined))
+  })
 })

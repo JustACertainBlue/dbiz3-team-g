@@ -12,6 +12,8 @@ interface ResultMessageMatch {
   price_per_person: number | null;
   distance_km?: number | null;
   distance_source?: 'haversine';
+  location_source?: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate';
+  radius_status?: 'confirmed' | 'unconfirmed';
 }
 
 const CRAFT_LABELS_VI: Record<string, string> = {
@@ -50,6 +52,8 @@ export function buildResultsMessage({
   noResultsWithinRadius = false,
   excludedVillages = [],
   excludedCrafts = [],
+  missingPrimary = [],
+  originUnresolved,
   priceSort,
   matches,
   ending,
@@ -66,6 +70,8 @@ export function buildResultsMessage({
   noResultsWithinRadius?: boolean;
   excludedVillages?: string[];
   excludedCrafts?: string[];
+  missingPrimary?: string[];
+  originUnresolved?: string;
   priceSort?: 'asc' | 'desc';
   matches?: ResultMessageMatch[];
   ending?: string;
@@ -74,8 +80,12 @@ export function buildResultsMessage({
   const dateScheduleNote = dateScheduleUnconfirmed
     ? 'Chưa có dữ liệu về lịch ngày này, gồm ngày nghỉ hoặc đóng cửa đặc biệt; bạn nên xác nhận với nhà cung cấp.'
     : undefined;
+  const missingPrimaryNotes = (missingPrimary ?? [])
+    .map(field => `Chưa có dữ liệu về ${field}.`)
   const withNotices = (message: string) =>
-    [message, dateScheduleNote, ending?.trim()].filter((line): line is string => Boolean(line)).join('\n\n');
+    [message, ...missingPrimaryNotes, dateScheduleNote, originUnresolved, ending?.trim()]
+      .filter((line): line is string => Boolean(line))
+      .join('\n\n')
   const hasCompleteDistances = Boolean(
     matches
     && matches.length > 0
@@ -84,14 +94,43 @@ export function buildResultsMessage({
       match.distance_source === 'haversine'
       && typeof match.distance_km === 'number'
       && Number.isFinite(match.distance_km)
+      && Boolean(match.location_source)
     )
   );
+  const hasMissingDistance = !matches
+    || matches.length !== count
+    || matches.some(match =>
+      match.distance_source !== 'haversine'
+      || typeof match.distance_km !== 'number'
+      || !Number.isFinite(match.distance_km)
+    )
+  const hasUnconfirmedRadius = Boolean(
+    radiusKm != null
+    && (hasMissingDistance || matches?.some(match => match.radius_status === 'unconfirmed'))
+  )
+  const hasApproximateRadius = Boolean(
+    matches?.some(match =>
+      match.location_source === 'approximate' && match.radius_status === 'unconfirmed'
+    )
+  )
+  const radiusNote = radiusKm == null
+    ? undefined
+    : hasMissingDistance
+      ? `Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${radiusKm} km.`
+      : hasUnconfirmedRadius
+        ? hasApproximateRadius
+          ? `Có trải nghiệm chưa xác nhận bán kính ${radiusKm} km do tọa độ xấp xỉ.`
+          : `Có trải nghiệm chưa xác nhận bán kính ${radiusKm} km do sai số ước tính theo huyện.`
+        : undefined
   if (radiusKm != null && count === 0 && noResultsWithinRadius) {
     const from = origin ? ` tính từ ${origin}` : '';
     return withNotices(`Không tìm thấy trải nghiệm nào phù hợp trong bán kính ${radiusKm} km${from}. Mình không tự mở rộng bán kính.`);
   }
   if (count === 0) {
-    return withNotices('Không tìm thấy trải nghiệm nào phù hợp với các tiêu chí hiện tại.');
+    const noMatches = 'Không tìm thấy trải nghiệm nào phù hợp với các tiêu chí hiện tại.'
+    return withNotices(radiusKm != null
+      ? `${noMatches}\n\n${radiusNote ?? `Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${radiusKm} km.`}`
+      : noMatches)
   }
   if (craft) criteria.push(`nghề ${craft}`);
   if (start_date) {
@@ -103,14 +142,12 @@ export function buildResultsMessage({
   }
   if (max_budget_per_person != null) criteria.push(`ngân sách tối đa ${formatVND(max_budget_per_person)}đ/người`);
   if (origin) criteria.push(`điểm xuất phát ${origin}`);
-  if (radiusKm != null && hasCompleteDistances) criteria.push(`bán kính ${radiusKm} km`);
+  if (radiusKm != null && hasCompleteDistances && !hasUnconfirmedRadius) criteria.push(`bán kính ${radiusKm} km`);
 
   const group = group_size != null ? ` cho nhóm ${group_size} khách` : '';
   const qualifier = criteria.length > 0 ? ` (${criteria.join(', ')})` : '';
   const lines = [`Mình tìm được ${count} trải nghiệm${group}${qualifier}.`];
-  if (radiusKm != null && !hasCompleteDistances) {
-    lines.push(`Chưa thể xác nhận bán kính ${radiusKm} km vì chưa có dữ liệu khoảng cách cho tất cả trải nghiệm.`);
-  }
+  if (radiusNote) lines.push(radiusNote)
   const exclusions = [
     ...excludedVillages,
     ...excludedCrafts.map(excludedCraft => `nghề ${excludedCraft}`),
@@ -125,18 +162,24 @@ export function buildResultsMessage({
     lines.push('');
     matches.forEach((match, index) => {
       const price = match.price_per_person == null
-        ? 'chưa có dữ liệu giá'
-        : `${formatVND(match.price_per_person)}đ/người`;
+        ? ''
+        : `: ${formatVND(match.price_per_person)}đ/người`;
       const distance = match.distance_source === 'haversine'
         && typeof match.distance_km === 'number'
         && Number.isFinite(match.distance_km)
-        ? ` (khoảng ${Math.round(match.distance_km)} km đường chim bay)`
-        : ' (chưa có dữ liệu khoảng cách)';
-      lines.push(`${index + 1}. ${match.experience_name}: ${price}${distance}`);
+        ? match.location_source === 'district_fallback'
+          ? ` (khoảng ${Math.round(match.distance_km)} km, ước tính theo huyện)`
+          : match.location_source === 'approximate'
+            ? ` (khoảng ${Math.round(match.distance_km)} km, tọa độ xấp xỉ)`
+            : ` (khoảng ${match.distance_km.toFixed(1)} km)`
+        : ''
+      lines.push(`${index + 1}. ${match.experience_name}${price}${distance}`);
     });
   }
 
+  if (missingPrimaryNotes.length > 0) lines.push('', ...missingPrimaryNotes)
   if (dateScheduleNote) lines.push('', dateScheduleNote);
+  if (originUnresolved) lines.push('', originUnresolved)
   if (ending?.trim()) lines.push('', ending.trim());
   return lines.join('\n');
 }

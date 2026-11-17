@@ -15,6 +15,7 @@ const makeCandidates = () => [
     max_participants: 20,
     price_per_person: 350000,
     location: { lat: 20.9994, lng: 105.8888 }, // Bat Trang
+    location_source: 'from_plus_code',
     provider_verification_status: 'Approved',
     has_published_profile_version: true,
   },
@@ -25,6 +26,7 @@ const makeCandidates = () => [
     max_participants: 5, // too small for group of 12
     price_per_person: 200000,
     location: { lat: 21.0025, lng: 105.7669 }, // Van Phuc
+    location_source: 'from_plus_code',
     provider_verification_status: 'Approved',
     has_published_profile_version: true,
   },
@@ -35,6 +37,7 @@ const makeCandidates = () => [
     max_participants: 30,
     price_per_person: 900000, // over budget
     location: { lat: 21.1667, lng: 105.5000 }, // Outlying craft location
+    location_source: 'from_plus_code',
     provider_verification_status: 'Approved',
     has_published_profile_version: true,
   },

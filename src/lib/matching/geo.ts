@@ -2,6 +2,22 @@ import { resolveHanoiDistrictCenter, type Coordinates } from './hanoi-district-c
 
 export type OriginCoordinates = Coordinates
 
+export const DEFAULT_HANOI_ORIGIN: OriginCoordinates = {
+  lat: 21.0285,
+  lng: 105.8542,
+}
+
+export const DISTRICT_FALLBACK_UNCERTAINTY_KM = 10
+export const APPROXIMATE_COORDINATE_UNCERTAINTY_KM = 3
+
+export function locationUncertaintyKm(
+  locationSource: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate' | undefined,
+): number {
+  if (locationSource === 'district_fallback') return DISTRICT_FALLBACK_UNCERTAINTY_KM
+  if (locationSource === 'approximate') return APPROXIMATE_COORDINATE_UNCERTAINTY_KM
+  return 0
+}
+
 function validCoordinates(value: unknown): Coordinates | undefined {
   if (!value || typeof value !== 'object') return undefined
   const record = value as Record<string, unknown>
@@ -48,9 +64,9 @@ export function haversineDistanceKm(
 export function resolveOriginCoordinates(origin: unknown): OriginCoordinates | undefined {
   const explicitCoordinates = validCoordinates(origin)
   if (explicitCoordinates) return explicitCoordinates
-  if (!origin || typeof origin !== 'object') {
-    return typeof origin === 'string' ? resolveHanoiDistrictCenter(origin) : undefined
-  }
+  if (origin == null || origin === '') return DEFAULT_HANOI_ORIGIN
+  if (typeof origin === 'string') return resolveHanoiDistrictCenter(origin)
+  if (typeof origin !== 'object') return undefined
 
   const record = origin as Record<string, unknown>
   const address = typeof record.origin_address === 'string'
@@ -58,5 +74,27 @@ export function resolveOriginCoordinates(origin: unknown): OriginCoordinates | u
     : typeof record.address === 'string'
       ? record.address
       : undefined
-  return resolveHanoiDistrictCenter(address)
+  return address?.trim() ? resolveHanoiDistrictCenter(address) : DEFAULT_HANOI_ORIGIN
+}
+
+export function originDisplayNotice(origin: unknown): string | undefined {
+  const coordinates = validCoordinates(origin)
+  if (coordinates) return undefined
+  const record = origin && typeof origin === 'object'
+    ? origin as Record<string, unknown>
+    : undefined
+  const address = typeof origin === 'string'
+    ? origin.trim()
+    : typeof record?.origin_address === 'string'
+      ? record.origin_address.trim()
+      : typeof record?.address === 'string'
+        ? record.address.trim()
+        : ''
+  if (!address && !record?.lat && !record?.lng) {
+    return 'Điểm xuất phát mặc định: trung tâm Hà Nội (Hồ Gươm).'
+  }
+  if (address && !resolveOriginCoordinates(origin)) {
+    return `Chưa xác định được điểm xuất phát “${address}”; không đoán và chưa tính khoảng cách.`
+  }
+  return undefined
 }

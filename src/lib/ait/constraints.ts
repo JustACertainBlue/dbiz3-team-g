@@ -1,4 +1,5 @@
 import { matchesCraftPreference } from '@/lib/matching/craft-taxonomy'
+import { locationUncertaintyKm } from '@/lib/matching/geo'
 
 function getNextDayUTC7(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -55,6 +56,7 @@ export function applyHardFilters({
   const matchingAttrs = profile?.matching_attributes ?? [];
 
   for (const candidate of candidates) {
+    let radiusUnconfirmed = false
     // 1. Status check
     const eligibleStatuses = ['verified', 'from_source_only'];
     if (!eligibleStatuses.includes(candidate.verification_status)) {
@@ -84,17 +86,21 @@ export function applyHardFilters({
       }
     }
 
-    if (
-      typeof radiusKm === 'number'
-      && Number.isFinite(radiusKm)
-      && radiusKm > 0
-      && candidate.distance_source === 'haversine'
-      && typeof candidate.distance_km === 'number'
-      && Number.isFinite(candidate.distance_km)
-      && candidate.distance_km > radiusKm
-    ) {
-      rejected.push({ id: candidate.id, reason: 'radius' });
-      continue;
+    if (typeof radiusKm === 'number' && Number.isFinite(radiusKm) && radiusKm > 0) {
+      if (
+        candidate.distance_source !== 'haversine'
+        || typeof candidate.distance_km !== 'number'
+        || !Number.isFinite(candidate.distance_km)
+      ) {
+        radiusUnconfirmed = true
+      } else {
+        const uncertaintyKm = locationUncertaintyKm(candidate.location_source)
+        if (candidate.distance_km - uncertaintyKm > radiusKm) {
+          rejected.push({ id: candidate.id, reason: 'radius' })
+          continue
+        }
+        radiusUnconfirmed = candidate.distance_km + uncertaintyKm > radiusKm
+      }
     }
 
     const includedCraft = matchingAttrs.find(
@@ -196,6 +202,9 @@ export function applyHardFilters({
     }
     if (candidate.notice_period_hours == null) {
       flags.push('notice_unknown');
+    }
+    if (radiusUnconfirmed) {
+      flags.push('radius_unconfirmed')
     }
 
     passed.push({ id: candidate.id, flags });

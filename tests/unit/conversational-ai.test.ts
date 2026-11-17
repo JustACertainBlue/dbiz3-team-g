@@ -10,6 +10,7 @@ import {
 } from '@/lib/ai/llm-service'
 import { QuotaManager } from '@/lib/ai/quota-manager'
 import { CloudflareAiClient } from '@/lib/ai/cloudflare-client'
+import { OpenRouterClient } from '@/lib/ai/openrouter-client'
 import { detectPromptInjection, buildSystemPrompt } from '@/lib/ai/prompt-templates'
 import { queryKnowledgeBase, PLATFORM_KNOWLEDGE_BASE } from '@/lib/ai/knowledge-base'
 import { extractTourContext } from '@/lib/ai/extractor'
@@ -113,6 +114,39 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
       expect(results.some(r => r.id === 'verified_craft_villages')).toBe(true)
     })
 
+    it('validates missing_primary from the LLM against only explicit unavailable requests', async () => {
+      const fakeCloudflare = {
+        isConfigured: () => true,
+        runChat: async () => ({
+          success: true,
+          modelUsed: 'fake-llm',
+          text: JSON.stringify({
+            intent: 'tour_matching',
+            conversational_reply: 'Mình đang tìm trải nghiệm dệt lụa phù hợp.',
+            missing_primary: ['ăn trưa', 'nhà hàng'],
+            extracted_context: { craft_preference: 'silk' },
+            is_tour_complete: false,
+            follow_up_questions: [],
+          }),
+        }),
+      } as unknown as CloudflareAiClient
+      const fakeOpenRouter = {
+        isConfigured: () => false,
+      } as unknown as OpenRouterClient
+
+      ConversationalAiService.setClients(fakeCloudflare, fakeOpenRouter)
+      try {
+        const result = await ConversationalAiService.processConversation([
+          { sender: 'Agency', text: 'dệt lụa và ăn trưa tại làng' },
+        ])
+
+        expect(result.missing_primary).toEqual(['ăn trưa'])
+        expect(result.conversational_reply).not.toContain('chưa có dữ liệu')
+      } finally {
+        ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
+      }
+    })
+
     it('routes system help and booking help to verified UI guidance', () => {
       expect(queryKnowledgeBase('system_help').some(item => item.id === 'contact_and_booking')).toBe(true)
       expect(queryKnowledgeBase('book_now').some(item => item.id === 'contact_and_booking')).toBe(true)
@@ -145,10 +179,39 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
       expect(result.conversational_reply).toContain('"Xin báo giá ngay"')
     })
 
+    it('T11: answers Vietnamese system and booking questions from the verified knowledge base', () => {
+      const result = ConversationalAiService.fallbackAnalysis(
+        [{ sender: 'Agency', text: 'Cách sử dụng hệ thống và đặt tour như thế nào?' }],
+        { inCooldown: false, provider: 'test', model: 'test' },
+        () => new Date('2026-11-17T00:00:00Z')
+      )
+
+      expect(result.intent).toBe('platform_guidance')
+      expect(result.conversational_reply).toContain('"Xin báo giá ngay"')
+      expect(result.conversational_reply).toMatch(/AI không tự đặt hoặc xác nhận tour/i)
+      expect(result.conversational_reply).toContain('TODO:')
+    })
+
+    it('T16: extracts supported tour fields from a mixed English-Vietnamese request', () => {
+      const result = ConversationalAiService.fallbackAnalysis(
+        [{ sender: 'Agency', text: 'We need dệt lụa for 10 khách on 20/11/2026 from Hoàn Kiếm' }],
+        { inCooldown: false, provider: 'test', model: 'test' },
+        () => new Date('2026-11-17T00:00:00Z')
+      )
+
+      expect(result.intent).toBe('tour_matching')
+      expect(result.tour_context).toMatchObject({
+        craft_preference: 'silk',
+        group_size: 10,
+        target_date_or_range: { start_date: '2026-11-20' },
+        origin_or_route: { origin_address: 'Hoàn Kiếm' },
+      })
+    })
+
     it('does not prompt the assistant to ask about meals or refreshments', () => {
       const prompt = buildSystemPrompt()
       expect(prompt).not.toMatch(/lunch\/refreshment needs/i)
-      expect(prompt).toMatch(/do not proactively suggest or ask about lunch/i)
+      expect(prompt).toMatch(/meal services .*outside scope: never suggest or search/i)
     })
   })
 

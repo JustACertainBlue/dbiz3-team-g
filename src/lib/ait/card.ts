@@ -126,10 +126,17 @@ export function buildMatchCard({
   if (factors.distance?.km != null) {
     caveats.push({
       key: 'distance',
-      text: `Khoảng ${Math.round(factors.distance.km)} km đường chim bay`,
+      text: candidate.location_source === 'district_fallback'
+        ? `Khoảng ${Math.round(factors.distance.km)} km, ước tính theo huyện`
+        : candidate.location_source === 'approximate'
+          ? `Khoảng ${Math.round(factors.distance.km)} km, tọa độ xấp xỉ`
+        : `Khoảng ${factors.distance.km.toFixed(1)} km`,
     });
-  } else {
+  } else if (candidate.distance_requested && !factors.radius_unconfirmed) {
     caveats.push({ key: 'distance', text: 'Chưa có dữ liệu khoảng cách' });
+  }
+  if (factors.radius_unconfirmed) {
+    caveats.push({ key: 'radius', text: 'Chưa xác nhận bán kính' })
   }
 
   return {
@@ -143,6 +150,14 @@ export function buildMatchCard({
     price_per_person: candidate.price_per_person ?? null,
     distance_km: candidate.distance_source === 'haversine' ? candidate.distance_km ?? null : null,
     ...(candidate.distance_source === 'haversine' ? { distance_source: 'haversine' as const } : {}),
+    ...(candidate.distance_source === 'haversine' && candidate.location_source
+      ? { location_source: candidate.location_source }
+      : {}),
+    ...(candidate.distance_requested ? { distance_requested: true } : {}),
+    ...(candidate.radius_status ? { radius_status: candidate.radius_status } : {}),
+    ...(candidate.distance_source === 'haversine' && candidate.distance_origin_label
+      ? { distance_origin_label: candidate.distance_origin_label }
+      : {}),
     max_participants: candidate.max_participants ?? null,
     notice_period_hours: candidate.notice_period_hours ?? null,
     image_url: candidate.image_url ?? null,

@@ -79,6 +79,9 @@ function cardFactors(candidate: ScoredCandidate): Record<string, unknown> {
   if (candidate.distance_source === 'haversine' && candidate.distance_km != null) {
     factors.distance = { km: candidate.distance_km }
   }
+  if (candidate.flags?.includes('radius_unconfirmed')) {
+    factors.radius_unconfirmed = true
+  }
   if (Array.isArray(candidate.tags) && candidate.tags.length > 0) {
     factors.tags = { matched: candidate.tags }
   }
@@ -116,8 +119,25 @@ export async function runAitMatchingPipeline({
   now = Date.now(),
 }: AitMatchingPipelineInput): Promise<AitMatchingPipelineResult> {
   const originCoordinates = resolveOriginCoordinates(profile?.hard_constraints?.origin)
+  const hasExplicitOrigin = Boolean(
+    profile?.hard_constraints?.origin?.origin_address
+    || profile?.hard_constraints?.origin?.address
+    || profile?.hard_constraints?.origin?.lat != null
+    || typeof profile?.hard_constraints?.origin === 'string',
+  )
+  const radiusRequested = typeof profile?.hard_constraints?.radius_km === 'number'
+    && profile.hard_constraints.radius_km > 0
+  const distanceRequested = hasExplicitOrigin || radiusRequested
+  const distanceOriginLabel = !hasExplicitOrigin
+    ? 'trung tâm Hà Nội (Hồ Gươm, mặc định)'
+    : undefined
   const enrichedCandidates = candidates.map((candidate) => {
-    const distanceKm = candidate.location_source === 'from_plus_code'
+    const distanceKm = (
+      candidate.location_source === 'from_plus_code'
+      || candidate.location_source === 'district_fallback'
+      || candidate.location_source === 'manual_gmaps'
+      || candidate.location_source === 'approximate'
+    )
       ? haversineDistanceKm(originCoordinates, candidate.location)
       : undefined
 
@@ -125,6 +145,8 @@ export async function runAitMatchingPipeline({
       ...candidate,
       distance_km: distanceKm,
       distance_source: distanceKm !== undefined ? 'haversine' : undefined,
+      distance_requested: distanceRequested,
+      distance_origin_label: distanceOriginLabel,
       village_name:
         candidate.village_name
         || (candidate.village_id ? villageNames?.get(candidate.village_id) : undefined)
@@ -201,6 +223,14 @@ export async function runAitMatchingPipeline({
         price_per_person: candidate.price_per_person ?? null,
         distance_km: candidate.distance_source === 'haversine' ? candidate.distance_km ?? null : null,
         ...(candidate.distance_source === 'haversine' ? { distance_source: 'haversine' as const } : {}),
+        ...(candidate.distance_source === 'haversine' ? { location_source: candidate.location_source } : {}),
+        ...(candidate.distance_requested ? { distance_requested: true } : {}),
+        ...(candidate.distance_origin_label ? { distance_origin_label: candidate.distance_origin_label } : {}),
+        ...(radiusRequested ? {
+          radius_status: candidate.flags?.includes('radius_unconfirmed')
+            ? 'unconfirmed' as const
+            : 'confirmed' as const,
+        } : {}),
         max_participants: candidate.max_participants ?? null,
         notice_period_hours: candidate.notice_period_hours ?? null,
         image_url: candidate.image_url ?? null,

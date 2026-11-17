@@ -7,6 +7,7 @@ import type { TourContext } from '@/lib/matching/types'
 import { extractTourDate } from './tour-date'
 import { detectCraftPreference, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
 import { systemClock } from '@/lib/booking/clock'
+import { fallbackMissingPrimary, normalizeMissingPrimary } from './missing-primary'
 
 export interface ConversationalAiResult {
   intent: 'tour_matching' | 'platform_guidance' | 'mixed'
@@ -14,6 +15,7 @@ export interface ConversationalAiResult {
   tour_context: TourContext
   is_complete: boolean
   follow_up_questions: string[]
+  missing_primary: string[]
   quota_status: QuotaStatus
   usedLlm: boolean
   modelUsed?: string
@@ -187,6 +189,7 @@ export class ConversationalAiService {
         tour_context: {},
         is_complete: false,
         follow_up_questions: [],
+        missing_primary: [],
         quota_status: quotaStatus,
         usedLlm: false,
       }
@@ -202,6 +205,7 @@ export class ConversationalAiService {
         tour_context: {},
         is_complete: false,
         follow_up_questions: [],
+        missing_primary: [],
         quota_status: quotaStatus,
         usedLlm: false,
       }
@@ -332,6 +336,7 @@ export class ConversationalAiService {
         tour_context: finalContext,
         is_complete: isComplete,
         follow_up_questions: followUps,
+        missing_primary: normalizeMissingPrimary(parsed.missing_primary, latestUserMsg),
         quota_status: quotaStatus,
         usedLlm: true,
         modelUsed: aiResponse.modelUsed,
@@ -352,6 +357,7 @@ export class ConversationalAiService {
         tour_context: tourContext,
         is_complete: isComplete,
         follow_up_questions: [],
+        missing_primary: fallbackMissingPrimary(latestUserMsg),
         quota_status: quotaStatus,
         usedLlm: true,
         modelUsed: aiResponse.modelUsed,
@@ -641,6 +647,7 @@ export class ConversationalAiService {
         tour_context: {},
         is_complete: false,
         follow_up_questions: [],
+        missing_primary: fallbackMissingPrimary(latestUserMsg),
         quota_status: quotaStatus,
         usedLlm: false,
       }
@@ -672,6 +679,7 @@ export class ConversationalAiService {
         tour_context: craft ? { craft_preference: craft } : {},
         is_complete: false,
         follow_up_questions: [],
+        missing_primary: fallbackMissingPrimary(latestUserMsg),
         quota_status: quotaStatus,
         usedLlm: false,
       }
@@ -813,6 +821,7 @@ export class ConversationalAiService {
       tour_context: tourContext,
       is_complete: isComplete,
       follow_up_questions: followUps,
+      missing_primary: fallbackMissingPrimary(latestUserMsg),
       quota_status: quotaStatus,
       usedLlm: false,
     }

@@ -22,6 +22,7 @@ export interface ExtractionResult {
   follow_up_questions: string[]
   tour_context: TourContext
   conversational_reply?: string
+  missing_primary?: string[]
   intent?: 'tour_matching' | 'platform_guidance' | 'mixed'
   quota_status?: QuotaStatus
   usedLlm?: boolean
@@ -56,6 +57,7 @@ export async function extractTourContext(
     follow_up_questions: result.follow_up_questions,
     tour_context: result.tour_context,
     conversational_reply: result.conversational_reply,
+    missing_primary: result.missing_primary,
     intent: result.intent,
     quota_status: result.quota_status,
     usedLlm: result.usedLlm,

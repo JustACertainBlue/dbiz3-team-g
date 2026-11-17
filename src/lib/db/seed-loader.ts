@@ -1,6 +1,11 @@
 
 
 import { demoRepository } from '@/lib/db/application-store'
+import {
+  DEFAULT_VILLAGE_COORDINATE_LOOKUP,
+  resolveVillageCoordinate,
+  type VillageCoordinateLookup,
+} from '@/lib/matching/village-coordinate-lookup'
 
 export interface Village {
   village_id: string
@@ -31,7 +36,12 @@ export interface Experience {
   provider_verification_status: string
   has_published_profile_version: boolean
   location?: { lat: number; lng: number }
-  location_source?: 'from_plus_code'
+  location_source?: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate'
+  village_attributes?: Record<string, {
+    value: unknown
+    source: string
+    verified_status: string
+  }>
   distance_km?: number
   travel_time_minutes?: number
   provider_quality_rating?: number
@@ -69,12 +79,16 @@ export async function loadVillages(): Promise<Village[]> {
   }))
 }
 
-export async function loadExperiences(): Promise<Experience[]> {
+export async function loadExperiences(
+  coordinateLookup: VillageCoordinateLookup = DEFAULT_VILLAGE_COORDINATE_LOOKUP
+): Promise<Experience[]> {
   const repository = demoRepository()
   const expRows = (await repository.all('experiences'))
   const providerRows = (await repository.all('provider_profiles'))
   const providerVersions = (await repository.all('provider_profile_versions'))
+  const villageRows = (await repository.all('villages'))
   const providersMap = new Map(providerRows.map(row => [row.provider_id, row]))
+  const villagesMap = new Map(villageRows.map(row => [row.village_id, row]))
 
   const experiences: Experience[] = []
 
@@ -82,6 +96,11 @@ export async function loadExperiences(): Promise<Experience[]> {
     if (row.archived_at) continue
 
     const prov = providersMap.get(row.provider_id)
+    const village = prov?.village_id ? villagesMap.get(prov.village_id) : undefined
+    const villageData = resolveVillageCoordinate({
+      id: prov?.village_id,
+      name: village?.name,
+    }, coordinateLookup)
     const isVerified = prov?.verification_status === 'Verified' && Boolean(prov?.published_version_no)
 
     // For general AI matching seed catalog, return verified active experiences
@@ -95,6 +114,7 @@ export async function loadExperiences(): Promise<Experience[]> {
         provider_name: publishedVersion?.business_name,
         craft_type: publishedVersion?.craft_type || undefined,
         village_id: prov?.village_id,
+        village_name: village?.name,
         description: row.description,
         category: row.category,
         experience_type: row.category,
@@ -105,6 +125,7 @@ export async function loadExperiences(): Promise<Experience[]> {
         experience_location_address: row.experience_location_address,
         provider_verification_status: 'Approved',
         has_published_profile_version: true,
+        ...(villageData ? villageData : {}),
         provider_quality_rating: 0.95,
         tags: Array.isArray(row.tags)
           ? row.tags

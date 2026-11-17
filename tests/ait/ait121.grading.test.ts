@@ -509,7 +509,7 @@ t('CARD', 'reasons sinh trực tiếp tiếng Việt, đúng thứ tự khóa cr
     { key: 'budget', text: '175.000đ/người, trong ngân sách 300.000đ' },
     { key: 'tags', text: 'Có vé miễn phí' },
   ]);
-  expect(c.caveats).toEqual([{ key: 'distance', text: 'Khoảng 12 km đường chim bay' }]);
+  expect(c.caveats).toEqual([{ key: 'distance', text: 'Khoảng 12.4 km' }]);
 });
 t('CARD', 'yếu tố không khớp chỉ vào caveats, không bao giờ vào reasons', async () => {
   const c = await BC({ factors: { craft: { matched: false, value: 'gốm' } } });
@@ -593,7 +593,7 @@ t('MESSAGE', 'câu dẫn: khoảng ngày, thiếu trường, start=end', async (
   expect(f({ count: 1, group_size: 8, start_date: '2026-11-25', end_date: '2026-11-25' }))
     .toBe('Mình tìm được 1 trải nghiệm cho nhóm 8 khách (ngày 25/11/2026).');
 });
-t('MESSAGE', 'result list is one activity per line and identifies unavailable distance', async () => {
+t('MESSAGE', 'result list is one activity per line and omits unavailable distance', async () => {
   const f = await ex('messages', 'buildResultsMessage');
   expect(f({
     count: 2,
@@ -612,8 +612,8 @@ t('MESSAGE', 'result list is one activity per line and identifies unavailable di
     'Mình tìm được 2 trải nghiệm cho nhóm 10 khách (nghề dệt lụa, ngày 12/07/2028, ngân sách tối đa 200.000đ/người).',
     'Đã loại Bát Tràng và sắp xếp giá từ cao xuống thấp.',
     '',
-    '1. Dệt lụa truyền thống: 175.000đ/người (chưa có dữ liệu khoảng cách)',
-    '2. Thêu họa tiết: 150.000đ/người (khoảng 5 km đường chim bay)',
+    '1. Dệt lụa truyền thống: 175.000đ/người',
+    '2. Thêu họa tiết: 150.000đ/người (khoảng 5.0 km)',
     '',
     'Chúc đoàn có trải nghiệm vui vẻ.',
   ].join('\n'));

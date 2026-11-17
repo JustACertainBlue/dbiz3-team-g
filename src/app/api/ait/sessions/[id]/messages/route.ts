@@ -30,6 +30,12 @@ import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import { loadBookings, loadExperiences, loadVillages } from '@/lib/db/seed-loader'
 import { loadOperatingHours } from '@/lib/prf/seed-reader'
 import { priceSortDirection, runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
+import { originDisplayNotice } from '@/lib/matching/geo'
+import {
+  fallbackMissingPrimary,
+  normalizeMissingPrimary,
+  stripMissingDataClaims,
+} from '@/lib/ai/missing-primary'
 import { sanitizeInput, createRateLimiter } from '@/lib/ait/guard'
 import { routeByRules } from '@/lib/ait/router'
 import { classifyIntent } from '@/lib/ait/llm-router'
@@ -548,6 +554,12 @@ export async function POST(
       )
     }
 
+    extraction.missing_primary = [...new Set([
+      ...normalizeMissingPrimary(extraction.missing_primary, originalText),
+      ...fallbackMissingPrimary(originalText),
+    ])]
+    extraction.conversational_reply = stripMissingDataClaims(extraction.conversational_reply ?? '')
+
     let optionalInvite: string | undefined
     const stateBeforeExtraction = conversationState
     if (isReset) {
@@ -699,9 +711,6 @@ export async function POST(
     }
 
     const replyText = typeof extraction.conversational_reply === 'string' ? extraction.conversational_reply : ''
-    const mixedScopeNotice = mixedMeal.hasMealRequest
-      ? 'Xin lỗi, mình không thể gợi ý chỗ ăn trưa vì yêu cầu đó nằm ngoài phạm vi; mình tiếp tục hỗ trợ yêu cầu làng nghề.'
-      : ''
     const cardQueryText = acceptsInScopeOffer ? 'những làng nghề nào được hỗ trợ' : userText
     const combined = `${cardQueryText} ${replyText}`
     const scope = detectCardScope(cardQueryText)
@@ -736,8 +745,7 @@ export async function POST(
 
     if (!isRetry && extraction.conversational_reply && typeof extraction.conversational_reply === 'string') {
       try {
-        const assistantReply = [mixedScopeNotice, extraction.conversational_reply].filter(Boolean).join(' ')
-        await addMessage(params.id, 'Assistant', assistantReply.slice(0, 2000))
+        await addMessage(params.id, 'Assistant', extraction.conversational_reply.slice(0, 2000))
       } catch (e) {
         console.warn('[AIT] Could not save assistant response to message history:', e)
       }
@@ -816,6 +824,13 @@ export async function POST(
         const craftPreference = tourPreferenceProfile.matching_attributes.find(
           (attribute: any) => attribute.type === 'craft_preference' && attribute.polarity !== 'exclude'
         )?.value
+        const requestedOrigin = conversationState.origin
+          || tourPreferenceProfile.hard_constraints?.origin?.origin_address
+          || tourPreferenceProfile.hard_constraints?.origin?.address
+        const originNotice = originDisplayNotice(tourPreferenceProfile.hard_constraints?.origin)
+        const originUnresolved = originNotice?.startsWith('Chưa xác định được')
+          ? originNotice
+          : undefined
         const resultMessage = buildResultsMessage({
           count: totalCount,
           group_size: conversationState.group_size,
@@ -824,7 +839,8 @@ export async function POST(
             : undefined,
           max_budget_per_person: conversationState.budget_per_person,
           craft: typeof craftPreference === 'string' ? craftLabelVi(craftPreference) : undefined,
-          origin: conversationState.origin,
+          origin: requestedOrigin || 'mặc định là trung tâm Hà Nội (Hồ Gươm)',
+          originUnresolved,
           radiusKm: conversationState.radius_km,
           dateScheduleUnconfirmed: /^\d{4}-\d{2}-\d{2}$/.test(conversationState.date || ''),
           noResultsWithinRadius:
@@ -833,6 +849,7 @@ export async function POST(
             && matching.rejected.some(({ reason }) => reason === 'radius'),
           excludedVillages: excludedVillageNames,
           excludedCrafts: excludedCraftNames,
+          missingPrimary: extraction.missing_primary,
           priceSort: priceSortDirection(tourPreferenceProfile),
           matches: cards.length > 0
             ? cards.map((card) => ({
@@ -840,6 +857,8 @@ export async function POST(
               price_per_person: card.price_per_person,
               distance_km: card.distance_km,
               distance_source: card.distance_source,
+              location_source: card.location_source,
+              radius_status: card.radius_status,
             }))
             : undefined,
           ending: extraction.is_complete && cards.length > 0 && checkedNarration.ok
@@ -905,9 +924,6 @@ export async function POST(
       }
     }
 
-    if (mixedScopeNotice) {
-      turn.message = `${mixedScopeNotice} ${turn.message}`.slice(0, 500)
-    }
     if (hasAffirmativeBookingClaim(turn.message)) {
       turn = bookingGuidanceTurn()
     }

@@ -95,6 +95,38 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     })
   })
 
+  it('T17: “như lúc nãy, giữ nguyên nhé” keeps the stored profile without another question', async () => {
+    const sessionId = await openSession()
+    const previousState = normalizeConversationState({
+      craft: 'silk',
+      group_size: 10,
+      budget_per_person: 200000,
+      date: '2026-11-20',
+      origin: 'Hoàn Kiếm',
+      exclusions: { villages: [], crafts: [] },
+    })
+    await updateMatchingSessionContext(sessionId, { state: previousState })
+    vi.spyOn(extractor, 'extractTourContext').mockResolvedValueOnce({
+      is_complete: false,
+      processing_status: 'Success',
+      retry_available: false,
+      follow_up_questions: [],
+      conversational_reply: 'Mình sẽ giữ nguyên các tiêu chí đã lưu.',
+      tour_context: {},
+    })
+    vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
+      intent: 'refine_results',
+      confidence: 1,
+      source: 'llm',
+    })
+
+    const response = await send(sessionId, 'Như lúc nãy, giữ nguyên nhé')
+
+    expect(response.status).toBe(201)
+    expect(response.json.extraction.follow_up_questions).toEqual([])
+    expect((await getContext(sessionId)).state).toMatchObject(previousState)
+  })
+
   it('T2: updates the craft preference to the latest choice across repeated changes', async () => {
     const sessionId = await openSession()
     const choices = [
@@ -412,7 +444,12 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
     expect(response.json.turn.turn_type, `Transcript: ${JSON.stringify(transcript)}`).not.toBe('refusal')
     expect(response.json.extraction.tour_context.craft_preference, `Transcript: ${JSON.stringify(transcript)}`).toBe('silk')
-    expect(response.json.turn.message, `Transcript: ${JSON.stringify(transcript)}`).toMatch(/ngoài phạm vi/i)
+    expect(response.json.turn.message, `Transcript: ${JSON.stringify(transcript)}`)
+      .toContain('Chưa có dữ liệu về ăn trưa.')
+    expect(response.json.turn.message, `Transcript: ${JSON.stringify(transcript)}`)
+      .not.toContain('Chưa có dữ liệu về chỗ ăn.')
+    expect(response.json.turn.message, `Transcript: ${JSON.stringify(transcript)}`)
+      .not.toMatch(/ngoài phạm vi/i)
     expect(response.json.turn.message, `Transcript: ${JSON.stringify(transcript)}`).toMatch(/lụa|ghép tour/i)
   })
 
@@ -557,9 +594,10 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
     expect(response.status).toBe(201)
     expect(cards.length).toBeGreaterThan(0)
-    expect(message).not.toMatch(/\bkm\b/i)
+    expect(message.match(/\(khoảng \d+\.\d km\)/g)).toHaveLength(cards.length)
     for (const card of cards) {
-      expect(card.distance_km).toBeNull()
+      expect(card.distance_source).toBe('haversine')
+      expect(card.distance_km).toEqual(expect.any(Number))
     }
     expect(message).toMatch(new RegExp(`^Mình tìm được ${cards.length} trải nghiệm`))
     expect(message).toContain('Đã loại Bát Tràng và sắp xếp giá từ cao xuống thấp.')
@@ -571,7 +609,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     const activityLines = message.split('\n').filter((line: string) => /^\d+\.\s/.test(line))
     expect(activityLines).toHaveLength(cards.length)
     expect(activityLines).toEqual(cards.map((card: Json, index: number) =>
-      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người${card.distance_source === 'haversine' && typeof card.distance_km === 'number' ? ` (khoảng ${Math.round(card.distance_km)} km đường chim bay)` : ' (chưa có dữ liệu khoảng cách)'}`
+      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người${card.distance_source === 'haversine' && typeof card.distance_km === 'number' ? ` (khoảng ${card.distance_km.toFixed(1)} km)` : ''}`
     ))
     const knownActivityNames = (await loadExperiences()).map((experience) => experience.name)
     expect(knownActivityNames.filter((name) => message.includes(name)).sort())
@@ -650,6 +688,13 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     expect(priceExplanation.json.turn.turn_type).toBe('answer')
     expect(priceExplanation.json.turn.message).toContain(cards[0].experience_name)
     expect(priceExplanation.json.turn.message).toContain(
+      `${String(cards[0].price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người`
+    )
+
+    const genericPriceExplanation = await send(sessionId, 'Tại sao giá này?')
+    expect(genericPriceExplanation.json.turn.turn_type).toBe('answer')
+    expect(genericPriceExplanation.json.turn.message).toContain(cards[0].experience_name)
+    expect(genericPriceExplanation.json.turn.message).toContain(
       `${String(cards[0].price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người`
     )
 

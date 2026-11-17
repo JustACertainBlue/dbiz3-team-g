@@ -4,6 +4,10 @@
  */
 
 import { PLATFORM_KNOWLEDGE_BASE } from './knowledge-base'
+import {
+  buildVillageAttributePromptBlock,
+  type VillageAttributeValue,
+} from '@/lib/matching/village-coordinate-lookup'
 
 /**
  * Checks for common prompt injection patterns.
@@ -72,6 +76,7 @@ export function detectUnauthorizedDataProbe(text: string): DataProbeResult {
 export interface SystemPromptOptions {
   /** Adds an urgent correction used when the model recycled an earlier answer instead of answering the newest message. */
   antiRepetition?: boolean
+  villageAttributes?: Record<string, VillageAttributeValue>
 }
 
 export function buildSystemPrompt(
@@ -88,6 +93,7 @@ export function buildSystemPrompt(
         )
         .join('\n\n')
     : 'Hanoi Artisan Bridge matches B2B Tour Agencies with verified artisan workshops in Hanoi.'
+  const attributeBlock = buildVillageAttributePromptBlock(options.villageAttributes)
 
   return `You are the official Conversational AI Assistant for Hanoi Artisan Bridge (HAB), a verified B2B cultural tourism platform connecting Tour Agencies with verified artisan workshops and master craftsmen in Hanoi's traditional craft villages.
 
@@ -104,7 +110,7 @@ CRITICAL SECURITY AND OPERATIONAL GUARDRAILS (RAILGUARDS):
      1) Tham quan (Sightseeing / Heritage exploration): Visiting historic craft villages, heritage kilns, ancient communal houses (đình làng), artisan museums (Bảo tàng Gốm Bát Tràng, Bảo tàng Tinh hoa Làng nghề Việt), ancient streets, silk street strolls, photo/check-in heritage spots.
      2) Trải nghiệm & Workshop (Hands-on crafts): Direct hands-on practice making crafts with master artisans (nặn gốm, dệt lụa, làm tranh vải, đan mây tre, làm nón...).
      3) Biểu diễn nghệ thuật văn hóa (Cultural Shows): Water puppetry at Đào Thục pavilion, folk singing, artisan craft demonstrations.
-     4) Ẩm thực truyền thống (Culinary & Local food): Tasting village specialties (bún miến Cự Đà, bánh tẻ, chè sen...).
+     4) Hoạt động ẩm thực chỉ được tìm khi hoạt động đó có trong dữ liệu và khách yêu cầu; dịch vụ ăn trưa, nhà hàng, chỗ ăn nằm ngoài danh mục.
    - ABSOLUTE PROHIBITION ON APOLOGIZING FOR SIGHTSEEING ("KHÔNG ĐƯỢC NÓI XIN LỖI KHI KHÁCH MUỐN THAM QUAN"):
      * NEVER SAY "Xin lỗi! Hanoi Artisan Bridge ưu tiên hoạt động trải nghiệm..." OR CLAIM THE PLATFORM ONLY PRIORITIZES WORKSHOPS! This is strictly forbidden.
      * Users are free to search, explore, and create tours for ANY tourism activity: THAM QUAN, TRẢI NGHIỆM, WORKSHOP, SHOW, ẨM THỰC... All are 100% supported and welcomed!
@@ -122,7 +128,8 @@ CRITICAL SECURITY AND OPERATIONAL GUARDRAILS (RAILGUARDS):
      * Agricultural farming: planting vegetables/trees (trồng rau, trồng cây), harvesting fruit (hái quả), farm work.
      * Nature/camping: camping (cắm trại), trekking / mountain climbing (leo núi), resort stays.
      These are completely outside the platform scope.
-   - Do not proactively suggest or ask about lunch, restaurants, places to eat, or meal services. Only discuss a culinary activity when it is present in the platform data and the user asks about that activity.
+   - Meal services (lunch, restaurants, places to eat) are outside scope: never suggest or search for them. If explicitly requested but absent from verified data, return only that exact request in "missing_primary"; do not mention unrequested missing attributes in the reply.
+   - Culinary experiences are in scope only when the activity exists in platform data and the user asks for that activity. Never infer that a meal service is a culinary experience.
    - HOW TO HANDLE NON-CRAFT LOCATIONS (e.g., Sóc Sơn, Ba Vì) OR "HOẠT ĐỘNG NGOÀI TRỜI / TEAMBUILDING":
      * Explain politely that Hanoi Artisan Bridge connects traditional craft villages and cultural artisan workshops in Hanoi.
      * Explain that from Sóc Sơn (or northern Hanoi), the group connects conveniently to traditional craft villages with outdoor / semi-outdoor cultural workshop spaces ideal for collective teambuilding:
@@ -230,12 +237,14 @@ If essential tour matching details are missing (group size, date, craft preferen
 
 PLATFORM VERIFIED KNOWLEDGE:
 ${knowledgeSummary}
+${attributeBlock ? `\n${attributeBlock}\n` : ''}
 
 RESPONSE FORMAT:
 You MUST respond with valid JSON adhering to this schema:
 {
   "intent": "tour_matching" | "platform_guidance" | "mixed",
   "conversational_reply": "Natural conversational text in the user's language answering their question or asking follow-ups",
+  "missing_primary": string[],
   "extracted_context": {
     "group_size": number | null,
     "target_date": string | null,
@@ -247,6 +256,7 @@ You MUST respond with valid JSON adhering to this schema:
   "is_tour_complete": boolean,
   "follow_up_questions": string[]
 }
+Only put explicitly requested, unavailable primary items in "missing_primary". Do not put missing-data claims in "conversational_reply"; the backend renders only the validated "missing_primary" list.
 ${options.antiRepetition ? `
 URGENT CORRECTION (your previous draft was rejected):
 Your last draft repeated a sentence from an earlier assistant message instead of answering the newest user message.

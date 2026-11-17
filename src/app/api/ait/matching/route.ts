@@ -32,6 +32,7 @@ import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import { loadOperatingHours } from '@/lib/prf/seed-reader'
 import { runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
 import { matchingContextResults } from '@/lib/ait/match-reasons'
+import { originDisplayNotice } from '@/lib/matching/geo'
 
 export async function POST(request: Request) {
   try {
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
 
     const constraints = rawProfile.hard_constraints || {}
     const reqGroupSize = constraints.group_size || 0
+    const originNotice = originDisplayNotice(constraints.origin)
 
     // Both matching routes use the same hard filters, ranking and card builder.
     const [bookings, operatingHours, villages] = await Promise.all([
@@ -132,6 +134,7 @@ export async function POST(request: Request) {
         }
         return NextResponse.json({
           is_test: isTest,
+          origin_notice: originNotice,
           top_matches: [],
           additional_suggestions: [],
           relaxation_suggestions: {
@@ -158,6 +161,7 @@ export async function POST(request: Request) {
         )
       }
       return NextResponse.json({
+        origin_notice: originNotice,
         top_matches: [],
         additional_suggestions: [],
         relaxation_suggestions: {
@@ -197,6 +201,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       is_test: isTest,
+      origin_notice: originNotice,
       top_matches: topMatches,
       additional_suggestions: additionalMatches,
     })

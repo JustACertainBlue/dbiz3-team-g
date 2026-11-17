@@ -4,6 +4,8 @@ import { buildResultsMessage } from '@/lib/ait/messages'
 import { profileSchema } from '@/lib/ait/schemas'
 import { buildTourPreferenceProfile } from '@/lib/ai/extractor'
 import { emptyConversationState } from '@/lib/ait/conversation-state'
+import { haversineDistanceKm } from '@/lib/matching/geo'
+import { applyHardConstraints } from '@/lib/matching/constraint-engine'
 
 const profile = (hardConstraints: Record<string, unknown> = {}) => ({
   hard_constraints: hardConstraints,
@@ -19,6 +21,7 @@ const profile = (hardConstraints: Record<string, unknown> = {}) => ({
 const candidate = (
   experienceId: string,
   location?: { lat: number; lng: number },
+  locationSource: 'from_plus_code' | 'district_fallback' | 'manual_gmaps' | 'approximate' = 'from_plus_code',
 ) => ({
   experience_id: experienceId,
   provider_id: `provider-${experienceId}`,
@@ -33,10 +36,153 @@ const candidate = (
   provider_status: 'Verified',
   provider_verification_status: 'Approved',
   has_published_profile_version: true,
-  ...(location ? { location, location_source: 'from_plus_code' } : {}),
+  ...(location ? { location, location_source: locationSource } : {}),
 })
 
 describe('AIT distance calculations', () => {
+  it('filters a Vạn Phúc manual point against the unrounded 10 km boundary', async () => {
+    const resultAtTen = await runAitMatchingPipeline({
+      candidates: [candidate('van-phuc', { lat: 20.97976, lng: 105.77402 }, 'manual_gmaps')],
+      profile: profile({ radius_km: 10 }),
+    })
+    const resultBelowDistance = await runAitMatchingPipeline({
+      candidates: [candidate('van-phuc', { lat: 20.97976, lng: 105.77402 }, 'manual_gmaps')],
+      profile: profile({ radius_km: 9.9 }),
+    })
+
+    expect(resultAtTen.rankedCandidates[0].distance_km).toBeCloseTo(9.932198, 5)
+    expect(resultAtTen.topMatches[0].caveats).toContainEqual({
+      key: 'distance',
+      text: 'Khoảng 9.9 km',
+    })
+    expect(resultAtTen.rejected).toEqual([])
+    expect(resultBelowDistance.rejected).toContainEqual({ id: 'van-phuc', reason: 'radius' })
+  })
+
+  it('rejects Bá Dương Nội approximate coordinates when the 3 km lower bound is outside', async () => {
+    const result = await runAitMatchingPipeline({
+      candidates: [candidate('ba-duong-noi', { lat: 21.13333, lng: 105.7 }, 'approximate')],
+      profile: profile({ radius_km: 15 }),
+    })
+
+    expect(result.eligibleCandidates).toHaveLength(0)
+    expect(result.rejected).toContainEqual({ id: 'ba-duong-noi', reason: 'radius' })
+  })
+
+  it('keeps Bá Dương Nội unconfirmed when the 3 km band crosses the radius', async () => {
+    const result = await runAitMatchingPipeline({
+      candidates: [candidate('ba-duong-noi', { lat: 21.13333, lng: 105.7 }, 'approximate')],
+      profile: profile({ radius_km: 20 }),
+    })
+
+    expect(result.topMatches[0]).toMatchObject({
+      distance_km: expect.closeTo(19.794832, 5),
+      location_source: 'approximate',
+      radius_status: 'unconfirmed',
+    })
+    expect(result.topMatches[0].caveats).toContainEqual({
+      key: 'distance',
+      text: 'Khoảng 20 km, tọa độ xấp xỉ',
+    })
+    expect(result.topMatches[0].caveats).toContainEqual({
+      key: 'radius',
+      text: 'Chưa xác nhận bán kính',
+    })
+    const message = buildResultsMessage({
+      count: 1,
+      radiusKm: 20,
+      matches: [{
+        experience_name: 'Bá Dương Nội',
+        price_per_person: 100000,
+        distance_km: result.topMatches[0].distance_km,
+        distance_source: 'haversine',
+        location_source: 'approximate',
+        radius_status: 'unconfirmed',
+      }],
+    })
+    expect(message).toContain('do tọa độ xấp xỉ')
+    expect(message).not.toContain('ước tính theo huyện')
+  })
+
+  it('confirms Bá Dương Nội when the 3 km upper bound is inside the radius', async () => {
+    const result = await runAitMatchingPipeline({
+      candidates: [candidate('ba-duong-noi', { lat: 21.13333, lng: 105.7 }, 'approximate')],
+      profile: profile({ radius_km: 25 }),
+    })
+
+    expect(result.topMatches[0]).toMatchObject({
+      location_source: 'approximate',
+      radius_status: 'confirmed',
+    })
+    expect(result.topMatches[0].caveats).toContainEqual({
+      key: 'distance',
+      text: 'Khoảng 20 km, tọa độ xấp xỉ',
+    })
+    expect(result.topMatches[0].caveats).not.toContainEqual({
+      key: 'radius',
+      text: 'Chưa xác nhận bán kính',
+    })
+  })
+
+  it('uses inclusive bounds for the configured approximate uncertainty', async () => {
+    const origin = { lat: 21.0285, lng: 105.8542 }
+    const location = { lat: 21.13333, lng: 105.7 }
+    const distance = haversineDistanceKm(origin, location)!
+    const atLowerBound = await runAitMatchingPipeline({
+      candidates: [candidate('at-lower-bound', location, 'approximate')],
+      profile: profile({ origin, radius_km: distance - 3 }),
+    })
+    const belowLowerBound = await runAitMatchingPipeline({
+      candidates: [candidate('below-lower-bound', location, 'approximate')],
+      profile: profile({ origin, radius_km: distance - 3 - 0.000001 }),
+    })
+    const atUpperBound = await runAitMatchingPipeline({
+      candidates: [candidate('at-upper-bound', location, 'approximate')],
+      profile: profile({ origin, radius_km: distance + 3 }),
+    })
+
+    expect(atLowerBound.eligibleCandidates).toHaveLength(1)
+    expect(atLowerBound.topMatches[0].radius_status).toBe('unconfirmed')
+    expect(belowLowerBound.eligibleCandidates).toHaveLength(0)
+    expect(atUpperBound.topMatches[0].radius_status).toBe('confirmed')
+  })
+
+  it('applies approximate uncertainty in the shared hard-constraint engine', async () => {
+    const location = { lat: 21.13333, lng: 105.7 }
+    const approximateCandidate = candidate('ba-duong-noi', location, 'approximate')
+
+    const outside = await applyHardConstraints([approximateCandidate], { radius_km: 15 })
+    const uncertain = await applyHardConstraints([approximateCandidate], { radius_km: 20 })
+    const inside = await applyHardConstraints([approximateCandidate], { radius_km: 25 })
+
+    expect(outside.eligible_candidates).toHaveLength(0)
+    expect(uncertain.eligible_candidates[0].radius_status).toBe('unconfirmed')
+    expect(inside.eligible_candidates[0].radius_status).toBe('confirmed')
+  })
+
+  it('uses inclusive approximate bounds in the shared hard-constraint engine', async () => {
+    const origin = { lat: 21.0285, lng: 105.8542 }
+    const location = { lat: 21.13333, lng: 105.7 }
+    const distance = haversineDistanceKm(origin, location)!
+    const approximateCandidate = candidate('ba-duong-noi', location, 'approximate')
+    const atLowerBound = await applyHardConstraints([approximateCandidate], {
+      origin,
+      radius_km: distance - 3,
+    })
+    const belowLowerBound = await applyHardConstraints([approximateCandidate], {
+      origin,
+      radius_km: distance - 3 - 0.000001,
+    })
+    const atUpperBound = await applyHardConstraints([approximateCandidate], {
+      origin,
+      radius_km: distance + 3,
+    })
+
+    expect(atLowerBound.eligible_candidates[0].radius_status).toBe('unconfirmed')
+    expect(belowLowerBound.eligible_candidates).toHaveLength(0)
+    expect(atUpperBound.eligible_candidates[0].radius_status).toBe('confirmed')
+  })
+
   it('filters known distances outside the requested radius and leaves unknown distances unranked by distance', async () => {
     const result = await runAitMatchingPipeline({
       candidates: [
@@ -60,6 +206,64 @@ describe('AIT distance calculations', () => {
       expect(result.rankedCandidates.find((item) => item.experience_id === id)?.distance_km)
       .toBeUndefined()
     }
+  })
+
+  it('keeps an exact-radius match and rejects a point just beyond the radius', async () => {
+    const origin = { lat: 21.0285, lng: 105.8542 }
+    const exactLocation = { lat: origin.lat, lng: origin.lng + 0.01 }
+    const radiusKm = haversineDistanceKm(origin, exactLocation)!
+    const justOutsideLocation = { lat: origin.lat, lng: origin.lng + 0.01000001 }
+    const result = await runAitMatchingPipeline({
+      candidates: [
+        candidate('exact-radius', exactLocation),
+        candidate('just-outside', justOutsideLocation),
+      ],
+      profile: profile({ origin, radius_km: radiusKm }),
+    })
+
+    expect(result.eligibleCandidates.map((item) => item.experience_id)).toEqual(['exact-radius'])
+    expect(result.rankedCandidates[0].distance_km).toBe(radiusKm)
+    expect(result.rejected).toContainEqual({ id: 'just-outside', reason: 'radius' })
+  })
+
+  it('applies the district uncertainty band and labels estimated distance', async () => {
+    const origin = { lat: 21.0285, lng: 105.8542 }
+    const result = await runAitMatchingPipeline({
+      candidates: [
+        candidate('district-near', { lat: origin.lat, lng: origin.lng + 0.01 }, 'district_fallback'),
+        candidate('district-far', { lat: origin.lat, lng: origin.lng + 0.2 }, 'district_fallback'),
+      ],
+      profile: profile({ origin, radius_km: 10 }),
+    })
+
+    expect(result.eligibleCandidates.map((item) => item.experience_id)).toEqual(['district-near'])
+    expect(result.rejected).toContainEqual({ id: 'district-far', reason: 'radius' })
+    expect(result.rankedCandidates[0].distance_km).toBeCloseTo(1, 1)
+    expect(result.topMatches[0]).toMatchObject({
+      distance_source: 'haversine',
+      location_source: 'district_fallback',
+      radius_status: 'unconfirmed',
+    })
+    expect(result.topMatches[0].caveats).toContainEqual({
+      key: 'distance',
+      text: 'Khoảng 1 km, ước tính theo huyện',
+    })
+
+    const districtMatch = {
+      experience_name: result.topMatches[0].experience_name,
+      price_per_person: result.topMatches[0].price_per_person,
+      distance_km: result.topMatches[0].distance_km,
+      distance_source: 'haversine' as const,
+      location_source: 'district_fallback' as const,
+      radius_status: 'unconfirmed' as const,
+    }
+    const message = buildResultsMessage({
+      count: 1,
+      radiusKm: 10,
+      matches: [districtMatch],
+    })
+    expect(message).toContain('khoảng 1 km, ước tính theo huyện')
+    expect(message).toContain('chưa xác nhận bán kính')
   })
 
   it('resolves a Hanoi district origin and calculates distance only from sourced coordinates', async () => {
@@ -109,7 +313,7 @@ describe('AIT distance calculations', () => {
       text: 'Chưa có dữ liệu khoảng cách',
     })
     expect(message).not.toMatch(/\bkm\b/i)
-    expect(message).toContain('chưa có dữ liệu khoảng cách')
+    expect(message).not.toContain('chưa có dữ liệu khoảng cách')
   })
 
   it('states directly when no sourced result falls within the requested radius', () => {
@@ -125,14 +329,30 @@ describe('AIT distance calculations', () => {
     expect(message).not.toMatch(/(?:bạn có thể|gợi ý|nên)\s+(?:tự\s+)?mở rộng/i)
   })
 
-  it('does not claim the radius caused an empty result when no candidate had a measured distance', () => {
+  it('does not claim radius filtering and says it could not be verified when no distance exists', () => {
     const message = buildResultsMessage({
       count: 0,
       radiusKm: 5,
       matches: [],
     })
 
-    expect(message).toBe('Không tìm thấy trải nghiệm nào phù hợp với các tiêu chí hiện tại.')
-    expect(message).not.toContain('bán kính')
+    expect(message).toContain('Không tìm thấy trải nghiệm nào phù hợp')
+    expect(message).toContain('Chưa có dữ liệu khoảng cách để kiểm tra bán kính 5 km')
+    expect(message).not.toContain('Không tìm thấy trải nghiệm nào phù hợp trong bán kính')
+  })
+
+  it('says the radius cannot be verified when a returned result has no measured distance', () => {
+    const message = buildResultsMessage({
+      count: 1,
+      radiusKm: 5,
+      matches: [{
+        experience_name: 'Trải nghiệm chưa có tọa độ',
+        price_per_person: 100000,
+        distance_km: null,
+      }],
+    })
+
+    expect(message).toContain('Chưa có dữ liệu khoảng cách để kiểm tra bán kính 5 km')
+    expect(message).not.toContain('Không tìm thấy trải nghiệm nào phù hợp trong bán kính')
   })
 })

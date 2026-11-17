@@ -5,6 +5,11 @@ import type { CandidateExperience } from '@/lib/matching/candidate-repo'
 import type { TourPreferenceProfile } from '@/lib/matching/types'
 import type { CraftType } from '@/lib/matching/craft-taxonomy'
 import { villageStartingPrices } from '@/lib/village-starting-price'
+import {
+  DEFAULT_VILLAGE_COORDINATE_LOOKUP,
+  resolveVillageCoordinate,
+  type VillageCoordinateLookup,
+} from '@/lib/matching/village-coordinate-lookup'
 
 export interface TestVillageRaw {
   village_id: string
@@ -148,11 +153,42 @@ function getExperienceCategory(name: string): string {
 /**
  * Returns candidate experiences constructed exclusively from villages_providers_activities_merged.json
  */
-export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExperience[] {
+export function getTestCandidates(
+  profile?: TourPreferenceProfile,
+  coordinateLookup: VillageCoordinateLookup = DEFAULT_VILLAGE_COORDINATE_LOOKUP,
+): CandidateExperience[] {
   const villages = (rawData as { villages: TestVillageRaw[] }).villages || []
   const candidates: CandidateExperience[] = []
 
   for (const village of villages) {
+    const plusCodePoints = village.providers.flatMap(provider => {
+      const coordinates = provider.coordinates
+      if (
+        coordinates?.status !== 'from_plus_code'
+        || typeof coordinates.lat !== 'number'
+        || !Number.isFinite(coordinates.lat)
+        || typeof coordinates.lng !== 'number'
+        || !Number.isFinite(coordinates.lng)
+      ) {
+        return []
+      }
+      return [{ lat: coordinates.lat, lng: coordinates.lng }]
+    })
+    const plusCodeLocation = plusCodePoints.length > 0
+      ? {
+          lat: Math.round(
+            plusCodePoints.reduce((total, point) => total + point.lat, 0) / plusCodePoints.length * 1e7
+          ) / 1e7,
+          lng: Math.round(
+            plusCodePoints.reduce((total, point) => total + point.lng, 0) / plusCodePoints.length * 1e7
+          ) / 1e7,
+        }
+      : undefined
+    const villageData = resolveVillageCoordinate(
+      { id: village.village_id, name: village.village_name },
+      coordinateLookup,
+      plusCodeLocation,
+    )
     const meta = VILLAGE_CRAFT_MAPPING[village.village_id] || {
       craftType: 'Other' as CraftType,
       craftName: village.village_name,
@@ -168,15 +204,6 @@ export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExp
       const price = parsePriceFromRaw(act.price_raw)
       const duration = parseDurationMinutes(act.duration)
       const category = getExperienceCategory(cleanName)
-
-      const coordinates = prov?.coordinates
-      const location = coordinates?.status === 'from_plus_code'
-        && typeof coordinates.lat === 'number'
-        && Number.isFinite(coordinates.lat)
-        && typeof coordinates.lng === 'number'
-        && Number.isFinite(coordinates.lng)
-        ? { lat: coordinates.lat, lng: coordinates.lng }
-        : undefined
 
       candidates.push({
         experience_id: act.activity_id,
@@ -202,10 +229,7 @@ export function getTestCandidates(profile?: TourPreferenceProfile): CandidateExp
         historical_agency_preference_weight: 0.9,
         provider_quality_rating: 0.95,
         image_url: testMediaUrl(act, testMediaUrl(prov ?? {}, testMediaUrl(village, meta.mediaUrl))) ?? meta.mediaUrl,
-        ...(location ? {
-          location,
-          location_source: 'from_plus_code' as const,
-        } : {}),
+        ...(villageData ?? {}),
       })
     }
   }

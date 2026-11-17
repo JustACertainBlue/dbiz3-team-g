@@ -818,9 +818,15 @@ export default function AiMatchingScreen({
     }
     const { top: topMatches, additional } = matchResultsView(result.body)
     const defaultIntro = 'Tôi đã phân tích yêu cầu tour và đối soát với các làng nghề và xưởng thủ công. Đây là các đề xuất phù hợp nhất:'
+    const originNotice = typeof result.body.origin_notice === 'string'
+      ? result.body.origin_notice
+      : ''
+    const hasUnresolvedOrigin = originNotice.startsWith('Chưa xác định được')
     if (topMatches.length > 0) {
       addAssistant({
-        text: customIntro || defaultIntro,
+        text: [originNotice, hasUnresolvedOrigin ? defaultIntro : customIntro || defaultIntro]
+          .filter(Boolean)
+          .join('\n\n'),
         dateLine,
         recommendations: topMatches,
         additionalSuggestions: additional,
@@ -832,10 +838,16 @@ export default function AiMatchingScreen({
       const view = noMatchView(result.body)
       const relaxationAdvice = localizeRelaxationPrompt(view.prompt)
       // Ưu tiên phản hồi tự nhiên từ AI, ghép với lời khuyên nới lỏng tiêu chí nếu có
-      const textToDisplay = customIntro
+      const textToDisplay = customIntro && !hasUnresolvedOrigin
         ? `${customIntro}\n\n💡 Lưu ý điều phối: ${relaxationAdvice}`
         : relaxationAdvice
-      addAssistant({ text: textToDisplay, relaxationLines: view.lines, dateLine, followUpQuestions: followUps, usedLlm })
+      addAssistant({
+        text: [originNotice, textToDisplay].filter(Boolean).join('\n\n'),
+        relaxationLines: view.lines,
+        dateLine,
+        followUpQuestions: followUps,
+        usedLlm,
+      })
     }
   }
 
@@ -1156,8 +1168,14 @@ export default function AiMatchingScreen({
                                 <p className="rec-card-location">
                                   📍 {formatVillageName(rec.village_name)}
                                   {rec.distance_source === 'haversine' && typeof rec.distance_km === 'number'
-                                    ? ` · ${Math.round(rec.distance_km)} km đường chim bay`
-                                    : ' · Chưa có dữ liệu khoảng cách'}
+                                    ? ` · ${rec.location_source === 'district_fallback'
+                                      ? `khoảng ${Math.round(rec.distance_km)} km, ước tính theo huyện`
+                                      : `khoảng ${rec.distance_km.toFixed(1)} km`}${rec.radius_status === 'unconfirmed' ? ' · Chưa xác nhận bán kính' : ''}${rec.distance_origin_label ? ` · từ ${rec.distance_origin_label}` : ''}`
+                                    : rec.radius_status === 'unconfirmed'
+                                      ? ' · Chưa xác nhận bán kính'
+                                      : rec.distance_requested
+                                        ? ' · Chưa có dữ liệu khoảng cách'
+                                        : ''}
                                 </p>
 
                                 <div className="rec-card-reason-wrap">

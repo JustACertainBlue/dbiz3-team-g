@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { formatVillageName } from '@/lib/village-name'
 import { resolveActivityCards, resolveProviderCards, resolveVillageCards } from '@/lib/matching/card-resolver'
+import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
 
 const villages = [
   'Bát Tràng',
@@ -45,6 +46,17 @@ describe('formatVillageName', () => {
     expect(resolveProviderCards('xưởng gốm Bát Tràng')[0].village_name).toBe('Làng Bát Tràng')
     expect(resolveActivityCards('nặn gốm Bát Tràng')[0].village_name).toBe('Làng Bát Tràng')
   })
+
+  it.each(['lang gom bat trang', 'gốm bt'])(
+    'resolves the Bat Trang query "%s" without duplicating “làng”',
+    (query) => {
+      expect(detectCraftPreference(query)).toBe('pottery')
+      const cards = resolveVillageCards(query)
+      expect(cards).toHaveLength(1)
+      expect(cards[0].name).toBe('Làng gốm Bát Tràng')
+      expect(cards[0].name.toLowerCase()).not.toContain('làng làng')
+    }
+  )
 
   it('does not render the unsupported cultural-affinity badge', () => {
     const component = readFileSync('src/app/ai-matching/AiMatchingClient.tsx', 'utf8')

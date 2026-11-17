@@ -113,7 +113,7 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
       distance_km: 5,
       distance_source: 'haversine',
     })
-    expect(result.top_matches[0].explanation).toContain('5 km straight-line from Hoàn Kiếm')
+    expect(result.top_matches[0].explanation).toContain('5.0 km straight-line from Hoàn Kiếm')
     expect(result.top_matches[0].explanation).not.toMatch(/estimated/i)
   })
 

@@ -34,6 +34,7 @@ describe('T009 | F-SCHED-09 agrees with create (#81)', () => {
   it('an Unavailable slot is rejected, also on a day without hours', async () => {
     const evening = (await availability('2026-10-12')).availability_calendar.find(block => block.status === 'Unavailable' && block.start_at.endsWith('17:00:00+07:00'))!
     await expect(((create(evening.start_at)))).rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })
+    demoRepository().remove('provider_operating_hours', row => row.provider_id === PROVIDER && Number(row.weekday) === 2)
     const tuesday = (await availability('2026-10-13')).availability_calendar
     expect(tuesday).toHaveLength(1)
     expect(tuesday[0].status).toBe('Unavailable')

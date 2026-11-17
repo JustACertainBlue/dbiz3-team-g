@@ -18,6 +18,18 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 57: 17/11 Copilot — seed provider operating hours for all weekdays
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`. |
+| Scope | Complete weekly operating-hour seed coverage while preserving the original eight rows, validate the generated weekday/time rules, and keep schedule boundary tests independent of common seed hours. |
+| Produced | Added 48 SHA-256-derived provider/day rows; retained every original operating-hour row unchanged, including Hạ Thái Monday 08:00–23:59. Updated generated manifests and coverage counts. Updated PRF/BKG seed expectations and isolated no-hours/out-of-hours assertions with test fixtures. |
+| Test-first | Before seed generation, the new full-week assertions failed at 8 vs 56 rows and at missing provider weekdays (3 test failures; 54 passed). After generation, the focused schedule/profile tests passed. Full-suite feedback exposed a second Tuesday/no-hours assumption in `bkg-availability-consistency`; it now removes Tuesday hours within that test. |
+| Mutation checks | Disabling the create-booking hours guard made its outside-hours test resolve instead of reject. Skipping availability-hour rows broke the calendar boundary assertion. Removing one weekday row from a temporary seed copy failed the full-week validator. Changing an added row's opening to 06:00 failed the allowed-hours validator. Each source/data mutation was restored or isolated to a temporary copy. |
+| Verification | `python data/scripts/validate_seed.py`: passed. Generator run twice: every file under `data/seed/` had identical SHA-256 hashes; original hour rows were unchanged. Provider-day gaps: 48/56 → 0/56; bookings within hours: 8/8; manifest and coverage report 56 rows. AIT 20/11 matching scenario: 5 results. Six related test files: 60 passed; `npm.cmd run lint`: passed. Full `npx.cmd vitest run --config vitest.config.ts --maxWorkers=1 --minWorkers=1`: 257 files passed, 1 failed, 5 skipped; 1,732 tests passed, 6 failed, 30 skipped. The six failures are parameterized AIT assertions still expecting the displayed word `origin`, contrary to the current Vietnamese-only question text; no schedule tests failed. |
+| Boundaries | No push. `.claude/`, `.env.local`, `.demo-data/`, and the existing untracked AIT planning-input file were not changed. No work on AIT matching pipeline/Bước 1. |
+
 ### Entry 56: 17/11 Copilot — AIT budget retention and assistant-question post-check
 
 | Field | Value |

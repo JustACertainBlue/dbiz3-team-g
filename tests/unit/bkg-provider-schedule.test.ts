@@ -37,8 +37,24 @@ describe('T010 | getProviderSchedule ranges, operating_hours, owner view', () =>
   it('operating_hours has the seven ISO weekdays (#78)', async () => {
     const { operating_hours } = await getProviderSchedule(DEMO_IDENTITIES.provider, PROVIDER, OCT, seedNow)
     expect(Object.keys(operating_hours).sort()).toEqual(['1', '2', '3', '4', '5', '6', '7'])
-    expect(operating_hours['1']).toEqual([{ local_start: '08:00:00', local_end: '17:00:00' }])
-    for (const day of ['2', '3', '4', '5', '6', '7']) expect(operating_hours[day]).toEqual([])
+    const seededHours = demoRepository().all('provider_operating_hours').filter(row => row.provider_id === PROVIDER)
+    const expected = Object.fromEntries(['1', '2', '3', '4', '5', '6', '7'].map(day => [
+      day,
+      seededHours.filter(row => String(Number(row.weekday)) === day)
+        .map(row => ({ local_start: row.local_start, local_end: row.local_end })),
+    ]))
+    expect(operating_hours).toEqual(expected)
+    for (const day of ['1', '2', '3', '4', '5', '6', '7']) expect(operating_hours[day]).toHaveLength(1)
+  })
+
+  it('Vạn Phúc has no available Sunday period when Sunday hours are absent', async () => {
+    demoRepository().remove('provider_operating_hours', row => row.provider_id === OTHER && Number(row.weekday) === 7)
+    const { calendar_blocks } = await getProviderSchedule(otherOwner, OTHER, {
+      date_from: '2026-10-11',
+      date_to: '2026-10-11',
+    }, seedNow)
+    expect(calendar_blocks.some(block => block.status === 'Available')).toBe(false)
+    expect(calendar_blocks.some(block => block.status === 'On hold')).toBe(true)
   })
 
   it('the owner view carries booking_id on own Booking blocks (#73)', async () => {
@@ -64,7 +80,8 @@ describe('T012 | authorize → validate → expire → read (#80)', () => {
 
   it('the owner sees a due hold already expired', async () => {
     const { calendar_blocks } = await getProviderSchedule(otherOwner, OTHER, { date_from: '2026-10-11', date_to: '2026-10-11' }, at('2026-10-02T00:00:00+07:00'))
-    expect(calendar_blocks).toEqual([{ start_at: '2026-10-11T00:00:00+07:00', end_at: '2026-10-12T00:00:00+07:00', status: 'Unavailable' }])
+    const hours = demoRepository().all('provider_operating_hours').filter(row => row.provider_id === OTHER && Number(row.weekday) === 7)
+    expect(calendar_blocks).toEqual(buildCalendarBlocks(hours, [], '2026-10-11', '2026-10-11', 'owner'))
   })
 
   it('denied requests write nothing', async () => {

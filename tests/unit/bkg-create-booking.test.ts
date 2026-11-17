@@ -57,10 +57,10 @@ describe('T012 | createBooking lifecycle', () => {
     expect(agencyRows.map(row => row.booking_id)).toContain(result.booking_id)
   })
 
-  it('AS-5: a request outside operating hours or overlapping writes nothing', async () => {
+  it('AS-5: a request before operating hours or overlapping writes nothing', async () => {
     const bookings = count('bookings')
     const history = count('booking_status_history')
-    await expect(createBooking(provider, input({ start_at: '2026-10-13T09:00:00+07:00' }), options)) // Tuesday
+    await expect(createBooking(provider, input({ start_at: '2026-10-12T06:00:00+07:00' }), options)) // Monday, before any seeded opening time
       .rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })
     await expect(createBooking(provider, input({ start_at: '2026-10-05T09:30:00+07:00' }), options)) // overlaps Booked 4bf17b30…
       .rejects.toMatchObject({ code: 'SLOT_UNAVAILABLE' })

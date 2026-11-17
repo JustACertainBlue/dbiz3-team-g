@@ -56,9 +56,14 @@ describe('A2 | #40 FR-003 profile data comes from the Provider data', () => {
 
   it('availability holds the real weekly operating hours in the #78 shape', async () => {
     const profile = await getProviderProfile(BAT_TRANG, agency)
-    expect(profile?.availability).toEqual({
-      operating_hours: { 1: [{ local_start: '08:00', local_end: '17:00' }], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] },
-    })
+    const seededHours = demoRepository().all('provider_operating_hours').filter(row => row.provider_id === BAT_TRANG)
+    const expected = Object.fromEntries(['1', '2', '3', '4', '5', '6', '7'].map(day => [
+      day,
+      seededHours.filter(row => String(Number(row.weekday)) === day)
+        .map(row => ({ local_start: row.local_start.slice(0, 5), local_end: row.local_end.slice(0, 5) })),
+    ]))
+    expect(profile?.availability).toEqual({ operating_hours: expected })
+    expect(Object.values(expected).every(windows => windows.length === 1)).toBe(true)
   })
 
   it('booking_conditions are the shown version\'s booking_conditions', async () => {

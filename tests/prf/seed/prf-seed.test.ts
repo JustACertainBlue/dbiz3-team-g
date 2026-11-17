@@ -13,7 +13,7 @@
  *   provider_profiles.csv  — 8 providers, statuses: Verified×5, Pending Verification×1,
  *                            Draft×1, Revision Required×1
  *   experiences.csv        — 8 experiences; Nặn gốm price_per_person=150000 (VND)
- *   provider_operating_hours.csv — 8 rows; Bát Tràng provider weekday=1 local_start=08:00
+ *   provider_operating_hours.csv — every provider has all 7 ISO weekdays
  */
 import { describe, it, expect } from 'vitest'
 import { loadProviderProfiles, loadExperiences, loadOperatingHours } from '@/lib/prf/seed-reader'
@@ -124,15 +124,21 @@ describe('T008 | PRF Seed Data Smoke Test', () => {
   // ── provider_operating_hours ─────────────────────────────────────────────
 
   describe('provider_operating_hours.csv', () => {
-    it('loads 8 operating hour rows from seed (BR-021: recurring weekly hours)', async () => {
+    it('loads seven operating-hour rows per provider from seed (BR-021: recurring weekly hours)', async () => {
+      const providers = await loadProviderProfiles()
       const hours = await loadOperatingHours()
-      expect(hours).toHaveLength(8)
+      expect(hours).toHaveLength(providers.length * 7)
+      expect(new Set(hours.map(hour => `${hour.provider_id}:${hour.weekday}`)).size).toBe(hours.length)
+      for (const provider of providers) {
+        expect(hours.filter(hour => hour.provider_id === provider.provider_id).map(hour => hour.weekday).sort())
+          .toEqual([1, 2, 3, 4, 5, 6, 7])
+      }
     })
 
     it('Bát Tràng provider (50f2c8fc) has an operating hours row with weekday=1 and local_start=08:00', async () => {
       const hours = await loadOperatingHours()
       const batTrang = hours.find(
-        h => h.provider_id === '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374',
+        h => h.provider_id === '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374' && h.weekday === 1,
       )
       expect(batTrang).toBeDefined()
       expect(batTrang!.weekday).toBe(1)

@@ -27,15 +27,17 @@ describe('T007 | buildCalendarBlocks (#72)', () => {
   })
 
   it('a day without operating hours is Unavailable all day (US-2 AS-4)', () => {
-    expect(buildCalendarBlocks(hours(), bookings(), '2026-10-06', '2026-10-06', 'owner')).toEqual([
+    expect(buildCalendarBlocks([], bookings(), '2026-10-06', '2026-10-06', 'owner')).toEqual([
       { start_at: t('2026-10-06', '00:00'), end_at: t('2026-10-07', '00:00'), status: 'Unavailable' },
     ])
   })
 
   it('a Booking outside the hours is still occupied (#32)', () => {
-    const blocks = buildCalendarBlocks(hours(), bookings(), '2026-10-10', '2026-10-10', 'owner')
+    const limitedSaturdayHours = [{ weekday: '6', local_start: '10:45:00', local_end: '17:00:00' }]
+    const blocks = buildCalendarBlocks(limitedSaturdayHours, bookings(), '2026-10-10', '2026-10-10', 'owner')
     expect(blocks.map(block => [block.start_at.slice(11, 16), block.end_at.slice(11, 16), block.status])).toEqual([
-      ['00:00', '09:00', 'Unavailable'], ['09:00', '10:45', 'Booked'], ['10:45', '00:00', 'Unavailable'],
+      ['00:00', '09:00', 'Unavailable'], ['09:00', '10:45', 'Booked'],
+      ['10:45', '17:00', 'Available'], ['17:00', '00:00', 'Unavailable'],
     ])
   })
 

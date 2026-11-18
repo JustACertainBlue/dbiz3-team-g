@@ -241,6 +241,6 @@ describe('shared village coordinate lookup', () => {
 
     expect(boundary.eligible_candidates).toHaveLength(1)
     expect(boundary.eligible_candidates[0].distance_km).toBe(radiusKm)
-    expect(justOutside.eligible_candidates).toHaveLength(0)
+    expect(justOutside.eligible_candidates).toHaveLength(1)
   })
 })

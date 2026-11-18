@@ -26,3 +26,9 @@ these branches; each row below is a known gap between the built UI and the writt
   2026-11-18 #4, accepted for the MVP).
 - Images: no CC BY / CC BY-SA photographs in new UI work and no "Nguồn ảnh" link anywhere; `/image-credits` stays
   unlinked until every licensed photograph is replaced, then it is removed in a cleanup PR (decision #3).
+- Sample chat history: `chat_messages` rows of the seed/demo data still contain "[DEMO]" in their text. They are not
+  edited and the `chat_message_immutable_trg` trigger is not disabled (chat history is immutable); left as is
+  (human decision 2026-11-18).
+- Image import (decision 2026-11-18): `villages.cover_image_id` and `image_sources` (provenance of imported images:
+  source type, page URL, licence URL, photographer, date, visible faces and consent; SELECT only for `hab_app`, never
+  shown in the UI) are added to `20261118120000_hab_ui_v3_content.sql`. The import script lives on `feat/seed-image-import`.

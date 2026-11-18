@@ -1,132 +1,119 @@
 import Link from 'next/link';
-import MediaImage from '@/app/components/MediaImage';
 import { cookies } from 'next/headers';
-import { CircleCheck, ImageIcon, Lock, ShieldCheck, SlidersHorizontal, Sparkles } from 'lucide-react';
-import { buildExplorePage, eligibleRows, resolveViewer, villageStrip } from '../../lib/explore/catalog';
+import { eligibleRows, resolveViewer } from '../../lib/explore/catalog';
 import { demoRuntime } from '../../lib/explore/demo-runtime';
 import { loadExploreRuntime } from '../../lib/explore/seed-repository';
+import { applyQuickFilter, cardView, holdBanner, preferenceKeys, QUICK_FILTERS, villageTiles } from '../../lib/explore/v3-home';
 import ExploreTracker from './ExploreTracker';
-import ExperienceActions from './ExperienceActions';
-import { hasQuoteRequest } from '../../lib/demo/commercial-handoff-service';
-import GuestLockedActions from './GuestLockedActions';
 import { currentServerSession } from '../../lib/auth/server-session';
 import AppFooter from '../components/footer/AppFooter';
 import { footerVisible } from '../components/nav/nav-model';
-import './explore-v9.css';
-import { categoryLabel, craftLabel } from '../../lib/explore/display-labels';
+import SearchBar from './v3/SearchBar';
+import AiBox from './v3/AiBox';
+import ExperienceCard from './v3/ExperienceCard';
+import VillageGrid from './v3/VillageGrid';
+import CoverImage from './v3/CoverImage';
+import './v3/explore-v3.css';
 
 // Rendered per request (cookies, searchParams, live catalog). Without this, `next build` tries to
 // prerender the page and opens a database connection before noticing it is dynamic.
 export const dynamic = 'force-dynamic';
 
-type Params = { page?: string; category?: string };
+type Params = { loc?: string };
 
-// Design wave 4 (Figma "Explore v6", v9 §6c), content per EXP120 (Guest) / EXP017 (Agency): a static hero
-// (no slider: screen-spec §9 "no new feature implied by decorative mockup copy"), one ranked list with the
-// permitted filter and pagination (no search: spec-EXP Q8/Q11), Guest analytics consent kept (EXP120 #2, SR-004),
-// AI Matching for Agency only (EXP120 SR-003), no booking button (BKG BR-002).
-function durationLabel(minutes: number) {
-  const h = Math.floor(minutes / 60), m = minutes % 60;
-  return h && m ? `${h} giờ ${m} phút` : h ? `${h} giờ` : `${m} phút`;
-}
-const vnd = (value: number) => `${value.toLocaleString('vi-VN')} ₫`;
-
+// UI v3 Đợt 1: EXP120 Guest = mockup 01, EXP017 Tour Agency = mockup 21 (human decisions 2026-11-18; deviations
+// from docs/spec are listed in docs/build/ui-v3-spec-deviations.md). Four cards (Agency: personal ranking order),
+// quick filters by duration and capacity, villages with an image, the hold banner for an Agency On hold booking.
 export default async function ExplorePage({ searchParams }: { searchParams: Params }) {
   const seed = (await loadExploreRuntime());
-  const requestedPage = Number(searchParams.page ?? 1);
-  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const session = (await currentServerSession());
   const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
-  const engine=await demoRuntime();
-  const tracked = await engine.sessionFor(cookies().get('explore_session')?.value ?? '');
-  const rankOrder = tracked && tracked.agency_id === (viewer.kind === 'agency' ? viewer.agencyId : null)
-    ? (await engine.resultsFor(tracked.session_id)).map(row => row.experience_id) : undefined;
-  const catalog = buildExplorePage(seed, { page, viewer, category: searchParams.category, rankOrder });
-  const carry = searchParams.category ? `&category=${encodeURIComponent(searchParams.category)}` : '';
-  const totalPages = Math.ceil(catalog.pagination.total_count / catalog.pagination.page_size);
-  const categories = [...new Set(eligibleRows(seed).map(row => row.experience.category))].sort();
-  const strip = villageStrip(seed, viewer);
-  const heroImage = strip.find(item => item.card.images[0])?.card.images[0]?.storage_key;
-
   const isAgency = viewer.kind === 'agency';
-  // #204, FR-002 / FR-011: Agency cards offer Request Quote and Chat; Request Quote is hidden once sent.
-  const quoteSent = new Set(isAgency
-    ? (await Promise.all(catalog.experience_cards.map(async card => (await hasQuoteRequest(session, card.id)) ? card.id : ''))).filter(Boolean)
-    : []);
+  const agencyId = viewer.kind === 'agency' ? viewer.agencyId : null;
+  const engine = await demoRuntime();
+  const tracked = await engine.sessionFor(cookies().get('explore_session')?.value ?? '');
+  const rankOrder = tracked && tracked.agency_id === agencyId ? (await engine.resultsFor(tracked.session_id)).map(row => row.experience_id) : undefined;
 
-  return <div className="explore-module xv">
-    <section className="xv-hero" aria-label="Giới thiệu">
-      <div className="xv-hero__media">
-        {heroImage ? <MediaImage src={heroImage} alt="Xưởng thủ công làng nghề Hà Nội" large /> : <span className="xv-placeholder" aria-hidden="true"><ImageIcon size={40} /></span>}
-      </div>
-      <div className="xv-hero__panel">
-        <div className="xv-hero__intro">
-          <p className="xv-script">Yêu mến làng nghề</p>
-          <h1 className="xv-hero__title">Hà Nội</h1>
-          <p className="xv-hero__lead">Cầu nối đại lý du lịch với làng nghề thủ công đã xác minh quanh Hà Nội.</p>
-        </div>
-        <ul className="xv-strip" aria-label="Làng nghề có trải nghiệm đã xác minh">
-          {strip.map(item => <li key={item.village_name}>
-            <Link href={`/explore/experiences/${item.card.id}`} className="xv-strip__card" data-exp-action="click_card" data-exp-id={item.card.id} data-provider-id={item.card.provider_id}>
-              {item.card.images[0] ? <MediaImage src={item.card.images[0].storage_key} alt={`${item.village_name} — ${item.card.name}`} /> : <span className="xv-placeholder" aria-hidden="true"><ImageIcon size={24} /></span>}
-              <span className="xv-verified"><ShieldCheck aria-hidden="true" size={14} />Đã xác minh</span>
-              <span className="xv-strip__label"><strong>{item.village_name}</strong><small>{craftLabel(item.craft)}{!isAgency && <> · <Lock aria-hidden="true" size={12} /> Giá ẩn</>}</small></span>
-            </Link>
-          </li>)}
-        </ul>
-        <a className="xv-cta" href="#tim-kiem"><span>Khám phá làng nghề</span></a>
+  const quick = QUICK_FILTERS.some(item => item.key === searchParams.loc) ? searchParams.loc : undefined;
+  let rows = applyQuickFilter(eligibleRows(seed), quick);
+  if (rankOrder) {
+    const positions = new Map(rankOrder.map((id, index) => [id, index]));
+    rows = [...rows].sort((a, b) => (positions.get(a.experience.experience_id) ?? Number.MAX_SAFE_INTEGER) - (positions.get(b.experience.experience_id) ?? Number.MAX_SAFE_INTEGER));
+  }
+  const keys = preferenceKeys(seed, agencyId);
+  const cards = rows.slice(0, 4).map(row => cardView(seed, row, keys));
+  const tiles = villageTiles(seed);
+  const agency = agencyId ? seed.agency_profiles.find(row => row.agency_id === agencyId) : undefined;
+  const person = session.userId ? seed.user_accounts.find(row => row.user_id === session.userId)?.full_name : '';
+  const banner = agencyId ? holdBanner(seed, agencyId, new Date()) : null;
+  const listId = 'goi-y';
+
+  const filters = <nav className="v3-tabs" aria-label="Lọc nhanh">
+    {QUICK_FILTERS.map(item => <Link key={item.label} href={item.key ? `/explore?loc=${item.key}#${listId}` : `/explore#${listId}`}
+      className={`v3-tab${quick === item.key ? ' v3-tab--on' : ''}`} aria-current={quick === item.key ? 'true' : undefined}>{item.label}</Link>)}
+  </nav>;
+  const allExperiences = <Link href="/explore/search" className="v3-more">Xem tất cả trải nghiệm ›</Link>;
+  const allVillages = <Link href="/villages" className="v3-more">Xem tất cả làng nghề ›</Link>;
+
+  return <div className="v3x">
+    <section className="v3x-hero" aria-label="Giới thiệu">
+      {/* No hero image yet (human decision 2026-11-18 #3a: no CC BY / CC BY-SA images; waiting for a new one). */}
+      <div className="v3x-hero__in">
+        {isAgency && person && <p className="v3x-hero__eb">Chào {person},</p>}
+        {isAgency
+          ? <h1 className="v3x-hero__h">Đoàn tiếp theo của bạn<br />muốn làm nghề gì?</h1>
+          : <h1 className="v3x-hero__h">Tự tay làm nghề<br />cùng nghệ nhân làng</h1>}
+        <p className="v3x-hero__sub">{isAgency ? 'Tìm theo nghề, ngày đi và số khách. Giá từng trải nghiệm hiện ngay trên kết quả.' : 'Gốm, lụa, nón lá, mây tre… cho đoàn khách của bạn, đặt thẳng với xưởng.'}</p>
+        <Link className="v3x-hero__btn" href="/villages">Khám phá làng nghề</Link>
       </div>
     </section>
+    <div className="hab-band v3x-search"><SearchBar /></div>
 
-    <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
+    <ExploreTracker demoAgencyId={agencyId ?? undefined} />
 
-    <main className="xv-main">
-      <section id="tim-kiem" className="xv-filter" aria-label="Lọc trải nghiệm">
-        <SlidersHorizontal aria-hidden="true" size={20} />
-        <nav className="xv-chips" aria-label="Lọc theo loại hoạt động">
-          <Link className={!searchParams.category ? 'is-selected' : ''} aria-current={!searchParams.category ? 'true' : undefined} href="/explore#tim-kiem">Tất cả</Link>
-          {categories.map(category => <Link className={searchParams.category === category ? 'is-selected' : ''} aria-current={searchParams.category === category ? 'true' : undefined} key={category} data-exp-action="apply_filter" data-category={category}
-            href={`/explore?category=${encodeURIComponent(category)}#tim-kiem`}>{categoryLabel(category)}</Link>)}
-        </nav>
-        {isAgency && <Link className="xv-button xv-button--primary" href="/ai-matching"><Sparkles aria-hidden="true" size={18} />Ghép tour AI</Link>}
-      </section>
+    {banner && <section className="hab-band v3x-sec v3x-sec--remind" aria-label="Đặt chỗ đang giữ">
+      <div className="v3-remind" role="status">
+        <CoverImage src={banner.image} alt="" className="v3-remind__img" />
+        <p className="v3-remind__text"><b>{banner.title}</b><br />{banner.note}</p>
+        <Link className="hab-btn hab-btn--primary" href={banner.href}>Thanh toán ngay</Link>
+      </div>
+    </section>}
 
-      <section className="xv-section" aria-labelledby="xv-list-title">
-        <div className="xv-section__head">
-          <h2 id="xv-list-title">Trải nghiệm làng nghề</h2>
-          <p><span>{catalog.pagination.total_count} kết quả</span>{isAgency && <span className="xv-chip">Giá hiển thị: ₫ (VND)</span>}</p>
-        </div>
+    <section className="hab-band v3x-sec v3x-sec--ai" aria-labelledby="v3x-ai">
+      <div className="v3-head"><div><h2 id="v3x-ai" className="v3-h2">Chưa biết chọn trải nghiệm nào cho đoàn?</h2><p className="v3-sub">Kể cho AI nghe đoàn của bạn cần gì, AI sẽ gợi ý trải nghiệm làng nghề phù hợp.</p></div></div>
+      <AiBox agency={isAgency} title="Kể yêu cầu của đoàn bằng lời thường, AI tìm trải nghiệm làng nghề phù hợp cho bạn."
+        placeholder="VD: đoàn 20 học sinh, đi buổi sáng, muốn tự làm sản phẩm mang về…"
+        chips={isAgency ? ['Đoàn khách Hàn Quốc 15 người', 'Team building 30 người', 'Khách quốc tế, có sản phẩm mang về'] : ['Trải nghiệm cho 20 học sinh', 'Khách quốc tế, có sản phẩm mang về']} />
+    </section>
 
-        {catalog.experience_cards.length === 0
-          ? <div className="xv-empty"><p>Không có trải nghiệm khớp bộ lọc này.</p>{searchParams.category && <Link className="xv-button xv-button--outline" href="/explore#tim-kiem">Xóa bộ lọc</Link>}</div>
-          : <ul className="xv-grid" aria-label="Danh sách trải nghiệm">
-            {catalog.experience_cards.map(card => <li key={card.id}><article className="xv-card">
-              <div className="xv-card__media">
-                {card.images[0] ? <MediaImage src={card.images[0].storage_key} alt={card.name} /> : <span className="xv-placeholder" aria-hidden="true"><ImageIcon size={28} /></span>}
-              </div>
-              <div className="xv-card__body">
-                <p className="xv-card__meta"><span className="xv-tag">{card.location.village_name}</span><span>{durationLabel(card.duration_minutes)} · Tối đa {card.capacity.max_pax} khách</span></p>
-                <h3>{card.name}</h3>
-                <p className="xv-card__provider"><span className="xv-verified xv-verified--inline"><ShieldCheck aria-hidden="true" size={14} />Đã xác minh</span><Link href={`/explore/providers/${card.provider_id}`}>{card.provider_name}</Link></p>
-                <p className="xv-card__desc">{card.description}</p>
-                <p className="xv-card__type"><CircleCheck aria-hidden="true" size={16} />{categoryLabel(card.type)}</p>
-                {card.price === null
-                  ? <p className="xv-price xv-price--locked"><Lock aria-hidden="true" size={16} />Đăng nhập để xem giá</p>
-                  : <p className="xv-price">{vnd(card.price)}<small>/khách</small></p>}
-                <Link className="xv-button xv-button--outline" data-exp-action="click_card" data-exp-id={card.id} data-provider-id={card.provider_id} href={`/explore/experiences/${card.id}`}>Xem chi tiết</Link>
-                {isAgency && <ExperienceActions experienceId={card.id} sourceContext="Card" quoteSent={quoteSent.has(card.id)} />}
-                {!isAgency && <GuestLockedActions buttonClassName="xv-button xv-button--outline" />}
-              </div>
-            </article></li>)}
-          </ul>}
+    <section id={listId} className="hab-band v3x-sec" aria-labelledby="v3x-list">
+      <div className="v3-head">
+        <div><h2 id="v3x-list" className="v3-h2">{isAgency ? `Gợi ý cho ${agency?.company_name ?? 'công ty của bạn'}` : 'Tìm hoạt động cho đoàn khách của bạn?'}</h2>
+          {isAgency && <p className="v3-sub">Dựa trên loại tour công ty thường tổ chức và những gì bạn vừa xem.</p>}</div>
+        {isAgency && allExperiences}
+      </div>
+      {filters}
+      {cards.length
+        ? <div className="v3-xgrid">{cards.map(card => <ExperienceCard key={card.id} card={card} showDetailLink={isAgency} track={isAgency} />)}</div>
+        : <p className="v3-empty">Không có trải nghiệm khớp bộ lọc này.</p>}
+      {!isAgency && <div className="v3-more-row">{allExperiences}</div>}
+    </section>
 
-        {totalPages > 1 && <nav className="xv-pagination" aria-label="Phân trang">
-          {page > 1 ? <Link href={`/explore?page=${page - 1}${carry}#tim-kiem`}>Trang trước</Link> : <span aria-hidden="true" />}
-          <span>Trang {page} / {totalPages}</span>
-          {page < totalPages ? <Link href={`/explore?page=${page + 1}${carry}#tim-kiem`}>Trang sau</Link> : <span aria-hidden="true" />}
-        </nav>}
-      </section>
-    </main>
+    {tiles.length > 0 && <section id="lang-nghe" className="hab-band v3x-sec" aria-labelledby="v3x-villages">
+      <div className="v3-head"><div><h2 id="v3x-villages" className="v3-h2">{isAgency ? 'Làng nghề đang nhận đoàn' : 'Làng nghề quanh Hà Nội'}</h2></div>{isAgency && allVillages}</div>
+      <VillageGrid tiles={tiles} />
+      {!isAgency && <div className="v3-more-row">{allVillages}</div>}
+    </section>}
+
+    {!isAgency && <section className="hab-band v3x-sec" aria-labelledby="v3x-promo">
+      <div className="v3-promo">
+        <h2 id="v3x-promo" className="v3-promo__title">Lên tour làng nghề nhanh hơn</h2>
+        <p className="v3-promo__text">Có tài khoản công ty lữ hành, bạn xem được giá từng trải nghiệm, nhắn tin thẳng với xưởng và nhờ AI gợi ý trải nghiệm theo yêu cầu của đoàn.</p>
+        <div className="v3-promo__row"><Link className="hab-btn hab-btn--primary" href="/register">Đăng ký tài khoản công ty lữ hành</Link>
+          <p className="v3-promo__login">Đã có tài khoản? <Link href="/login" className="v3-link">Đăng nhập ngay</Link></p></div>
+      </div>
+    </section>}
+
     {footerVisible(session, '/explore') && <AppFooter />}
   </div>;
 }

@@ -7,26 +7,27 @@ import RefreshedNotice from './RefreshedNotice';
 
 type Action = 'click_card' | 'expand_preview' | 'view_detail' | 'apply_filter' | 'scroll';
 
+// UI v3 Đợt 1 (human decision 2026-11-18 #10.1, docs/build/ui-v3-spec-deviations.md #6): no consent box. A Guest
+// session runs with tracking_scope "No Non-essential Tracking" and the page sends no non-essential events; the
+// Tour Agency keeps personalisation (F-EXPLORE-05).
 export default function ExploreTracker({ demoAgencyId, detailExperienceId }: { demoAgencyId?: string; detailExperienceId?: string }) {
   const router = useRouter();
-  const [consent, setConsent] = useState(false);
   const [ready, setReady] = useState(false);
   const [refreshed, setRefreshed] = useState(false); // FR-010 indicator (#204)
   const enteredAt = useRef(Date.now());
 
-  useEffect(() => { setConsent(localStorage.getItem('explore_analytics_consent') === 'yes'); }, []);
   useEffect(() => {
     let alive = true;
     fetch('/api/explore/session', { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ analytics_consent: consent }) })
+      body: JSON.stringify({ analytics_consent: false }) })
       .then(response => { if (!response.ok) throw new Error('Session unavailable'); return response.json(); })
       .then(() => { if (alive) { setReady(true); router.refresh(); } })
       .catch(() => { if (alive) setReady(false); });
     return () => { alive = false; };
-  }, [demoAgencyId, consent, router]);
+  }, [demoAgencyId, router]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !demoAgencyId) return;
     const reportDetail = detailExperienceId ? createDetailExitReporter(detailExperienceId, enteredAt.current, payload => {
       fetch('/api/explore/events', { method: 'POST', headers: { 'content-type': 'application/json' }, keepalive: true,
         body: JSON.stringify({ event_id: crypto.randomUUID(), ...payload }) }).catch(() => {});
@@ -75,12 +76,7 @@ export default function ExploreTracker({ demoAgencyId, detailExperienceId }: { d
       window.removeEventListener('pagehide', onPageExit);
       window.removeEventListener('popstate', onPageExit);
     };
-  }, [ready, router, detailExperienceId]);
+  }, [ready, router, detailExperienceId, demoAgencyId]);
 
-  if (demoAgencyId) return <RefreshedNotice show={refreshed} />;
-  return <><RefreshedNotice show={refreshed} /><aside className="consent-panel" aria-label="Tùy chọn phân tích">
-    <label><input type="checkbox" checked={consent} onChange={event => {
-      const value = event.target.checked; setConsent(value); localStorage.setItem('explore_analytics_consent', value ? 'yes' : 'no');
-    }} /> Cho phép phân tích lượt xem ẩn danh để cải thiện danh mục</label>
-  </aside></>;
+  return <RefreshedNotice show={refreshed} />;
 }

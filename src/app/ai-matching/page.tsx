@@ -27,6 +27,12 @@ export default function AiMatchingScreen() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [agencyId, setAgencyId] = useState<string>('')
   const [inputText, setInputText] = useState('')
+  // UI v3 (human decision 2026-11-18 #2): Explore / detail pages open this page with ?prompt=…; the text is filled in
+  // the input and never sent automatically.
+  useEffect(() => {
+    const prompt = new URLSearchParams(window.location.search).get('prompt')
+    if (prompt) setInputText(prompt.slice(0, 2000))
+  }, [])
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [quoteStatus, setQuoteStatus] = useState<Record<string, string>>({})

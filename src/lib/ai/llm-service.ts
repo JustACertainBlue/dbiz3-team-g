@@ -172,7 +172,11 @@ export class ConversationalAiService {
    */
   static async processConversation(
     messages: Array<{ sender?: string; text: string; sent_at?: string }>,
-    options?: { now?: () => Date; state?: AitConversationState }
+    options?: {
+      now?: () => Date
+      state?: AitConversationState
+      recentTurns?: Array<{ sender?: string; text: string; sent_at?: string }>
+    }
   ): Promise<ConversationalAiResult> {
     const latestUserMsg = [...messages].reverse().find(m => m.sender?.toLowerCase() !== 'assistant')?.text || ''
     const now = options?.now ?? systemClock
@@ -230,11 +234,19 @@ export class ConversationalAiService {
 
     const previousAssistantReplies: string[] = []
     const currentState = options?.state ?? {}
+    const recentUserTurns = (options?.recentTurns ?? messages)
+      .filter(message => message.sender?.toLowerCase() !== 'assistant')
+      .slice(-2)
+      .map(message => message.text)
     const cfMessages: CloudflareChatMessage[] = [
       { role: 'system', content: systemPrompt },
       {
         role: 'system',
         content: `Current structured conversation state (JSON): ${JSON.stringify(currentState)}`,
+      },
+      {
+        role: 'system',
+        content: `Recent user turns (oldest first; use only to resolve references, never as new constraints): ${JSON.stringify(recentUserTurns)}`,
       },
       ...(latestUserMsg ? [{ role: 'user' as const, content: latestUserMsg }] : []),
     ]
@@ -507,6 +519,8 @@ export class ConversationalAiService {
     const userMessages = messages.filter(m => m.sender?.toLowerCase() !== 'assistant')
     const relevantMsgs = userMessages.length > 0 ? userMessages : messages
     const fullText = relevantMsgs.map(m => m.text).join(' ')
+    const relativeCenterPreference = /(?:gần|near)\s+(?:trung tâm|center)(?:\s+ấy)?/iu.test(fullText)
+      && !/(?:xuất phát từ|điểm đón|pickup|from)\b/iu.test(fullText)
 
     if (extracted?.group_size && typeof extracted.group_size === 'number' && extracted.group_size > 0) {
       context.group_size = extracted.group_size
@@ -560,12 +574,12 @@ export class ConversationalAiService {
     // The model may echo a village it suggested as the group's origin (e.g. "Vạn Phúc" right after
     // proposing it). Accept an origin only when the user actually wrote it; otherwise fall back to the
     // text scan so the assistant never treats its own suggestion as the starting point.
-    if (extracted?.origin && isOriginGroundedInUserText(String(extracted.origin), fullText)) {
+    if (!relativeCenterPreference && extracted?.origin && isOriginGroundedInUserText(String(extracted.origin), fullText)) {
       context.origin_or_route = { origin_address: String(extracted.origin) }
-    } else {
+    } else if (!relativeCenterPreference) {
       for (const m of [...relevantMsgs].reverse()) {
         const text = m.text || ''
-        const originMatch = text.match(/(?:from|near|xuất phát từ|từ|cách|gần|tại khu vực|ở|khu vực)\s+(.+?)(?=\s+(?:under|below|dưới|trong|không quá|tối đa|on|with|for|budget|looking|and|to|in|at|vào ngày|ngày|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu)
+        const originMatch = text.match(/(?:from|near|xuất phát từ|từ|cách|gần|tại khu vực|ở|khu vực)\s+(.+?)(?=\s+(?:under|below|dưới|trong|không quá|tối đa|hơn|more|on|with|for|budget|looking|and|to|in|at|vào ngày|ngày|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu)
         if (originMatch) {
           context.origin_or_route = { origin_address: originMatch[1].trim() }
           break
@@ -587,7 +601,7 @@ export class ConversationalAiService {
    */
   private static parseGroupSize(text: string): number | undefined {
     const match = text.match(
-      /(?:nh[oó]m|group\s+of?|for)\s*(\d+)|(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists?|passengers?|kh[aá]ch|ng[uư][oờ]i)/i
+      /(?:nh[oó]m|group\s+of?|for)\s*(\d+)|(\d+)\s*(?:French|international|foreign|guests?|pax|people|tourists?|passengers?|kh[aá]ch|ng[uư][oờ]i|b[aạ]n)/i
     )
     if (!match) return undefined
     const value = parseInt(match[1] || match[2], 10)
@@ -724,9 +738,11 @@ export class ConversationalAiService {
         tourContext.experience_types = types
       }
 
-      if (!tourContext.origin_or_route) {
+      const relativeCenterPreference = /(?:gần|near)\s+(?:trung tâm|center)(?:\s+ấy)?/iu.test(text)
+        && !/(?:xuất phát từ|điểm đón|pickup|from)\b/iu.test(text)
+      if (!tourContext.origin_or_route && !relativeCenterPreference) {
         // Supports accented (xuất phát từ) and unaccented (xuat phat tu, tu trung tam).
-        const originMatch = text.match(/(?:from|near|xu[aấ]t\s*ph[aá]t\s*t[uừ]|xuat\s*phat\s*tu|từ|cách|gần)\s+(.+?)(?=\s+(?:under|below|dưới|trong|không quá|tối đa|on|with|for|budget|looking|and|to|in|at|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu)
+        const originMatch = text.match(/(?:from|near|xu[aấ]t\s*ph[aá]t\s*t[uừ]|xuat\s*phat\s*tu|từ|cách|gần)\s+(.+?)(?=\s+(?:under|below|dưới|trong|không quá|tối đa|hơn|more|on|with|for|budget|looking|and|to|in|at|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu)
         if (originMatch) {
           tourContext.origin_or_route = { origin_address: originMatch[1].trim() }
         } else if (/(?:hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i.test(text)) {

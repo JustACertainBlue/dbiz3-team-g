@@ -917,6 +917,92 @@ describe('AIT geography pipeline through the real extractor', () => {
     })
   })
 
+  it.each([
+    ['scientific notation', '1e3 km'],
+    ['written number', 'mười km'],
+    ['kilometre spelling', '10 ki-lô-mét'],
+  ] as const)('rejects unsupported %s radius without changing state', async (_label, text) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    const response = await send(sessionId, text)
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(response.status).toBe(201)
+    expect(context?.state.radius_km).toBeUndefined()
+    expect(context?.state.slots.radius).toBeUndefined()
+    expect(response.json.village_cards).toEqual([])
+  })
+
+  it.each([
+    ['negative radius', 'dưới -5 km'],
+    ['zero group', '0 khách'],
+  ] as const)('rejects invalid %s before state merge', async (_label, text) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    const response = await send(sessionId, text)
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(response.status).toBe(201)
+    expect(context?.state.radius_km).toBeUndefined()
+    expect(context?.state.group_size).toBeUndefined()
+  })
+
+  it('does not treat 20 km as origin and sums adult plus child group counts', async () => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    const first = await send(sessionId, 'cho khách hoạt động cách 20 km, làm hương hay tò he cho 10 người')
+    const response = await send(sessionId, '10 người lớn 3 trẻ em')
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(first.status).toBe(201)
+    expect(context?.state.origin).toBeUndefined()
+    expect(context?.state.radius_km).toBe(20)
+    expect(context?.state.group_size).toBe(13)
+    expect(response.status).toBe(201)
+  })
+
+  it('splits a total budget only when group size is known', async () => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const withGroup = await openSession()
+    const grouped = await send(withGroup, '1,5 triệu cho cả đoàn 10 người')
+    expect(grouped.json.tour_preference_profile.hard_constraints.max_budget_per_person)
+      .toBe(150000)
+
+    const withoutGroup = await openSession()
+    const missing = await send(withoutGroup, '1,5 triệu cho cả đoàn')
+    expect(missing.json.tour_preference_profile.hard_constraints.max_budget_per_person)
+      .toBeUndefined()
+  })
+
+  it.each([
+    ['I want pottery villages under 15km', 'Vui lòng nhập bằng tiếng Việt'],
+    ['$20 per person', 'Hiện chưa hỗ trợ đơn vị tiền này, vui lòng nhập bằng đồng'],
+  ] as const)('rejects unsupported external-language or currency input: %s', async (text, expected) => {
+    installLlmMock('Mình đang tìm trải nghiệm.')
+    const response = await send(await openSession(), text)
+    const visible = String(response.json.turn.message)
+
+    expect(visible).toMatch(new RegExp(expected, 'iu'))
+  })
+
   it('omits null capacity and localizes verified distance explanations', async () => {
     installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
     const sessionId = await openSession()

@@ -74,6 +74,7 @@ import {
   isExplicitConversationReset,
   isFalsePositiveMealPhrase,
   hasZeroRadiusConstraint,
+  hasInvalidRadiusConstraint,
   isShortPendingReply,
   isSystemHelpRequest,
   hasUnsupportedDistanceConstraint,
@@ -321,13 +322,19 @@ export async function POST(
     const routeText = mixedMeal.hasMealRequest ? mixedMeal.inScopeText : textForParsing
     const unsupportedDistanceRequest = !isRetry && hasUnsupportedDistanceConstraint(routeText)
     const zeroRadiusRequest = !isRetry && hasZeroRadiusConstraint(routeText)
+    const invalidRadiusRequest = !isRetry && hasInvalidRadiusConstraint(routeText)
+    const unsupportedCurrencyRequest = !isRetry && /\$|(?:\bUSD\b|\bdollar\b|\beuro\b|\bEUR\b|\bGBP\b|\byen\b)/iu.test(routeText)
+    const pureEnglishRequest = !isRetry
+      && /^[\x00-\x7F]*$/.test(routeText)
+      && /\b(?:I|want|visit|pottery|silk|weaving|under|over|pax|budget|person|show|please|distance|from|with)\b/iu.test(routeText)
     const acceptsInScopeOffer = activePendingQuestion?.field === 'in_scope_offer'
       && isAffirmativeReply(originalText)
     const answersPendingQuestion = Boolean(activePendingQuestion && isShortPendingReply(originalText))
     const isHelpQuestion = isSystemHelpRequest(routeText) || isBookingHelpRequest(routeText)
     const bypassClassifier = isRetry || isReset || acceptsInScopeOffer || answersPendingQuestion
       || isHelpQuestion || isFalsePositiveMealPhrase(routeText) || mixedMeal.hasMealRequest
-      || unsupportedDistanceRequest || zeroRadiusRequest
+      || unsupportedDistanceRequest || zeroRadiusRequest || invalidRadiusRequest
+      || unsupportedCurrencyRequest || pureEnglishRequest
 
     // 3. Rule-based router and LLM router (A.2, B.3 Layer 1 & 2)
     if (!isRetry) {
@@ -546,6 +553,51 @@ export async function POST(
     // 4. Record the original input, then extract only the current turn against persisted state.
     const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', originalText)
     const isTest = isTestConversation([{ sender: 'Agency', text: originalText }])
+    if (unsupportedCurrencyRequest || pureEnglishRequest || invalidRadiusRequest) {
+      const reply = unsupportedCurrencyRequest
+        ? 'Hiện chưa hỗ trợ đơn vị tiền này, vui lòng nhập bằng đồng.'
+        : pureEnglishRequest
+          ? 'Hiện chỉ hỗ trợ tiếng Việt, bạn vui lòng nhập bằng tiếng Việt.'
+          : 'Giá trị bán kính không hợp lệ. Vui lòng nhập một số bán kính dương bằng km.'
+      await updateMatchingSessionContext(params.id, {
+        state: normalizeConversationState(conversationState),
+        pending_question: activePendingQuestion,
+        out_of_scope_refusal_count: 0,
+      })
+      await addMessage(params.id, 'Assistant', reply)
+      const turn = {
+        turn_type: 'answer' as const,
+        message: reply,
+        top_matches: [],
+        additional_suggestions: [],
+        comparison: null,
+        quick_replies: [],
+        follow_up_questions: [],
+        relaxation_suggestions: [],
+        sources: [],
+        used_llm: false,
+      }
+      return NextResponse.json({
+        message,
+        is_test: isTest,
+        extraction: {
+          is_complete: false,
+          processing_status: 'Success',
+          retry_available: false,
+          follow_up_questions: [],
+          tour_context: applyConversationState({}, normalizeConversationState(conversationState)),
+          conversational_reply: reply,
+          missing_primary: [],
+          intent: 'platform_guidance',
+          usedLlm: false,
+        },
+        tour_preference_profile: null,
+        activity_cards: [],
+        village_cards: [],
+        provider_cards: [],
+        turn,
+      }, { status: 201 })
+    }
     if (unsupportedDistanceRequest || zeroRadiusRequest) {
       const stateWithoutPreviousRadius = normalizeConversationState(conversationState)
       delete stateWithoutPreviousRadius.radius_km

@@ -75,8 +75,9 @@ export function filterCandidateByRadius(
     candidate.distance_source !== 'haversine'
     || typeof candidate.distance_km !== 'number'
     || !Number.isFinite(candidate.distance_km)
+    || candidate.distance_km < 0
   ) {
-    return { include: true, missingDistance: true, status: 'unconfirmed' }
+    return { include: false, missingDistance: true, status: 'unconfirmed' }
   }
 
   const uncertaintyKm = locationUncertaintyKm(candidate.location_source)

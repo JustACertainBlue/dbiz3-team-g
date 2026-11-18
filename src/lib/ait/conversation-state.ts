@@ -9,6 +9,9 @@ export interface AitConversationState {
   craft?: string
   group_size?: number
   budget_per_person?: number
+  budget_basis?: 'per_person' | 'group_total'
+  date_or_duration?: string
+  interests?: string[]
   date?: string
   origin?: string
   dismissed_questions: PendingQuestionField[]
@@ -59,6 +62,10 @@ export function stripUnsupportedDistanceConstraint(text: string): string {
 
 export function hasZeroRadiusConstraint(text: string): boolean {
   return new RegExp(ZERO_RADIUS_EXPRESSION, 'iu').test(text)
+}
+
+export function hasInvalidRadiusConstraint(text: string): boolean {
+  return /(?:^|[^\w])[-+]\s*\d+(?:[.,]\d+)?\s*(?:km|kilometers?|cây\s*số)\b|(?:^|[^\p{L}\d])(?:mười|1e\d+)\s*(?:km|kilometers?|cây\s*số)\b|10\s*ki[- ]?lô[- ]?mét\b/iu.test(text)
 }
 
 export function stripZeroRadiusConstraint(text: string): string {
@@ -137,6 +144,9 @@ export function normalizeConversationState(value: unknown): AitConversationState
   if (typeof raw.budget_per_person === 'number' && raw.budget_per_person > 0) {
     state.budget_per_person = raw.budget_per_person
   }
+  if (raw.budget_basis === 'per_person' || raw.budget_basis === 'group_total') {
+    state.budget_basis = raw.budget_basis
+  }
   if (typeof raw.date === 'string') state.date = raw.date
   if (typeof raw.origin === 'string') state.origin = raw.origin
   if (typeof raw.radius_km === 'number' && Number.isFinite(raw.radius_km) && raw.radius_km > 0) {
@@ -209,6 +219,10 @@ export function normalizeConversationState(value: unknown): AitConversationState
   }
   const radiusSlot = state.slots.radius
   if (radiusSlot) {
+    if (/[-+]\s*\d|1e\d|mười|ki[- ]?lô[- ]?mét/iu.test(radiusSlot.raw_span)) {
+      delete state.slots.radius
+      delete state.radius_km
+    } else {
     const parsedRadius = radiusSlot.raw_span.match(/(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])/iu)
     if (!parsedRadius) {
       delete state.slots.radius
@@ -216,6 +230,7 @@ export function normalizeConversationState(value: unknown): AitConversationState
     } else {
       radiusSlot.value = Number(parsedRadius[1].replace(',', '.'))
       state.radius_km = Number(radiusSlot.value)
+    }
     }
   }
   state.turn_history = Array.isArray(raw.turn_history)
@@ -409,17 +424,38 @@ export function mergeConversationState(
   }
 
   next.exclusions.villages = [...new Set([...next.exclusions.villages, ...newVillageExclusions])]
-  const rawGroup = text.match(/\b\d+\s*(?:khách|người|pax|people|guests?)\b/iu)?.[0]
-  const parsedGroupSize = rawGroup ? Number(rawGroup.match(/\d+/)?.[0]) : undefined
+  const adultsAndChildren = text.match(
+    /(\d+)\s*(?:người lớn|nguoi lon)\s*(\d+)\s*(?:trẻ em|tre em)\b/iu,
+  )
+  const rawGroup = adultsAndChildren
+    ? `${adultsAndChildren[1]} người lớn ${adultsAndChildren[2]} trẻ em`
+    : text.match(/\b\d+\s*(?:khách|người|pax|people|guests?)\b/iu)?.[0]
+  const parsedGroupSize = adultsAndChildren
+    ? Number(adultsAndChildren[1]) + Number(adultsAndChildren[2])
+    : rawGroup ? Number(rawGroup.match(/\d+/)?.[0]) : undefined
   const groupSize = parsedGroupSize ?? extracted.group_size
-  if (groupSize !== undefined && (rawGroup || next.group_size === undefined)) {
+  if (groupSize !== undefined && Number.isInteger(groupSize) && groupSize > 0 && (rawGroup || next.group_size === undefined)) {
     setSlot('group_size', groupSize, rawGroup ?? text, rawGroup ? 'explicit' : 'inferred')
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'group_size')
+  } else if (/\b0\s*(?:khách|người|pax|people|guests?)\b/iu.test(text)) {
+    delete next.group_size
+    delete next.slots.group_size
   }
   const budget = parseExplicitBudgetAmount(text)
   if (budget !== undefined) {
     const rawBudget = text.match(/\b\d[\d.,\s]*\s*(?:k\b(?!m)|nghìn|ngàn|triệu|đ|vnd)(?![\p{L}])/iu)?.[0] ?? text
-    setSlot('budget_per_person', budget, rawBudget)
+    const groupTotal = /(?:cả\s+đoàn|cho\s+cả\s+đoàn|tổng\s+đoàn|toàn\s+đoàn)/iu.test(text)
+    const explicitGroupSize = parsedGroupSize
+    if (groupTotal && (!explicitGroupSize || explicitGroupSize <= 0)) {
+      delete next.budget_per_person
+      delete next.slots.budget_per_person
+    } else {
+    const budgetValue = groupTotal && explicitGroupSize && explicitGroupSize > 0
+      ? budget / explicitGroupSize
+      : budget
+    setSlot('budget_per_person', budgetValue, rawBudget)
+    next.budget_basis = groupTotal ? 'group_total' : 'per_person'
+    }
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'budget_per_person')
   }
 
@@ -434,14 +470,20 @@ export function mergeConversationState(
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'date')
   }
   if (extracted.origin_or_route?.origin_address
-    && isOriginGroundedInUserText(extracted.origin_or_route.origin_address, text)) {
+    && isOriginGroundedInUserText(extracted.origin_or_route.origin_address, text)
+    && !/\b\d+(?:[.,]\d+)?\s*(?:km|kilometers?|cây\s*số)\b/iu.test(extracted.origin_or_route.origin_address)) {
     const origin = extracted.origin_or_route.origin_address
     setSlot('origin', origin, text)
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'origin')
   }
 
-  const radius = text.match(/(?:radius|bán kính|trong phạm vi|dưới|không quá|tối đa|cách)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])/iu)
-  if (radius) {
+  const radius = hasInvalidRadiusConstraint(text)
+    ? null
+    : text.match(/(?:radius|bán kính|trong phạm vi|dưới|không quá|tối đa|cách)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])/iu)
+  if (hasInvalidRadiusConstraint(text)) {
+    delete next.radius_km
+    delete next.slots.radius
+  } else if (radius) {
     setSlot('radius', Number(radius[1].replace(',', '.')), radius[0])
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'radius_km')
   }

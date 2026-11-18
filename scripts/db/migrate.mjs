@@ -1,6 +1,38 @@
 import { readFileSync,readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { command } from './shared.mjs'
+import { dryRunTarget, listMigrations, pendingMigrations } from './migrate-plan.mjs'
+
+const dryRun=process.argv.includes('--dry-run')
+const dirArg=process.argv.find(arg=>arg.startsWith('--dir='))?.slice('--dir='.length)
+if(dirArg&&!dryRun)throw new Error('--dir is only accepted with --dry-run')
+
+// --dry-run (human decision 2026-11-18): every pending migration runs in ONE transaction, in order, then ROLLBACK.
+// The ledger is not written. Each migration reports OK or its error. PROD is refused before connecting.
+// --dir=<folder> reads the migration files from another folder (to try files that are not on this branch yet).
+if(dryRun){
+  const {projectRef}=dryRunTarget(process.env)
+  console.log(`[dry-run] project ref ${projectRef}; nothing will be committed`)
+  await command(async client=>{
+    const existing=await client.query("SELECT to_regclass('hab_internal.migrations') AS history")
+    const applied=existing.rows[0].history?(await client.query('SELECT name FROM hab_internal.migrations')).rows.map(row=>row.name):[]
+    const dir=dirArg||'supabase/migrations'
+    const pending=pendingMigrations(listMigrations(dir),applied)
+    console.log(`[dry-run] ${applied.length} applied in the ledger, ${pending.length} pending: ${pending.join(', ')||'none'}`)
+    await client.query('BEGIN')
+    try{
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('hab_schema_migrations'))")
+      await client.query("SET LOCAL search_path=public,extensions; SET LOCAL statement_timeout='60s'")
+      for(const name of pending){
+        const sql=readFileSync(`${dir}/${name}`,'utf8').replace(/\r\n/g,'\n')
+        await client.query('SAVEPOINT hab_dry_run')
+        try{await client.query(sql);await client.query('RELEASE SAVEPOINT hab_dry_run');console.log(`[dry-run] OK    ${name}`)}
+        catch(error){await client.query('ROLLBACK TO SAVEPOINT hab_dry_run');console.log(`[dry-run] ERROR ${name}: ${typeof error?.code==='string'?error.code:'UNKNOWN'} ${error?.message??''}`);process.exitCode=1}
+      }
+    }finally{await client.query('ROLLBACK');console.log('[dry-run] rolled back; ledger unchanged')}
+  })
+  process.exit()
+}
 
 await command(async client=>{
   await client.query("SELECT pg_advisory_lock(hashtext('hab_schema_migrations'))")

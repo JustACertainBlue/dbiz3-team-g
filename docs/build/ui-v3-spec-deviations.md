@@ -16,3 +16,13 @@ these branches; each row below is a known gap between the built UI and the writt
 | 8 | Content fields | No spec fields for highlights (4 items with sub-line), inclusions, guide languages, child policy, suitable-for tags, fixed time slots, workshop founding year, parking note, village distance / visit notes / tour suggestion detail | Added by `supabase/migrations/20261118120000_hab_ui_v3_content.sql` (ADD only, not applied yet) and read with `src/lib/explore/vocabulary.ts` | Human, 18/11 (Đợt 1 #5) |
 | 9 | Village images | No village media in the data model | Village gallery and village grid reuse images of the village's verified workshops and their experiences; a village without any image shows an empty neutral frame (page) or is left out (grid on 01/21) | Human, 18/11 (Đợt 1 #7) |
 | 10 | Removed elements | Various screen-spec elements (breadcrumbs, verified badges, "Lịch của xưởng" link, separate detail-page footers, village catalogue box, inactive-provider text) | Removed because the approved mockup does not show them; `/explore/providers/[id]/schedule` stays until the embedded calendar on 24 works | Human, 18/11 (Đợt 1 #10) |
+
+## Follow-ups recorded with the deviations
+
+- `experience_slots` (migration `20261118120000_hab_ui_v3_content.sql`) grants `hab_app` SELECT only. The Provider
+  experience form (mockup 32, EXP069/EXP070) will need write access (INSERT/UPDATE/DELETE + RLS policies) when slot
+  editing is built; not granted now (human decision 2026-11-18 #6).
+- `founded_year` and `parking_note` live on `provider_profiles`, outside the verified profile version (human decision
+  2026-11-18 #4, accepted for the MVP).
+- Images: no CC BY / CC BY-SA photographs in new UI work and no "Nguồn ảnh" link anywhere; `/image-credits` stays
+  unlinked until every licensed photograph is replaced, then it is removed in a cleanup PR (decision #3).

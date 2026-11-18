@@ -90,7 +90,7 @@ export interface ResultView {
   availability: Availability | null; price: PriceView
 }
 
-function resultView(seed: ExploreSeed, row: Row, query: SearchQuery, isAgency: boolean): ResultView {
+export function resultView(seed: ExploreSeed, row: Row, query: Pick<SearchQuery, 'date' | 'guests'>, isAgency: boolean): ResultView {
   const { experience, version, village } = row
   const inclusions = parseInclusions(experience.inclusions)
   const km = parseDistance(village.distance_km)

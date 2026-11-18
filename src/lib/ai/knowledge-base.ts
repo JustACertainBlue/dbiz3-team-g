@@ -116,7 +116,7 @@ export const PLATFORM_KNOWLEDGE_BASE: KnowledgeItem[] = [
     titleVi: 'Thông tin cần cung cấp để ghép tour hiệu quả nhất',
     titleEn: 'Information Needed for the Best Tour Match',
     contentVi:
-      'Để AI tìm được xưởng phù hợp nhất, bạn nên cung cấp:\n- Số lượng khách (ví dụ: đoàn 15 khách)\n- Ngày tổ chức dự kiến (ví dụ: 25/11 hoặc Thứ Năm tuần sau)\n- Ngành nghề mong muốn (ví dụ: làm gốm vuốt tay, dệt lụa tơ tằm, đan mây tre)\n- Ngân sách tối đa/khách (ví dụ: dưới 400.000 đ/người)\n- Điểm đón/khởi hành (ví dụ: từ Hoàn Kiếm, phố cổ)',
+      'Để AI tìm được xưởng phù hợp nhất, bạn nên cung cấp:\n- Số lượng khách (ví dụ: đoàn 15 khách)\n- Ngày tổ chức dự kiến (ví dụ: 25/11 hoặc Thứ Năm tuần sau)\n- Ngành nghề mong muốn (ví dụ: làm gốm vuốt tay, dệt lụa tơ tằm, đan mây tre)\n- Ngân sách tối đa/khách (ví dụ: dưới 400.000 đ/người)\n- Điểm đón/khởi hành nếu muốn dùng điểm xuất phát khác trung tâm Hà Nội',
     contentEn:
       'To get the most accurate match, please mention:\n- Group size (e.g. 15 guests)\n- Target date (e.g. Nov 25 or next Thursday)\n- Desired craft (e.g. pottery, silk weaving, rattan)\n- Budget per person (e.g. under 400,000 VND)\n- Departure origin (e.g. from Old Quarter / Hoan Kiem)',
   },

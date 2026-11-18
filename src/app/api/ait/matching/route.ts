@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import {
   getMatchingSession,
+  getMessages,
   updateMatchingSessionContext,
 } from '@/lib/matching/session-service'
 import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
@@ -33,6 +34,7 @@ import { loadOperatingHours } from '@/lib/prf/seed-reader'
 import { runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
 import { matchingContextResults } from '@/lib/ait/match-reasons'
 import { originDisplayNotice } from '@/lib/matching/geo'
+import { isTestPrompt } from '@/lib/matching/test-dataset'
 
 export async function POST(request: Request) {
   try {
@@ -66,7 +68,9 @@ export async function POST(request: Request) {
       )
     }
 
-    const isTest = body.is_test === true || rawProfile.is_test === true
+    const messages = body.session_id ? await getMessages(body.session_id) : []
+    const latestUserMessage = [...messages].reverse().find(message => message.sender === 'Agency')
+    const isTest = latestUserMessage ? isTestPrompt(latestUserMessage.text) : false
 
     // Retrieve candidates
     const rawCandidates = isTest
@@ -98,6 +102,24 @@ export async function POST(request: Request) {
     const constraints = rawProfile.hard_constraints || {}
     const reqGroupSize = constraints.group_size || 0
     const originNotice = originDisplayNotice(constraints.origin)
+    if (originNotice?.startsWith('Địa điểm')) {
+      if (body.session_id) {
+        await updateMatchingSessionContext(
+          body.session_id,
+          matchingContextResults([], JSON.stringify(rawProfile.matching_attributes ?? []))
+        )
+      }
+      return NextResponse.json({
+        is_test: isTest,
+        origin_notice: originNotice,
+        top_matches: [],
+        additional_suggestions: [],
+        relaxation_suggestions: {
+          relaxation_suggestions: [],
+          conversation_prompt: originNotice,
+        },
+      })
+    }
 
     // Both matching routes use the same hard filters, ranking and card builder.
     const [bookings, operatingHours, villages] = await Promise.all([

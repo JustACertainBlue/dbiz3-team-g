@@ -2,7 +2,7 @@ import { resolveHanoiDistrictCenter, type Coordinates } from './hanoi-district-c
 
 export type OriginCoordinates = Coordinates
 
-export const DEFAULT_HANOI_ORIGIN_LABEL = 'trung tâm Hà Nội (Hồ Gươm)'
+export const DEFAULT_HANOI_ORIGIN_LABEL = 'trung tâm Hà Nội'
 export const DEFAULT_HANOI_ORIGIN: OriginCoordinates = {
   lat: 21.0285,
   lng: 105.8542,
@@ -12,10 +12,22 @@ export const DISTRICT_FALLBACK_UNCERTAINTY_KM = 10
 export const APPROXIMATE_COORDINATE_UNCERTAINTY_KM = 3
 const DEFAULT_HANOI_ORIGIN_LABELS = new Set([
   'ho guom',
+  'hoan kiem',
+  'ho hoan kiem',
   'trung tam ha noi',
   'trung tam ha noi ho guom',
   'ha noi',
   'gan ha noi',
+  'pho co',
+])
+const OUTSIDE_HANOI_ORIGIN_LABELS = new Set([
+  'da nang',
+  'sai gon',
+  'ho chi minh',
+  'ho chi minh city',
+  'tp hcm',
+  'tp ho chi minh',
+  'hcmc',
 ])
 
 function normalizeOriginLabel(value: string): string {
@@ -126,9 +138,9 @@ export function resolveOriginCoordinates(origin: unknown): OriginCoordinates | u
   if (explicitCoordinates) return explicitCoordinates
   if (origin == null || origin === '') return DEFAULT_HANOI_ORIGIN
   if (typeof origin === 'string') {
-    return isDefaultHanoiOriginLabel(origin)
-      ? DEFAULT_HANOI_ORIGIN
-      : resolveHanoiDistrictCenter(origin)
+    if (isDefaultHanoiOriginLabel(origin)) return DEFAULT_HANOI_ORIGIN
+    return resolveHanoiDistrictCenter(origin)
+      || (OUTSIDE_HANOI_ORIGIN_LABELS.has(normalizeOriginLabel(origin)) ? undefined : DEFAULT_HANOI_ORIGIN)
   }
   if (typeof origin !== 'object') return undefined
 
@@ -139,13 +151,31 @@ export function resolveOriginCoordinates(origin: unknown): OriginCoordinates | u
       ? record.address
       : undefined
   if (!address?.trim()) return DEFAULT_HANOI_ORIGIN
-  return isDefaultHanoiOriginLabel(address)
-    ? DEFAULT_HANOI_ORIGIN
-    : resolveHanoiDistrictCenter(address)
+  if (isDefaultHanoiOriginLabel(address)) return DEFAULT_HANOI_ORIGIN
+  return resolveHanoiDistrictCenter(address)
+    || (OUTSIDE_HANOI_ORIGIN_LABELS.has(normalizeOriginLabel(address)) ? undefined : DEFAULT_HANOI_ORIGIN)
 }
 
 export function originDisplayLabel(origin: unknown): string | undefined {
   if (origin == null || origin === '') return DEFAULT_HANOI_ORIGIN_LABEL
+  const record = origin && typeof origin === 'object'
+    ? origin as Record<string, unknown>
+    : undefined
+  const address = typeof origin === 'string'
+    ? origin.trim()
+    : typeof record?.origin_address === 'string'
+      ? record.origin_address.trim()
+      : typeof record?.address === 'string'
+        ? record.address.trim()
+        : undefined
+  if (address && isDefaultHanoiOriginLabel(address)) {
+    const normalizedAddress = normalizeOriginLabel(address)
+    if (/(?:^|\s)ho guom(?:\s|$)/.test(normalizedAddress)) return 'Hồ Gươm'
+    if (/(?:^|\s)hoan kiem(?:\s|$)/.test(normalizedAddress)) {
+      return normalizedAddress.startsWith('ho hoan kiem') ? 'Hồ Hoàn Kiếm' : 'Hoàn Kiếm'
+    }
+    return DEFAULT_HANOI_ORIGIN_LABEL
+  }
   const coordinates = resolveOriginCoordinates(origin)
   if (!coordinates) return undefined
   if (
@@ -155,15 +185,7 @@ export function originDisplayLabel(origin: unknown): string | undefined {
     return DEFAULT_HANOI_ORIGIN_LABEL
   }
   if (typeof origin === 'string') return origin
-  if (typeof origin === 'object') {
-    const record = origin as Record<string, unknown>
-    const address = typeof record.origin_address === 'string'
-      ? record.origin_address
-      : typeof record.address === 'string'
-        ? record.address
-        : undefined
-    if (address?.trim()) return address.trim()
-  }
+  if (address) return address
   return 'điểm xuất phát đã cung cấp'
 }
 
@@ -183,8 +205,11 @@ export function originDisplayNotice(origin: unknown): string | undefined {
   if (!address && !record?.lat && !record?.lng) {
     return `Khoảng cách tính từ ${DEFAULT_HANOI_ORIGIN_LABEL}.`
   }
-  if (address && !resolveOriginCoordinates(origin)) {
-    return `Chưa xác định được điểm xuất phát “${address}”; không đoán và chưa tính khoảng cách.`
+  if (address && OUTSIDE_HANOI_ORIGIN_LABELS.has(normalizeOriginLabel(address))) {
+    return `Địa điểm ${address} nằm ngoài phạm vi Hà Nội; mình chưa thể ghép tour theo điểm xuất phát này.`
+  }
+  if (address && !isDefaultHanoiOriginLabel(address) && !resolveHanoiDistrictCenter(address)) {
+    return `Chưa nhận ra địa điểm ${address}, tạm tính từ ${DEFAULT_HANOI_ORIGIN_LABEL}.`
   }
   return undefined
 }

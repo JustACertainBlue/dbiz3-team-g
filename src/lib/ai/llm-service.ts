@@ -9,6 +9,7 @@ import { detectCraftPreference, detectExperienceTypes } from '@/lib/matching/cra
 import { systemClock } from '@/lib/booking/clock'
 import { fallbackMissingPrimary, normalizeMissingPrimary } from './missing-primary'
 import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
+import type { AitConversationState } from '@/lib/ait/conversation-state'
 
 export interface ConversationalAiResult {
   intent: 'tour_matching' | 'platform_guidance' | 'mixed'
@@ -171,7 +172,7 @@ export class ConversationalAiService {
    */
   static async processConversation(
     messages: Array<{ sender?: string; text: string; sent_at?: string }>,
-    options?: { now?: () => Date }
+    options?: { now?: () => Date; state?: AitConversationState }
   ): Promise<ConversationalAiResult> {
     const latestUserMsg = [...messages].reverse().find(m => m.sender?.toLowerCase() !== 'assistant')?.text || ''
     const now = options?.now ?? systemClock
@@ -227,18 +228,15 @@ export class ConversationalAiService {
     const knowledge = relevantKnowledge.length > 0 ? relevantKnowledge : undefined
     const systemPrompt = buildSystemPrompt(knowledge)
 
-    // Format messages for the LLM. Earlier assistant turns are kept so references such
-    // as "1 đi" still resolve, but the reply itself is checked against them for repetition (rule 13).
-    const previousAssistantReplies = messages
-      .filter(m => m.sender?.toLowerCase() === 'assistant')
-      .map(m => m.text)
-      .filter((text): text is string => Boolean(text && text.trim()))
+    const previousAssistantReplies: string[] = []
+    const currentState = options?.state ?? {}
     const cfMessages: CloudflareChatMessage[] = [
       { role: 'system', content: systemPrompt },
-      ...messages.slice(-6).map(m => ({
-        role: (m.sender?.toLowerCase() === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
-        content: m.text,
-      })),
+      {
+        role: 'system',
+        content: `Current structured conversation state (JSON): ${JSON.stringify(currentState)}`,
+      },
+      ...(latestUserMsg ? [{ role: 'user' as const, content: latestUserMsg }] : []),
     ]
 
     let aiResponse: {
@@ -303,24 +301,25 @@ export class ConversationalAiService {
       const isGuidance = rawIntent === 'platform_guidance' || detectedGuidance
       const hasTourIntent = !isGuidance && (rawIntent === 'tour_matching' || rawIntent === 'mixed' || Object.keys(tourContext).length > 0)
       const waivers = detectWaivers(latestUserMsg)
-      const followUps = Array.isArray(parsed.follow_up_questions) ? [...parsed.follow_up_questions] : []
+      const followUps: string[] = Array.isArray(parsed.follow_up_questions)
+        ? parsed.follow_up_questions.filter((question: unknown): question is string =>
+          typeof question === 'string'
+          && !/(?:xuất phát|điểm đón|origin|from)/i.test(question)
+        )
+        : []
 
-      // Require all 4 core fields for a tour to be complete (BR-004, T035). A field the Agency
+      // Require the craft, group size, and date fields for a tour to be complete (BR-004, T035). A field the Agency
       // explicitly waived counts as settled, so the assistant stops asking about it.
       const hasPreference = Boolean(tourContext.craft_preference || (tourContext.experience_types && tourContext.experience_types.length > 0))
-      const hasOrigin = Boolean(tourContext.origin_or_route?.origin_address)
       const hasGroupSize = tourContext.group_size !== undefined && tourContext.group_size > 0
       const hasDate = Boolean(tourContext.target_date_or_range?.start_date)
 
-      if (!isGuidance && (!hasPreference || !hasOrigin || !hasGroupSize || !hasDate)) {
+      if (!isGuidance && (!hasPreference || !hasGroupSize || !hasDate)) {
         if (!hasGroupSize && !followUps.some(q => /số lượng khách|group size|pax|khách/i.test(q))) {
           followUps.push(isVi ? 'Quý khách vui lòng cho biết số lượng khách dự kiến tham gia đoàn?' : 'Could you please specify your expected group size?')
         }
         if (!hasDate && !waivers.date && !followUps.some(q => /ngày|date|khi nào/i.test(q))) {
           followUps.push(isVi ? 'Đoàn dự kiến khởi hành vào ngày nào (ví dụ: 25/11 hoặc Thứ Năm tuần tới)?' : 'What is your desired date or date range for the tour?')
-        }
-        if (!hasOrigin && !waivers.origin && !followUps.some(q => /xuất phát|điểm đón|origin|from/i.test(q))) {
-          followUps.push(isVi ? 'Đoàn sẽ xuất phát từ khu vực nào tại Hà Nội (ví dụ: từ Hoàn Kiếm, phố cổ)?' : 'Where will the group start from (for example "from Hoàn Kiếm")?')
         }
         if (!hasPreference && !waivers.craft && !followUps.some(q => /nghề|craft|trải nghiệm|thủ công/i.test(q))) {
           followUps.push(isVi ? 'Đoàn quan tâm đến loại trải nghiệm làng nghề nào (ví dụ: gốm Bát Tràng, lụa Vạn Phúc, mộc Chàng Sơn, mây tre Phú Vinh)?' : 'Which craft or type of experience are you looking for (for example pottery, silk weaving, woodcarving)?')
@@ -329,7 +328,7 @@ export class ConversationalAiService {
 
       const finalContext = isGuidance ? (tourContext.craft_preference ? { craft_preference: tourContext.craft_preference } : {}) : tourContext
       // If user has all 4 core fields, mark complete and match right away, but STILL keep follow-up questions to refine!
-      const isComplete = Boolean(!isGuidance && hasGroupSize && (hasDate || waivers.date) && (hasOrigin || waivers.origin) && (hasPreference || waivers.craft))
+      const isComplete = Boolean(!isGuidance && hasGroupSize && (hasDate || waivers.date) && (hasPreference || waivers.craft))
 
       return {
         intent: isGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
@@ -439,13 +438,10 @@ export class ConversationalAiService {
     const group = tourContext.group_size
     const craft = tourContext.craft_preference || tourContext.experience_types?.[0]
     const date = tourContext.target_date_or_range?.start_date
-    const origin = tourContext.origin_or_route?.origin_address
-
     const acknowledged: string[] = []
     if (group) acknowledged.push(isVi ? `đoàn khoảng ${group} khách` : `a group of about ${group} guests`)
     if (craft) acknowledged.push(isVi ? `trải nghiệm ${craft}` : `a ${craft} experience`)
     if (date) acknowledged.push(isVi ? `ngày ${date}` : `the date ${date}`)
-    if (origin) acknowledged.push(isVi ? `xuất phát từ ${origin}` : `starting from ${origin}`)
 
     const waived: string[] = []
     if (waivers.budget) waived.push(isVi ? 'ngân sách' : 'budget')
@@ -456,7 +452,6 @@ export class ConversationalAiService {
     const missing: string[] = []
     if (!group) missing.push(isVi ? 'số lượng khách dự kiến' : 'the expected group size')
     if (!craft && !waivers.craft) missing.push(isVi ? 'loại trải nghiệm làng nghề mong muốn' : 'the craft experience you want')
-    if (!origin && !waivers.origin) missing.push(isVi ? 'khu vực xuất phát của đoàn' : 'where the group starts from')
     if (!date && !waivers.date) missing.push(isVi ? 'ngày dự kiến khởi hành' : 'the intended departure date')
 
     const sentences: string[] = []
@@ -745,7 +740,6 @@ export class ConversationalAiService {
 
     const hasGroupSize = tourContext.group_size !== undefined && tourContext.group_size > 0
     const hasDate = Boolean(tourContext.target_date_or_range)
-    const hasOrigin = Boolean(tourContext.origin_or_route)
     const hasCraft = Boolean(tourContext.craft_preference || tourContext.experience_types?.length)
 
     const followUps: string[] = []
@@ -763,13 +757,6 @@ export class ConversationalAiService {
           : 'What is your desired date or date range for the tour?'
       )
     }
-    if (!hasOrigin && !waivers.origin) {
-      followUps.push(
-        isVi
-          ? 'Đoàn sẽ xuất phát từ khu vực nào tại Hà Nội (ví dụ: từ Hoàn Kiếm)?'
-          : 'Where will the group start from (for example "from Hoàn Kiếm")?'
-      )
-    }
     if (!hasCraft && !waivers.craft) {
       followUps.push(
         isVi
@@ -778,7 +765,7 @@ export class ConversationalAiService {
       )
     }
 
-    const isComplete = hasGroupSize && (hasDate || waivers.date) && (hasOrigin || waivers.origin) && (hasCraft || waivers.craft)
+    const isComplete = hasGroupSize && (hasDate || waivers.date) && (hasCraft || waivers.craft)
     let conversationalReply = ''
     if (craftPref === 'woodcarving' || /(?:làng mộc|chàng sơn|sơn đồng)/i.test(latestUserMsg)) {
       conversationalReply = isVi
@@ -793,9 +780,7 @@ export class ConversationalAiService {
         ? 'Rất sẵn lòng! Hanoi Artisan Bridge kết nối đầy đủ các tuyến tham quan di sản, làng cổ và bảo tàng làng nghề đặc sắc (như Bảo tàng Gốm Bát Tràng & Lò Bầu cổ, Tuyến phố lụa Vạn Phúc, Di tích đình làng Chàng Sơn...). Dưới đây là các điểm đến tham quan phù hợp cho bạn:'
         : 'Certainly! Hanoi Artisan Bridge connects heritage sightseeing tours, ancient villages and craft museums. Here are the top destinations for your tour:'
     } else if (isComplete) {
-      conversationalReply = isVi
-        ? 'Tôi đã tiếp nhận yêu cầu và đối soát các xưởng nghề phù hợp nhất cho đoàn:'
-        : 'I have gathered all the key requirements for your tour. Analyzing and ranking the best matching craft workshops now...'
+      conversationalReply = this.contextualReply(tourContext, waivers, isVi)
     } else {
       // Build the reply from what this turn actually contains, so two different inputs never get the
       // same canned sentence (rules 12 and 13).

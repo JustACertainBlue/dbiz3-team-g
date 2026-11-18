@@ -24,20 +24,35 @@ describe('AI Matching with Test Dataset (villages_providers_activities_merged.js
     expect(isTestPrompt('test')).toBe(true)
     expect(isTestPrompt('Test')).toBe(true)
     expect(isTestPrompt('test tour 15 người làng gốm')).toBe(true)
+    expect(isTestPrompt('TEST')).toBe(true)
+    expect(isTestPrompt('test: làng gốm')).toBe(true)
+    expect(isTestPrompt('tester')).toBe(false)
+    expect(isTestPrompt('testing')).toBe(false)
+    expect(isTestPrompt('latest')).toBe(false)
+    expect(isTestPrompt('contest')).toBe(false)
+    expect(isTestPrompt('kiểm tra làng gốm')).toBe(false)
     expect(isTestPrompt('Tôi muốn tìm xưởng gốm')).toBe(false)
     expect(isTestPrompt('chuyến đi tốt đẹp')).toBe(false)
   })
 
-  it('keeps test mode active on later turns in the same conversation', () => {
+  it('does not carry fixture mode from an earlier Agency turn', () => {
+    expect(isTestConversation([
+      { sender: 'Agency', text: 'test tour làng gốm' },
+      { sender: 'Assistant', text: 'Tôi tìm được một số trải nghiệm.' },
+      { sender: 'Agency', text: 'Tìm làng Phùng Xá' },
+    ])).toBe(false)
+  })
+
+  it('uses only the latest Agency turn to select the dataset', () => {
     expect(isTestConversation([
       { sender: 'Agency', text: 'test tour' },
       { sender: 'Assistant', text: 'Please provide more details.' },
       { sender: 'Agency', text: '10 pax from Hoàn Kiếm' },
-    ])).toBe(true)
+    ])).toBe(false)
     expect(isTestConversation([
       { sender: 'Assistant', text: 'Try the test tour' },
-      { sender: 'Agency', text: '10 pax from Hoàn Kiếm' },
-    ])).toBe(false)
+      { sender: 'Agency', text: '10 pax from Hoàn Kiếm test' },
+    ])).toBe(true)
   })
 
   it('loads test candidates solely from the test JSON file', () => {

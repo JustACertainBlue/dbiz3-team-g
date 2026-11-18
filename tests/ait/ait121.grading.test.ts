@@ -511,7 +511,7 @@ t('CARD', 'reasons sinh trực tiếp tiếng Việt, đúng thứ tự khóa cr
   ]);
   expect(c.caveats).toEqual([{
     key: 'distance',
-    text: 'Cách trung tâm Hà Nội (Hồ Gươm) khoảng 12.4 km (đường chim bay)',
+    text: 'Cách trung tâm Hà Nội khoảng 12.4 km (đường chim bay)',
   }]);
 });
 t('CARD', 'yếu tố không khớp chỉ vào caveats, không bao giờ vào reasons', async () => {
@@ -616,9 +616,9 @@ t('MESSAGE', 'result list is one activity per line and omits unavailable distanc
     'Đã loại Bát Tràng và sắp xếp giá từ cao xuống thấp.',
     '',
     '1. Dệt lụa truyền thống: 175.000đ/người',
-    '2. Thêu họa tiết: 150.000đ/người (Cách trung tâm Hà Nội (Hồ Gươm) khoảng 5.0 km (đường chim bay))',
+    '2. Thêu họa tiết: 150.000đ/người (Cách trung tâm Hà Nội khoảng 5.0 km (đường chim bay))',
     '',
-    'Khoảng cách tính từ trung tâm Hà Nội (Hồ Gươm).',
+    'Khoảng cách tính từ trung tâm Hà Nội.',
     '',
     'Chúc đoàn có trải nghiệm vui vẻ.',
   ].join('\n'));

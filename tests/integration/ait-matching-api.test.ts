@@ -206,12 +206,14 @@ describe('T055 | D11 Quote / Chat authorize before validate (BR-001, BR-002, les
 describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34, #35)', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('T035: partial profiles answer with available criteria and invite missing origin', async () => {
+  it('T035: partial profiles use the default origin without asking the Agency for one', async () => {
     const noOriginSession = await openSession()
     const noOrigin = await send(noOriginSession, 'silk weaving, 10 pax on 2026-11-20')
-    expect(noOrigin.json.extraction.is_complete).toBe(false)
+    expect(noOrigin.json.extraction.is_complete).toBe(true)
     expect(noOrigin.json.tour_preference_profile).not.toBeNull()
-    expect(noOrigin.json.extraction.follow_up_questions[0]).not.toMatch(/\borigin\b/i)
+    expect(noOrigin.json.extraction.follow_up_questions).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/\borigin\b|điểm xuất phát/i)])
+    )
     const sessionRow = await demoRepository().find(
       'matching_sessions',
       row => row.matching_session_id === noOriginSession
@@ -219,11 +221,11 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
     const context = typeof sessionRow?.conversation_context === 'string'
       ? JSON.parse(sessionRow.conversation_context)
       : sessionRow?.conversation_context
-    expect(context?.pending_question?.field).toBe('origin')
+    expect(context?.pending_question).toBeNull()
 
     const destinationOnly = await send(await openSession(), 'pottery workshop in Bat Trang, 10 pax on 2026-11-20')
-    expect(destinationOnly.json.extraction.is_complete).toBe(false)
-    expect(destinationOnly.json.tour_preference_profile).toBeNull()
+    expect(destinationOnly.json.extraction.is_complete).toBe(true)
+    expect(destinationOnly.json.tour_preference_profile).not.toBeNull()
 
     const noPreference = await send(await openSession(), '10 pax on 2026-11-20 from Hoàn Kiếm')
     expect(noPreference.json.extraction.is_complete).toBe(false)

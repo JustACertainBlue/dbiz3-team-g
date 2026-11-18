@@ -3,6 +3,7 @@ import { loadExperiences } from '@/lib/db/seed-loader'
 import { getTestCandidates } from '@/lib/matching/test-dataset'
 import {
   DEFAULT_HANOI_ORIGIN,
+  originDisplayLabel,
   originDisplayNotice,
   resolveOriginCoordinates,
 } from '@/lib/matching/geo'
@@ -138,13 +139,55 @@ describe('shared village enrichment', () => {
 })
 
 describe('origin and radius uncertainty', () => {
-  it('uses the named Ho Guom default only when no origin was provided', () => {
+  it('uses the Hanoi center as the visible default origin', () => {
     expect(resolveOriginCoordinates(undefined)).toEqual(DEFAULT_HANOI_ORIGIN)
-    expect(resolveOriginCoordinates({ address: 'Unknown place outside lookup' })).toBeUndefined()
-    expect(originDisplayNotice(undefined)).toContain('trung tâm Hà Nội (Hồ Gươm)')
+    expect(resolveOriginCoordinates({ address: 'Unknown place outside lookup' })).toEqual(DEFAULT_HANOI_ORIGIN)
+    expect(originDisplayNotice(undefined)).toContain('trung tâm Hà Nội')
     expect(originDisplayNotice({ address: 'Unknown place outside lookup' })).toContain(
-      'Chưa xác định được điểm xuất phát',
+      'Chưa nhận ra địa điểm Unknown place outside lookup, tạm tính từ trung tâm Hà Nội',
     )
+    expect(originDisplayNotice({ address: 'Đà Nẵng' })).toContain('ngoài phạm vi Hà Nội')
+  })
+
+  it('uses only the center label when the user has not named an origin', () => {
+    expect(originDisplayLabel(undefined)).toBe('trung tâm Hà Nội')
+    for (const alias of ['Hà Nội', 'gần Hà Nội', 'phố cổ', 'trung tâm Hà Nội']) {
+      expect(originDisplayLabel(alias)).toBe('trung tâm Hà Nội')
+      expect(resolveOriginCoordinates(alias)).toEqual(DEFAULT_HANOI_ORIGIN)
+    }
+    expect(originDisplayLabel('Hoàn Kiếm')).toBe('Hoàn Kiếm')
+    expect(originDisplayLabel('ho guom')).toBe('Hồ Gươm')
+    const message = buildResultsMessage({
+      count: 1,
+      matches: [{
+        experience_name: 'Nặn gốm',
+        price_per_person: 150000,
+        distance_km: 8.1,
+        distance_source: 'haversine',
+        location_source: 'from_plus_code',
+      }],
+    })
+
+    expect(message).toContain('Khoảng cách tính từ trung tâm Hà Nội.')
+    expect(message).toContain('Cách trung tâm Hà Nội khoảng 8.1 km (đường chim bay)')
+    expect(message).not.toMatch(/Hồ Gươm|Hoàn Kiếm|Ho Guom/i)
+  })
+
+  it('renders the exact user-named default-origin alias', () => {
+    const message = buildResultsMessage({
+      count: 1,
+      origin: 'Hồ Gươm',
+      matches: [{
+        experience_name: 'Nặn gốm',
+        price_per_person: 150000,
+        distance_km: 8.1,
+        distance_source: 'haversine',
+        location_source: 'from_plus_code',
+      }],
+    })
+
+    expect(message).toContain('Cách Hồ Gươm khoảng 8.1 km (đường chim bay)')
+    expect(message).not.toContain('trung tâm Hà Nội (Hồ Gươm)')
   })
 
   it.each([
@@ -255,8 +298,8 @@ describe('origin and radius uncertainty', () => {
       radiusKm: 10,
     })
 
-    expect(message).toContain('Khoảng cách tính từ trung tâm Hà Nội (Hồ Gươm).')
-    expect(message).toContain('Cách trung tâm Hà Nội (Hồ Gươm) khoảng 1.3 km (đường chim bay)')
+    expect(message).toContain('Khoảng cách tính từ trung tâm Hà Nội.')
+    expect(message).toContain('Cách trung tâm Hà Nội khoảng 1.3 km (đường chim bay)')
     expect(message).toContain('khoảng 13 km (ước tính theo huyện)')
     expect(message).toContain('chưa xác nhận bán kính')
     expect(message).not.toContain('chưa có dữ liệu khoảng cách')

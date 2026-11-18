@@ -94,10 +94,10 @@ describe('T011 | Intent Extraction & Clarification (FR-003, FR-004, BR-004, BR-0
 describe('T035 | Completeness per OQ #4 (FR-003, BR-004, #29, #34, #35)', () => {
   const extract = (text: string) => extractTourContext([{ sender: 'Agency', text }])
 
-  it('#29: no origin → incomplete with an origin follow-up and no default origin', async () => {
+  it('#29: no origin → complete without inventing an origin or asking for one', async () => {
     const result = await extract('silk weaving, 10 pax on 2026-11-20')
-    expect(result.is_complete).toBe(false)
-    expect(result.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(true)
+    expect(result.is_complete).toBe(true)
+    expect(result.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(false)
     expect(result.tour_context.origin_or_route).toBeUndefined()
   })
 
@@ -115,14 +115,15 @@ describe('T035 | Completeness per OQ #4 (FR-003, BR-004, #29, #34, #35)', () => 
     expect(workshop.tour_context.experience_types).toEqual(['Workshop/Hands-on'])
   })
 
-  it('#35: "near X" and "from <district>" are origins; a craft village as destination is not', async () => {
+  it('#35: resolves explicit origins without treating a craft-village destination as one', async () => {
     expect((await extract('pottery workshop near Hanoi, 10 pax on 2026-11-20')).is_complete).toBe(true)
     const longBien = await extract('pottery workshop, 10 pax on 2026-11-20 from Long Biên')
     expect(longBien.is_complete).toBe(true)
     expect(longBien.tour_context.origin_or_route?.origin_address).toBe('Long Biên')
     const destination = await extract('pottery workshop in Bat Trang, 10 pax on 2026-11-20')
-    expect(destination.is_complete).toBe(false)
-    expect(destination.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(true)
+    expect(destination.is_complete).toBe(true)
+    expect(destination.tour_context.origin_or_route).toBeUndefined()
+    expect(destination.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(false)
   })
 
   it('#29: the profile has no Experience type attribute the Agency did not state', async () => {

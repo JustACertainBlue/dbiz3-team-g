@@ -791,8 +791,7 @@ export default function AiMatchingScreen({
 
     setMessages(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'Agency', text: textToSend, sent_at: nowVN() }])
     if (!customPrompt) setInputText('')
-    const isTest = /(?:^|[\s,.:;!?])test(?:$|[\s,.:;!?])/i.test(textToSend.trim())
-    await analyze({ sender: 'Agency', text: textToSend, is_test: isTest })
+    await analyze({ sender: 'Agency', text: textToSend })
   }
 
   /**
@@ -1172,7 +1171,7 @@ export default function AiMatchingScreen({
                                       ? `khoảng ${Math.round(rec.distance_km)} km (ước tính theo huyện)`
                                       : rec.location_source === 'approximate'
                                         ? `khoảng ${Math.round(rec.distance_km)} km (tọa độ xấp xỉ)`
-                                        : `Cách ${rec.distance_origin_label || 'trung tâm Hà Nội (Hồ Gươm)'} khoảng ${rec.distance_km.toFixed(1)} km (đường chim bay)`}${rec.radius_status === 'unconfirmed' ? ' · Chưa xác nhận bán kính' : ''}`
+                                        : `Cách ${rec.distance_origin_label || 'trung tâm Hà Nội'} khoảng ${rec.distance_km.toFixed(1)} km (đường chim bay)`}${rec.radius_status === 'unconfirmed' ? ' · Chưa xác nhận bán kính' : ''}`
                                     : rec.radius_status === 'unconfirmed'
                                       ? ' · Chưa xác nhận bán kính'
                                       : rec.distance_requested

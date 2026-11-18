@@ -7,6 +7,12 @@ import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
 import { DEFAULT_HANOI_ORIGIN, resolveOriginCoordinates } from '@/lib/matching/geo'
+import {
+  conversationStateBytes,
+  emptyConversationState,
+  mergeConversationState,
+  normalizeConversationState,
+} from '@/lib/ait/conversation-state'
 
 type Handler = (request: never, context?: never) => Promise<Response>
 type Json = Record<string, any>
@@ -37,7 +43,7 @@ async function send(sessionId: string, text: string, isTest = false) {
   return call(
     POST_MESSAGES,
     `/api/ait/sessions/${sessionId}/messages`,
-    { sender: 'Agency', text, ...(isTest ? { is_test: true } : {}) },
+    { sender: 'Agency', text: isTest ? `${text} test` : text },
     { id: sessionId }
   )
 }
@@ -45,7 +51,7 @@ async function send(sessionId: string, text: string, isTest = false) {
 function installLlmMock(reply: string, origin?: string, missingPrimary: string[] = []) {
   vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', 'test-account')
   vi.stubEnv('CLOUDFLARE_API_TOKEN', 'test-token')
-  vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockResolvedValue({
+  const llmCall = vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockResolvedValue({
     success: true,
     text: JSON.stringify({
       intent: 'tour_matching',
@@ -66,11 +72,12 @@ function installLlmMock(reply: string, origin?: string, missingPrimary: string[]
     provider: 'cloudflare_workers_ai',
     model: 'test-mock',
   })
-  vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
+  const classify = vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
     intent: 'catalog_query',
     confidence: 1,
     source: 'llm',
   })
+  return { llmCall, classify }
 }
 
 describe('AIT geography pipeline through the real extractor', () => {
@@ -103,12 +110,289 @@ describe('AIT geography pipeline through the real extractor', () => {
       expect(villageNames.some(name => name.includes(forbidden))).toBe(false)
     }
     expect(response.json.turn.message).not.toContain('Bát Tràng cách 4 km')
-    expect(response.json.turn.message).toContain('tính từ trung tâm Hà Nội (Hồ Gươm)')
-    expect(response.json.turn.message.match(/tính từ trung tâm Hà Nội \(Hồ Gươm\)/g)).toHaveLength(1)
+    expect(response.json.turn.message).toContain('tính từ Hồ Gươm')
+    expect(response.json.turn.message.match(/tính từ Hồ Gươm/g)).toHaveLength(1)
     for (const card of villageCards) {
       expect(card.distance_km).toEqual(expect.any(Number))
       expect(card.distance_source).toBe('haversine')
     }
+  })
+
+  it('uses only the current standalone test marker and strips it before parsing', async () => {
+    const mocks = installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+
+    const fixtureTurn = await send(sessionId, 'Tìm làng nghề dưới 10 km TEST:')
+
+    expect(fixtureTurn.json.is_test).toBe(true)
+    expect(fixtureTurn.json.tour_preference_profile.hard_constraints.radius_km).toBe(10)
+    expect(mocks.classify).toHaveBeenCalledWith(
+      'Tìm làng nghề dưới 10 km',
+      expect.anything(),
+    )
+    expect(mocks.llmCall.mock.calls[0][0].find(message => message.role === 'user')?.content)
+      .toContain('Tìm làng nghề dưới 10 km')
+    expect(mocks.llmCall.mock.calls[0][0].find(message => message.role === 'user')?.content)
+      .not.toMatch(/\bTEST\b/i)
+
+    const seedTurn = await send(sessionId, 'Tìm làng Phùng Xá')
+
+    expect(seedTurn.json.is_test).toBe(false)
+    expect((seedTurn.json.village_cards as Json[]).map(card => card.name).join(' '))
+      .not.toContain('Phùng Xá')
+    expect(JSON.stringify(seedTurn.json.turn)).toContain('chưa có dữ liệu')
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('retains explicit structured slots across three turns on %s data', async (_source, isFixture) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    const marker = isFixture ? ' test' : ''
+    const readState = async () => {
+      const row = await demoRepository().find(
+        'matching_sessions',
+        item => item.matching_session_id === sessionId,
+      )
+      const context = typeof row?.conversation_context === 'string'
+        ? JSON.parse(row.conversation_context)
+        : row?.conversation_context
+      return context?.state
+    }
+
+    await send(sessionId, `làng gốm${marker}`)
+    expect(await readState()).toMatchObject({
+      craft: 'pottery',
+      slots: {
+        craft: { value: 'pottery', raw_span: 'làng gốm', created_turn: 1, source: 'explicit' },
+      },
+    })
+
+    await send(sessionId, `dưới 10 km${marker}`)
+    expect(await readState()).toMatchObject({
+      craft: 'pottery',
+      radius_km: 10,
+      slots: {
+        radius: { value: 10, raw_span: 'dưới 10 km', created_turn: 2, source: 'explicit' },
+      },
+    })
+
+    await send(sessionId, `14 người${marker}`)
+    const state = await readState()
+    expect(state).toMatchObject({
+      craft: 'pottery',
+      radius_km: 10,
+      group_size: 14,
+      slots: {
+        craft: { value: 'pottery', raw_span: 'làng gốm', created_turn: 1, source: 'explicit' },
+        radius: { value: 10, raw_span: 'dưới 10 km', created_turn: 2, source: 'explicit' },
+        group_size: { value: 14, raw_span: '14 người', created_turn: 3, source: 'explicit' },
+      },
+    })
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('retains explicit radius while changing to silk on %s data', async (_source, isFixture) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    const marker = isFixture ? ' test' : ''
+
+    await send(sessionId, `dưới 9 km${marker}`)
+    const response = await send(sessionId, `làng dệt lụa gần Hà Nội${marker}`)
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(context?.state).toMatchObject({ craft: 'silk', radius_km: 9 })
+    expect(context?.state.budget_per_person).toBeUndefined()
+    expect(response.json.turn.message).toContain('Đang áp dụng:')
+    expect(response.json.turn.message).not.toContain('chưa xác định được')
+    expect(response.json.turn.message).not.toContain('ngân sách')
+  })
+
+  it('sends only structured state and the latest Agency text to the LLM', async () => {
+    const mocks = installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+
+    await send(sessionId, 'làng gốm')
+    await send(sessionId, 'dưới 10 km')
+
+    const prompt = mocks.llmCall.mock.calls[1][0]
+    expect(prompt.filter(message => message.role === 'assistant')).toEqual([])
+    expect(prompt.filter(message => message.role === 'user').map(message => message.content))
+      .toEqual(['dưới 10 km'])
+    expect(prompt.find(message =>
+      message.role === 'system' && message.content.includes('Current structured conversation state')
+    )?.content).toContain('"craft":"pottery"')
+    expect(prompt.map(message => message.content).join(' ')).not.toMatch(/Hồ Gươm|Hoàn Kiếm|Ho Guom/i)
+  })
+
+  it('keeps geo debug logs opt-in and does not change the response', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const debugCalls = () => info.mock.calls.filter(([message]) =>
+      typeof message === 'string' && message.startsWith('ref=')
+    )
+    const previousDebugFlag = process.env.AIT_DEBUG
+    let withoutDebug: Awaited<ReturnType<typeof send>>
+    try {
+      delete process.env.AIT_DEBUG
+      installLlmMock('Mình tìm thấy các làng nghề phù hợp.')
+      withoutDebug = await send(await openSession(), 'làng nghề dưới 10 km')
+      expect(debugCalls()).toHaveLength(0)
+    } finally {
+      if (previousDebugFlag === undefined) delete process.env.AIT_DEBUG
+      else process.env.AIT_DEBUG = previousDebugFlag
+    }
+
+    vi.stubEnv('AIT_DEBUG', '1')
+    const debugMocks = installLlmMock('Mình tìm thấy các làng nghề phù hợp.')
+    const withDebug = await send(await openSession(), 'làng nghề dưới 10 km')
+
+    expect(JSON.stringify(withDebug.json)).not.toMatch(/ref=|debug/i)
+    expect(JSON.stringify(withDebug.json)).not.toMatch(/Hồ Gươm|Hoàn Kiếm|Ho Guom/i)
+    expect(debugMocks.llmCall.mock.calls[0][0].map(message => message.content).join(' '))
+      .not.toMatch(/ref=|AIT_DEBUG/i)
+    const responseContent = (json: Json) => {
+      const content = { ...json }
+      delete content.message
+      return content
+    }
+    expect(responseContent(withDebug.json)).toEqual(responseContent(withoutDebug.json))
+    expect(debugCalls()).toHaveLength(1)
+    expect(debugCalls()[0]).toEqual([
+      expect.stringContaining('ref=21.0285,105.8542 (default: trung tâm Hà Nội)'),
+      expect.arrayContaining([
+        expect.objectContaining({ id: expect.any(String), precision: expect.any(String) }),
+      ]),
+    ])
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('clarifies ambiguous unsupported craft without changing state on %s data', async (_source, isFixture) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    const marker = isFixture ? ' test' : ''
+
+    await send(sessionId, `làng gốm${marker}`)
+    const before = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const beforeContext = typeof before?.conversation_context === 'string'
+      ? JSON.parse(before.conversation_context)
+      : before?.conversation_context
+    const response = await send(sessionId, `làm tò he được không${marker}`)
+    const after = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const afterContext = typeof after?.conversation_context === 'string'
+      ? JSON.parse(after.conversation_context)
+      : after?.conversation_context
+
+    expect(response.json.turn.turn_type).toBe('clarify')
+    expect(afterContext?.state).toEqual(beforeContext?.state)
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('treats a known outside-Hanoi origin as out of scope on %s data', async (_source, isFixture) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.', 'Đà Nẵng')
+    const sessionId = await openSession()
+    const marker = isFixture ? ' test' : ''
+
+    const response = await send(sessionId, `làng nghề cách Đà Nẵng dưới 10 km${marker}`)
+
+    expect(response.json.turn.message).toContain('ngoài phạm vi Hà Nội')
+    expect(response.json.turn.top_matches).toEqual([])
+    expect(response.json.turn.message).not.toContain('Cách trung tâm Hà Nội')
+  })
+
+  it('does not run direct matching for an origin outside Hanoi', async () => {
+    const response = await call(POST_MATCHING, '/api/ait/matching', {
+      tour_preference_profile: {
+        hard_constraints: { origin: { origin_address: 'Đà Nẵng' } },
+        matching_attributes: [{ type: 'craft_preference', value: 'pottery' }],
+        preference_weights: {
+          experience_fit: 0.4,
+          route_convenience: 0.25,
+          agency_preferences: 0.2,
+          provider_quality: 0.15,
+        },
+      },
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.json.top_matches).toEqual([])
+    expect(response.json.origin_notice).toContain('ngoài phạm vi Hà Nội')
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('replaces criteria and reports unsupported craft on %s data', async (_source, isFixture) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    const marker = isFixture ? ' test' : ''
+
+    await send(sessionId, `làng gốm${marker}`)
+    await send(sessionId, `dưới 10 km${marker}`)
+    await send(sessionId, `14 người${marker}`)
+    const response = await send(
+      sessionId,
+      `cho khách hoạt động cách 20 km, làm hương hay tò he cho 10 người${marker}`,
+    )
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(context?.state).toMatchObject({
+      craft: 'hương/tò he',
+      radius_km: 20,
+      group_size: 10,
+    })
+    expect(context?.state.exclusions.villages).toEqual([])
+    expect(response.json.turn.message).toContain('Hiện chưa có dữ liệu về hương/tò he.')
+    expect(response.json.turn.message).toContain('làng nghề khác đang có dữ liệu')
+    expect(response.json.turn.message).not.toContain('Bát Tràng có')
+  })
+
+  it('reparses stored raw spans and keeps only the last 20 structured turns', () => {
+    const stale = normalizeConversationState({
+      budget_per_person: 9000,
+      slots: {
+        budget_per_person: {
+          value: 9000,
+          raw_span: 'dưới 9 km',
+          created_turn: 1,
+          source: 'explicit',
+        },
+      },
+    })
+    expect(stale.budget_per_person).toBeUndefined()
+
+    let state = emptyConversationState()
+    for (let turn = 0; turn < 25; turn += 1) {
+      state = mergeConversationState(state, `dưới ${turn + 1} km`, {}, new Date('2026-11-09T00:00:00Z'))
+    }
+
+    expect(state.turn_history).toHaveLength(20)
+    expect(state.turn_count).toBe(25)
+    expect(conversationStateBytes(state)).toBeLessThan(20000)
   })
 
   it.each([
@@ -140,7 +424,7 @@ describe('AIT geography pipeline through the real extractor', () => {
     const response = await send(sessionId, 'làng nghề cách Sao Hỏa dưới 5 km', isTest)
 
     expect(response.json.extraction.usedLlm).toBe(true)
-    expect(response.json.turn.message).toContain('Chưa xác định được điểm xuất phát')
+    expect(response.json.turn.message).toContain('Chưa nhận ra địa điểm')
     expect(response.json.turn.message).not.toContain('Khoảng cách tính từ trung tâm Hà Nội (Hồ Gươm)')
   })
 
@@ -182,12 +466,12 @@ describe('AIT geography pipeline through the real extractor', () => {
 
     expect(villageCards.some(card => String(card.name).includes('Bát Tràng'))).toBe(true)
     expect(message).not.toContain('Bát Tràng cách 4 km')
-    expect(message).toContain('tính từ trung tâm Hà Nội (Hồ Gươm)')
-    expect(message.match(/tính từ trung tâm Hà Nội \(Hồ Gươm\)/g)).toHaveLength(1)
+    expect(message).toContain('Khoảng cách tính từ trung tâm Hà Nội.')
+    expect(message.match(/Khoảng cách tính từ trung tâm Hà Nội\./g)).toHaveLength(1)
     for (const card of villageCards) {
       const distance = card.location_source === 'district_fallback'
         ? `khoảng ${Math.round(Number(card.distance_km))} km (ước tính theo huyện)`
-        : `Cách trung tâm Hà Nội (Hồ Gươm) khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
+        : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
       expect(message).toContain(distance)
     }
   })
@@ -287,7 +571,7 @@ describe('AIT geography pipeline through the real extractor', () => {
     }
   })
 
-  it('does not carry an unstated radius or budget into the next Vietnamese turn', async () => {
+  it('carries an explicit radius but not an unmentioned budget into the next Vietnamese turn', async () => {
     installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
     const sessionId = await openSession()
     await send(sessionId, 'Tìm trải nghiệm dưới 9 km', true)
@@ -296,13 +580,13 @@ describe('AIT geography pipeline through the real extractor', () => {
     const constraints = response.json.tour_preference_profile.hard_constraints
 
     expect(response.json.extraction.usedLlm).toBe(true)
-    expect(constraints.radius_km).toBeUndefined()
+    expect(constraints.radius_km).toBe(9)
     expect(constraints.max_budget_per_person).toBeUndefined()
-    expect(response.json.turn.message).not.toContain('bán kính 9 km')
+    expect(response.json.turn.message).toContain('bán kính 9 km')
     expect(response.json.turn.message).not.toContain('Chưa xác định được điểm xuất phát')
   })
 
-  it('does not carry an unstated origin into the next Vietnamese turn', async () => {
+  it('carries an explicitly stated origin into the next Vietnamese turn', async () => {
     installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
     const sessionId = await openSession()
     await send(sessionId, 'Tìm làng nghề cách Ba Đình dưới 9 km', true)
@@ -310,7 +594,9 @@ describe('AIT geography pipeline through the real extractor', () => {
     const response = await send(sessionId, 'làng dệt lụa', true)
 
     expect(response.json.extraction.usedLlm).toBe(true)
-    expect(response.json.tour_preference_profile.hard_constraints.origin).toBeUndefined()
+    expect(response.json.tour_preference_profile.hard_constraints.origin).toMatchObject({
+      origin_address: 'Ba Đình',
+    })
   })
 
   it('omits null capacity and localizes verified distance explanations', async () => {
@@ -335,7 +621,7 @@ describe('AIT geography pipeline through the real extractor', () => {
       if (card.distance_source === 'haversine') {
         const distance = card.location_source === 'district_fallback'
           ? `Khoảng ${Math.round(Number(card.distance_km))} km (ước tính theo huyện)`
-          : `Cách trung tâm Hà Nội (Hồ Gươm) khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
+          : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
         expect(String(card.explanation)).toContain(distance)
       }
     }

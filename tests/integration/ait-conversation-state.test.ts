@@ -91,8 +91,8 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       radius_km: 25,
       exclusions: { villages: [], crafts: [] },
     })
-    expect(state.budget_per_person).toBeUndefined()
-    expect(state.origin).toBeUndefined()
+    expect(state.budget_per_person).toBe(450000)
+    expect(state.origin).toBe('Ba Đình')
   })
 
   it('T17: “như lúc nãy, giữ nguyên nhé” keeps the stored profile without another question', async () => {
@@ -124,7 +124,13 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
     expect(response.status).toBe(201)
     expect(response.json.extraction.follow_up_questions).toEqual([])
-    expect((await getContext(sessionId)).state).toMatchObject(previousState)
+    expect((await getContext(sessionId)).state).toMatchObject({
+      craft: 'silk',
+      group_size: 10,
+      budget_per_person: 200000,
+      date: '2026-11-20',
+      origin: 'Hoàn Kiếm',
+    })
   })
 
   it('T2: updates the craft preference to the latest choice across repeated changes', async () => {
@@ -165,7 +171,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     }
   })
 
-  it('clears a 200,000 VND budget when a later turn does not repeat it (P1)', async () => {
+  it('retains an explicitly stated 200,000 VND budget when a later turn omits it (P1)', async () => {
     const sessionId = await openSession()
     const extraction = vi.spyOn(extractor, 'extractTourContext')
     extraction
@@ -195,12 +201,12 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     expect(extraction).toHaveBeenNthCalledWith(2, expect.objectContaining({
       messages: expect.arrayContaining([expect.objectContaining({ text: 'Ngày 20/11/2026' })]),
     }))
-    expect((await getContext(sessionId)).state.budget_per_person).toBeUndefined()
-    expect(later.json.extraction.tour_context.budget?.max_per_person).toBeUndefined()
+    expect((await getContext(sessionId)).state.budget_per_person).toBe(200000)
+    expect(later.json.extraction.tour_context.budget?.max_per_person).toBe(200000)
   })
 
   it.each(['ăn trưa', 'nhà hàng', 'chỗ ăn', 'khách sạn', 'xe', 'thời tiết'])(
-    'replaces unsupported AI follow-up questions about "%s" with a supported missing-field question',
+    'does not surface unsupported AI follow-up questions about "%s"',
     async (unsupportedTopic) => {
       const sessionId = await openSession()
       await send(sessionId, 'Tìm trải nghiệm dệt lụa cho 10 khách, ngày 20/11/2026')
@@ -218,12 +224,9 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       const pendingQuestion = (await getContext(sessionId)).pending_question
 
       expect(answer).not.toMatch(/ăn\s*trưa|nhà\s*hàng|chỗ\s*ăn|khách\s*sạn|\bxe\b|thời\s*tiết/i)
-      expect(pendingQuestion.field).toBe('origin')
-      expect(pendingQuestion.text).toMatch(/xuất phát/i)
-      expect(pendingQuestion.text).not.toMatch(/\borigin\b/i)
-      expect(answer).toContain(pendingQuestion.text)
+      expect(pendingQuestion).toBeNull()
       expect(answer).not.toMatch(/\borigin\b/i)
-      expect(response.json.extraction.follow_up_questions).toEqual([pendingQuestion.text])
+      expect(response.json.extraction.follow_up_questions).toEqual([])
     }
   )
 
@@ -299,7 +302,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     expect(contextAfterFirst.pending_question.field).toBe('date')
     expect(reply.json.extraction.tour_context.target_date_or_range.start_date).toMatch(/^\d{4}-11-20$/)
     expect(stateAfterReply.date).toMatch(/^\d{4}-11-20$/)
-    expect((await getContext(sessionId)).pending_question.field).toBe('origin')
+    expect((await getContext(sessionId)).pending_question).toBeNull()
   })
 
   it('T14b: clears a skipped optional invitation and does not repeat it later', async () => {
@@ -341,11 +344,10 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     const skipped = await send(sessionId, 'Đổi sang nón lá')
     const later = await send(sessionId, 'Xem thêm trải nghiệm')
 
-    expect((await getContext(sessionId)).pending_question.field).toBe('origin')
+    expect((await getContext(sessionId)).pending_question).toBeNull()
     expect((await getContext(sessionId)).state.dismissed_questions).toContain('date')
     expect(skipped.json.extraction.follow_up_questions).toEqual([])
-    expect(later.json.extraction.follow_up_questions).toHaveLength(1)
-    expect(later.json.extraction.follow_up_questions[0]).toMatch(/điểm xuất phát/i)
+    expect(later.json.extraction.follow_up_questions).toEqual([])
     expect(later.json.turn.message).not.toMatch(/ngày đi|khởi hành vào ngày/i)
   })
 
@@ -371,7 +373,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     const response = await send(sessionId, answer)
     const context = await getContext(sessionId)
     expect(context.state.date).toBe(answer)
-    expect(context.pending_question.field).not.toBe('date')
+    expect(context.pending_question).toBeNull()
     expect(response.json.turn.turn_type).not.toBe('refusal')
   })
 
@@ -595,7 +597,8 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
     expect(response.status).toBe(201)
     expect(cards.length).toBeGreaterThan(0)
-    expect(message.match(/Cách Hoàn Kiếm khoảng \d+\.\d km \(đường chim bay\)/g)).toHaveLength(cards.length)
+    expect(message.match(/Cách trung tâm Hà Nội khoảng \d+\.\d km \(đường chim bay\)/g)).toHaveLength(cards.length)
+    expect(message).not.toContain('Hoàn Kiếm')
     for (const card of cards) {
       expect(card.distance_source).toBe('haversine')
       expect(card.distance_km).toEqual(expect.any(Number))
@@ -610,7 +613,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     const activityLines = message.split('\n').filter((line: string) => /^\d+\.\s/.test(line))
     expect(activityLines).toHaveLength(cards.length)
     expect(activityLines).toEqual(cards.map((card: Json, index: number) =>
-      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người${card.distance_source === 'haversine' && typeof card.distance_km === 'number' ? ` (Cách Hoàn Kiếm khoảng ${card.distance_km.toFixed(1)} km (đường chim bay))` : ''}`
+      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người${card.distance_source === 'haversine' && typeof card.distance_km === 'number' ? ` (Cách trung tâm Hà Nội khoảng ${card.distance_km.toFixed(1)} km (đường chim bay))` : ''}`
     ))
     const knownActivityNames = (await loadExperiences()).map((experience) => experience.name)
     expect(knownActivityNames.filter((name) => message.includes(name)).sort())
@@ -720,7 +723,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
         type: 'knowledge_base',
         ref: 'contact_and_booking',
       })
-      expect(message).toMatch(/không thể tự đặt, xác nhận hoặc chốt tour/i)
+      expect(message).toMatch(/AI không tự đặt hoặc xác nhận tour/i)
       expect(message.length).toBeLessThanOrEqual(500)
       expect(message).toContain('"Xin báo giá ngay"')
       expect(message).toContain('"Chi tiết"')
@@ -752,7 +755,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
     expect(response.json.turn.message).not.toMatch(/(?:đã\s+(?:đặt|xác nhận|chốt)\s+tour|tour\s+đã\s+(?:đặt|xác nhận|chốt))/i)
     expect(response.json.turn.turn_type).toBe('answer')
-    expect(response.json.turn.message).toMatch(/không thể tự đặt, xác nhận hoặc chốt tour/i)
+    expect(response.json.turn.message).toMatch(/AI không tự đặt hoặc xác nhận tour/i)
     expect(response.json.turn.message.length).toBeLessThanOrEqual(500)
     expect(response.json.turn.message).toContain('"Xin báo giá ngay"')
   })
@@ -769,7 +772,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       group_size: original.group_size,
       date: original.date,
     })
-    expect(afterUnstatedTurn.origin).toBeUndefined()
+    expect(afterUnstatedTurn.origin).toBe(original.origin)
 
     const help = await send(sessionId, 'Đặt lịch thế nào?')
     expect(help.json.extraction?.intent, JSON.stringify(help.json)).toBe('platform_guidance')

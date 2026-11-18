@@ -13,6 +13,7 @@ export interface MessageInput {
 export interface ExtractionOptions {
   simulateFailure?: boolean
   now?: () => Date
+  state?: AitConversationState
 }
 
 export interface ExtractionResult {
@@ -29,7 +30,7 @@ export interface ExtractionResult {
 }
 
 export async function extractTourContext(
-  input: MessageInput[] | { sessionId?: string; messages: MessageInput[] },
+  input: MessageInput[] | { sessionId?: string; messages: MessageInput[]; state?: AitConversationState },
   options?: ExtractionOptions
 ): Promise<ExtractionResult> {
   if (options?.simulateFailure) {
@@ -43,11 +44,12 @@ export async function extractTourContext(
   }
 
   const messages: MessageInput[] = Array.isArray(input) ? input : input.messages || []
+  const state = Array.isArray(input) ? options?.state : input.state ?? options?.state
 
   // Run through Conversational AI service (with Cloudflare Workers AI + Quota Protection)
   const result: ConversationalAiResult = await ConversationalAiService.processConversation(
     messages,
-    options
+    { ...options, state }
   )
 
   return {

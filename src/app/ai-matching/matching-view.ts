@@ -144,9 +144,14 @@ export function localizeExplanation(explanation: string): string {
 
   // 6. Khoảng cách di chuyển
   text = text.replace(/About ([\d.]+) km straight-line from (.+?)\./i, (_, dist, origin) => {
-    const originLabel = /^(hoàn kiếm|your starting point)$/i.test(origin)
-      ? 'trung tâm Hà Nội (Hồ Gươm)'
-      : origin
+    const normalizedOrigin = origin.toLowerCase().normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+    const originLabel = normalizedOrigin === 'your starting point'
+      ? 'trung tâm Hà Nội'
+      : normalizedOrigin === 'ho guom'
+        ? 'Hồ Gươm'
+        : origin
     return `Cách ${originLabel} khoảng ${dist} km (đường chim bay).`
   })
   text = text.replace(/About ([\d.]+) km from (.+?) \(estimated\)\./i, (_, dist, origin) => {

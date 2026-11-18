@@ -23,8 +23,10 @@ import {
   resolveTestVillageCards,
   resolveTestProviderCards,
   resolveTestActivityCards,
+  findFixtureVillageMentions,
+  stripTestPromptMarker,
 } from '@/lib/matching/test-dataset'
-import { detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
+import { craftTypeForPreference, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
 import { withVillageStartingPrices } from '@/lib/village-starting-price'
 import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
@@ -36,6 +38,7 @@ import {
   runVillageCardPipeline,
 } from '@/lib/ait/matching-pipeline'
 import { originDisplayLabel, originDisplayNotice } from '@/lib/matching/geo'
+import { isAitGeoDebugEnabled, logAitGeoDebug } from '@/lib/ait/geo-debug'
 import {
   fallbackMissingPrimary,
   normalizeMissingPrimary,
@@ -64,6 +67,7 @@ import {
   emptyConversationState,
   isAffirmativeReply,
   isBookingActionRequest,
+  isAmbiguousCraftQuestion,
   isBookingHelpRequest,
   isCompleteConversationState,
   isExplicitConversationReset,
@@ -88,7 +92,7 @@ function bookingGuidanceTurn() {
   if (!knowledge) throw new Error('Booking guidance is missing from the knowledge base.')
   return {
     turn_type: 'answer' as const,
-    message: `Mình không thể tự đặt, xác nhận hoặc chốt tour.\n\n${knowledge.contentVi}`,
+    message: `AI không tự đặt hoặc xác nhận tour.\n\n${knowledge.contentVi}`,
     top_matches: [],
     additional_suggestions: [],
     comparison: null,
@@ -303,10 +307,11 @@ export async function POST(
     const pendingQuestion = normalizePendingQuestion(storedContext.pending_question)
     const isReset = !isRetry && isExplicitConversationReset(originalText)
     const activePendingQuestion = isReset ? null : pendingQuestion
+    const textForParsing = stripTestPromptMarker(originalText)
     const mixedMeal = !isRetry && !isReset
-      ? splitMixedMealRequest(originalText)
-      : { inScopeText: originalText, hasMealRequest: false }
-    const routeText = mixedMeal.hasMealRequest ? mixedMeal.inScopeText : originalText
+      ? splitMixedMealRequest(textForParsing)
+      : { inScopeText: textForParsing, hasMealRequest: false }
+    const routeText = mixedMeal.hasMealRequest ? mixedMeal.inScopeText : textForParsing
     const acceptsInScopeOffer = activePendingQuestion?.field === 'in_scope_offer'
       && isAffirmativeReply(originalText)
     const answersPendingQuestion = Boolean(activePendingQuestion && isShortPendingReply(originalText))
@@ -539,14 +544,29 @@ export async function POST(
       : acceptsInScopeOffer
         ? 'Những làng nghề nào được hỗ trợ?'
         : routeText
-    const analysisMessages = [
-      ...(activePendingQuestion ? [{ sender: 'Assistant', text: activePendingQuestion.text }] : []),
-      ...(analysisText ? [{ sender: 'Agency', text: analysisText }] : []),
-    ]
+    const analysisMessages = analysisText ? [{ sender: 'Agency', text: analysisText }] : []
+
+    if (isAmbiguousCraftQuestion(analysisText)) {
+      const clarification = 'Bạn muốn đổi yêu cầu sang trải nghiệm này hay chỉ hỏi về khả năng có hoạt động này?'
+      const turn = {
+        turn_type: 'clarify' as const,
+        message: clarification,
+        top_matches: [],
+        additional_suggestions: [],
+        comparison: null,
+        quick_replies: [],
+        follow_up_questions: [],
+        relaxation_suggestions: [],
+        sources: [],
+        used_llm: false,
+      }
+      return NextResponse.json({ message, turn, conversational_reply: clarification }, { status: 201 })
+    }
 
     const extraction = await extractTourContext({
       sessionId: params.id,
       messages: analysisMessages,
+      state: conversationState,
     })
 
     if (extraction.processing_status === 'Temporary AI Failure') {
@@ -628,7 +648,7 @@ export async function POST(
     }
 
     const userText = analysisText
-    const isTest = isTestConversation(allMessages, body.is_test === true)
+    const isTest = isTestConversation([{ sender: 'Agency', text: originalText }])
 
     if (isTest) {
       if (!extraction.tour_context.experience_types || extraction.tour_context.experience_types.length === 0) {
@@ -639,7 +659,7 @@ export async function POST(
       }
     }
 
-    const isBareTest = userText.trim().toLowerCase() === 'test'
+    const isBareTest = isTest && userText.trim() === ''
     const specificActivityTerms = [
       ...userText.matchAll(/\b(?:làm|chế\s+tạo|chế\s+tác)\s+([\p{L}]+)/giu),
       ...userText.matchAll(/\bworkshop\s+([\p{L}]+)/giu),
@@ -757,6 +777,48 @@ export async function POST(
         origin: conversationState.origin || extraction.tour_context.origin_or_route,
       })
     }
+    const originNotice = originDisplayNotice(
+      conversationState.origin || extraction.tour_context.origin_or_route,
+    )
+    if (isAitGeoDebugEnabled()) {
+      try {
+        logAitGeoDebug({
+          origin: conversationState.origin || extraction.tour_context.origin_or_route,
+          radiusKm: conversationState.radius_km,
+          villages: await loadVillages(),
+        })
+      } catch (error) {
+        console.error('[AIT debug] Could not collect village distance decisions:', error)
+      }
+    }
+    const originOutsideScope = originNotice?.startsWith('Địa điểm') === true
+    if (originOutsideScope) {
+      tourPreferenceProfile = null
+      villageCards = []
+      providerCards = []
+      activityCards = []
+    }
+    const unavailableFixtureVillages = !isTest
+      ? findFixtureVillageMentions(cardQueryText)
+        .filter(name => !resolveVillageCards(name).some(card =>
+          card.name.toLocaleLowerCase('vi').includes(name.toLocaleLowerCase('vi'))
+        ))
+      : []
+    const unavailableCraft = conversationState.craft
+      && !craftTypeForPreference(conversationState.craft)
+      ? conversationState.craft
+      : undefined
+    if (unavailableFixtureVillages.length > 0 || unavailableCraft) {
+      extraction.missing_primary = [
+        ...new Set([
+          ...extraction.missing_primary,
+          ...unavailableFixtureVillages,
+          ...(unavailableCraft ? [unavailableCraft] : []),
+        ]),
+      ]
+      tourPreferenceProfile = null
+      villageCards = []
+    }
     villageCards = villageCards
       .sort((left, right) => {
         const leftDistance = typeof left.distance_km === 'number' ? left.distance_km : undefined
@@ -862,8 +924,7 @@ export async function POST(
           || tourPreferenceProfile.hard_constraints?.origin?.address
         const requestedOrigin = originDisplayLabel(rawOrigin)
           || (typeof rawOrigin === 'string' ? rawOrigin : undefined)
-        const originNotice = originDisplayNotice(tourPreferenceProfile.hard_constraints?.origin)
-        const originUnresolved = originNotice?.startsWith('Chưa xác định được')
+        const originUnresolved = originNotice?.startsWith('Chưa nhận ra')
           ? originNotice
           : undefined
         const resultMessage = buildResultsMessage({
@@ -874,7 +935,7 @@ export async function POST(
             : undefined,
           max_budget_per_person: conversationState.budget_per_person,
           craft: typeof craftPreference === 'string' ? craftLabelVi(craftPreference) : undefined,
-          origin: requestedOrigin || 'mặc định là trung tâm Hà Nội (Hồ Gươm)',
+          origin: requestedOrigin || 'trung tâm Hà Nội',
           originUnresolved,
           radiusKm: conversationState.radius_km,
           dateScheduleUnconfirmed: /^\d{4}-\d{2}-\d{2}$/.test(conversationState.date || ''),
@@ -922,6 +983,21 @@ export async function POST(
       }
     }
 
+    if (!turn && originOutsideScope) {
+      turn = {
+        turn_type: 'no_results' as const,
+        message: originNotice!,
+        top_matches: [],
+        additional_suggestions: [],
+        comparison: null,
+        quick_replies: [],
+        follow_up_questions: [],
+        relaxation_suggestions: [],
+        sources: [],
+        used_llm: false,
+      }
+    }
+
     if (!turn && extraction.intent === 'platform_guidance' && (isHelpQuestion || acceptsInScopeOffer)) {
       turn = {
         turn_type: 'answer' as const,
@@ -959,9 +1035,8 @@ export async function POST(
       }
     }
 
-    if (scope === 'village' && conversationState.radius_km !== undefined) {
+    if (!originOutsideScope && scope === 'village' && conversationState.radius_km !== undefined) {
       const origin = conversationState.origin || extraction.tour_context.origin_or_route
-      const originNotice = originDisplayNotice(origin)
       const originLabel = originDisplayLabel(origin)
         || (typeof origin === 'string' ? origin : undefined)
       turn = {
@@ -969,7 +1044,7 @@ export async function POST(
         turn_type: villageCards.length > 0 ? 'results' : 'no_results',
         message: [
           buildVillageCardResultsMessage(villageCards, conversationState.radius_km, originLabel),
-          ...(originNotice?.startsWith('Chưa xác định được') ? [originNotice] : []),
+          ...(originNotice?.startsWith('Chưa nhận ra') ? [originNotice] : []),
         ].join('\n\n'),
         top_matches: [],
         additional_suggestions: [],
@@ -984,7 +1059,9 @@ export async function POST(
       turn = {
         ...turn,
         turn_type: 'answer',
-        message: missingPrimaryMessage,
+        message: unavailableCraft
+          ? `${missingPrimaryMessage}\n\nMình có thể gợi ý làng nghề khác đang có dữ liệu.`
+          : missingPrimaryMessage,
         top_matches: [],
         additional_suggestions: [],
       }
@@ -999,6 +1076,21 @@ export async function POST(
 
     if (hasAffirmativeBookingClaim(turn.message)) {
       turn = bookingGuidanceTurn()
+    }
+
+    const activeCriteria = [
+      conversationState.craft,
+      conversationState.radius_km !== undefined ? `bán kính ${conversationState.radius_km} km` : undefined,
+      conversationState.group_size !== undefined ? `${conversationState.group_size} khách` : undefined,
+      conversationState.budget_per_person !== undefined
+        ? `ngân sách ${conversationState.budget_per_person.toLocaleString('vi-VN')}đ`
+        : undefined,
+      conversationState.date,
+      conversationState.origin,
+    ].filter((value): value is string => Boolean(value))
+    turn = {
+      ...turn,
+      message: `${turn.message}\n\nĐang áp dụng: ${activeCriteria.join(', ') || 'trống'}.`,
     }
 
     const statusCode = isE2E ? 200 : isRetry ? 200 : 201

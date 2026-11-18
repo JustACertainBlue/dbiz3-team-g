@@ -1,5 +1,5 @@
 import type { TourContext } from '@/lib/matching/types'
-import { resolveCraftPreference } from '@/lib/ai/llm-service'
+import { isOriginGroundedInUserText, resolveCraftPreference } from '@/lib/ai/llm-service'
 import { extractTourDate } from '@/lib/ai/tour-date'
 import { CATALOG_VILLAGES } from '@/lib/matching/card-resolver'
 import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
@@ -17,6 +17,24 @@ export interface AitConversationState {
     crafts: string[]
   }
   radius_km?: number
+  turn_count: number
+  slots: Partial<Record<ConversationSlotName, ConversationSlot>>
+  turn_history: Array<{ turn: number; slots: Partial<Record<ConversationSlotName, ConversationSlot>> }>
+}
+
+export type ConversationSlotName =
+  | 'craft'
+  | 'group_size'
+  | 'budget_per_person'
+  | 'date'
+  | 'origin'
+  | 'radius'
+
+export interface ConversationSlot {
+  value: string | number
+  raw_span: string
+  created_turn: number
+  source: 'explicit' | 'inferred'
 }
 
 export type PendingQuestionField =
@@ -51,7 +69,17 @@ export function normalizePendingQuestion(value: unknown): PendingQuestion | null
 }
 
 export function emptyConversationState(): AitConversationState {
-  return { dismissed_questions: [], exclusions: { villages: [], crafts: [] } }
+  return {
+    dismissed_questions: [],
+    exclusions: { villages: [], crafts: [] },
+    turn_count: 0,
+    slots: {},
+    turn_history: [],
+  }
+}
+
+export function conversationStateBytes(state: AitConversationState): number {
+  return new TextEncoder().encode(JSON.stringify(state)).byteLength
 }
 
 export function normalizeConversationState(value: unknown): AitConversationState {
@@ -96,6 +124,61 @@ export function normalizeConversationState(value: unknown): AitConversationState
       ? exclusions.crafts.filter((item): item is string => typeof item === 'string')
       : [],
   }
+  state.turn_count = typeof raw.turn_count === 'number' && Number.isInteger(raw.turn_count) && raw.turn_count >= 0
+    ? raw.turn_count
+    : 0
+  const rawSlots = raw.slots && typeof raw.slots === 'object'
+    ? raw.slots as Record<string, unknown>
+    : {}
+  const slotNames: ConversationSlotName[] = [
+    'craft', 'group_size', 'budget_per_person', 'date', 'origin', 'radius',
+  ]
+  for (const name of slotNames) {
+    const rawSlot = rawSlots[name]
+    if (!rawSlot || typeof rawSlot !== 'object' || Array.isArray(rawSlot)) continue
+    const slot = rawSlot as Record<string, unknown>
+    if (
+      (typeof slot.value !== 'string' && typeof slot.value !== 'number')
+      || typeof slot.raw_span !== 'string'
+      || typeof slot.created_turn !== 'number'
+      || (slot.source !== 'explicit' && slot.source !== 'inferred')
+    ) continue
+    state.slots[name] = {
+      value: slot.value,
+      raw_span: slot.raw_span,
+      created_turn: slot.created_turn,
+      source: slot.source,
+    }
+  }
+  const budgetSlot = state.slots.budget_per_person
+  if (budgetSlot) {
+    const parsedBudget = parseExplicitBudgetAmount(budgetSlot.raw_span)
+    if (parsedBudget === undefined) {
+      delete state.slots.budget_per_person
+      delete state.budget_per_person
+    } else {
+      budgetSlot.value = parsedBudget
+      state.budget_per_person = parsedBudget
+    }
+  }
+  const radiusSlot = state.slots.radius
+  if (radiusSlot) {
+    const parsedRadius = radiusSlot.raw_span.match(/(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?)\b/iu)
+    if (!parsedRadius) {
+      delete state.slots.radius
+      delete state.radius_km
+    } else {
+      radiusSlot.value = Number(parsedRadius[1].replace(',', '.'))
+      state.radius_km = Number(radiusSlot.value)
+    }
+  }
+  state.turn_history = Array.isArray(raw.turn_history)
+    ? raw.turn_history
+      .filter((turn): turn is { turn: number; slots: Partial<Record<ConversationSlotName, ConversationSlot>> } =>
+        Boolean(turn && typeof turn === 'object' && typeof (turn as Record<string, unknown>).turn === 'number')
+      )
+      .slice(-20)
+    : []
   return state
 }
 
@@ -114,6 +197,10 @@ export function isBookingHelpRequest(text: string): boolean {
 export function isBookingActionRequest(text: string): boolean {
   return /(?:đặt\s+(?:luôn|ngay)(?:\s+(?:cho tôi|giúp tôi))?|(?:chốt|xác nhận)\s+(?:tour|lịch|chuyến)(?:\s+này)?|book\s+(?:it|this|now)|confirm\s+(?:this\s+)?tour)/i
     .test(text)
+}
+
+export function isAmbiguousCraftQuestion(text: string): boolean {
+  return /(?:làm|thử)\s+(?:hương|tò\s*he)\s+(?:được không|có được không|được chứ)/iu.test(text)
 }
 
 export function isAffirmativeReply(text: string): boolean {
@@ -182,12 +269,60 @@ export function mergeConversationState(
   pendingField?: PendingQuestionField
 ): AitConversationState {
   const next = normalizeConversationState(current)
-  const keepsPreviousCriteria = /(?:như (?:lúc nãy|trước)|giữ nguyên(?: các)? tiêu chí|keep (?:them|the same))/i
-    .test(text)
-  if (!keepsPreviousCriteria) {
-    delete next.budget_per_person
-    delete next.origin
+  if (!text.trim()) return next
+  const turn = next.turn_count + 1
+  const updatedSlots: AitConversationState['slots'] = {}
+  const clearSlotValue = (name: ConversationSlotName) => {
+    switch (name) {
+      case 'craft': delete next.craft; break
+      case 'group_size': delete next.group_size; break
+      case 'budget_per_person': delete next.budget_per_person; break
+      case 'date': delete next.date; break
+      case 'origin': delete next.origin; break
+      case 'radius': delete next.radius_km; break
+    }
+  }
+  for (const name of ['craft', 'group_size', 'budget_per_person', 'date', 'origin', 'radius'] as const) {
+    if (next.slots[name]?.source === 'inferred') {
+      clearSlotValue(name)
+      delete next.slots[name]
+    }
+  }
+  const setSlot = (
+    name: ConversationSlotName,
+    value: string | number,
+    rawSpan: string,
+    source: ConversationSlot['source'] = 'explicit',
+  ) => {
+    const slot = { value, raw_span: rawSpan.trim(), created_turn: turn, source }
+    next.slots[name] = slot
+    updatedSlots[name] = slot
+    switch (name) {
+      case 'craft':
+        if (typeof value === 'string') next.craft = value
+        break
+      case 'group_size':
+        if (typeof value === 'number') next.group_size = value
+        break
+      case 'budget_per_person':
+        if (typeof value === 'number') next.budget_per_person = value
+        break
+      case 'date':
+        if (typeof value === 'string') next.date = value
+        break
+      case 'origin':
+        if (typeof value === 'string') next.origin = value
+        break
+      case 'radius':
+        if (typeof value === 'number') next.radius_km = value
+        break
+    }
+  }
+  const normalized = normalizeText(text)
+  const clearsRadius = /(?:bo|xoa|huy|khong can|thoi)\s+(?:gioi han\s+)?(?:ban kinh|km|kilomet)/i.test(normalized)
+  if (clearsRadius) {
     delete next.radius_km
+    delete next.slots.radius
   }
   const craftExclusion = excludedCraft(text)
   const newVillageExclusions = excludedVillageIds(text)
@@ -196,44 +331,61 @@ export function mergeConversationState(
     next.exclusions.crafts = [...new Set([...next.exclusions.crafts, craftExclusion])]
     if (next.craft === craftExclusion) delete next.craft
   } else {
-    const craft = resolveCraftPreference(extracted.craft_preference, [{ text }])
+    const unsupportedPair = text.match(/\b(hương|tò\s*he)\s+(?:hay|hoặc)\s+(?:làm\s+)?(hương|tò\s*he)\b/iu)
+    const unsupportedCraft = text.match(/(?:đổi\s+sang|hay\s+là|làm|thử)\s+(hương|tò\s*he)\b/iu)?.[1]
+    const explicitCraft = detectCraftPreference(text)
+      || (unsupportedPair ? `${unsupportedPair[1]}/${unsupportedPair[2]}`.toLocaleLowerCase('vi') : unsupportedCraft?.toLocaleLowerCase('vi'))
+    const craft = explicitCraft || (next.craft === undefined
+      ? resolveCraftPreference(extracted.craft_preference, [{ text }])
+      : undefined)
     if (craft) {
-      next.craft = craft
+      if (explicitCraft && next.craft !== explicitCraft) next.exclusions.villages = []
+      setSlot('craft', craft, text.match(/(?:làng\s+(?:nghề\s+)?)?(?:gốm|lụa|dệt|mộc|gỗ|nón|mây tre|hương|tò\s*he)/iu)?.[0] ?? text,
+        explicitCraft ? 'explicit' : 'inferred')
       next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'craft')
     }
   }
 
   next.exclusions.villages = [...new Set([...next.exclusions.villages, ...newVillageExclusions])]
-  if (extracted.group_size !== undefined) {
-    next.group_size = extracted.group_size
+  const rawGroup = text.match(/\b\d+\s*(?:khách|người|pax|people|guests?)\b/iu)?.[0]
+  const parsedGroupSize = rawGroup ? Number(rawGroup.match(/\d+/)?.[0]) : undefined
+  const groupSize = parsedGroupSize ?? extracted.group_size
+  if (groupSize !== undefined && (rawGroup || next.group_size === undefined)) {
+    setSlot('group_size', groupSize, rawGroup ?? text, rawGroup ? 'explicit' : 'inferred')
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'group_size')
   }
   const budget = parseExplicitBudgetAmount(text)
   if (budget !== undefined) {
-    next.budget_per_person = budget
+    const rawBudget = text.match(/\b\d[\d.,\s]*\s*(?:k\b(?!m)|nghìn|ngàn|triệu|đ|vnd)(?![\p{L}])/iu)?.[0] ?? text
+    setSlot('budget_per_person', budget, rawBudget)
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'budget_per_person')
   }
 
-  const date = extracted.target_date_or_range?.start_date ?? extractTourDate(text, now)
+  const parsedDate = extractTourDate(text, now)
+  const date = parsedDate ?? (next.date === undefined ? extracted.target_date_or_range?.start_date : undefined)
   if (date) {
-    next.date = date
+    setSlot('date', date, text, parsedDate ? 'explicit' : 'inferred')
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'date')
   }
   else if (pendingField === 'date' && /^(?:mai|ngày mai|cuối tuần|cuối tuần này|tomorrow|this weekend|weekend)[.!? ]*$/i.test(text.trim())) {
     next.date = text.trim()
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'date')
   }
-  if (extracted.origin_or_route?.origin_address) {
-    next.origin = extracted.origin_or_route.origin_address
+  if (extracted.origin_or_route?.origin_address
+    && isOriginGroundedInUserText(extracted.origin_or_route.origin_address, text)) {
+    const origin = extracted.origin_or_route.origin_address
+    setSlot('origin', origin, text)
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'origin')
   }
 
-  const radius = text.match(/(?:radius|bán kính|trong phạm vi)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?)\b/i)
+  const radius = text.match(/(?:radius|bán kính|trong phạm vi|dưới|không quá|tối đa|cách)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?)\b/iu)
   if (radius) {
-    next.radius_km = Number(radius[1].replace(',', '.'))
+    setSlot('radius', Number(radius[1].replace(',', '.')), radius[0])
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'radius_km')
   }
 
+  next.turn_count = turn
+  next.turn_history = [...next.turn_history, { turn, slots: updatedSlots }].slice(-20)
   return next
 }
 
@@ -243,11 +395,12 @@ export function applyConversationState(context: TourContext, state: AitConversat
   if (state.group_size !== undefined) next.group_size = state.group_size
   if (state.budget_per_person !== undefined) {
     next.budget = { max_per_person: state.budget_per_person, currency: 'VND' }
-  }
+  } else delete next.budget
   if (state.date && /^\d{4}-\d{2}-\d{2}$/.test(state.date)) {
     next.target_date_or_range = { start_date: state.date }
   }
   if (state.origin) next.origin_or_route = { origin_address: state.origin }
+  else delete next.origin_or_route
   return next
 }
 
@@ -258,9 +411,6 @@ export function missingQuestions(state: AitConversationState): PendingQuestion[]
   }
   if (state.date === undefined) {
     questions.push({ field: 'date', text: 'Tôi có thể tư vấn lịch phù hợp hơn nếu bạn cho biết ngày đi.' })
-  }
-  if (state.origin === undefined) {
-    questions.push({ field: 'origin', text: 'Tôi có thể gợi ý lộ trình phù hợp hơn nếu bạn cho biết điểm xuất phát.' })
   }
   if (state.craft === undefined && state.exclusions.crafts.length === 0) {
     questions.push({ field: 'craft', text: 'Tôi có thể gợi ý sát hơn nếu bạn cho biết nghề hoặc trải nghiệm muốn thử.' })
@@ -293,6 +443,5 @@ export function nextPendingQuestion(state: AitConversationState): PendingQuestio
 export function isCompleteConversationState(state: AitConversationState): boolean {
   return state.group_size !== undefined
     && state.date !== undefined
-    && state.origin !== undefined
     && (state.craft !== undefined || state.exclusions.crafts.length > 0)
 }

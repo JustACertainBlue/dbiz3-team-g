@@ -67,8 +67,38 @@ export function isTestPrompt(text: string): boolean {
   return /(?:^|[\s,.:;!?])test(?:$|[\s,.:;!?])/i.test(text.trim())
 }
 
-export function isTestConversation(messages: Array<{ sender: string; text: string }>, explicitTest = false): boolean {
-  return explicitTest || messages.some(message => message.sender === 'Agency' && isTestPrompt(message.text))
+export function stripTestPromptMarker(text: string): string {
+  return text
+    .split(/\s+/)
+    .filter(token => token.replace(/^[,.:;!?]+|[,.:;!?]+$/g, '').toLowerCase() !== 'test')
+    .join(' ')
+    .trim()
+}
+
+export function isTestConversation(messages: Array<{ sender: string; text: string }>): boolean {
+  const latestAgencyMessage = [...messages].reverse().find(message => message.sender === 'Agency')
+  return latestAgencyMessage ? isTestPrompt(latestAgencyMessage.text) : false
+}
+
+export function findFixtureVillageMentions(text: string): string[] {
+  const normalize = (value: string) => value
+    .toLocaleLowerCase('vi')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/đ/g, 'd')
+  const normalizedText = normalize(text)
+  const villages = (rawData as { villages: TestVillageRaw[] }).villages || []
+  return villages
+    .flatMap(village => {
+      const words = village.village_name.split(/\s+/)
+      const aliases = [
+        words.slice(-3).join(' '),
+        words.slice(-2).join(' '),
+        village.village_id.replace(/-/g, ' '),
+      ]
+      const mention = aliases.find(alias => normalizedText.includes(normalize(alias)))
+      return mention ? [words.slice(-mention.split(' ').length).join(' ')] : []
+    })
 }
 
 const VILLAGE_CRAFT_MAPPING: Record<string, { craftType: CraftType; craftName: string; mediaUrl: string }> = {

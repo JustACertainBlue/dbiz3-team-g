@@ -53,7 +53,7 @@ describe('AIT distance calculations', () => {
     expect(resultAtTen.rankedCandidates[0].distance_km).toBeCloseTo(9.932198, 5)
     expect(resultAtTen.topMatches[0].caveats).toContainEqual({
       key: 'distance',
-      text: 'Cách trung tâm Hà Nội (Hồ Gươm) khoảng 9.9 km (đường chim bay)',
+      text: 'Cách trung tâm Hà Nội khoảng 9.9 km (đường chim bay)',
     })
     expect(resultAtTen.rejected).toEqual([])
     expect(resultBelowDistance.rejected).toContainEqual({ id: 'van-phuc', reason: 'radius' })

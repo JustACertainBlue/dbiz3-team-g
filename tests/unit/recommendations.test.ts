@@ -110,7 +110,7 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
       distance_km: 5,
       distance_source: 'haversine',
     })
-    expect(result.top_matches[0].explanation).toContain('Cách Hoàn Kiếm khoảng 5.0 km (đường chim bay)')
+    expect(result.top_matches[0].explanation).toContain('Cách Hoàn Kiếm khoảng 5,0 km (đường chim bay)')
     expect(result.top_matches[0].explanation).not.toMatch(/estimated/i)
   })
 

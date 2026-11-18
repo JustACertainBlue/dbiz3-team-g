@@ -597,7 +597,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
     expect(response.status).toBe(201)
     expect(cards.length).toBeGreaterThan(0)
-    expect(message.match(/Cách trung tâm Hà Nội khoảng \d+\.\d km \(đường chim bay\)/g)).toHaveLength(cards.length)
+    expect(message.match(/Cách trung tâm Hà Nội khoảng \d+,\d km \(đường chim bay\)/g)).toHaveLength(cards.length)
     expect(message).not.toContain('Hoàn Kiếm')
     for (const card of cards) {
       expect(card.distance_source).toBe('haversine')
@@ -613,7 +613,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     const activityLines = message.split('\n').filter((line: string) => /^\d+\.\s/.test(line))
     expect(activityLines).toHaveLength(cards.length)
     expect(activityLines).toEqual(cards.map((card: Json, index: number) =>
-      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người${card.distance_source === 'haversine' && typeof card.distance_km === 'number' ? ` (Cách trung tâm Hà Nội khoảng ${card.distance_km.toFixed(1)} km (đường chim bay))` : ''}`
+      `${index + 1}. ${card.experience_name}: ${String(card.price_per_person).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ/người${card.distance_source === 'haversine' && typeof card.distance_km === 'number' ? ` (Cách trung tâm Hà Nội khoảng ${card.distance_km.toFixed(1).replace('.', ',')} km (đường chim bay))` : ''}`
     ))
     const knownActivityNames = (await loadExperiences()).map((experience) => experience.name)
     expect(knownActivityNames.filter((name) => message.includes(name)).sort())

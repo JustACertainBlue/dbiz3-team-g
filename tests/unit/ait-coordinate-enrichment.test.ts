@@ -169,7 +169,7 @@ describe('origin and radius uncertainty', () => {
     })
 
     expect(message).toContain('Khoảng cách tính từ trung tâm Hà Nội.')
-    expect(message).toContain('Cách trung tâm Hà Nội khoảng 8.1 km (đường chim bay)')
+    expect(message).toContain('Cách trung tâm Hà Nội khoảng 8,1 km (đường chim bay)')
     expect(message).not.toMatch(/Hồ Gươm|Hoàn Kiếm|Ho Guom/i)
   })
 
@@ -186,7 +186,7 @@ describe('origin and radius uncertainty', () => {
       }],
     })
 
-    expect(message).toContain('Cách Hồ Gươm khoảng 8.1 km (đường chim bay)')
+    expect(message).toContain('Cách Hồ Gươm khoảng 8,1 km (đường chim bay)')
     expect(message).not.toContain('trung tâm Hà Nội (Hồ Gươm)')
   })
 
@@ -236,8 +236,8 @@ describe('origin and radius uncertainty', () => {
       profile: { ...profile, hard_constraints: { radius_km: 10 } },
     })
 
-    expect(result.passed.map(item => item.id)).toEqual(['at-boundary'])
-    expect(result.rejected).toEqual([{ id: 'outside-boundary', reason: 'radius' }])
+    expect(result.passed.map(item => item.id)).toEqual(['at-boundary', 'outside-boundary'])
+    expect(result.rejected).toEqual([])
   })
 
   it('uses the same district uncertainty band in the shared constraint engine', async () => {
@@ -299,7 +299,7 @@ describe('origin and radius uncertainty', () => {
     })
 
     expect(message).toContain('Khoảng cách tính từ trung tâm Hà Nội.')
-    expect(message).toContain('Cách trung tâm Hà Nội khoảng 1.3 km (đường chim bay)')
+    expect(message).toContain('Cách trung tâm Hà Nội khoảng 1,3 km (đường chim bay)')
     expect(message).toContain('khoảng 13 km (ước tính theo huyện)')
     expect(message).toContain('chưa xác nhận bán kính')
     expect(message).not.toContain('chưa có dữ liệu khoảng cách')

@@ -152,7 +152,7 @@ export function localizeExplanation(explanation: string): string {
       : normalizedOrigin === 'ho guom'
         ? 'Hồ Gươm'
         : origin
-    return `Cách ${originLabel} khoảng ${dist} km (đường chim bay).`
+    return `Cách ${originLabel} khoảng ${String(dist).replace('.', ',')} km (đường chim bay).`
   })
   text = text.replace(/About ([\d.]+) km from (.+?) \(estimated\)\./i, (_, dist, origin) => {
     return `Khoảng ${Math.round(Number(dist))} km (ước tính theo huyện).`

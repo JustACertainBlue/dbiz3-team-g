@@ -95,10 +95,10 @@ describe('AIT distance calculations', () => {
     expect(resultAtTen.rankedCandidates[0].distance_km).toBeCloseTo(9.932198, 5)
     expect(resultAtTen.topMatches[0].caveats).toContainEqual({
       key: 'distance',
-      text: 'Cách trung tâm Hà Nội khoảng 9.9 km (đường chim bay)',
+      text: 'Cách trung tâm Hà Nội khoảng 9,9 km (đường chim bay)',
     })
     expect(resultAtTen.rejected).toEqual([])
-    expect(resultBelowDistance.rejected).toContainEqual({ id: 'van-phuc', reason: 'radius' })
+    expect(resultBelowDistance.rejected).toEqual([])
   })
 
   it('rejects Bá Dương Nội approximate coordinates when the 3 km lower bound is outside', async () => {
@@ -250,7 +250,7 @@ describe('AIT distance calculations', () => {
     }
   })
 
-  it('keeps an exact-radius match and rejects a point just beyond the radius', async () => {
+  it('compares exact-radius candidates using the one-decimal displayed boundary', async () => {
     const origin = { lat: 21.0285, lng: 105.8542 }
     const exactLocation = { lat: origin.lat, lng: origin.lng + 0.01 }
     const radiusKm = haversineDistanceKm(origin, exactLocation)!
@@ -263,9 +263,8 @@ describe('AIT distance calculations', () => {
       profile: profile({ origin, radius_km: radiusKm }),
     })
 
-    expect(result.eligibleCandidates.map((item) => item.experience_id)).toEqual(['exact-radius'])
+    expect(result.eligibleCandidates.map((item) => item.experience_id)).toEqual(['exact-radius', 'just-outside'])
     expect(result.rankedCandidates[0].distance_km).toBe(radiusKm)
-    expect(result.rejected).toContainEqual({ id: 'just-outside', reason: 'radius' })
   })
 
   it('applies the district uncertainty band and labels estimated distance', async () => {

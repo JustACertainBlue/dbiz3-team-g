@@ -549,23 +549,6 @@ export async function POST(
           source: 'fallback',
           action_path: 'extraction_pipeline',
         })
-        const clarifyMsg = 'Bạn có thể nói rõ hơn yêu cầu về làng nghề, thời gian hoặc ngân sách không?'
-        const turn = {
-          turn_type: 'clarify' as const,
-          message: clarifyMsg,
-          top_matches: [],
-          additional_suggestions: [],
-          comparison: null,
-          quick_replies: [],
-          follow_up_questions: [],
-          relaxation_suggestions: [],
-          sources: [],
-          used_llm: false,
-        }
-        return NextResponse.json(
-          { turn, conversational_reply: clarifyMsg, is_test: isTestConversation([{ sender: 'Agency', text: originalText }]) },
-          { status: 201 },
-        )
       }
     }
 

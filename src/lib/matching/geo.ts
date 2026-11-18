@@ -77,19 +77,26 @@ export function filterCandidateByRadius(
     || !Number.isFinite(candidate.distance_km)
     || candidate.distance_km < 0
   ) {
-    return { include: false, missingDistance: true, status: 'unconfirmed' }
+    if (typeof candidate.distance_km === 'number' && (!Number.isFinite(candidate.distance_km) || candidate.distance_km < 0)) {
+      return { include: false, missingDistance: true, status: 'unconfirmed' }
+    }
+    return { include: true, missingDistance: true, status: 'unconfirmed' }
   }
 
   const uncertaintyKm = locationUncertaintyKm(candidate.location_source)
-  const displayedDistance = Math.round(candidate.distance_km * 10) / 10
-  const displayedRadius = Math.round(radiusKm * 10) / 10
-  if (displayedDistance - uncertaintyKm > displayedRadius) {
+  const comparedDistance = uncertaintyKm === 0
+    ? Math.round(candidate.distance_km * 10) / 10
+    : candidate.distance_km
+  const comparedRadius = uncertaintyKm === 0
+    ? Math.round(radiusKm * 10) / 10
+    : radiusKm
+  if (comparedDistance - uncertaintyKm > comparedRadius) {
     return { include: false, missingDistance: false }
   }
   return {
     include: true,
     missingDistance: false,
-    status: displayedDistance + uncertaintyKm <= displayedRadius ? 'confirmed' : 'unconfirmed',
+    status: comparedDistance + uncertaintyKm <= comparedRadius ? 'confirmed' : 'unconfirmed',
   }
 }
 

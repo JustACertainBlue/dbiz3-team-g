@@ -629,7 +629,7 @@ describe('AIT geography pipeline through the real extractor', () => {
     for (const card of villageCards) {
       const distance = card.location_source === 'district_fallback'
         ? `khoảng ${Math.round(Number(card.distance_km))} km (ước tính theo huyện)`
-        : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
+        : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1).replace('.', ',')} km (đường chim bay)`
       expect(message).toContain(distance)
     }
   })
@@ -884,7 +884,7 @@ describe('AIT geography pipeline through the real extractor', () => {
       if (card.distance_source !== 'haversine') continue
       const expectedDistance = card.location_source === 'district_fallback'
         ? `khoảng ${Math.round(Number(card.distance_km))} km (ước tính theo huyện)`
-        : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
+        : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1).replace('.', ',')} km (đường chim bay)`
       expect(message).toContain(expectedDistance)
     }
   })
@@ -1082,7 +1082,7 @@ describe('AIT geography pipeline through the real extractor', () => {
       if (card.distance_source === 'haversine') {
         const distance = card.location_source === 'district_fallback'
           ? `Khoảng ${Math.round(Number(card.distance_km))} km (ước tính theo huyện)`
-          : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
+          : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1).replace('.', ',')} km (đường chim bay)`
         expect(String(card.explanation)).toContain(distance)
       }
     }

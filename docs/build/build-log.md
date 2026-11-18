@@ -1523,6 +1523,30 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Not verified | Not applied on any database. Migration `20261117120000_hab_catalog_editorial_content.sql` is in the DEV ledger but in no branch: find it before PROD |
 | Next (human) | Merge PR 1 then PR 2; `npm run db:migrate -- --dry-run`, `npm run db:migrate` on DEV; `node scripts/db/dev-load-content.mjs --dir=<draft>` then `--apply` |
 
+### Entry 108: 18/11 Claude Code + human — UI mockup v3, Đợt 0: shared header, tokens and page frame
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu. Branch `ui/v3-foundation` from `main` `c502594`; 3 commits (`df61ac0`, `7bcc4d8`, `36b4fa9`); not pushed, no merge, no `db:*` / `storage:*`, no `.env` read by the agent |
+| Trigger | Mockup v3 hand-off (`~/Desktop/hab-mockup-v3/`, outside the repo, not committed). Đợt 0 = app frame only; screen content unchanged |
+| Human decisions (18/11) | Bar items exactly as the PNGs: Guest Khám phá (png/01); Agency Khám phá · Lịch sử đặt chỗ · Ghép tour AI (png/21); Provider Tổng quan · Trải nghiệm · Lịch sử đặt chỗ (png/29); Admin "HAB · Quản trị" Tổng quan · Duyệt hồ sơ · Quản lý tài khoản (png/38). No "Lịch" on the bar (deviates from the shared screen-spec line "Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses …SCH139…"; schedule pages stay reachable from in-page links). HDT Duyệt hồ sơ → `/admin/agencies` (selected on `/admin/providers` too); UBND → `/admin/providers`. Bar #0F3D2A (guest/agency/provider), #1F2A25 (admin). Account menu = Tài khoản của tôi · Doanh nghiệp của tôi · Đăng xuất (png/20, popup png/20a). Inter for all text, Lora dropped; white page. Hamburger below 900 px, bottom tab bar removed. Guest button "Đăng ký tài khoản" in the header only; AuthShell and `/login` left for Đợt 2 |
+| Change | `tokens.css` v3 block (`--c-*`, radii, `--layout-max`, `--gx`, `--nav-h`, `--tap`), heading fonts → Inter, text #1F2A25, page surface #FFF, `--bp-content-max` 1100. `fonts.ts` drops Lora. Hard-coded `Georgia,serif` / Playfair stacks in 13 files → `var(--font-body)`. New `components/header/AppHeader.tsx` (pure props) + `SessionHeader.tsx` as the fetching wrapper; `nav/nav-model.ts` rewritten (`headerVariant`, mockup items, `alsoActive`, initials of the last two words as in the mockup chip). New `components/ui/` (Button, Card, StatusPill, Pagination, Select, Switch, Breadcrumb, Tabs, Modal, Container + `ui.css`). `shell.css` rewritten: bar, account menu, collapsed menu, shared 1100 px frame for the existing page wrappers. `explore-v9.css`: hero no longer under the bar. `provider-ui.css`: workspace background white |
+| Tests | New `tests/unit/app-header.test.ts` (24 tests): red first (module missing), then green. Two of its own assertions were rewritten before first green because they assumed `href` before `aria-label` (next/link renders `href` last). No existing test changed |
+| Checks | `npm run lint` 0; `npx vitest run` 242 files / 1438 passed (22 skipped); `npm run build` passes |
+| Verified in browser | Local dev + dev DB: account menu, logout popup (opened, closed with Escape; logout not confirmed), 390 px hamburger menu without horizontal scroll. Screenshots 1440/1920 in `~/Desktop/hab-v3-screenshots/{before,after,compare}` (Playwright installed in a scratch folder, Google Chrome channel; not in `package.json`) |
+| Open (asked) | (a) footer links without routes; (b) admin logout on desktop (bar has none in png/38); image-credits footer on every page vs "footer only on Explore"; UBND organisation name (account API returns empty → "UBND") |
+| Not changed | ExploreHeader.tsx, RoleSwitcher.tsx, AdminSidebar.tsx (unused; kept until the human decides) |
+
+#### Entry 108, round 2 (18/11, same branch; commits `05e13cc`, `2d05ac6`, `0ca56f6`; not pushed)
+
+| Field | Value |
+|---|---|
+| Human decisions | (a) Footer only on `/explore` for Guest and Tour Agency: "Hanoi Artisan Bridge", "Nối công ty lữ hành với xưởng nghề ở các làng quanh Hà Nội.", "© 2026 Hanoi Artisan Bridge"; no link columns, no "Nguồn ảnh"; the root-layout credits footer removed everywhere, `/image-credits` kept. (b) Admin unit name = menu button with arrow; menu Tài khoản của tôi (/account) · Đăng xuất (same popup); Escape and outside click close it. (c) UBND unit "UBND xã <village>" from `ubnd_village_assignments → villages`, account API change allowed (read only). Mockup png/01, 21, 38 replaced by the human (new file names `01 · EXP120 …@1x.png` etc.) |
+| Change | `lib/auth/account-service.ts` (`ownAccount.organization` for UBND); `nav-model.ts` (`accountLinks` admin → /account only, `footerVisible`); `AppHeader.tsx` (admin unit chip + menu, `accountMenuOpen` initial-state prop, document Escape listener); new `components/footer/AppFooter.tsx`; `explore/page.tsx` renders `AppFooter` instead of the old `.xv-footer` (which had "Đăng nhập Agency"); `layout.tsx` footer removed; `shell.css` (`.hab-nav__org` chip, `.hab-footer`) |
+| Tests | New `account-organization.test.ts` (4) and `app-footer.test.ts` (5); `app-header.test.ts` +6 and 3 assertions of this branch's own new test updated for the new decisions (admin org markup, admin account links, chevron). All red first for the right reason, then green. No test from `main` changed |
+| Checks | lint 0; vitest 244 files / 1453 passed (22 skipped); build passes |
+| Verified in browser | dev DB: `/api/auth/account` for thanhvien8 → "UBND xã Hạ Thái"; HDT menu items [/account Tài khoản của tôi, Đăng xuất]; Escape and outside click close it; Đăng xuất opens the popup (closed, not confirmed). Screenshots 1440 px in `~/Desktop/hab-v3-screenshots/after-r2/`, sheets `compare/*-after-r2.png` |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

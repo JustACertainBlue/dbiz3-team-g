@@ -1038,6 +1038,28 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(text).not.toMatch(/\b\d+\.\d+\s*km\b/)
   })
 
+  it('uses the one-decimal displayed radius for the Bat Trang boundary', async () => {
+    installLlmMock('Mình tìm thấy làng nghề phù hợp.')
+    const response = await send(await openSession(), 'làng gốm dưới 8,1 km')
+
+    expect(response.status).toBe(201)
+    expect(response.json.tour_preference_profile.hard_constraints.radius_km).toBe(8.1)
+    expect((response.json.village_cards as Json[]).some(card =>
+      String(card.name).includes('Bát Tràng')
+    )).toBe(true)
+  })
+
+  it('rounds long decimal radius values to at most one decimal in state and text', async () => {
+    installLlmMock('Mình tìm thấy làng nghề phù hợp.')
+    const response = await send(await openSession(), 'dưới 10.0001 km')
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === (response.json.message?.session_id ?? ''),
+    )
+
+    expect(response.json.tour_preference_profile.hard_constraints.radius_km).toBe(10)
+    expect(String(response.json.turn.message)).not.toMatch(/10\.0001/)
+  })
   it('omits null capacity and localizes verified distance explanations', async () => {
     installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
     const sessionId = await openSession()

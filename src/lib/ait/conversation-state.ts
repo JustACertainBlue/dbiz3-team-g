@@ -228,7 +228,7 @@ export function normalizeConversationState(value: unknown): AitConversationState
       delete state.slots.radius
       delete state.radius_km
     } else {
-      radiusSlot.value = Number(parsedRadius[1].replace(',', '.'))
+      radiusSlot.value = Math.round(Number(parsedRadius[1].replace(',', '.')) * 10) / 10
       state.radius_km = Number(radiusSlot.value)
     }
     }
@@ -361,7 +361,10 @@ export function mergeConversationState(
     rawSpan: string,
     source: ConversationSlot['source'] = 'explicit',
   ) => {
-    const slot = { value, raw_span: rawSpan.trim(), created_turn: turn, source }
+    const slotValue = name === 'radius' && typeof value === 'number'
+      ? Math.round(value * 10) / 10
+      : value
+    const slot = { value: slotValue, raw_span: rawSpan.trim(), created_turn: turn, source }
     next.slots[name] = slot
     updatedSlots[name] = slot
     switch (name) {
@@ -381,7 +384,7 @@ export function mergeConversationState(
         if (typeof value === 'string') next.origin = value
         break
       case 'radius':
-        if (typeof value === 'number') next.radius_km = value
+        if (typeof value === 'number') next.radius_km = Math.round(value * 10) / 10
         break
       case 'nearest':
         if (typeof value === 'boolean') {

@@ -81,13 +81,15 @@ export function filterCandidateByRadius(
   }
 
   const uncertaintyKm = locationUncertaintyKm(candidate.location_source)
-  if (candidate.distance_km - uncertaintyKm > radiusKm) {
+  const displayedDistance = Math.round(candidate.distance_km * 10) / 10
+  const displayedRadius = Math.round(radiusKm * 10) / 10
+  if (displayedDistance - uncertaintyKm > displayedRadius) {
     return { include: false, missingDistance: false }
   }
   return {
     include: true,
     missingDistance: false,
-    status: candidate.distance_km + uncertaintyKm <= radiusKm ? 'confirmed' : 'unconfirmed',
+    status: displayedDistance + uncertaintyKm <= displayedRadius ? 'confirmed' : 'unconfirmed',
   }
 }
 

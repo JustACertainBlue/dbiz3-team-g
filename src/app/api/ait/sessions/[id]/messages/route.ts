@@ -73,20 +73,26 @@ import {
   isCompleteConversationState,
   isExplicitConversationReset,
   isFalsePositiveMealPhrase,
+  hasZeroRadiusConstraint,
   isShortPendingReply,
   isSystemHelpRequest,
+  hasUnsupportedDistanceConstraint,
   mergeConversationState,
   missingQuestions,
   nextPendingQuestion,
   normalizeConversationState,
   normalizePendingQuestion,
   sanitizeUnsupportedFollowUpQuestions,
+  stripZeroRadiusConstraint,
+  stripUnsupportedDistanceConstraint,
   splitMixedMealRequest,
 } from '@/lib/ait/conversation-state'
 import fs from 'fs'
 import path from 'path'
 
 const rateLimiter = createRateLimiter({ limit: 20, windowMs: 60000 })
+const UNSUPPORTED_DISTANCE_REPLY =
+  "Hiện chưa hỗ trợ lọc theo khoảng cách tối thiểu hoặc khoảng cách trong một dải. Bạn có thể nói giới hạn tối đa, ví dụ 'dưới 20 km'."
 
 function bookingGuidanceTurn() {
   const knowledge = PLATFORM_KNOWLEDGE_BASE.find(item => item.id === 'contact_and_booking')
@@ -313,12 +319,15 @@ export async function POST(
       ? splitMixedMealRequest(textForParsing)
       : { inScopeText: textForParsing, hasMealRequest: false }
     const routeText = mixedMeal.hasMealRequest ? mixedMeal.inScopeText : textForParsing
+    const unsupportedDistanceRequest = !isRetry && hasUnsupportedDistanceConstraint(routeText)
+    const zeroRadiusRequest = !isRetry && hasZeroRadiusConstraint(routeText)
     const acceptsInScopeOffer = activePendingQuestion?.field === 'in_scope_offer'
       && isAffirmativeReply(originalText)
     const answersPendingQuestion = Boolean(activePendingQuestion && isShortPendingReply(originalText))
     const isHelpQuestion = isSystemHelpRequest(routeText) || isBookingHelpRequest(routeText)
     const bypassClassifier = isRetry || isReset || acceptsInScopeOffer || answersPendingQuestion
       || isHelpQuestion || isFalsePositiveMealPhrase(routeText) || mixedMeal.hasMealRequest
+      || unsupportedDistanceRequest || zeroRadiusRequest
 
     // 3. Rule-based router and LLM router (A.2, B.3 Layer 1 & 2)
     if (!isRetry) {
@@ -536,6 +545,66 @@ export async function POST(
 
     // 4. Record the original input, then extract only the current turn against persisted state.
     const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', originalText)
+    const isTest = isTestConversation([{ sender: 'Agency', text: originalText }])
+    if (unsupportedDistanceRequest || zeroRadiusRequest) {
+      const stateWithoutPreviousRadius = normalizeConversationState(conversationState)
+      delete stateWithoutPreviousRadius.radius_km
+      delete stateWithoutPreviousRadius.slots.radius
+      const stateText = unsupportedDistanceRequest
+        ? stripUnsupportedDistanceConstraint(routeText)
+        : stripZeroRadiusConstraint(routeText)
+      conversationState = mergeConversationState(
+        stateWithoutPreviousRadius,
+        stateText,
+        {},
+        new Date(),
+        activePendingQuestion?.field,
+      )
+      await updateMatchingSessionContext(params.id, {
+        state: conversationState,
+        pending_question: activePendingQuestion,
+        out_of_scope_refusal_count: 0,
+      })
+      const reply = unsupportedDistanceRequest
+        ? UNSUPPORTED_DISTANCE_REPLY
+        : buildVillageCardResultsMessage([], 0, conversationState.origin)
+      await addMessage(params.id, 'Assistant', reply)
+      const turn = {
+        turn_type: unsupportedDistanceRequest ? 'answer' as const : 'no_results' as const,
+        message: reply,
+        top_matches: [],
+        additional_suggestions: [],
+        comparison: null,
+        quick_replies: [],
+        follow_up_questions: [],
+        relaxation_suggestions: [],
+        sources: [],
+        used_llm: false,
+      }
+      return NextResponse.json(
+        {
+          message,
+          is_test: isTest,
+          extraction: {
+            is_complete: false,
+            processing_status: 'Success',
+            retry_available: false,
+            follow_up_questions: [],
+            tour_context: applyConversationState({}, conversationState),
+            conversational_reply: reply,
+            missing_primary: [],
+            intent: 'platform_guidance',
+            usedLlm: false,
+          },
+          tour_preference_profile: null,
+          activity_cards: [],
+          village_cards: [],
+          provider_cards: [],
+          turn,
+        },
+        { status: 201 },
+      )
+    }
     const allMessages = await getMessages(params.id)
     const latestUserMessage = [...allMessages]
       .reverse()
@@ -649,8 +718,6 @@ export async function POST(
     }
 
     const userText = analysisText
-    const isTest = isTestConversation([{ sender: 'Agency', text: originalText }])
-
     if (isTest) {
       if (!extraction.tour_context.experience_types || extraction.tour_context.experience_types.length === 0) {
         const detected = detectExperienceTypes(userText)

@@ -6,6 +6,7 @@ import * as llmRouter from '@/lib/ait/llm-router'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
+import { messageOutcome } from '@/app/ai-matching/matching-view'
 import { DEFAULT_HANOI_ORIGIN, resolveOriginCoordinates } from '@/lib/matching/geo'
 import { resolveTestVillageCards } from '@/lib/matching/test-dataset'
 import { runVillageCardPipeline } from '@/lib/ait/matching-pipeline'
@@ -148,6 +149,103 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect((seedTurn.json.village_cards as Json[]).map(card => card.name).join(' '))
       .not.toContain('Phùng Xá')
     expect(JSON.stringify(seedTurn.json.turn)).toContain('chưa có dữ liệu')
+  })
+
+  it.each([
+    ['trên 10 km', false],
+    ['trên 10 km', true],
+    ['hơn 10 km', false],
+    ['hơn 10 km', true],
+    ['xa hơn 10 km', false],
+    ['xa hơn 10 km', true],
+    ['từ 5 đến 10 km', false],
+    ['từ 5 đến 10 km', true],
+    ['5-10 km', false],
+    ['5-10 km', true],
+    ['ít nhất 10 km', false],
+    ['ít nhất 10 km', true],
+    ['tối thiểu 10 km', false],
+    ['tối thiểu 10 km', true],
+    ['ngoài 10 km', false],
+    ['ngoài 10 km', true],
+  ] as const)('does not apply an unsupported minimum/range distance for %s (fixture=%s)', async (text, isFixture) => {
+    const mocks = installLlmMock('Bát Tràng cách 999 km và có bể bơi.')
+    const sessionId = await openSession()
+    const response = await send(sessionId, text, isFixture)
+    const fixedReply = 'Hiện chưa hỗ trợ lọc theo khoảng cách tối thiểu hoặc khoảng cách trong một dải. Bạn có thể nói giới hạn tối đa, ví dụ \'dưới 20 km\'.'
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(response.status).toBe(201)
+    expect(response.json.turn.message).toBe(fixedReply)
+    expect(messageOutcome({ ok: true, status: response.status, body: response.json }))
+      .toEqual({ kind: 'guidance', reply: fixedReply })
+    expect(response.json.is_test).toBe(isFixture)
+    expect(response.json.village_cards).toEqual([])
+    expect(response.json.activity_cards).toEqual([])
+    expect(response.json.provider_cards).toEqual([])
+    expect(response.json.turn.top_matches).toEqual([])
+    expect(response.json.turn.additional_suggestions).toEqual([])
+    expect(context?.state.radius_km).toBeUndefined()
+    expect(context?.state.slots.radius).toBeUndefined()
+    expect(context?.state.budget_per_person).toBeUndefined()
+    expect(mocks.llmCall).not.toHaveBeenCalled()
+    expect(mocks.classify).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('retains explicit craft/group slots without applying unsupported distance on %s data', async (_source, isFixture) => {
+    const mocks = installLlmMock('Bát Tràng cách 999 km và có bể bơi.')
+    const sessionId = await openSession()
+    const response = await send(sessionId, 'gốm, trên 10 km cho 10 khách', isFixture)
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(response.json.turn.message).toMatch(/^Hiện chưa hỗ trợ lọc theo khoảng cách tối thiểu/)
+    expect(context?.state).toMatchObject({ craft: 'pottery', group_size: 10 })
+    expect(context?.state.radius_km).toBeUndefined()
+    expect(context?.state.budget_per_person).toBeUndefined()
+    expect(response.json.village_cards).toEqual([])
+    expect(mocks.llmCall).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('still applies a supported maximum radius on %s data', async (_source, isFixture) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const response = await send(await openSession(), 'làng nghề dưới 10 km', isFixture)
+
+    expect(response.json.tour_preference_profile.hard_constraints.radius_km).toBe(10)
+    expect(response.json.village_cards.length).toBeGreaterThan(0)
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('returns no cards for a zero-kilometer maximum radius on %s data', async (_source, isFixture) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const response = await send(await openSession(), 'làng nghề dưới 0 km', isFixture)
+
+    expect(response.status).toBe(201)
+    expect(response.json.turn.turn_type).toBe('no_results')
+    expect(response.json.village_cards).toEqual([])
+    expect(response.json.activity_cards).toEqual([])
+    expect(response.json.provider_cards).toEqual([])
+    expect(response.json.turn.top_matches).toEqual([])
+    expect(response.json.turn.additional_suggestions).toEqual([])
   })
 
   it.each([

@@ -43,6 +43,31 @@ export interface ConversationSlot {
   source: 'explicit' | 'inferred'
 }
 
+const UNSUPPORTED_DISTANCE_EXPRESSION = String.raw`(^|[^\p{L}\d])(?:(?:xa\s+hơn|xa\s+hon|trên|tren|hơn|hon|ít\s+nhất|it\s+nhat|tối\s+thiểu|toi\s+thieu|ngoài|ngoai)\s*\d+(?:[.,]\d+)?|(?:từ|tu)\s*\d+(?:[.,]\d+)?\s*(?:đến|den|to)\s*\d+(?:[.,]\d+)?|\d+(?:[.,]\d+)?\s*[-–—]\s*\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])`
+const ZERO_RADIUS_EXPRESSION = String.raw`(^|[^\p{L}\d])(?:(?:dưới|duoi|không\s+quá|khong\s+qua|tối\s+đa|toi\s+da|bán\s*kính|ban\s*kinh|cách|cach)\s*)?0\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])`
+
+export function hasUnsupportedDistanceConstraint(text: string): boolean {
+  return new RegExp(UNSUPPORTED_DISTANCE_EXPRESSION, 'iu').test(text)
+}
+
+export function stripUnsupportedDistanceConstraint(text: string): string {
+  return text.replace(new RegExp(UNSUPPORTED_DISTANCE_EXPRESSION, 'giu'), '$1')
+    .replace(/\s+([,.;!?])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
+export function hasZeroRadiusConstraint(text: string): boolean {
+  return new RegExp(ZERO_RADIUS_EXPRESSION, 'iu').test(text)
+}
+
+export function stripZeroRadiusConstraint(text: string): string {
+  return text.replace(new RegExp(ZERO_RADIUS_EXPRESSION, 'giu'), '$1')
+    .replace(/\s+([,.;!?])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
 export type PendingQuestionField =
   | 'craft'
   | 'group_size'

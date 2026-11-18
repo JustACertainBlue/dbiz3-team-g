@@ -40,10 +40,14 @@ describe('#227 | VIL030 Experience cards follow the F-EXPLORE-02 card', () => {
     }
   })
 
-  it('the page renders the image, workshop name and (when present) the price', () => {
+  // Rewritten for UI v3 (mockup 03, pack 19/11/2026): the page renders the shared result card (image, workshop name,
+  // "Giá từ … /khách" for everyone, group price for a Tour Agency; human decision 2026-11-18, ui-v3-spec-deviations.md).
+  it('the page renders the image, workshop name and the price through the shared result card', () => {
     const page = readFileSync('src/app/village/[villageId]/page.tsx', 'utf8')
-    expect(page).toContain('<MediaImage src={item.image} alt={item.name} />')
-    expect(page).toContain('{item.provider_name}')
-    expect(page).toMatch(/item\.price_per_person !== undefined && .*\/khách/)
+    const card = readFileSync('src/app/explore/v3/ResultCard.tsx', 'utf8')
+    expect(page).toContain('<ResultCard key={item.id} item={item} query={searchParams} />')
+    expect(card).toContain('<CoverImage src={item.image} alt="" />')
+    expect(card).toContain('<span>{item.providerName}</span>')
+    expect(card).toMatch(/Giá từ<\/span><b className="v3r__total">\{vnd\(item\.price\.perPerson\)\}<span className="v3-cap"> \/khách/)
   })
 })

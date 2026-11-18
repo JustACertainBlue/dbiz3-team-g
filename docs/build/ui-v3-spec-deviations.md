@@ -14,7 +14,7 @@ these branches; each row below is a known gap between the built UI and the writt
 | 6 | Analytics consent | EXP120 #2 / SR-004: Guest analytics consent option | Consent box removed; Guests run with `tracking_scope = "No Non-essential Tracking"` and no non-essential events are sent, so nothing is recorded without consent. The Guest loses the option to opt in. Agency personalisation kept (F-EXPLORE-05) | Human, 18/11 (Đợt 1 #10.1) |
 | 7 | Payments wording | Payment flow not in the current MVP slice | "Hình thức thanh toán" and QR / refund FAQ rows exist behind `PAYMENTS_ENABLED` (default false); the hold banner on 21 links "Thanh toán ngay" to the booking detail; "Không cần trả trước…" stays as fixed text | Human, 18/11 (Đợt 1 #4) |
 | 8 | Content fields | No spec fields for highlights (4 items with sub-line), inclusions, guide languages, child policy, suitable-for tags, fixed time slots, workshop founding year, parking note, village distance / visit notes / tour suggestion detail / highlights (19/11) | Added by `supabase/migrations/20261118120000_hab_ui_v3_content.sql` (ADD only, not applied yet) and read with `src/lib/explore/vocabulary.ts` | Human, 18/11 (Đợt 1 #5) |
-| 9 | Village images | No village media in the data model | Village gallery and village grid reuse images of the village's verified workshops and their experiences; a village without any image shows an empty neutral frame (page) or is left out (grid on 01/21) | Human, 18/11 (Đợt 1 #7) |
+| 9 | Village images | No village media in the data model | Village image = `villages.cover_image_id`, else the first image of the village's live experiences. A village without any image is left out of 01/21 and 03a; its page 03 shows no gallery (no empty frame) | Human, 18/11 (Đợt 1 #7); 19/11 (pack 19/11: every village has a cover image) |
 | 10 | Removed elements | Various screen-spec elements (breadcrumbs, verified badges, "Lịch của xưởng" link, separate detail-page footers, village catalogue box, inactive-provider text) | Removed because the approved mockup does not show them; `/explore/providers/[id]/schedule` stays until the embedded calendar on 24 works | Human, 18/11 (Đợt 1 #10) |
 
 ## Follow-ups recorded with the deviations
@@ -32,3 +32,9 @@ these branches; each row below is a known gap between the built UI and the writt
 - Image import (decision 2026-11-18): `villages.cover_image_id` and `image_sources` (provenance of imported images:
   source type, page URL, licence URL, photographer, date, visible faces and consent; SELECT only for `hab_app`, never
   shown in the UI) are added to `20261118120000_hab_ui_v3_content.sql`. The import script lives on `feat/seed-image-import`.
+- Screens 03 and 03a (pack 19/11, human decisions 2026-11-19): "Vì sao nên đưa đoàn đến…" merges `suitable_for` of the
+  village's live experiences in vocabulary order; "Hoạt động nổi bật" lists up to 3 experience names; "Điểm nổi bật của
+  làng" reads `villages.highlights` with the computed counter card second (at most 4 cards); empty `distance_km` hides
+  the distance line. 03a filters by the village's main `craft_type` (no spec field for village crafts). Tests
+  `vil030-card-grid` and `vil030-experience-cards` (page-source checks of the old client page) were rewritten to the
+  new page; the `/api/demo/villages/[id]` API and its tests are unchanged.

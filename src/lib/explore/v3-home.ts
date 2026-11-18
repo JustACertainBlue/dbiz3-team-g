@@ -29,7 +29,7 @@ export function durationLabel(minutes: number): string {
 }
 
 /** URL the browser can load: private Storage files go through /api/prf/media; seed placeholder keys are not images. */
-function fileUrl(file: CsvRow): string | null {
+export function fileUrl(file: CsvRow): string | null {
   if (file.storage_key.startsWith('prf-media/')) return `/api/prf/media/${file.file_id}`
   return /^https?:\/\//.test(file.storage_key) ? file.storage_key : null
 }
@@ -94,9 +94,32 @@ export function preferenceKeys(seed: ExploreSeed, agencyId: string | null): stri
   try { const data = JSON.parse(row.preference_weights); return data && typeof data === 'object' ? Object.keys(data) : [] } catch { return [] }
 }
 
+/** Most common craft_type among the village's live workshops (ties: first seen). */
+export function mainCraft(rows: Row[]): string {
+  const crafts = [...new Map(rows.map(row => [row.provider.provider_id, row.version.craft_type])).values()].filter(Boolean)
+  return [...crafts].sort((a, b) => crafts.filter(c => c === b).length - crafts.filter(c => c === a).length)[0] ?? ''
+}
+
 export interface VillageTile { village_id: string; name: string; craft: string; area: string; providers: number; image: string }
 
-/** Village grid of 01/21: villages with at least one image (workshop or experience images), most workshops first. */
+/**
+ * Image of a village (human decision 2026-11-19, mockup pack 19/11): villages.cover_image_id, else the first image of
+ * the village's live experiences (eligible order, then profile_media order); null when there is none.
+ */
+export function villageImage(seed: ExploreSeed, villageId: string): string | null {
+  const village = seed.villages.find(row => row.village_id === villageId)
+  const cover = village?.cover_image_id ? seed.stored_files.find(file => file.file_id === village.cover_image_id) : undefined
+  const coverUrl = cover?.media_type?.startsWith('image/') ? fileUrl(cover) : null
+  if (coverUrl) return coverUrl
+  for (const row of eligibleRows(seed)) {
+    if (row.village.village_id !== villageId) continue
+    const image = experienceImage(seed, row.experience.experience_id)
+    if (image) return image
+  }
+  return null
+}
+
+/** Village grid of 01/21: villages with an image (villageImage), most workshops first. */
 export function villageTiles(seed: ExploreSeed): VillageTile[] {
   const byVillage = new Map<string, Row[]>()
   for (const row of eligibleRows(seed)) byVillage.set(row.village.village_id, [...(byVillage.get(row.village.village_id) ?? []), row])
@@ -104,12 +127,9 @@ export function villageTiles(seed: ExploreSeed): VillageTile[] {
   for (const [villageId, rows] of byVillage) {
     const village = rows[0].village
     const providers = new Map(rows.map(row => [row.provider.provider_id, row]))
-    const image = rows.map(row => experienceImage(seed, row.experience.experience_id)).find(Boolean)
-      ?? [...providers.values()].flatMap(row => providerImages(seed, row.provider.provider_id, row.version.version_no))[0]
+    const image = villageImage(seed, villageId)
     if (!image) continue
-    const crafts = [...providers.values()].map(row => row.version.craft_type).filter(Boolean)
-    const common = crafts.sort((a, b) => crafts.filter(c => c === b).length - crafts.filter(c => c === a).length)[0] ?? ''
-    tiles.push({ village_id: villageId, name: village.name, craft: village.editorial_craft || craftLabel(common),
+    tiles.push({ village_id: villageId, name: village.name, craft: village.editorial_craft || craftLabel(mainCraft(rows)),
       area: [village.district, village.city_province].filter(Boolean).join(', '), providers: providers.size, image })
   }
   return tiles.sort((a, b) => b.providers - a.providers || a.name.localeCompare(b.name, 'vi'))

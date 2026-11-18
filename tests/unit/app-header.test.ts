@@ -67,6 +67,10 @@ describe('Guest (png/01)', () => {
     expect(html).toContain('Hanoi Artisan Bridge')
     expect(mainNav(html)).toEqual([['/explore', 'Khám phá', true]])
   })
+  it('keeps "Khám phá" selected on the village pages 03 (png/03) and 03a (png/03a)', () => {
+    expect(mainNav(render(guest, '/villages'))).toEqual([['/explore', 'Khám phá', true]])
+    expect(mainNav(render(guest, '/village/v-1'))).toEqual([['/explore', 'Khám phá', true]])
+  })
   it('shows "Đăng nhập" and the white "Đăng ký tài khoản" button on the right', () => {
     expect(html).toMatch(/<a[^>]*href="\/login"[^>]*>Đăng nhập<\/a>/)
     expect(linkTag(html, '/register')).toMatch(/class="[^"]*hab-btn--white/)
@@ -94,6 +98,10 @@ describe('Tour Agency (png/21)', () => {
   it('selects "Lịch sử đặt chỗ" on a booking detail page and "Ghép tour AI" on /ai-matching', () => {
     expect(mainNav(render(agency, `/agency/${AG}/bookings/b-1`, account)).map(i => i[2])).toEqual([false, true, false, false])
     expect(mainNav(render(agency, '/ai-matching', account)).map(i => i[2])).toEqual([false, false, false, true])
+  })
+  it('selects "Khám phá" on the village pages 03 and 03a (pack 19/11)', () => {
+    expect(mainNav(render(agency, '/villages', account)).map(i => i[2])).toEqual([true, false, false, false])
+    expect(mainNav(render(agency, '/village/v-1', account)).map(i => i[2])).toEqual([true, false, false, false])
   })
   it('selects "Lịch" on the schedule page (png/27)', () => {
     expect(mainNav(render(agency, `/agency/${AG}/schedule`, account)).map(i => i[2])).toEqual([false, false, true, false])

@@ -33,11 +33,14 @@ export function guestNavLinks(): Array<{ href: string; label: string }> {
   ]
 }
 
+/** "Khám phá" stays selected on the village pages 03 /village/<id> and 03a /villages (mockup pack 19/11). */
+const EXPLORE: NavItem = { href: '/explore', label: 'Khám phá', alsoActive: ['/village', '/villages'] }
+
 export function navItems(session: SessionContext | null): NavItem[] {
-  if (!session?.authenticated) return [{ href: '/explore', label: 'Khám phá' }]
+  if (!session?.authenticated) return [EXPLORE]
   if (session.mustChangePassword) return [{ href: '/account/change-password', label: 'Đổi mật khẩu tạm' }]
   if (session.role === 'Tour_Agency' && session.agencyId) return [
-    { href: '/explore', label: 'Khám phá' },
+    EXPLORE,
     { href: `/agency/${session.agencyId}/bookings`, label: 'Lịch sử đặt chỗ' },
     { href: `/agency/${session.agencyId}/schedule`, label: 'Lịch' },
     { href: '/ai-matching', label: 'Ghép tour AI' },

@@ -18,6 +18,17 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 64: 20/11 Copilot — reject unsupported distance-minimum and range requests
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`. |
+| Scope | Apply Jade's decision that minimum-distance and range filtering are not supported; treat a zero-kilometer maximum as no results. Do not push. |
+| Produced | Recognizes “trên/hơn/xa hơn/ít nhất/tối thiểu/ngoài X km”, “từ X đến Y km”, and “X-Y km”. These inputs bypass classifier/extractor, return Jade's fixed response, produce no cards, and do not write a radius or budget from those values to state. Explicit craft and group-size slots in the same sentence are retained. “Dưới 0 km” returns a no-results response and no cards; supported “dưới 10 km” behavior remains unchanged. Code/tests commit: `00819c4`. |
+| Test-first and mutation checks | Added seed + fixture route tests before implementation; 14 unsupported-distance cases and 2 zero-radius cases failed before the route handling was added. The passing suite now covers the exact fixed text, UI guidance outcome, no cards, no model invocation, state without radius/budget, retained craft/group size, and unchanged maximum-radius behavior. Mutation setting unsupported-distance detection to false made “trên 10 km” return 3 experiences under an applied 10 km maximum; the test failed as required, then the mutation was restored. |
+| Verification | Focused `npx.cmd vitest run tests/integration/ait-geography-pipeline.test.ts -t "unsupported minimum/range distance|explicit craft/group slots|supported maximum radius|zero-kilometer maximum radius"`: 22 passed. Full `npm.cmd test`: 267 files passed, 1 failed, 5 skipped; 1,910 tests passed, 1 failed, 30 skipped. The sole failure remains `tests/unit/village-display-name.test.ts` for `resolveVillageCards("lang gom bat trang")`, previously reproduced on clean HEAD and unrelated. The 50-prompt AIT matrix still reports 200 response runs, 78 cross-path comparisons, and 0 invariant violations. `npm.cmd run lint`: passed. `npm.cmd run build`: passed; Next.js logged its existing dynamic-server-usage diagnostic for `/ai-matching` and emitted it as dynamic. `git diff --check`: passed. |
+| Boundaries | Local only; no push, no data edits, and no edits to `.claude/`, `.env.local`, or `.demo-data/`. The unrelated `.claude/settings.json` modification and untracked planning/report files remain untouched and uncommitted. |
+
 ### Entry 63: 20/11 Copilot — finish AIT invariant and mutation audit
 
 | Field | Value |

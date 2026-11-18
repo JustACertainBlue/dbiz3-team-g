@@ -1,0 +1,18 @@
+# UI v3 – deviations from `docs/spec/` (recorded, spec not edited)
+
+Source: mockup v3 (`~/Desktop/hab-mockup-v3`, outside the repo) and the human's decisions of 18 Nov 2026
+(Đợt 0 on `ui/v3-foundation`, Đợt 1 on `ui/v3-public`). `docs/spec/` is human-owned and is not changed by
+these branches; each row below is a known gap between the built UI and the written spec, for the spec owner.
+
+| # | Area | Spec says | UI v3 does | Decision |
+|---|---|---|---|---|
+| 1 | Main navigation | Shared screen-spec line: "Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065" | No "Lịch" (SCH141 / SCH139) on the bar; schedule pages stay reachable from in-page links | Human, 18/11 (Đợt 0) |
+| 2 | Search | spec-EXP Q8 / Q11: no free-text search on Explore | Search bar on 01/21 and a results page `/explore/search` (keyword without diacritics, guest count ≤ `max_participants`, date via `lib/explore/availability.ts`, filters, sort, pagination as mockup 02); duration/capacity chips replace the activity-type chips | Human, 18/11 (Đợt 1 #1) |
+| 3 | Guest AI | EXP120 SR-003, nav rule "Guest … with no AI navigation" | Guest sees the AI block on 01 and 23; it only links to `/login`, the guest never calls AI | Human, 18/11 (Đợt 1 #2) |
+| 4 | Guest prices | F-EXPLORE-02: price hidden from Guests | Guest sees "Giá từ … /khách"; group price hidden behind a lock + "Đăng nhập để xem giá đoàn" (mockup README rule 4) | Human, mockup README (awaiting lecturer) |
+| 5 | Booking request | BKG BR-002 (only the Provider creates a Booking); F-EXPLORE-11 Request Quote | "Gửi yêu cầu đặt chỗ" (04) and "Gửi yêu cầu đặt ngày này" (24) replace Request Quote; Agency self-booking flow approved by the lecturer on 15/11, built on `ui/v3-booking`; Đợt 1 only shows the button and block; quote backend code is not removed | Human, 18/11 (Đợt 1 #3) |
+| 6 | Analytics consent | EXP120 #2 / SR-004: Guest analytics consent option | Consent box removed; Guests run with `tracking_scope = "No Non-essential Tracking"` and no non-essential events are sent, so nothing is recorded without consent. The Guest loses the option to opt in. Agency personalisation kept (F-EXPLORE-05) | Human, 18/11 (Đợt 1 #10.1) |
+| 7 | Payments wording | Payment flow not in the current MVP slice | "Hình thức thanh toán" and QR / refund FAQ rows exist behind `PAYMENTS_ENABLED` (default false); the hold banner on 21 links "Thanh toán ngay" to the booking detail; "Không cần trả trước…" stays as fixed text | Human, 18/11 (Đợt 1 #4) |
+| 8 | Content fields | No spec fields for highlights (4 items with sub-line), inclusions, guide languages, child policy, suitable-for tags, fixed time slots, workshop founding year, parking note, village distance / visit notes / tour suggestion detail | Added by `supabase/migrations/20261118120000_hab_ui_v3_content.sql` (ADD only, not applied yet) and read with `src/lib/explore/vocabulary.ts` | Human, 18/11 (Đợt 1 #5) |
+| 9 | Village images | No village media in the data model | Village gallery and village grid reuse images of the village's verified workshops and their experiences; a village without any image shows an empty neutral frame (page) or is left out (grid on 01/21) | Human, 18/11 (Đợt 1 #7) |
+| 10 | Removed elements | Various screen-spec elements (breadcrumbs, verified badges, "Lịch của xưởng" link, separate detail-page footers, village catalogue box, inactive-provider text) | Removed because the approved mockup does not show them; `/explore/providers/[id]/schedule` stays until the embedded calendar on 24 works | Human, 18/11 (Đợt 1 #10) |

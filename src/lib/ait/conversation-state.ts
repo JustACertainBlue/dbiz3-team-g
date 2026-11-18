@@ -12,6 +12,7 @@ export interface AitConversationState {
   budget_basis?: 'per_person' | 'group_total'
   date_or_duration?: string
   interests?: string[]
+  relaxed_fields: string[]
   date?: string
   origin?: string
   dismissed_questions: PendingQuestionField[]
@@ -115,6 +116,7 @@ export function emptyConversationState(): AitConversationState {
     dismissed_questions: [],
     exclusions: { villages: [], crafts: [] },
     turn_count: 0,
+    relaxed_fields: [],
     slots: {},
     turn_history: [],
   }
@@ -205,6 +207,9 @@ export function normalizeConversationState(value: unknown): AitConversationState
     }
   }
   if (typeof raw.date_or_duration === 'string') state.date_or_duration = raw.date_or_duration
+  state.relaxed_fields = Array.isArray(raw.relaxed_fields)
+    ? [...new Set(raw.relaxed_fields.filter((item): item is string => typeof item === 'string'))]
+    : []
   if (Array.isArray(raw.interests) && raw.interests.every(item => typeof item === 'string')) {
     state.interests = raw.interests
   }

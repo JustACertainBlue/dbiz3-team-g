@@ -18,6 +18,16 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 69: 18/11 Copilot — define AIT delta schema
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local work on `feat/ait-conversational-llm`, after test commit `8a2409d`. |
+| Scope | Add the typed per-slot `set`/`clear`/`relax` delta contract and a persisted list for relaxed optional fields. |
+| Produced | Added `src/lib/ait/conversation-delta-schema.ts`; `AitConversationState` now normalizes `relaxed_fields`. No LLM is allowed to merge state through this schema yet; validator and route wiring are still separate steps. |
+| Verification | Tests-first contract commit `8a2409d` remains intentionally red until the validator implementation lands; no pass claim. |
+| Boundaries | No push, no environment/secret/Supabase access, and no edits outside AIT plus this build-log entry. |
+
 ### Entry 68: 18/11 Copilot — AIT delta contract test-first
 
 | Field | Value |

@@ -18,6 +18,16 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 71: 18/11 Copilot — implement AIT delta validation and merge
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up after delta schema and test commits `395067f`, `1ea7cc3`. |
+| Scope | Validate each `set`/`clear`/`relax` operation independently and apply only accepted operations to structured state. |
+| Produced | Added `src/lib/ait/conversation-delta.ts`. Set values require source text and typed/domain validation; clear requires an explicit field-specific clear cue; relax requires a waiver cue and matching earlier user-turn evidence. Rejections include slot and reason. Applying an accepted group-total budget stores its per-person ceiling and recalculates it when group size changes. |
+| Verification | `npx.cmd vitest run tests/unit/ait-conversation-delta.test.ts --reporter=dot`: 1 file, 6 tests passed. `npm.cmd run lint`: passed. LLM and route wiring are not yet implemented. |
+| Boundaries | No push, no environment/secret/Supabase access, and no edits outside AIT plus this log. |
+
 ### Entry 70: 18/11 Copilot — expand AIT delta validator oracles
 
 | Field | Value |

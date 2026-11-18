@@ -10,7 +10,7 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { SessionContext } from '@/lib/auth/session'
 import AppHeader, { type HeaderAccount } from '@/app/components/header/AppHeader'
-import { accountLinks, headerVariant, navItems } from '@/app/components/nav/nav-model'
+import { accountLinks, footerVisible, headerVariant, navItems } from '@/app/components/nav/nav-model'
 
 ;(globalThis as { React?: typeof React }).React = React
 
@@ -26,8 +26,16 @@ const provider: SessionContext = { ...base, role: 'Local_Provider', providerId: 
 const hdt: SessionContext = { ...base, role: 'ADMIN', adminType: 'HDT' }
 const ubnd: SessionContext = { ...base, role: 'ADMIN', adminType: 'UBND', assignedVillageId: 'v-1' }
 
-function render(session: SessionContext, pathname: string, account: HeaderAccount = {}, unread = 0) {
-  return renderToStaticMarkup(React.createElement(AppHeader, { session, pathname, account, unread }))
+function render(session: SessionContext, pathname: string, account: HeaderAccount = {}, unread = 0, accountMenuOpen = false) {
+  return renderToStaticMarkup(React.createElement(AppHeader, { session, pathname, account, unread, accountMenuOpen }))
+}
+
+/** Text of every item in the open account menu. */
+function menuItems(html: string) {
+  const menu = html.match(/<div[^>]*role="menu"[^>]*>([\s\S]*)<\/div>/)?.[1] ?? ''
+  return [...menu.matchAll(/<(a|button)\b([^>]*role="menuitem"[^>]*)>([\s\S]*?)<\/\1>/g)].map(m => [
+    m[2].match(/href="([^"]+)"/)?.[1] ?? null, m[3].replace(/<[^>]+>/g, ''),
+  ])
 }
 
 /** Opening tag of the first <a> whose href is `href` (attribute order independent). */
@@ -142,9 +150,9 @@ describe('Admin (png/38)', () => {
       ['/admin/agencies', 'Duyệt hồ sơ', false],
       ['/admin/users', 'Quản lý tài khoản', false],
     ])
-    expect(html).toMatch(/class="hab-nav__org"[^>]*>Sở Du lịch Hà Nội</)
+    expect(html).toMatch(/class="hab-nav__org-name"[^>]*>Sở Du lịch Hà Nội</)
     expect(html).toMatch(/<header[^>]*class="[^"]*hab-nav--admin/)
-    expect(html).not.toContain('hab-chip')
+    expect(html).not.toContain('hab-chip__avatar')
     expect(html).not.toContain('href="/messages"')
   })
   it('HDT: "Duyệt hồ sơ" stays selected on /admin/providers and its detail page', () => {
@@ -162,7 +170,21 @@ describe('Admin (png/38)', () => {
       ['/admin/providers', 'Duyệt hồ sơ', true],
       ['/admin/users', 'Quản lý tài khoản', false],
     ])
-    expect(html).toMatch(/class="hab-nav__org"[^>]*>UBND xã Bát Tràng</)
+    expect(html).toMatch(/class="hab-nav__org-name"[^>]*>UBND xã Bát Tràng</)
+  })
+  it('HDT without an organisation from the account API shows "Sở Du lịch Hà Nội"', () => {
+    expect(render(hdt, '/admin', { organization: '' })).toMatch(/class="hab-nav__org-name"[^>]*>Sở Du lịch Hà Nội</)
+  })
+  it('the organisation name is a menu button with an arrow (human decision 2026-11-18)', () => {
+    const html = render(hdt, '/admin', { organization: 'Sở Du lịch Hà Nội' })
+    expect(html).toMatch(/<button[^>]*class="hab-nav__org"[^>]*aria-haspopup="menu"[^>]*aria-expanded="false"/)
+    // Updated png/38 (18/11): chevron icon after the name.
+    expect(html).toMatch(/<svg[^>]*class="[^"]*hab-nav__caret/)
+  })
+  it('the open admin menu has exactly Tài khoản của tôi (/account) and Đăng xuất', () => {
+    const html = render(ubnd, '/admin', { full_name: 'Hoàng Thùy Linh', organization: 'UBND xã Hạ Thái' }, 0, true)
+    expect(html).toMatch(/aria-expanded="true"/)
+    expect(menuItems(html)).toEqual([['/account', 'Tài khoản của tôi'], [null, 'Đăng xuất']])
   })
   it('replaces the old sidebar', () => {
     expect(render(hdt, '/admin', {})).not.toContain('shell-sidebar')
@@ -182,14 +204,34 @@ describe('Account menu (png/20)', () => {
       { href: `/provider/${PV}`, label: 'Doanh nghiệp của tôi' },
     ])
   })
-  it('Guest and Admin have no account menu', () => {
+  it('Guest has no account menu; Admin has only Tài khoản của tôi', () => {
     expect(accountLinks(guest)).toEqual([])
-    expect(accountLinks(hdt)).toEqual([])
+    expect(accountLinks(hdt)).toEqual([{ href: '/account', label: 'Tài khoản của tôi' }])
+    expect(accountLinks(ubnd)).toEqual([{ href: '/account', label: 'Tài khoản của tôi' }])
+  })
+  it('the open Agency menu keeps the png/20 order', () => {
+    const html = render(agency, '/explore', { full_name: 'Lý Gia Hân', organization: 'Du lịch Tràng An' }, 0, true)
+    expect(menuItems(html)).toEqual([['/account', 'Tài khoản của tôi'], [`/agency/${AG}`, 'Doanh nghiệp của tôi'], [null, 'Đăng xuất']])
   })
 })
 
 describe('navItems', () => {
   it('Guest has only Khám phá', () => {
     expect(navItems(guest).map(i => i.label)).toEqual(['Khám phá'])
+  })
+})
+
+describe('footerVisible (footer only on /explore for Guest and Tour Agency)', () => {
+  it('is true for Guest and Agency on /explore only', () => {
+    expect(footerVisible(guest, '/explore')).toBe(true)
+    expect(footerVisible(null, '/explore')).toBe(true)
+    expect(footerVisible(agency, '/explore')).toBe(true)
+    expect(footerVisible(agency, '/explore/experiences/x')).toBe(false)
+    expect(footerVisible(guest, '/login')).toBe(false)
+  })
+  it('is false for Provider and Admin, even on /explore', () => {
+    expect(footerVisible(provider, '/explore')).toBe(false)
+    expect(footerVisible(hdt, '/explore')).toBe(false)
+    expect(footerVisible(ubnd, '/explore')).toBe(false)
   })
 })

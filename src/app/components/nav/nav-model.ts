@@ -59,14 +59,21 @@ export function navItems(session: SessionContext | null): NavItem[] {
   return []
 }
 
-/** Account menu (png/20): Tài khoản của tôi · Doanh nghiệp của tôi; Đăng xuất is rendered by the header. */
+/** Account menu (png/20): Tài khoản của tôi · Doanh nghiệp của tôi; Đăng xuất is rendered by the header.
+ *  Admin (human decision 2026-11-18): only Tài khoản của tôi, plus Đăng xuất. */
 export function accountLinks(session: SessionContext | null): AccountLink[] {
-  if (!session?.authenticated || session.role === 'ADMIN') return []
+  if (!session?.authenticated) return []
   const links: AccountLink[] = [{ href: '/account', label: 'Tài khoản của tôi' }]
-  if (session.mustChangePassword) return links
+  if (session.mustChangePassword || session.role === 'ADMIN') return links
   if (session.role === 'Tour_Agency' && session.agencyId) links.push({ href: `/agency/${session.agencyId}`, label: 'Doanh nghiệp của tôi' })
   if (session.role === 'Local_Provider' && session.providerId) links.push({ href: `/provider/${session.providerId}`, label: 'Doanh nghiệp của tôi' })
   return links
+}
+
+/** Footer (human decision 2026-11-18): only on /explore, and only for Guest and Tour Agency. */
+export function footerVisible(session: SessionContext | null, pathname: string): boolean {
+  const variant = headerVariant(session)
+  return pathname === '/explore' && (variant === 'guest' || variant === 'agency')
 }
 
 const matches = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`)

@@ -6,7 +6,7 @@
 // Pure props (no fetching) so it renders in tests; SessionHeader supplies session, account and unread count.
 import Link from 'next/link'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { BriefcaseBusiness, LogOut, Menu, MessageSquareText, User, X } from 'lucide-react'
+import { BriefcaseBusiness, ChevronDown, ChevronUp, LogOut, Menu, MessageSquareText, User, X } from 'lucide-react'
 import type { SessionContext } from '@/lib/auth/session'
 import { accountLinks, activeHref, headerVariant, homeHref, initials, navItems } from '../nav/nav-model'
 import { buttonClass } from '../ui/Button'
@@ -14,11 +14,13 @@ import Modal from '../ui/Modal'
 
 export type HeaderAccount = { full_name?: string; title?: string; organization?: string }
 
-export default function AppHeader({ session, pathname, account = {}, unread = 0 }: {
+export default function AppHeader({ session, pathname, account = {}, unread = 0, accountMenuOpen = false }: {
   session: SessionContext | null; pathname: string; account?: HeaderAccount; unread?: number
+  /** Initial state of the account menu (tests render it open). */
+  accountMenuOpen?: boolean
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [accountOpen, setAccountOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(accountMenuOpen)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [logoutError, setLogoutError] = useState('')
@@ -26,12 +28,15 @@ export default function AppHeader({ session, pathname, account = {}, unread = 0 
   const chipButton = useRef<HTMLButtonElement>(null)
   const accountBox = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { setMenuOpen(false); setAccountOpen(false) }, [pathname])
+  const firstPath = useRef(pathname)
+  useEffect(() => { if (pathname === firstPath.current) return; firstPath.current = pathname; setMenuOpen(false); setAccountOpen(false) }, [pathname])
   useEffect(() => {
     if (!accountOpen) return
     const outside = (event: MouseEvent) => { if (!accountBox.current?.contains(event.target as Node)) setAccountOpen(false) }
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setAccountOpen(false); chipButton.current?.focus() } }
     document.addEventListener('mousedown', outside)
-    return () => document.removeEventListener('mousedown', outside)
+    document.addEventListener('keydown', escape)
+    return () => { document.removeEventListener('mousedown', outside); document.removeEventListener('keydown', escape) }
   }, [accountOpen])
   const closeMenu = useCallback(() => { setMenuOpen(false); menuButton.current?.focus() }, [])
 
@@ -81,31 +86,34 @@ export default function AppHeader({ session, pathname, account = {}, unread = 0 
           <Link href="/login" className="hab-nav__login">Đăng nhập</Link>
           <Link href="/register" className={buttonClass('white', 'md', 'hab-nav__register')}>Đăng ký tài khoản</Link>
         </>}
-        {variant === 'admin' && <span className="hab-nav__org">{org}</span>}
-        {signedIn && variant !== 'admin' && <>
-          <Link href="/messages" aria-label={unreadLabel} title="Tin nhắn" className="hab-nav__msg">
-            <MessageSquareText aria-hidden="true" size={22} />
-            {unread > 0 && <span className="hab-nav__badge" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
-          </Link>
-          <div className="hab-account" ref={accountBox}>
-            <button ref={chipButton} type="button" className="hab-chip" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen(open => !open)}>
-              <span className="hab-chip__avatar" aria-hidden="true">{avatar}</span>
-              <span className="hab-chip__name">{chipName}</span>
-              <span className="hab-chip__caret" aria-hidden="true">{accountOpen ? '▴' : '▾'}</span>
-            </button>
-            {accountOpen && <div className="hab-account__menu" role="menu" aria-label="Tài khoản"
-              onKeyDown={event => menuKeys(event, () => { setAccountOpen(false); chipButton.current?.focus() })}>
-              <div className="hab-account__who"><p className="hab-account__person">{account.full_name || chipName}</p>{org && <p className="hab-account__org">{org}</p>}</div>
-              {links.map((link, index) => <Link key={link.href} role="menuitem" href={link.href} className="hab-account__item" autoFocus={index === 0} onClick={() => setAccountOpen(false)}>
-                {index === 0 ? <User aria-hidden="true" size={20} /> : <BriefcaseBusiness aria-hidden="true" size={20} />}{link.label}
-              </Link>)}
-              <div className="hab-account__divider" role="separator" />
-              <button type="button" role="menuitem" className="hab-account__item hab-account__item--danger" onClick={askLogout}>
-                <LogOut aria-hidden="true" size={20} />Đăng xuất
+        {signedIn && variant !== 'admin' && <Link href="/messages" aria-label={unreadLabel} title="Tin nhắn" className="hab-nav__msg">
+          <MessageSquareText aria-hidden="true" size={22} />
+          {unread > 0 && <span className="hab-nav__badge" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
+        </Link>}
+        {signedIn && <div className="hab-account" ref={accountBox}>
+          {variant === 'admin'
+            // Admin (human decision 2026-11-18): the unit name is the menu button, with an arrow.
+            ? <button ref={chipButton} type="button" className="hab-nav__org" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen(open => !open)}>
+                <span className="hab-nav__org-name">{org}</span>
+                {accountOpen ? <ChevronUp className="hab-nav__caret" aria-hidden="true" size={18} /> : <ChevronDown className="hab-nav__caret" aria-hidden="true" size={18} />}
               </button>
-            </div>}
-          </div>
-        </>}
+            : <button ref={chipButton} type="button" className="hab-chip" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen(open => !open)}>
+                <span className="hab-chip__avatar" aria-hidden="true">{avatar}</span>
+                <span className="hab-chip__name">{chipName}</span>
+                <span className="hab-chip__caret" aria-hidden="true">{accountOpen ? '▴' : '▾'}</span>
+              </button>}
+          {accountOpen && <div className="hab-account__menu" role="menu" aria-label="Tài khoản"
+            onKeyDown={event => menuKeys(event, () => { setAccountOpen(false); chipButton.current?.focus() })}>
+            <div className="hab-account__who"><p className="hab-account__person">{account.full_name || chipName}</p>{org && <p className="hab-account__org">{org}</p>}</div>
+            {links.map((link, index) => <Link key={link.href} role="menuitem" href={link.href} className="hab-account__item" autoFocus={index === 0} onClick={() => setAccountOpen(false)}>
+              {index === 0 ? <User aria-hidden="true" size={20} /> : <BriefcaseBusiness aria-hidden="true" size={20} />}{link.label}
+            </Link>)}
+            <div className="hab-account__divider" role="separator" />
+            <button type="button" role="menuitem" className="hab-account__item hab-account__item--danger" onClick={askLogout}>
+              <LogOut aria-hidden="true" size={20} />Đăng xuất
+            </button>
+          </div>}
+        </div>}
         <button ref={menuButton} type="button" className="hab-nav__burger" aria-expanded={menuOpen} aria-label="Mở menu" onClick={() => setMenuOpen(true)}>
           <Menu aria-hidden="true" size={24} />
         </button>

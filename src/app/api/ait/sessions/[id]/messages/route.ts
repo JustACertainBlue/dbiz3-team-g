@@ -313,6 +313,9 @@ export async function POST(
 
     let conversationState = normalizeConversationState(storedContext.state)
     const pendingQuestion = normalizePendingQuestion(storedContext.pending_question)
+    const previousUserMessages = (await getMessages(params.id))
+      .filter(item => item.sender.toLowerCase() !== 'assistant')
+    const previousUserText = previousUserMessages.at(-1)?.text ?? ''
     const isReset = !isRetry && isExplicitConversationReset(originalText)
     const activePendingQuestion = isReset ? null : pendingQuestion
     const textForParsing = stripTestPromptMarker(originalText)
@@ -332,7 +335,13 @@ export async function POST(
     const acceptsInScopeOffer = activePendingQuestion?.field === 'in_scope_offer'
       && isAffirmativeReply(originalText)
     const answersPendingQuestion = Boolean(activePendingQuestion && isShortPendingReply(originalText))
-    const isHelpQuestion = isSystemHelpRequest(routeText) || isBookingHelpRequest(routeText)
+    const isGuideLanguageQuestion = /(?:có\s+)?hướng dẫn tiếng Anh(?:\s+không)?\??/iu.test(routeText)
+    const isGuideLanguageFollowUp = /^(?:không có cũng được|có cũng được)[.!? ]*$/iu.test(routeText.trim())
+      && /(?:có\s+)?hướng dẫn tiếng Anh(?:\s+không)?\??/iu.test(previousUserText)
+    const isHelpQuestion = isSystemHelpRequest(routeText)
+      || isBookingHelpRequest(routeText)
+      || isGuideLanguageQuestion
+      || isGuideLanguageFollowUp
     const bypassClassifier = isRetry || isReset || acceptsInScopeOffer || answersPendingQuestion
       || isHelpQuestion || isFalsePositiveMealPhrase(routeText) || mixedMeal.hasMealRequest
       || unsupportedDistanceRequest || zeroRadiusRequest || invalidRadiusRequest
@@ -662,6 +671,10 @@ export async function POST(
       )
     }
     const allMessages = await getMessages(params.id)
+    const recentUserTurns = allMessages
+      .filter(item => item.sender.toLowerCase() !== 'assistant')
+      .slice(-2)
+      .map(item => ({ sender: item.sender, text: item.text, sent_at: item.sent_at }))
     const latestUserMessage = [...allMessages]
       .reverse()
       .find(item => item.sender.toLowerCase() !== 'assistant')
@@ -693,6 +706,7 @@ export async function POST(
       sessionId: params.id,
       messages: analysisMessages,
       state: conversationState,
+      recentTurns: recentUserTurns,
     })
 
     if (extraction.processing_status === 'Temporary AI Failure') {
@@ -717,7 +731,7 @@ export async function POST(
     const stateBeforeExtraction = conversationState
     if (isReset) {
       conversationState = emptyConversationState()
-    } else if (extraction.intent !== 'platform_guidance') {
+    } else if (!isHelpQuestion && extraction.intent !== 'platform_guidance') {
       conversationState = mergeConversationState(
         conversationState,
         analysisText,
@@ -1253,7 +1267,9 @@ export async function POST(
     ].filter((value): value is string => Boolean(value))
     turn = {
       ...turn,
-      message: `${turn.message}\n\nĐang áp dụng: ${activeCriteria.join(', ') || 'trống'}.`,
+      message: `${turn.message}${turn.turn_type === 'results'
+        ? `\n\nĐang lọc: ${activeCriteria.join(', ') || 'các tiêu chí đã nêu'}.`
+        : ''}\n\nĐang áp dụng: ${activeCriteria.join(', ') || 'trống'}.`,
     }
 
     const statusCode = isE2E ? 200 : isRetry ? 200 : 201

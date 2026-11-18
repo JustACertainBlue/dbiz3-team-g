@@ -318,6 +318,9 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(context?.state).toMatchObject({ craft: 'silk', radius_km: 9 })
     expect(context?.state.budget_per_person).toBeUndefined()
     expect(response.json.turn.message).toContain('Đang áp dụng:')
+    if (response.json.turn.turn_type === 'results') {
+      expect(response.json.turn.message).toContain('Đang lọc:')
+    }
     expect(response.json.turn.message).not.toContain('chưa xác định được')
     expect(response.json.turn.message).not.toContain('ngân sách')
   })
@@ -343,7 +346,7 @@ describe('AIT geography pipeline through the real extractor', () => {
     })
   })
 
-  it('sends only structured state and the latest Agency text to the LLM', async () => {
+  it('sends structured state and at most two recent user turns, never assistant prose, to the LLM', async () => {
     const mocks = installLlmMock('Mình đang tìm làng nghề phù hợp.')
     const sessionId = await openSession()
 
@@ -354,6 +357,9 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(prompt.filter(message => message.role === 'assistant')).toEqual([])
     expect(prompt.filter(message => message.role === 'user').map(message => message.content))
       .toEqual(['dưới 10 km'])
+    expect(prompt.find(message =>
+      message.role === 'system' && message.content.includes('Recent user turns')
+    )?.content).toContain('"làng gốm"')
     expect(prompt.find(message =>
       message.role === 'system' && message.content.includes('Current structured conversation state')
     )?.content).toContain('"craft":"pottery"')

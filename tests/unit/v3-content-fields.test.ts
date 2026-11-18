@@ -27,6 +27,16 @@ describe('suitable_for vocabulary', () => {
   })
 })
 
+describe('villages.highlights (human decision 2026-11-19)', () => {
+  it('is a nullable jsonb array of at most 4 items, read with parseHighlights', () => {
+    const sql = readFileSync('supabase/migrations/20261118120000_hab_ui_v3_content.sql', 'utf8')
+    const villages = sql.match(/ALTER TABLE public\.villages\s+ADD COLUMN[\s\S]*?;/)?.[0] ?? ''
+    expect(villages).toMatch(/ADD COLUMN IF NOT EXISTS highlights jsonb/)
+    expect(sql).toMatch(/CONSTRAINT village_highlights_shape_chk CHECK \(highlights IS NULL OR \(jsonb_typeof\(highlights\) = 'array' AND jsonb_array_length\(highlights\) <= 4\)\)/)
+    expect(parseHighlights('[{"title":"Làng gốm lâu đời","sub":"Nhiều gia đình làm gốm"}]')).toEqual([{ title: 'Làng gốm lâu đời', sub: 'Nhiều gia đình làm gốm' }])
+  })
+})
+
 describe('PREFERENCE_TO_SUITABLE_FOR', () => {
   it('has exactly one row: culture → Tour văn hoá – di sản, a vocabulary term', () => {
     expect(PREFERENCE_TO_SUITABLE_FOR).toEqual({ culture: 'Tour văn hoá – di sản' })

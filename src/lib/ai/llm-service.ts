@@ -10,6 +10,8 @@ import { systemClock } from '@/lib/booking/clock'
 import { fallbackMissingPrimary, normalizeMissingPrimary } from './missing-primary'
 import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
 import type { AitConversationState } from '@/lib/ait/conversation-state'
+import { validateConversationDelta } from '@/lib/ait/conversation-delta'
+import type { ValidatedConversationDelta } from '@/lib/ait/conversation-delta-schema'
 
 export interface ConversationalAiResult {
   intent: 'tour_matching' | 'platform_guidance' | 'mixed'
@@ -21,6 +23,7 @@ export interface ConversationalAiResult {
   quota_status: QuotaStatus
   usedLlm: boolean
   modelUsed?: string
+  delta_validation?: ValidatedConversationDelta
 }
 
 export function sanitizeConversationalReply(text: string): string {
@@ -307,7 +310,15 @@ export class ConversationalAiService {
 
     if (parsed && typeof parsed === 'object') {
       const isVi = isVietnameseText(latestUserMsg)
-      const tourContext = this.mapExtractedToTourContext(parsed.extracted_context, messages, now)
+      const deltaValidation = validateConversationDelta(
+        parsed.conversation_delta,
+        latestUserMsg,
+        recentUserTurns,
+        options?.state,
+      )
+      const tourContext = parsed.conversation_delta === undefined
+        ? this.mapExtractedToTourContext(parsed.extracted_context, messages, now)
+        : {}
       // Intent handling: platform guidance vs tour matching
       const rawIntent = parsed.intent || 'tour_matching'
       const isGuidance = rawIntent === 'platform_guidance' || detectedGuidance
@@ -352,6 +363,7 @@ export class ConversationalAiService {
         quota_status: quotaStatus,
         usedLlm: true,
         modelUsed: aiResponse.modelUsed,
+        delta_validation: deltaValidation,
       }
     }
 

@@ -19,5 +19,6 @@ export interface RejectedConversationDelta {
 
 export interface ValidatedConversationDelta {
   accepted: ConversationDelta
+  unsupported: ConversationDelta
   rejected: RejectedConversationDelta[]
 }

@@ -2,6 +2,7 @@ import type { TourContext, TourPreferenceProfile } from '@/lib/matching/types'
 import { ConversationalAiService, type ConversationalAiResult } from './llm-service'
 import type { QuotaStatus } from './quota-manager'
 import type { AitConversationState } from '@/lib/ait/conversation-state'
+import type { ValidatedConversationDelta } from '@/lib/ait/conversation-delta-schema'
 import { craftTypeForPreference } from '@/lib/matching/craft-taxonomy'
 
 export interface MessageInput {
@@ -28,6 +29,7 @@ export interface ExtractionResult {
   intent?: 'tour_matching' | 'platform_guidance' | 'mixed'
   quota_status?: QuotaStatus
   usedLlm?: boolean
+  delta_validation?: ValidatedConversationDelta
 }
 
 export async function extractTourContext(
@@ -70,6 +72,7 @@ export async function extractTourContext(
     intent: result.intent,
     quota_status: result.quota_status,
     usedLlm: result.usedLlm,
+    delta_validation: result.delta_validation,
   }
 }
 

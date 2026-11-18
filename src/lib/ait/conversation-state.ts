@@ -2,11 +2,12 @@ import type { TourContext } from '@/lib/matching/types'
 import { isOriginGroundedInUserText, resolveCraftPreference } from '@/lib/ai/llm-service'
 import { extractTourDate } from '@/lib/ai/tour-date'
 import { CATALOG_VILLAGES } from '@/lib/matching/card-resolver'
-import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
+import { craftTypeForPreference, detectCraftPreference } from '@/lib/matching/craft-taxonomy'
 import { parseExplicitBudgetAmount } from './budget'
 
 export interface AitConversationState {
   craft?: string
+  craft_no_data?: boolean
   group_size?: number
   budget_per_person?: number
   budget_basis?: 'per_person' | 'group_total'
@@ -144,6 +145,7 @@ export function normalizeConversationState(value: unknown): AitConversationState
   ]
 
   if (typeof raw.craft === 'string') state.craft = raw.craft
+  if (typeof raw.craft_no_data === 'boolean') state.craft_no_data = raw.craft_no_data
   if (typeof raw.group_size === 'number' && Number.isInteger(raw.group_size) && raw.group_size > 0) {
     state.group_size = raw.group_size
   }
@@ -409,7 +411,10 @@ export function mergeConversationState(
     updatedSlots[name] = slot
     switch (name) {
       case 'craft':
-        if (typeof value === 'string') next.craft = value
+        if (typeof value === 'string') {
+          next.craft = value
+          next.craft_no_data = !craftTypeForPreference(value)
+        }
         break
       case 'group_size':
         if (typeof value === 'number') next.group_size = value

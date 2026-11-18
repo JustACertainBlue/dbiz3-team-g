@@ -103,6 +103,12 @@ function validateSet(
       return
     case 'group_size': {
       if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) return 'group_size_must_be_positive_integer'
+      const adultsAndChildren = rawSpan.match(/(\d+)\s*(?:người lớn|nguoi lon)\s*(\d+)\s*(?:trẻ em|tre em)\b/iu)
+      if (adultsAndChildren) {
+        return Number(adultsAndChildren[1]) + Number(adultsAndChildren[2]) === value
+          ? undefined
+          : 'group_size_not_supported_by_raw_span'
+      }
       const parsed = rawSpan.match(/\b\d+\s*(?:khách|người|bạn|pax|people|guests?)\b/iu)
       return parsed && Number(parsed[0].match(/\d+/)?.[0]) === value
         ? undefined
@@ -151,7 +157,7 @@ function validateSet(
       }
       const radius = rawSpan.match(/(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])/iu)
       if (!radius) return 'radius_not_supported_by_raw_span'
-      return Math.round(Number(radius[1].replace(',', '.')) * 10) / 10 === value
+      return Number(radius[1].replace(',', '.')) === value
         ? undefined
         : 'radius_value_does_not_match_raw_span'
     }
@@ -173,9 +179,10 @@ export function validateConversationDelta(
   currentState?: AitConversationState,
 ): ValidatedConversationDelta {
   const accepted: ConversationDelta = {}
+  const unsupported: ConversationDelta = {}
   const rejected: RejectedConversationDelta[] = []
   if (!isRecord(raw)) {
-    return { accepted, rejected: [{ slot: 'craft', reason: 'delta_must_be_object' }] }
+    return { accepted, unsupported, rejected: [{ slot: 'craft', reason: 'delta_must_be_object' }] }
   }
 
   const rawGroup = raw.group_size
@@ -205,6 +212,14 @@ export function validateConversationDelta(
       continue
     }
     if (operation.action === 'set') {
+      if (slot === 'craft'
+        && typeof operation.value === 'string'
+        && operation.value.trim().length > 0
+        && !craftTypeForPreference(operation.value)
+        && normalizeText(operation.raw_span).includes(normalizeText(operation.value))) {
+        unsupported.craft = operation
+        continue
+      }
       const reason = validateSet(slot, operation, userText, groupSize, budgetBasis)
       if (reason) rejected.push({ slot, reason })
       else accepted[slot] = operation
@@ -225,12 +240,15 @@ export function validateConversationDelta(
     }
   }
 
-  return { accepted, rejected }
+  return { accepted, unsupported, rejected }
 }
 
 function clearStateSlot(state: AitConversationState, slot: ConversationDeltaSlot): void {
   switch (slot) {
-    case 'craft': delete state.craft; break
+    case 'craft':
+      delete state.craft
+      delete state.craft_no_data
+      break
     case 'group_size': delete state.group_size; break
     case 'budget_per_person': delete state.budget_per_person; break
     case 'budget_basis': delete state.budget_basis; break
@@ -255,7 +273,8 @@ export function applyConversationDelta(
   _now: Date,
 ): AitConversationState {
   const entries = Object.entries(validation.accepted) as Array<[ConversationDeltaSlot, ConversationDeltaOperation]>
-  if (entries.length === 0) return current
+  const unsupportedEntries = Object.entries(validation.unsupported) as Array<[ConversationDeltaSlot, ConversationDeltaOperation]>
+  if (entries.length === 0 && unsupportedEntries.length === 0) return current
 
   const next: AitConversationState = {
     ...current,
@@ -269,7 +288,10 @@ export function applyConversationDelta(
     slots: { ...current.slots },
     turn_history: [...current.turn_history],
   }
-  const turn = current.turn_count + 1
+  const metadataOnlyRelax = entries.every(([slot, operation]) =>
+    slot === 'guide_language' && operation.action === 'relax'
+  )
+  const turn = current.turn_count + (metadataOnlyRelax ? 0 : 1)
   const changed: AitConversationState['slots'] = {}
 
   for (const [slot, operation] of entries) {
@@ -290,7 +312,12 @@ export function applyConversationDelta(
     const value = operation.value
     if (slot === 'budget_basis' && value !== 'group_total' && value !== 'per_person') continue
     switch (slot) {
-      case 'craft': if (typeof value === 'string') next.craft = value; break
+      case 'craft':
+        if (typeof value === 'string') {
+          next.craft = value
+          next.craft_no_data = false
+        }
+        break
       case 'group_size': if (typeof value === 'number') next.group_size = value; break
       case 'budget_per_person': if (typeof value === 'number') next.budget_per_person = value; break
       case 'budget_basis': if (value === 'group_total' || value === 'per_person') next.budget_basis = value; break
@@ -298,7 +325,7 @@ export function applyConversationDelta(
       case 'duration': if (typeof value === 'string') next.date_or_duration = value; break
       case 'interests': if (Array.isArray(value)) next.interests = value; break
       case 'origin': if (typeof value === 'string') next.origin = value; break
-      case 'radius': if (typeof value === 'number') next.radius_km = value; break
+      case 'radius': if (typeof value === 'number') next.radius_km = Math.round(value * 10) / 10; break
       case 'nearest':
       case 'cheapest':
       case 'guide_language':
@@ -312,8 +339,11 @@ export function applyConversationDelta(
     }
     if (slot === 'guide_language') continue
     const stateSlot = slot as ConversationSlotName
+    const storedValue = slot === 'radius' && typeof value === 'number'
+      ? Math.round(value * 10) / 10
+      : value
     const entry = {
-      value: value as string | number | boolean | string[],
+      value: storedValue as string | number | boolean | string[],
       raw_span: operation.raw_span.trim(),
       created_turn: turn,
       source_turn: turn,
@@ -322,6 +352,21 @@ export function applyConversationDelta(
     next.slots[stateSlot] = entry
     changed[stateSlot] = entry
     next.relaxed_fields = next.relaxed_fields.filter(field => field !== slot)
+  }
+
+  for (const [slot, operation] of unsupportedEntries) {
+    if (slot !== 'craft' || operation.action !== 'set' || typeof operation.value !== 'string') continue
+    next.craft = operation.value
+    next.craft_no_data = true
+    const entry = {
+      value: operation.value,
+      raw_span: operation.raw_span.trim(),
+      created_turn: turn,
+      source_turn: turn,
+      source: 'explicit' as const,
+    }
+    next.slots.craft = entry
+    changed.craft = entry
   }
 
   if (validation.accepted.group_size?.action === 'set'
@@ -337,6 +382,8 @@ export function applyConversationDelta(
   }
 
   next.turn_count = turn
-  next.turn_history = [...next.turn_history, { turn, slots: changed }].slice(-20)
+  if (!metadataOnlyRelax) {
+    next.turn_history = [...next.turn_history, { turn, slots: changed }].slice(-20)
+  }
   return next
 }

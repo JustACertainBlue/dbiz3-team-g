@@ -59,7 +59,7 @@ export function handoffOutcome(result: ApiResult): HandoffOutcome {
 
 export interface RecommendationView {
   experience_id: string; provider_id: string; experience_name: string; provider_name: string; village_name: string
-  rank: number; match_score: number; price_per_person: number | null; max_participants: number | null
+  rank: number; match_score: number | null; price_per_person: number | null; max_participants: number | null
   village_starting_price: number | null; explanation: string; image_url?: string
 }
 

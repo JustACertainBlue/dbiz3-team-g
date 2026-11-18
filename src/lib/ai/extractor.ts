@@ -111,6 +111,7 @@ export async function buildTourPreferenceProfile(
   return {
     hard_constraints: hardConstraints,
     matching_attributes: matchingAttributes,
+    ranking_preferences: state?.ranking_preferences,
     inferred_preferences: ['Authentic Craft', 'Cultural Immersion'],
     preference_weights: {
       experience_fit: 0.4,

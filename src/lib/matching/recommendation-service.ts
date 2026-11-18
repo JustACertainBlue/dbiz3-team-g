@@ -63,7 +63,7 @@ const EXPERIENCE_LABELS_VI: Record<string, string> = {
 }
 
 // #25: only factors that the scoring actually evaluated (match_factors), never a craft the Agency did not ask for.
-export function explain(item: any, _score: number): string {
+export function explain(item: any, _score: number | null): string {
   const f: MatchFactors = item.match_factors || {}
   const parts: string[] = []
   if (f.craft) {

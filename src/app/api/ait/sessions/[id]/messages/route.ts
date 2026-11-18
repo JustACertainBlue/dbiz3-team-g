@@ -38,6 +38,7 @@ import {
   runVillageCardPipeline,
 } from '@/lib/ait/matching-pipeline'
 import { originDisplayLabel, originDisplayNotice } from '@/lib/matching/geo'
+import { normalizeVillageName } from '@/lib/matching/village-coordinate-lookup'
 import { isAitGeoDebugEnabled, logAitGeoDebug } from '@/lib/ait/geo-debug'
 import {
   fallbackMissingPrimary,
@@ -712,6 +713,7 @@ export async function POST(
           agency_preferences: 0.2,
           provider_quality: 0.15,
         },
+        ranking_preferences: conversationState.ranking_preferences,
         is_test: true,
       }
       if (extraction.tour_context.craft_preference) {
@@ -746,6 +748,7 @@ export async function POST(
     let activityCards: any[] = []
     let providerCards: any[] = []
     let villageCards: any[] = []
+    let villageOverflowCards: any[] = []
 
     if (isTest) {
       if (scope === 'village') villageCards = resolveTestVillageCards(cardQueryText, conversationState.radius_km !== undefined)
@@ -775,22 +778,14 @@ export async function POST(
         cards: villageCards,
         radiusKm: conversationState.radius_km,
         origin: conversationState.origin || extraction.tour_context.origin_or_route,
+        distanceRequested: conversationState.slots.radius?.source === 'explicit'
+          || conversationState.slots.origin?.source === 'explicit'
+          || conversationState.ranking_preferences?.nearest === true,
       })
     }
     const originNotice = originDisplayNotice(
       conversationState.origin || extraction.tour_context.origin_or_route,
     )
-    if (isAitGeoDebugEnabled()) {
-      try {
-        logAitGeoDebug({
-          origin: conversationState.origin || extraction.tour_context.origin_or_route,
-          radiusKm: conversationState.radius_km,
-          villages: await loadVillages(),
-        })
-      } catch (error) {
-        console.error('[AIT debug] Could not collect village distance decisions:', error)
-      }
-    }
     const originOutsideScope = originNotice?.startsWith('Địa điểm') === true
     if (originOutsideScope) {
       tourPreferenceProfile = null
@@ -819,15 +814,10 @@ export async function POST(
       tourPreferenceProfile = null
       villageCards = []
     }
-    villageCards = villageCards
-      .sort((left, right) => {
-        const leftDistance = typeof left.distance_km === 'number' ? left.distance_km : undefined
-        const rightDistance = typeof right.distance_km === 'number' ? right.distance_km : undefined
-        if (leftDistance === undefined) return rightDistance === undefined ? 0 : 1
-        if (rightDistance === undefined) return -1
-        return leftDistance - rightDistance
-      })
-      .slice(0, 3)
+    if (scope === 'village') {
+      villageOverflowCards = villageCards.slice(3)
+      villageCards = villageCards.slice(0, 3)
+    }
 
     if (
       !isRetry
@@ -878,6 +868,14 @@ export async function POST(
         const matching = await runAitMatchingPipeline({
           candidates: experiences,
           profile: tourPreferenceProfile,
+          explicitCriteria: {
+            distance: conversationState.slots.radius?.source === 'explicit'
+              || conversationState.slots.origin?.source === 'explicit'
+              || conversationState.ranking_preferences?.nearest === true,
+            group_size: conversationState.slots.group_size?.source === 'explicit',
+            budget: conversationState.slots.budget_per_person?.source === 'explicit',
+            date: conversationState.slots.date?.source === 'explicit',
+          },
           bookings: bookings.map(booking => ({
             experience_id: booking.experience_id,
             start_at: booking.start_at,
@@ -887,6 +885,40 @@ export async function POST(
           operatingHours,
           villageNames: new Map(villages.map(village => [village.village_id, village.village_name])),
         })
+        if (isAitGeoDebugEnabled()) {
+          const debugVillages = isTest
+            ? resolveTestVillageCards('làng nghề', true)
+            : villages
+          const scoresByVillage = new Map<string, {
+            score_components: Record<string, number>
+            normalized_weights: Record<string, number>
+            ranking_score: number | null
+            omitted_components: string[]
+          }>()
+          for (const candidate of matching.rankedCandidates) {
+            const village = debugVillages.find(item =>
+              item.village_id === candidate.village_id
+              || normalizeVillageName('village_name' in item ? item.village_name : item.name)
+                === normalizeVillageName(candidate.village_name || ''),
+            )
+            if (!village || scoresByVillage.has(village.village_id)) continue
+            scoresByVillage.set(village.village_id, {
+              score_components: candidate.score_components,
+              normalized_weights: candidate.normalized_weights,
+              ranking_score: candidate.ranking_score,
+              omitted_components: candidate.omitted_components,
+            })
+          }
+          logAitGeoDebug({
+            origin: conversationState.origin || extraction.tour_context.origin_or_route,
+            radiusKm: conversationState.radius_km,
+            villages: debugVillages.map(village => ({
+              village_id: village.village_id,
+              name: 'village_name' in village ? village.village_name : village.name,
+            })),
+            scoresByVillage,
+          })
+        }
         const topCards = matching.topMatches
         const additionalCards = matching.additionalMatches
 
@@ -1043,7 +1075,12 @@ export async function POST(
         ...turn,
         turn_type: villageCards.length > 0 ? 'results' : 'no_results',
         message: [
-          buildVillageCardResultsMessage(villageCards, conversationState.radius_km, originLabel),
+          buildVillageCardResultsMessage(
+            villageCards,
+            conversationState.radius_km,
+            originLabel,
+            villageOverflowCards,
+          ),
           ...(originNotice?.startsWith('Chưa nhận ra') ? [originNotice] : []),
         ].join('\n\n'),
         top_matches: [],

@@ -40,6 +40,25 @@ const candidate = (
 })
 
 describe('AIT distance calculations', () => {
+  it('does not let an unrequested distance affect the default candidate order', async () => {
+    const near = { lat: 21.0285, lng: 105.8542 }
+    const far = { lat: 20.72611, lng: 105.70667 }
+    const order = async (nearId: string) => {
+      const candidates = [
+        candidate('a-candidate', nearId === 'a-candidate' ? near : far),
+        candidate('b-candidate', nearId === 'b-candidate' ? near : far),
+      ]
+      const result = await runAitMatchingPipeline({
+        candidates,
+        profile: profile(),
+      })
+      return result.rankedCandidates.map(item => item.experience_id)
+    }
+
+    expect(await order('a-candidate')).toEqual(await order('b-candidate'))
+    expect(await order('a-candidate')).toEqual(['a-candidate', 'b-candidate'])
+  })
+
   it('filters a Vạn Phúc manual point against the unrounded 10 km boundary', async () => {
     const resultAtTen = await runAitMatchingPipeline({
       candidates: [candidate('van-phuc', { lat: 20.97976, lng: 105.77402 }, 'manual_gmaps')],

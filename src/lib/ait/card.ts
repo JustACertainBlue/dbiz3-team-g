@@ -23,7 +23,7 @@ export function buildMatchCard({
 }: {
   candidate: any;
   rank: number;
-  score: number;
+  score: number | null;
   factors?: any;
   sourceCount?: number | null;
 }): MatchCard {
@@ -144,7 +144,7 @@ export function buildMatchCard({
     experience_id: candidate.id,
     provider_id: candidate.provider_id,
     rank,
-    match_score: Math.round(score * 10) / 10,
+    match_score: score === null ? null : Math.round(score * 10) / 10,
     experience_name: candidate.name,
     provider_name: candidate.provider_name,
     village_name: candidate.village_name,

@@ -207,6 +207,7 @@ export function buildVillageCardResultsMessage(
   }>,
   radiusKm?: number,
   origin?: string,
+  overflowCards: Array<{ name: string }> = [],
 ): string {
   const displayOrigin = originDisplayLabel(origin)
   if (cards.length === 0) {
@@ -244,6 +245,10 @@ export function buildVillageCardResultsMessage(
     || !Number.isFinite(card.distance_km)
   )) {
     lines.push(`Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${radiusKm} km.`)
+  }
+  if (radiusKm != null && overflowCards.length > 0) {
+    const names = overflowCards.slice(0, 3).map(card => card.name).join(', ')
+    lines.push(`Còn ${overflowCards.length} làng khác trong bán kính: ${names}.`)
   }
   return lines.join('\n')
 }

@@ -1,7 +1,8 @@
 import { applyHardFilters } from './constraints'
-import { applyNullPenalty, resolveDisplayGroups, selectTiers } from './scoring'
 import { buildMatchCard } from './card'
-import { rankCandidates, type ScoredCandidate } from '@/lib/matching/scoring-engine'
+import type { ScoredCandidate } from '@/lib/matching/scoring-engine'
+import { rankAitCandidates, type AitRankingCriterion } from './dynamic-ranking'
+import { craftLabel, matchesCraftPreference } from '@/lib/matching/craft-taxonomy'
 import {
   filterCandidateByRadius,
   haversineDistanceKm,
@@ -31,6 +32,7 @@ interface MatchingBooking {
 export interface AitMatchingPipelineInput {
   candidates: any[]
   profile: any
+  explicitCriteria?: Partial<Record<AitRankingCriterion, boolean>>
   bookings?: MatchingBooking[]
   operatingHours?: OperatingHoursRow[]
   villageNames?: ReadonlyMap<string, string>
@@ -39,23 +41,33 @@ export interface AitMatchingPipelineInput {
 
 export interface AitMatchingPipelineResult {
   eligibleCandidates: any[]
-  rankedCandidates: ScoredCandidate[]
+  rankedCandidates: AitRankedCandidate[]
   rejected: { id: string; reason: string }[]
   topMatches: ReturnType<typeof buildMatchCard>[]
   additionalMatches: ReturnType<typeof buildMatchCard>[]
+}
+
+export interface AitRankedCandidate extends Omit<ScoredCandidate, 'match_score'> {
+  match_score: number | null
+  ranking_score: number | null
+  score_components: Record<string, number>
+  normalized_weights: Record<string, number>
+  omitted_components: string[]
 }
 
 export function runVillageCardPipeline({
   cards,
   radiusKm,
   origin,
+  distanceRequested,
 }: {
   cards: VillageCardData[]
   radiusKm?: number
   origin?: unknown
+  distanceRequested?: boolean
 }): VillageCardData[] {
   const originCoordinates = resolveOriginCoordinates(origin)
-  return cards.flatMap((card) => {
+  const eligibleCards = cards.flatMap((card) => {
     const assignment = resolveVillageCoordinate(
       { id: card.village_id, name: card.name },
       DEFAULT_VILLAGE_COORDINATE_LOOKUP,
@@ -79,6 +91,15 @@ export function runVillageCardPipeline({
       ...(radiusDecision.status ? { radius_status: radiusDecision.status } : {}),
     }]
   })
+  const ranked = rankAitCandidates(eligibleCards, {
+    distance: distanceRequested ?? (radiusKm !== undefined || origin !== undefined),
+    radius_km: radiusKm,
+  }).ranked
+  const cardsById = new Map(eligibleCards.map(card => [card.village_id, card]))
+  return ranked.flatMap(card => {
+    const original = cardsById.get(card.village_id)
+    return original ? [original] : []
+  })
 }
 
 export function priceSortDirection(profile: any): 'asc' | 'desc' | undefined {
@@ -91,7 +112,7 @@ export function priceSortDirection(profile: any): 'asc' | 'desc' | undefined {
   return undefined
 }
 
-function cardFactors(candidate: ScoredCandidate): Record<string, unknown> {
+function cardFactors(candidate: AitRankedCandidate): Record<string, unknown> {
   const matchFactors = candidate.match_factors || {}
   const factors: Record<string, any> = {}
 
@@ -135,30 +156,10 @@ function cardFactors(candidate: ScoredCandidate): Record<string, unknown> {
   return factors
 }
 
-function sortByRequestedPrice(
-  ids: string[],
-  candidates: Map<string, ScoredCandidate>,
-  direction: 'asc' | 'desc'
-): string[] {
-  return [...ids].sort((leftId, rightId) => {
-    const left = candidates.get(leftId)!
-    const right = candidates.get(rightId)!
-    const leftPrice = left.price_per_person
-    const rightPrice = right.price_per_person
-    if (leftPrice == null || rightPrice == null) {
-      if (leftPrice == null && rightPrice == null) return right.match_score - left.match_score
-      return leftPrice == null ? 1 : -1
-    }
-    if (leftPrice !== rightPrice) {
-      return direction === 'desc' ? rightPrice - leftPrice : leftPrice - rightPrice
-    }
-    return right.match_score - left.match_score
-  })
-}
-
 export async function runAitMatchingPipeline({
   candidates,
   profile,
+  explicitCriteria,
   bookings = [],
   operatingHours = [],
   villageNames,
@@ -173,7 +174,18 @@ export async function runAitMatchingPipeline({
   )
   const radiusRequested = typeof profile?.hard_constraints?.radius_km === 'number'
     && profile.hard_constraints.radius_km > 0
-  const distanceRequested = hasExplicitOrigin || radiusRequested
+  const rankingPreferences = profile?.ranking_preferences || {}
+  const requestedPriceSort = priceSortDirection(profile)
+    ?? (rankingPreferences.cheapest === true ? 'asc' : undefined)
+  const distanceRequested = explicitCriteria?.distance
+    ?? (hasExplicitOrigin || radiusRequested || rankingPreferences.nearest === true)
+  const groupSizeRequested = explicitCriteria?.group_size
+    ?? (typeof profile?.hard_constraints?.group_size === 'number')
+  const budgetRequested = explicitCriteria?.budget
+    ?? (typeof (profile?.hard_constraints?.max_budget_per_person
+      ?? profile?.hard_constraints?.budget_per_person) === 'number')
+  const dateRequested = explicitCriteria?.date
+    ?? Boolean(profile?.hard_constraints?.target_date_or_range?.start_date)
   const distanceOriginLabel = originDisplayLabel(profile?.hard_constraints?.origin)
   const enrichedCandidates = candidates.map((candidate) => {
     const distanceKm = (
@@ -222,38 +234,78 @@ export async function runAitMatchingPipeline({
   const eligibleCandidates = enrichedCandidates.filter((candidate) =>
     flagsById.has(candidate.experience_id)
   )
-  const rankedCandidates = await rankCandidates(eligibleCandidates, profile)
+  const targetDate = profile?.hard_constraints?.target_date_or_range?.start_date
+  const targetDateParts = typeof targetDate === 'string' ? targetDate.split('-').map(Number) : []
+  const targetWeekday = targetDateParts.length === 3
+    ? new Date(Date.UTC(targetDateParts[0], targetDateParts[1] - 1, targetDateParts[2])).getUTCDay() || 7
+    : undefined
+  const candidatesWithAvailability = eligibleCandidates.map(candidate => {
+    const providerHours = targetWeekday === undefined
+      ? []
+      : operatingHours.filter(hours => hours.provider_id === candidate.provider_id)
+    return {
+      ...candidate,
+      date_available: providerHours.length > 0
+        && providerHours.some(hours => Number(hours.weekday) === targetWeekday),
+    }
+  })
+  const ranking = rankAitCandidates(candidatesWithAvailability, {
+    distance: distanceRequested,
+    group_size: groupSizeRequested,
+    budget: budgetRequested,
+    date: dateRequested,
+    nearest: rankingPreferences.nearest === true,
+    cheapest: rankingPreferences.cheapest === true || requestedPriceSort === 'asc',
+    radius_km: profile?.hard_constraints?.radius_km,
+    group_size_value: profile?.hard_constraints?.group_size,
+    budget_per_person: profile?.hard_constraints?.max_budget_per_person
+      ?? profile?.hard_constraints?.budget_per_person,
+    price_sort_without_budget: requestedPriceSort === 'asc' && !budgetRequested,
+    price_sort_direction: !budgetRequested ? requestedPriceSort : undefined,
+  })
+  const rankedCandidates = ranking.ranked as AitRankedCandidate[]
+  const craftAttribute = profile?.matching_attributes?.find(
+    (attribute: any) => attribute.type === 'craft_preference' && attribute.polarity !== 'exclude'
+  )
+  const requestedTypes = profile?.matching_attributes
+    ?.filter((attribute: any) => attribute.type === 'experience_type')
+    .map((attribute: any) => attribute.value) ?? []
 
   for (const candidate of rankedCandidates) {
     const flags = flagsById.get(candidate.experience_id) || []
     candidate.flags = flags
-    candidate.match_score = applyNullPenalty(candidate.match_score, flags)
+    const candidateType = candidate.experience_type || candidate.category || ''
+    candidate.match_factors = {
+      craft: craftAttribute ? {
+        preference: craftAttribute.value,
+        label: craftLabel(craftAttribute.value),
+        matched: matchesCraftPreference(craftAttribute.value, {
+          craft_type: candidate.craft_type,
+          name: candidate.name,
+          experience_name: candidate.experience_name,
+          village_name: candidate.village_name,
+          provider_name: candidate.provider_name,
+        }),
+      } : undefined,
+      experience_types: requestedTypes.length > 0
+        ? { requested: requestedTypes, matched: requestedTypes.includes(candidateType) }
+        : undefined,
+      group_size: groupSizeRequested ? profile?.hard_constraints?.group_size : undefined,
+      max_participants: candidate.max_participants ?? candidate.max_capacity,
+      budget_per_person: budgetRequested
+        ? profile?.hard_constraints?.max_budget_per_person
+          ?? profile?.hard_constraints?.budget_per_person
+        : undefined,
+      price_per_person: candidate.price_per_person,
+      distance_km: candidate.distance_source === 'haversine' ? candidate.distance_km : undefined,
+      origin: profile?.hard_constraints?.origin?.origin_address
+        || profile?.hard_constraints?.origin?.address,
+    }
   }
 
-  const tiers = selectTiers(
-    rankedCandidates.map((candidate) => ({
-      id: candidate.experience_id,
-      score: candidate.match_score,
-      flags: candidate.flags,
-    }))
-  )
-  const groups = resolveDisplayGroups(tiers)
-  let primaryIds = groups.primary
-  let secondaryIds = groups.secondary
-  const requestedPriceSort = priceSortDirection(profile)
   const candidatesById = new Map(rankedCandidates.map((candidate) => [candidate.experience_id, candidate]))
-
-  if (requestedPriceSort) {
-    const sortedIds = sortByRequestedPrice(
-      [...primaryIds, ...secondaryIds],
-      candidatesById,
-      requestedPriceSort
-    )
-    const pricedIds = sortedIds.filter((id) => candidatesById.get(id)?.price_per_person != null)
-    const unknownPriceIds = sortedIds.filter((id) => candidatesById.get(id)?.price_per_person == null)
-    primaryIds = pricedIds.slice(0, 5)
-    secondaryIds = [...pricedIds.slice(5), ...unknownPriceIds]
-  }
+  const primaryIds = rankedCandidates.slice(0, 5).map(candidate => candidate.experience_id)
+  const secondaryIds = rankedCandidates.slice(5).map(candidate => candidate.experience_id)
 
   const buildCards = (ids: string[], rankOffset: number) => ids.map((id, index) => {
     const candidate = candidatesById.get(id)!

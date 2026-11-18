@@ -16,6 +16,10 @@ export interface AitConversationState {
     villages: string[]
     crafts: string[]
   }
+  ranking_preferences?: {
+    nearest?: boolean
+    cheapest?: boolean
+  }
   radius_km?: number
   turn_count: number
   slots: Partial<Record<ConversationSlotName, ConversationSlot>>
@@ -29,9 +33,11 @@ export type ConversationSlotName =
   | 'date'
   | 'origin'
   | 'radius'
+  | 'nearest'
+  | 'cheapest'
 
 export interface ConversationSlot {
-  value: string | number
+  value: string | number | boolean
   raw_span: string
   created_turn: number
   source: 'explicit' | 'inferred'
@@ -124,6 +130,9 @@ export function normalizeConversationState(value: unknown): AitConversationState
       ? exclusions.crafts.filter((item): item is string => typeof item === 'string')
       : [],
   }
+  const rawRankingPreferences = raw.ranking_preferences && typeof raw.ranking_preferences === 'object'
+    ? raw.ranking_preferences as Record<string, unknown>
+    : {}
   state.turn_count = typeof raw.turn_count === 'number' && Number.isInteger(raw.turn_count) && raw.turn_count >= 0
     ? raw.turn_count
     : 0
@@ -131,14 +140,14 @@ export function normalizeConversationState(value: unknown): AitConversationState
     ? raw.slots as Record<string, unknown>
     : {}
   const slotNames: ConversationSlotName[] = [
-    'craft', 'group_size', 'budget_per_person', 'date', 'origin', 'radius',
+    'craft', 'group_size', 'budget_per_person', 'date', 'origin', 'radius', 'nearest', 'cheapest',
   ]
   for (const name of slotNames) {
     const rawSlot = rawSlots[name]
     if (!rawSlot || typeof rawSlot !== 'object' || Array.isArray(rawSlot)) continue
     const slot = rawSlot as Record<string, unknown>
     if (
-      (typeof slot.value !== 'string' && typeof slot.value !== 'number')
+      (typeof slot.value !== 'string' && typeof slot.value !== 'number' && typeof slot.value !== 'boolean')
       || typeof slot.raw_span !== 'string'
       || typeof slot.created_turn !== 'number'
       || (slot.source !== 'explicit' && slot.source !== 'inferred')
@@ -148,6 +157,18 @@ export function normalizeConversationState(value: unknown): AitConversationState
       raw_span: slot.raw_span,
       created_turn: slot.created_turn,
       source: slot.source,
+    }
+  }
+  const nearest = typeof state.slots.nearest?.value === 'boolean'
+    ? state.slots.nearest.value
+    : typeof rawRankingPreferences.nearest === 'boolean' ? rawRankingPreferences.nearest : undefined
+  const cheapest = typeof state.slots.cheapest?.value === 'boolean'
+    ? state.slots.cheapest.value
+    : typeof rawRankingPreferences.cheapest === 'boolean' ? rawRankingPreferences.cheapest : undefined
+  if (nearest !== undefined || cheapest !== undefined) {
+    state.ranking_preferences = {
+      ...(nearest !== undefined ? { nearest } : {}),
+      ...(cheapest !== undefined ? { cheapest } : {}),
     }
   }
   const budgetSlot = state.slots.budget_per_person
@@ -280,9 +301,15 @@ export function mergeConversationState(
       case 'date': delete next.date; break
       case 'origin': delete next.origin; break
       case 'radius': delete next.radius_km; break
+      case 'nearest':
+        if (next.ranking_preferences) delete next.ranking_preferences.nearest
+        break
+      case 'cheapest':
+        if (next.ranking_preferences) delete next.ranking_preferences.cheapest
+        break
     }
   }
-  for (const name of ['craft', 'group_size', 'budget_per_person', 'date', 'origin', 'radius'] as const) {
+  for (const name of ['craft', 'group_size', 'budget_per_person', 'date', 'origin', 'radius', 'nearest', 'cheapest'] as const) {
     if (next.slots[name]?.source === 'inferred') {
       clearSlotValue(name)
       delete next.slots[name]
@@ -290,7 +317,7 @@ export function mergeConversationState(
   }
   const setSlot = (
     name: ConversationSlotName,
-    value: string | number,
+    value: string | number | boolean,
     rawSpan: string,
     source: ConversationSlot['source'] = 'explicit',
   ) => {
@@ -315,6 +342,16 @@ export function mergeConversationState(
         break
       case 'radius':
         if (typeof value === 'number') next.radius_km = value
+        break
+      case 'nearest':
+        if (typeof value === 'boolean') {
+          next.ranking_preferences = { ...next.ranking_preferences, nearest: value }
+        }
+        break
+      case 'cheapest':
+        if (typeof value === 'boolean') {
+          next.ranking_preferences = { ...next.ranking_preferences, cheapest: value }
+        }
         break
     }
   }
@@ -383,6 +420,10 @@ export function mergeConversationState(
     setSlot('radius', Number(radius[1].replace(',', '.')), radius[0])
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'radius_km')
   }
+  const nearest = text.match(/(?:gần nhất|nearest|closest)/iu)?.[0]
+  if (nearest) setSlot('nearest', true, nearest)
+  const cheapest = text.match(/(?:rẻ nhất|giá thấp nhất|cheapest|lowest price)/iu)?.[0]
+  if (cheapest) setSlot('cheapest', true, cheapest)
 
   next.turn_count = turn
   next.turn_history = [...next.turn_history, { turn, slots: updatedSlots }].slice(-20)

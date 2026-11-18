@@ -17,6 +17,12 @@ interface AitGeoDebugOptions {
   origin?: unknown
   radiusKm?: number
   villages: GeoDebugVillage[]
+  scoresByVillage?: ReadonlyMap<string, {
+    score_components: Record<string, number>
+    normalized_weights: Record<string, number>
+    ranking_score: number | null
+    omitted_components: string[]
+  }>
 }
 
 function originName(origin: unknown): string | undefined {
@@ -45,7 +51,12 @@ export function isAitGeoDebugEnabled(): boolean {
   return process.env.AIT_DEBUG === '1' && process.env.NODE_ENV !== 'production'
 }
 
-export function logAitGeoDebug({ origin, radiusKm, villages }: AitGeoDebugOptions): void {
+export function logAitGeoDebug({
+  origin,
+  radiusKm,
+  villages,
+  scoresByVillage,
+}: AitGeoDebugOptions): void {
   if (!isAitGeoDebugEnabled()) return
 
   const namedOrigin = originName(origin)
@@ -92,6 +103,10 @@ export function logAitGeoDebug({ origin, radiusKm, villages }: AitGeoDebugOption
       id: village.village_id,
       distance_km: distance === undefined ? null : Number(distance.toFixed(1)),
       precision: precisionForSource(assignment?.location_source),
+      score_components: scoresByVillage?.get(village.village_id)?.score_components ?? {},
+      normalized_weights: scoresByVillage?.get(village.village_id)?.normalized_weights ?? {},
+      total_score: scoresByVillage?.get(village.village_id)?.ranking_score ?? null,
+      omitted_components: scoresByVillage?.get(village.village_id)?.omitted_components ?? [],
       decision,
       reason,
     }

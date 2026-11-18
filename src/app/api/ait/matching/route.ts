@@ -25,7 +25,7 @@ import {
   explain,
 } from '@/lib/matching/recommendation-service'
 import { loadExperiences, loadBookings, loadVillages } from '@/lib/db/seed-loader'
-import { getTestCandidates, getTestAllExperiences } from '@/lib/matching/test-dataset'
+import { getTestCandidates, getTestAllExperiences, resolveTestVillageCards } from '@/lib/matching/test-dataset'
 import { profileSchema } from '@/lib/ait/schemas'
 import { villageStartingPrices } from '@/lib/village-starting-price'
 import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
@@ -35,6 +35,8 @@ import { runAitMatchingPipeline } from '@/lib/ait/matching-pipeline'
 import { matchingContextResults } from '@/lib/ait/match-reasons'
 import { originDisplayNotice } from '@/lib/matching/geo'
 import { isTestPrompt } from '@/lib/matching/test-dataset'
+import { isAitGeoDebugEnabled, logAitGeoDebug } from '@/lib/ait/geo-debug'
+import { normalizeVillageName } from '@/lib/matching/village-coordinate-lookup'
 
 export async function POST(request: Request) {
   try {
@@ -139,6 +141,40 @@ export async function POST(request: Request) {
       operatingHours,
       villageNames: new Map(villages.map(village => [village.village_id, village.village_name])),
     })
+    if (isAitGeoDebugEnabled()) {
+      const debugVillages = isTest
+        ? resolveTestVillageCards('làng nghề', true)
+        : villages
+      const scoresByVillage = new Map<string, {
+        score_components: Record<string, number>
+        normalized_weights: Record<string, number>
+        ranking_score: number | null
+        omitted_components: string[]
+      }>()
+      for (const candidate of matching.rankedCandidates) {
+        const village = debugVillages.find(item =>
+          item.village_id === candidate.village_id
+          || normalizeVillageName('village_name' in item ? item.village_name : item.name)
+            === normalizeVillageName(candidate.village_name || ''),
+        )
+        if (!village || scoresByVillage.has(village.village_id)) continue
+        scoresByVillage.set(village.village_id, {
+          score_components: candidate.score_components,
+          normalized_weights: candidate.normalized_weights,
+          ranking_score: candidate.ranking_score,
+          omitted_components: candidate.omitted_components,
+        })
+      }
+      logAitGeoDebug({
+        origin: constraints.origin,
+        radiusKm: constraints.radius_km,
+        villages: debugVillages.map(village => ({
+          village_id: village.village_id,
+          name: 'village_name' in village ? village.village_name : village.name,
+        })),
+        scoresByVillage,
+      })
+    }
 
     // 3. No candidate left → relaxation suggestions (BR-011, FR-012, #23, #24)
     if (matching.eligibleCandidates.length === 0) {

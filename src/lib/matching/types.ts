@@ -64,6 +64,10 @@ export const TourPreferenceProfileSchema = z.object({
   matching_attributes: z.array(z.any()).default([]),
   inferred_preferences: z.array(z.any()).optional().default([]),
   preference_weights: z.record(z.number()),
+  ranking_preferences: z.object({
+    nearest: z.boolean().optional(),
+    cheapest: z.boolean().optional(),
+  }).optional(),
 })
 
 export type MessageText = z.infer<typeof MessageTextSchema>

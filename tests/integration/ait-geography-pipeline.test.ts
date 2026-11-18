@@ -217,6 +217,27 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(response.json.turn.message).not.toContain('ngân sách')
   })
 
+  it('keeps explicit nearest and cheapest preferences in structured state', async () => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+
+    await send(sessionId, 'làng gốm gần nhất')
+    await send(sessionId, 'làng gốm rẻ nhất')
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(context?.state.ranking_preferences).toEqual({ nearest: true, cheapest: true })
+    expect(context?.state.slots).toMatchObject({
+      nearest: { value: true, raw_span: 'gần nhất', source: 'explicit' },
+      cheapest: { value: true, raw_span: 'rẻ nhất', source: 'explicit' },
+    })
+  })
+
   it('sends only structured state and the latest Agency text to the LLM', async () => {
     const mocks = installLlmMock('Mình đang tìm làng nghề phù hợp.')
     const sessionId = await openSession()
@@ -244,7 +265,7 @@ describe('AIT geography pipeline through the real extractor', () => {
     try {
       delete process.env.AIT_DEBUG
       installLlmMock('Mình tìm thấy các làng nghề phù hợp.')
-      withoutDebug = await send(await openSession(), 'làng nghề dưới 10 km')
+      withoutDebug = await send(await openSession(), 'làng nghề dưới 10 km cho 10 khách')
       expect(debugCalls()).toHaveLength(0)
     } finally {
       if (previousDebugFlag === undefined) delete process.env.AIT_DEBUG
@@ -253,7 +274,7 @@ describe('AIT geography pipeline through the real extractor', () => {
 
     vi.stubEnv('AIT_DEBUG', '1')
     const debugMocks = installLlmMock('Mình tìm thấy các làng nghề phù hợp.')
-    const withDebug = await send(await openSession(), 'làng nghề dưới 10 km')
+    const withDebug = await send(await openSession(), 'làng nghề dưới 10 km cho 10 khách')
 
     expect(JSON.stringify(withDebug.json)).not.toMatch(/ref=|debug/i)
     expect(JSON.stringify(withDebug.json)).not.toMatch(/Hồ Gươm|Hoàn Kiếm|Ho Guom/i)
@@ -269,7 +290,15 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(debugCalls()[0]).toEqual([
       expect.stringContaining('ref=21.0285,105.8542 (default: trung tâm Hà Nội)'),
       expect.arrayContaining([
-        expect.objectContaining({ id: expect.any(String), precision: expect.any(String) }),
+        expect.objectContaining({
+          id: expect.any(String),
+          precision: expect.any(String),
+          score_components: expect.any(Object),
+          normalized_weights: expect.any(Object),
+          total_score: expect.any(Number),
+          decision: expect.any(String),
+          reason: expect.any(String),
+        }),
       ]),
     ])
   })
@@ -487,6 +516,106 @@ describe('AIT geography pipeline through the real extractor', () => {
 
     expect(response.json.extraction.usedLlm).toBe(true)
     expect(response.json.village_cards.length).toBeLessThanOrEqual(3)
+  })
+
+  it.each([
+    ['seed', false, ['Làng gốm Bát Tràng', 'Làng lụa Vạn Phúc', 'Làng múa rối nước Đào Thục']],
+    ['fixture', true, ['Làng đúc đồng Ngũ Xã', 'Làng giấy Dó Yên Thái', 'Làng gốm Bát Tràng']],
+  ] as const)('ranks villages by explicit radius score and lists eligible overflow on %s data', async (_source, isTest, expectedNames) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'làng nghề dưới 10 km', isTest)
+    const cards = response.json.village_cards as Json[]
+    const names = cards.map(card => String(card.name))
+
+    expect(response.status).toBe(201)
+    expect(names).toEqual(expectedNames)
+    expect(cards).toHaveLength(3)
+    expect(response.json.turn.message).toMatch(/Còn \d+ làng khác trong bán kính:/)
+  })
+
+  it.each([
+    ['seed', false, ['Làng gốm Bát Tràng']],
+    ['fixture', true, ['Làng gốm Bát Tràng']],
+  ] as const)('filters craft first and then ranks by distance on %s data', async (_source, isTest, expectedNames) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'làng gốm dưới 10 km', isTest)
+
+    expect((response.json.village_cards as Json[]).map(card => String(card.name)))
+      .toEqual(expectedNames)
+  })
+
+  it.each([
+    ['seed', false, ['Làng gốm Bát Tràng']],
+    ['fixture', true, ['Làng gốm Bát Tràng']],
+  ] as const)('recomputes ranking after the explicit craft changes on %s data', async (_source, isTest, expectedNames) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    await send(sessionId, 'làng nghề dưới 10 km', isTest)
+
+    const response = await send(sessionId, 'làng gốm', isTest)
+    const state = await demoRepository().find(
+      'matching_sessions',
+      row => row.matching_session_id === sessionId,
+    )
+    const context = typeof state?.conversation_context === 'string'
+      ? JSON.parse(state.conversation_context)
+      : state?.conversation_context
+
+    expect(context?.state).toMatchObject({ craft: 'pottery', radius_km: 10 })
+    expect((response.json.village_cards as Json[]).map(card => String(card.name)))
+      .toEqual(expectedNames)
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('removes distance from the active ranking after “thôi bỏ giới hạn km” on %s data', async (_source, isTest) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const sessionId = await openSession()
+    await send(sessionId, 'làng nghề dưới 10 km', isTest)
+
+    const response = await send(sessionId, 'làng nghề, thôi bỏ giới hạn km', isTest)
+    const state = await demoRepository().find(
+      'matching_sessions',
+      row => row.matching_session_id === sessionId,
+    )
+    const context = typeof state?.conversation_context === 'string'
+      ? JSON.parse(state.conversation_context)
+      : state?.conversation_context
+
+    expect(context?.state.radius_km).toBeUndefined()
+    expect(response.status).toBe(201)
+    expect(response.json.village_cards.length).toBeLessThanOrEqual(3)
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('logs normalized explicit weights for %s data without exposing debug output', async (_source, isTest) => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    vi.stubEnv('AIT_DEBUG', '1')
+    installLlmMock('Mình tìm thấy các làng nghề phù hợp.')
+    const response = await send(await openSession(), 'làng nghề dưới 10 km cho 10 khách', isTest)
+    const log = info.mock.calls.find(([message]) =>
+      typeof message === 'string' && message.startsWith('ref=')
+    )
+    const rows = log?.[1] as Json[]
+    const scored = rows?.find(row => Object.keys(row.score_components).length > 0)
+
+    expect(scored).toBeDefined()
+    expect(scored?.total_score).toEqual(expect.any(Number))
+    expect(JSON.stringify(response.json)).not.toMatch(/ref=|score_components|normalized_weights/i)
+    if (isTest) {
+      expect(scored?.normalized_weights).toEqual({ distance: 1 })
+      expect(scored?.omitted_components).toContain('group_size')
+    } else {
+      expect(scored?.normalized_weights.distance).toBeCloseTo(0.35 / 0.6)
+      expect(scored?.normalized_weights.group_size).toBeCloseTo(0.25 / 0.6)
+    }
   })
 
   it.each([

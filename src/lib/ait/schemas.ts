@@ -50,6 +50,10 @@ export const profileSchema = z
       .optional()
       .default([]),
     preference_weights: z.record(z.string(), z.number()).optional(),
+    ranking_preferences: z.object({
+      nearest: z.boolean().optional(),
+      cheapest: z.boolean().optional(),
+    }).optional(),
     visitor_profile: z.enum(['school', 'corporate', 'family', 'senior', 'other']).optional(),
   })
   .strip();
@@ -59,7 +63,7 @@ export const matchCardSchema = z
     experience_id: z.string(),
     provider_id: z.string(),
     rank: z.number(),
-    match_score: z.number().min(0).max(100),
+    match_score: z.number().min(0).max(100).nullable(),
     experience_name: z.string(),
     provider_name: z.string(),
     village_name: z.string(),

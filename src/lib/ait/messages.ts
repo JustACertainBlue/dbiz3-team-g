@@ -4,6 +4,11 @@ function formatVND(n: number): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+function formatKm(n: number): string {
+  if (!Number.isFinite(n)) return 'chưa có dữ liệu'
+  return n.toFixed(1).replace('.', ',')
+}
+
 function toDDMMYYYY(d: string): string {
   const parts = d.split('-');
   return parts.length >= 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d;
@@ -183,7 +188,7 @@ export function buildResultsMessage({
           ? ` (khoảng ${Math.round(match.distance_km)} km (ước tính theo huyện))`
           : match.location_source === 'approximate'
             ? ` (khoảng ${Math.round(match.distance_km)} km, tọa độ xấp xỉ)`
-            : ` (Cách ${origin || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${match.distance_km.toFixed(1)} km (đường chim bay))`
+            : ` (Cách ${origin || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${formatKm(match.distance_km)} km (đường chim bay))`
         : ''
       lines.push(`${index + 1}. ${match.experience_name}${price}${distance}`);
     });
@@ -232,7 +237,7 @@ export function buildVillageCardResultsMessage(
     const distance = hasDistance
       ? card.location_source === 'district_fallback'
         ? ` (khoảng ${Math.round(card.distance_km!)} km (ước tính theo huyện))`
-        : ` (Cách ${displayOrigin || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${card.distance_km!.toFixed(1)} km (đường chim bay))`
+        : ` (Cách ${displayOrigin || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${formatKm(card.distance_km!)} km (đường chim bay))`
       : ''
     const radiusWarning = card.radius_status === 'unconfirmed'
       ? ' — chưa xác nhận bán kính'

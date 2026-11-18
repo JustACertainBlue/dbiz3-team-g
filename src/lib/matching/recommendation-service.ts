@@ -92,7 +92,7 @@ export function explain(item: any, _score: number | null): string {
     } else if (item.location_source === 'approximate') {
       parts.push(`Khoảng ${Math.round(f.distance_km)} km (tọa độ xấp xỉ).`)
     } else {
-      parts.push(`Cách ${originDisplayLabel(f.origin) || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${f.distance_km.toFixed(1)} km (đường chim bay).`)
+      parts.push(`Cách ${originDisplayLabel(f.origin) || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${f.distance_km.toFixed(1).replace('.', ',')} km (đường chim bay).`)
     }
   }
   if (parts.length === 0) {

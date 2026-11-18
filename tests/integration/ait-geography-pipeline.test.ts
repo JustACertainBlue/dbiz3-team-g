@@ -1003,6 +1003,41 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(visible).toMatch(new RegExp(expected, 'iu'))
   })
 
+  it.each([
+    'SELECT * FROM villages WHERE 1=1',
+    'làng có homestay bể bơi điều hòa wifi',
+    'tọa độ GPS của Bát Tràng là bao nhiêu',
+    'có bao nhiêu làng gốm ở Hà Nội',
+  ])('does not route out-of-scope prompt "%s" into matching', async (text) => {
+    installLlmMock('Mình tìm được 5 trải nghiệm.')
+    const response = await send(await openSession(), text)
+    const visible = String(response.json.turn.message)
+
+    expect(response.status).toBeLessThan(400)
+    expect(visible).not.toMatch(/Mình tìm được\s+\d+\s+trải nghiệm/)
+    expect(response.json.village_cards ?? []).toEqual([])
+  })
+
+  it.each([
+    'hôm qua',
+    'ngày 31/02',
+  ])('rejects invalid date "%s" instead of matching', async (text) => {
+    installLlmMock('Mình đang tìm trải nghiệm.')
+    const response = await send(await openSession(), text)
+    const visible = String(response.json.turn.message)
+
+    expect(visible).toMatch(/ngày|thời gian|không hợp lệ/iu)
+  })
+
+  it('formats exact distances with Vietnamese decimal separators and localizes craft state', async () => {
+    installLlmMock('Mình tìm thấy làng nghề phù hợp.')
+    const response = await send(await openSession(), 'làng gốm dưới 10 km')
+    const text = String(response.json.turn.message)
+
+    expect(text).not.toMatch(/\b(?:pottery|silk|woodcarving|bamboo)\b/i)
+    expect(text).not.toMatch(/\b\d+\.\d+\s*km\b/)
+  })
+
   it('omits null capacity and localizes verified distance explanations', async () => {
     installLlmMock('Mình tìm thấy các trải nghiệm phù hợp.')
     const sessionId = await openSession()

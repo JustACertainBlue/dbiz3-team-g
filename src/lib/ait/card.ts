@@ -131,7 +131,7 @@ export function buildMatchCard({
         ? `Khoảng ${Math.round(factors.distance.km)} km (ước tính theo huyện)`
         : candidate.location_source === 'approximate'
           ? `Khoảng ${Math.round(factors.distance.km)} km (tọa độ xấp xỉ)`
-          : `Cách ${candidate.distance_origin_label || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${factors.distance.km.toFixed(1)} km (đường chim bay)`,
+          : `Cách ${candidate.distance_origin_label || DEFAULT_HANOI_ORIGIN_LABEL} khoảng ${factors.distance.km.toFixed(1).replace('.', ',')} km (đường chim bay)`,
     });
   } else if (candidate.distance_requested && !factors.radius_unconfirmed) {
     caveats.push({ key: 'distance', text: 'Chưa có dữ liệu khoảng cách' });

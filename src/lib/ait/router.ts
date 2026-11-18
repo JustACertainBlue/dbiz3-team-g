@@ -113,6 +113,9 @@ export function routeByRules(
   // GROUP 4: OUT OF SCOPE (out_of_scope)
   // -------------------------------------------------------------
   const outOfScopeRegexes = [
+    // Statistics / GPS / accommodation / facilities
+    /\b(?:toa\s*do\s*(?:gps)?|gps\b|kinh\s+do|vi\s+do|co\s+bao\s+nhi(?:eu|u)\s+lang|bao\s+nhi(?:eu|u)\s+lang)\b/i,
+    /\b(?:homestay|be\s+bơi|ho\s+bơi|dieu\s+hoa|wifi|khach\s+san|phong\s+khach\s+san)\b/i,
     // Weather
     /\b(?:thoi\s+tiet|weather|du\s+bao\s+thoi\s+tiet|troi\s+co\s+mua\s+khong|nhiet\s+do\s+hom\s+nay)\b/i,
     // Finance / Crypto / Gold / Stocks

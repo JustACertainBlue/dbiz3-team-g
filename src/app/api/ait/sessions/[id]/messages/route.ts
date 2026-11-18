@@ -324,6 +324,8 @@ export async function POST(
     const zeroRadiusRequest = !isRetry && hasZeroRadiusConstraint(routeText)
     const invalidRadiusRequest = !isRetry && hasInvalidRadiusConstraint(routeText)
     const unsupportedCurrencyRequest = !isRetry && /\$|(?:\bUSD\b|\bdollar\b|\beuro\b|\bEUR\b|\bGBP\b|\byen\b)/iu.test(routeText)
+    const invalidDateRequest = !isRetry
+      && /(?:hôm\s+qua|hom\s+qua|31\s*\/\s*02(?:\s*\/\s*\d{4})?|ngày\s+\d{1,2}\s*\/\s*(?:2|02)\s*\/\s*\d{4})/iu.test(routeText)
     const pureEnglishRequest = !isRetry
       && /^[\x00-\x7F]*$/.test(routeText)
       && /\b(?:I|want|visit|pottery|silk|weaving|under|over|pax|budget|person|show|please|distance|from|with)\b/iu.test(routeText)
@@ -334,7 +336,7 @@ export async function POST(
     const bypassClassifier = isRetry || isReset || acceptsInScopeOffer || answersPendingQuestion
       || isHelpQuestion || isFalsePositiveMealPhrase(routeText) || mixedMeal.hasMealRequest
       || unsupportedDistanceRequest || zeroRadiusRequest || invalidRadiusRequest
-      || unsupportedCurrencyRequest || pureEnglishRequest
+      || unsupportedCurrencyRequest || pureEnglishRequest || invalidDateRequest
 
     // 3. Rule-based router and LLM router (A.2, B.3 Layer 1 & 2)
     if (!isRetry) {
@@ -547,18 +549,37 @@ export async function POST(
           source: 'fallback',
           action_path: 'extraction_pipeline',
         })
+        const clarifyMsg = 'Bạn có thể nói rõ hơn yêu cầu về làng nghề, thời gian hoặc ngân sách không?'
+        const turn = {
+          turn_type: 'clarify' as const,
+          message: clarifyMsg,
+          top_matches: [],
+          additional_suggestions: [],
+          comparison: null,
+          quick_replies: [],
+          follow_up_questions: [],
+          relaxation_suggestions: [],
+          sources: [],
+          used_llm: false,
+        }
+        return NextResponse.json(
+          { turn, conversational_reply: clarifyMsg, is_test: isTestConversation([{ sender: 'Agency', text: originalText }]) },
+          { status: 201 },
+        )
       }
     }
 
     // 4. Record the original input, then extract only the current turn against persisted state.
     const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', originalText)
     const isTest = isTestConversation([{ sender: 'Agency', text: originalText }])
-    if (unsupportedCurrencyRequest || pureEnglishRequest || invalidRadiusRequest) {
+    if (unsupportedCurrencyRequest || pureEnglishRequest || invalidRadiusRequest || invalidDateRequest) {
       const reply = unsupportedCurrencyRequest
         ? 'Hiện chưa hỗ trợ đơn vị tiền này, vui lòng nhập bằng đồng.'
         : pureEnglishRequest
           ? 'Hiện chỉ hỗ trợ tiếng Việt, bạn vui lòng nhập bằng tiếng Việt.'
-          : 'Giá trị bán kính không hợp lệ. Vui lòng nhập một số bán kính dương bằng km.'
+          : invalidRadiusRequest
+            ? 'Giá trị bán kính không hợp lệ. Vui lòng nhập một số bán kính dương bằng km.'
+            : 'Ngày hoặc thời gian này không hợp lệ. Vui lòng nhập một ngày hợp lệ.'
       await updateMatchingSessionContext(params.id, {
         state: normalizeConversationState(conversationState),
         pending_question: activePendingQuestion,
@@ -1236,8 +1257,10 @@ export async function POST(
     }
 
     const activeCriteria = [
-      conversationState.craft,
-      conversationState.radius_km !== undefined ? `bán kính ${conversationState.radius_km} km` : undefined,
+      conversationState.craft ? craftLabelVi(conversationState.craft) : undefined,
+      conversationState.radius_km !== undefined
+        ? `bán kính ${conversationState.radius_km.toString().replace('.', ',')} km`
+        : undefined,
       conversationState.group_size !== undefined ? `${conversationState.group_size} khách` : undefined,
       conversationState.budget_per_person !== undefined
         ? `ngân sách ${conversationState.budget_per_person.toLocaleString('vi-VN')}đ`

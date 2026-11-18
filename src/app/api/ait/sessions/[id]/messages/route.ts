@@ -63,6 +63,7 @@ import {
   matchingContextResults,
 } from '@/lib/ait/match-reasons'
 import { turnSchema } from '@/lib/ait/schemas'
+import { applyConversationDelta } from '@/lib/ait/conversation-delta'
 import {
   applyConversationState,
   emptyConversationState,
@@ -341,9 +342,8 @@ export async function POST(
     const isHelpQuestion = isSystemHelpRequest(routeText)
       || isBookingHelpRequest(routeText)
       || isGuideLanguageQuestion
-      || isGuideLanguageFollowUp
     const bypassClassifier = isRetry || isReset || acceptsInScopeOffer || answersPendingQuestion
-      || isHelpQuestion || isFalsePositiveMealPhrase(routeText) || mixedMeal.hasMealRequest
+      || isHelpQuestion || isGuideLanguageFollowUp || isFalsePositiveMealPhrase(routeText) || mixedMeal.hasMealRequest
       || unsupportedDistanceRequest || zeroRadiusRequest || invalidRadiusRequest
       || unsupportedCurrencyRequest || pureEnglishRequest || invalidDateRequest
 
@@ -729,9 +729,24 @@ export async function POST(
 
     let optionalInvite: string | undefined
     const stateBeforeExtraction = conversationState
+    const acceptedDelta = extraction.delta_validation?.accepted ?? {}
+    const hasAcceptedRelax = Object.values(acceptedDelta).some(operation => operation?.action === 'relax')
     if (isReset) {
       conversationState = emptyConversationState()
-    } else if (!isHelpQuestion && extraction.intent !== 'platform_guidance') {
+    } else if (hasAcceptedRelax) {
+      conversationState = applyConversationDelta(
+        conversationState,
+        extraction.delta_validation!,
+        new Date(),
+      )
+    } else if (!isHelpQuestion && extraction.intent !== 'platform_guidance' && extraction.delta_validation) {
+      conversationState = applyConversationDelta(
+        conversationState,
+        extraction.delta_validation,
+        new Date(),
+      )
+    } else if (!isHelpQuestion && !isGuideLanguageFollowUp
+      && extraction.intent !== 'platform_guidance' && !extraction.usedLlm) {
       conversationState = mergeConversationState(
         conversationState,
         analysisText,
@@ -940,6 +955,7 @@ export async function POST(
       && !craftTypeForPreference(conversationState.craft)
       ? conversationState.craft
       : undefined
+    const hasUnsupportedCraftDelta = Boolean(extraction.delta_validation?.unsupported.craft)
     if (unavailableFixtureVillages.length > 0 || unavailableCraft) {
       extraction.missing_primary = [
         ...new Set([
@@ -1234,7 +1250,7 @@ export async function POST(
       turn = {
         ...turn,
         turn_type: 'answer',
-        message: unavailableCraft
+        message: unavailableCraft || hasUnsupportedCraftDelta
           ? `${missingPrimaryMessage}\n\nMình có thể gợi ý làng nghề khác đang có dữ liệu.`
           : missingPrimaryMessage,
         top_matches: [],

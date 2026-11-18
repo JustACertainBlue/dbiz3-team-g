@@ -89,6 +89,12 @@ describe('whyLine ("Gợi ý vì: Hợp …")', () => {
   it('lists the suitable_for terms that are also Agency preferences', () => {
     expect(whyLine('["Đoàn học sinh","Tour văn hoá – di sản"]', ['Tour văn hoá – di sản', 'price'])).toBe('Gợi ý vì: Hợp tour văn hoá – di sản')
   })
+  it('maps the preference key "culture" to "Tour văn hoá – di sản" (explicit table, decision 2026-11-18 #2)', () => {
+    expect(whyLine('["Tour văn hoá – di sản","Đoàn học sinh"]', ['culture', 'price'])).toBe('Gợi ý vì: Hợp tour văn hoá – di sản')
+  })
+  it('does not map price, category:* or provider:* keys', () => {
+    expect(whyLine('["Tour văn hoá – di sản","Đoàn học sinh","Team building"]', ['price', 'category:Workshop/Hands-on', 'provider:p1'])).toBeNull()
+  })
   it('is hidden (null) when nothing matches or a side is empty', () => {
     expect(whyLine('["Đoàn học sinh"]', ['culture', 'price'])).toBeNull()
     expect(whyLine('', ['Tour văn hoá – di sản'])).toBeNull()

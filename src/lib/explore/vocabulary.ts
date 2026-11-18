@@ -17,6 +17,15 @@ export const SUITABLE_FOR = [
   'Không cần kinh nghiệm', 'Sản phẩm mang về', 'Chụp ảnh cùng nghệ nhân', 'Xem nghệ nhân làm việc',
 ] as const
 
+/**
+ * Agency preference keys (agency_preference_profiles.preference_weights) that stand for a suitable_for term, for the
+ * "Gợi ý vì" line on 21 (human decision 2026-11-18 #2). Only this row; price, category:* and provider:* keys are
+ * not mapped, so they never produce a reason.
+ */
+export const PREFERENCE_TO_SUITABLE_FOR: Readonly<Record<string, (typeof SUITABLE_FOR)[number]>> = {
+  culture: 'Tour văn hoá – di sản',
+}
+
 function json(value: unknown): unknown {
   if (value === undefined || value === null || value === '') return null
   if (typeof value !== 'string') return value

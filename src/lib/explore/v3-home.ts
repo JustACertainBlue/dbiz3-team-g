@@ -2,7 +2,7 @@
 // filters, the village grid and the hold banner (human decisions 2026-11-18 #1, #4, #5, #7, #9).
 import type { CsvRow, ExploreSeed } from './catalog'
 import { eligibleRows } from './catalog'
-import { craftLabel, parseHighlights, parseStringList } from './vocabulary'
+import { PREFERENCE_TO_SUITABLE_FOR, craftLabel, parseHighlights, parseStringList } from './vocabulary'
 
 type Row = ReturnType<typeof eligibleRows>[number]
 
@@ -78,9 +78,10 @@ export function cardView(seed: ExploreSeed, row: Row, preferenceKeys: string[]):
   }
 }
 
-/** "Gợi ý vì: Hợp …": suitable_for terms that are also keys of the Agency's preference_weights; null otherwise. */
+/** "Gợi ý vì: Hợp …": suitable_for terms matching the Agency's preference keys, either literally or through
+ *  PREFERENCE_TO_SUITABLE_FOR; null when nothing matches. */
 export function whyLine(suitableFor: unknown, preferenceKeys: string[]): string | null {
-  const keys = new Set(preferenceKeys)
+  const keys = new Set(preferenceKeys.flatMap(key => PREFERENCE_TO_SUITABLE_FOR[key] ? [key, PREFERENCE_TO_SUITABLE_FOR[key]] : [key]))
   const common = parseStringList(suitableFor).filter(term => keys.has(term))
   if (!common.length) return null
   return `Gợi ý vì: Hợp ${common.map(term => term.charAt(0).toLowerCase() + term.slice(1)).join(', ')}`

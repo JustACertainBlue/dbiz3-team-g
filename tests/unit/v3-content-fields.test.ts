@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
-  CRAFT_LABELS, SUITABLE_FOR, craftLabel, parseHighlights, parseInclusions, parseStringList, parseSlots,
+  CRAFT_LABELS, PREFERENCE_TO_SUITABLE_FOR, SUITABLE_FOR, craftLabel, parseHighlights, parseInclusions, parseStringList, parseSlots,
   parseVisitNotes, parseTourDetail, parseDistance,
 } from '@/lib/explore/vocabulary'
 
@@ -24,6 +24,13 @@ describe('suitable_for vocabulary', () => {
     const sql = readFileSync('supabase/migrations/20261118120000_hab_ui_v3_content.sql', 'utf8')
     const list = sql.match(/suitable_for <@ ARRAY\[([\s\S]*?)\]::text\[\]/)?.[1] ?? ''
     expect([...list.matchAll(/'([^']+)'/g)].map(m => m[1])).toEqual([...SUITABLE_FOR])
+  })
+})
+
+describe('PREFERENCE_TO_SUITABLE_FOR', () => {
+  it('has exactly one row: culture → Tour văn hoá – di sản, a vocabulary term', () => {
+    expect(PREFERENCE_TO_SUITABLE_FOR).toEqual({ culture: 'Tour văn hoá – di sản' })
+    expect(SUITABLE_FOR).toContain(PREFERENCE_TO_SUITABLE_FOR.culture)
   })
 })
 

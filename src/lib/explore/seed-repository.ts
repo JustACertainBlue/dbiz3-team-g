@@ -23,3 +23,12 @@ export function loadExploreSeed(root = process.cwd()): ExploreSeed {
 export async function loadExploreRuntime(): Promise<ExploreSeed> {
   return (await demoRepository().snapshot(tables)) as unknown as ExploreSeed;
 }
+
+/**
+ * experience_slots (migration 20261118120000_hab_ui_v3_content.sql, UI v3 Đợt 1). Until the migration is applied the
+ * table does not exist (live store: "Unknown persisted table"; JSON fixtures: no such table), so an empty list is
+ * returned and the slot table on the detail page shows its empty state.
+ */
+export async function loadExperienceSlots(): Promise<CsvRow[]> {
+  try { return (await demoRepository().all('experience_slots')) as unknown as CsvRow[] } catch { return [] }
+}

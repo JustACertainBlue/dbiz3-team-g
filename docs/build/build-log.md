@@ -18,6 +18,21 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 65: 18/11 Copilot — execute AIT anti/Jade A0-A stage fixes
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local execution of the Jade prompt for anti/Jade A0-A on `feat/ait-conversational-llm`. |
+| Scope | Stage A only: reproduce anti BUG/JQ, apply test-first P0/P1/P2 fixes, verify, and stop before Stage B. No push. |
+| A0/JQ decisions | Reproduced the anti harness at HEAD `30dcdd3`; JQ-03 chose entity_first, JQ-04 chose displayed_number, JQ-05 chose exact_first. JQ-01, JQ-02, JQ-06, JQ-07, JQ-08 came from the Jade prompt and were applied to P0/P1. Key reproduced defects included negative/NaN distances, negative radius, `1e3`/written radius units, origin captured as “20 km”, 0 adults/children, total budget not divided, pure English/currency refusal, and stale float-distance expectations. |
+| P0 commits | `897b999` — validates corrupt/negative distance candidates, rejects invalid radius and group values, separates km/budget, sums adult plus child counts, rejects group-total budgets without group size, and rejects 1e3/written/unsupported units, pure English, and unsupported currency. |
+| P1/P2 commits | `14cbd04` and `f496bcb` — localizes exact distances with comma decimals, localizes craft status, adds out-of-scope routing for homestay/GPS/statistics, rejects invalid dates, rounds radius state to one decimal, and compares exact-coordinate candidates by the approved displayed boundary. `0b7a2ab` and `2c9a799` align stale locale/JQ-04/JQ-06 oracles with the approved behavior. |
+| Test-first/mutation evidence | P0 focused route tests failed before patch for `1e3`, negative radius, zero group, origin “20 km”, total budget, pure English, and currency, then passed after patch. P1 route tests failed for homestay/GPS/statistics, invalid dates, dot-decimal locale, then passed. P2 boundary tests failed for 8.1/Bát Tràng and 10.0001 rounding, then passed. Prior independent AIT audit mutations: 16/16 caught; new A0/A1 mutations were not claimed as complete until their tests ran. |
+| Verification | Full Vitest: 267 files passed, 1 failed, 5 skipped; 1,928 tests passed, 1 failed, 30 skipped. The sole failure is `tests/unit/village-display-name.test.ts` for `resolveVillageCards("lang gom bat trang")`, reproduced independently on clean HEAD earlier and left unchanged. Focused AIT suites passed: matching API 13/13, conversation state 29/29, geography 101 tests in their relevant selectors, distance/router 76/76, and card/locale suites 184 pass with 6 E2E skips. `npm.cmd run lint`: passed after `npm.cmd run build` finished `.next/types` generation. `npm.cmd run build`: passed; `/ai-matching` retained its existing dynamic-server-usage diagnostic. |
+| Workers/model status | Workers AI/Groq/OpenRouter booleans were all false in process environment. `.env.local` was not opened, read, printed, or written; no key or secret was included in code, tests, logs, or this entry. Real-model 42-call run and 126 real-model/126 mock matrix were not run. Full mock suite was run through the repository runner. |
+| Not completed | Mock 114/126 complete CSV/CHAT runner was not present as an executable suite; only the Jade Markdown fixture existed. A0 BUG-01..29/JQ-01..08 can not be reported as individually replayed where an existing harness did not cover the exact sentence. A7 mutation count and independent anti replay remain incomplete, and Stage B was not started because Jade has not approved Stage A. |
+| Boundaries | No push. Did not edit `.env.local`, `.demo-data/`, `data/`, or `.claude/`. Preserved the unrelated `.claude/settings.json` modification and untracked planning/report/anti/114 files. |
+
 ### Entry 64: 20/11 Copilot — reject unsupported distance-minimum and range requests
 
 | Field | Value |

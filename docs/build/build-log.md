@@ -18,6 +18,19 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 63: 20/11 Copilot — finish AIT invariant and mutation audit
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`. |
+| Scope | Complete the requested read-only AIT audit and narrowly fix regressions proven by tests. Do not push. |
+| Produced | Village overflow explanations now label each district-estimated village as “chưa xác nhận bán kính”. Post-LLM facility checks include Wi-Fi and wheelchair claims, and the checked narration (not raw model text) is returned to the UI-facing extraction field. Added a 50-prompt invariant matrix over seed and fixture. The matrix exposed that “cây số” was not parsed as a radius; both current-turn parsing and stored raw-span re-parsing now accept it without relying on an ASCII word boundary. Code/tests commit: `3d0a0aa`. |
+| Mutation checks | 16/16 mutations were caught and restored: removing village radius filtering; changing the inclusive lower-bound comparison; reverting the money `k` boundary; injecting a 999 km/Wi-Fi/wheelchair model reply; removing the route post-check; removing the ±10 km uncertainty; clearing state on each turn; retaining inferred slots; enabling fixture for “latest”; hard-coding Hồ Gươm as the default display origin; removing weight normalization; swapping distance/group-size weights; removing the 0.85 district factor; retaining input order instead of reranking; removing the “Còn N làng khác” line; and exposing geo debug in JSON. |
+| Scenario results | Fixture “test làng nghề dưới 10 km” returns Ngũ Xã, Yên Thái, Bát Tràng in that order. Its overflow line is `Còn 4 làng khác trong bán kính: Làng gốm cổ Kim Lan, Làng lụa Vạn Phúc, Làng múa rối nước Đào Thục — chưa xác nhận bán kính.` The matrix ran 50 prompts × 2 datasets × 2 repetitions (200 responses), blocked 4 long-input requests, compared IDs across both API paths in 78 eligible cases, and found 0 checked invariant violations. The crafted LLM responses were mocks; Workers AI account/token configuration was absent, so 42 real-model requests were not run. |
+| Verification | Full `npm.cmd test`: 267 files passed, 1 failed, 5 skipped; 1,888 tests passed, 1 failed, 30 skipped. The sole failure remains `tests/unit/village-display-name.test.ts` for `resolveVillageCards("lang gom bat trang")`, previously reproduced on clean HEAD and unrelated to this work. `npm.cmd run lint`: passed on rerun after `next build` finished generating `.next/types` (the concurrent first run raced that generation). `npm.cmd run build`: passed; Next.js logged its existing dynamic-server-usage diagnostic for `/ai-matching` and emitted it as dynamic. `git diff --check`: passed. |
+| Open decision | The parser currently maps “trên 10 km” to the existing maximum-radius slot, and “dưới 0 km” is not a meaningful positive radius. The spec/prompt does not say whether these should prompt for clarification, be rejected, or support a minimum/range constraint; no behavior was invented or changed for these cases. |
+| Boundaries | Local only; no push and no data edits. Did not touch `.claude/`, `.env.local`, or `.demo-data/`. Preserved the unrelated `.claude/settings.json` modification and untracked planning/report files; neither was included in the changes. |
+
 ### Entry 61: 20/11 Copilot — finish AIT radius, reply-safety, and result-limit checks
 
 | Field | Value |

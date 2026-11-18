@@ -23,6 +23,11 @@ describe('screen 05 → screen 27', () => {
     expect(row).toMatch(/<nav[^>]*aria-label="Lọc theo trạng thái"/)
     expect(row).toMatch(new RegExp(`<\\/nav><a[^>]*href="/agency/${TRANG_AN}/schedule"[^>]*>[\\s\\S]*Xem lịch<\\/a>$`))
   })
+  it('has no quote characters in its inline CSS (the server escapes them and hydration fails)', async () => {
+    const html = renderToStaticMarkup(await AgencyBookingHistoryPage({ params: { agencyId: TRANG_AN }, searchParams: {} }))
+    const css = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('')
+    expect(css).not.toContain('&quot;')
+  })
   it('titles screen 27 "Lịch Công ty"', async () => {
     const html = renderToStaticMarkup(await AgencySchedulePage({ params: { agencyId: TRANG_AN }, searchParams: {} }))
     expect(html).toMatch(/<h1>Lịch Công ty<\/h1>/)

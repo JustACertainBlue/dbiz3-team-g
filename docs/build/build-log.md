@@ -18,6 +18,16 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 68: 18/11 Copilot — AIT delta contract test-first
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local work on `feat/ait-conversational-llm`, HEAD `bead3e6c`. |
+| Scope | Start A-BIS-2 delta/validator work with an independent test oracle. No push, no environment/secret/Supabase access. |
+| Test-first evidence | Added `tests/unit/ait-conversation-delta.test.ts` for accepted grounded sets, rejection of malformed/out-of-scope deltas, explicit clear, contextual `relax` for CHAT06, and preserving old values when rejected. `npx.cmd vitest run tests/unit/ait-conversation-delta.test.ts --reporter=dot` failed before implementation because `@/lib/ait/conversation-delta` does not exist. This oracle was written after inspecting the current implementation, so it is not evidence of the requested “oracle before reading code” ordering. |
+| Not completed | Delta schema, validator, LLM prompt/response wiring, route merge, all-code A0/JQ table, test-expectation audit, and final verification are not yet complete. |
+| Boundaries | No push, no commit at this entry, no edits to `.env`, `.env.local`, `.demo-data/`, `data/`, `.claude/`, and no Supabase/model calls. |
+
 ### Entry 67: 20/11 Copilot — AIT conversation-state replay follow-up
 
 | Field | Value |

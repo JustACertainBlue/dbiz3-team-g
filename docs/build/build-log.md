@@ -18,6 +18,19 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 72: 18/11 Copilot — wire AIT delta validation and preserve unavailable craft choices
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`, HEAD `119a821`. |
+| Scope | Complete LLM delta validation wiring and resolve Jade's R6/R7 exception: an explicit craft outside the catalog is not a malformed delta. No push, real-model calls, environment/secret/Supabase access, or edits outside AIT and this log. |
+| Decision evidence | The AIT state stores one `craft` string (`AitConversationState.craft`); `docs/spec/specs/spec-AIT.md` maps a craft preference to the Provider `craft_type` enum and does not specify a multi-craft state. Preserve the full explicit phrase `hương hay tò he` in that string rather than silently reducing it to the first alternative. Added `craft_no_data`; unsupported craft replaces the prior craft and suppresses matching, while malformed/out-of-range/ungrounded deltas remain rejected without state changes. |
+| Produced | Wired `conversation_delta` through prompt, extractor, validator, and session route. Validation now returns accepted, unsupported, and rejected operations. Valid radius/group slots merge alongside an unsupported craft. An explicit supported craft later clears `craft_no_data`; unsupported-craft responses retain the existing missing-data guidance and alternative-craft invitation. |
+| Test-first and mutation evidence | Added contract and seed/fixture route tests for `hương hay tò he` replacing `pottery`, preserving 20 km and 10 people, empty results, and switching back to pottery; initial run failed with state still `pottery`. Focused AIT run: 3 files, 147 tests passed. Mutation runs all failed as expected and were restored: bypass validation (`rejects invalid deltas independently`), skip applying a newer valid set (`valid newer set`), skip clear (`clears only a slot`), skip relax (`uses a relax delta`), and skip applying unsupported craft (new unit and seed/fixture route tests). The full-suite run first exposed that the invariant-matrix mock still returned only legacy `extracted_context`; after Jade approved, it was updated to return `conversation_delta` while keeping the invariant assertions unchanged. `tests/integration/ait-invariant-matrix.test.ts`: 50 prompts × 2 datasets × 2 repetitions, 200 responses, 4 blocked long inputs, 70 path comparisons, no violations in its existing checks (distance-to-card text, facility claims, filtered village IDs, and path ID sets; it does not assert conversation-state craft, group size, budget basis, or origin). |
+| Verification | `npx.cmd tsc --noEmit`: passed. `npm.cmd run lint`: passed. Full `npm.cmd test -- --reporter=dot`: 268 files passed, 1 failed, 5 skipped; 1,945 tests passed, 1 failed, 30 skipped. The remaining failure is the existing `tests/unit/village-display-name.test.ts` case for `resolveVillageCards("lang gom bat trang")`. `npm.cmd run build`: passed; Next.js printed its existing dynamic-server-usage diagnostic for `/ai-matching`. |
+| Not completed | The requested line-by-line A0/JQ tables and real-model checks are not part of this follow-up and remain outstanding. |
+| Boundaries | No push, no real-model calls, and no edits to `.env*`, `.demo-data/`, `data/`, `.claude/`, or files outside AIT plus this log. |
+
 ### Entry 71: 18/11 Copilot — implement AIT delta validation and merge
 
 | Field | Value |

@@ -8,6 +8,7 @@ import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
 import { matchResultsView, messageOutcome } from '@/app/ai-matching/matching-view'
 import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
+import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
 import { runVillageCardPipeline } from '@/lib/ait/matching-pipeline'
 import { resolveVillageCards } from '@/lib/matching/card-resolver'
 import { resolveTestVillageCards } from '@/lib/matching/test-dataset'
@@ -90,18 +91,66 @@ async function call(handler: Handler, path: string, body: unknown, params?: Json
 function installLlmMock() {
   vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', 'test-account')
   vi.stubEnv('CLOUDFLARE_API_TOKEN', 'test-token')
-  vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockResolvedValue({
-    success: true,
-    text: JSON.stringify({
-      intent: 'tour_matching',
-      conversational_reply: MOCK_REPLY,
-      extracted_context: { budget_per_person: 5000 },
-      follow_up_questions: [],
-      missing_primary: [],
-    }),
-    isQuotaExhausted: false,
-    isNetworkError: false,
-    modelUsed: 'matrix-mock',
+  vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockImplementation(async messages => {
+    const text = [...messages].reverse().find(message => message.role === 'user')?.content ?? ''
+    const delta: Record<string, { action: 'set'; value: string | number; raw_span: string }> = {}
+    const craft = detectCraftPreference(text)
+    if (craft) delta.craft = { action: 'set', value: craft, raw_span: text }
+
+    const groupSpan = text.match(/\b\d+\s*(?:khách|người|bạn|pax|people|guests?)\b/iu)?.[0]
+    if (groupSpan) {
+      delta.group_size = {
+        action: 'set',
+        value: Number(groupSpan.match(/\d+/)?.[0]),
+        raw_span: groupSpan,
+      }
+    }
+
+    if (!/(?:trên|hơn|ít nhất|tối thiểu|từ .+ đến .+)/iu.test(text)) {
+      const radius = text.match(/(?:dưới|trong vòng|không quá|tối đa|bán kính|cách)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])/iu)
+      if (radius) {
+        delta.radius = {
+          action: 'set',
+          value: Number(radius[1].replace(',', '.')),
+          raw_span: radius[0],
+        }
+      }
+    }
+
+    const amount = parseExplicitBudgetAmount(text)
+    const amountSpan = text.match(/\b\d[\d.,\s]*\s*(?:k\b(?!m)|nghìn|ngàn|triệu|đ|vnd)(?![\p{L}])/iu)?.[0]
+    if (amount !== undefined && amountSpan) {
+      const groupTotal = /(?:cả đoàn|toàn đoàn|tổng đoàn|cho cả đoàn)/iu.test(text)
+      const groupSize = groupSpan ? Number(groupSpan.match(/\d+/)?.[0]) : undefined
+      delta.budget_per_person = {
+        action: 'set',
+        value: groupTotal && groupSize ? Math.round(amount / groupSize) : amount,
+        raw_span: amountSpan,
+      }
+      delta.budget_basis = {
+        action: 'set',
+        value: groupTotal ? 'group_total' : 'per_person',
+        raw_span: text,
+      }
+    }
+
+    const origin = text.match(/(?:xuất phát từ|cách|gần|từ)\s+(hồ gươm|hoàn kiếm|trung tâm hà nội|hà nội|nội bài|đà nẵng)(?=\s+(?:dưới|không quá|tối đa|\d+(?:[.,]\d+)?\s*km)|[,.;!?]|$)/iu)?.[1]
+    if (origin) delta.origin = { action: 'set', value: origin, raw_span: origin }
+
+    return {
+      success: true,
+      text: JSON.stringify({
+        intent: 'tour_matching',
+        conversational_reply: MOCK_REPLY,
+        conversation_delta: delta,
+        extracted_context: { budget_per_person: 5000 },
+        follow_up_questions: [],
+        missing_primary: [],
+      }),
+      isQuotaExhausted: false,
+      isNetworkError: false,
+      modelUsed: 'matrix-mock',
+    }
   })
   vi.spyOn(QuotaManager, 'checkCooldown').mockResolvedValue({
     inCooldown: false,

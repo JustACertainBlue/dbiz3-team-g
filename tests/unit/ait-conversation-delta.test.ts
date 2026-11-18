@@ -68,6 +68,61 @@ describe('AIT conversation delta contract', () => {
     })
   })
 
+  it('lets a valid newer set replace the previous value for that slot', () => {
+    const before = {
+      ...emptyConversationState(),
+      craft: 'pottery',
+      radius_km: 10,
+    }
+    const delta: ConversationDelta = {
+      craft: { action: 'set', value: 'silk', raw_span: 'làng lụa' },
+      radius: { action: 'set', value: 20, raw_span: '20 km' },
+    }
+    const validation = validateConversationDelta(delta, 'đổi sang làng lụa, 20 km', [], before)
+
+    expect(validation.rejected).toEqual([])
+    expect(applyConversationDelta(before, validation, now)).toMatchObject({
+      craft: 'silk',
+      craft_no_data: false,
+      radius_km: 20,
+    })
+  })
+
+  it('distinguishes an explicitly requested unsupported craft from an invalid delta', () => {
+    const before = {
+      ...emptyConversationState(),
+      craft: 'pottery',
+      radius_km: 10,
+      group_size: 14,
+    }
+    const unsupportedCraft = {
+      craft: { action: 'set', value: 'hương hay tò he', raw_span: 'làm hương hay tò he' },
+      radius: { action: 'set', value: 20, raw_span: 'cách 20 km' },
+      group_size: { action: 'set', value: 10, raw_span: '10 người' },
+    } satisfies ConversationDelta
+    const validation = validateConversationDelta(
+      unsupportedCraft,
+      'cho khách hoạt động cách 20 km, làm hương hay tò he cho 10 người',
+      [],
+      before,
+    )
+
+    expect(validation.accepted).toMatchObject({
+      radius: { action: 'set', value: 20 },
+      group_size: { action: 'set', value: 10 },
+    })
+    expect(validation.unsupported).toEqual({
+      craft: unsupportedCraft.craft,
+    })
+    expect(validation.rejected).toEqual([])
+    expect(applyConversationDelta(before, validation, now)).toMatchObject({
+      craft: 'hương hay tò he',
+      craft_no_data: true,
+      radius_km: 20,
+      group_size: 10,
+    })
+  })
+
   it('clears only a slot explicitly cleared by the latest user turn', () => {
     const before = {
       ...emptyConversationState(),
@@ -125,7 +180,7 @@ describe('AIT conversation delta contract', () => {
     expect(applyConversationDelta(before, validation, now)).toMatchObject({
       interests: ['khách nước ngoài'],
       relaxed_fields: ['guide_language'],
-      turn_count: 2,
+      turn_count: 1,
     })
   })
 

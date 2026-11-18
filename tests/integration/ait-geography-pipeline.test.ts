@@ -10,6 +10,10 @@ import { messageOutcome } from '@/app/ai-matching/matching-view'
 import { DEFAULT_HANOI_ORIGIN, resolveOriginCoordinates } from '@/lib/matching/geo'
 import { resolveTestVillageCards } from '@/lib/matching/test-dataset'
 import { runVillageCardPipeline } from '@/lib/ait/matching-pipeline'
+import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
+import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
+import type { ConversationDelta } from '@/lib/ait/conversation-delta-schema'
+import { extractTourDate } from '@/lib/ai/tour-date'
 import {
   conversationStateBytes,
   emptyConversationState,
@@ -55,25 +59,98 @@ function installLlmMock(
   reply: string,
   origin?: string,
   missingPrimary: string[] = [],
-  budgetPerPerson: number | undefined = 5000,
+  budgetPerPerson?: number,
+  deltaOverride?: unknown,
 ) {
   vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', 'test-account')
   vi.stubEnv('CLOUDFLARE_API_TOKEN', 'test-token')
-  const llmCall = vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockResolvedValue({
-    success: true,
-    text: JSON.stringify({
-      intent: 'tour_matching',
-      conversational_reply: reply,
-      extracted_context: {
-        ...(origin ? { origin } : {}),
-        ...(budgetPerPerson !== undefined ? { budget_per_person: budgetPerPerson } : {}),
-      },
-      follow_up_questions: [],
-      missing_primary: missingPrimary,
-    }),
-    isQuotaExhausted: false,
-    isNetworkError: false,
-    modelUsed: 'test-mock',
+  const llmCall = vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockImplementation(async messages => {
+      const text = messages.findLast(message => message.role === 'user')?.content ?? ''
+      const delta: ConversationDelta = {}
+      const craft = detectCraftPreference(text)
+      if (craft) delta.craft = { action: 'set', value: craft, raw_span: text }
+      if (/khách nước ngoài|khach nuoc ngoai/iu.test(text)) {
+        delta.interests = { action: 'set', value: ['khách nước ngoài'], raw_span: text }
+      }
+      const unsupportedCraft = text.match(/(?:làm|đổi sang)\s+(hương(?:\s+hay\s+tò\s*he)?|tò\s*he)/iu)
+      if (!craft && unsupportedCraft) {
+        delta.craft = {
+          action: 'set',
+          value: unsupportedCraft[1].toLocaleLowerCase('vi'),
+          raw_span: unsupportedCraft[0],
+        }
+      }
+      const adultsAndChildren = text.match(/(\d+)\s*người lớn\s*(\d+)\s*trẻ em\b/iu)
+      const groupSpan = adultsAndChildren?.[0]
+        ?? text.match(/\b\d+\s*(?:khách|người|bạn|pax|people|guests?)\b/iu)?.[0]
+      const parsedGroupSize = adultsAndChildren
+        ? Number(adultsAndChildren[1]) + Number(adultsAndChildren[2])
+        : groupSpan ? Number(groupSpan.match(/\d+/)?.[0]) : undefined
+      if (groupSpan && parsedGroupSize) {
+        delta.group_size = { action: 'set', value: parsedGroupSize, raw_span: groupSpan }
+      }
+      const radius = text.match(/(?:dưới|không quá|tối đa|bán kính|cách)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])/iu)
+      if (radius) {
+        delta.radius = {
+          action: 'set',
+          value: Number(radius[1].replace(',', '.')),
+          raw_span: radius[0],
+        }
+      }
+      const explicitBudget = parseExplicitBudgetAmount(text)
+      const budgetSpan = text.match(/\b\d[\d.,\s]*\s*(?:k\b(?!m)|nghìn|ngàn|triệu|đ|vnd)(?![\p{L}])/iu)?.[0]
+      if (explicitBudget !== undefined && budgetSpan) {
+        const groupTotal = /(?:cả đoàn|toàn đoàn|tổng đoàn)/iu.test(text)
+        const perPerson = groupTotal && parsedGroupSize ? Math.round(explicitBudget / parsedGroupSize) : explicitBudget
+        delta.budget_per_person = { action: 'set', value: perPerson, raw_span: budgetSpan }
+        delta.budget_basis = {
+          action: 'set',
+          value: groupTotal ? 'group_total' : 'per_person',
+          raw_span: text,
+        }
+      } else if (budgetPerPerson !== undefined) {
+        delta.budget_per_person = { action: 'set', value: budgetPerPerson, raw_span: '5.000đ' }
+      }
+      const namedOrigin = origin && text.toLocaleLowerCase('vi').includes(origin.toLocaleLowerCase('vi'))
+        ? origin
+        : text.match(/(?:xuất phát từ|cách|gần|từ)\s+(hồ gươm|hoàn kiếm|trung tâm hà nội|hà nội|ba đình|sao hỏa)(?=\s+(?:dưới|không quá|tối đa|\d+(?:[.,]\d+)?\s*km)|[,.;!?]|$)/iu)?.[1]
+      if (namedOrigin) delta.origin = { action: 'set', value: namedOrigin, raw_span: namedOrigin }
+      const recentTurnsMessage = messages.find(message =>
+        message.role === 'system' && message.content.includes('Recent user turns')
+      )?.content
+      const recentTurnsJson = recentTurnsMessage?.match(/Recent user turns .*?: (\[[\s\S]*\])$/)?.[1]
+      const recentTurns = recentTurnsJson ? JSON.parse(recentTurnsJson) as string[] : []
+      if (/^không có cũng được[.!? ]*$/iu.test(text.trim())
+        && recentTurns.some(turn => /hướng dẫn tiếng Anh|english guide/iu.test(turn))) {
+        delta.guide_language = { action: 'relax', raw_span: text.trim() }
+      }
+      const date = extractTourDate(text, new Date('2026-11-18T00:00:00.000Z'))
+      const dateSpan = text.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/iu)?.[0]
+      if (date && dateSpan) delta.date = { action: 'set', value: date, raw_span: dateSpan }
+      for (const [slot, value, pattern] of [
+        ['nearest', true, /gần nhất|nearest|closest/iu],
+        ['cheapest', true, /rẻ nhất|giá thấp nhất|cheapest/iu],
+      ] as const) {
+        const match = text.match(pattern)
+        if (match) delta[slot] = { action: 'set', value, raw_span: match[0] }
+      }
+      if (/(?:bỏ|xóa|hủy|thôi)\s+(?:giới hạn\s+)?(?:bán kính|km|kilomet)/iu.test(text)) {
+        delta.radius = { action: 'clear', raw_span: text.match(/(?:bỏ|xóa|hủy|thôi)\s+(?:giới hạn\s+)?(?:bán kính|km|kilomet)/iu)![0] }
+      }
+      const responseDelta = deltaOverride ?? delta
+      return {
+        success: true,
+        text: JSON.stringify({
+          intent: 'tour_matching',
+          conversational_reply: reply,
+          conversation_delta: responseDelta,
+          follow_up_questions: [],
+          missing_primary: missingPrimary,
+        }),
+        isQuotaExhausted: false,
+        isNetworkError: false,
+        modelUsed: 'test-mock',
+      }
   })
   vi.spyOn(QuotaManager, 'checkCooldown').mockResolvedValue({
     inCooldown: false,
@@ -366,6 +443,130 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(prompt.map(message => message.content).join(' ')).not.toMatch(/Hồ Gươm|Hoàn Kiếm|Ho Guom/i)
   })
 
+  it('validates an LLM delta before applying its search slots', async () => {
+    const mocks = installLlmMock('Mình đang tìm làng nghề phù hợp.', undefined, [], undefined)
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'Tìm làng gốm cho 10 khách, dưới 10 km')
+    const state = (await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    ))
+    const context = typeof state?.conversation_context === 'string'
+      ? JSON.parse(state.conversation_context)
+      : state?.conversation_context
+
+    expect(response.json.extraction.delta_validation).toMatchObject({
+      accepted: {
+        craft: { action: 'set', value: 'pottery' },
+        group_size: { action: 'set', value: 10 },
+        radius: { action: 'set', value: 10 },
+      },
+      rejected: [],
+    })
+    expect(context?.state).toMatchObject({ craft: 'pottery', group_size: 10, radius_km: 10 })
+    const prompt = mocks.llmCall.mock.calls[0][0]
+      .map(message => message.content)
+      .join('\n')
+    expect(prompt).toContain('"conversation_delta"')
+    expect(prompt).not.toContain('"extracted_context"')
+  })
+
+  it('keeps state unchanged and reports why an ungrounded model budget delta was rejected', async () => {
+    const mocks = installLlmMock('Mình đang tìm làng nghề phù hợp.', undefined, [], 5000)
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'Tìm làng gốm dưới 10 km')
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(context?.state.budget_per_person).toBeUndefined()
+    expect(response.json.extraction.delta_validation.rejected).toContainEqual({
+      slot: 'budget_per_person',
+      reason: 'raw_span_not_in_latest_user_turn',
+    })
+    expect(mocks.llmCall).toHaveBeenCalledTimes(1)
+  })
+
+  it('accepts CHAT06 optional English-guide waiver through the validated relax delta', async () => {
+    installLlmMock('Đã ghi nhận yêu cầu.')
+    const sessionId = await openSession()
+
+    await send(sessionId, 'Tìm chỗ cho khách nước ngoài')
+    await send(sessionId, 'Có hướng dẫn tiếng Anh không?')
+    const response = await send(sessionId, 'Không có cũng được')
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(response.json.extraction.delta_validation).toMatchObject({
+      accepted: {
+        guide_language: { action: 'relax', raw_span: 'Không có cũng được' },
+      },
+      rejected: [],
+    })
+    expect(context?.state).toMatchObject({
+      interests: ['khách nước ngoài'],
+      relaxed_fields: ['guide_language'],
+      turn_count: 1,
+    })
+  })
+
+  it('rejects malformed, extra, wrong-clear, and out-of-range model delta fields', async () => {
+    const invalidDelta = {
+      craft: { action: 'set', value: 'invented-craft', raw_span: 'làng gốm' },
+      group_size: { action: 'set', value: 1000, raw_span: '10 khách' },
+      radius: { action: 'set', value: 999, raw_span: 'dưới 10 km' },
+      budget_per_person: { action: 'set', value: 500000, raw_span: '5.000đ' },
+      budget_basis: { action: 'set', value: 'per_person', raw_span: 'dưới 10 km' },
+      origin: { action: 'set', value: 'Đà Nẵng', raw_span: 'làng gốm' },
+      nearest: 'true',
+      cheapest: { action: 'set', value: true, raw_span: 'dưới 10 km' },
+      interests: { action: 'clear', raw_span: 'dưới 10 km' },
+      guide_language: { action: 'relax', raw_span: 'dưới 10 km' },
+      unknown_slot: { action: 'set', value: 'anything', raw_span: 'làng gốm' },
+    }
+    installLlmMock('Đã ghi nhận yêu cầu.', undefined, [], undefined, invalidDelta)
+    const sessionId = await openSession()
+
+    const response = await send(sessionId, 'Tìm làng gốm cho 10 khách dưới 10 km')
+    const state = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof state?.conversation_context === 'string'
+      ? JSON.parse(state.conversation_context)
+      : state?.conversation_context
+    const rejected = response.json.extraction.delta_validation.rejected as Json[]
+
+    expect(response.json.extraction.delta_validation.accepted).toEqual({})
+    expect(context?.state.craft).toBeUndefined()
+    expect(context?.state.group_size).toBeUndefined()
+    expect(context?.state.radius_km).toBeUndefined()
+    expect(rejected).toEqual(expect.arrayContaining([
+      { slot: 'craft', reason: 'craft_not_in_catalog' },
+      { slot: 'group_size', reason: 'group_size_not_supported_by_raw_span' },
+      { slot: 'radius', reason: 'radius_value_does_not_match_raw_span' },
+      { slot: 'budget_per_person', reason: 'raw_span_not_in_latest_user_turn' },
+      { slot: 'budget_basis', reason: 'per_person_basis_not_stated' },
+      { slot: 'origin', reason: 'origin_value_not_supported_by_raw_span' },
+      { slot: 'nearest', reason: 'malformed_operation' },
+      { slot: 'cheapest', reason: 'cheapest_not_supported_by_raw_span' },
+      { slot: 'interests', reason: 'clear_not_explicitly_requested' },
+      { slot: 'guide_language', reason: 'no_matching_prior_user_request' },
+      { slot: 'craft', reason: 'unknown_slot:unknown_slot' },
+    ]))
+  })
+
   it('keeps geo debug logs opt-in and does not change the response', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => {})
     const debugCalls = () => info.mock.calls.filter(([message]) =>
@@ -480,8 +681,8 @@ describe('AIT geography pipeline through the real extractor', () => {
   it.each([
     ['seed', false],
     ['fixture', true],
-  ] as const)('replaces criteria and reports unsupported craft on %s data', async (_source, isFixture) => {
-    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+  ] as const)('stores unsupported craft without falling back to the previous craft on %s data', async (_source, isFixture) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.', undefined, ['hương hay tò he'])
     const sessionId = await openSession()
     const marker = isFixture ? ' test' : ''
 
@@ -501,14 +702,30 @@ describe('AIT geography pipeline through the real extractor', () => {
       : row?.conversation_context
 
     expect(context?.state).toMatchObject({
-      craft: 'hương/tò he',
+      craft: 'hương hay tò he',
+      craft_no_data: true,
       radius_km: 20,
       group_size: 10,
     })
     expect(context?.state.exclusions.villages).toEqual([])
-    expect(response.json.turn.message).toContain('Hiện chưa có dữ liệu về hương/tò he.')
+    expect(response.json.turn.message).toContain('Hiện chưa có dữ liệu về hương hay tò he.')
     expect(response.json.turn.message).toContain('làng nghề khác đang có dữ liệu')
+    expect(response.json.turn.top_matches).toEqual([])
     expect(response.json.turn.message).not.toContain('Bát Tràng có')
+    expect(response.json.extraction.delta_validation.unsupported).toEqual({
+      craft: { action: 'set', value: 'hương hay tò he', raw_span: 'làm hương hay tò he' },
+    })
+
+    const switchedBack = await send(sessionId, 'vậy làm gốm đi')
+    const switchedContext = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const switchedState = switchedContext?.conversation_context
+      ? JSON.parse(switchedContext.conversation_context).state
+      : undefined
+    expect(switchedState).toMatchObject({ craft: 'pottery', craft_no_data: false })
+    expect(switchedBack.json.turn.message).not.toContain('Hiện chưa có dữ liệu về hương hay tò he.')
   })
 
   it('reparses stored raw spans and keeps only the last 20 structured turns', () => {

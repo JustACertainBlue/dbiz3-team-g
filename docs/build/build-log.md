@@ -139,6 +139,19 @@ did and what the humans decided.
 | Boundaries | Only bcrypt hashes are stored in seed; synthetic passwords were not written to repository files or `.env.local`. No commit, push or merge. Existing user changes to `.claude/hooks/block-git-push.py` were inspected and left untouched. PreToolUse was restored from the temporary diagnostic wrapper to `py -3 .claude/hooks/block-git-push.py`; the temporary `diag.py` was removed, and no `debug.log` existed. |
 | Commit / remote | No commit, push or merge performed in this run. |
 
+### Entry 54: 15/11 Copilot — AIT explicit-criteria dynamic ranking
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local AIT matching pipeline, conversation state and debug output. |
+| Scope | Replace implicit route-convenience ranking with dynamically normalized weights for explicit distance, group size, budget and date criteria; preserve distance filtering and the seed/fixture boundary. |
+| Produced | Added centralized weights and per-candidate dynamic scoring; unavailable components are omitted and weights re-normalized, unscored candidates retain a null score and stable default order, district-fallback distance is discounted, and explicit nearest/cheapest preferences are retained in structured conversation state. Village cards now rank only on explicitly requested distance, overflow is reported from the already-filtered set, and opt-in S7 logs include components, normalized weights, total score, omitted components and radius decision. |
+| Test-first | Before integration, the regression that changed default ordering when only coordinates changed failed (`a-candidate`/`b-candidate` reversed); the new route tests also reproduced missing overflow reporting and stale distance sorting. Focused formula tests cover normalization, missing capacity/date, district fallback, radius-free distance normalization, nearest emphasis, cheapest ordering, budget floor, capacity decay and tie-breaks. |
+| Verification | `npx.cmd vitest run tests/ait/ait-dynamic-ranking.test.ts tests/ait/ait-geo-distance.test.ts tests/ait/ait-schedule-filter.test.ts tests/integration/ait-geography-pipeline.test.ts tests/integration/ait-conversation-state.test.ts tests/integration/ait-flow.test.ts tests/integration/ait-matching-api.test.ts tests/unit/ait-test-dataset-matching.test.ts tests/unit/scoring-engine.test.ts`: 9 files, 152 tests passed. `npm.cmd test`: 272 files, 1,880 passed, 30 skipped, 1 failed; the sole failure is the known pre-existing `tests/unit/village-display-name.test.ts` case for `lang gom bat trang`, previously reproduced on clean HEAD. `npm.cmd run lint`: passed. `npm.cmd run build`: passed; Next.js printed its existing dynamic-server-usage warning while prerendering `/ai-matching`. |
+| Not verified | No mutation-test runner or mutation script is present in the repository. No live LLM, database, or browser run was performed; route integration used the real extractor with a mocked LLM, for both seed and fixture. |
+| Boundaries | No changes to `data/`, `docs/spec/`, `.claude/`, `.env.local` or `.demo-data/`; no push or merge. |
+| Commit / remote | Pending local commit after review; no push or merge. |
+
 ### Entry 52: 15/11 Copilot — connect AI Matching test media
 
 | Field | Value |

@@ -18,6 +18,18 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 67: 20/11 Copilot — AIT conversation-state replay follow-up
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`, HEAD `6898bff`. |
+| Scope | Continue A-BIS Stage A state investigation only. No push, no commit, and no work on Stage B. |
+| Produced | Added replay coverage for CHAT01–CHAT06 and independent 3-, 6-, and 10-turn conversations through the AIT session route. State slots record `source_turn`; the LLM receives the current structured state and up to two recent user turns, never assistant prose. FAQ/help turns do not merge extracted search criteria, and result turns include `Đang lọc:`. This remains fallback/rule-based replay coverage: the requested LLM `set`/`clear`/`relax` delta schema and validator are **not implemented**. |
+| Verification | `npx.cmd vitest run tests/integration/ait-conversation-state.test.ts tests/integration/ait-geography-pipeline.test.ts --reporter=dot`: 2 files passed, 135 tests passed. `npm.cmd run lint`: passed. `npm.cmd test -- --reporter=dot`: 267 files passed, 1 failed, 5 skipped; 1,933 tests passed, 1 failed, 30 skipped. The failure is `tests/unit/village-display-name.test.ts` for `resolveVillageCards("lang gom bat trang")`, previously reproduced on clean HEAD and unrelated to this change. `npm.cmd run build`: passed; Next.js printed its existing `/ai-matching` dynamic-server-usage diagnostic. |
+| Model status | Loaded `.env.local` through `@next/env`; printed only presence booleans. `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `GROQ_API_KEY`, and `OPENROUTER_API_KEY` are present; requested `CF_MODEL`, `GROQ_MODEL`, and `OPENROUTER_MODEL` are absent. No provider calls were made. The code uses `CLOUDFLARE_AI_MODEL` / `CLOUDFLARE_AI_FALLBACK_MODEL` (both absent, with built-in defaults) and has no Groq client. |
+| Not completed | A0 BUG/JQ line-by-line replay table, A7 mutation suite, 30 additional conversations, CSV runner for 114/126 cases, anti fuzz/pairwise/race replay, and the complete invariant transcript package remain outstanding. Stage A is not complete; stop for Jade's review before Stage B. |
+| Boundaries | No push or commit. No edits to `.claude/`, `.env.local`, `.demo-data/`, or `data/`; no Supabase access. |
+
 ### Entry 65: 18/11 Copilot — execute AIT anti/Jade A0-A stage fixes
 
 | Field | Value |

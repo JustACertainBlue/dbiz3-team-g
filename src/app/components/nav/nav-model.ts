@@ -1,6 +1,6 @@
 // Navigation per role, mockup v3 (hab-mockup-v3 png/01 Guest, png/21 Tour Agency, png/29 Local Provider,
-// png/38 Admin, png/20 account menu). Human decisions 2026-11-18: the bar shows exactly the mockup items (no "Lịch";
-// the schedule pages stay reachable from in-page links); HDT "Duyệt hồ sơ" → /admin/agencies and stays selected
+// png/38 Admin, png/20 account menu). Human decisions 2026-11-18: the bar shows exactly the mockup items; 2026-11-19
+// (new pack, png/05 and png/27): Tour Agency gets "Lịch" (SCH141 /agency/<id>/schedule) after "Lịch sử đặt chỗ"; HDT "Duyệt hồ sơ" → /admin/agencies and stays selected
 // on /admin/providers; UBND "Duyệt hồ sơ" → /admin/providers.
 import type { SessionContext } from '@/lib/auth/session'
 
@@ -39,6 +39,7 @@ export function navItems(session: SessionContext | null): NavItem[] {
   if (session.role === 'Tour_Agency' && session.agencyId) return [
     { href: '/explore', label: 'Khám phá' },
     { href: `/agency/${session.agencyId}/bookings`, label: 'Lịch sử đặt chỗ' },
+    { href: `/agency/${session.agencyId}/schedule`, label: 'Lịch' },
     { href: '/ai-matching', label: 'Ghép tour AI' },
   ]
   if (session.role === 'Local_Provider' && session.providerId) {

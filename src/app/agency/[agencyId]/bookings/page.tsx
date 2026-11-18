@@ -1,3 +1,4 @@
+import { CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 import { listAgencyBookings } from '@/lib/booking/agency-bookings'
 import { BookingError } from '@/lib/booking/create-booking'
@@ -46,13 +47,14 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
       <div className="bkg-actions"><button type="submit">Lọc</button><Link href={base}>Xoá bộ lọc</Link></div>
     </form>
     {/* #193, screen-spec-BKG137 §8: status filter tabs below the date/village filters; each tab keeps those filters. */}
-    <nav className="bkg-status-tabs" aria-label="Lọc theo trạng thái">
+    {/* Mockup v3 png/05 (2026-11-19): "Xem lịch" at the end of the tab row → screen 27 SCH141. */}
+    <div className="bkg-tab-row"><nav className="bkg-status-tabs" aria-label="Lọc theo trạng thái">
       {['', ...BOOKING_STATUSES].map(status => {
         const params = new URLSearchParams(Object.entries({ ...query, status }).filter(([, value]) => value))
         const href = params.size ? `${base}?${params}` : base
         return <Link key={status || 'all'} href={href} aria-current={query.status === status ? 'page' : undefined}>{status ? statusLabel('booking', status) : 'Tất cả'}</Link>
       })}
-    </nav>
+    </nav><Link className="bkg-schedule-link" href={`/agency/${params.agencyId}/schedule`}><CalendarDays aria-hidden="true" size={18} />Xem lịch</Link></div>
     {rows.length === 0
       ? <p className="bkg-panel" style={{ marginTop: 14 }}>Không có Booking nào khớp bộ lọc này.</p>
       : <table className="bkg-table">
@@ -74,4 +76,4 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
   </main>
 }
 
-const historyStyles = `.bkg-list{max-width:1080px}.bkg-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:20px;padding:16px;background:#f4efe5;border-radius:14px}.bkg-filters label{display:grid;gap:4px;font-weight:700;font-size:13px}.bkg-filters input,.bkg-filters select{padding:8px 10px;border:1px solid #ddd6ca;border-radius:10px;font:inherit;background:white}.bkg-filters .bkg-actions{margin-top:0}.bkg-status-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.bkg-status-tabs a{padding:8px 16px;border:1px solid #ddd6ca;border-radius:999px;color:#203229;font-weight:700;font-size:14px;text-decoration:none;background:white}.bkg-status-tabs a[aria-current="page"]{background:#203229;border-color:#203229;color:white}.bkg-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}.bkg-table th,.bkg-table td{padding:10px 8px;border-bottom:1px solid #e4ddd0;text-align:left;vertical-align:top}.bkg-table small{display:block;color:#66746d}@media(max-width:720px){.bkg-table thead{display:none}.bkg-table tr{display:grid;padding:8px 0}.bkg-table td{border:0;padding:2px 8px}}`
+const historyStyles = `.bkg-list{max-width:1080px}.bkg-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:20px;padding:16px;background:#f4efe5;border-radius:14px}.bkg-filters label{display:grid;gap:4px;font-weight:700;font-size:13px}.bkg-filters input,.bkg-filters select{padding:8px 10px;border:1px solid #ddd6ca;border-radius:10px;font:inherit;background:white}.bkg-filters .bkg-actions{margin-top:0}.bkg-tab-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-top:14px}.bkg-status-tabs{display:flex;flex-wrap:wrap;gap:8px}.bkg-schedule-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1.5px solid #0F3D2A;border-radius:6px;color:#0F3D2A;font-weight:700;text-decoration:none;background:white}.bkg-status-tabs a{padding:8px 16px;border:1px solid #ddd6ca;border-radius:999px;color:#203229;font-weight:700;font-size:14px;text-decoration:none;background:white}.bkg-status-tabs a[aria-current="page"]{background:#203229;border-color:#203229;color:white}.bkg-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}.bkg-table th,.bkg-table td{padding:10px 8px;border-bottom:1px solid #e4ddd0;text-align:left;vertical-align:top}.bkg-table small{display:block;color:#66746d}@media(max-width:720px){.bkg-table thead{display:none}.bkg-table tr{display:grid;padding:8px 0}.bkg-table td{border:0;padding:2px 8px}}`

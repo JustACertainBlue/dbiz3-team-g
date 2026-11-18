@@ -6,7 +6,7 @@ these branches; each row below is a known gap between the built UI and the writt
 
 | # | Area | Spec says | UI v3 does | Decision |
 |---|---|---|---|---|
-| 1 | Main navigation | Shared screen-spec line: "Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065" | No "Lịch" (SCH141 / SCH139) on the bar; schedule pages stay reachable from in-page links | Human, 18/11 (Đợt 0) |
+| 1 | Main navigation | Shared screen-spec line: "Agency main navigation uses EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065" | Tour Agency bar: Khám phá · Lịch sử đặt chỗ · Lịch (SCH141) · Ghép tour AI, with "Xem lịch" on BKG137 (mockup pack 19/11, png/05, png/27); messages are the header button, not a bar item. Provider bar has no "Lịch" (SCH139 reachable from in-page links) | Human, 18/11 (Đợt 0); 19/11 |
 | 2 | Search | spec-EXP Q8 / Q11: no free-text search on Explore | Search bar on 01/21 and a results page `/explore/search` (keyword without diacritics, guest count ≤ `max_participants`, date via `lib/explore/availability.ts`, filters, sort, pagination as mockup 02); duration/capacity chips replace the activity-type chips | Human, 18/11 (Đợt 1 #1) |
 | 3 | Guest AI | EXP120 SR-003, nav rule "Guest … with no AI navigation" | Guest sees the AI block on 01 and 23; it only links to `/login`, the guest never calls AI | Human, 18/11 (Đợt 1 #2) |
 | 4 | Guest prices | F-EXPLORE-02: price hidden from Guests | Guest sees "Giá từ … /khách"; group price hidden behind a lock + "Đăng nhập để xem giá đoàn" (mockup README rule 4) | Human, mockup README (awaiting lecturer) |

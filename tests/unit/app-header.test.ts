@@ -1,7 +1,8 @@
 /**
  * UI v3 foundation (Đợt 0): one shared header with four variants taken from the session.
  * Source: hab-mockup-v3 png/01 (Guest), png/21 (Tour Agency), png/29 (Local Provider), png/38 (Admin HDT/UBND),
- * png/20 (account menu) and png/20a (logout confirmation). Human decisions 2026-11-18: no "Lịch" item on the bar;
+ * png/20 (account menu) and png/20a (logout confirmation). Human decisions 2026-11-18; 2026-11-19 (new mockup pack):
+ * Tour Agency bar Khám phá · Lịch sử đặt chỗ · Lịch (SCH141) · Ghép tour AI (png/05, png/27); provider and admin unchanged;
  * HDT "Duyệt hồ sơ" → /admin/agencies and stays selected on /admin/providers; UBND "Duyệt hồ sơ" → /admin/providers;
  * guest button label "Đăng ký tài khoản"; bar colour #0F3D2A (guest, agency, provider) and #1F2A25 (admin).
  */
@@ -82,19 +83,20 @@ describe('Guest (png/01)', () => {
 
 describe('Tour Agency (png/21)', () => {
   const account = { full_name: 'Lý Gia Hân', organization: 'Du lịch Tràng An' }
-  it('shows Khám phá · Lịch sử đặt chỗ · Ghép tour AI with no Lịch item', () => {
+  it('shows Khám phá · Lịch sử đặt chỗ · Lịch · Ghép tour AI (Lịch → SCH141)', () => {
     expect(mainNav(render(agency, '/explore', account))).toEqual([
       ['/explore', 'Khám phá', true],
       [`/agency/${AG}/bookings`, 'Lịch sử đặt chỗ', false],
+      [`/agency/${AG}/schedule`, 'Lịch', false],
       ['/ai-matching', 'Ghép tour AI', false],
     ])
   })
   it('selects "Lịch sử đặt chỗ" on a booking detail page and "Ghép tour AI" on /ai-matching', () => {
-    expect(mainNav(render(agency, `/agency/${AG}/bookings/b-1`, account)).map(i => i[2])).toEqual([false, true, false])
-    expect(mainNav(render(agency, '/ai-matching', account)).map(i => i[2])).toEqual([false, false, true])
+    expect(mainNav(render(agency, `/agency/${AG}/bookings/b-1`, account)).map(i => i[2])).toEqual([false, true, false, false])
+    expect(mainNav(render(agency, '/ai-matching', account)).map(i => i[2])).toEqual([false, false, false, true])
   })
-  it('selects nothing on the schedule page (no Lịch item on the bar)', () => {
-    expect(mainNav(render(agency, `/agency/${AG}/schedule`, account)).map(i => i[2])).toEqual([false, false, false])
+  it('selects "Lịch" on the schedule page (png/27)', () => {
+    expect(mainNav(render(agency, `/agency/${AG}/schedule`, account)).map(i => i[2])).toEqual([false, false, true, false])
   })
   it('has a round message button with an aria-label and the unread count', () => {
     const html = render(agency, '/explore', account, 2)

@@ -12,13 +12,13 @@ import { statusLabel } from '@/lib/status-labels'
 
 export const dynamic = 'force-dynamic'
 
-// Screen SCH141 Agency Schedule (F-SCHED-02 calendar, #68): own Bookings in all canonical statuses,
+// Screen SCH141 Agency Schedule, titled "Lịch Công ty" per mockup v3 png/27 (F-SCHED-02 calendar, #68): own Bookings in all canonical statuses,
 // date range (default today .. +29, UI choice #71) and status filter (analyze M1).
 export default async function AgencySchedulePage({ params, searchParams }: { params: { agencyId: string }; searchParams: Record<string, string | undefined> }) {
   const session = (await agencyPageSession(params.agencyId))
   const styles = bookingDetailStyles + calendarStyles + scheduleStyles
   if (!session) {
-    return <main className="bkg-page bkg-state"><h1>Agency Schedule</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch này.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Lịch Công ty</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch này.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
   }
   const base = `/agency/${params.agencyId}/schedule`
   const dateFrom = searchParams.date_from || hanoiDate(Date.now())
@@ -29,7 +29,7 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
     rows = (await listAgencyBookings(session, { status, date_from: dateFrom, date_to: dateTo })).bookings
   } catch (error) {
     const message = error instanceof BookingError ? `${error.code}: ${error.message}` : 'Không tải được lịch.'
-    return <main className="bkg-page bkg-state"><h1>Agency Schedule</h1><p className="bkg-error" role="alert">{message}</p><Link href={base}>Về hôm nay</Link><style>{styles}</style></main>
+    return <main className="bkg-page bkg-state"><h1>Lịch Công ty</h1><p className="bkg-error" role="alert">{message}</p><Link href={base}>Về hôm nay</Link><style>{styles}</style></main>
   }
   const days: string[] = []
   for (let day = dateFrom; day <= dateTo && days.length < 62; day = addDays(day, 1)) days.push(day)
@@ -38,7 +38,7 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
   return <main className="bkg-page bkg-list">
     {/* #157: Provider changes show within ~10 s without a reload (FR-008) */}
     <AutoRefresh />
-    <header><p>HANOI ARTISAN BRIDGE · SCH141</p><h1>Agency Schedule</h1><span>{(await sessionDisplayName(session))} · Booking của chính Agency, chỉ xem</span></header>
+    <header><p>HANOI ARTISAN BRIDGE · SCH141</p><h1>Lịch Công ty</h1><span>{(await sessionDisplayName(session))} · Booking của chính Agency, chỉ xem</span></header>
     <form className="bkg-filters" method="get" action={base}>
       <label>Trạng thái
         <select name="status" defaultValue={status}>

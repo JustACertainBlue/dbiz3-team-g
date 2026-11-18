@@ -1,4 +1,5 @@
 // Search bar of mockup 01/21/02/04 (human decision 2026-11-18 #1): a GET form to /explore/search.
+import React from 'react'
 import { CalendarDays, ChevronDown, Search, Users } from 'lucide-react'
 
 export const GUEST_OPTIONS = Array.from({ length: 60 }, (_, index) => index + 1)

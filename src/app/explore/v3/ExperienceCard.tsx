@@ -1,5 +1,6 @@
 // Experience card of mockup 01/21 (and the workshop page 24): image, craft label, name, place, duration/capacity,
 // the first 3 highlight titles, "Gợi ý vì" (Agency, when preferences match) and "Giá từ … /khách" for everyone.
+import React from 'react'
 import Link from 'next/link'
 import { Check, MapPin, Sparkles } from 'lucide-react'
 import type { CardView } from '@/lib/explore/v3-home'

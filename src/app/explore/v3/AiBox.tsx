@@ -1,6 +1,7 @@
 // "Ghép tour AI" block of mockup 01/21/03/04/23 (human decision 2026-11-18 #2). Tour Agency: the request and the
 // suggestion chips open /ai-matching with the text filled in (`?prompt=`), never sent automatically.
 // Guest: everything leads to /login; the Guest never calls AI.
+import React from 'react'
 import Link from 'next/link'
 import { ArrowUp, Sparkles, WandSparkles } from 'lucide-react'
 

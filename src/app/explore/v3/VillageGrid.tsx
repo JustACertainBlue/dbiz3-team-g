@@ -1,5 +1,6 @@
 // Village grid of mockup 01/21 (human decision 2026-11-18 #7): only villages with an image; the first tile is
 // large and spans two rows; at most 7 tiles as in the mockup.
+import React from 'react'
 import Link from 'next/link'
 import type { VillageTile } from '@/lib/explore/v3-home'
 import CoverImage from './CoverImage'

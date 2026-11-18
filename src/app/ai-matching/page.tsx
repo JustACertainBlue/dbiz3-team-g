@@ -113,7 +113,7 @@ export default function AiMatchingScreen() {
           }}
         >
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '24px', margin: '0 0 12px 0' }}>
+          <h2 style={{ fontFamily: 'var(--font-body)', fontSize: '24px', margin: '0 0 12px 0' }}>
             Access Restricted to Tour Agencies
           </h2>
           <p style={{ color: '#94A3B8', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>

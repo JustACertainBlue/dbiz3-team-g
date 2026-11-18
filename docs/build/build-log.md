@@ -18,6 +18,16 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 70: 18/11 Copilot — expand AIT delta validator oracles
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up after delta schema commit `395067f`. |
+| Scope | Strengthen independent contract tests for group-total budgets and the no-op state after a valid clear. |
+| Test evidence | First run exposed that the group-total oracle passed the total amount as `budget_per_person`; corrected the oracle to the slot's per-person value and verified the explicit group total is divided by the stated group size. `npx.cmd vitest run tests/unit/ait-conversation-delta.test.ts --reporter=dot`: 1 file, 6 tests passed against the in-progress validator. |
+| Not completed | LLM response schema and route merge have not yet been wired. |
+| Boundaries | No push, no environment/secret/Supabase access, and no edits outside AIT plus this log. |
+
 ### Entry 69: 18/11 Copilot — define AIT delta schema
 
 | Field | Value |

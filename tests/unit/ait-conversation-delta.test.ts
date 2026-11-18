@@ -83,10 +83,26 @@ describe('AIT conversation delta contract', () => {
 
     const validation = validateConversationDelta(delta, 'Bỏ giới hạn km', [])
     expect(validation.rejected).toEqual([])
-    expect(applyConversationDelta(before, validation, now)).toMatchObject({
-      radius_km: undefined,
-      slots: {},
-      turn_count: 2,
+    const after = applyConversationDelta(before, validation, now)
+    expect(after.radius_km).toBeUndefined()
+    expect(after.slots).toEqual({})
+    expect(after.turn_count).toBe(2)
+  })
+
+  it('validates a group-total budget basis and stores the per-person ceiling', () => {
+    const phrase = '1,4 triệu cho cả đoàn 14 người'
+    const delta: ConversationDelta = {
+      group_size: { action: 'set', value: 14, raw_span: '14 người' },
+      budget_basis: { action: 'set', value: 'group_total', raw_span: phrase },
+      budget_per_person: { action: 'set', value: 100000, raw_span: phrase },
+    }
+
+    const validation = validateConversationDelta(delta, phrase, [])
+    expect(validation.rejected).toEqual([])
+    expect(applyConversationDelta(emptyConversationState(), validation, now)).toMatchObject({
+      group_size: 14,
+      budget_basis: 'group_total',
+      budget_per_person: 100000,
     })
   })
 

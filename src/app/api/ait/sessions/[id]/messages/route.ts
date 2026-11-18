@@ -943,6 +943,7 @@ export async function POST(
           ]).filter((fact): fact is string => typeof fact === 'string'),
           fallback: '',
         })
+        extraction.conversational_reply = checkedNarration.ok ? checkedNarration.message : ''
         const excludedVillageNames = conversationState.exclusions.villages
           .map(villageId => villages.find(village => village.village_id === villageId)?.village_name)
           .filter((name): name is string => Boolean(name))

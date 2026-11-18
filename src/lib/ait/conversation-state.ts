@@ -184,7 +184,7 @@ export function normalizeConversationState(value: unknown): AitConversationState
   }
   const radiusSlot = state.slots.radius
   if (radiusSlot) {
-    const parsedRadius = radiusSlot.raw_span.match(/(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?)\b/iu)
+    const parsedRadius = radiusSlot.raw_span.match(/(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])/iu)
     if (!parsedRadius) {
       delete state.slots.radius
       delete state.radius_km
@@ -415,7 +415,7 @@ export function mergeConversationState(
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'origin')
   }
 
-  const radius = text.match(/(?:radius|bán kính|trong phạm vi|dưới|không quá|tối đa|cách)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?)\b/iu)
+  const radius = text.match(/(?:radius|bán kính|trong phạm vi|dưới|không quá|tối đa|cách)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometers?|cây\s*số)(?![\p{L}])/iu)
   if (radius) {
     setSlot('radius', Number(radius[1].replace(',', '.')), radius[0])
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'radius_km')

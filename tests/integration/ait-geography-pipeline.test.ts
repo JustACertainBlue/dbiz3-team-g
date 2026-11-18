@@ -7,6 +7,8 @@ import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
 import { DEFAULT_HANOI_ORIGIN, resolveOriginCoordinates } from '@/lib/matching/geo'
+import { resolveTestVillageCards } from '@/lib/matching/test-dataset'
+import { runVillageCardPipeline } from '@/lib/ait/matching-pipeline'
 import {
   conversationStateBytes,
   emptyConversationState,
@@ -48,7 +50,12 @@ async function send(sessionId: string, text: string, isTest = false) {
   )
 }
 
-function installLlmMock(reply: string, origin?: string, missingPrimary: string[] = []) {
+function installLlmMock(
+  reply: string,
+  origin?: string,
+  missingPrimary: string[] = [],
+  budgetPerPerson: number | undefined = 5000,
+) {
   vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', 'test-account')
   vi.stubEnv('CLOUDFLARE_API_TOKEN', 'test-token')
   const llmCall = vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockResolvedValue({
@@ -58,7 +65,7 @@ function installLlmMock(reply: string, origin?: string, missingPrimary: string[]
       conversational_reply: reply,
       extracted_context: {
         ...(origin ? { origin } : {}),
-        budget_per_person: 5000,
+        ...(budgetPerPerson !== undefined ? { budget_per_person: budgetPerPerson } : {}),
       },
       follow_up_questions: [],
       missing_primary: missingPrimary,
@@ -424,6 +431,30 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(conversationStateBytes(state)).toBeLessThan(20000)
   })
 
+  it('does not carry inferred slots into the next turn', () => {
+    const inferred = mergeConversationState(
+      emptyConversationState(),
+      'tìm trải nghiệm',
+      { craft_preference: 'pottery', group_size: 10 },
+      new Date('2026-11-09T00:00:00Z'),
+    )
+    expect(inferred.slots.craft?.source).toBe('inferred')
+    expect(inferred.slots.group_size?.source).toBe('inferred')
+
+    const next = mergeConversationState(
+      inferred,
+      'dưới 10 km',
+      {},
+      new Date('2026-11-09T00:00:00Z'),
+    )
+
+    expect(next.craft).toBeUndefined()
+    expect(next.group_size).toBeUndefined()
+    expect(next.slots.craft).toBeUndefined()
+    expect(next.slots.group_size).toBeUndefined()
+    expect(next.radius_km).toBe(10)
+  })
+
   it.each([
     ['Hồ Gươm', 'làng nghề cách Hồ Gươm dưới 5 km', false],
     ['Hồ Gươm', 'không quá 20 km từ Hồ Gươm', true],
@@ -533,6 +564,33 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(names).toEqual(expectedNames)
     expect(cards).toHaveLength(3)
     expect(response.json.turn.message).toMatch(/Còn \d+ làng khác trong bán kính:/)
+  })
+
+  it('uses fixture and reports the actual order and uncertainty labels for “test dưới 10 km”', async () => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const response = await send(await openSession(), 'test làng nghề dưới 10 km')
+    const cards = response.json.village_cards as Json[]
+    const allEligible = runVillageCardPipeline({
+      cards: resolveTestVillageCards('làng nghề', true),
+      radiusKm: 10,
+      distanceRequested: true,
+    })
+    const expectedOverflow = allEligible.slice(3, 6).map(card =>
+      `${card.name}${card.radius_status === 'unconfirmed' ? ' — chưa xác nhận bán kính' : ''}`
+    ).join(', ')
+    const overflowLine = String(response.json.turn.message)
+      .split('\n')
+      .find(line => line.startsWith('Còn '))
+
+    expect(response.json.is_test).toBe(true)
+    expect(cards.map(card => card.name)).toEqual([
+      'Làng đúc đồng Ngũ Xã',
+      'Làng giấy Dó Yên Thái',
+      'Làng gốm Bát Tràng',
+    ])
+    expect(overflowLine).toBe(
+      `Còn ${allEligible.length - 3} làng khác trong bán kính: ${expectedOverflow}.`
+    )
   })
 
   it.each([
@@ -697,6 +755,39 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(villageCards.length).toBeLessThanOrEqual(3)
     for (const card of villageCards) {
       expect(message).toContain(String(card.name))
+    }
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('replaces fabricated distance and facility claims on %s data', async (_source, isTest) => {
+    installLlmMock('Bát Tràng cách 999 km và có wifi, xe lăn.', undefined, [], undefined)
+    const sessionId = await openSession()
+
+    const response = await send(
+      sessionId,
+      'Tìm trải nghiệm làm gốm dưới 10 km cho 10 khách ngày 12/07/2028',
+      isTest
+    )
+    const message = String(response.json.turn.message)
+    const modelReply = String(response.json.extraction.conversational_reply)
+    const cards = [
+      ...(response.json.turn.top_matches ?? []),
+      ...(response.json.turn.additional_suggestions ?? []),
+    ] as Json[]
+
+    expect(response.status).toBe(201)
+    expect(response.json.extraction.is_complete).toBe(true)
+    expect(cards.length).toBeGreaterThan(0)
+    expect(message).not.toMatch(/999\s*km|wifi|xe lăn/i)
+    expect(modelReply).not.toMatch(/999\s*km|wifi|xe lăn/i)
+    for (const card of cards) {
+      if (card.distance_source !== 'haversine') continue
+      const expectedDistance = card.location_source === 'district_fallback'
+        ? `khoảng ${Math.round(Number(card.distance_km))} km (ước tính theo huyện)`
+        : `Cách trung tâm Hà Nội khoảng ${Number(card.distance_km).toFixed(1)} km (đường chim bay)`
+      expect(message).toContain(expectedDistance)
     }
   })
 

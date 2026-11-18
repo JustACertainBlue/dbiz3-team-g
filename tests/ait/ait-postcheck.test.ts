@@ -41,4 +41,16 @@ describe('AIT booking-claim post-check', () => {
     expect(result.violations).toContain('facility_claim')
     expect(result.message).toBe('Hiện chưa có dữ liệu về homestay và bể bơi.')
   })
+
+  it.each(['wifi', 'xe lăn'])('rejects an unsupported %s claim', (facility) => {
+    const result = postCheckMessage({
+      turnType: 'answer',
+      message: `Làng nghề có ${facility}.`,
+      fallback: `Hiện chưa có dữ liệu về ${facility}.`,
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.violations).toContain('facility_claim')
+    expect(result.message).toBe(`Hiện chưa có dữ liệu về ${facility}.`)
+  })
 })

@@ -33,16 +33,20 @@ export type ConversationSlotName =
   | 'craft'
   | 'group_size'
   | 'budget_per_person'
+  | 'budget_basis'
   | 'date'
+  | 'duration'
+  | 'interests'
   | 'origin'
   | 'radius'
   | 'nearest'
   | 'cheapest'
 
 export interface ConversationSlot {
-  value: string | number | boolean
+  value: string | number | boolean | string[]
   raw_span: string
   created_turn: number
+  source_turn: number
   source: 'explicit' | 'inferred'
 }
 
@@ -175,24 +179,34 @@ export function normalizeConversationState(value: unknown): AitConversationState
     ? raw.slots as Record<string, unknown>
     : {}
   const slotNames: ConversationSlotName[] = [
-    'craft', 'group_size', 'budget_per_person', 'date', 'origin', 'radius', 'nearest', 'cheapest',
+    'craft', 'group_size', 'budget_per_person', 'budget_basis', 'date', 'duration',
+    'interests', 'origin', 'radius', 'nearest', 'cheapest',
   ]
   for (const name of slotNames) {
     const rawSlot = rawSlots[name]
     if (!rawSlot || typeof rawSlot !== 'object' || Array.isArray(rawSlot)) continue
     const slot = rawSlot as Record<string, unknown>
     if (
-      (typeof slot.value !== 'string' && typeof slot.value !== 'number' && typeof slot.value !== 'boolean')
+      (typeof slot.value !== 'string'
+        && typeof slot.value !== 'number'
+        && typeof slot.value !== 'boolean'
+        && !(Array.isArray(slot.value) && slot.value.every(item => typeof item === 'string')))
       || typeof slot.raw_span !== 'string'
       || typeof slot.created_turn !== 'number'
+      || (slot.source_turn !== undefined && typeof slot.source_turn !== 'number')
       || (slot.source !== 'explicit' && slot.source !== 'inferred')
     ) continue
     state.slots[name] = {
       value: slot.value,
       raw_span: slot.raw_span,
       created_turn: slot.created_turn,
+      source_turn: typeof slot.source_turn === 'number' ? slot.source_turn : slot.created_turn,
       source: slot.source,
     }
+  }
+  if (typeof raw.date_or_duration === 'string') state.date_or_duration = raw.date_or_duration
+  if (Array.isArray(raw.interests) && raw.interests.every(item => typeof item === 'string')) {
+    state.interests = raw.interests
   }
   const nearest = typeof state.slots.nearest?.value === 'boolean'
     ? state.slots.nearest.value
@@ -208,7 +222,12 @@ export function normalizeConversationState(value: unknown): AitConversationState
   }
   const budgetSlot = state.slots.budget_per_person
   if (budgetSlot) {
-    const parsedBudget = parseExplicitBudgetAmount(budgetSlot.raw_span)
+    const rawBudget = parseExplicitBudgetAmount(budgetSlot.raw_span)
+    const parsedBudget = rawBudget === undefined
+      ? undefined
+      : state.budget_basis === 'group_total'
+        ? state.group_size ? rawBudget / state.group_size : undefined
+        : rawBudget
     if (parsedBudget === undefined) {
       delete state.slots.budget_per_person
       delete state.budget_per_person
@@ -337,8 +356,15 @@ export function mergeConversationState(
     switch (name) {
       case 'craft': delete next.craft; break
       case 'group_size': delete next.group_size; break
-      case 'budget_per_person': delete next.budget_per_person; break
+      case 'budget_per_person':
+        delete next.budget_per_person
+        break
+      case 'budget_basis':
+        delete next.budget_basis
+        break
       case 'date': delete next.date; break
+      case 'duration': delete next.date_or_duration; break
+      case 'interests': delete next.interests; break
       case 'origin': delete next.origin; break
       case 'radius': delete next.radius_km; break
       case 'nearest':
@@ -349,7 +375,10 @@ export function mergeConversationState(
         break
     }
   }
-  for (const name of ['craft', 'group_size', 'budget_per_person', 'date', 'origin', 'radius', 'nearest', 'cheapest'] as const) {
+  for (const name of [
+    'craft', 'group_size', 'budget_per_person', 'budget_basis', 'date', 'duration',
+    'interests', 'origin', 'radius', 'nearest', 'cheapest',
+  ] as const) {
     if (next.slots[name]?.source === 'inferred') {
       clearSlotValue(name)
       delete next.slots[name]
@@ -357,14 +386,20 @@ export function mergeConversationState(
   }
   const setSlot = (
     name: ConversationSlotName,
-    value: string | number | boolean,
+    value: string | number | boolean | string[],
     rawSpan: string,
     source: ConversationSlot['source'] = 'explicit',
   ) => {
     const slotValue = name === 'radius' && typeof value === 'number'
       ? Math.round(value * 10) / 10
       : value
-    const slot = { value: slotValue, raw_span: rawSpan.trim(), created_turn: turn, source }
+    const slot = {
+      value: slotValue,
+      raw_span: rawSpan.trim(),
+      created_turn: turn,
+      source_turn: turn,
+      source,
+    }
     next.slots[name] = slot
     updatedSlots[name] = slot
     switch (name) {
@@ -377,8 +412,17 @@ export function mergeConversationState(
       case 'budget_per_person':
         if (typeof value === 'number') next.budget_per_person = value
         break
+      case 'budget_basis':
+        if (value === 'per_person' || value === 'group_total') next.budget_basis = value
+        break
       case 'date':
         if (typeof value === 'string') next.date = value
+        break
+      case 'duration':
+        if (typeof value === 'string') next.date_or_duration = value
+        break
+      case 'interests':
+        if (Array.isArray(value)) next.interests = value
         break
       case 'origin':
         if (typeof value === 'string') next.origin = value
@@ -432,7 +476,7 @@ export function mergeConversationState(
   )
   const rawGroup = adultsAndChildren
     ? `${adultsAndChildren[1]} người lớn ${adultsAndChildren[2]} trẻ em`
-    : text.match(/\b\d+\s*(?:khách|người|pax|people|guests?)\b/iu)?.[0]
+    : text.match(/\b\d+\s*(?:khách|người|bạn|pax|people|guests?)\b/iu)?.[0]
   const parsedGroupSize = adultsAndChildren
     ? Number(adultsAndChildren[1]) + Number(adultsAndChildren[2])
     : rawGroup ? Number(rawGroup.match(/\d+/)?.[0]) : undefined
@@ -458,6 +502,7 @@ export function mergeConversationState(
       : budget
     setSlot('budget_per_person', budgetValue, rawBudget)
     next.budget_basis = groupTotal ? 'group_total' : 'per_person'
+    setSlot('budget_basis', next.budget_basis, rawBudget)
     }
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'budget_per_person')
   }
@@ -495,9 +540,18 @@ export function mergeConversationState(
   const cheapest = text.match(/(?:rẻ nhất|giá thấp nhất|cheapest|lowest price)/iu)?.[0]
   if (cheapest) setSlot('cheapest', true, cheapest)
 
+  const duration = text.match(/\b(?:nửa\s+ngày|một\s+ngày|1\s+ngày|hai\s+ngày|2\s+ngày|cuối\s+tuần)\b/iu)?.[0]
+  if (duration) setSlot('duration', duration.toLocaleLowerCase('vi'), duration)
+  const interestMatches = [...text.matchAll(/(?:đoàn\s+học\s+sinh|khách\s+nước\s+ngoài|gần\s+trung\s+tâm|tự\s+tay\s+làm|trải\s+nghiệm|thủ\s+công|giá\s+mềm)/giu)]
+    .map(match => match[0].toLocaleLowerCase('vi'))
+  if (interestMatches.length > 0) {
+    const interests = [...new Set([...(next.interests ?? []), ...interestMatches])]
+    setSlot('interests', interests, interestMatches.join(', '))
+  }
+
   next.turn_count = turn
   next.turn_history = [...next.turn_history, { turn, slots: updatedSlots }].slice(-20)
-  return next
+  return normalizeConversationState(next)
 }
 
 export function applyConversationState(context: TourContext, state: AitConversationState): TourContext {

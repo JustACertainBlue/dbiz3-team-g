@@ -3,7 +3,7 @@ import { demoRepository } from '@/lib/demo/json-repository'
 import * as extractor from '@/lib/ai/extractor'
 import * as llmRouter from '@/lib/ait/llm-router'
 import { updateMatchingSessionContext } from '@/lib/matching/session-service'
-import { normalizeConversationState } from '@/lib/ait/conversation-state'
+import { mergeConversationState, normalizeConversationState } from '@/lib/ait/conversation-state'
 import { loadExperiences } from '@/lib/db/seed-loader'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
@@ -91,8 +91,283 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       radius_km: 25,
       exclusions: { villages: [], crafts: [] },
     })
+
     expect(state.budget_per_person).toBe(450000)
     expect(state.origin).toBe('Ba Đình')
+  })
+
+  it('records source turns and duration/interests from CHAT01 without deriving expectations from the parser', () => {
+    const oracle = [
+      { input: 'Tìm chỗ làm gốm.', craft: 'pottery', group_size: undefined, duration: undefined },
+      { input: 'Cho đoàn 20 người nhé.', craft: 'pottery', group_size: 20, duration: undefined },
+      { input: 'Nửa ngày thôi.', craft: 'pottery', group_size: 20, duration: 'nửa ngày' },
+    ] as const
+    let state = normalizeConversationState({})
+
+    for (const [index, expected] of oracle.entries()) {
+      state = mergeConversationState(state, expected.input, {}, new Date('2026-11-18T00:00:00Z'))
+      expect({
+        craft: state.craft,
+        group_size: state.group_size,
+        duration: state.date_or_duration,
+      }).toEqual({
+        craft: expected.craft,
+        group_size: expected.group_size,
+        duration: expected.duration,
+      })
+
+      if (state.craft) {
+        expect(state.slots.craft).toMatchObject({
+          value: 'pottery',
+          source_turn: 1,
+          raw_span: expect.any(String),
+        })
+      }
+      if (state.group_size !== undefined) {
+        expect(state.slots.group_size).toMatchObject({
+          value: 20,
+          source_turn: 2,
+          raw_span: '20 người',
+        })
+      }
+      expect(state.turn_count).toBe(index + 1)
+    }
+  })
+
+  it('BUG-08 oracle rejects an origin copied from a distance phrase', () => {
+    const text = 'cho khách hoạt động cách 20 km, làm hương hay tò he cho 10 người'
+    const state = mergeConversationState(
+      normalizeConversationState({}),
+      text,
+      { origin_or_route: { origin_address: '20 km' } },
+      new Date('2026-11-18T00:00:00Z'),
+    )
+
+    expect(state.origin).toBeUndefined()
+    expect(state.radius_km).toBe(20)
+    expect(state.group_size).toBe(10)
+    expect(state.craft).toBe('hương/tò he')
+  })
+
+  it('replays CHAT01 through the session route on seed and fixture datasets', async () => {
+    const turns = ['Tìm chỗ làm gốm.', 'Cho đoàn 20 người nhé.', 'Nửa ngày thôi.']
+    const transcript: Array<{ input: string; dataset: string; state: Json }> = []
+
+    for (const dataset of ['seed', 'fixture'] as const) {
+      const sessionId = await openSession()
+      for (const input of turns) {
+        const prompt = dataset === 'fixture' ? `${input} test` : input
+        const response = await send(sessionId, prompt)
+        const state = (await getContext(sessionId)).state
+        transcript.push({ input: prompt, dataset, state })
+        expect(response.status, `${dataset}: ${prompt}`).toBe(201)
+        expect(response.json.is_test, `${dataset}: ${prompt}`).toBe(dataset === 'fixture')
+      }
+
+      const finalState = transcript[transcript.length - 1].state
+      expect(finalState).toMatchObject({
+        craft: 'pottery',
+        group_size: 20,
+        date_or_duration: 'nửa ngày',
+      })
+      expect(finalState.slots.craft.source_turn).toBe(1)
+      expect(finalState.slots.group_size.source_turn).toBe(2)
+      expect(finalState.slots.duration.source_turn).toBe(3)
+    }
+
+    console.info('[FALLBACK-CHAT01-ROUTE]', JSON.stringify(transcript))
+  })
+
+  it('replays CHAT02-CHAT06 through the route and records every turn state', async () => {
+    const cases = [
+      {
+        id: 'CHAT02',
+        inputs: ['Có làng nào làm lụa không?', 'Gần trung tâm ấy.', 'Có trải nghiệm luôn càng tốt.'],
+        expected: [
+          { craft: 'silk' },
+          { craft: 'silk', interests: ['gần trung tâm'] },
+          { craft: 'silk', interests: ['gần trung tâm', 'trải nghiệm'] },
+        ],
+      },
+      {
+        id: 'CHAT03',
+        inputs: ['Tìm cho đoàn học sinh.', 'Tầm 30 bạn.', 'Có hoạt động nào tự tay làm được không?'],
+        expected: [
+          { interests: ['đoàn học sinh'] },
+          { group_size: 30, interests: ['đoàn học sinh'] },
+          { group_size: 30, interests: ['đoàn học sinh', 'tự tay làm'] },
+        ],
+      },
+      {
+        id: 'CHAT04',
+        inputs: ['Tìm làng nghề làm gốm.', 'Xa quá.', 'Có chỗ nào gần Hoàn Kiếm hơn không?'],
+        expected: [
+          { craft: 'pottery' },
+          { craft: 'pottery' },
+          { craft: 'pottery', origin: 'Hoàn Kiếm' },
+        ],
+      },
+      {
+        id: 'CHAT05',
+        inputs: ['Có chỗ làm đồ thủ công không?', 'Giá mềm thôi.', 'Khoảng 200k/người.'],
+        expected: [
+          { interests: ['thủ công'] },
+          { interests: ['thủ công', 'giá mềm'] },
+          { budget_per_person: 200000, budget_basis: 'per_person' },
+        ],
+      },
+      {
+        id: 'CHAT06',
+        inputs: ['Tìm chỗ cho khách nước ngoài.', 'Có hướng dẫn tiếng Anh không?', 'Không có cũng được.'],
+        expected: [
+          { interests: ['khách nước ngoài'] },
+          { interests: ['khách nước ngoài'] },
+          { interests: ['khách nước ngoài'] },
+        ],
+      },
+    ] as const
+    const records: Array<{ id: string; turn: number; input: string; dataset: string; state: Json }> = []
+
+    for (const chat of cases) {
+      const sessionId = await openSession()
+      let beforeQuestionState: Json | undefined
+      for (const [index, input] of chat.inputs.entries()) {
+        const response = await send(sessionId, input)
+        const state = (await getContext(sessionId)).state
+        records.push({ id: chat.id, turn: index + 1, input, dataset: 'seed', state })
+        expect(response.status, `${chat.id} turn ${index + 1}`).toBe(201)
+        expect(response.json.is_test, `${chat.id} turn ${index + 1}`).toBe(false)
+        expect(state, `${chat.id} turn ${index + 1}: ${input}`).toMatchObject(chat.expected[index])
+        if (chat.id === 'CHAT02') expect(state.origin).toBeUndefined()
+        expect(state.turn_history.at(-1).turn).toBe(
+          chat.id === 'CHAT06' && index > 0 ? 1 : index + 1
+        )
+        if (chat.id === 'CHAT06' && index === 0) beforeQuestionState = state
+        if (chat.id === 'CHAT06' && index === 1) {
+          expect(state, 'CHAT06 information question must not mutate search state').toEqual(beforeQuestionState)
+        }
+      }
+    }
+
+    console.info('[FALLBACK-CHAT02-06-ROUTE]', JSON.stringify(records))
+  })
+
+  it('replays independent 3-, 6-, and 10-turn conversations with state snapshots', async () => {
+    const scripts = [
+      {
+        id: 'CUSTOM-3',
+        inputs: [
+          'Tìm trải nghiệm làm gốm cho 10 khách.',
+          'Đặt lịch thế nào?',
+          'Làm lại từ đầu',
+        ],
+        expected: [
+          { craft: 'pottery', group_size: 10 },
+          { craft: 'pottery', group_size: 10 },
+          { turn_count: 0 },
+        ],
+      },
+      {
+        id: 'CUSTOM-6',
+        inputs: [
+          'Tìm trải nghiệm dệt lụa cho 12 khách, ngân sách 300000đ/người, ngày 20/11/2026',
+          'Đặt lịch thế nào?',
+          'Đổi sang nón lá',
+          'Đổi số khách thành 14 khách',
+          'Đổi ngân sách thành 450k/người',
+          'Làm lại từ đầu',
+        ],
+        expected: [
+          { craft: 'silk', group_size: 12, budget_per_person: 300000, date: '2026-11-20' },
+          { craft: 'silk', group_size: 12, budget_per_person: 300000, date: '2026-11-20' },
+          { craft: 'conical hat', group_size: 12, budget_per_person: 300000, date: '2026-11-20' },
+          { craft: 'conical hat', group_size: 14, budget_per_person: 300000, date: '2026-11-20' },
+          { craft: 'conical hat', group_size: 14, budget_per_person: 450000, date: '2026-11-20' },
+          { turn_count: 0 },
+        ],
+      },
+      {
+        id: 'CUSTOM-10',
+        inputs: [
+          'Tìm trải nghiệm làm gốm cho 10 khách, ngân sách 500k/người, ngày 20/11/2026',
+          'Đổi sang dệt lụa test',
+          'Cho đoàn 14 khách nhé',
+          'Ngân sách 1,4 triệu cho cả đoàn 14 người',
+          'Đặt lịch thế nào?',
+          'Nửa ngày thôi',
+          'Gần trung tâm ấy',
+          'Đổi sang tò he',
+          '20 khách',
+          'Làm lại từ đầu',
+        ],
+        expected: [
+          { craft: 'pottery', group_size: 10, budget_per_person: 500000, date: '2026-11-20' },
+          { craft: 'silk', group_size: 10, budget_per_person: 500000, date: '2026-11-20' },
+          { craft: 'silk', group_size: 14, budget_per_person: 500000, date: '2026-11-20' },
+          { craft: 'silk', group_size: 14, budget_per_person: 100000, budget_basis: 'group_total' },
+          { craft: 'silk', group_size: 14, budget_per_person: 100000, budget_basis: 'group_total' },
+          {
+            craft: 'silk',
+            group_size: 14,
+            budget_per_person: 100000,
+            budget_basis: 'group_total',
+            date: '2026-11-20',
+            date_or_duration: 'nửa ngày',
+            interests: ['trải nghiệm'],
+          },
+          {
+            craft: 'silk',
+            group_size: 14,
+            budget_per_person: 100000,
+            budget_basis: 'group_total',
+            date: '2026-11-20',
+            date_or_duration: 'nửa ngày',
+            interests: ['trải nghiệm', 'gần trung tâm'],
+          },
+          {
+            craft: 'tò he',
+            group_size: 14,
+            budget_per_person: 100000,
+            budget_basis: 'group_total',
+            date: '2026-11-20',
+            date_or_duration: 'nửa ngày',
+            interests: ['trải nghiệm', 'gần trung tâm'],
+          },
+          {
+            craft: 'tò he',
+            group_size: 20,
+            budget_per_person: 70000,
+            budget_basis: 'group_total',
+            date: '2026-11-20',
+            date_or_duration: 'nửa ngày',
+            interests: ['trải nghiệm', 'gần trung tâm'],
+          },
+          { turn_count: 0 },
+        ],
+      },
+    ] as const
+    const records: Array<{ id: string; turn: number; input: string; dataset: string; state: Json }> = []
+
+    for (const script of scripts) {
+      const sessionId = await openSession()
+      for (const [index, input] of script.inputs.entries()) {
+        const response = await send(sessionId, input)
+        const state = (await getContext(sessionId)).state
+        records.push({
+          id: script.id,
+          turn: index + 1,
+          input,
+          dataset: response.json.is_test ? 'fixture' : 'seed',
+          state,
+        })
+        expect(response.status, `${script.id} turn ${index + 1}: ${input}`).toBe(201)
+        expect(state, `${script.id} turn ${index + 1}: ${input}`).toMatchObject(script.expected[index])
+        if (script.id === 'CUSTOM-10' && index === 1) expect(response.json.is_test).toBe(true)
+        if (script.id === 'CUSTOM-10' && index === 2) expect(response.json.is_test).toBe(false)
+      }
+    }
+
+    console.info('[FALLBACK-CUSTOM-CONVERSATIONS]', JSON.stringify(records))
   })
 
   it('T17: “như lúc nãy, giữ nguyên nhé” keeps the stored profile without another question', async () => {
@@ -167,6 +442,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       expect(response.json.extraction.tour_context.craft_preference).toBe(expectedCraft)
       expect((await getContext(sessionId)).state.craft).toBe(expectedCraft)
       expect(response.json.turn.turn_type).toBe('results')
+      expect(response.json.turn.message).toContain('Đang lọc:')
       expect(cards.map((card: Json) => card.experience_name)).toEqual([expectedExperience])
     }
   })
@@ -385,7 +661,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     )
     expect(valid.status).toBe(201)
     expect(valid.json.extraction.conversational_reply).not.toMatch(/ăn trưa|nhà hàng|refreshment|lunch/i)
-    const before = JSON.stringify((await getContext(sessionId)).state)
+    const before = (await getContext(sessionId)).state
     const transcript = ['Tìm trải nghiệm dệt lụa cho 10 khách, ngày 20/11/2026, xuất phát từ Hoàn Kiếm']
     const refusalMessages: string[] = []
 
@@ -399,7 +675,7 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       expect(refusal.json.turn.top_matches, `Transcript: ${JSON.stringify(transcript)}`).toEqual([])
       expect(refusal.json.turn.additional_suggestions, `Transcript: ${JSON.stringify(transcript)}`).toEqual([])
       refusalMessages.push(refusal.json.turn.message)
-      expect(JSON.stringify((await getContext(sessionId)).state), `Transcript: ${JSON.stringify(transcript)}`).toBe(before)
+      expect((await getContext(sessionId)).state, `Transcript: ${JSON.stringify(transcript)}`).toEqual(before)
     }
     expect(refusalMessages[0]).not.toBe(refusalMessages[1])
 

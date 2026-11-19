@@ -13,6 +13,7 @@
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
+import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { projectRefFromDatabaseUrl } from '../db/lecturer-accounts.mjs'
 
@@ -75,9 +76,10 @@ export function assertTargets(env, { targetProd = false } = {}) {
 export const assertDevTargets = env => assertTargets(env, { targetProd: false })
 
 /** The undo folder: always inside <cwd>/.demo-data/ (git-ignored), never elsewhere. */
-export function resolveNotesDir(cwd, notesDir) {
-  const base = resolve(cwd, '.demo-data'), dir = resolve(cwd, notesDir ?? DEFAULT_NOTES_DIR)
-  if (!dir.startsWith(`${base}/`)) refuse(`--notes-dir must be a folder under .demo-data/ of ${cwd}.`)
+export function resolveNotesDir(cwd, notesDir, pathApi = path) {
+  const base = pathApi.resolve(cwd, '.demo-data'), dir = pathApi.resolve(cwd, notesDir ?? DEFAULT_NOTES_DIR)
+  const inside = pathApi.relative(base, dir) // separator-independent (Windows uses "\\")
+  if (!inside || inside.startsWith('..') || pathApi.isAbsolute(inside)) refuse(`--notes-dir must be a folder under .demo-data/ of ${cwd}.`)
   return dir
 }
 

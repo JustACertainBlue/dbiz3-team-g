@@ -6,7 +6,7 @@
  */
 import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve, win32 } from 'node:path'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
 import { DEV_PROJECT_REF, PROD_PROJECT_REF, assertTargets, parseArgs, resolveNotesDir, run } from '../../scripts/storage/refresh-catalog-copies.mjs'
@@ -41,11 +41,20 @@ describe('storage:catalog-copies PROD guard', () => {
     expect(parseArgs([])).toMatchObject({ targetProd: false, apply: false })
   })
   it('keeps the undo folder under .demo-data/ of the folder the command runs from', () => {
-    const cwd = '/work/dbiz3-prod'
-    expect(resolveNotesDir(cwd, undefined)).toBe('/work/dbiz3-prod/.demo-data/catalog-copies')
-    expect(resolveNotesDir(cwd, '.demo-data/prod-photos')).toBe('/work/dbiz3-prod/.demo-data/prod-photos')
+    // Expected paths built with the platform's own path module (CI runs on Windows too).
+    const cwd = resolve('/work/dbiz3-prod')
+    expect(resolveNotesDir(cwd, undefined)).toBe(resolve(cwd, '.demo-data', 'catalog-copies'))
+    expect(resolveNotesDir(cwd, '.demo-data/prod-photos')).toBe(resolve(cwd, '.demo-data', 'prod-photos'))
     expect(() => resolveNotesDir(cwd, '/tmp/elsewhere')).toThrow(/\.demo-data.*Nothing was changed/)
     expect(() => resolveNotesDir(cwd, '.demo-data/../src')).toThrow(/\.demo-data/)
+  })
+  it('accepts the default undo folder with Windows paths and still refuses folders outside .demo-data', () => {
+    const cwd = 'C:\\Users\\me\\dbiz3-prod'
+    expect(resolveNotesDir(cwd, undefined, win32)).toBe('C:\\Users\\me\\dbiz3-prod\\.demo-data\\catalog-copies')
+    expect(resolveNotesDir(cwd, '.demo-data\\prod-photos', win32)).toBe('C:\\Users\\me\\dbiz3-prod\\.demo-data\\prod-photos')
+    expect(() => resolveNotesDir(cwd, '.demo-data\\..\\src', win32)).toThrow(/\.demo-data/)
+    expect(() => resolveNotesDir(cwd, 'D:\\elsewhere', win32)).toThrow(/\.demo-data/)
+    expect(() => resolveNotesDir(cwd, '.demo-data', win32)).toThrow(/\.demo-data/)
   })
   it('a PROD dry run reads only: no object, row or undo folder is written', async () => {
     const OLD = Buffer.from('old ceramics bytes'), NEW = Buffer.from('new ceramics photo')

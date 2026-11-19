@@ -9,19 +9,21 @@ import { vnd } from './ExperienceCard'
 
 type Params = Record<string, string | string[] | undefined>
 
-export default function ResultCard({ item, query }: { item: ResultView; query: Params }) {
+// variant "provider" (screen 24, mockup 19/11): no village · workshop line, no prepay line, CTA "Xem chi tiết".
+export default function ResultCard({ item, query, variant = 'search' }: { item: ResultView; query: Params; variant?: 'search' | 'provider' }) {
   const keep = new URLSearchParams()
   for (const key of ['date', 'guests']) { const value = query[key]; if (typeof value === 'string' && value) keep.set(key, value); }
   const href = `/explore/experiences/${item.id}${keep.toString() ? `?${keep.toString()}` : ''}`
   const tagIcons = [CalendarClock, Users, Package, CalendarClock]
-  return <article className="v3-card v3r">
+  const provider = variant === 'provider'
+  return <article className={`v3-card v3r${provider ? ' v3r--provider' : ''}`}>
     <Link href={href} className="v3r__media" tabIndex={-1} aria-hidden="true"><CoverImage src={item.image} alt="" /></Link>
     <div className="v3r__main">
       <div className="v3r__top">
         <div className="v3r__titles">
           <h2 className="v3r__name"><Link href={href}>{item.name}</Link></h2>
-          <p className="v3r__where"><Link href={`/village/${item.villageId}`} className="v3r__village">{item.villageLine}</Link><span className="v3r__dot"> · </span><span>{item.providerName}</span></p>
-          {item.distance && <p className="v3r__distance">{item.distance}</p>}
+          {!provider && <p className="v3r__where"><Link href={`/village/${item.villageId}`} className="v3r__village">{item.villageLine}</Link><span className="v3r__dot"> · </span><span>{item.providerName}</span></p>}
+          {!provider && item.distance && <p className="v3r__distance">{item.distance}</p>}
         </div>
         {item.craft && <span className="v3r__craft">{item.craft}</span>}
       </div>
@@ -29,8 +31,8 @@ export default function ResultCard({ item, query }: { item: ResultView; query: P
       <div className="v3r__cols">
         <div className="v3r__left">
           {item.highlights.length > 0 && <ul className="v3-ben" aria-label="Điểm nổi bật">{item.highlights.map(text => <li key={text}><Check aria-hidden="true" /><span>{text}</span></li>)}</ul>}
-          <p className="v3r__prepay"><b>Không cần trả trước</b>, chỉ thanh toán khi xưởng đã giữ chỗ</p>
-          {item.availability && <p className={item.availability.ok ? 'v3-av-ok' : 'v3-av-warn'}>{item.availability.text}</p>}
+          {!provider && <p className="v3r__prepay"><b>Không cần trả trước</b>, chỉ thanh toán khi xưởng đã giữ chỗ</p>}
+          {!provider && item.availability && <p className={item.availability.ok ? 'v3-av-ok' : 'v3-av-warn'}>{item.availability.text}</p>}
         </div>
         <div className="v3r__price">
           {item.price.kind === 'group' && <>
@@ -42,7 +44,9 @@ export default function ResultCard({ item, query }: { item: ResultView; query: P
           {item.price.kind !== 'group' && <><span className="v3-cap">Giá từ</span><b className="v3r__total">{vnd(item.price.perPerson)}<span className="v3-cap"> /khách</span></b></>}
           {item.price.kind === 'locked' && <Link href="/login" className="v3r__lock"><Lock aria-hidden="true" />Đăng nhập để xem giá đoàn</Link>}
           {item.included && <p className="v3-cap v3r__incl">Đã gồm vật liệu và người hướng dẫn</p>}
-          <Link className="hab-btn hab-btn--primary v3r__cta" href={`${href}#lich`}>Xem lịch trống <ChevronRight aria-hidden="true" /></Link>
+          {provider
+            ? <Link className="hab-btn hab-btn--primary v3r__cta" href={href}>Xem chi tiết</Link>
+            : <Link className="hab-btn hab-btn--primary v3r__cta" href={`${href}#lich`}>Xem lịch trống <ChevronRight aria-hidden="true" /></Link>}
         </div>
       </div>
     </div>

@@ -1,21 +1,26 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Check, CircleCheck, MessageSquareText } from 'lucide-react';
+import { Bus, Check, CircleCheck, Clock, Info, Languages, Mail, MapPin, MessageSquareText, Phone, QrCode, Users, type LucideIcon } from 'lucide-react';
 import { resolveViewer } from '../../../../lib/explore/catalog';
 import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
 import { monthCalendar, providerView } from '../../../../lib/explore/v3-provider';
-import { parseSearch, type ResultView } from '../../../../lib/explore/v3-search';
+import { parseSearch } from '../../../../lib/explore/v3-search';
 import { currentServerSession } from '../../../../lib/auth/server-session';
 import { paymentsEnabled } from '../../../../lib/flags';
 import ExploreTracker from '../../ExploreTracker';
 import CoverImage from '../../v3/CoverImage';
 import ChatButton from '../../v3/ChatButton';
-import { vnd } from '../../v3/ExperienceCard';
+import ResultCard from '../../v3/ResultCard';
 import MonthCalendar from './MonthCalendar';
 import '../../v3/explore-v3.css';
 
 export const dynamic = 'force-dynamic';
+
+const INFO_ICONS: Record<string, LucideIcon> = {
+  'Địa chỉ': MapPin, 'Giờ nhận đoàn': Clock, 'Sức chứa': Users, 'Ngôn ngữ hướng dẫn': Languages, 'Đỗ xe': Bus,
+  'Thanh toán': QrCode, 'Điện thoại': Phone, 'Email': Mail,
+};
 
 type Params = Record<string, string | string[] | undefined>;
 
@@ -37,6 +42,7 @@ export default async function ProviderPage({ params, searchParams }: { params: {
 
   return <div className="v3p">
     <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
+    <div className="hab-band"><nav aria-label="Đường dẫn" className="v3-crumbs"><Link href="/explore">Trang chủ</Link><span aria-hidden="true">›</span><Link href={`/village/${view.villageId}`}>{view.villageTitle}</Link><span aria-hidden="true">›</span><span aria-current="page">{view.name}</span></nav></div>
     <nav className="v3d-tabs" aria-label="Mục trên trang"><div className="hab-band v3d-tabs__in">
       <a href="#tong-quan">Tổng quan</a><a href="#trai-nghiem">Trải nghiệm</a><a href="#lich">Lịch trống</a><a href="#thong-tin">Thông tin &amp; liên hệ</a><a href="#hoi-dap">Câu hỏi thường gặp</a>
     </div></nav>
@@ -87,8 +93,8 @@ export default async function ProviderPage({ params, searchParams }: { params: {
 
     <section id="trai-nghiem" className="hab-band v3d-sec">
       <div className="v3-head"><div><h2 className="v3-h2">Trải nghiệm của xưởng ({view.experiences.length})</h2></div></div>
-      <div className="v3p-exgrid">{view.experiences.map(item => <ProviderExperience key={item.id} item={item} />)}</div>
-      <div className="v3-more-row"><Link href="/explore/search" className="v3-more">Xem tất cả trải nghiệm ›</Link></div>
+      <div className="v3p-exlist">{view.experiences.slice(0, 3).map(item => <ResultCard key={item.id} item={item} query={searchParams} variant="provider" />)}</div>
+      {view.experiences.length > 3 && <div className="v3-more-row"><Link href="/explore/search" className="v3-more">Xem tất cả trải nghiệm ›</Link></div>}
     </section>
 
     <section id="lich" className="hab-band v3d-sec">
@@ -98,15 +104,15 @@ export default async function ProviderPage({ params, searchParams }: { params: {
 
     {view.info.length > 0 && <section id="thong-tin" className="hab-band v3d-sec">
       <h2 className="v3-h2 v3d-mb">Thông tin &amp; liên hệ</h2>
-      <div className="v3-card v3p-kv"><dl>{view.info.map(row => <div key={row.label} className="v3p-kvr"><dt>{row.label}</dt><dd className={row.label === 'Email' ? 'v3p-brk' : undefined}>{row.value}</dd></div>)}</dl></div>
+      <div className="v3-card v3p-kv"><div className="v3p-kvg">{view.info.map(row => { const Icon = INFO_ICONS[row.label] ?? Info; return <div key={row.label} className="v3p-kvi"><Icon aria-hidden="true" /><div><b>{row.label}</b><span className={row.label === 'Email' ? 'v3p-brk' : undefined}>{row.value}</span></div></div> })}</div></div>
     </section>}
 
     {view.similar.length > 0 && <section className="hab-band v3d-sec" aria-labelledby="v3p-sim">
-      <div className="v3-head"><div><h2 id="v3p-sim" className="v3-h2">Trải nghiệm tương tự ở làng khác</h2></div><Link href="/explore/search" className="v3-more">Xem tất cả ›</Link></div>
+      <div className="v3-head"><div><h2 id="v3p-sim" className="v3-h2">Trải nghiệm tương tự ở làng khác</h2></div></div>
       <div className="v3p-simgrid">{view.similar.map(card => <Link key={card.id} href={`/explore/experiences/${card.id}`} className="v3-card v3p-sim">
         <CoverImage src={card.image} alt="" className="v3p-sim__img" />
         <span className="v3p-sim__body"><span className="v3-craft">{card.craft}</span><b className="v3p-sim__name">{card.name}</b><span className="v3-cap">{[card.location.split(',')[0], card.meta.split(' · ')[0], card.meta.split(' · ')[1]?.replace('Tối đa', 'tối đa').replace('/ca', '')].filter(Boolean).join(' · ')}</span></span>
-      </Link>)}</div>
+      </Link>)}</div><div className="v3-more-row"><Link href="/explore/search" className="v3-more">Xem tất cả ›</Link></div>
     </section>}
 
     <section id="hoi-dap" className="hab-band v3d-sec v3d-sec--last">
@@ -118,22 +124,3 @@ export default async function ProviderPage({ params, searchParams }: { params: {
   </div>;
 }
 
-function ProviderExperience({ item }: { item: ResultView }) {
-  const href = `/explore/experiences/${item.id}`;
-  return <article className="v3-card v3p-ex">
-    <Link href={href} className="v3p-ex__img" tabIndex={-1} aria-hidden="true"><CoverImage src={item.image} alt="" /></Link>
-    <div className="v3p-ex__body">
-      <h3 className="v3r__name v3p-ex__name"><Link href={href}>{item.name}</Link></h3>
-      <div className="v3-ftags">{[item.craft, ...item.tags].filter(Boolean).map(tag => <span key={tag} className="v3-ftag">{tag}</span>)}</div>
-      {item.highlights.length > 0 && <ul className="v3-ben" aria-label="Điểm nổi bật">{item.highlights.map(text => <li key={text}><Check aria-hidden="true" /><span>{text}</span></li>)}</ul>}
-      <div className="v3p-ex__price">
-        {item.price.kind === 'group' && <><p className="v3r__guests">{item.price.guests} khách</p><b className="v3r__total">{vnd(item.price.total)}</b>
-          {item.price.old !== null && <span className="v3r__old">{vnd(item.price.old)}</span>}{item.price.note && <span className={item.price.old !== null ? 'v3r__disc' : 'v3r__nodisc'}>{item.price.note}</span>}</>}
-        {item.price.kind !== 'group' && <><span className="v3-cap">Giá từ</span><b className="v3r__total">{vnd(item.price.perPerson)}<span className="v3-cap"> /khách</span></b></>}
-        {item.price.kind === 'locked' && <Link href="/login" className="v3r__lock">Đăng nhập để xem giá đoàn</Link>}
-        {item.included && <p className="v3-cap">Đã gồm vật liệu và người hướng dẫn</p>}
-        <Link href={href} className="v3-link">Xem chi tiết</Link>
-      </div>
-    </div>
-  </article>;
-}

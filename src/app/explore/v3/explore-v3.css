@@ -428,3 +428,12 @@
 .v3-loading__media { aspect-ratio: 16 / 10; background: var(--c-ghost); }
 .v3-loading__body { padding: 20px 24px 24px; }
 .v3-loading__bar { display: block; height: 14px; margin-bottom: 10px; border-radius: 999px; background: var(--c-ghost); }
+/* Screen 24 per mockup 19/11: experiences as result cards, contact info as icon rows. */
+.v3p-exlist { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.v3p-kvg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; }
+.v3p-kvi { display: flex; gap: 14px; align-items: flex-start; padding: 20px 0; border-top: 1px solid var(--c-border-soft); }
+.v3p-kvi:nth-child(-n+2) { border-top: 0; }
+.v3p-kvi > svg { width: 22px; height: 22px; flex: none; margin-top: 1px; color: var(--c-primary); }
+.v3p-kvi b { display: block; font: 700 16px/24px var(--font-body); }
+.v3p-kvi span { display: block; font: 400 16px/24px var(--font-body); color: var(--c-text-2); }
+@media (max-width: 899px) { .v3p-kvg { grid-template-columns: 1fr; } .v3p-kvi:nth-child(2) { border-top: 1px solid var(--c-border-soft); } }

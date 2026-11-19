@@ -1,6 +1,7 @@
 // scripts/db/dev-load-content.mjs (human decision 2026-11-19, part C): DEV-only load of the reviewed content draft.
-// Pure parts plus run() against a fake client: DEV/PROD guard before connecting, migration check, dry run is READ ONLY
-// and writes nothing, apply writes one journal and one audit row in one transaction, missing rows roll back, undo restores.
+// Pure parts plus run() against a fake client: DEV/PROD guard before connecting, migration check, dry run writes inside
+// one transaction and rolls back (so CHECK, FK and triggers run; human decision 2026-11-19) and reports the rows that
+// would change, apply writes one journal and one audit row in one transaction, missing rows roll back, undo restores.
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -25,13 +26,13 @@ function draftDir(over: Record<string, string> = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'hab-content-'))
   writeFileSync(join(dir, 'experiences.csv'), csv([experience(over)]))
   writeFileSync(join(dir, 'providers.csv'), csv([{ provider_id: P, village: 'Bát Tràng', old_business_name: 'Xưởng thủ công Bát Tràng', new_business_name: 'Xưởng gốm Lộc Khê', new_description: 'Xưởng gốm gia đình.', founded_year: '1998', parking_note: 'Bãi xe đầu làng.' }]))
-  writeFileSync(join(dir, 'villages.csv'), csv([{ village_id: V, name: 'Bát Tràng', editorial_craft: '', distance_km: '13.2', distance_source: 'https://www.openstreetmap.org/directions', description_new: '', visit_notes: '{"trang_phuc":"Đồ dễ giặt."}', tour_suggestion_detail: '{"title":"Hợp cho tour nửa ngày!","lines":[],"extras":[]}', highlights: '[{"title":"Làng gốm","sub":"x"}]' }]))
+  writeFileSync(join(dir, 'villages.csv'), csv([{ village_id: V, name: 'Bát Tràng', editorial_craft: '', tour_suggestion: 'Hợp cho tour nửa ngày.', distance_km: '13.2', distance_source: 'https://www.openstreetmap.org/directions', description_new: '', visit_notes: '{"trang_phuc":"Đồ dễ giặt."}', tour_suggestion_detail: '{"title":"Hợp cho tour nửa ngày!","lines":[],"extras":[]}', highlights: '[{"title":"Làng gốm","sub":"x"}]' }]))
   writeFileSync(join(dir, 'agencies.csv'), csv([{ agency_id: A, old_company_name: 'Du lịch Di sản 01', new_company_name: 'Công ty Lữ hành Mây Ngàn', new_description: 'Tour làng nghề.' }]))
   writeFileSync(join(dir, 'users.csv'), csv([{ user_id: U, role_code: 'Local_Provider', old_full_name: 'Nghệ nhân mẫu 1', new_full_name: 'Phan Thị Hồng Nhung' }]))
   return dir
 }
 
-function fakeClient({ migrated = true, found = true }: { migrated?: boolean; found?: boolean } = {}) {
+function fakeClient({ migrated = true, found = true, changed = true, violate = '' }: { migrated?: boolean; found?: boolean; changed?: boolean; violate?: string } = {}) {
   const queries: Array<{ text: string; values?: unknown[] }> = []
   let connected = false
   return {
@@ -41,6 +42,8 @@ function fakeClient({ migrated = true, found = true }: { migrated?: boolean; fou
       queries.push({ text, values })
       if (text.includes('information_schema.columns')) return { rows: migrated ? [1, 2, 3, 4].map(n => ({ n })) : [] }
       if (text.includes('to_regclass')) return { rows: [{ present: migrated }] }
+      if (text.includes(' AS changed ')) return { rows: [{ changed }] }
+      if (violate && text.startsWith(`UPDATE ${violate} `)) throw Object.assign(new Error(`new row for relation "${violate}" violates check constraint "x_chk"`), { code: '23514' })
       if (text.startsWith('SELECT label')) return { rows: [{ label: 'Ca cũ', start_time: '10:00', end_time: '11:00', weekdays: [1] }] }
       if (text.startsWith('SELECT ')) return { rows: found ? [{ old: 'value' }] : [] }
       if (text.startsWith('UPDATE ')) return { rowCount: 1, rows: [] }
@@ -78,7 +81,7 @@ describe('plan', () => {
     expect(summary(work)).toEqual({ experiences: 1, provider_profiles: 1, provider_profile_versions: 1, villages: 1, agency_profiles: 1, user_accounts: 1, experience_slots: 1 })
     expect(work.updates[0].set).toMatchObject({ name: 'Nặn bát trên bàn xoay', suitable_for: ['Đoàn học sinh', 'Sản phẩm mang về'], guide_languages: ['Tiếng Việt'] })
     expect(work.updates.find(u => u.table === 'provider_profile_versions')).toMatchObject({ published: true, set: { business_name: 'Xưởng gốm Lộc Khê', description: 'Xưởng gốm gia đình.' } })
-    expect(work.updates.find(u => u.table === 'villages')!.set).toMatchObject({ distance_km: 13.2, highlights: '[{"title":"Làng gốm","sub":"x"}]' })
+    expect(work.updates.find(u => u.table === 'villages')!.set).toMatchObject({ distance_km: 13.2, highlights: '[{"title":"Làng gốm","sub":"x"}]', tour_suggestion: 'Hợp cho tour nửa ngày.' })
     expect(work.slots[E]).toEqual([{ label: 'Ca sáng', start_time: '08:30', end_time: '09:30', weekdays: [1, 2, 3] }])
   })
   it('keeps the old name and description when the draft leaves them empty', () => {
@@ -106,13 +109,31 @@ describe('run', () => {
     await expect(run({ argv: [`--dir=${draftDir()}`], env, connect: () => client, log: quiet })).rejects.toThrow(/not applied/)
     expect(writes(client)).toEqual([])
   })
-  it('dry run: READ ONLY, reads every target row, writes nothing, no journal', async () => {
+  it('dry run: writes inside one transaction and rolls back (no READ ONLY), no journal, no commit', async () => {
     const client = fakeClient(), journalDir = mkdtempSync(join(tmpdir(), 'hab-journal-'))
-    expect(await run({ argv: [`--dir=${draftDir()}`], env, connect: () => client, log: quiet, journalDir })).toEqual({ updated: 0, planned: 6 })
-    expect(client.queries.map(q => q.text).slice(0, 2)).toEqual(['BEGIN', 'SET TRANSACTION READ ONLY'])
-    expect(client.queries.at(-1)!.text).toBe('ROLLBACK')
-    expect(writes(client)).toEqual([])
+    const lines: string[] = []
+    expect(await run({ argv: [`--dir=${draftDir()}`], env, connect: () => client, log: { log: (line: string) => lines.push(line) }, journalDir })).toEqual({ updated: 0, planned: 6, changed: 6, slotChanges: 1 })
+    const texts = client.queries.map(q => q.text)
+    expect(texts[0]).toBe('BEGIN')
+    expect(texts).not.toContain('SET TRANSACTION READ ONLY')
+    expect(texts.filter(t => t.startsWith('UPDATE '))).toHaveLength(6)
+    expect(texts.filter(t => t.startsWith('INSERT INTO experience_slots'))).toHaveLength(1)
+    expect(texts).not.toContain('COMMIT')
+    expect(texts.at(-1)).toBe('ROLLBACK')
     expect(readdirSync(journalDir)).toEqual([])
+    expect(lines.join('\n')).toMatch(/6 of 6 row\(s\) would change/)
+  })
+  it('dry run reports a CHECK violation from the database and rolls back', async () => {
+    const client = fakeClient({ violate: 'experiences' })
+    await expect(run({ argv: [`--dir=${draftDir()}`], env, connect: () => client, log: quiet })).rejects.toThrow(/violates check constraint "x_chk"/)
+    expect(client.queries.map(q => q.text)).not.toContain('COMMIT')
+    expect(client.queries.at(-1)!.text).toBe('ROLLBACK')
+  })
+  it('dry run after a load reports 0 rows to change', async () => {
+    const lines: string[] = []
+    const result = await run({ argv: [`--dir=${draftDir()}`], env, connect: () => fakeClient({ changed: false }), log: { log: (line: string) => lines.push(line) } })
+    expect(result).toMatchObject({ changed: 0 })
+    expect(lines.join('\n')).toMatch(/0 of 6 row\(s\) would change/)
   })
   it('apply: journal first, then updates, slots and one audit row in one transaction', async () => {
     const client = fakeClient(), journalDir = mkdtempSync(join(tmpdir(), 'hab-journal-'))

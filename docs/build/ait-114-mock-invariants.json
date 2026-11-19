@@ -1,0 +1,22 @@
+{
+  "label": "[MOCK]",
+  "case_count": 114,
+  "input_count": 126,
+  "conversation_rollups": 6,
+  "eight_auto_fail_invariants": [
+    "I1 fixture marker must use Fixture dataset on this turn",
+    "I2 absence of fixture marker must use Seed dataset on this turn",
+    "I3 a response must not mix Seed and Fixture records",
+    "I4 every returned village/provider/activity record must belong to the selected dataset",
+    "I5 no unsupported claim that a provider is open, accepting guests, available, or booked",
+    "I6 explicit positive group, radius, and budget constraints must appear in state",
+    "I7 a turn changing one criterion must preserve every untouched prior slot",
+    "I8 Fixture mode must not carry over from the previous turn without a current marker"
+  ],
+  "pass_count": 0,
+  "fail_count": 0,
+  "blocked_count": 0,
+  "review_count": 126,
+  "semantic_scores": "Not assigned; model is mocked and expected-result semantics require human review.",
+  "csv": "C:\\Users\\Admin\\dbiz3-team-g\\docs\\build\\ait-114-mock-results.csv"
+}

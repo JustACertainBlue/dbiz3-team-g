@@ -18,6 +18,19 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 108: 20/11 Copilot — replay AIT state and serialize concurrent turns [MOCK]
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local work on `feat/ait-conversational-llm`, HEAD `5d90ce7`; existing AIT edits were already present. No commit or push. |
+| Scope | Add a 30-conversation replay, run the 114-case/126-input mock corpus and available anti suites, then address a lost-update race reproduced by two simultaneous turns in one AIT session. No real-model calls or edits to `.env*`, secrets, Supabase, `data/`, or non-AIT application code. |
+| Produced | Added `tests/harness/ait-state-replay.test.ts`, `docs/build/ait-30-conversation-replay.json`, `docs/build/ait-114-mock-results.csv`, and `docs/build/ait-114-mock-invariants.json`. Wrapped each AIT message POST in an in-process per-session write queue in `src/lib/matching/session-service.ts`; concurrent requests for different sessions remain independent. Updated the zero-radius integration expectation to the approved invalid-radius explanation rather than generic no-results. |
+| Replay results | [MOCK] 30 conversations / 110 turns completed with no replay assertion failures. The 114-case runner recorded 126 inputs and no auto-FAIL across its eight encoded invariants; semantic answers remain `REVIEW`, not a pass. Anti probes: fuzz 500 inputs (0 crashes, 2 blank responses, no invalid numeric results observed); pairwise 36 combinations (5 suite tests pass, but its result/card oracle is incomplete); Persona suite 7 tests pass. These counts do not establish real-model behavior. |
+| Jade decisions recorded | JQ-01: express budget per person. JQ-03: entity-first handling. JQ-04: one-decimal radius display/comparison, so 8.14 km is within displayed 8.1 km. JQ-05: prioritize real coordinates, pending Jade confirmation. JQ-06: respond in Vietnamese that the request is not supported. JQ-07: refuse with “Hiện chưa có dữ liệu”. JQ-08: refuse. These are recorded decisions, not new implementation changes in this entry. |
+| Test-first and mutation evidence | The concurrent-turn test first reproduced a lost `group_size` update when “20 khách” and “dưới 10 km” were posted simultaneously; after adding the queue it passed, preserving both independent slots. The test only demonstrates serialization within one Node process. The focused run after aligning the zero-radius assertion passed 159 tests across 3 files; the race-only run passed 1 test (2 gated tests skipped). A full 20-mutation sweep was not completed in this entry. |
+| Verification | `RUN_AIT_RACE_REPLAY=1` with `npx.cmd vitest run tests/harness/ait-state-replay.test.ts -t "concurrent"`: 1 passed, 2 skipped. Focused `npx.cmd vitest run tests/unit/ait-conversation-delta.test.ts tests/integration/ait-geography-pipeline.test.ts tests/integration/ait-conversation-state.test.ts --reporter=dot`: 3 files, 159 tests passed. `npm.cmd run lint`: passed. `npm.cmd run build`: passed; Next.js printed the pre-existing dynamic-server-usage diagnostic for `/ai-matching`. Full `npm.cmd test -- --reporter=dot`: 267 files passed, 2 failed, 7 skipped; 1,963 tests passed, 3 failed, 34 skipped. The failures were T037 and T039 in `ait-matching-api.test.ts` and `village-display-name.test.ts` for `"lang gom bat trang"`; Entry 75 records T037/T039 also red at baseline `6898bff`. |
+| Boundaries | Worktree remains local and uncommitted; no model/API calls, push, secret inspection, or database access. |
+
 ### Entry 75: 19/11 Copilot — finish AIT BUG-09/10/20/22 replay and fixes
 
 | Field | Value |

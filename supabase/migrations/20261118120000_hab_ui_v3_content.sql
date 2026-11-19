@@ -66,32 +66,6 @@ REVOKE ALL ON public.image_sources FROM PUBLIC, anon, authenticated, hab_app;
 GRANT SELECT ON public.image_sources TO hab_app;
 CREATE POLICY hab_backend_select ON public.image_sources FOR SELECT TO hab_app USING (true);
 
--- Village cover image (image import plan, human decision 2026-11-18). Nullable; pages fall back to workshop and
--- experience images when it is empty.
-ALTER TABLE public.villages
-  ADD COLUMN IF NOT EXISTS cover_image_id uuid REFERENCES public.stored_files(file_id) ON DELETE RESTRICT;
-
--- Provenance of imported images (human decision 2026-11-18). Read by the server only; never shown in the UI.
-CREATE TABLE IF NOT EXISTS public.image_sources (
-    file_id uuid PRIMARY KEY REFERENCES public.stored_files(file_id) ON DELETE CASCADE,
-    source_type varchar(20) NOT NULL,
-    page_url text,
-    license_url text,
-    nguoi_chup varchar(255),
-    ngay_chup date,
-    co_nguoi_ro_mat boolean NOT NULL DEFAULT false,
-    da_xin_phep boolean NOT NULL DEFAULT false,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT image_source_type_chk CHECK (source_type IN ('unsplash', 'pexels', 'pixabay', 'commons_cc0', 'flickr_pd', 'tu_chup')),
-    CONSTRAINT image_source_page_chk CHECK (source_type = 'tu_chup' OR page_url IS NOT NULL),
-    CONSTRAINT image_source_own_photo_chk CHECK (source_type <> 'tu_chup' OR (nguoi_chup IS NOT NULL AND ngay_chup IS NOT NULL)),
-    CONSTRAINT image_source_consent_chk CHECK (NOT co_nguoi_ro_mat OR da_xin_phep)
-);
-ALTER TABLE public.image_sources ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.image_sources FROM PUBLIC, anon, authenticated, hab_app;
-GRANT SELECT ON public.image_sources TO hab_app;
-CREATE POLICY hab_backend_select ON public.image_sources FOR SELECT TO hab_app USING (true);
-
 -- Fixed time slots per Experience ("Ca sáng 08:30 – 09:30"). weekdays: ISO 1 = Monday … 7 = Sunday.
 CREATE TABLE IF NOT EXISTS public.experience_slots (
     slot_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

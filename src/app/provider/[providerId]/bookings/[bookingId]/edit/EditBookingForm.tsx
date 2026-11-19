@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { bookingFormError } from '@/app/booking-form-copy'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { BookingDetail } from '@/lib/booking/booking-detail'
@@ -37,7 +38,7 @@ export default function EditBookingForm({ detail, backHref }: { detail: BookingD
     const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     if (response.ok) return null
     const json = await response.json() as ApiError
-    return json.error ? `${json.error.code}: ${json.error.message}` : 'Không lưu được.'
+    return json.error ? `${bookingFormError(json.error.message)}` : 'Không lưu được.'
   }
 
   const submit = async (event: React.FormEvent) => {
@@ -106,7 +107,7 @@ export default function EditBookingForm({ detail, backHref }: { detail: BookingD
       <label>Giá thỏa thuận cho cả đoàn (VND)
         <input type="number" min={1} step="any" value={price} onChange={event => setPrice(Number(event.target.value))} required />
       </label>
-      <label>Notice period (giờ)
+      <label>Thời gian báo trước (giờ)
         <input type="number" min={0} step={1} value={notice} onChange={event => setNotice(Number(event.target.value))} required />
       </label>
       <label>Cancellation policy (JSON)
@@ -124,8 +125,8 @@ export default function EditBookingForm({ detail, backHref }: { detail: BookingD
     </div>
     {error && <p className="bkg-error" role="alert">{error}</p>}
     <div className="bkg-actions">
-      <button type="submit" disabled={saving}>{saving ? 'Đang lưu…' : 'Save'}</button>
-      <Link href={backHref}>Discard</Link>
+      <button type="submit" disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button>
+      <Link href={backHref}>Bỏ thay đổi</Link>
     </div>
   </form>
 }

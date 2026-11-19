@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { bookingFormError } from '@/app/booking-form-copy'
 import { useRouter } from 'next/navigation'
 import React, { useMemo, useState } from 'react'
 
@@ -81,7 +82,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
       })
       const json = await response.json() as { data?: CreatedBooking; error?: { code: string; message: string } }
       if (!response.ok || !json.data) {
-        setError(json.error ? `${json.error.code}: ${json.error.message}` : 'Không tạo được Booking.')
+        setError(json.error ? `${bookingFormError(json.error.message)}` : 'Không tạo được Booking.')
         return
       }
       // #54: a successful create opens BKG135 (replaces the in-place result of #43).
@@ -99,13 +100,13 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
 
   // Any field change clears the previous server error, so a stale message never sits next to new input.
   return <form className="bkg-form" onSubmit={submit} onChange={() => setError(null)}>
-    <label>Experience
+    <label>Trải nghiệm
       <select value={experienceId} onChange={event => selectExperience(event.target.value)} required>
         {experiences.map(row => <option key={row.experience_id} value={row.experience_id}>{row.name}</option>)}
       </select>
     </label>
     {experience && <div className="bkg-panel">Sức chứa tối đa: {experience.max_participants} khách · Thời lượng gợi ý: {experience.duration_minutes} phút</div>}
-    <label>Agency
+    <label>Công ty du lịch
       <select value={agencyId} onChange={event => setAgencyId(event.target.value)} required>
         {agencies.map(row => <option key={row.agency_id} value={row.agency_id}>{row.company_name}</option>)}
       </select>
@@ -126,7 +127,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
     </div>
     {experience && <div className="bkg-panel">Gợi ý: {formatVnd(experience.price_per_person)} × {groupSize} khách = {formatVnd(experience.price_per_person * groupSize)}. Giá thỏa thuận vẫn có thể sửa.</div>}
     <div className="bkg-grid">
-      <label>Notice period (giờ)
+      <label>Thời gian báo trước (giờ)
         <input type="number" min={0} step={1} value={noticePeriod} onChange={event => setNoticePeriod(Number(event.target.value))} required />
       </label>
       <label>Cancellation policy (JSON)
@@ -135,7 +136,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies }:
     </div>
     {error && <p className="bkg-error" role="alert">{error}</p>}
     <div className="bkg-actions">
-      <button type="submit" disabled={saving}>{saving ? 'Đang tạo…' : 'Create On hold'}</button>
+      <button type="submit" disabled={saving}>{saving ? 'Đang tạo…' : 'Tạo đặt chỗ tạm giữ'}</button>
       <Link href={`/provider/${providerId}/bookings`}>Cancel</Link>
     </div>
   </form>

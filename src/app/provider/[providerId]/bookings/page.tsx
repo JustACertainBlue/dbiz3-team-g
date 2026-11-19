@@ -78,7 +78,7 @@ export default async function BookingManagementPage({ params, searchParams }: { 
     {rows.length === 0
       ? <p className="bkg-panel bkg-empty">Không có Booking nào khớp bộ lọc này. Thử “Xoá bộ lọc” để xem cả lịch sử.</p>
       : <table className="bkg-table">
-          <thead><tr><th>Thời gian</th><th>Agency</th><th>Experience</th><th>Khách</th><th>Trạng thái</th><th></th></tr></thead>
+          <thead><tr><th>Thời gian</th><th>Agency</th><th>Trải nghiệm</th><th>Khách</th><th>Trạng thái</th><th></th></tr></thead>
           <tbody>
             {rows.map(row => <tr key={row.booking_id} className={row.needs_action_label ? 'bkg-needs' : undefined}>
               <td>{row.when}{row.hold_expiry && <small>Giữ chỗ đến {row.hold_expiry}</small>}</td>

@@ -37,7 +37,7 @@ describe('#204 | EXP017 refreshed-results indicator (FR-010)', () => {
     expect(renderToStaticMarkup(React.createElement(RefreshedNotice, { show: false }))).toBe('')
     const html = renderToStaticMarkup(React.createElement(RefreshedNotice, { show: true }))
     expect(html).toMatch(/role="status"/)
-    expect(html).toContain('Đã cập nhật thứ tự kết quả theo các trải nghiệm bạn quan tâm.')
+    expect(html).toContain('Đã cập nhật gợi ý trải nghiệm cho bạn.')
   })
 
   it('the tracker turns the indicator on when the server reports results_refreshed_indicator', () => {

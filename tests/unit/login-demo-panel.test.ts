@@ -3,8 +3,7 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 // Issue #102. docs/build/demo-login.md and ADR 0001: the "any non-empty password" prototype login is a
-// development aid; production refuses it (authenticatePrototype). The /login page must offer the demo panel
-// under exactly the same condition, so testers on the hosted version are not told to use a login that fails.
+// development aid. The login page shows the demo panel only when explicitly enabled in development.
 ;(globalThis as { React?: typeof React }).React = React
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: () => {}, refresh: () => {} }), useSearchParams: () => new URLSearchParams() }))
 
@@ -15,11 +14,12 @@ const render = () => renderToStaticMarkup(React.createElement(LoginPage))
 const PANEL = 'Tài khoản thử nghiệm'
 const ANY_PASSWORD = 'nhập bất kỳ mật khẩu không rỗng'
 
-describe('#102 AUT /login | demo panel only where the prototype login works', () => {
+describe('#102 AUT /login | opt-in demo panel in development', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('production (error case of the old page): no demo panel, no seed emails, no "any password" text', () => {
     vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS', 'true')
     const html = render()
     expect(html).toContain('type="password"')
     expect(html).not.toContain(PANEL)
@@ -27,8 +27,15 @@ describe('#102 AUT /login | demo panel only where the prototype login works', ()
     expect(html).not.toContain('thanhvien13@example.invalid')
   })
 
-  it('development (normal): the demo panel and the four seed identities are offered', () => {
+  it('development defaults to the standard login form', () => {
     vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS', undefined)
+    expect(render()).not.toContain(PANEL)
+  })
+
+  it('development with explicit opt-in offers the four seed identities', () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS', 'true')
     const html = render()
     expect(html).toContain(PANEL)
     for (const email of ['thanhvien13', 'thanhvien19', 'thanhvien8', 'thanhvien9']) expect(html).toContain(`${email}@example.invalid`)

@@ -659,6 +659,109 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(response.json.turn.message).not.toContain('Cách trung tâm Hà Nội')
   })
 
+  it('applies CHAT06 guide-language relax through the validated delta route', async () => {
+    vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', 'test-account')
+    vi.stubEnv('CLOUDFLARE_API_TOKEN', 'test-token')
+    vi.spyOn(QuotaManager, 'checkCooldown').mockResolvedValue({
+      inCooldown: false,
+      provider: 'cloudflare_workers_ai',
+      model: 'delta-chat06-mock',
+    })
+    vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
+      intent: 'catalog_query',
+      confidence: 1,
+      source: 'llm',
+    })
+    const responses = [
+      {
+        intent: 'tour_matching',
+        conversational_reply: 'Đã ghi nhận nhóm khách.',
+        conversation_delta: {
+          interests: { action: 'set', value: ['khách nước ngoài'], raw_span: 'khách nước ngoài' },
+        },
+        follow_up_questions: [],
+        missing_primary: [],
+      },
+      {
+        intent: 'platform_guidance',
+        conversational_reply: 'Đang kiểm tra thông tin hướng dẫn tiếng Anh.',
+        conversation_delta: {},
+        follow_up_questions: [],
+        missing_primary: [],
+      },
+      {
+        intent: 'platform_guidance',
+        conversational_reply: 'Đã bỏ yêu cầu bắt buộc về hướng dẫn tiếng Anh.',
+        conversation_delta: {
+          guide_language: { action: 'relax', raw_span: 'Không có cũng được.' },
+        },
+        follow_up_questions: [],
+        missing_primary: [],
+      },
+    ]
+    const llmCall = vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockImplementation(async () => ({
+      success: true,
+      text: JSON.stringify(responses.shift()),
+      isQuotaExhausted: false,
+      isNetworkError: false,
+      modelUsed: 'delta-chat06-mock',
+    }))
+    const sessionId = await openSession()
+
+    await send(sessionId, 'Tìm chỗ cho khách nước ngoài.')
+    const beforeFaq = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const beforeFaqState = beforeFaq?.conversation_context
+      ? JSON.parse(beforeFaq.conversation_context).state
+      : undefined
+
+    const faq = await send(sessionId, 'Có hướng dẫn tiếng Anh không?')
+    const afterFaq = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const afterFaqState = afterFaq?.conversation_context
+      ? JSON.parse(afterFaq.conversation_context).state
+      : undefined
+
+    const relax = await send(sessionId, 'Không có cũng được.')
+    const afterRelax = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const afterRelaxState = afterRelax?.conversation_context
+      ? JSON.parse(afterRelax.conversation_context).state
+      : undefined
+
+    expect(llmCall).toHaveBeenCalledTimes(3)
+    expect(faq.json.extraction.usedLlm).toBe(true)
+    expect(relax.json.extraction.usedLlm).toBe(true)
+    expect(faq.status).toBe(201)
+    expect(relax.status).toBe(201)
+    expect(afterFaqState).toEqual(beforeFaqState)
+    expect(relax.json.extraction.delta_validation).toMatchObject({
+      accepted: {
+        guide_language: { action: 'relax', raw_span: 'Không có cũng được.' },
+      },
+      unsupported: {},
+      rejected: [],
+    })
+    expect(afterRelaxState).toMatchObject({
+      interests: ['khách nước ngoài'],
+      relaxed_fields: ['guide_language'],
+      turn_count: 1,
+    })
+    expect(afterRelaxState.slots).toEqual(beforeFaqState.slots)
+    console.info('[MOCK-CHAT06-DELTA-STATE]', JSON.stringify({
+      beforeFaqState,
+      afterFaqState,
+      afterRelaxState,
+      accepted: relax.json.extraction.delta_validation.accepted,
+    }))
+  })
+
   it('does not run direct matching for an origin outside Hanoi', async () => {
     const response = await call(POST_MATCHING, '/api/ait/matching', {
       tour_preference_profile: {

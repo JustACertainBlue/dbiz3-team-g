@@ -11,7 +11,6 @@ const source = readFileSync('src/app/fonts.ts', 'utf8')
 const files = (dir: string): string[] => readdirSync(dir).flatMap(name => statSync(join(dir, name)).isDirectory() ? files(join(dir, name)) : [join(dir, name)])
 const FONTS = [
   { variable: '--font-inter', file: 'src/app/fonts/inter/Inter-Variable.woff2', weight: '100 900' },
-  { variable: '--font-lora', file: 'src/app/fonts/lora/Lora-Variable.woff2', weight: '400 700' },
   { variable: '--font-pacifico', file: 'src/app/fonts/pacifico/Pacifico-Regular.woff2', weight: '400' },
 ]
 
@@ -31,7 +30,10 @@ describe('self-hosted fonts', () => {
     expect(call).toContain("display: 'swap'")
   })
   it('keeps the exported names used by the layout', () => {
-    expect(source).toMatch(/export const fontVariables = `\$\{lora\.variable\} \$\{inter\.variable\} \$\{pacifico\.variable\}`/)
+    // UI v3 (human decision 2026-11-19): one sans family, Lora removed with its files; Pacifico stays for the Explore hero
+    // script line (.xv-script) while that line exists.
+    expect(source).toMatch(/export const fontVariables = `\$\{inter\.variable\} \$\{pacifico\.variable\}`/)
+    expect(existsSync('src/app/fonts/lora')).toBe(false)
   })
 })
 
@@ -44,9 +46,8 @@ describe('subset fonts', () => {
     for (const range of ['U+0300-036F', 'U+1EA0-1EF9', 'U+20AB']) expect(readme).toContain(range)
     expect(readme).toContain("--layout-features='*'")
   })
-  it('is smaller than the full fonts (Inter 236 480, Lora 85 028, Pacifico 105 168 bytes)', () => {
+  it('is smaller than the full fonts (Inter 236 480, Pacifico 105 168 bytes)', () => {
     expect(statSync('src/app/fonts/inter/Inter-Variable.woff2').size).toBeLessThan(236480)
-    expect(statSync('src/app/fonts/lora/Lora-Variable.woff2').size).toBeLessThan(85028)
     expect(statSync('src/app/fonts/pacifico/Pacifico-Regular.woff2').size).toBeLessThan(105168)
   })
 })

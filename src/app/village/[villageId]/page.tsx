@@ -94,7 +94,7 @@ export default async function VillagePage({ params, searchParams }: { params: { 
           <h2 className="v3-h2">Trải nghiệm ở {view.name}</h2>
           <p className="v3-sub">Giá đã gồm nguyên liệu và người hướng dẫn, tính theo mỗi khách.</p>
           {view.results.length === 0 && <p className="v3-empty">Làng chưa có trải nghiệm đang nhận đoàn.</p>}
-          <div className="v3v-results">{view.results.map(item => <ResultCard key={item.id} item={item} query={searchParams} />)}</div>
+          <div className="v3v-results">{view.results.map(item => <ResultCard key={item.id} item={item} query={searchParams} showDistance={false} />)}</div>
           {view.moreHref && <Link href={view.moreHref} className="v3v-more">Xem thêm trải nghiệm ›</Link>}
         </div>
       </div>

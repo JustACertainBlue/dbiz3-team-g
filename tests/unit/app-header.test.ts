@@ -7,6 +7,7 @@
  * guest button label "Đăng ký tài khoản"; bar colour #0F3D2A (guest, agency, provider) and #1F2A25 (admin).
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { SessionContext } from '@/lib/auth/session'
@@ -243,5 +244,19 @@ describe('footerVisible (footer only on /explore for Guest and Tour Agency)', ()
     expect(footerVisible(provider, '/explore')).toBe(false)
     expect(footerVisible(hdt, '/explore')).toBe(false)
     expect(footerVisible(ubnd, '/explore')).toBe(false)
+  })
+})
+
+describe('Guest header below 900 px (human review 2026-11-19)', () => {
+  // At 390 px the white "Đăng ký tài khoản" button stayed visible (.hab-btn sets display:flex with the same specificity as
+  // the media rule) and pushed the menu button off screen. The collapse rule must outrank .hab-btn.
+  const css = readFileSync('src/app/shell.css', 'utf8')
+  const block = css.match(/@media \(max-width: 899px\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+  it('hides Đăng nhập and Đăng ký tài khoản with a rule stronger than .hab-btn, and shows the menu button', () => {
+    expect(block).toMatch(/\.hab-nav__end \.hab-nav__login, \.hab-nav__end \.hab-nav__register \{ display: none; \}/)
+    expect(block).toMatch(/\.hab-nav__burger \{ display: grid; \}/)
+  })
+  it('the guest menu button has an aria-label', () => {
+    expect(render(guest, '/explore')).toMatch(/<button type="button" class="hab-nav__burger" aria-expanded="false" aria-label="Mở menu">/)
   })
 })

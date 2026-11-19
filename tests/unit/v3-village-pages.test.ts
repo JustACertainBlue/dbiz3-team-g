@@ -89,3 +89,17 @@ describe('screen 03 AI block for a Guest (human review 2026-11-19, A4)', () => {
     expect([...box.matchAll(/<a class="v3-aiq" href="([^"]+)"/g)].map(m => m[1])).toEqual(['/login', '/login', '/login'])
   })
 })
+
+describe('screen 03 experience cards (human review 2026-11-19)', () => {
+  it('have no "Cách trung tâm Hà Nội khoảng … km" line; the village head keeps its own distance', async () => {
+    role = null
+    const html = renderToStaticMarkup(await VillagePage({ params: { villageId: 'v1' }, searchParams: {} }))
+    const cards = html.match(/<article class="v3-card v3r">[\s\S]*?<\/article>/g) ?? []
+    expect(cards.length).toBeGreaterThan(0)
+    for (const card of cards) {
+      expect(card).not.toContain('v3r__distance')
+      expect(card).not.toContain('Cách trung tâm')
+    }
+    expect(text(html)).toContain('Bát Tràng, Gia Lâm, Hà Nội · Cách trung tâm khoảng 13 km')
+  })
+})

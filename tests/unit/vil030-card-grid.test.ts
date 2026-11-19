@@ -13,7 +13,7 @@ const css = readFileSync('src/app/explore/v3/explore-v3.css', 'utf8')
 describe('#248 | VIL030 Experience card grid', () => {
   it('renders the cards in a page-owned list with bounded images', () => {
     expect(page).toContain('<div className="v3v-results">')
-    expect(page).toContain('<ResultCard key={item.id} item={item} query={searchParams} />')
+    expect(page).toMatch(/<ResultCard key=\{item\.id\} item=\{item\} query=\{searchParams\}[^>]*\/>/)
     expect(page).not.toContain('className="provider-media-grid"')
     expect(css).toMatch(/\.v3r__media \{ flex: 0 0 220px;[^}]*min-height: 240px;[^}]*overflow: hidden;/)
   })

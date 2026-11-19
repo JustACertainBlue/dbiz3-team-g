@@ -45,7 +45,7 @@ describe('#227 | VIL030 Experience cards follow the F-EXPLORE-02 card', () => {
   it('the page renders the image, workshop name and the price through the shared result card', () => {
     const page = readFileSync('src/app/village/[villageId]/page.tsx', 'utf8')
     const card = readFileSync('src/app/explore/v3/ResultCard.tsx', 'utf8')
-    expect(page).toContain('<ResultCard key={item.id} item={item} query={searchParams} />')
+    expect(page).toMatch(/<ResultCard key=\{item\.id\} item=\{item\} query=\{searchParams\}[^>]*\/>/)
     expect(card).toContain('<CoverImage src={item.image} alt="" />')
     expect(card).toContain('<span>{item.providerName}</span>')
     expect(card).toMatch(/Giá từ<\/span><b className="v3r__total">\{vnd\(item\.price\.perPerson\)\}<span className="v3-cap"> \/khách/)

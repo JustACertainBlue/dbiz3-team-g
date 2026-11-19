@@ -74,7 +74,7 @@
 .v3-airow { display: flex; gap: 14px; align-items: center; margin: 0; }
 .v3-aiic { width: 52px; height: 52px; flex: none; display: grid; place-items: center; border-radius: 999px; background: var(--c-white); box-shadow: 0 2px 10px rgba(15,61,42,.14); color: var(--c-primary); }
 .v3-aiic svg { width: 24px; height: 24px; }
-.v3-aiin { flex: 1; display: flex; align-items: center; gap: 8px; min-height: 60px; padding: 6px 6px 6px 22px; box-sizing: border-box; border: 1px solid var(--c-disabled); border-radius: 999px; background: var(--c-white); }
+.v3-aiin { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 60px; padding: 6px 6px 6px 22px; box-sizing: border-box; border: 1px solid var(--c-disabled); border-radius: 999px; background: var(--c-white); }
 .v3-aiin:focus-within { border-color: var(--c-primary); }
 .v3-aiin input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: 400 18px/26px var(--font-body); color: var(--c-text); }
 .v3-aisend { width: 48px; height: 48px; flex: none; display: grid; place-items: center; border: 0; border-radius: 999px; background: #EAF4EE; color: var(--c-primary); cursor: pointer; }
@@ -229,7 +229,7 @@
 .v3d-h1 { margin: 6px 0 0; font: 700 38px/46px var(--font-body); color: var(--c-primary-dark); }
 .v3d-provider { margin: 8px 0 0; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font: 400 16px/23px var(--font-body); color: var(--c-text-2); }
 .v3d-provider svg { width: 18px; height: 18px; }
-.v3d-titleside { display: flex; gap: 12px; align-items: flex-end; }
+.v3d-titleside { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; min-width: 0; }
 .v3d-share { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 999px; background: transparent; color: var(--c-primary); cursor: pointer; }
 .v3d-share:hover { background: var(--c-surface-green); }
 .v3d-from { text-align: right; margin-right: 4px; }

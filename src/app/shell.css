@@ -96,7 +96,9 @@ body { background: var(--c-white); color: var(--c-text); }
 .hab-menu__logout { color: var(--c-danger) !important; }
 
 @media (max-width: 899px) {
-  .hab-nav__items, .hab-account, .hab-nav__login, .hab-nav__register { display: none; }
+  .hab-nav__items, .hab-account { display: none; }
+  /* Two classes so the rule outranks .hab-btn (display: flex) on the guest register button (human review 2026-11-19). */
+  .hab-nav__end .hab-nav__login, .hab-nav__end .hab-nav__register { display: none; }
   .hab-nav__end { margin-left: auto; }
   .hab-nav__burger { display: grid; }
 }

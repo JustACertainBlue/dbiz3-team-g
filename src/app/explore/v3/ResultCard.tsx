@@ -10,7 +10,8 @@ import { vnd } from './ExperienceCard'
 type Params = Record<string, string | string[] | undefined>
 
 // variant "provider" (screen 24, mockup 19/11): no village · workshop line, no prepay line, CTA "Xem chi tiết".
-export default function ResultCard({ item, query, variant = 'search' }: { item: ResultView; query: Params; variant?: 'search' | 'provider' }) {
+// showDistance=false on 03 (human review 2026-11-19): the distance line stays on 02 only.
+export default function ResultCard({ item, query, variant = 'search', showDistance = true }: { item: ResultView; query: Params; variant?: 'search' | 'provider'; showDistance?: boolean }) {
   const keep = new URLSearchParams()
   for (const key of ['date', 'guests']) { const value = query[key]; if (typeof value === 'string' && value) keep.set(key, value); }
   const href = `/explore/experiences/${item.id}${keep.toString() ? `?${keep.toString()}` : ''}`
@@ -23,7 +24,7 @@ export default function ResultCard({ item, query, variant = 'search' }: { item: 
         <div className="v3r__titles">
           <h2 className="v3r__name"><Link href={href}>{item.name}</Link></h2>
           {!provider && <p className="v3r__where"><Link href={`/village/${item.villageId}`} className="v3r__village">{item.villageLine}</Link><span className="v3r__dot"> · </span><span>{item.providerName}</span></p>}
-          {!provider && item.distance && <p className="v3r__distance">{item.distance}</p>}
+          {!provider && showDistance && item.distance && <p className="v3r__distance">{item.distance}</p>}
         </div>
         {item.craft && <span className="v3r__craft">{item.craft}</span>}
       </div>

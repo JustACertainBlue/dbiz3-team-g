@@ -6,15 +6,10 @@ import { imageSize } from 'image-size'
 import nextEnv from '@next/env'
 import { command } from '../db/shared.mjs'
 import { storageClient } from './client.mjs'
+import { buildCatalogPlan } from './catalog-plan.mjs'
 nextEnv.loadEnvConfig(process.cwd())
 const apply=process.argv.includes('--apply')
 const refresh=process.argv.includes('--refresh-seed-images')
-const crafts={
- 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69':'ceramics','c8281688-2dc1-5cb1-9ff6-139df04ba562':'silk',
- 'd95bc77b-5e7b-53a6-a8af-5ccaabb485d8':'bamboo','b70bd0fa-6a81-5aec-9ff6-5303210b2fad':'conical-hats',
- 'bad51dc8-1529-506a-8302-cb0b1d95954c':'embroidery','67a2cbab-850c-5f69-b496-59f2e9a5f594':'wood-carving',
- '800b5192-03c7-5953-849b-32a321e12a47':'lacquer','8e485337-5a2c-5703-9fbf-5e0c6492cd87':'water-puppets',
-}
 await command(async client=>{
  const manifest=JSON.parse(readFileSync('assets/demo-media/manifest.json','utf8'))
  const photos=new Map(manifest.map(photo=>[photo.slug,photo]))
@@ -27,9 +22,17 @@ await command(async client=>{
    WHERE f.media_type LIKE 'image/%' AND f.file_id=ANY($1::uuid[])
      AND (f.storage_key LIKE 'seed/%' OR ($2 AND f.storage_key='prf-media/'||f.file_id::text))
      AND (pm.experience_id IS NOT NULL OR pvm.provider_id IS NOT NULL)`,[seedIds,refresh])
- const plan=candidates.rows.map(row=>({row,photo:photos.get(crafts[row.subject_experience])})).filter(item=>item.photo)
- const missing=[...new Set(candidates.rows.filter(row=>!photos.has(crafts[row.subject_experience])).map(row=>crafts[row.subject_experience]||'unmapped'))]
- console.log(JSON.stringify({mode:apply?'apply':'read-only plan',imageRecords:plan.length,missingCrafts:missing}))
+ const subjects=[...new Set(candidates.rows.map(row=>row.subject_experience).filter(Boolean))]
+ const described=await client.query(`SELECT e.experience_id,e.name,v.craft_type FROM public.experiences e
+   JOIN public.provider_profiles p ON p.provider_id=e.provider_id
+   LEFT JOIN public.provider_profile_versions v ON v.provider_id=p.provider_id AND v.version_no=COALESCE(p.published_version_no,p.current_version_no)
+   WHERE e.experience_id=ANY($1::uuid[])`,[subjects])
+ const experiences=new Map(described.rows.map(row=>[row.experience_id,{name:row.name,craft_type:row.craft_type}]))
+ const {plan,missingCrafts:missing,unresolved}=buildCatalogPlan({rows:candidates.rows,photos,experiences})
+ console.log(JSON.stringify({mode:apply?'apply':'read-only plan',imageRecords:plan.length,missingCrafts:missing,unresolvedFiles:unresolved.length,
+  filesSharedWithOtherExperiences:plan.filter(item=>item.shared.length).length,craftMismatches:plan.reduce((sum,item)=>sum+item.mismatched.length,0)}))
+ for(const item of plan)console.log(JSON.stringify({file_id:item.row.file_id,photo:item.photo.slug,photoCraft:item.photoCraft,sharedExperiences:item.shared.length,mismatched:item.mismatched}))
+ for(const fileId of unresolved)console.log(JSON.stringify({file_id:fileId,unresolved:'no single original catalog experience'}))
  if(!apply)return
  if(missing.length)throw new Error('Prepare all catalog photographs before applying')
  for(const {photo}of plan){

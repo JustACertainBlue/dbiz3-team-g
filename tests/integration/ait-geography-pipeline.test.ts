@@ -958,6 +958,7 @@ describe('AIT geography pipeline through the real extractor', () => {
     const appliedLine = text.split('\n').find(line => line.startsWith('Đang áp dụng:'))
 
     expect(text).not.toMatch(/\b\d+\.\d+\s*km\b/)
+    expect(text).toContain('Đang lọc:')
     expect(appliedLine).toContain('lụa')
     expect(appliedLine).not.toMatch(/\b(?:silk|pottery|woodcarving)\b/i)
   })

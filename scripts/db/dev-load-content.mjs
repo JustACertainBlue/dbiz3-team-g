@@ -4,7 +4,8 @@
 // Reads experiences.csv, providers.csv, villages.csv, agencies.csv and users.csv (columns as in the draft's SPEC.md).
 // - Refuses to connect unless DATABASE_URL names the DEV project ref (also for --dry-run); PROD is always refused.
 // - Needs migration 20261118120000_hab_ui_v3_content.sql applied (checked before anything else).
-// - --dry-run (default): validates the CSVs, reads the target rows in a READ ONLY transaction, prints counts, rolls back.
+// - --dry-run (default): validates the CSVs, then runs every write inside one transaction and rolls it back, so the
+//   database's CHECK, FK and trigger rules are exercised (human decision 2026-11-19); prints how many rows would change.
 // - --apply: one transaction. Every UPDATE must hit exactly one row, else everything rolls back. Before writing, the
 //   current values of every changed column (and the old experience_slots rows) go to an undo journal outside the repo
 //   (~/.hab-content-load/), and one audit_logs row (actor NULL = System, action SEED_CONTENT_LOAD) records the run.
@@ -118,6 +119,7 @@ export function plan(draft, vocab = vocabulary()) {
       highlights: highlights ? JSON.stringify(highlights) : null }
     if (nonEmpty(row.description_new)) set.description = row.description_new.trim()
     if (nonEmpty(row.editorial_craft)) set.editorial_craft = row.editorial_craft.trim()
+    if (nonEmpty(row.tour_suggestion)) set.tour_suggestion = row.tour_suggestion.trim()
     updates.push({ table: 'villages', key: { village_id: row.village_id }, set })
   }
   for (const row of draft.agencies) {
@@ -156,6 +158,16 @@ export function selectSql(update, lock) {
   return `SELECT ${columns} FROM ${update.table} WHERE ${where}${lock ? ' FOR UPDATE' : ''}`
 }
 
+/** SELECT telling whether the update would change the row (any column IS DISTINCT FROM its new value). */
+export function changedSql(update) {
+  const columns = Object.keys(update.set)
+  const where = update.published ? versionWhere : `${Object.keys(update.key)[0]} = $1`
+  const tests = columns.map((column, index) => `${column} IS DISTINCT FROM $${index + 2}${CAST[column] ?? ''}`)
+  return { text: `SELECT (${tests.join(' OR ')}) AS changed FROM ${update.table} WHERE ${where}`, values: [Object.values(update.key)[0], ...columns.map(column => update.set[column])] }
+}
+
+const slotKey = rows => JSON.stringify(rows.map(row => [row.label, row.start_time, row.end_time, [...row.weekdays].map(Number)]))
+
 export function updateSql(update) {
   const columns = Object.keys(update.set)
   const assignments = columns.map((column, index) => `${column} = $${index + 2}${CAST[column] ?? ''}`)
@@ -185,7 +197,7 @@ export async function run({ argv, env, connect, log, now = () => new Date(), jou
   await client.connect()
   try {
     await client.query('BEGIN')
-    if (!opts.apply) await client.query('SET TRANSACTION READ ONLY')
+    if (!opts.apply && opts.undo) await client.query('SET TRANSACTION READ ONLY')
     await assertMigration(client)
     if (opts.undo) {
       for (const entry of journal.before) {
@@ -202,7 +214,7 @@ export async function run({ argv, env, connect, log, now = () => new Date(), jou
     }
     const before = [], missing = []
     for (const update of work.updates) {
-      const { rows } = await client.query(selectSql(update, opts.apply), [Object.values(update.key)[0]])
+      const { rows } = await client.query(selectSql(update, true), [Object.values(update.key)[0]])
       if (rows.length !== 1) { missing.push(`${update.table} ${Object.values(update.key)[0]}`); continue }
       before.push({ table: update.table, key: update.key, published: update.published, values: rows[0] })
     }
@@ -211,23 +223,33 @@ export async function run({ argv, env, connect, log, now = () => new Date(), jou
     for (const experienceId of Object.keys(work.slots)) {
       oldSlots[experienceId] = (await client.query(`SELECT label, to_char(start_time, 'HH24:MI') AS start_time, to_char(end_time, 'HH24:MI') AS end_time, weekdays FROM experience_slots WHERE experience_id = $1 ORDER BY start_time`, [experienceId])).rows
     }
-    if (!opts.apply) {
-      await client.query('ROLLBACK')
-      log.log(`All ${before.length} target rows found. Dry run: READ ONLY transaction rolled back, nothing was written.`)
-      return { updated: 0, planned: work.updates.length }
+    let changed = 0
+    for (const update of work.updates) {
+      const { text, values } = changedSql(update)
+      if ((await client.query(text, values)).rows[0]?.changed) changed++
     }
-    mkdirSync(journalDir, { recursive: true })
-    const file = join(journalDir, `content-load-${now().toISOString().replace(/[:.]/g, '-')}.json`)
-    writeFileSync(file, JSON.stringify({ projectRef: ref, createdAt: now().toISOString(), before, slots: oldSlots }, null, 1))
+    const slotChanges = Object.keys(work.slots).filter(id => slotKey(oldSlots[id] ?? []) !== slotKey(work.slots[id])).length
+    let file = null
+    if (opts.apply) {
+      mkdirSync(journalDir, { recursive: true })
+      file = join(journalDir, `content-load-${now().toISOString().replace(/[:.]/g, '-')}.json`)
+      writeFileSync(file, JSON.stringify({ projectRef: ref, createdAt: now().toISOString(), before, slots: oldSlots }, null, 1))
+    }
     for (const update of work.updates) {
       const { text, values } = updateSql(update)
       if ((await client.query(text, values)).rowCount !== 1) refuse(`Update of ${update.table} ${Object.values(update.key)[0]} did not hit one row; rolled back.`)
     }
     for (const [experienceId, rows] of Object.entries(work.slots)) await replaceSlots(client, experienceId, rows)
-    await audit(client, now, { mode: 'load', counts: summary(work), journal: file })
+    await audit(client, now, { mode: opts.apply ? 'load' : 'load dry-run', counts: summary(work), journal: file })
+    log.log(`${changed} of ${work.updates.length} row(s) would change; slots of ${slotChanges} experience(s) would change.`)
+    if (!opts.apply) {
+      await client.query('ROLLBACK')
+      log.log(`All ${before.length} target rows found and every write passed the database rules. Dry run: rolled back, nothing kept.`)
+      return { updated: 0, planned: work.updates.length, changed, slotChanges }
+    }
     await client.query('COMMIT')
     log.log(`Updated ${work.updates.length} row(s) and ${summary(work).experience_slots} slot(s). Undo journal: ${file}`)
-    return { updated: work.updates.length, journal: file }
+    return { updated: work.updates.length, journal: file, changed, slotChanges }
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {})
     throw error

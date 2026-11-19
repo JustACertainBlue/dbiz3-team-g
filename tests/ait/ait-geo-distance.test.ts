@@ -6,6 +6,9 @@ import { buildTourPreferenceProfile } from '@/lib/ai/extractor'
 import { emptyConversationState } from '@/lib/ait/conversation-state'
 import { filterCandidateByRadius, haversineDistanceKm } from '@/lib/matching/geo'
 import { applyHardConstraints } from '@/lib/matching/constraint-engine'
+import { resolveVillageCards } from '@/lib/matching/card-resolver'
+import { resolveTestVillageCards } from '@/lib/matching/test-dataset'
+import { runVillageCardPipeline } from '@/lib/ait/matching-pipeline'
 
 const profile = (hardConstraints: Record<string, unknown> = {}) => ({
   hard_constraints: hardConstraints,
@@ -40,6 +43,11 @@ const candidate = (
 })
 
 describe('AIT distance calculations', () => {
+  it('rejects coordinates whose latitude is outside the valid range', () => {
+    expect(haversineDistanceKm({ lat: 90.01, lng: 0 }, { lat: 0, lng: 0 })).toBeUndefined()
+    expect(haversineDistanceKm({ lat: -90.01, lng: 0 }, { lat: 0, lng: 0 })).toBeUndefined()
+  })
+
   it('prioritizes the budget reason when both budget and radius exclude all results', () => {
     const message = buildResultsMessage({
       count: 0,
@@ -101,6 +109,39 @@ describe('AIT distance calculations', () => {
     expect(message).toContain(
       'Còn 3 làng khác trong bán kính: Quất Động — chưa xác nhận bán kính, Vạn Phúc, Yên Thái — chưa xác nhận bán kính.'
     )
+  })
+
+  it.each([
+    ['seed', false],
+    ['fixture', true],
+  ] as const)('reports exact post-filter overflow counts for zero, 3, 4 and many %s villages', (_dataset, fixture) => {
+    const sourceCards = fixture
+      ? resolveTestVillageCards('làng nghề', true)
+      : resolveVillageCards('làng nghề', true)
+    const postFilterCards = runVillageCardPipeline({
+      cards: sourceCards,
+      radiusKm: 1000,
+      distanceRequested: true,
+    })
+    const counts = [0, 3, 4, postFilterCards.length]
+    expect(postFilterCards.length).toBeGreaterThan(4)
+
+    for (const count of counts) {
+      const filtered = count === 0 ? [] : postFilterCards.slice(0, count)
+      const message = buildVillageCardResultsMessage(
+        filtered.slice(0, 3),
+        1000,
+        undefined,
+        filtered.slice(3),
+      )
+      const overflow = message.split('\n').find(line => line.startsWith('Còn '))
+
+      if (count <= 3) {
+        expect(overflow).toBeUndefined()
+      } else {
+        expect(overflow).toMatch(new RegExp(`^Còn ${count - 3} làng khác trong bán kính:`))
+      }
+    }
   })
 
   it('does not let an unrequested distance affect the default candidate order', async () => {

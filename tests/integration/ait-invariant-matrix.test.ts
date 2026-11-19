@@ -422,4 +422,92 @@ describe('AIT invariant matrix across seed and fixture', () => {
     }))
     expect(violations).toEqual([])
   })
+
+  it('checks AIT slot, dataset and text invariants against a literal independent oracle [MOCK]', async () => {
+    const transcript = [
+      {
+        input: 'Tìm làng lụa cho 12 khách dưới 20 km, ngân sách 300000đ/người, xuất phát từ Hoàn Kiếm.',
+        dataset: 'seed',
+        expected: {
+          craft: 'silk',
+          group_size: 12,
+          budget_per_person: 300000,
+          budget_basis: 'per_person',
+          origin: 'Hoàn Kiếm',
+          radius_km: 20,
+          budget_source_turn: 1,
+        },
+      },
+      {
+        input: 'Đổi ngân sách thành 400000đ/người test',
+        dataset: 'fixture',
+        expected: {
+          craft: 'silk',
+          group_size: 12,
+          budget_per_person: 400000,
+          budget_basis: 'per_person',
+          origin: 'Hoàn Kiếm',
+          radius_km: 20,
+          budget_source_turn: 2,
+        },
+      },
+      {
+        input: 'Gần trung tâm ấy.',
+        dataset: 'seed',
+        expected: {
+          craft: 'silk',
+          group_size: 12,
+          budget_per_person: 400000,
+          budget_basis: 'per_person',
+          origin: 'Hoàn Kiếm',
+          radius_km: 20,
+          budget_source_turn: 2,
+        },
+      },
+    ] as const
+    const session = await call(POST_SESSIONS, '/api/ait/sessions', {})
+    const sessionId = session.json.session_id as string
+    const records: Array<Record<string, unknown>> = []
+
+    for (const step of transcript) {
+      auditClock += 60_001
+      installLlmMock()
+      const response = await call(
+        POST_MESSAGES,
+        `/api/ait/sessions/${sessionId}/messages`,
+        { sender: 'Agency', text: step.input },
+        { id: sessionId },
+      )
+      const row = await demoRepository().find(
+        'matching_sessions',
+        item => item.matching_session_id === sessionId,
+      )
+      const context = typeof row?.conversation_context === 'string'
+        ? JSON.parse(row.conversation_context)
+        : row?.conversation_context
+      const state = context?.state ?? {}
+      const json = response.json ?? {}
+      const message = String(json.turn?.message ?? '')
+      const resultCount = Array.isArray(json.village_cards) ? json.village_cards.length : 0
+      const { budget_source_turn: expectedBudgetSourceTurn, ...expectedState } = step.expected
+
+      expect(json.is_test).toBe(step.dataset === 'fixture')
+      expect(state).toMatchObject(expectedState)
+      expect(state.slots.craft.source_turn).toBe(1)
+      expect(state.slots.budget_per_person.source_turn).toBe(expectedBudgetSourceTurn)
+      expect(resultCount).toBeLessThanOrEqual(3)
+      expect(message).not.toMatch(/\b\d+\.\d+\s*km\b/)
+      expect(message).not.toMatch(/\b(?:silk|pottery|woodcarving)\b/i)
+      expect(message).toContain('Đang áp dụng:')
+      records.push({
+        input: step.input,
+        dataset: step.dataset,
+        state,
+        village_count: resultCount,
+        response_text: message,
+      })
+    }
+
+    console.info('[MOCK-AIT-INDEPENDENT-ORACLE]', JSON.stringify(records))
+  })
 })

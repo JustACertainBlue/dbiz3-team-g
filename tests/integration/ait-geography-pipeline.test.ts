@@ -313,12 +313,14 @@ describe('AIT geography pipeline through the real extractor', () => {
   it.each([
     ['seed', false],
     ['fixture', true],
-  ] as const)('returns no cards for a zero-kilometer maximum radius on %s data', async (_source, isFixture) => {
+  ] as const)('explains that a zero-kilometer radius is invalid on %s data', async (_source, isFixture) => {
     installLlmMock('Mình đang tìm làng nghề phù hợp.')
     const response = await send(await openSession(), 'làng nghề dưới 0 km', isFixture)
 
     expect(response.status).toBe(201)
-    expect(response.json.turn.turn_type).toBe('no_results')
+    expect(response.json.turn.turn_type).toBe('answer')
+    expect(response.json.turn.message).toMatch(/bán kính không hợp lệ/i)
+    expect(response.json.turn.message.trim().split(/[.!?]+/).filter(Boolean)).toHaveLength(1)
     expect(response.json.village_cards).toEqual([])
     expect(response.json.activity_cards).toEqual([])
     expect(response.json.provider_cards).toEqual([])
@@ -492,6 +494,27 @@ describe('AIT geography pipeline through the real extractor', () => {
       reason: 'raw_span_not_in_latest_user_turn',
     })
     expect(mocks.llmCall).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a mocked budget hallucination grounded only in a kilometer span [MOCK]', async () => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.', undefined, [], undefined, {
+      budget_per_person: { action: 'set', value: 20000, raw_span: '10 km' },
+    })
+    const sessionId = await openSession()
+    const response = await send(sessionId, 'khoảng 10 km làng tò he')
+    const row = await demoRepository().find(
+      'matching_sessions',
+      item => item.matching_session_id === sessionId,
+    )
+    const context = typeof row?.conversation_context === 'string'
+      ? JSON.parse(row.conversation_context)
+      : row?.conversation_context
+
+    expect(context?.state.budget_per_person).toBeUndefined()
+    expect(response.json.extraction.delta_validation.rejected).toContainEqual({
+      slot: 'budget_per_person',
+      reason: 'budget_not_explicitly_stated',
+    })
   })
 
   it('accepts CHAT06 optional English-guide waiver through the validated relax delta', async () => {
@@ -923,6 +946,63 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(response.json.turn.message).toContain(
       'Chưa nhận ra địa điểm Sân bay Nội Bài, tạm tính từ trung tâm Hà Nội.',
     )
+  })
+
+  it('localizes craft and renders radius and distance kilometers for BUG-11/12', async () => {
+    installLlmMock('Mình tìm thấy làng lụa phù hợp.')
+    const response = await send(
+      await openSession(),
+      'Tìm làng lụa trong bán kính 20 km.',
+    )
+    const text = String(response.json.turn.message)
+    const appliedLine = text.split('\n').find(line => line.startsWith('Đang áp dụng:'))
+
+    expect(text).not.toMatch(/\b\d+\.\d+\s*km\b/)
+    expect(appliedLine).toContain('lụa')
+    expect(appliedLine).not.toMatch(/\b(?:silk|pottery|woodcarving)\b/i)
+  })
+
+  it.each([
+    ['0 khách gốm', 'khách'],
+    ['-5 khách gốm', 'khách'],
+    ['gốm dưới 0 km', 'bán kính'],
+    ['gốm dưới -5 km', 'bán kính'],
+  ])('rejects nonpositive %s with one validation sentence and no generic matches', async (input, invalidField) => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    const response = await send(await openSession(), input)
+    const turn = response.json.turn
+
+    expect(turn.message).toMatch(invalidField === 'khách' ? /số khách.*không hợp lệ/i : /bán kính.*không hợp lệ/i)
+    expect(turn.message.trim().split(/[.!?]+/).filter(Boolean)).toHaveLength(1)
+    expect(turn.top_matches).toEqual([])
+    expect(turn.additional_suggestions).toEqual([])
+    expect(response.json.village_cards).toEqual([])
+  })
+
+  it('replays BUG-27 with fallback and catalog-query classifier outputs [MOCK]', async () => {
+    installLlmMock('Mình đang tìm các làng nghề phù hợp.')
+    const classifier = vi.spyOn(llmRouter, 'classifyIntent')
+    const outcomes = [
+      null,
+      { intent: 'catalog_query', confidence: 1, source: 'llm' },
+    ] as const
+    const replay: Array<{ classifier: string; status: number; cards: number; text: string }> = []
+
+    for (const outcome of outcomes) {
+      demoRepository().reset()
+      classifier.mockResolvedValue(outcome)
+      const response = await send(await openSession(), 'đặt tour luôn cho tôi')
+      replay.push({
+        classifier: outcome?.intent ?? 'fallback',
+        status: response.status,
+        cards: response.json.turn.top_matches.length,
+        text: String(response.json.turn.message),
+      })
+    }
+
+    expect(replay).toHaveLength(2)
+    expect(replay.every(result => result.status === 201 && result.cards > 0)).toBe(true)
+    console.info('[MOCK-BUG-27-CLASSIFIER-COMPARISON]', JSON.stringify(replay))
   })
 
   it.each([

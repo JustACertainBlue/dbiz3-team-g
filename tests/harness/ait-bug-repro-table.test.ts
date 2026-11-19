@@ -36,7 +36,7 @@ function parseBugRows(markdown: string): BugRow[] {
   return rows
 }
 
-function deltaFor(text: string, bugId: string): ConversationDelta {
+function deltaFor(text: string): ConversationDelta {
   const delta: ConversationDelta = {}
   const craft = detectCraftPreference(text)
   if (craft) delta.craft = { action: 'set', value: craft, raw_span: text }
@@ -71,9 +71,7 @@ function deltaFor(text: string, bugId: string): ConversationDelta {
 
   const amount = parseExplicitBudgetAmount(text)
   const amountSpan = text.match(/\b\d[\d.,\s]*\s*(?:k\b(?!m)|nghìn|ngàn|triệu|đ|vnd)(?![\p{L}])/iu)?.[0]
-  if (bugId === 'BUG-21' && /km|cây\s*số/iu.test(text)) {
-    delta.budget_per_person = { action: 'set', value: 20000, raw_span: '20 km' }
-  } else if (amount !== undefined && amountSpan) {
+  if (amount !== undefined && amountSpan) {
     const groupTotal = /(?:cả đoàn|toàn đoàn|tổng đoàn|cho cả đoàn)/iu.test(text)
     const perPerson = groupTotal && groupSize ? Math.round(amount / groupSize) : amount
     delta.budget_per_person = { action: 'set', value: perPerson, raw_span: amountSpan }
@@ -284,7 +282,7 @@ function renderReport(
     `- Generated: ${generatedAt}`,
     '- Method: read each BUG reproduction cell from `docs/build/anti-bug-report.md`; for multi-example cells use the first quoted utterance exactly, otherwise send the source cell literally.',
     '- Route: `POST /api/ait/sessions` then `POST /api/ait/sessions/[id]/messages`; each case uses a fresh in-memory demo repository and a stubbed Cloudflare client. No real model, environment file, or Supabase was used.',
-    '- Mock boundary: `deltaFor` builds a heuristic delta from the input; this exercises route/state/validator behavior but does not test real-model extraction. BUG-21 deliberately injects an unsupported budget delta to check validator rejection.',
+    '- Mock boundary: `deltaFor` builds a heuristic delta from the input; this exercises route/state/validator behavior but does not test real-model extraction. An earlier BUG-21 special case hardcoded `budget_per_person=20000` from a km input; it has been removed because it made the replay manufacture the bug rather than observe extraction. A separate route test checks validator rejection of that malformed delta.',
     '- Dataset mode is selected by the route from the standalone `test` marker in the original input; BUG-20 injects a NaN distance through a mocked haversine result.',
     '- Supplemental [MOCK]: `filterCandidateByRadius` excludes candidate distances `NaN` and negative; the route test injects `NaN` from haversine and confirms no `NaN` appears in text. Separate route tests cover unrecognized explicit origin, BUG-10 budget rejection, and BUG-22 comma formatting.',
     '- “Không tái hiện trên [MOCK]” means only that the checked symptom was not observed on this scripted input; it is not evidence about real-model behavior.',
@@ -323,7 +321,7 @@ describe('AIT anti-bug replay report generator', () => {
     })
     vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockImplementation(async messages => {
       const text = [...messages].reverse().find(message => message.role === 'user')?.content ?? ''
-      const delta = deltaFor(text, activeBugId)
+      const delta = deltaFor(text)
       return {
         success: true,
         text: JSON.stringify({

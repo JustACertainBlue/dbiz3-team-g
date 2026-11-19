@@ -454,3 +454,20 @@
 @media (max-width: 899px) { .v3g { height: 280px; } }
 /* Result card below 600 px (human review 2026-11-19): craft tag above the title so the title keeps the full width. */
 @media (max-width: 599px) { .v3r__top { flex-direction: column-reverse; align-items: flex-start; gap: 8px; } }
+/* Screen 02 below 900 px (human review 2026-11-19): filter button + sort row, full-screen filter sheet, AI box after the
+   third result. From 900 px the page is unchanged. */
+.v3s-mobilebar { display: none; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.v3s-filterbtn { display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap); padding: 0 18px; border: 1.5px solid var(--c-primary); border-radius: 999px; background: var(--c-white); color: var(--c-primary-dark); font: 700 16px/22px var(--font-body); cursor: pointer; }
+.v3s-filterbtn svg { width: 18px; height: 18px; }
+.v3s-sheet { position: fixed; inset: 0; z-index: 1300; display: flex; flex-direction: column; background: var(--c-white); }
+.v3s-sheet__head { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px var(--gx); border-bottom: 1px solid var(--c-border); }
+.v3s-sheet__title { margin: 0; font: 700 20px/28px var(--font-body); color: var(--c-primary-dark); }
+.v3s-sheet__close { width: var(--tap); height: var(--tap); display: grid; place-items: center; border: 0; border-radius: 999px; background: transparent; color: var(--c-text-2); cursor: pointer; }
+.v3s-sheet__body { flex: 1; overflow-y: auto; padding: 16px var(--gx); }
+.v3s-sheet__body .v3-filters { border: 0; padding: 0; }
+.v3s-sheet__bar { position: sticky; bottom: 0; display: flex; gap: 12px; padding: 12px var(--gx) calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--c-border); background: var(--c-white); }
+.v3s-sheet__bar > * { flex: 1; justify-content: center; }
+@media (max-width: 899px) { .v3s-aside, .v3s-head .v3-sort { display: none; } .v3s-mobilebar { display: flex; } }
+@media (min-width: 900px) { .v3s-mobilebar, .v3s-need-mobile { display: none; } }
+/* Screen 24 below 600 px (human review 2026-11-19): message button on the avatar + name row, aligned right. */
+@media (max-width: 599px) { .v3p-head { flex-wrap: nowrap; align-items: flex-start; } .v3p-head__who { min-width: 0; gap: 12px; align-items: flex-start; } .v3p-head__who > div { min-width: 0; } .v3p-mark { width: 56px; height: 56px; font-size: 22px; } .v3p-h1 { font-size: 28px; line-height: 34px; } .v3p-chat { flex: none; margin-left: auto; } }

@@ -178,3 +178,21 @@ export function searchSubtitle(query: SearchQuery): string {
 }
 
 export { placeLine }
+
+/** "Lọc (n)" on screen 02 below 900 px (human review 2026-11-19): each chosen craft, duration and village, plus budget,
+ *  15+ capacity and free-only once each. The search itself (q, date, guests) and the sort are not filters. */
+export function activeFilterCount(query: SearchQuery): number {
+  return query.crafts.length + query.durations.length + query.villages.length
+    + (query.min !== null || query.max !== null ? 1 : 0) + (query.cap15 ? 1 : 0) + (query.freeOnly ? 1 : 0)
+}
+
+/** "Xoá bộ lọc": keeps q, date, guests and the sort; drops every filter and the page. */
+export function clearFiltersHref(params: Record<string, string | string[] | undefined>): string {
+  const next = new URLSearchParams()
+  for (const key of ['q', 'date', 'guests', 'sx']) {
+    const value = params[key]
+    const one = Array.isArray(value) ? value[0] : value
+    if (one) next.set(key, one)
+  }
+  return next.size ? `/explore/search?${next.toString()}` : '/explore/search'
+}

@@ -18,4 +18,7 @@ describe('narrow layout', () => {
   it('below 600 px the craft tag of a result card sits above the title so the title keeps the full width', () => {
     expect(css).toMatch(/@media \(max-width: 599px\) \{ \.v3r__top \{ flex-direction: column-reverse; align-items: flex-start; gap: 8px; \} \}/)
   })
+  it('below 600 px the 24 message button stays on the avatar + name row, aligned right', () => {
+    expect(css).toMatch(/@media \(max-width: 599px\) \{ \.v3p-head \{ flex-wrap: nowrap; align-items: flex-start; \} \.v3p-head__who \{ min-width: 0; gap: 12px; align-items: flex-start; \} \.v3p-head__who > div \{ min-width: 0; \} \.v3p-mark \{ width: 56px; height: 56px; font-size: 22px; \} \.v3p-h1 \{ font-size: 28px; line-height: 34px; \} \.v3p-chat \{ flex: none; margin-left: auto; \} \}/)
+  })
 })

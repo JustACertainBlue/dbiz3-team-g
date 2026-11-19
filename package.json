@@ -27,6 +27,7 @@
     "storage:setup": "node scripts/storage/setup.mjs",
     "storage:import-local": "node scripts/storage/import-local.mjs",
     "storage:catalog": "node scripts/storage/bootstrap-catalog.mjs",
+    "storage:catalog-copies": "node scripts/storage/refresh-catalog-copies.mjs",
     "test:storage": "node scripts/storage/test.mjs"
   },
   "dependencies": {

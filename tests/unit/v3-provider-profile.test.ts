@@ -53,7 +53,7 @@ describe('providerView', () => {
     expect(view.suitableFor).toEqual(['Đoàn học sinh', 'Khách quốc tế', 'Tour nửa ngày']) // vocabulary order
     expect(view.info.map(row => row.label)).toEqual(['Địa chỉ', 'Giờ nhận đoàn', 'Sức chứa', 'Ngôn ngữ hướng dẫn', 'Đỗ xe', 'Điện thoại', 'Email'])
     expect(view.info[0].value).toBe('Bát Tràng, Gia Lâm, Hà Nội · cách trung tâm khoảng 13 km')
-    expect(view.info[1].value).toBe('Thứ 2 – Thứ 6, 08:00 – 17:00. Nghỉ Thứ 7, Chủ nhật')
+    expect(view.info[1].value).toBe('Thứ 2 – Thứ 6, 08:00–17:00')
     expect(view.experiences.map(card => card.id)).toEqual(['e1', 'e2'])
     expect(view.similar.map(card => card.id)).toEqual(['e3'])
   })

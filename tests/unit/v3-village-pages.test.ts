@@ -59,7 +59,7 @@ describe('screen 03a /villages', () => {
     const html = renderToStaticMarkup(await VillagesPage({ searchParams: {} }))
     const t = text(html)
     expect(t).toContain('2 làng đang nhận đoàn.')
-    expect(t).toContain('Tất cả (2) Gốm sứ (1) Dệt lụa (1)')
+    expect(t).toContain('Tất cả (2) Dệt lụa (1) Làm gốm (1)')
     const cards = html.match(/<a class="v3-card v3l-card"[\s\S]*?<\/a>/g) ?? []
     expect(cards.map(card => text(card).trim())).toEqual([
       'Bát Tràng Làm gốm · Gia Lâm, Hà Nội 2 xưởng · 4 trải nghiệm Cách trung tâm khoảng 13 km',
@@ -69,9 +69,9 @@ describe('screen 03a /villages', () => {
     expect(t).toContain('Hiển thị 1–2 / 2 làng nghề')
   })
   it('filters by craft and marks the chosen chip', async () => {
-    const html = renderToStaticMarkup(await VillagesPage({ searchParams: { nghe: 'Silk/Textile' } }))
+    const html = renderToStaticMarkup(await VillagesPage({ searchParams: { nghe: 'Dệt lụa' } }))
     const chip = html.match(/<a class="v3l-chip"[^>]*>Dệt lụa \(1\)<\/a>/)?.[0] ?? ''
-    expect(chip).toContain('href="/villages?nghe=Silk%2FTextile"')
+    expect(decodeURIComponent(chip.match(/href="([^"]+)"/)![1]).replace(/\+/g, ' ')).toBe('/villages?nghe=Dệt lụa')
     expect(chip).toContain('aria-current="page"')
     expect((html.match(/v3l-card"/g) ?? []).length).toBe(1)
   })

@@ -65,7 +65,7 @@ describe('keyword, guests, filters', () => {
     expect(ids({ guests: '10' }).sort()).toEqual(['e1', 'e2', 'e3'])
   })
   it('filters by craft, budget, duration, capacity, village', () => {
-    expect(ids({ nghe: 'Ceramics' }).sort()).toEqual(['e1', 'e4'])
+    expect(ids({ nghe: 'Gốm sứ' }).sort()).toEqual(['e1', 'e4'])
     expect(ids({ tu: '160000', den: '200000' }).sort()).toEqual(['e2', 'e4'])
     expect(ids({ tg: 'duoi-90' })).toEqual(['e1'])
     expect(ids({ tg: '90-120' }).sort()).toEqual(['e2', 'e4'])
@@ -78,7 +78,7 @@ describe('keyword, guests, filters', () => {
   })
   it('counts options in the facets', () => {
     const facets = run({}).facets
-    expect(facets.crafts).toEqual([{ value: 'Ceramics', label: 'Gốm sứ', n: 2 }, { value: 'Other', label: 'Nghề khác', n: 1 }, { value: 'Silk/Textile', label: 'Dệt lụa', n: 1 }])
+    expect(facets.crafts).toEqual([{ value: 'Dệt lụa', label: 'Dệt lụa', n: 1 }, { value: 'Gốm sứ', label: 'Gốm sứ', n: 2 }, { value: 'Nghề khác', label: 'Nghề khác', n: 1 }])
     expect(facets.durations.map(item => item.n)).toEqual([1, 2, 1])
   })
 })

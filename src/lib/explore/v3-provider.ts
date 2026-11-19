@@ -25,6 +25,25 @@ function hoursOf(seed: ExploreSeed, providerId: string) {
   return { range, time: `${rows[0].local_start.slice(0, 5)} – ${rows[0].local_end.slice(0, 5)}`, closed }
 }
 
+/**
+ * "Giờ nhận đoàn" (human review 2026-11-19): open days only, consecutive days with the same hours grouped:
+ * "Thứ 2 – Thứ 6, 08:00–17:00"; "Thứ 2, Thứ 4 – Thứ 5, 08:00–17:00"; groups with other hours follow after "; ".
+ */
+export function openingHoursText(rows: CsvRow[]): string {
+  const windows = new Map<number, string[]>()
+  for (const row of rows) windows.set(Number(row.weekday), [...(windows.get(Number(row.weekday)) ?? []), `${row.local_start.slice(0, 5)}–${row.local_end.slice(0, 5)}`])
+  const byTime = new Map<string, number[]>()
+  for (const day of [...windows.keys()].sort((a, b) => a - b)) {
+    const time = [...windows.get(day)!].sort().join(' và ')
+    byTime.set(time, [...(byTime.get(time) ?? []), day])
+  }
+  return [...byTime].map(([time, days]) => {
+    const runs: number[][] = []
+    for (const day of days) { const last = runs[runs.length - 1]; if (last && day === last[last.length - 1] + 1) last.push(day); else runs.push([day]) }
+    return `${runs.map(run => run.length > 1 ? `${WEEKDAY[run[0]]} – ${WEEKDAY[run[run.length - 1]]}` : WEEKDAY[run[0]]).join(', ')}, ${time}`
+  }).join('; ')
+}
+
 export interface ProviderView {
   id: string; initials: string; eyebrow: string; name: string; address: string; villageId: string; villageTitle: string
   images: string[]; owner: { initials: string; name: string; title: string; phone: string | null; email: string | null }
@@ -74,7 +93,7 @@ export function providerView(seed: ExploreSeed, providerId: string, viewer: View
 
   const info = [
     { label: 'Địa chỉ', value: [version.location_address, km !== null ? `cách trung tâm khoảng ${km.toLocaleString('vi-VN')} km` : ''].filter(Boolean).join(' · ') },
-    { label: 'Giờ nhận đoàn', value: hours ? `${hours.range}, ${hours.time}.${hours.closed.length ? ` Nghỉ ${hours.closed.join(', ')}` : ''}`.replace(/\.$/, '') : '' },
+    { label: 'Giờ nhận đoàn', value: openingHoursText((seed.provider_operating_hours ?? []).filter(row => row.provider_id === providerId)) },
     { label: 'Sức chứa', value: max > 0 ? `Tối đa ${max} khách mỗi ca, nhiều ca liên tiếp trong ngày` : '' },
     { label: 'Ngôn ngữ hướng dẫn', value: languages.join(', ') },
     { label: 'Đỗ xe', value: provider.parking_note ?? '' },
@@ -105,6 +124,15 @@ export function providerView(seed: ExploreSeed, providerId: string, viewer: View
   }
 }
 
+/** Selected-day panel of "Lịch trống": one label and one sentence per state (human review 2026-11-19). */
+export const DAY_STATUS = {
+  free: { label: 'Còn trống', note: 'Xưởng còn nhận một đoàn trong ngày này.' },
+  hold: { label: 'Có đoàn giữ chỗ', note: 'Một đoàn đang giữ chỗ ngày này. Bạn có thể chọn ngày khác.' },
+  busy: { label: 'Đã có đoàn', note: 'Xưởng đã nhận đoàn ngày này. Bạn có thể chọn ngày khác.' },
+  off: { label: 'Xưởng nghỉ', note: 'Xưởng nghỉ ngày này. Bạn có thể chọn ngày khác.' },
+  past: { label: 'Ngày đã qua', note: 'Ngày này đã qua. Bạn có thể chọn ngày khác.' },
+} as const
+
 export interface CalendarDay { day: number; date: string; state: 'past' | 'free' | 'hold' | 'busy' | 'off'; hours: string }
 export interface MonthCalendar { month: string; title: string; leading: number; days: CalendarDay[]; prev: string; next: string }
 
@@ -129,6 +157,23 @@ export function monthCalendar(seed: ExploreSeed, providerId: string, month: stri
     days.push({ day, date, state, hours: open ? `${open.local_start.slice(0, 5)} – ${open.local_end.slice(0, 5)}` : '' })
   }
   return { month, title: `Tháng ${mon}/${year}`, leading, days, prev: shift(-1), next: shift(1) }
+}
+
+const addMonths = (month: string, offset: number) => { const [y, m] = month.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + offset, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}` }
+
+/** Preselected day of "Lịch trống": the search date when it is free, else the nearest free day from today (within
+ *  6 months); '' when there is none. */
+export function defaultCalendarDay(seed: ExploreSeed, providerId: string, searchDate: string, now: Date): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(searchDate)) {
+    const day = monthCalendar(seed, providerId, searchDate.slice(0, 7), now).days.find(item => item.date === searchDate)
+    if (day?.state === 'free') return searchDate
+  }
+  const today = hanoiDate(now)
+  for (let offset = 0; offset < 6; offset++) {
+    const free = monthCalendar(seed, providerId, addMonths(today.slice(0, 7), offset), now).days.find(item => item.state === 'free' && item.date >= today)
+    if (free) return free.date
+  }
+  return ''
 }
 
 export type { CsvRow }

@@ -72,7 +72,7 @@ describe('cardView', () => {
   const row = (id: string) => rows.find(item => item.experience.experience_id === id)!
   it('shows craft label, full location, duration/capacity, the first 3 highlight titles and "Giá từ" for everyone', () => {
     const card = cardView(data, row('e1'), [])
-    expect(card).toMatchObject({ id: 'e1', craft: 'Gốm sứ', location: 'Bát Tràng, Gia Lâm, Hà Nội', meta: '60 phút · Tối đa 12 khách/ca', priceFrom: 150000, image: '/api/prf/media/f1' })
+    expect(card).toMatchObject({ id: 'e1', craft: 'Làm gốm', location: 'Bát Tràng, Gia Lâm, Hà Nội', meta: '60 phút · Tối đa 12 khách/ca', priceFrom: 150000, image: '/api/prf/media/f1' })
     expect(card.highlights).toEqual(['Tự tay nặn', 'Mang bát về', 'Đã gồm đất'])
   })
   it('reads the old highlights shape and formats hours', () => {

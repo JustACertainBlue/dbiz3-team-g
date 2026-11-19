@@ -437,3 +437,18 @@
 .v3p-kvi b { display: block; font: 700 16px/24px var(--font-body); }
 .v3p-kvi span { display: block; font: 400 16px/24px var(--font-body); color: var(--c-text-2); }
 @media (max-width: 899px) { .v3p-kvg { grid-template-columns: 1fr; } .v3p-kvi:nth-child(2) { border-top: 1px solid var(--c-border-soft); } }
+/* Shared gallery (03, 04/23, 24): layout by image count, never an empty tile. */
+.v3g { flex: 999 1 600px; min-width: 0; height: 440px; display: grid; gap: 8px; }
+.v3g__t { position: relative; overflow: hidden; border-radius: 4px; min-height: 0; }
+.v3g__t1 { border-radius: 8px 4px 4px 8px; }
+.v3g--n5 { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.v3g--n5 .v3g__t1, .v3g--n4 .v3g__t1 { grid-column: span 2; grid-row: span 2; }
+.v3g--n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.v3g--n4 .v3g__t2 { grid-column: span 2; }
+.v3g--n3 { grid-template-columns: 2fr 1fr; grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.v3g--n3 .v3g__t1 { grid-row: span 2; }
+.v3g--n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: 1fr; }
+.v3g--n2 .v3g__t1 { border-radius: 8px 4px 4px 8px; }
+.v3g--n1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.v3g--n1 .v3g__t1 { border-radius: 8px; }
+@media (max-width: 899px) { .v3g { height: 280px; } }

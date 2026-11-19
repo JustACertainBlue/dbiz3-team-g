@@ -111,7 +111,7 @@ export function resultView(seed: ExploreSeed, row: Row, query: Pick<SearchQuery,
 
 function matches(row: Row, folded: string): number {
   if (!folded) return 1
-  const name = foldText(row.experience.name), craft = foldText(craftLabel(row.version.craft_type ?? '')), village = foldText(row.village.name)
+  const name = foldText(row.experience.name), craft = foldText(`${rowCraft(row.version.craft_type, row.village)} ${craftLabel(row.version.craft_type ?? '')}`), village = foldText(row.village.name)
   return name.includes(folded) ? 3 : craft.includes(folded) ? 2 : village.includes(folded) ? 1 : 0
 }
 
@@ -135,7 +135,7 @@ export function searchExperiences(seed: ExploreSeed, query: SearchQuery, viewer:
   const price = (row: Row) => Number(row.experience.price_per_person)
   const fits = (row: Row) => !query.guests || !query.fit || Number(row.experience.max_participants) >= query.guests
   const checks: Record<string, (row: Row) => boolean> = {
-    craft: row => !query.crafts.length || query.crafts.includes(row.version.craft_type),
+    craft: row => !query.crafts.length || query.crafts.includes(rowCraft(row.version.craft_type, row.village)),
     budget: row => (query.min === null || price(row) >= query.min) && (query.max === null || price(row) <= query.max),
     duration: row => !query.durations.length || DURATION_OPTIONS.some(option => query.durations.includes(option.value) && option.test(minutes(row))),
     fit: fits, cap15: row => !query.cap15 || Number(row.experience.max_participants) >= 15,
@@ -148,14 +148,14 @@ export function searchExperiences(seed: ExploreSeed, query: SearchQuery, viewer:
     : query.sort === 'thoi-luong' ? minutes(a.row) - minutes(b.row) || a.row.experience.name.localeCompare(b.row.experience.name, 'vi')
     : b.score - a.score)
   const count = (except: string, test: (row: Row) => boolean) => base.filter(item => passes(item.row, except) && test(item.row)).length
-  const crafts = [...new Set(base.map(item => item.row.version.craft_type).filter(Boolean))].sort()
+  const crafts = [...new Set(base.map(item => rowCraft(item.row.version.craft_type, item.row.village)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'))
   const villages = [...new Map(base.map(item => [item.row.village.village_id, item.row.village])).values()].sort((a, b) => a.name.localeCompare(b.name, 'vi'))
   const page = Math.min(query.page, Math.max(1, Math.ceil(sorted.length / PAGE_SIZE)))
   return {
     total: sorted.length, page, pageSize: PAGE_SIZE,
     items: sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => resultView(seed, item.row, query, isAgency)),
     facets: {
-      crafts: crafts.map(value => ({ value, label: craftLabel(value), n: count('craft', row => row.version.craft_type === value) })),
+      crafts: crafts.map(value => ({ value, label: value, n: count('craft', row => rowCraft(row.version.craft_type, row.village) === value) })),
       durations: DURATION_OPTIONS.map(option => ({ value: option.value, label: option.label, n: count('duration', row => option.test(minutes(row))) })),
       fit: query.guests ? count('fit', row => Number(row.experience.max_participants) >= query.guests!) : 0,
       cap15: count('cap15', row => Number(row.experience.max_participants) >= 15),

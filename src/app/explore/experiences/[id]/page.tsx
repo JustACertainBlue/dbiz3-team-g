@@ -10,7 +10,7 @@ import { currentServerSession } from '../../../../lib/auth/server-session';
 import { paymentsEnabled } from '../../../../lib/flags';
 import ExploreTracker from '../../ExploreTracker';
 import SearchBar from '../../v3/SearchBar';
-import CoverImage from '../../v3/CoverImage';
+import Gallery from '../../v3/Gallery';
 import AiBox from '../../v3/AiBox';
 import ChatButton from '../../v3/ChatButton';
 import ShareButton from '../../v3/ShareButton';
@@ -36,8 +36,6 @@ export default async function ExperienceEntry({ params, searchParams }: { params
   const week = query.date ? weekNote(seed, view.providerId, query.date) : '';
   const dateLong = query.date ? `${view.group.dateText.split(' ')[0]} ${view.group.dateText.split(' ')[1]}, ${query.date.slice(8, 10)}/${query.date.slice(5, 7)}/${query.date.slice(0, 4)}` : '';
   const aiHref = (text: string) => isAgency ? `/ai-matching?prompt=${encodeURIComponent(text)}` : '/login';
-  const gallery = view.images.slice(0, 7);
-  const more = view.images.length - gallery.length;
   const groupTitle = view.group.guests ? `Gợi ý cho đoàn ${view.group.guests} khách của bạn` : 'Gợi ý cho đoàn của bạn';
 
   return <div className="v3p">
@@ -60,12 +58,7 @@ export default async function ExperienceEntry({ params, searchParams }: { params
         </div>
       </div>
       <div className="v3d-hero">
-        <div className={`v3d-mosaic${gallery.length <= 3 ? ' v3d-mosaic--few' : ''}`}>
-          {gallery.length ? gallery.map((src, index) => <div key={`${src}-${index}`} className={index === 0 ? 'v3d-mosaic__main' : undefined}>
-            <CoverImage src={src} alt={index === 0 ? view.name : ''} eager />
-            {index === gallery.length - 1 && more > 0 && <span className="v3d-more">+{more} ảnh</span>}
-          </div>) : <div className="v3d-mosaic__main"><CoverImage src={null} alt="" /></div>}
-        </div>
+        <Gallery images={view.images} alt={view.name} />
         <aside className="v3d-side">
           <div className="v3-card v3d-owner">
             <div className="v3d-owner__who"><span className="v3d-avatar" aria-hidden="true">{view.owner.initials}</span><div><p className="v3d-owner__name">{view.owner.name}</p><p className="v3-cap">{view.owner.title}</p></div></div>

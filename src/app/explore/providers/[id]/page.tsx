@@ -4,12 +4,13 @@ import { notFound } from 'next/navigation';
 import { Bus, Check, CircleCheck, Clock, Info, Languages, Mail, MapPin, MessageSquareText, Phone, QrCode, Users, type LucideIcon } from 'lucide-react';
 import { resolveViewer } from '../../../../lib/explore/catalog';
 import { loadExploreRuntime } from '../../../../lib/explore/seed-repository';
-import { monthCalendar, providerView } from '../../../../lib/explore/v3-provider';
+import { defaultCalendarDay, monthCalendar, providerView } from '../../../../lib/explore/v3-provider';
 import { parseSearch } from '../../../../lib/explore/v3-search';
 import { currentServerSession } from '../../../../lib/auth/server-session';
 import { paymentsEnabled } from '../../../../lib/flags';
 import ExploreTracker from '../../ExploreTracker';
 import CoverImage from '../../v3/CoverImage';
+import Gallery from '../../v3/Gallery';
 import ChatButton from '../../v3/ChatButton';
 import ResultCard from '../../v3/ResultCard';
 import MonthCalendar from './MonthCalendar';
@@ -34,11 +35,11 @@ export default async function ProviderPage({ params, searchParams }: { params: {
   const now = new Date();
   const view = providerView(seed, params.id, viewer, now, paymentsEnabled(), { date: query.date, guests: query.guests });
   if (!view) notFound();
+  // Preselected day (human review 2026-11-19): the search date when free, else the nearest free day from today.
+  const chosen = defaultCalendarDay(seed, view.id, query.date, now);
   const thang = typeof searchParams.thang === 'string' && /^\d{4}-\d{2}$/.test(searchParams.thang) ? searchParams.thang
-    : (query.date || new Date(now.getTime() + 7 * 3_600_000).toISOString()).slice(0, 7);
+    : (chosen || query.date || new Date(now.getTime() + 7 * 3_600_000).toISOString()).slice(0, 7);
   const month = monthCalendar(seed, view.id, thang, now);
-  const gallery = view.images.slice(0, 5);
-  const more = view.images.length - gallery.length;
 
   return <div className="v3p">
     <ExploreTracker demoAgencyId={isAgency ? viewer.agencyId : undefined} />
@@ -58,12 +59,7 @@ export default async function ProviderPage({ params, searchParams }: { params: {
           : !isAgency && <Link href="/login" className="v3p-chat" aria-label="Nhắn tin cho xưởng" title="Nhắn tin cho xưởng"><MessageSquareText aria-hidden="true" /></Link>}
       </div>
       <div className="v3d-hero">
-        <div className={`v3p-mosaic${gallery.length <= 1 ? ' v3p-mosaic--one' : ''}`}>
-          {gallery.length ? gallery.map((src, index) => <div key={`${src}-${index}`} className={index === 0 ? 'v3p-mosaic__main' : undefined}>
-            <CoverImage src={src} alt={index === 0 ? view.name : ''} eager />
-            {index === gallery.length - 1 && more > 0 && <span className="v3d-more">+{more} ảnh</span>}
-          </div>) : <div className="v3p-mosaic__main"><CoverImage src={null} alt="" /></div>}
-        </div>
+        <Gallery images={view.images} alt={view.name} />
         <aside className="v3d-side">
           <div className="v3-card v3d-owner">
             <div className="v3d-owner__who"><span className="v3d-avatar v3p-avatar" aria-hidden="true">{view.owner.initials}</span><div><p className="v3d-owner__name">{view.owner.name}</p><p className="v3-cap">{view.owner.title}</p></div></div>
@@ -99,7 +95,7 @@ export default async function ProviderPage({ params, searchParams }: { params: {
 
     <section id="lich" className="hab-band v3d-sec">
       <h2 className="v3-h2 v3d-mb">Lịch trống</h2>
-      <MonthCalendar month={month} basePath={`/explore/providers/${view.id}`} isAgency={isAgency} initial={query.date} />
+      <MonthCalendar month={month} basePath={`/explore/providers/${view.id}`} isAgency={isAgency} initial={chosen} />
     </section>
 
     {view.info.length > 0 && <section id="thong-tin" className="hab-band v3d-sec">

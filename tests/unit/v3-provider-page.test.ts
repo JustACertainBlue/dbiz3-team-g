@@ -55,7 +55,7 @@ describe('screen 24 per mockup 19/11', () => {
     const rows = [...section.matchAll(/<div class="v3p-kvi"><svg[\s\S]*?<\/svg><div><b>([^<]+)<\/b><span[^>]*>([^<]+)<\/span><\/div><\/div>/g)].map(m => [m[1], m[2]])
     expect(rows).toEqual([
       ['Địa chỉ', 'Bát Tràng, Gia Lâm, Hà Nội · cách trung tâm khoảng 13 km'],
-      ['Giờ nhận đoàn', 'Thứ 2 – Thứ 6, 08:00 – 17:00. Nghỉ Thứ 7, Chủ nhật'],
+      ['Giờ nhận đoàn', 'Thứ 2 – Thứ 6, 08:00–17:00'],
       ['Sức chứa', 'Tối đa 15 khách mỗi ca, nhiều ca liên tiếp trong ngày'],
       ['Đỗ xe', 'Bãi đỗ xe 45 chỗ, đi bộ 3 phút đến xưởng'],
     ])

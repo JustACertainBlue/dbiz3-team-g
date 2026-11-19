@@ -70,3 +70,4 @@
   .v3v-hls, .v3l-grid { grid-template-columns: 1fr; }
   .v3v-pcard { padding: 20px; }
 }
+.v3v-gal { flex: none; margin-top: 20px; }

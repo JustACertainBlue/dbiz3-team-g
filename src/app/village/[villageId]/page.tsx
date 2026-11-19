@@ -13,7 +13,7 @@ import { currentServerSession } from '@/lib/auth/server-session'
 import { GUEST_OPTIONS } from '@/app/explore/v3/SearchBar'
 import AiBox from '@/app/explore/v3/AiBox'
 import ChatButton from '@/app/explore/v3/ChatButton'
-import CoverImage from '@/app/explore/v3/CoverImage'
+import Gallery from '@/app/explore/v3/Gallery'
 import ResultCard from '@/app/explore/v3/ResultCard'
 import '@/app/explore/v3/explore-v3.css'
 import '@/app/explore/v3/village-v3.css'
@@ -41,8 +41,6 @@ export default async function VillagePage({ params, searchParams }: { params: { 
   const ex = typeof searchParams.ex === 'string' ? searchParams.ex : ''
   const view = villageView(seed, params.villageId, viewer, { date: query.date, guests: query.guests, ex })
   if (!view) notFound()
-  const gallery = view.images.slice(0, 5)
-  const more = view.images.length - gallery.length
   const hasNotes = view.notes.length > 0
 
   return <div className="v3v">
@@ -56,12 +54,7 @@ export default async function VillagePage({ params, searchParams }: { params: { 
         </div>
         {view.experienceCount > 0 && <a className="hab-btn hab-btn--primary" href="#trai-nghiem">Xem trải nghiệm ở làng</a>}
       </div>
-      {gallery.length > 0 && <div className={`v3p-mosaic v3v-mosaic${gallery.length <= 1 ? ' v3p-mosaic--one' : ''}`}>
-        {gallery.map((src, index) => <div key={`${src}-${index}`} className={index === 0 ? 'v3p-mosaic__main' : undefined}>
-          <CoverImage src={src} alt={index === 0 ? view.title : ''} eager />
-          {index === gallery.length - 1 && more > 0 && <span className="v3d-more">+{more} ảnh</span>}
-        </div>)}
-      </div>}
+      <Gallery images={view.images} alt={view.title} className="v3v-gal" />
 
       <section aria-labelledby="v3v-hl" className="v3d-block">
         <h2 id="v3v-hl" className="v3-h3 v3d-mb v3v-h3">Điểm nổi bật của làng</h2>

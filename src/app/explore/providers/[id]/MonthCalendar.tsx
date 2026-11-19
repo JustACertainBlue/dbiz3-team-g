@@ -5,9 +5,8 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import type { MonthCalendar as Month } from '@/lib/explore/v3-provider'
+import { DAY_STATUS, type MonthCalendar as Month } from '@/lib/explore/v3-provider'
 
-const LABEL = { free: 'Còn trống', hold: 'Giữ chỗ', busy: 'Đã có đoàn', off: 'Nghỉ', past: '' } as const
 const LONG = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
 
 export default function MonthCalendar({ month, basePath, isAgency, initial }: { month: Month; basePath: string; isAgency: boolean; initial: string }) {
@@ -31,9 +30,9 @@ export default function MonthCalendar({ month, basePath, isAgency, initial }: { 
         {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(name => <span key={name} className="v3p-wd">{name}</span>)}
         {Array.from({ length: month.leading }, (_, i) => <span key={`b${i}`} className="v3p-mc m-blank" aria-hidden="true" />)}
         {month.days.map(item => {
-          const selectable = item.state === 'free' || item.state === 'hold'
+          const selectable = item.state !== 'past'
           return <button key={item.date} type="button" className={`v3p-mc m-${item.state}${item.date === selected ? ' m-sel' : ''}`} disabled={!selectable}
-            aria-label={`${item.day}/${month.month.slice(5)} ${LABEL[item.state]}`.trim()} aria-pressed={item.date === selected} onClick={() => setSelected(item.date)}>
+            aria-label={`${item.day}/${month.month.slice(5)} ${item.state === 'past' ? '' : DAY_STATUS[item.state].label}`.trim()} aria-pressed={item.date === selected} onClick={() => setSelected(item.date)}>
             <b>{item.day}</b>
           </button>
         })}
@@ -43,12 +42,12 @@ export default function MonthCalendar({ month, basePath, isAgency, initial }: { 
       {day ? <>
         <p className="v3p-cal__eb">NGÀY ĐÃ CHỌN</p>
         <p className="v3p-cal__date">{long}</p>
-        <p className={day.state === 'free' ? 'v3-av-ok' : 'v3-av-warn'}>{LABEL[day.state]}{day.hours ? ` · ${day.hours}` : ''}</p>
-        <p className="v3p-cal__note">{day.state === 'free' ? 'Xưởng còn nhận một đoàn trong ngày này.' : 'Đã có đoàn giữ chỗ ngày này. Bạn có thể chọn ngày khác.'}</p>
-        {isAgency
+        <p className={day.state === 'free' ? 'v3-av-ok' : 'v3-av-warn'}>{DAY_STATUS[day.state].label}{day.state === 'free' && day.hours ? ` · ${day.hours}` : ''}</p>
+        <p className="v3p-cal__note">{DAY_STATUS[day.state].note}</p>
+        {day.state === 'free' && (isAgency
           ? <button type="button" className="hab-btn hab-btn--primary" disabled title="Luồng đặt chỗ đang được làm">Gửi yêu cầu đặt ngày này</button>
-          : <Link className="hab-btn hab-btn--primary" href="/login">Đăng nhập để đặt chỗ</Link>}
-        <p className="v3-cap">Không mất phí. Xưởng nhận lời thì giữ chỗ 72 giờ để bạn thanh toán.</p>
+          : <Link className="hab-btn hab-btn--primary" href="/login">Đăng nhập để đặt chỗ</Link>)}
+        {day.state === 'free' && <p className="v3-cap">Không mất phí. Xưởng nhận lời thì giữ chỗ 72 giờ để bạn thanh toán.</p>}
       </> : <p className="v3p-cal__note">Chọn một ngày còn trống trên lịch.</p>}
     </aside>
   </div>

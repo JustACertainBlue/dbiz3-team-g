@@ -7,7 +7,7 @@ import type { ExploreSeed, Viewer } from './catalog'
 import { eligibleRows } from './catalog'
 import { experienceImages, mainCraft, placeLine, villageImage } from './v3-home'
 import { resultView, type ResultView } from './v3-search'
-import { CRAFT_LABELS, SUITABLE_FOR, craftLabel, parseDistance, parseHighlights, parseStringList, parseTourDetail, parseVisitNotes, type TourDetail } from './vocabulary'
+import { SUITABLE_FOR, craftLabel, parseDistance, parseHighlights, parseStringList, parseTourDetail, parseVisitNotes, type TourDetail } from './vocabulary'
 import { initials } from '../../app/components/nav/nav-model'
 
 export { villageImage }
@@ -64,14 +64,14 @@ export interface VillageList {
   facets: Array<{ value: string; label: string; n: number }>
 }
 
-/** 03a: filter by the village's main craft (`nghe`, a craft_type value), 9 villages per page (`page`). */
+/** 03a: filter by the village craft label (`nghe`, same label as the cards), 9 villages per page (`page`). */
 export function villageList(seed: ExploreSeed, params: Record<string, string | string[] | undefined>): VillageList {
   const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? ''
   const cards = villageCards(seed)
-  const facets = Object.keys(CRAFT_LABELS).map(value => ({ value, label: craftLabel(value), n: cards.filter(card => card.craftKey === value).length }))
-    .filter(facet => facet.n > 0)
+  const facets = [...new Set(cards.map(card => card.craft))].sort((a, b) => a.localeCompare(b, 'vi'))
+    .map(value => ({ value, label: value, n: cards.filter(card => card.craft === value).length }))
   const craft = facets.some(facet => facet.value === one(params.nghe)) ? one(params.nghe) : ''
-  const selected = craft ? cards.filter(card => card.craftKey === craft) : cards
+  const selected = craft ? cards.filter(card => card.craft === craft) : cards
   const pages = Math.max(1, Math.ceil(selected.length / VILLAGE_PAGE_SIZE))
   const requested = Number(one(params.page))
   const page = Number.isInteger(requested) && requested >= 1 && requested <= pages ? requested : 1

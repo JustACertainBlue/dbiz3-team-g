@@ -24,6 +24,27 @@ export interface MatchingConversationContext extends Record<string, unknown> {
   pending_question?: unknown
 }
 
+const matchingSessionWriteQueues = new Map<string, Promise<void>>()
+
+export async function withMatchingSessionWriteLock<T>(
+  sessionId: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  const previous = matchingSessionWriteQueues.get(sessionId) ?? Promise.resolve()
+  let release!: () => void
+  const current = new Promise<void>(resolve => { release = resolve })
+  matchingSessionWriteQueues.set(sessionId, current)
+  await previous
+  try {
+    return await operation()
+  } finally {
+    release()
+    if (matchingSessionWriteQueues.get(sessionId) === current) {
+      matchingSessionWriteQueues.delete(sessionId)
+    }
+  }
+}
+
 function parseConversationContext(value: unknown): MatchingConversationContext {
   if (value == null || value === '') return {}
   const parsed = typeof value === 'string' ? JSON.parse(value) : value

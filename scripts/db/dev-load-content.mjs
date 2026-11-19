@@ -171,7 +171,8 @@ const slotKey = rows => JSON.stringify(rows.map(row => [row.label, row.start_tim
 export function updateSql(update) {
   const columns = Object.keys(update.set)
   const assignments = columns.map((column, index) => `${column} = $${index + 2}${CAST[column] ?? ''}`)
-  if (['experiences', 'provider_profiles', 'villages', 'agency_profiles', 'user_accounts'].includes(update.table)) assignments.push('updated_at = now()')
+  // Tables with an updated_at column (data/schema.sql; villages and provider_profile_versions have none).
+  if (['experiences', 'provider_profiles', 'agency_profiles', 'user_accounts'].includes(update.table)) assignments.push('updated_at = now()')
   const where = update.published ? versionWhere : `${Object.keys(update.key)[0]} = $1`
   return { text: `UPDATE ${update.table} SET ${assignments.join(', ')} WHERE ${where}`, values: [Object.values(update.key)[0], ...columns.map(column => update.set[column])] }
 }

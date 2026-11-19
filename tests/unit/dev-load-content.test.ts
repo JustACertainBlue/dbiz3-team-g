@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 // Same list as src/lib/explore/vocabulary.ts SUITABLE_FOR on ui/v3-public (not on main yet).
 const SUITABLE_FOR = ['Đoàn học sinh', 'Đoàn gia đình', 'Khách quốc tế', 'Team building', 'Tour nửa ngày', 'Tour văn hoá – di sản',
   'Không cần kinh nghiệm', 'Sản phẩm mang về', 'Chụp ảnh cùng nghệ nhân', 'Xem nghệ nhân làm việc']
-import { DEV_PROJECT_REF, PROD_PROJECT_REF, assertDevTarget, parseArgs, plan, readDraft, run, summary, vocabulary } from '../../scripts/db/dev-load-content.mjs'
+import { DEV_PROJECT_REF, PROD_PROJECT_REF, assertDevTarget, parseArgs, plan, readDraft, run, summary, updateSql, vocabulary } from '../../scripts/db/dev-load-content.mjs'
 
 const url = (ref: string) => `postgresql://postgres.${ref}:test-only@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres`
 const E = '11111111-1111-4111-8111-111111111111', P = '22222222-2222-4222-8222-222222222222', V = '33333333-3333-4333-8333-333333333333'
@@ -95,6 +95,17 @@ describe('plan', () => {
     expect(() => plan(readDraft(draftDir({ highlights: JSON.stringify(Array(5).fill({ title: 'x' })) })))).toThrow(/1–4 items/)
     expect(() => plan(readDraft(draftDir({ slots: '[{"label":"Ca sáng","start":"09:30","end":"08:30","weekdays":[1]}]' })))).toThrow(/invalid slot/)
     expect(() => plan(readDraft(draftDir({ inclusions: '[1]' })))).toThrow(/inclusions must be an object/)
+  })
+})
+
+describe('updateSql', () => {
+  // DEV dry run 2026-11-19 (writes rolled back): "column updated_at of relation villages does not exist".
+  // Only experiences, provider_profiles, agency_profiles and user_accounts have updated_at (data/schema.sql, DEV catalog).
+  it('sets updated_at only on tables that have it', () => {
+    const work = plan(readDraft(draftDir()))
+    const sql = (table: string) => updateSql(work.updates.find(u => u.table === table)!).text
+    for (const table of ['experiences', 'provider_profiles', 'agency_profiles', 'user_accounts']) expect(sql(table)).toContain('updated_at = now()')
+    for (const table of ['villages', 'provider_profile_versions']) expect(sql(table)).not.toContain('updated_at')
   })
 })
 

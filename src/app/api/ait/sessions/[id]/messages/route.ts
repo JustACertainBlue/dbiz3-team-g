@@ -1129,6 +1129,10 @@ export async function POST(
             totalCount === 0
             && conversationState.radius_km !== undefined
             && matching.rejected.some(({ reason }) => reason === 'radius'),
+          noResultsDueToBudget:
+            totalCount === 0
+            && conversationState.budget_per_person !== undefined
+            && matching.rejected.some(({ reason }) => reason === 'budget'),
           excludedVillages: excludedVillageNames,
           excludedCrafts: excludedCraftNames,
           missingPrimary: extraction.missing_primary,

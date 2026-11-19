@@ -12,6 +12,7 @@ import { resolveTestVillageCards } from '@/lib/matching/test-dataset'
 import { runVillageCardPipeline } from '@/lib/ait/matching-pipeline'
 import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
 import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
+import * as geo from '@/lib/matching/geo'
 import type { ConversationDelta } from '@/lib/ait/conversation-delta-schema'
 import { extractTourDate } from '@/lib/ai/tour-date'
 import {
@@ -912,6 +913,18 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(response.json.turn.message).not.toContain('Khoảng cách tính từ trung tâm Hà Nội (Hồ Gươm)')
   })
 
+  it('reports an unrecognized airport origin and says distances use the Hanoi center', async () => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.', 'Sân bay Nội Bài')
+    const response = await send(
+      await openSession(),
+      'làng nghề cách Sân bay Nội Bài dưới 10 km',
+    )
+
+    expect(response.json.turn.message).toContain(
+      'Chưa nhận ra địa điểm Sân bay Nội Bài, tạm tính từ trung tâm Hà Nội.',
+    )
+  })
+
   it.each([
     ['làng nghề cách Hồ Gươm dưới 10 km', undefined, 10],
     ['làng nghề dưới 9 km', undefined, 9],
@@ -1373,6 +1386,44 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect((response.json.village_cards as Json[]).some(card =>
       String(card.name).includes('Bát Tràng')
     )).toBe(true)
+  })
+
+  it('formats the rounded radius with a Vietnamese decimal comma in the route response', async () => {
+    installLlmMock('Mình tìm thấy làng nghề phù hợp.')
+    const response = await send(await openSession(), 'dưới 8.14 km')
+    const text = String(response.json.turn.message)
+
+    expect(response.json.tour_preference_profile.hard_constraints.radius_km).toBe(8.1)
+    expect(text).toContain('bán kính 8,1 km')
+    expect(text).not.toMatch(/\b8\.1\s*km\b/)
+  })
+
+  it('explains that budget removed every match instead of reporting missing distance', async () => {
+    installLlmMock('Mình đang tìm làng gốm phù hợp.')
+    const response = await send(
+      await openSession(),
+      '10 khách, dưới 10 km, 10k',
+    )
+    const text = String(response.json.turn.message)
+
+    expect(response.json.turn.turn_type).toBe('no_results')
+    expect(text).toContain(
+      'Không tìm thấy trải nghiệm nào phù hợp với ngân sách tối đa 10.000đ/người.',
+    )
+    expect(text).not.toContain('Chưa có dữ liệu khoảng cách')
+  })
+
+  it('does not expose NaN distance values when the route receives a corrupted distance result', async () => {
+    installLlmMock('Mình đang tìm làng nghề phù hợp.')
+    vi.spyOn(geo, 'haversineDistanceKm').mockReturnValue(Number.NaN)
+    const response = await send(
+      await openSession(),
+      'làng nghề dưới 10 km',
+    )
+
+    expect(response.status).toBe(201)
+    expect(response.json.turn.message).not.toMatch(/\bNaN\b/i)
+    expect(response.json.village_cards).toEqual([])
   })
 
   it('rounds long decimal radius values to at most one decimal in state and text', async () => {

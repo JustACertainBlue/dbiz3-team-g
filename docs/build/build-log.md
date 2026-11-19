@@ -18,6 +18,18 @@ did and what the humans decided.
 
 ## 2. Run entries
 
+### Entry 75: 19/11 Copilot — finish AIT BUG-09/10/20/22 replay and fixes
+
+| Field | Value |
+|---|---|
+| Path and agent | Copilot; local follow-up on `feat/ait-conversational-llm`, starting HEAD `f9a5696`; worktree was clean before this run. |
+| Scope | Regenerate the BUG-01..29 [MOCK] report, verify no-results reason priority and radius display, and fix the confirmed BUG-10 and BUG-22 messages. No push, real-model calls, environment/secret/Supabase access, or non-AIT code edits. |
+| Produced | `BUG-10`: pass `noResultsDueToBudget` from the session route to `buildResultsMessage`; prioritize that reason over radius when both filters exclude all matches. `BUG-22`: display a rounded radius with a Vietnamese decimal comma while retaining integer display for whole-kilometer radii. Added route tests for explicit unknown origin, budget rejection, NaN distance and radius formatting; added function-level NaN/negative candidate-distance coverage and a budget-plus-radius precedence oracle. Refined the BUG replay harness and regenerated `docs/build/bug-repro-table.md`; all rows are [MOCK], and no commit attribution is made without a red/green pair. |
+| Test-first and mutation evidence | A new combined budget/radius no-results test failed before the precedence change: received the radius explanation instead of the budget explanation. The anti input for BUG-10 had previously failed before the message fix and passes with the exact budget explanation. BUG-22's `dưới 8.14 km` route case previously printed `8.1 km` and passes with `8,1 km`; `10 km` remains without a decimal. No existing expected result was changed. The booking phrase test probe showed `đặt tour luôn cho tôi` still reaches catalog matching; no new router rule was added. |
+| Replay findings | The harness read BUG-01..29 from `anti-bug-report.md`; BUG-01/02 were checked at function level, BUG-20 injected NaN into the route distance calculation, BUG-29 used the available Persona 6 transcript, and every model-dependent replay is explicitly bounded by its stubbed classifier/delta. BUG-16's validator rejects zero, but the route still returns generic matches without explaining the invalid group size. BUG-17 is governed by the entity-first JQ-03 decision; the harness forces `catalog_query` and cannot establish real-model classification. BUG-27 remains reproducible for the booking phrase because the pre-route booking regex does not match `đặt tour luôn`; discount/monthly-price requests have no deterministic refusal rule. Those gaps are marked temporary for Stage B; no new rule was added. |
+| Verification | Focused geography tests: 5 passed; distance/precedence tests: 3 passed; replay generator: 1 passed; `npx.cmd tsc --noEmit`: passed; `npm.cmd run lint`: passed. Full `npm.cmd test -- --reporter=dot`: 267 files passed, 2 failed, 6 skipped; 1,951 tests passed, 3 failed, 31 skipped. The three existing failures are T037 and T039 in `ait-matching-api.test.ts` and the `lang gom bat trang` case in `village-display-name.test.ts`; T037/T039 were also red at baseline `6898bff` (11 passed, 2 failed), so they are not A-BIS regressions. `npm.cmd run build`: passed; Next.js printed the pre-existing `/ai-matching` dynamic-server-usage diagnostic. The build tool reported loading `.env.local` and `.env`; neither file was manually opened, edited, or printed, and no model call was made. |
+| Boundaries | No push, no real-model calls, and no edits to `.env*`, `.demo-data/`, `data/`, Supabase, or outside AIT/build evidence. |
+
 ### Entry 74: 19/11 Copilot — verify CHAT06 relax through the AIT validator route
 
 | Field | Value |

@@ -10,6 +10,7 @@ import * as llmRouter from '@/lib/ait/llm-router'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
+import * as geo from '@/lib/matching/geo'
 import type { ConversationDelta } from '@/lib/ait/conversation-delta-schema'
 
 type Handler = (request: never, context?: never) => Promise<Response>
@@ -112,7 +113,7 @@ function classifyOutcome(
   const budget = state.budget_per_person
   const groupSize = state.group_size
   const reproduced = (condition: boolean, criterion: string) => ({
-    status: condition ? 'còn tái hiện trong lượt [MOCK]' : 'hết tái hiện trong lượt [MOCK]',
+    status: condition ? 'còn tái hiện trên [MOCK]' : 'không tái hiện trên [MOCK]',
     criterion,
   })
   const inconclusive = (criterion: string) => ({
@@ -135,7 +136,7 @@ function classifyOutcome(
     case 'BUG-08':
       return reproduced(state.origin === '20 km' || radius !== 20 || groupSize !== 10, 'Câu khoảng cách bị gán sang origin hoặc mất bán kính/số khách.')
     case 'BUG-09':
-      return reproduced(!text.includes('Chưa nhận ra địa điểm'), 'Điểm xuất phát không nhận diện được nhưng thiếu thông báo.')
+      return inconclusive('Input nguồn chỉ ghi “sân bay Nội Bài”, không nói rõ đây là điểm xuất phát; delta mock không tự suy diễn origin. Kiểm tra route riêng với delta origin tường minh đã xác nhận có thông báo.')
     case 'BUG-10':
       return reproduced(/chưa có dữ liệu khoảng cách/i.test(text), 'Thông báo sai lý do loại kết quả, nêu thiếu khoảng cách.')
     case 'BUG-11':
@@ -149,22 +150,25 @@ function classifyOutcome(
     case 'BUG-15':
       return reproduced(groupSize !== 13, 'Tổng người lớn và trẻ em không bằng 13.')
     case 'BUG-16':
-      return reproduced(groupSize === 0 || /0 khách/.test(text), 'Số khách bằng 0 được chấp nhận.')
+      return reproduced(
+        groupSize === 0 || /0 khách/.test(text) || (groupSize === undefined && cards.length > 0),
+        'Validator rejects group_size=0 and leaves it out of state, but the route still returns generic matches without explaining the invalid group size.',
+      )
     case 'BUG-17':
-      return reproduced(cards.length > 0, 'Yêu cầu ngoài phạm vi bị trả kết quả matching.')
+      return {
+        status: 'hành vi theo JQ-03; [MOCK] classifier được stub thành catalog_query',
+        criterion: 'No deterministic creative-writing refusal matches this request, so classification is left to the LLM. The harness forces catalog_query; this reflects the entity-first JQ-03 decision only under the stub, not verified real-model behavior.',
+      }
     case 'BUG-18':
       return reproduced(budget === 1500000 || state.budget_basis !== 'group_total', 'Tổng ngân sách không được chia theo 10 khách hoặc mất basis.')
     case 'BUG-19':
       return reproduced(radius === 3, 'Scientific notation bị parse thành 3 km.')
     case 'BUG-20':
-      return {
-        status: 'không chạy được đúng điều kiện tái hiện',
-        criterion: 'Đã chạy input nguyên văn trên fixture chuẩn, nhưng fixture không được làm hỏng để có distance NaN như điều kiện BUG-20.',
-      }
+      return reproduced(/\bNaN\b/i.test(text), 'Đã inject distance NaN vào haversine trong test route; text phản hồi không được chứa NaN.')
     case 'BUG-21':
       return reproduced(budget !== undefined, 'Delta ngân sách không có căn cứ tiền được chấp nhận.')
     case 'BUG-22':
-      return reproduced(radius === 8.14 || /\b\d+\.\d+\s*km\b/.test(text), 'Radius/text vẫn giữ số lẻ hai chữ số hoặc km dấu chấm.')
+      return reproduced(/\b\d+\.\d+\s*km\b/.test(text), 'Kiểm tra dấu chấm trong số km hiển thị sau khi radius state được làm tròn theo JQ-04.')
     case 'BUG-23':
       return reproduced(radius === 10.0001 || /10\.0001\s*km/.test(text), 'Radius/text vẫn giữ bốn chữ số thập phân.')
     case 'BUG-24':
@@ -175,9 +179,14 @@ function classifyOutcome(
         'Ngoại tệ bị hiểu thành VND hoặc không có thông báo đơn vị không hỗ trợ.',
       )
     case 'BUG-27':
-      return reproduced(cards.length > 0, 'Yêu cầu đặt tour bị trả kết quả matching thay vì booking guidance.')
+      return reproduced(
+        cards.length > 0,
+        'Mock route bỏ qua booking action; isBookingActionRequest không khớp “đặt tour luôn”, còn router không có luật cho “giảm giá 50%”/“cho xem giá tháng sau”. TẠM cho Giai đoạn B, không thêm luật ở lượt này.',
+      )
     case 'BUG-28':
       return reproduced(cards.length > 0, 'Câu hỏi thống kê/GPS bị trả danh sách matching.')
+    case 'BUG-29':
+      return inconclusive('Replay dùng câu Persona 6 từ tests/harness/personas.test.ts và ép classifier trả null để đi nhánh fallback; delta vẫn do heuristic mock sinh, nên không kết luận về extraction của model thật.')
     default:
       return { status: 'không có oracle phân loại cho input này', criterion: routeInput }
   }
@@ -200,12 +209,20 @@ async function execute(row: BugRow) {
   demoRepository().reset()
   const session = await call(POST_SESSIONS, '/api/ait/sessions', {})
   const sessionId = session.json.session_id as string
-  const response = await call(
-    POST_MESSAGES,
-    `/api/ait/sessions/${sessionId}/messages`,
-    request,
-    { id: sessionId },
-  )
+  const nanDistance = row.id === 'BUG-20'
+    ? vi.spyOn(geo, 'haversineDistanceKm').mockReturnValue(Number.NaN)
+    : undefined
+  let response: Awaited<ReturnType<typeof call>>
+  try {
+    response = await call(
+      POST_MESSAGES,
+      `/api/ait/sessions/${sessionId}/messages`,
+      request,
+      { id: sessionId },
+    )
+  } finally {
+    nanDistance?.mockRestore()
+  }
   const match = await demoRepository().find(
     'matching_sessions',
     item => item.matching_session_id === sessionId,
@@ -231,27 +248,6 @@ function renderReport(
   records: Array<Awaited<ReturnType<typeof execute>> | Record<string, unknown>>,
   generatedAt: string,
 ) {
-  const traceNotes: Record<string, string> = {
-    'BUG-03': '`git log -S radiusKm <= 0` không tìm thấy commit trong range; lịch sử trước baseline có `c4d35f8` (unify AIT radius filtering) và `a5ff6f8`.',
-    'BUG-04': 'Không có commit phù hợp trong 6898bff..HEAD; `git log -S hasUnsupportedDistanceConstraint` tìm thấy `00819c4` (reject unsupported distance requests), trước baseline.',
-    'BUG-05': 'Không tìm được commit thay đổi parser sản phẩm bằng `git log -S` trong range. Kết quả này không chứng minh parser sản phẩm nhận “cây số”: mock `deltaFor` tự tạo radius cho input này.',
-    'BUG-06': 'Không có commit phù hợp trong 6898bff..HEAD; lịch sử trước baseline có `b5e8916` (complete AIT origin, state, and geo debug behavior), nhưng lượt này chỉ xác nhận route không trả cards.',
-    'BUG-07': 'Không có commit phù hợp trong 6898bff..HEAD; lịch sử trước baseline có `b5e8916` (complete AIT origin, state, and geo debug behavior), nhưng lượt này chỉ xác nhận phản hồi “chưa có dữ liệu”.',
-    'BUG-08': 'Không có commit phù hợp trong 6898bff..HEAD; `git log -S originDisplayNotice` tìm thấy `b5e8916` và `5733529` trước baseline. Delta input do mock tạo ra.',
-    'BUG-13': 'Không có commit phù hợp trong 6898bff..HEAD; `git log -S originDisplayLabel` tìm thấy `a5ff6f8` và `1ae9ad7` trước baseline.',
-    'BUG-14': '`git log -S invalid_date` trong range tìm thấy `119a821` (validator delta); không chứng minh hành vi real-model extraction.',
-    'BUG-15': '`git log -S group_size_must_be_positive_integer` trong range tìm thấy `119a821` (validator delta); tổng 10 người lớn + 3 trẻ em do mock tạo.',
-    'BUG-16': '`git log -S group_size_must_be_positive_integer` trong range tìm thấy `119a821` (validator delta); lượt này chứng minh delta số 0 bị từ chối.',
-    'BUG-18': '`git log -S group_total` trong range tìm thấy `119a821` (validator delta); phép chia ngân sách đoàn trên lượt này do mock tạo.',
-    'BUG-19': 'Không tìm thấy commit bằng `git log -S 1e3` trong source liên quan; không gán commit sửa. Kết quả chỉ cho thấy route hiện từ chối input trên mock.',
-    'BUG-21': '`git log -S per_person_basis_not_stated` trong range tìm thấy `119a821`; lượt này cố ý inject delta ngân sách không có tiền và validator từ chối.',
-    'BUG-23': 'Không có commit phù hợp trong 6898bff..HEAD; `git log -S toFixed(1)` tìm thấy `14cbd04` (BUG-11..29 P1 validation/localization), trước baseline.',
-    'BUG-24': 'Không tìm thấy commit đổi chuỗi cảnh báo bằng `git log -S` trong range; không gán commit sửa.',
-    'BUG-25': 'Không tìm thấy commit đổi chuỗi cảnh báo tiền tệ bằng `git log -S` trong range; không gán commit sửa.',
-    'BUG-26': 'Không có commit phù hợp trong 6898bff..HEAD; `14cbd04` là commit lịch sử bao quát BUG-11..29, không đủ để quy riêng BUG-26.',
-    'BUG-28': 'Không tìm thấy commit liên quan bằng `git log -S GPS` trong route router; không gán commit sửa.',
-  }
-
   const details = records.map(record => {
     const data = record as Record<string, any>
     return [
@@ -262,13 +258,13 @@ function renderReport(
       `- Dataset: ${data.dataset ?? '—'}`,
       `- Kết luận: ${data.conclusion?.status ?? data.status}`,
       `- Tiêu chí: ${data.conclusion?.criterion ?? data.reason ?? '—'}`,
-      '- Giới hạn kết luận: chỉ quan sát một input trên route [MOCK]; “hết tái hiện” không đồng nghĩa đã xác định commit sửa.',
+      '- Giới hạn kết luận: chỉ quan sát một input trên route [MOCK]; không tái hiện không đồng nghĩa đã xác định commit sửa.',
       `- HTTP: ${data.httpStatus ?? 'không chạy'}`,
       '- State:',
       '```json',
       JSON.stringify(data.state ?? null, null, 2),
       '```',
-      `- Text phản hồi: ${data.responseText ? `> ${data.responseText.replace(/\r?\n/g, '\n> ')}` : 'không có (không gọi route)'}`,
+      `- Text phản hồi: ${data.responseText ? `> ${data.responseText.replace(/\r?\n/g, '\n>')}` : 'không có (không gọi route)'}`,
       '- Delta validation:',
       '```json',
       JSON.stringify(data.deltaValidation ?? null, null, 2),
@@ -276,25 +272,28 @@ function renderReport(
       '',
     ].join('\n')
   }).join('\n')
-  const traces = Object.entries(traceNotes)
-    .map(([id, note]) => `- **${id}**: ${note}`)
+  const traces = records
+    .filter(record => (record as Record<string, any>).conclusion?.status === 'không tái hiện trên [MOCK]')
+    .map(record => `- **${(record as Record<string, any>).id}**: không quy được; chưa có bằng chứng test đỏ trước và xanh sau commit.`)
     .join('\n')
 
   return [
     '# BUG-01..29 — tái hiện qua route [MOCK]',
     '',
+    '- Lưu ý: mock tự sinh delta theo heuristic, vì vậy “không tái hiện” không chứng minh model thật đã đúng.',
     `- Generated: ${generatedAt}`,
     '- Method: read each BUG reproduction cell from `docs/build/anti-bug-report.md`; for multi-example cells use the first quoted utterance exactly, otherwise send the source cell literally.',
     '- Route: `POST /api/ait/sessions` then `POST /api/ait/sessions/[id]/messages`; each case uses a fresh in-memory demo repository and a stubbed Cloudflare client. No real model, environment file, or Supabase was used.',
     '- Mock boundary: `deltaFor` builds a heuristic delta from the input; this exercises route/state/validator behavior but does not test real-model extraction. BUG-21 deliberately injects an unsupported budget delta to check validator rejection.',
-    '- Dataset mode is selected by the route from the standalone `test` marker in the original input; BUG-20 uses the standard fixture, not corrupted data.',
-    '- “Hết tái hiện” means only that the checked symptom was not observed on this one scripted [MOCK] input. It does not prove a fix or identify a commit.',
+    '- Dataset mode is selected by the route from the standalone `test` marker in the original input; BUG-20 injects a NaN distance through a mocked haversine result.',
+    '- Supplemental [MOCK]: `filterCandidateByRadius` excludes candidate distances `NaN` and negative; the route test injects `NaN` from haversine and confirms no `NaN` appears in text. Separate route tests cover unrecognized explicit origin, BUG-10 budget rejection, and BUG-22 comma formatting.',
+    '- “Không tái hiện trên [MOCK]” means only that the checked symptom was not observed on this scripted input; it is not evidence about real-model behavior.',
     '',
     details,
     '',
     '## Truy nguyên commit cho các lượt không tái hiện',
     '',
-    '- Searches used `git log -S` against `6898bff..HEAD` and, where noted, all history. “Không có commit phù hợp” means no relevant source change was found in the requested range; it is not evidence that a specific commit fixed the symptom.',
+    '- Chỉ được ghi “đã sửa bởi commit X” nếu có test đỏ trước và xanh sau commit. Chưa có bằng chứng cặp test này cho các mã bên dưới, nên tất cả đều không quy được.',
     traces,
   ].join('\n')
 }
@@ -314,10 +313,13 @@ describe('AIT anti-bug replay report generator', () => {
       provider: 'cloudflare_workers_ai',
       model: 'ait-bug-table-mock',
     })
-    vi.spyOn(llmRouter, 'classifyIntent').mockResolvedValue({
-      intent: 'catalog_query',
-      confidence: 1,
-      source: 'llm',
+    vi.spyOn(llmRouter, 'classifyIntent').mockImplementation(async () => {
+      if (activeBugId === 'BUG-29') return null
+      return {
+        intent: 'catalog_query',
+        confidence: 1,
+        source: 'llm',
+      }
     })
     vi.spyOn(CloudflareAiClient.prototype, 'runChat').mockImplementation(async messages => {
       const text = [...messages].reverse().find(message => message.role === 'user')?.content ?? ''
@@ -344,22 +346,21 @@ describe('AIT anti-bug replay report generator', () => {
     expect(rows.map(row => row.id)).toEqual(Array.from({ length: 29 }, (_, index) =>
       `BUG-${String(index + 1).padStart(2, '0')}`
     ))
+    const persona6Input =
+      'làng mây tre đan hoặc thêu tay, không quá 30km, 15-20 người, ngân sách tổng không quá 5 triệu'
+    const bug29 = rows.find(row => row.id === 'BUG-29')
+    if (bug29) {
+      bug29.sourceText = `Persona 6 transcript: "${persona6Input}"`
+      bug29.routeInput = persona6Input
+    }
 
     const records: Array<Awaited<ReturnType<typeof execute>> | Record<string, unknown>> = []
     for (const row of rows) {
       if (row.id === 'BUG-01' || row.id === 'BUG-02') {
         records.push({
           ...row,
-          status: 'không chạy được vì cần dữ liệu hỏng',
-          reason: 'Yêu cầu NaN/tọa độ sai hoặc distance âm đòi hỏi fixture dữ liệu hỏng; lần chạy này không sửa seed/fixture.',
-        })
-        continue
-      }
-      if (row.id === 'BUG-29') {
-        records.push({
-          ...row,
-          status: 'không chạy được vì thiếu chuỗi tái hiện',
-          reason: 'Anti report chỉ dẫn tới “Persona 6 logs”, nhưng không ghi input multi-turn nguyên văn.',
+          status: 'không tái hiện trên [MOCK] ở mức hàm; không chạy qua route',
+          reason: 'tests/ait/ait-geo-distance.test.ts gọi filterCandidateByRadius trực tiếp với distance NaN và distance âm; BUG-02 cũng có test route riêng cho radius âm.',
         })
         continue
       }

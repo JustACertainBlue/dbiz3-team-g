@@ -4,7 +4,7 @@ import { buildResultsMessage, buildVillageCardResultsMessage } from '@/lib/ait/m
 import { profileSchema } from '@/lib/ait/schemas'
 import { buildTourPreferenceProfile } from '@/lib/ai/extractor'
 import { emptyConversationState } from '@/lib/ait/conversation-state'
-import { haversineDistanceKm } from '@/lib/matching/geo'
+import { filterCandidateByRadius, haversineDistanceKm } from '@/lib/matching/geo'
 import { applyHardConstraints } from '@/lib/matching/constraint-engine'
 
 const profile = (hardConstraints: Record<string, unknown> = {}) => ({
@@ -40,6 +40,35 @@ const candidate = (
 })
 
 describe('AIT distance calculations', () => {
+  it('prioritizes the budget reason when both budget and radius exclude all results', () => {
+    const message = buildResultsMessage({
+      count: 0,
+      max_budget_per_person: 10000,
+      radiusKm: 10,
+      noResultsWithinRadius: true,
+      noResultsDueToBudget: true,
+    })
+
+    expect(message).toContain(
+      'Không tìm thấy trải nghiệm nào phù hợp với ngân sách tối đa 10.000đ/người.',
+    )
+    expect(message).not.toContain('bán kính 10 km')
+    expect(message).not.toContain('Chưa có dữ liệu khoảng cách')
+  })
+
+  it.each([
+    ['NaN', Number.NaN],
+    ['negative', -1],
+  ])('excludes a corrupted %s candidate distance from a requested radius', (_label, distance) => {
+    const result = filterCandidateByRadius({
+      distance_km: distance,
+      distance_source: 'haversine',
+      location_source: 'from_plus_code',
+    }, 10)
+
+    expect(result.include).toBe(false)
+  })
+
   it('marks each unconfirmed village in the overflow summary', () => {
     const overflow = [
       { name: 'Quất Động', radius_status: 'unconfirmed' as const },

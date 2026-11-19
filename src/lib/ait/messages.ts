@@ -9,6 +9,11 @@ function formatKm(n: number): string {
   return n.toFixed(1).replace('.', ',')
 }
 
+function formatRadiusKm(n: number): string {
+  if (!Number.isFinite(n)) return 'chưa có dữ liệu'
+  return Number(n.toFixed(1)).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
+}
+
 function toDDMMYYYY(d: string): string {
   const parts = d.split('-');
   return parts.length >= 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d;
@@ -57,6 +62,7 @@ export function buildResultsMessage({
   radiusKm,
   dateScheduleUnconfirmed = false,
   noResultsWithinRadius = false,
+  noResultsDueToBudget = false,
   excludedVillages = [],
   excludedCrafts = [],
   missingPrimary = [],
@@ -75,6 +81,7 @@ export function buildResultsMessage({
   radiusKm?: number;
   dateScheduleUnconfirmed?: boolean;
   noResultsWithinRadius?: boolean;
+  noResultsDueToBudget?: boolean;
   excludedVillages?: string[];
   excludedCrafts?: string[];
   missingPrimary?: string[];
@@ -129,24 +136,29 @@ export function buildResultsMessage({
   const radiusNote = radiusKm == null
     ? undefined
     : hasMissingDistance
-      ? `Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${radiusKm} km.`
+      ? `Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${formatRadiusKm(radiusKm)} km.`
       : hasUnconfirmedRadius
         ? hasApproximateRadius
-          ? `Có trải nghiệm chưa xác nhận bán kính ${radiusKm} km do tọa độ xấp xỉ.`
-          : `Có trải nghiệm chưa xác nhận bán kính ${radiusKm} km do sai số ước tính theo huyện.`
+          ? `Có trải nghiệm chưa xác nhận bán kính ${formatRadiusKm(radiusKm)} km do tọa độ xấp xỉ.`
+          : `Có trải nghiệm chưa xác nhận bán kính ${formatRadiusKm(radiusKm)} km do sai số ước tính theo huyện.`
         : undefined
+  if (count === 0 && noResultsDueToBudget && max_budget_per_person != null) {
+    return withNotices(
+      `Không tìm thấy trải nghiệm nào phù hợp với ngân sách tối đa ${formatVND(max_budget_per_person)}đ/người.`,
+    )
+  }
   if (radiusKm != null && count === 0 && noResultsWithinRadius) {
     const from = isDefaultOrigin
       ? ` tính từ ${DEFAULT_HANOI_ORIGIN_LABEL}`
       : displayOrigin
         ? ` tính từ ${displayOrigin}`
         : '';
-    return withNotices(`Không tìm thấy trải nghiệm nào phù hợp trong bán kính ${radiusKm} km${from}. Mình không tự mở rộng bán kính.`);
+    return withNotices(`Không tìm thấy trải nghiệm nào phù hợp trong bán kính ${formatRadiusKm(radiusKm)} km${from}. Mình không tự mở rộng bán kính.`);
   }
   if (count === 0) {
     const noMatches = 'Không tìm thấy trải nghiệm nào phù hợp với các tiêu chí hiện tại.'
     return withNotices(radiusKm != null
-      ? `${noMatches}\n\n${radiusNote ?? `Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${radiusKm} km.`}`
+      ? `${noMatches}\n\n${radiusNote ?? `Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${formatRadiusKm(radiusKm)} km.`}`
       : noMatches)
   }
   if (craft) criteria.push(`nghề ${craft}`);
@@ -159,7 +171,7 @@ export function buildResultsMessage({
   }
   if (max_budget_per_person != null) criteria.push(`ngân sách tối đa ${formatVND(max_budget_per_person)}đ/người`);
   if (origin && !isDefaultOrigin) criteria.push(`điểm xuất phát ${origin}`);
-  if (radiusKm != null && hasCompleteDistances && !hasUnconfirmedRadius) criteria.push(`bán kính ${radiusKm} km`);
+  if (radiusKm != null && hasCompleteDistances && !hasUnconfirmedRadius) criteria.push(`bán kính ${formatRadiusKm(radiusKm)} km`);
 
   const group = group_size != null ? ` cho nhóm ${group_size} khách` : '';
   const qualifier = criteria.length > 0 ? ` (${criteria.join(', ')})` : '';
@@ -218,7 +230,7 @@ export function buildVillageCardResultsMessage(
   if (cards.length === 0) {
     return radiusKm == null
       ? 'Chưa tìm thấy làng nghề phù hợp trong dữ liệu.'
-      : `Chưa tìm thấy làng nghề phù hợp trong bán kính ${radiusKm} km${displayOrigin ? ` tính từ ${displayOrigin}` : ''}.`
+      : `Chưa tìm thấy làng nghề phù hợp trong bán kính ${formatRadiusKm(radiusKm)} km${displayOrigin ? ` tính từ ${displayOrigin}` : ''}.`
   }
 
   const hasDistances = cards.some(card =>
@@ -249,7 +261,7 @@ export function buildVillageCardResultsMessage(
     || typeof card.distance_km !== 'number'
     || !Number.isFinite(card.distance_km)
   )) {
-    lines.push(`Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${radiusKm} km.`)
+    lines.push(`Chưa có dữ liệu khoảng cách để kiểm tra bán kính ${formatRadiusKm(radiusKm)} km.`)
   }
   if (radiusKm != null && overflowCards.length > 0) {
     const names = overflowCards.slice(0, 3).map(card =>

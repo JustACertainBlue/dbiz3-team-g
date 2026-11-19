@@ -20,7 +20,7 @@
 .explore-header { position: sticky; top: 0; z-index: 40; border-bottom: var(--border-width-1) solid var(--alpha-teal-16-11); background: var(--alpha-gray-99-94); backdrop-filter: blur(16px); }
 .explore-header__inner { max-width: 1240px; min-height: 78px; margin: auto; padding: 0 var(--space-28px); display: flex; align-items: center; gap: var(--space-32px); }
 .explore-brand { display: flex; align-items: center; gap: var(--space-12px); min-width: 245px; text-decoration: none; }
-.explore-brand__mark { width: 42px; height: 42px; display: grid; place-items: center; color: var(--palette-orange-96); background: var(--exp-clay); border-radius: var(--radius-brand-mark); font-family: Georgia, serif; font-size: var(--font-size-22); font-weight: 700; box-shadow: inset 0 0 0 4px var(--alpha-white-20); }
+.explore-brand__mark { width: 42px; height: 42px; display: grid; place-items: center; color: var(--palette-orange-96); background: var(--exp-clay); border-radius: var(--radius-brand-mark); font-family: var(--font-body); font-size: var(--font-size-22); font-weight: 700; box-shadow: inset 0 0 0 4px var(--alpha-white-20); }
 .explore-brand strong, .explore-brand small { display: block; }
 .explore-brand strong { font-family: var(--font-serif), Georgia, serif; font-size: var(--font-size-17); letter-spacing: -.01em; }
 .explore-brand small { margin-top: var(--space-1px); color: var(--exp-clay); font-size: var(--font-size-9); font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }

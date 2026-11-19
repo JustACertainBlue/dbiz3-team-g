@@ -10,6 +10,8 @@ import ExperienceActions from './ExperienceActions';
 import { hasQuoteRequest } from '../../lib/demo/commercial-handoff-service';
 import GuestLockedActions from './GuestLockedActions';
 import { currentServerSession } from '../../lib/auth/server-session';
+import AppFooter from '../components/footer/AppFooter';
+import { footerVisible } from '../components/nav/nav-model';
 import './explore-v9.css';
 import { categoryLabel, craftLabel } from '../../lib/explore/display-labels';
 
@@ -125,6 +127,6 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
         </nav>}
       </section>
     </main>
-    <footer className="xv-footer"><span>© {new Date().getFullYear()} Hanoi Artisan Bridge</span>{!isAgency && <Link href="/login">Đăng nhập Agency</Link>}</footer>
+    {footerVisible(session, '/explore') && <AppFooter />}
   </div>;
 }

@@ -9,7 +9,12 @@ export async function ownAccount(session: SessionContext) {
   const agency = session.agencyId ? (await repo.find('agency_profiles', item => item.agency_id === session.agencyId)) : undefined
   const provider = session.providerId ? (await repo.find('provider_profiles', item => item.provider_id === session.providerId)) : undefined
   const version = provider ? (await repo.find('provider_profile_versions', item => item.provider_id === provider.provider_id && item.version_no === provider.current_version_no)) : undefined
-  return { full_name: row.full_name, title: row.title, phone: row.phone, email: row.email, role: session.role, admin_type: session.adminType, data_scope: session.dataScope, organization: agency?.company_name || version?.business_name || '', business_href: session.agencyId ? `/agency/${session.agencyId}` : session.providerId ? `/provider/${session.providerId}` : null }
+  // Admin header (UI v3, human decision 2026-11-18): a UBND admin's unit is "UBND xã <village>" from the village
+  // assignment (read only). HDT and unassigned UBND accounts get no organisation.
+  const assignment = session.adminType === 'UBND' ? (await repo.find('ubnd_village_assignments', item => item.ubnd_user_id === session.userId)) : undefined
+  const village = assignment ? (await repo.find('villages', item => item.village_id === assignment.village_id)) : undefined
+  const unit = village?.name ? `UBND xã ${village.name}` : ''
+  return { full_name: row.full_name, title: row.title, phone: row.phone, email: row.email, role: session.role, admin_type: session.adminType, data_scope: session.dataScope, organization: agency?.company_name || version?.business_name || unit, business_href: session.agencyId ? `/agency/${session.agencyId}` : session.providerId ? `/provider/${session.providerId}` : null }
 }
 
 export async function updateOwnAccount(session: SessionContext, input: Record<string, unknown>) {

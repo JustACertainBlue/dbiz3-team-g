@@ -2,12 +2,12 @@
 .xv { color: var(--color-text-primary); }
 .xv-placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: var(--color-brand-700); background: linear-gradient(135deg, var(--color-brand-200), var(--color-accent-soft)); }
 
-/* ---- Hero: 1fr / 1fr, min 680, the floating nav sits over it ---- */
-.xv-hero { position: relative; display: grid; grid-template-columns: 1fr 1fr; min-height: var(--layout-hero-min-height); margin-top: -84px; }
+/* ---- Hero: 1fr / 1fr, min 680, directly under the 68 px v3 bar (no overlap) ---- */
+.xv-hero { position: relative; display: grid; grid-template-columns: 1fr 1fr; min-height: var(--layout-hero-min-height); }
 .xv-hero__media { position: relative; z-index: 2; overflow: hidden; min-height: var(--layout-hero-min-height); }
 .xv-hero__media img { width: 100% !important; height: 100% !important; max-height: none !important; aspect-ratio: auto !important; object-fit: cover !important; border-radius: 0 !important; position: absolute; inset: 0; }
 .xv-hero__media > div[role="img"] { position: absolute; inset: 0; aspect-ratio: auto !important; border-radius: 0 !important; }
-.xv-hero__panel { position: relative; z-index: 1; min-width: 0; padding: 136px 0 48px 48px; background: var(--color-hero-panel); display: flex; flex-direction: column; }
+.xv-hero__panel { position: relative; z-index: 1; min-width: 0; padding: 52px 0 48px 48px; background: var(--color-hero-panel); display: flex; flex-direction: column; }
 .xv-script { margin: 0; font: 400 32px/44px var(--text-script-family); letter-spacing: var(--text-script-ls); color: var(--color-accent-default); }
 .xv-hero__title { margin: 4px 0 0; font: 700 var(--text-hero-size)/var(--text-hero-line) var(--font-heading); letter-spacing: -0.02em; }
 .xv-hero__lead { max-width: 46ch; margin: 16px 48px 0 0; font: 400 16px/24px var(--font-body); color: var(--color-text-secondary); }
@@ -82,7 +82,7 @@
 
 @media (max-width: 1023px) { .xv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 767px) {
-  .xv-hero { grid-template-columns: 1fr; margin-top: -68px; min-height: 0; }
+  .xv-hero { grid-template-columns: 1fr; min-height: 0; }
   .xv-hero__media { min-height: 340px; }
   .xv-hero__panel { position: static; z-index: auto; padding: 16px 0 0 12px; background: none; }
   .xv-hero__intro { position: absolute; z-index: 3; left: 12px; right: 12px; top: 324px; transform: translateY(-100%); padding: 16px 20px; border-radius: 20px; background: rgba(15, 61, 42, .78); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); color: var(--color-text-onbrand); }

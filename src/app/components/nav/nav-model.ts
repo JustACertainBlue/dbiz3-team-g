@@ -1,18 +1,19 @@
-// Navigation per role (design wave 3). Content follows the screen specs: "Agency main navigation uses
-// EXP017/AIT121/BKG137/SCH141/COM048; Provider uses DSH018/EXP067/BKG133/SCH139/COM065; Admin uses ADM079/ADM095.
-// Guest has EXP120 and AUT009/REG003, with no AI navigation." Avatar menu: My Account → ACC129,
-// My Business → PRF019 (Agency) / PRF127 (Provider), Logout → AUT026. Labels follow the Figma navigation frames.
+// Navigation per role, mockup v3 (hab-mockup-v3 png/01 Guest, png/21 Tour Agency, png/29 Local Provider,
+// png/38 Admin, png/20 account menu). Human decisions 2026-11-18: the bar shows exactly the mockup items (no "Lịch";
+// the schedule pages stay reachable from in-page links); HDT "Duyệt hồ sơ" → /admin/agencies and stays selected
+// on /admin/providers; UBND "Duyệt hồ sơ" → /admin/providers.
 import type { SessionContext } from '@/lib/auth/session'
 
-export type NavIcon = 'compass' | 'sparkles' | 'clipboard' | 'calendar' | 'message' | 'grid' | 'star' | 'building' | 'check' | 'users' | 'key'
-export interface NavItem { href: string; label: string; short?: string; icon: NavIcon; unread?: boolean }
-export interface AccountLink { href: string; label: string; icon: 'user' | 'building' }
+export interface NavItem { href: string; label: string; /** Extra path prefixes that also select this item. */ alsoActive?: string[] }
+export interface AccountLink { href: string; label: string }
 
-export type Shell = 'guest' | 'portal' | 'admin'
+export type HeaderVariant = 'guest' | 'agency' | 'provider' | 'admin'
 
-export function shellFor(session: SessionContext | null): Shell {
+export function headerVariant(session: SessionContext | null): HeaderVariant {
   if (!session?.authenticated) return 'guest'
-  return session.role === 'ADMIN' && !session.mustChangePassword ? 'admin' : 'portal'
+  if (session.role === 'ADMIN') return 'admin'
+  if (session.role === 'Local_Provider') return 'provider'
+  return 'agency'
 }
 
 export function homeHref(session: SessionContext | null): string {
@@ -23,7 +24,7 @@ export function homeHref(session: SessionContext | null): string {
   return '/explore'
 }
 
-/** Guest navigation (shared §5 rule: "Guest has EXP120 and AUT009/REG003, with no AI navigation"); #253. */
+/** Guest navigation of the sign-in pages (AuthShell, #253): "Guest has EXP120 and AUT009/REG003, with no AI navigation". */
 export function guestNavLinks(): Array<{ href: string; label: string }> {
   return [
     { href: '/explore', label: 'Khám phá' },
@@ -32,71 +33,66 @@ export function guestNavLinks(): Array<{ href: string; label: string }> {
   ]
 }
 
-/** Portal tagline under the logo (Figma). */
-export function tagline(session: SessionContext | null): string {
-  if (session?.role === 'Local_Provider') return 'Cổng nhà cung cấp địa phương'
-  if (session?.role === 'ADMIN') return 'Cổng quản trị viên'
-  return 'Cổng đại lý du lịch B2B'
-}
-
 export function navItems(session: SessionContext | null): NavItem[] {
-  if (!session?.authenticated) return [{ href: '/explore', label: 'Khám phá', icon: 'compass' }]
-  if (session.mustChangePassword) return [{ href: '/account/change-password', label: 'Đổi mật khẩu tạm', icon: 'key' }]
-  if (session.role === 'Tour_Agency' && session.agencyId) {
-    const base = `/agency/${session.agencyId}`
-    return [
-      { href: '/explore', label: 'Khám phá', icon: 'compass' },
-      { href: '/ai-matching', label: 'Ghép tour AI', short: 'Ghép tour', icon: 'sparkles' },
-      { href: `${base}/bookings`, label: 'Đặt chỗ', icon: 'clipboard' },
-      { href: `${base}/schedule`, label: 'Lịch', icon: 'calendar' },
-      { href: '/messages', label: 'Tin nhắn', icon: 'message', unread: true },
-    ]
-  }
+  if (!session?.authenticated) return [{ href: '/explore', label: 'Khám phá' }]
+  if (session.mustChangePassword) return [{ href: '/account/change-password', label: 'Đổi mật khẩu tạm' }]
+  if (session.role === 'Tour_Agency' && session.agencyId) return [
+    { href: '/explore', label: 'Khám phá' },
+    { href: `/agency/${session.agencyId}/bookings`, label: 'Lịch sử đặt chỗ' },
+    { href: '/ai-matching', label: 'Ghép tour AI' },
+  ]
   if (session.role === 'Local_Provider' && session.providerId) {
     const base = `/provider/${session.providerId}`
     return [
-      { href: `${base}/dashboard`, label: 'Tổng quan', icon: 'grid' },
-      { href: `${base}/experiences`, label: 'Quản lý trải nghiệm', short: 'Trải nghiệm', icon: 'star' },
-      { href: `${base}/bookings`, label: 'Đặt chỗ', icon: 'clipboard' },
-      { href: `${base}/schedule`, label: 'Lịch', icon: 'calendar' },
-      { href: '/messages', label: 'Tin nhắn', icon: 'message', unread: true },
+      { href: `${base}/dashboard`, label: 'Tổng quan' },
+      { href: `${base}/experiences`, label: 'Trải nghiệm' },
+      { href: `${base}/bookings`, label: 'Lịch sử đặt chỗ' },
     ]
   }
-  if (session.role === 'ADMIN') {
-    // ADM079 dashboard and ADM095 account management, plus the review screens that already have routes.
-    if (session.adminType === 'UBND') return [
-      { href: '/admin', label: 'Dashboard làng', short: 'Dashboard', icon: 'grid' },
-      { href: '/admin/users', label: 'Tài khoản xưởng', short: 'Xưởng', icon: 'building' },
-      { href: '/admin/providers', label: 'Duyệt hồ sơ', icon: 'check' },
-    ]
-    return [
-      { href: '/admin', label: 'Dashboard toàn thành phố', short: 'Dashboard', icon: 'grid' },
-      { href: '/admin/agencies', label: 'Duyệt Agency', icon: 'check' },
-      // VER146 View Pending Profile (provider subtype); HDT views, the village UBND decides (PRF BR-005).
-      { href: '/admin/providers', label: 'Hồ sơ chờ thẩm định', short: 'Hồ sơ', icon: 'building' },
-      { href: '/admin/users', label: 'Quản lý tài khoản', short: 'Tài khoản', icon: 'users' },
-    ]
-  }
+  if (session.role === 'ADMIN') return [
+    { href: '/admin', label: 'Tổng quan' },
+    session.adminType === 'UBND'
+      ? { href: '/admin/providers', label: 'Duyệt hồ sơ' }
+      : { href: '/admin/agencies', label: 'Duyệt hồ sơ', alsoActive: ['/admin/providers'] },
+    { href: '/admin/users', label: 'Quản lý tài khoản' },
+  ]
   return []
 }
 
+/** Account menu (png/20): Tài khoản của tôi · Doanh nghiệp của tôi; Đăng xuất is rendered by the header.
+ *  Admin (human decision 2026-11-18): only Tài khoản của tôi, plus Đăng xuất. */
 export function accountLinks(session: SessionContext | null): AccountLink[] {
   if (!session?.authenticated) return []
-  const links: AccountLink[] = [{ href: '/account', label: 'Tài khoản cá nhân', icon: 'user' }]
-  if (session.mustChangePassword) return links
-  if (session.role === 'Tour_Agency' && session.agencyId) links.push({ href: `/agency/${session.agencyId}`, label: 'Hồ sơ doanh nghiệp', icon: 'building' })
-  if (session.role === 'Local_Provider' && session.providerId) links.push({ href: `/provider/${session.providerId}`, label: 'Hồ sơ xưởng', icon: 'building' })
+  const links: AccountLink[] = [{ href: '/account', label: 'Tài khoản của tôi' }]
+  if (session.mustChangePassword || session.role === 'ADMIN') return links
+  if (session.role === 'Tour_Agency' && session.agencyId) links.push({ href: `/agency/${session.agencyId}`, label: 'Doanh nghiệp của tôi' })
+  if (session.role === 'Local_Provider' && session.providerId) links.push({ href: `/provider/${session.providerId}`, label: 'Doanh nghiệp của tôi' })
   return links
 }
 
-/** The nav item that owns the current path (longest matching prefix). */
-export function activeHref(items: NavItem[], pathname: string): string | undefined {
-  return items.filter(item => pathname === item.href || pathname.startsWith(`${item.href}/`))
-    .sort((a, b) => b.href.length - a.href.length)[0]?.href
+/** Footer (human decision 2026-11-18): only on /explore, and only for Guest and Tour Agency. */
+export function footerVisible(session: SessionContext | null, pathname: string): boolean {
+  const variant = headerVariant(session)
+  return pathname === '/explore' && (variant === 'guest' || variant === 'agency')
 }
 
+const matches = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+
+/** The nav item that owns the current path (longest matching prefix, including alsoActive prefixes). */
+export function activeHref(items: NavItem[], pathname: string): string | undefined {
+  let best: { href: string; length: number } | undefined
+  for (const item of items) {
+    for (const prefix of [item.href, ...(item.alsoActive ?? [])]) {
+      if (matches(pathname, prefix) && (!best || prefix.length > best.length)) best = { href: item.href, length: prefix.length }
+    }
+  }
+  return best?.href
+}
+
+/** Avatar letters as in the mockup chip: the first letters of the last two words ("Du lịch Tràng An" → "TA"). */
 export function initials(text: string): string {
   const words = text.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean)
   if (!words.length) return '?'
-  return (words.length === 1 ? words[0].slice(0, 2) : words[0][0] + words[words.length - 1][0]).toUpperCase()
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return (words[words.length - 2][0] + words[words.length - 1][0]).toUpperCase()
 }

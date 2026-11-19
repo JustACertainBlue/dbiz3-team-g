@@ -70,6 +70,11 @@ export function hasZeroRadiusConstraint(text: string): boolean {
   return new RegExp(ZERO_RADIUS_EXPRESSION, 'iu').test(text)
 }
 
+export function hasNonPositiveGroupSize(text: string): boolean {
+  return [...text.matchAll(/(?:^|[^\p{L}\d])([+-]?\d+(?:[.,]\d+)?)\s*(?:khách|người|bạn|pax|people|guests?)\b/giu)]
+    .some((match) => Number(match[1].replace(',', '.')) <= 0)
+}
+
 export function hasInvalidRadiusConstraint(text: string): boolean {
   return /(?:^|[^\w])[-+]\s*\d+(?:[.,]\d+)?\s*(?:km|kilometers?|cây\s*số)\b|(?:^|[^\p{L}\d])(?:mười|1e\d+)\s*(?:km|kilometers?|cây\s*số)\b|10\s*ki[- ]?lô[- ]?mét\b/iu.test(text)
 }

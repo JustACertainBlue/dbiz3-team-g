@@ -76,6 +76,7 @@ import {
   isExplicitConversationReset,
   isFalsePositiveMealPhrase,
   hasZeroRadiusConstraint,
+  hasNonPositiveGroupSize,
   hasInvalidRadiusConstraint,
   isShortPendingReply,
   isSystemHelpRequest,
@@ -86,7 +87,6 @@ import {
   normalizeConversationState,
   normalizePendingQuestion,
   sanitizeUnsupportedFollowUpQuestions,
-  stripZeroRadiusConstraint,
   stripUnsupportedDistanceConstraint,
   splitMixedMealRequest,
 } from '@/lib/ait/conversation-state'
@@ -328,6 +328,7 @@ async function handlePost(
     const unsupportedDistanceRequest = !isRetry && hasUnsupportedDistanceConstraint(routeText)
     const zeroRadiusRequest = !isRetry && hasZeroRadiusConstraint(routeText)
     const invalidRadiusRequest = !isRetry && hasInvalidRadiusConstraint(routeText)
+    const invalidGroupSizeRequest = !isRetry && hasNonPositiveGroupSize(routeText)
     const unsupportedCurrencyRequest = !isRetry && /\$|(?:\bUSD\b|\bdollar\b|\beuro\b|\bEUR\b|\bGBP\b|\byen\b)/iu.test(routeText)
     const invalidDateRequest = !isRetry
       && /(?:hôm\s+qua|hom\s+qua|31\s*\/\s*02(?:\s*\/\s*\d{4})?|ngày\s+\d{1,2}\s*\/\s*(?:2|02)\s*\/\s*\d{4})/iu.test(routeText)
@@ -345,7 +346,7 @@ async function handlePost(
       || isGuideLanguageQuestion
     const bypassClassifier = isRetry || isReset || acceptsInScopeOffer || answersPendingQuestion
       || isHelpQuestion || isGuideLanguageFollowUp || isFalsePositiveMealPhrase(routeText) || mixedMeal.hasMealRequest
-      || unsupportedDistanceRequest || zeroRadiusRequest || invalidRadiusRequest
+      || unsupportedDistanceRequest || zeroRadiusRequest || invalidRadiusRequest || invalidGroupSizeRequest
       || unsupportedCurrencyRequest || pureEnglishRequest || invalidDateRequest
 
     // 3. Rule-based router and LLM router (A.2, B.3 Layer 1 & 2)
@@ -565,13 +566,16 @@ async function handlePost(
     // 4. Record the original input, then extract only the current turn against persisted state.
     const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', originalText)
     const isTest = isTestConversation([{ sender: 'Agency', text: originalText }])
-    if (unsupportedCurrencyRequest || pureEnglishRequest || invalidRadiusRequest || invalidDateRequest) {
-      const reply = unsupportedCurrencyRequest
+    if (unsupportedCurrencyRequest || pureEnglishRequest || invalidRadiusRequest || zeroRadiusRequest
+      || invalidGroupSizeRequest || invalidDateRequest) {
+      const reply = invalidGroupSizeRequest
+        ? 'Số khách không hợp lệ; vui lòng nhập số nguyên dương.'
+        : unsupportedCurrencyRequest
         ? 'Hiện chưa hỗ trợ đơn vị tiền này, vui lòng nhập bằng đồng.'
         : pureEnglishRequest
           ? 'Hiện chỉ hỗ trợ tiếng Việt, bạn vui lòng nhập bằng tiếng Việt.'
-          : invalidRadiusRequest
-            ? 'Giá trị bán kính không hợp lệ. Vui lòng nhập một số bán kính dương bằng km.'
+          : invalidRadiusRequest || zeroRadiusRequest
+            ? 'Bán kính không hợp lệ; vui lòng nhập giá trị lớn hơn 0 km.'
             : 'Ngày hoặc thời gian này không hợp lệ. Vui lòng nhập một ngày hợp lệ.'
       await updateMatchingSessionContext(params.id, {
         state: normalizeConversationState(conversationState),
@@ -612,13 +616,11 @@ async function handlePost(
         turn,
       }, { status: 201 })
     }
-    if (unsupportedDistanceRequest || zeroRadiusRequest) {
+    if (unsupportedDistanceRequest) {
       const stateWithoutPreviousRadius = normalizeConversationState(conversationState)
       delete stateWithoutPreviousRadius.radius_km
       delete stateWithoutPreviousRadius.slots.radius
-      const stateText = unsupportedDistanceRequest
-        ? stripUnsupportedDistanceConstraint(routeText)
-        : stripZeroRadiusConstraint(routeText)
+      const stateText = stripUnsupportedDistanceConstraint(routeText)
       conversationState = mergeConversationState(
         stateWithoutPreviousRadius,
         stateText,
@@ -631,12 +633,10 @@ async function handlePost(
         pending_question: activePendingQuestion,
         out_of_scope_refusal_count: 0,
       })
-      const reply = unsupportedDistanceRequest
-        ? UNSUPPORTED_DISTANCE_REPLY
-        : buildVillageCardResultsMessage([], 0, conversationState.origin)
+      const reply = UNSUPPORTED_DISTANCE_REPLY
       await addMessage(params.id, 'Assistant', reply)
       const turn = {
-        turn_type: unsupportedDistanceRequest ? 'answer' as const : 'no_results' as const,
+        turn_type: 'answer' as const,
         message: reply,
         top_matches: [],
         additional_suggestions: [],

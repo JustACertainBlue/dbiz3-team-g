@@ -1,12 +1,15 @@
-// DEV only: replace the byte copies of the six old CC BY-SA catalog photos that are not seed files
+// DEV by default (PROD only with --target-prod, see below): replace the byte copies of the six old CC BY-SA catalog photos that are not seed files
 // (runbook-replace-photos step 2, human request 2026-11-19).
 //   npm run storage:catalog-copies [-- --dry-run | --apply] [--notes-dir <dir>]
 //   npm run storage:catalog-copies -- --undo <dir>/undo.json [--dry-run]
+//   CONFIRM_PROJECT_REF=<prod ref> npm run storage:catalog-copies -- --target-prod [--apply | --undo <file>]
 // A copy is a stored_files row outside data/seed with storage_key = prf-media/<file_id>, whose size and SHA-256 equal one of
 // the old photos (OLD_CATALOG_PHOTOS, taken from git 320bf9a). --apply writes the object's old bytes and the row's old
 // size/width/height to <notes-dir>/catalog-copies-<UTC>/ before any write, then overwrites the object with the new photo of
 // the same slug (assets/demo-media) and updates the row. --undo restores rows that still hold the new photo.
-// Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project. The dry run (default) only reads.
+// Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project, or, with --target-prod (human request
+// 2026-11-19), both name PROD and CONFIRM_PROJECT_REF equals that ref; checked before any connection. The dry run (default)
+// only reads. The undo folder is always under .demo-data/ of the folder the command runs from (git-ignored).
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -14,6 +17,7 @@ import { pathToFileURL } from 'node:url'
 import { projectRefFromDatabaseUrl } from '../db/lecturer-accounts.mjs'
 
 export const DEV_PROJECT_REF = 'jfrpnffknjpgmkyquxql'
+export const PROD_PROJECT_REF = 'euxclvszgiknjosbwjya'
 export const DEFAULT_NOTES_DIR = '.demo-data/catalog-copies'
 
 /** The six photos replaced in PR #270, as they were in git 320bf9a (assets/demo-media/<slug>.jpg). */
@@ -30,18 +34,19 @@ const refuse = message => { throw new Error(`${message} Nothing was changed.`) }
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 
 export function parseArgs(argv) {
-  const options = { apply: false, undo: undefined, notesDir: undefined }
+  const options = { apply: false, undo: undefined, notesDir: undefined, targetProd: false }
   let dryRun = false, apply = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--dry-run') dryRun = true
     else if (arg === '--apply') apply = true
+    else if (arg === '--target-prod') options.targetProd = true
     else if (arg === '--undo' || arg === '--notes-dir') {
       const value = argv[index + 1]
       if (!value || value.startsWith('--')) refuse(`${arg} needs a ${arg === '--undo' ? 'file' : 'folder'}.`)
       options[arg === '--undo' ? 'undo' : 'notesDir'] = value
       index += 1
-    } else refuse(`Unknown option ${arg}; use --dry-run (default), --apply, --undo <file> or --notes-dir <dir>.`)
+    } else refuse(`Unknown option ${arg}; use --dry-run (default), --apply, --undo <file>, --notes-dir <dir> or --target-prod.`)
   }
   if (dryRun && apply) refuse('Choose either --dry-run or --apply.')
   if (options.undo && apply) refuse('--undo writes by itself; use --undo <file> --dry-run to preview.')
@@ -49,16 +54,31 @@ export function parseArgs(argv) {
   return options
 }
 
-/** Runs before any connection: both the database and Storage must be the DEV project. */
-export function assertDevTargets(env) {
+/**
+ * Runs before any connection. Without --target-prod both the database and Storage must be the DEV project. With it, both
+ * must be the PROD project and CONFIRM_PROJECT_REF must equal that ref exactly. Returns the ref or throws.
+ */
+export function assertTargets(env, { targetProd = false } = {}) {
   if (!env.DATABASE_URL || !env.SUPABASE_URL) refuse('DATABASE_URL or SUPABASE_URL is not configured.')
   const dbRef = projectRefFromDatabaseUrl(env.DATABASE_URL)
   let storageRef = null
   try { storageRef = new URL(env.SUPABASE_URL).hostname.match(/^([a-z0-9]+)\.supabase\.co$/i)?.[1] ?? null } catch { storageRef = null }
+  const expected = targetProd ? PROD_PROJECT_REF : DEV_PROJECT_REF
+  if (targetProd && env.CONFIRM_PROJECT_REF !== PROD_PROJECT_REF) refuse(`--target-prod needs CONFIRM_PROJECT_REF=${PROD_PROJECT_REF} (missing or different).`)
   for (const [what, ref] of [['DATABASE_URL', dbRef], ['SUPABASE_URL', storageRef]]) {
-    if (ref !== DEV_PROJECT_REF) refuse(`${what} points to project ref "${ref ?? 'unknown'}", which is not the DEV project.`)
+    if (ref !== expected) refuse(`${what} points to project ref "${ref ?? 'unknown'}", which is not the ${targetProd ? 'confirmed PROD' : 'DEV'} project.`)
   }
-  return DEV_PROJECT_REF
+  return expected
+}
+
+/** Runs before any connection: both the database and Storage must be the DEV project. */
+export const assertDevTargets = env => assertTargets(env, { targetProd: false })
+
+/** The undo folder: always inside <cwd>/.demo-data/ (git-ignored), never elsewhere. */
+export function resolveNotesDir(cwd, notesDir) {
+  const base = resolve(cwd, '.demo-data'), dir = resolve(cwd, notesDir ?? DEFAULT_NOTES_DIR)
+  if (!dir.startsWith(`${base}/`)) refuse(`--notes-dir must be a folder under .demo-data/ of ${cwd}.`)
+  return dir
 }
 
 const SELECT_COPIES = `SELECT file_id::text, storage_key, media_type, file_size_bytes, width_px, height_px FROM public.stored_files
@@ -121,9 +141,9 @@ async function refresh(options, { client, storage, oldPhotos = OLD_CATALOG_PHOTO
   return report
 }
 
-function validateUndo(doc) {
+function validateUndo(doc, projectRef) {
   if (!doc || doc.kind !== 'hab-catalog-copies-undo' || doc.version !== 1) refuse('Not a catalog-copies undo file.')
-  if (doc.projectRef !== DEV_PROJECT_REF) refuse('The undo file was not made on the DEV project.')
+  if (doc.projectRef !== projectRef) refuse('The undo file was not made on this project.')
   if (!Array.isArray(doc.files)) refuse('The undo file is incomplete.')
   for (const file of doc.files) {
     if (!/^[0-9a-f-]{36}$/i.test(file.file_id ?? '') || file.storage_key !== `prf-media/${file.file_id}` || file.backup !== `${file.file_id}.jpg`) refuse('An undo entry has a wrong key.')
@@ -132,9 +152,9 @@ function validateUndo(doc) {
   return doc
 }
 
-async function undo(options, { client, storage }) {
+async function undo(options, { client, storage, projectRef }) {
   const file = resolve(options.undo), dir = dirname(file)
-  const doc = validateUndo(JSON.parse(readFileSync(file, 'utf8')))
+  const doc = validateUndo(JSON.parse(readFileSync(file, 'utf8')), projectRef)
   const conflicts = [], ready = []
   for (const entry of doc.files) {
     const backup = readFileSync(join(dir, entry.backup))
@@ -160,8 +180,10 @@ async function undo(options, { client, storage }) {
 async function main() {
   const options = parseArgs(process.argv.slice(2))
   const { default: nextEnv } = await import('@next/env')
+  const confirmFromShell = process.env.CONFIRM_PROJECT_REF // typed with the command, not read from a .env file
   nextEnv.loadEnvConfig(process.cwd())
-  const projectRef = assertDevTargets(process.env)
+  const projectRef = assertTargets({ ...process.env, CONFIRM_PROJECT_REF: confirmFromShell }, { targetProd: options.targetProd })
+  const notesDir = resolveNotesDir(process.cwd(), options.notesDir)
   const { parse } = await import('csv-parse/sync')
   const { imageSize } = await import('image-size')
   const { connection } = await import('../db/shared.mjs')
@@ -175,12 +197,12 @@ async function main() {
     newPhotos.set(photo.slug, { slug: photo.slug, bytes: data.length, width: size.width, height: size.height, data })
   }
   const seedIds = parse(readFileSync('data/seed/stored_files.csv', 'utf8'), { columns: true, skip_empty_lines: true }).map(row => row.file_id)
-  console.log(JSON.stringify({ projectRef, isDev: true, mode: options.undo ? `undo${options.apply ? '' : ' (dry run)'}` : options.apply ? 'apply' : 'dry-run' }))
+  console.log(JSON.stringify({ projectRef, isDev: projectRef === DEV_PROJECT_REF, isProd: projectRef === PROD_PROJECT_REF, mode: options.undo ? `undo${options.apply ? '' : ' (dry run)'}` : options.apply ? 'apply' : 'dry-run' }))
   const client = connection('migration')
   await client.connect()
   try {
     if (!options.apply) { await client.query('BEGIN'); await client.query('SET TRANSACTION READ ONLY') }
-    const report = await run(options, { client, storage: storageClient(), newPhotos, seedIds, notesDir: options.notesDir ?? DEFAULT_NOTES_DIR, projectRef })
+    const report = await run(options, { client, storage: storageClient(), newPhotos, seedIds, notesDir, projectRef })
     if (!options.apply) await client.query('ROLLBACK')
     const bySlug = report.toReplace ? Object.fromEntries(Object.keys(OLD_CATALOG_PHOTOS).map(slug => [slug, report.toReplace.filter(item => item.slug === slug).length])) : undefined
     console.log(JSON.stringify({ ...report, ...(bySlug ? { toReplaceCount: report.toReplace.length, bySlug } : {}) }, null, 2))

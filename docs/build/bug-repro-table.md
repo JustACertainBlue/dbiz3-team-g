@@ -1,10 +1,10 @@
 # BUG-01..29 — tái hiện qua route [MOCK]
 
 - Lưu ý: mock tự sinh delta theo heuristic, vì vậy “không tái hiện” không chứng minh model thật đã đúng.
-- Generated: 2026-11-19T15:28:03.409Z
+- Generated: 2026-11-19T17:40:43.663Z
 - Method: read each BUG reproduction cell from `docs/build/anti-bug-report.md`; for multi-example cells use the first quoted utterance exactly, otherwise send the source cell literally.
 - Route: `POST /api/ait/sessions` then `POST /api/ait/sessions/[id]/messages`; each case uses a fresh in-memory demo repository and a stubbed Cloudflare client. No real model, environment file, or Supabase was used.
-- Mock boundary: `deltaFor` builds a heuristic delta from the input; this exercises route/state/validator behavior but does not test real-model extraction. BUG-21 deliberately injects an unsupported budget delta to check validator rejection.
+- Mock boundary: `deltaFor` builds a heuristic delta from the input; this exercises route/state/validator behavior but does not test real-model extraction. An earlier BUG-21 special case hardcoded `budget_per_person=20000` from a km input; it has been removed because it made the replay manufacture the bug rather than observe extraction. A separate route test checks validator rejection of that malformed delta.
 - Dataset mode is selected by the route from the standalone `test` marker in the original input; BUG-20 injects a NaN distance through a mocked haversine result.
 - Supplemental [MOCK]: `filterCandidateByRadius` excludes candidate distances `NaN` and negative; the route test injects `NaN` from haversine and confirms no `NaN` appears in text. Separate route tests cover unrecognized explicit origin, BUG-10 budget rejection, and BUG-22 comma formatting.
 - “Không tái hiện trên [MOCK]” means only that the checked symptom was not observed on this scripted input; it is not evidence about real-model behavior.
@@ -70,7 +70,7 @@ null
   "turn_history": []
 }
 ```
-- Text phản hồi: > Chưa tìm thấy làng nghề phù hợp trong bán kính 0 km tính từ trung tâm Hà Nội.
+- Text phản hồi: > Bán kính không hợp lệ; vui lòng nhập giá trị lớn hơn 0 km.
 - Delta validation:
 ```json
 null
@@ -784,7 +784,7 @@ null
 - Câu gây lỗi nguyên văn từ anti report: "0 khách"
 - Input gửi route: 0 khách
 - Dataset: seed
-- Kết luận: còn tái hiện trên [MOCK]
+- Kết luận: không tái hiện trên [MOCK]
 - Tiêu chí: Validator rejects group_size=0 and leaves it out of state, but the route still returns generic matches without explaining the invalid group size.
 - Giới hạn kết luận: chỉ quan sát một input trên route [MOCK]; không tái hiện không đồng nghĩa đã xác định commit sửa.
 - HTTP: 201
@@ -802,33 +802,10 @@ null
   "turn_history": []
 }
 ```
-- Text phản hồi: > Mình tìm được 5 trải nghiệm.
->
->1. Làm nón lá: 225.000đ/người (Cách trung tâm Hà Nội khoảng 24,4 km (đường chim bay))
->2. Thêu họa tiết: 250.000đ/người (khoảng 17 km (ước tính theo huyện))
->3. Dệt lụa truyền thống: 175.000đ/người (Cách trung tâm Hà Nội khoảng 9,9 km (đường chim bay))
->4. Nặn gốm thủ công: 150.000đ/người (Cách trung tâm Hà Nội khoảng 8,1 km (đường chim bay))
->5. Đan mây tre: 200.000đ/người (Cách trung tâm Hà Nội khoảng 23,7 km (đường chim bay))
->
->Khoảng cách tính từ trung tâm Hà Nội.
->
->Tôi có thể tư vấn cụ thể hơn nếu bạn muốn chia sẻ số khách dự kiến.
->
->Đang lọc: các tiêu chí đã nêu.
->
->Đang áp dụng: trống.
+- Text phản hồi: > Số khách không hợp lệ; vui lòng nhập số nguyên dương.
 - Delta validation:
 ```json
-{
-  "accepted": {},
-  "unsupported": {},
-  "rejected": [
-    {
-      "slot": "group_size",
-      "reason": "group_size_must_be_positive_integer"
-    }
-  ]
-}
+null
 ```
 
 ### BUG-17
@@ -1037,7 +1014,7 @@ null
   "turn_history": []
 }
 ```
-- Text phản hồi: > Giá trị bán kính không hợp lệ. Vui lòng nhập một số bán kính dương bằng km.
+- Text phản hồi: > Bán kính không hợp lệ; vui lòng nhập giá trị lớn hơn 0 km.
 - Delta validation:
 ```json
 null
@@ -1139,12 +1116,7 @@ null
 {
   "accepted": {},
   "unsupported": {},
-  "rejected": [
-    {
-      "slot": "budget_per_person",
-      "reason": "raw_span_not_in_latest_user_turn"
-    }
-  ]
+  "rejected": []
 }
 ```
 
@@ -1606,6 +1578,7 @@ null
 - **BUG-13**: không quy được; chưa có bằng chứng test đỏ trước và xanh sau commit.
 - **BUG-14**: không quy được; chưa có bằng chứng test đỏ trước và xanh sau commit.
 - **BUG-15**: không quy được; chưa có bằng chứng test đỏ trước và xanh sau commit.
+- **BUG-16**: không quy được; chưa có bằng chứng test đỏ trước và xanh sau commit.
 - **BUG-18**: không quy được; chưa có bằng chứng test đỏ trước và xanh sau commit.
 - **BUG-19**: không quy được; chưa có bằng chứng test đỏ trước và xanh sau commit.
 - **BUG-20**: không quy được; chưa có bằng chứng test đỏ trước và xanh sau commit.

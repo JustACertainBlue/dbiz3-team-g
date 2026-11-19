@@ -1511,6 +1511,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm test` 241 files / 1414 passed (22 skipped); lint 0; build 44/44 |
 | Docs | `docs/build/deploy-runbook.md` §2.1 (variables, PROD has 3 Verified Providers in Phú Vinh), `.env.example` (names only) |
 
+### Entry 110: 18–19/11 Claude Code + human — UI v3 content migrations and the DEV content loader (PR 2, `db/ui-v3-content`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu. Branch `db/ui-v3-content` from `main` `c502594`; replaces branch `db/add-db-only-columns` (dropped). Not pushed, no merge; no migration applied anywhere |
+| Trigger | UI v3 (mockup pack 18–19/11, branch `ui/v3-public`) reads content columns that no migration creates on `main`; the human asked to land the migrations alone first so they can be applied safely, then load the reviewed content draft on DEV |
+| Change | `supabase/migrations/20261118101709_hab_db_only_content_columns.sql` (unchanged from `db/add-db-only-columns` `3da26f6`): five columns DEV already has (`villages.description`, `editorial_craft`, `tour_suggestion`, `experiences.highlights`, `group_note`). `supabase/migrations/20261118120000_hab_ui_v3_content.sql` (latest from `ui/v3-public`, ADD only): experience `inclusions`, `guide_languages`, `child_policy`, `suitable_for` (CHECK vocabulary); provider `founded_year`, `parking_note`; village `distance_km`, `visit_notes`, `tour_suggestion_detail`, `highlights` (≤ 4), `cover_image_id`; tables `experience_slots`, `image_sources` (RLS, `hab_app` SELECT only). `scripts/db/dev-load-content.mjs`: DEV-only loader for the content draft (ref guard before connecting, migration check, dry run by default in a READ ONLY transaction, `--apply` in one transaction with an undo journal outside the repo and one System `audit_logs` row, `--undo`) |
+| Tests | `tests/unit/dev-load-content.test.ts` (12). The loader was written before its tests (test-first not followed); mutation check instead: removing the PROD guard, the READ ONLY transaction or the vocabulary check each made tests fail; file restored. The test lists the `suitable_for` vocabulary inline (the UI list `src/lib/explore/vocabulary.ts` is not on `main` yet) |
+| Verified | `migrate --dry-run` (branch `db/migrate-dry-run`) on DEV `jfrpnffknjpgmkyquxql` with these files: 6 applied, 2 pending, both OK, rolled back, ledger unchanged. Loader dry run on DEV: draft valid (90 experiences, 45 providers, 22 renamed published versions, 20 villages, 3 agencies, 43 users, 190 slots), stopped because the migration is not applied; nothing written |
+| Not verified | Not applied on any database. Migration `20261117120000_hab_catalog_editorial_content.sql` is in the DEV ledger but in no branch: find it before PROD |
+| Next (human) | Merge PR 1 then PR 2; `npm run db:migrate -- --dry-run`, `npm run db:migrate` on DEV; `node scripts/db/dev-load-content.mjs --dir=<draft>` then `--apply` |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

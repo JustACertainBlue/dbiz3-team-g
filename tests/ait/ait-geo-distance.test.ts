@@ -56,6 +56,17 @@ describe('AIT distance calculations', () => {
     expect(message).not.toContain('Chưa có dữ liệu khoảng cách')
   })
 
+  it('uses the displayed one-decimal boundary for an 8.14 km candidate and 8.1 km radius', () => {
+    const result = filterCandidateByRadius({
+      distance_km: 8.14,
+      distance_source: 'haversine',
+      location_source: 'from_plus_code',
+    }, 8.1)
+
+    expect(result.include).toBe(true)
+    expect(result.status).toBe('confirmed')
+  })
+
   it.each([
     ['NaN', Number.NaN],
     ['negative', -1],

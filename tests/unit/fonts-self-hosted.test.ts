@@ -34,3 +34,19 @@ describe('self-hosted fonts', () => {
     expect(source).toMatch(/export const fontVariables = `\$\{lora\.variable\} \$\{inter\.variable\} \$\{pacifico\.variable\}`/)
   })
 })
+
+// Human decision 2026-11-19: one file per family, cut to Latin + Latin Extended + Vietnamese with pyftsubset (fonttools on
+// the machine, not a repo dependency), kerning/GPOS and the Inter wght axis kept; the command is recorded next to the fonts.
+describe('subset fonts', () => {
+  const readme = readFileSync('src/app/fonts/README.md', 'utf8')
+  it('records the pyftsubset command with the Vietnamese ranges and all layout features', () => {
+    expect(readme).toContain('pyftsubset')
+    for (const range of ['U+0300-036F', 'U+1EA0-1EF9', 'U+20AB']) expect(readme).toContain(range)
+    expect(readme).toContain("--layout-features='*'")
+  })
+  it('is smaller than the full fonts (Inter 236 480, Lora 85 028, Pacifico 105 168 bytes)', () => {
+    expect(statSync('src/app/fonts/inter/Inter-Variable.woff2').size).toBeLessThan(236480)
+    expect(statSync('src/app/fonts/lora/Lora-Variable.woff2').size).toBeLessThan(85028)
+    expect(statSync('src/app/fonts/pacifico/Pacifico-Regular.woff2').size).toBeLessThan(105168)
+  })
+})

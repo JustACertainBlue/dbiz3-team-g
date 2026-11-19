@@ -421,3 +421,10 @@
 .v3p-sim__name { font: 700 19px/27px var(--font-body); color: var(--c-text); }
 .v3p-sim:hover .v3p-sim__name { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 899px) { .v3p-hls { grid-template-columns: repeat(2, minmax(0, 1fr)); } .v3p-kv dl { grid-template-columns: 1fr; } .v3p-kvr { grid-template-columns: 1fr; gap: 4px; } .v3p-mosaic { height: 260px; } .v3p-cal__side { max-width: none; } }
+/* /explore loading (human review 2026-11-19): white page, v3 tokens, no gradient. */
+.v3-loading { background: var(--c-white); padding-top: 32px; padding-bottom: 48px; }
+.v3-loading__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+.v3-loading__card { overflow: hidden; }
+.v3-loading__media { aspect-ratio: 16 / 10; background: var(--c-ghost); }
+.v3-loading__body { padding: 20px 24px 24px; }
+.v3-loading__bar { display: block; height: 14px; margin-bottom: 10px; border-radius: 999px; background: var(--c-ghost); }

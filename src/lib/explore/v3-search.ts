@@ -5,7 +5,7 @@ import type { CsvRow, ExploreSeed, Viewer } from './catalog'
 import { eligibleRows } from './catalog'
 import { calculateAvailability } from './availability'
 import { durationLabel, experienceImage, placeLine } from './v3-home'
-import { craftLabel, parseDistance, parseHighlights, parseInclusions } from './vocabulary'
+import { craftLabel, parseDistance, parseHighlights, parseInclusions, rowCraft } from './vocabulary'
 
 type Row = ReturnType<typeof eligibleRows>[number]
 export const PAGE_SIZE = 7
@@ -99,7 +99,7 @@ export function resultView(seed: ExploreSeed, row: Row, query: Pick<SearchQuery,
     id: experience.experience_id, name: experience.name, image: experienceImage(seed, experience.experience_id),
     villageId: village.village_id, villageLine: [village.name, village.district].filter(Boolean).join(', '), providerName: version.business_name,
     distance: km === null ? '' : `Cách trung tâm Hà Nội khoảng ${km.toLocaleString('vi-VN')} km`,
-    craft: craftLabel(version.craft_type ?? ''),
+    craft: rowCraft(version.craft_type, village),
     tags: [durationLabel(Number(experience.duration_minutes)), `Tối đa ${Number(experience.max_participants)} khách/ca`,
       ...(inclusions?.take_home ? ['Mang sản phẩm về'] : []), ...(Number.isFinite(notice) && experience.notice_period_hours !== '' ? [`Đặt trước ${notice} giờ`] : [])],
     highlights: parseHighlights(experience.highlights).slice(0, 3).map(item => item.title),

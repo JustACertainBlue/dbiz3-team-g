@@ -2,7 +2,7 @@
 // filters, the village grid and the hold banner (human decisions 2026-11-18 #1, #4, #5, #7, #9).
 import type { CsvRow, ExploreSeed } from './catalog'
 import { eligibleRows } from './catalog'
-import { PREFERENCE_TO_SUITABLE_FOR, craftLabel, parseHighlights, parseStringList } from './vocabulary'
+import { PREFERENCE_TO_SUITABLE_FOR, craftLabel, parseHighlights, parseStringList, rowCraft } from './vocabulary'
 
 type Row = ReturnType<typeof eligibleRows>[number]
 
@@ -70,7 +70,7 @@ export function cardView(seed: ExploreSeed, row: Row, preferenceKeys: string[]):
   const { experience, version, village } = row
   return {
     id: experience.experience_id, providerId: row.provider.provider_id, name: experience.name,
-    craft: craftLabel(version.craft_type ?? ''), location: placeLine(village),
+    craft: rowCraft(version.craft_type, village), location: placeLine(village),
     meta: `${durationLabel(Number(experience.duration_minutes))} · Tối đa ${Number(experience.max_participants)} khách/ca`,
     highlights: parseHighlights(experience.highlights).slice(0, 3).map(item => item.title),
     priceFrom: Number(experience.price_per_person), image: experienceImage(seed, experience.experience_id),

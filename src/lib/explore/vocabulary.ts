@@ -11,6 +11,13 @@ export const CRAFT_LABELS: Record<string, string> = {
 }
 export const craftLabel = (value: string) => CRAFT_LABELS[value] ?? value
 
+/** Craft label of a workshop's card or page (human review 2026-11-19): the "Other" group shows the village's
+ *  editorial_craft when it has one; every other craft_type shows its Vietnamese label. */
+export function rowCraft(craftType: string | undefined, village: { editorial_craft?: string } | undefined): string {
+  if (craftType === 'Other' && village?.editorial_craft) return village.editorial_craft
+  return craftLabel(craftType ?? '')
+}
+
 /** Fixed vocabulary of experiences.suitable_for; same list as the migration CHECK constraint. */
 export const SUITABLE_FOR = [
   'Đoàn học sinh', 'Đoàn gia đình', 'Khách quốc tế', 'Team building', 'Tour nửa ngày', 'Tour văn hoá – di sản',

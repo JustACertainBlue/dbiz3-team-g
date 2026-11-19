@@ -76,3 +76,16 @@ describe('screen 03a /villages', () => {
     expect((html.match(/v3l-card"/g) ?? []).length).toBe(1)
   })
 })
+
+describe('screen 03 AI block for a Guest (human review 2026-11-19, A4)', () => {
+  it('has no login hint line and no "Đăng nhập để dùng Ghép tour AI" button; send and chips lead to /login', async () => {
+    role = null
+    const html = renderToStaticMarkup(await VillagePage({ params: { villageId: 'v1' }, searchParams: {} }))
+    const box = html.match(/<div class="v3-aibox"[\s\S]*?<\/div><\/section>/)?.[0] ?? ''
+    expect(box).not.toBe('')
+    expect(box).not.toContain('Đăng nhập để dùng Ghép tour AI')
+    expect(box).not.toContain('v3-ainote')
+    expect(box).toMatch(/<form class="v3-airow" action="\/login" method="get">/)
+    expect([...box.matchAll(/<a class="v3-aiq" href="([^"]+)"/g)].map(m => m[1])).toEqual(['/login', '/login', '/login'])
+  })
+})

@@ -6,7 +6,7 @@ import { eligibleRows } from './catalog'
 import { calculateAvailability } from './availability'
 import { durationLabel, experienceImages, placeLine, providerImages } from './v3-home'
 import { availabilityOn, priceFor, type PriceView } from './v3-search'
-import { craftLabel, parseDistance, parseHighlights, parseInclusions, parseSlots, parseStringList, type Highlight } from './vocabulary'
+import { craftLabel, parseDistance, parseHighlights, parseInclusions, parseSlots, parseStringList, type Highlight, rowCraft } from './vocabulary'
 import { initials } from '../../app/components/nav/nav-model'
 
 export const HOLD_HOURS = 72 // src/lib/booking/create-booking.ts HOLD_HOURS (BKG BR-004)
@@ -101,7 +101,7 @@ export function detailView(seed: ExploreSeed, id: string, viewer: Viewer, query:
   const suitableFor = parseStringList(experience.suitable_for)
   const opening = openingLine(seed, provider.provider_id)
   const km = parseDistance(village.distance_km)
-  const craft = craftLabel(version.craft_type ?? '')
+  const craft = rowCraft(version.craft_type, village)
   const dateText = query.date ? `${WEEKDAY_LONG[isoWeekday(query.date)]} ${query.date.slice(8, 10)}/${query.date.slice(5, 7)}` : ''
 
   const includes: InfoGroup[] = [

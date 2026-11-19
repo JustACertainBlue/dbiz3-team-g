@@ -140,7 +140,7 @@ export default async function VillagePage({ params, searchParams }: { params: { 
       <h2 id="v3v-ai" className="v3-h2 v3v-aih">Chưa biết chọn trải nghiệm nào ở {view.name}?</h2>
       <AiBox agency={isAgency} title={`Kể yêu cầu của đoàn, AI gợi ý trải nghiệm phù hợp ở ${view.name} cho bạn.`}
         placeholder="VD: đoàn 20 học sinh, sáng Thứ Tư, muốn tự tay làm một sản phẩm…"
-        chips={[`Trải nghiệm ở ${view.name} cho 20 học sinh`, 'Trải nghiệm có sản phẩm mang về', 'Trải nghiệm nhận đoàn 30 khách']} />
+        chips={[`Trải nghiệm ở ${view.name} cho 20 học sinh`, 'Trải nghiệm có sản phẩm mang về', 'Trải nghiệm nhận đoàn 30 khách']} guestHints={false} />
     </section>}
 
     {hasNotes && <section id="luu-y" className="hab-band v3d-sec">

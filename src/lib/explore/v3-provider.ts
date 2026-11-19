@@ -6,7 +6,7 @@ import { calculateAvailability } from './availability'
 import { cardView, experienceImages, providerImages, type CardView } from './v3-home'
 import { resultView, type ResultView } from './v3-search'
 import { aboutParagraphs } from './v3-detail'
-import { craftLabel, parseDistance, parseStringList, SUITABLE_FOR } from './vocabulary'
+import { craftLabel, parseDistance, parseStringList, SUITABLE_FOR, rowCraft } from './vocabulary'
 import { initials } from '../../app/components/nav/nav-model'
 
 const WEEKDAY = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
@@ -92,7 +92,7 @@ export function providerView(seed: ExploreSeed, providerId: string, viewer: View
     ...(payments ? [{ q: 'Thanh toán cho xưởng thế nào?', a: 'Sau khi xưởng giữ chỗ, bạn thanh toán bằng mã QR trong trang chi tiết đặt chỗ. Tiền vào thẳng tài khoản của xưởng.' }] : []),
   ]
 
-  const craft = craftLabel(version.craft_type ?? '')
+  const craft = rowCraft(version.craft_type, village)
   const otherVillages = all.filter(row => row.village.village_id !== village.village_id && row.version.craft_type === version.craft_type)
   return {
     id: providerId, initials: initials(version.business_name), eyebrow: [craft, `Làng ${village.name}`].filter(Boolean).join(' · ').toUpperCase(),

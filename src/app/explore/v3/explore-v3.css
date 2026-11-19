@@ -452,3 +452,5 @@
 .v3g--n1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
 .v3g--n1 .v3g__t1 { border-radius: 8px; }
 @media (max-width: 899px) { .v3g { height: 280px; } }
+/* Result card below 600 px (human review 2026-11-19): craft tag above the title so the title keeps the full width. */
+@media (max-width: 599px) { .v3r__top { flex-direction: column-reverse; align-items: flex-start; gap: 8px; } }

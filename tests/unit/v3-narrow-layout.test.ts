@@ -15,4 +15,7 @@ describe('narrow layout', () => {
   it('the price and booking button beside the 04/23 title wrap instead of overflowing', () => {
     expect(rule('.v3d-titleside')).toMatch(/flex-wrap: wrap;/)
   })
+  it('below 600 px the craft tag of a result card sits above the title so the title keeps the full width', () => {
+    expect(css).toMatch(/@media \(max-width: 599px\) \{ \.v3r__top \{ flex-direction: column-reverse; align-items: flex-start; gap: 8px; \} \}/)
+  })
 })

@@ -35,6 +35,8 @@ export function createStorageClient(config,request=fetch){
     async read(key){const response=await call(`object/authenticated/${config.bucket}/${objectPath(key)}`);if(!response.ok){if(await missing(response))return null;failed(response)};return Buffer.from(await response.arrayBuffer())},
     /** Response body as a stream (no full buffering); null when the object does not exist. */
     async readStream(key){const response=await call(`object/authenticated/${config.bucket}/${objectPath(key)}`);if(!response.ok){if(await missing(response))return null;failed(response)};const size=Number(response.headers.get('content-length'));return {body:response.body,size:Number.isFinite(size)&&size>0?size:null}},
+    /** Stored size in bytes from a 1-byte range request (Content-Range: bytes 0-0/<size>); null when missing. */
+    async size(key){const response=await call(`object/authenticated/${config.bucket}/${objectPath(key)}`,{headers:{Range:'bytes=0-0'}});if(!response.ok){if(await missing(response))return null;failed(response)}await response.body?.cancel();const total=Number(response.headers.get('content-range')?.split('/')[1]);return Number.isFinite(total)?total:null},
     async exists(key){const response=await call(`object/authenticated/${config.bucket}/${objectPath(key)}`,{headers:{Range:'bytes=0-0'}});if(!response.ok){if(await missing(response))return false;failed(response)}await response.body?.cancel();return true},
     async remove(key){const response=await call(`object/${config.bucket}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({prefixes:[objectPath(key)]})});if(!response.ok)failed(response)},
   }

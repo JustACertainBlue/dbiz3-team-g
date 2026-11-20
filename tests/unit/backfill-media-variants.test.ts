@@ -1,7 +1,7 @@
 // Step 2A (human request 2026-11-20): backfill WebP variants for every showcase image already stored. DEV only, dry run
 // by default, --apply writes an undo file first, --undo removes what the run created. Pure parts only.
 import { describe, expect, it } from 'vitest'
-import { DISPLAY_IMAGES_SQL, parseArgs, summarizeVariants } from '../../scripts/storage/backfill-media-variants.mjs'
+import { DISPLAY_IMAGES_SQL, parseArgs, summarizeVariants, writeVariant } from '../../scripts/storage/backfill-media-variants.mjs'
 
 describe('parseArgs', () => {
   it('is a dry run by default; --apply writes; --undo <file> writes unless --dry-run', () => {
@@ -12,6 +12,12 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['--dry-run', '--apply'])).toThrow()
     expect(() => parseArgs(['--target-prod'])).toThrow()
     expect(() => parseArgs(['--undo'])).toThrow()
+  })
+  it('--only-oversize redoes only the variants over their cap (dry run unless --apply); not with --undo', () => {
+    expect(parseArgs(['--only-oversize'])).toMatchObject({ apply: false, onlyOversize: true })
+    expect(parseArgs(['--only-oversize', '--apply'])).toMatchObject({ apply: true, onlyOversize: true })
+    expect(parseArgs(['--apply'])).toMatchObject({ onlyOversize: false })
+    expect(() => parseArgs(['--only-oversize', '--undo', 'x/undo.json'])).toThrow()
   })
 })
 
@@ -38,5 +44,29 @@ describe('summarizeVariants', () => {
       1600: { count: 2, averageKB: 200, maxKB: 250 },
     })
     expect(summarizeVariants([])).toEqual({ 400: { count: 0, averageKB: 0, maxKB: 0 }, 800: { count: 0, averageKB: 0, maxKB: 0 }, 1600: { count: 0, averageKB: 0, maxKB: 0 } })
+  })
+})
+
+describe('writeVariant', () => {
+  const fakeStorage = (behaviour: { fail?: boolean, existing?: number | null }) => {
+    const writes: Array<{ key: string, replace: boolean }> = []
+    return { writes, storage: {
+      write: async (key: string, _bytes: Buffer, _type: string, options: { replace: boolean }) => { writes.push({ key, replace: options.replace }); if (behaviour.fail) throw new Error('Storage operation failed (400)') },
+      size: async () => behaviour.existing ?? null,
+    } }
+  }
+  const key = 'prf-media/0c22e70d-91d7-5347-8c9a-74fa00558912.w400.webp', bytes = Buffer.from('12345')
+  it('writes once when Storage accepts it', async () => {
+    const { storage, writes } = fakeStorage({})
+    await writeVariant(storage, key, bytes, false)
+    expect(writes).toEqual([{ key, replace: false }])
+  })
+  it('treats a refused write as done when the object already holds exactly these bytes (a timed-out first attempt)', async () => {
+    const { storage } = fakeStorage({ fail: true, existing: 5 })
+    await expect(writeVariant(storage, key, bytes, false)).resolves.toBe('already-stored')
+  })
+  it('still fails when the object is missing or has another size', async () => {
+    await expect(writeVariant(fakeStorage({ fail: true, existing: null }).storage, key, bytes, false)).rejects.toThrow(/400/)
+    await expect(writeVariant(fakeStorage({ fail: true, existing: 9 }).storage, key, bytes, false)).rejects.toThrow(/400/)
   })
 })

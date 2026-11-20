@@ -117,18 +117,14 @@ Trang HTML thì nhanh: TTFB của document 40–470 ms.
 - `/api/prf/media`: **~2,2 s TTFB mỗi ảnh** khi không có tải; `no-store` nên không cache được.
 - Giao diện v3 đã giảm 01 xuống **12 ảnh / 2,4 MB** (có lazy), nhưng chưa đổi kích cỡ ảnh, chưa cache, ảnh LCP chưa ưu tiên.
 
-Dữ liệu thô (JSON từng lần đo):
-`/private/tmp/claude-501/-Users-vukhanhlinh-Desktop-dbiz3-team-g/a71dfa1b-07e5-45a2-9c04-e5648157e992/scratchpad/perf/summary-live.json`
-và `.../scratchpad/perf/summary-v3.json`; script `.../scratchpad/perf/measure.mjs`. Thư mục scratchpad có thể bị dọn khi khởi động lại máy.
+Dữ liệu thô lưu ngoài repo.
 
 ## Lighthouse chính thức (20/11/2026)
 
 `npx lighthouse@13.5.0` (không thêm vào package.json); Chrome headless; chỉ hạng mục Performance. Mobile = mặc định (giả lập
 Moto G Power, 4G chậm, CPU 4×, throttling *simulated*); desktop = `--preset=desktop`. Mỗi trang mở một lần trước khi đo (Render
 không ngủ), rồi 3 lần, lấy trung vị (điểm và từng chỉ số lấy trung vị riêng; audit ảnh lấy từ lần có LCP trung vị). Chỉ GET, không
-đăng nhập. Báo cáo HTML/JSON ngoài repo:
-`/private/tmp/claude-501/-Users-vukhanhlinh-Desktop-dbiz3-team-g/a71dfa1b-07e5-45a2-9c04-e5648157e992/scratchpad/perf/lh/`
-(`explore|detail`-`mobile|desktop`-`1..3`.report.html/json; thư mục tạm, chép đi nếu cần giữ).
+đăng nhập. Dữ liệu thô lưu ngoài repo.
 
 | Trang | Thiết bị | Performance (3 lần) | LCP | TBT | CLS | Speed Index | FCP | Tổng tải |
 |---|---|---|---|---|---|---|---|---|

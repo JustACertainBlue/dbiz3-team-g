@@ -1,22 +1,40 @@
 // Backfill WebP display variants for every showcase image already stored (step 2A, human request 2026-11-20). DEV only.
-//   npm run storage:media-variants [-- --dry-run | --apply] [--notes-dir <dir>]
+//   npm run storage:media-variants [-- --dry-run | --apply] [--only-oversize] [--notes-dir <dir>]
 //   npm run storage:media-variants -- --undo <dir>/undo.json [--dry-run]
 // Showcase image = an image at prf-media/<file_id> linked as Experience/profile media, workshop version media or village
 // cover, and never a provider document. For each one whose variants are missing, the original is read and
 // prf-media/<file_id>.w400|w800|w1600.webp are made with media-variants.mjs (never enlarged, WebP ~72, no metadata).
 // The dry run (default) reads and encodes only and reports the sizes; nothing is uploaded. --apply writes
 // <notes-dir>/media-variants-<UTC>/undo.json (the keys it will create) first, then uploads without replacing. --undo
-// removes those keys. Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project.
+// removes those keys. --only-oversize (2026-11-20) redoes only the stored variants over their cap (media-variants.mjs
+// VARIANT_CAPS): --apply first saves their current bytes next to undo.json, then replaces them; --undo puts them back.
+// Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { DEV_PROJECT_REF, assertDevTargets, resolveNotesDir } from './refresh-catalog-copies.mjs'
-import { VARIANT_WIDTHS, isVariantKey, makeVariants, variantKey } from './media-variants.mjs'
+import { VARIANT_CAPS, VARIANT_WIDTHS, isVariantKey, makeVariants, oversizeWidths, variantKey } from './media-variants.mjs'
 
 export const DEFAULT_NOTES_DIR = '.demo-data/media-variants'
 const refuse = message => { throw new Error(message) }
 /** Storage calls time out after 30 s each; a busy network should not end a long run. @param {() => Promise<any>} call */
 const retry = async (call, attempts = 3) => { for (let attempt = 1; ; attempt += 1) { try { return await call() } catch (error) { if (attempt >= attempts) throw error } } }
+
+/**
+ * Upload one variant. A write that times out may still be stored, so a retry without replace is refused (400); when the
+ * object then holds exactly these bytes, the write counts as done. Other failures are retried, then thrown.
+ * @param {any} storage @param {string} key @param {Buffer} bytes @param {boolean} replace @returns {Promise<'written'|'already-stored'>}
+ */
+export async function writeVariant(storage, key, bytes, replace, attempts = 3) {
+  for (let attempt = 1; ; attempt += 1) {
+    try { await storage.write(key, bytes, 'image/webp', { replace }); return 'written' }
+    catch (error) {
+      const stored = await storage.size(key).catch(() => null)
+      if (!replace && stored === bytes.length) return 'already-stored'
+      if (attempt >= attempts) throw error
+    }
+  }
+}
 
 export const DISPLAY_IMAGES_SQL = `SELECT f.file_id::text AS file_id,f.storage_key,f.media_type,f.file_size_bytes FROM public.stored_files f
   WHERE f.media_type LIKE 'image/%' AND f.storage_key = 'prf-media/' || f.file_id::text
@@ -28,23 +46,25 @@ export const DISPLAY_IMAGES_SQL = `SELECT f.file_id::text AS file_id,f.storage_k
 
 /** @param {string[]} argv */
 export function parseArgs(argv) {
-  /** @type {{apply:boolean,undo?:string,notesDir?:string}} */
-  const options = { apply: false }
+  /** @type {{apply:boolean,onlyOversize:boolean,undo?:string,notesDir?:string}} */
+  const options = { apply: false, onlyOversize: false }
   let dryRun = false, apply = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--dry-run') dryRun = true
     else if (arg === '--apply') apply = true
+    else if (arg === '--only-oversize') options.onlyOversize = true
     else if (arg === '--undo' || arg === '--notes-dir') {
       const value = argv[index + 1]
       if (!value || value.startsWith('--')) refuse(`${arg} needs a value.`)
       if (arg === '--undo') options.undo = value
       else options.notesDir = value
       index += 1
-    } else refuse(`Unknown option ${arg}; use --dry-run (default), --apply, --undo <file> or --notes-dir <dir>.`)
+    } else refuse(`Unknown option ${arg}; use --dry-run (default), --apply, --only-oversize, --undo <file> or --notes-dir <dir>.`)
   }
   if (dryRun && apply) refuse('Choose either --dry-run or --apply.')
   if (options.undo && apply) refuse('--undo writes by itself; use --undo <file> --dry-run to preview.')
+  if (options.undo && options.onlyOversize) refuse('--only-oversize cannot be combined with --undo.')
   options.apply = options.undo ? !dryRun : apply
   return options
 }
@@ -72,9 +92,10 @@ async function backfill(options, { client, storage, notesDir, projectRef, now = 
   const files = (await client.query(DISPLAY_IMAGES_SQL)).rows
   const work = [], skipped = []
   for (const file of files) {
-    const missing = []
-    for (const width of VARIANT_WIDTHS) if (!(await retry(() => storage.exists(variantKey(file.file_id, width))))) missing.push(width)
-    if (missing.length) work.push({ file, missing }); else skipped.push(file.file_id)
+    /** @type {Record<number, number|null>} */ const sizes = {}
+    for (const width of VARIANT_WIDTHS) sizes[width] = await retry(() => storage.size(variantKey(file.file_id, width)))
+    const widths = options.onlyOversize ? oversizeWidths(sizes) : VARIANT_WIDTHS.filter(width => sizes[width] === null)
+    if (widths.length) work.push({ file, missing: widths, sizes }); else skipped.push(file.file_id)
   }
   const results = [], failures = [], originals = []
   const made = new Map()
@@ -85,7 +106,7 @@ async function backfill(options, { client, storage, notesDir, projectRef, now = 
       const variants = await makeVariants(original)
       made.set(file.file_id, variants)
       originals.push(original.length)
-      results.push(variants.map(variant => ({ width: variant.width, bytes: variant.bytes.length })))
+      results.push(variants.map(variant => ({ width: variant.width, bytes: variant.bytes.length, quality: variant.quality, overCap: variant.overCap })))
     } catch (error) { failures.push({ file_id: file.file_id, reason: error instanceof Error ? error.message : String(error) }) }
   }
   const heaviest = [...made.entries()].map(([fileId, variants]) => ({ file_id: fileId, KB: Object.fromEntries(variants.map(variant => [variant.width, Math.round(variant.bytes.length / 1024)])) }))
@@ -95,18 +116,30 @@ async function backfill(options, { client, storage, notesDir, projectRef, now = 
     originalsAverageKB: originals.length ? Math.round(originals.reduce((sum, size) => sum + size, 0) / originals.length / 1024) : 0,
     originalsMaxKB: originals.length ? Math.round(Math.max(...originals) / 1024) : 0,
     byWidth: summarizeVariants(results), heaviest1600: heaviest,
+    caps: VARIANT_CAPS, onlyOversize: options.onlyOversize, variantsToWrite: work.reduce((sum, item) => sum + item.missing.length, 0),
+    qualityUsed: Object.fromEntries(VARIANT_WIDTHS.map(width => [width, results.flat().filter(item => item.width === width).reduce((/** @type {Record<string,number>} */ count, item) => ({ ...count, [item.quality]: (count[item.quality] ?? 0) + 1 }), {})])),
+    stillOverCapAt45: results.flat().filter(item => item.overCap).map(item => item.width),
   }
   if (!options.apply) return report
-  const keys = work.filter(({ file }) => made.has(file.file_id)).flatMap(({ file, missing }) => missing.map(width => variantKey(file.file_id, width)))
   const dir = join(notesDir, `media-variants-${now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}`)
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'undo.json'), JSON.stringify({ projectRef, createdAt: now.toISOString(), keys }, null, 2), { flag: 'wx' })
+  const ready = work.filter(({ file }) => made.has(file.file_id))
+  const keys = options.onlyOversize ? [] : ready.flatMap(({ file, missing }) => missing.map(width => variantKey(file.file_id, width)))
+  const replaced = []
+  if (options.onlyOversize) for (const { file, missing } of ready) for (const width of missing) {
+    const key = variantKey(file.file_id, width), backup = `${file.file_id}.w${width}.webp`
+    const current = await retry(() => storage.read(key))
+    if (!current) continue
+    writeFileSync(join(dir, backup), current, { flag: 'wx' })
+    replaced.push({ key, backup, bytes: current.length })
+  }
+  writeFileSync(join(dir, 'undo.json'), JSON.stringify({ projectRef, createdAt: now.toISOString(), keys, replaced }, null, 2), { flag: 'wx' })
   let uploaded = 0
-  for (const { file, missing } of work) {
-    const variants = made.get(file.file_id)
-    if (!variants) continue
-    for (const variant of variants.filter(item => missing.includes(item.width))) {
-      await retry(() => storage.write(variantKey(file.file_id, variant.width), variant.bytes, 'image/webp', { replace: false }))
+  for (const { file, missing } of ready) {
+    for (const variant of /** @type {any[]} */ (made.get(file.file_id)).filter(item => missing.includes(item.width))) {
+      const key = variantKey(file.file_id, variant.width)
+      if (options.onlyOversize && !replaced.some(item => item.key === key)) continue
+      await writeVariant(storage, key, variant.bytes, options.onlyOversize)
       uploaded += 1
     }
   }
@@ -116,10 +149,16 @@ async function backfill(options, { client, storage, notesDir, projectRef, now = 
 /** @param {any} options @param {any} deps @returns {Promise<any>} */
 async function undoBackfill(options, { storage, projectRef }) {
   const doc = JSON.parse(readFileSync(options.undo, 'utf8'))
-  if (!doc || doc.projectRef !== projectRef || !Array.isArray(doc.keys) || !doc.keys.every(isVariantKey)) refuse('Not an undo file of storage:media-variants for this project.')
-  if (!options.apply) return { mode: 'undo (dry run)', keys: doc.keys.length }
-  for (const key of doc.keys) await storage.remove(key)
-  return { mode: 'undo', removed: doc.keys.length }
+  const replaced = doc?.replaced ?? []
+  if (!doc || doc.projectRef !== projectRef || !Array.isArray(doc.keys) || !doc.keys.every(isVariantKey) || !Array.isArray(replaced)
+    || !replaced.every((/** @type {any} */ item) => isVariantKey(item.key) && /^[0-9a-f-]{36}\.w(400|800|1600)\.webp$/.test(item.backup))) refuse('Not an undo file of storage:media-variants for this project.')
+  if (!options.apply) return { mode: 'undo (dry run)', keys: doc.keys.length, restore: replaced.length }
+  for (const key of doc.keys) await retry(() => storage.remove(key))
+  for (const item of replaced) {
+    const bytes = readFileSync(join(dirname(options.undo), item.backup))
+    await retry(() => storage.write(item.key, bytes, 'image/webp', { replace: true }))
+  }
+  return { mode: 'undo', removed: doc.keys.length, restored: replaced.length }
 }
 
 async function main() {

@@ -10,7 +10,7 @@ export function storageConfig(env=process.env){
 }
 export function createStorageClient(config,request=fetch){
   if(!/^[a-z0-9-]+$/.test(config.bucket))throw new Error('Invalid bucket')
-  function objectPath(key){if(!/^(prf-media|chat-files|registration-documents|account-avatars)\/[0-9a-f-]{36}$/i.test(key))throw new Error('Invalid object key');return key.split('/').map(encodeURIComponent).join('/')}
+  function objectPath(key){if(!/^(prf-media|chat-files|registration-documents|account-avatars)\/[0-9a-f-]{36}$/i.test(key)&&!/^prf-media\/[0-9a-f-]{36}\.w(400|800|1600)\.webp$/i.test(key))throw new Error('Invalid object key');return key.split('/').map(encodeURIComponent).join('/')}
   async function call(path,init={}){
     return request(`${config.url}/storage/v1/${path}`,{...init,headers:{apikey:config.key,Authorization:`Bearer ${config.key}`,...init.headers},signal:AbortSignal.timeout(30000),cache:'no-store',redirect:'error'})
   }
@@ -33,6 +33,8 @@ export function createStorageClient(config,request=fetch){
       if(!response.ok)failed(response)
     },
     async read(key){const response=await call(`object/authenticated/${config.bucket}/${objectPath(key)}`);if(!response.ok){if(await missing(response))return null;failed(response)};return Buffer.from(await response.arrayBuffer())},
+    /** Response body as a stream (no full buffering); null when the object does not exist. */
+    async readStream(key){const response=await call(`object/authenticated/${config.bucket}/${objectPath(key)}`);if(!response.ok){if(await missing(response))return null;failed(response)};const size=Number(response.headers.get('content-length'));return {body:response.body,size:Number.isFinite(size)&&size>0?size:null}},
     async exists(key){const response=await call(`object/authenticated/${config.bucket}/${objectPath(key)}`,{headers:{Range:'bytes=0-0'}});if(!response.ok){if(await missing(response))return false;failed(response)}await response.body?.cancel();return true},
     async remove(key){const response=await call(`object/${config.bucket}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({prefixes:[objectPath(key)]})});if(!response.ok)failed(response)},
   }

@@ -11,6 +11,8 @@ const qualified=(table:Table)=>`${quote(table.schema)}.${quote(table.name)}`
 export class AsyncPostgresStore {
   private metadata?:Promise<Map<string,Table>>
   constructor(private readonly database:DbClient){}
+  /** Direct keyed SQL for read paths that must not load whole tables (media access, step 2A). */
+  executor():SqlExecutor{return this.database}
   private tables() {
     return this.metadata??=this.database.query(`SELECT n.nspname AS schema,c.relname AS name,
       (SELECT json_agg(json_build_object('name',a.attname,'nullable',NOT a.attnotnull) ORDER BY a.attnum)

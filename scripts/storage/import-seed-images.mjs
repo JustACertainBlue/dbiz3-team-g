@@ -9,7 +9,7 @@
 //     (stored_files and objects stay), the remaining rows move one place down, the new photo becomes display_order 0;
 //   - village: villages.cover_image_id.
 // The dry run (default) does all writes and rolls back; it uploads nothing. --apply writes <notes-dir>/seed-image-import-<UTC>/undo.json
-// first, uploads the objects (prf-media/<new file_id>), then commits; a failed upload or commit removes the uploaded objects.
+// first, uploads the objects (prf-media/<new file_id> and its WebP variants .w400/.w800/.w1600.webp), then commits; a failed upload or commit removes the uploaded objects.
 // Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project. Never reads a .env file itself: the
 // environment comes from @next/env in the folder the command runs from.
 import { randomUUID } from 'node:crypto'
@@ -17,6 +17,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { resolveNotesDir } from './refresh-catalog-copies.mjs'
+import { VARIANT_WIDTHS, makeVariants, variantKey } from './media-variants.mjs'
 import {
   DEV_PROJECT_REF, assertImportTarget, filterEntries, orderPlan, processImage, toRecords, validateEntry, verifySha256,
 } from './seed-image-import-plan.mjs'
@@ -100,10 +101,10 @@ async function importPhotos(options, { client, storage, notesDir, projectRef, no
       }
       await client.query(`INSERT INTO public.profile_media(profile_media_id,file_id,experience_id,category,display_order) VALUES($1,$2,$3,$4,$5)`,
         [link.profile_media_id, link.file_id, link.experience_id, link.category, link.display_order])
-      undo.items.push({ kind: 'experience', file_id: file.file_id, storage_key: file.storage_key, profile_media_id: link.profile_media_id, experience_id: item.id })
+      undo.items.push({ kind: 'experience', file_id: file.file_id, storage_key: file.storage_key, variant_keys: VARIANT_WIDTHS.map(width => variantKey(file.file_id, width)), profile_media_id: link.profile_media_id, experience_id: item.id })
     } else {
       await client.query('UPDATE public.villages SET cover_image_id=$2 WHERE village_id=$1', [link.village_id, link.cover_image_id])
-      undo.items.push({ kind: 'village', file_id: file.file_id, storage_key: file.storage_key, village_id: item.id, previous_cover_image_id: previousCover.get(item.id) ?? null })
+      undo.items.push({ kind: 'village', file_id: file.file_id, storage_key: file.storage_key, variant_keys: VARIANT_WIDTHS.map(width => variantKey(file.file_id, width)), village_id: item.id, previous_cover_image_id: previousCover.get(item.id) ?? null })
     }
     if (records.focal) focal.push({ loai: item.loai, id: item.id, ten: item.ten, size: `${file.width_px}x${file.height_px}`, focal: records.focal })
   }
@@ -142,6 +143,12 @@ async function importPhotos(options, { client, storage, notesDir, projectRef, no
       const entry = undo.items.find(row => row.kind === item.loai && (row.experience_id ?? row.village_id) === item.id)
       await storage.write(entry.storage_key, processed.get(item).bytes, 'image/jpeg', { replace: false })
       uploaded.push(entry.storage_key)
+      // WebP display variants (step 2A, media-variants.mjs), listed in the undo file as variant_keys
+      for (const variant of await makeVariants(processed.get(item).bytes)) {
+        const key = variantKey(entry.file_id, variant.width)
+        await storage.write(key, variant.bytes, 'image/webp', { replace: false })
+        uploaded.push(key)
+      }
     }
     await client.query('COMMIT')
   } catch (error) {
@@ -177,8 +184,9 @@ async function undoImport(options, { client, storage, projectRef }) {
     profileMediaRestored: doc.removedProfileMedia.length, villagesReset: doc.items.filter(row => row.kind === 'village').length }
   if (!options.apply) return report
   await client.query('COMMIT')
-  for (const item of doc.items) await storage.remove(item.storage_key)
-  return { ...report, objectsRemoved: doc.items.length }
+  let objectsRemoved = 0
+  for (const item of doc.items) for (const key of [item.storage_key, ...(item.variant_keys ?? [])]) { await storage.remove(key); objectsRemoved += 1 }
+  return { ...report, objectsRemoved }
 }
 
 async function main() {

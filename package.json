@@ -27,6 +27,7 @@
     "storage:setup": "node scripts/storage/setup.mjs",
     "storage:import-local": "node scripts/storage/import-local.mjs",
     "storage:catalog": "node scripts/storage/bootstrap-catalog.mjs",
+    "storage:seed-images": "node scripts/storage/import-seed-images.mjs",
     "storage:catalog-copies": "node scripts/storage/refresh-catalog-copies.mjs",
     "test:storage": "node scripts/storage/test.mjs"
   },
@@ -49,6 +50,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/supertest": "^6.0.0",
     "@vitest/coverage-v8": "^2.1.0",
+    "sharp": "^0.33.5",
     "supabase": "3.0.0",
     "supertest": "^7.0.0",
     "typescript": "^5.5.0",

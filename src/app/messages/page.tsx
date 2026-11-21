@@ -225,9 +225,7 @@ function MessagesContent() {
           <span className="ch9-avatar" aria-hidden="true">{initials(selected.organization)}</span>
           <div className="ch9-head__name"><h2>{selected.organization}</h2>
             <p>{selected.experience_name ? `Trải nghiệm: ${selected.experience_name}` : selected.participant_name}<span className={history.chat_status === 'Active' ? 'ch9-state-text is-active' : 'ch9-state-text'}> · {chatStatusLine(history.chat_status)}</span></p></div>
-          <div className="ch9-actions">{actions.map(action => action.href
-            ? <Link key={action.key} href={action.href} className={action.key === 'create_booking' ? 'ch9-btn ch9-btn--primary' : 'ch9-btn'}>{action.label}</Link>
-            : <button key={action.key} type="button" className="ch9-btn ch9-btn--danger" onClick={() => { setCloseOpen(true); setNotice('') }}>{action.label}</button>)}</div>
+          <div className="ch9-actions">{actions.map(action => <Link key={action.key} href={action.href} className="ch9-btn ch9-btn--primary">{action.label}</Link>)}</div>
         </header>
         {closeOpen && history.chat_status === 'Active' && <div className="ch9-dialog" role="dialog" aria-label="Đóng hội thoại">
           <p><strong>Đóng hội thoại này?</strong> Lịch sử vẫn được giữ; hội thoại đã đóng không mở lại được.</p>

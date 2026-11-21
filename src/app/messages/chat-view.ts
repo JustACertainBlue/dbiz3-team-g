@@ -55,28 +55,15 @@ export function groupByDay<T extends { sent_at: string }>(messages: T[], now: Da
 
 export const attachmentLine = (file: { file_name: string; file_size: number }) => `Đính kèm: ${file.file_name} · ${sizeLabel(file.file_size)}`
 
-export type ChatAction = { key: 'create_booking' | 'close' | 'bookings' | 'schedule'; label: string; href?: string }
+export type ChatAction = { key: 'create_booking'; label: string; href: string }
 
 /**
- * Screen actions next to the conversation header. Close Chat only while Active (F-CHAT-04: Closed is terminal).
- * Leaving through Bookings / Schedule never closes the Chat (COM048 #9–#10, COM065 #10).
+ * Header buttons of the thread (screen 25, decision 21/11): "Đóng hội thoại", "Đặt chỗ" and "Lịch" are gone for both
+ * roles. The Local Provider keeps "Tạo đặt chỗ"; the request card has its own "Tạo đặt chỗ từ yêu cầu" button.
  */
-export function chatActions(session: { role: string | null; agencyId?: string | null; providerId?: string | null }, status: string): ChatAction[] {
-  const active = status === 'Active'
-  if (session.role === 'Local_Provider') {
-    const base = `/provider/${session.providerId}`
-    return [
-      { key: 'create_booking', label: 'Tạo đặt chỗ', href: `${base}/bookings/new` },
-      ...(active ? [{ key: 'close', label: 'Đóng hội thoại' } as ChatAction] : []),
-      { key: 'bookings', label: 'Đặt chỗ', href: `${base}/bookings` },
-    ]
-  }
-  const base = `/agency/${session.agencyId}`
-  return [
-    ...(active ? [{ key: 'close', label: 'Đóng hội thoại' } as ChatAction] : []),
-    { key: 'bookings', label: 'Đặt chỗ', href: `${base}/bookings` },
-    { key: 'schedule', label: 'Lịch', href: `${base}/schedule` },
-  ]
+export function chatActions(session: { role: string | null; agencyId?: string | null; providerId?: string | null }, _status: string): ChatAction[] {
+  if (session.role === 'Local_Provider') return [{ key: 'create_booking', label: 'Tạo đặt chỗ', href: `/provider/${session.providerId}/bookings/new` }]
+  return []
 }
 
 // #158: a poll fetches the latest page of the open Chat. Messages the user already loaded with

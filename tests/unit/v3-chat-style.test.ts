@@ -44,3 +44,16 @@ describe('screen 25 list and header markup (mockup TinNhan)', () => {
     expect(page).toContain('className="ch9-sr"')
   })
 })
+
+describe('screen 25 header has no Đóng hội thoại / Đặt chỗ / Lịch button', () => {
+  const page = readFileSync('src/app/messages/page.tsx', 'utf8')
+  const header = page.slice(page.indexOf('<header className="ch9-head">'), page.indexOf('</header>'))
+  it('the header renders action links only (no close button)', () => {
+    expect(header).toContain('ch9-actions')
+    expect(header).not.toContain('setCloseOpen(true)')
+    for (const label of ['Đóng hội thoại', '>Đặt chỗ<', '>Lịch<']) expect(header).not.toContain(label)
+  })
+  it('the request card keeps its own "Tạo đặt chỗ từ yêu cầu" button for the Provider', () => {
+    expect(page).toContain('Tạo đặt chỗ từ yêu cầu')
+  })
+})

@@ -7,6 +7,7 @@ import { hanoiTimestamp, systemClock, type Clock } from './clock'
 import { BookingError } from './create-booking'
 import type { StatusHistoryEntry } from './change-status'
 import { expireDueHoldsLocked } from './expire-holds'
+import { assertTransition } from './transitions'
 import { withBookingWriteLock } from './write-lock'
 
 // F-SCHED-06 Mark Group Arrival (spec-BKG US-5, FR-006, BR-010, #11).
@@ -48,6 +49,7 @@ export async function markGroupArrival(
     })
     if (booking.status !== 'Booked') return rejected('Booking Not Booked')
     if (now < Date.parse(booking.start_at)) return rejected('Tour Start Time Not Reached') // BR-010
+    assertTransition({ actor: 'provider', from: booking.status, to: 'Completed' })
 
     const at = hanoiTimestamp(now)
     const entry: StatusHistoryEntry = { from_status: 'Booked', to_status: 'Completed', changed_by: session.userId ?? '', changed_at: at, reason: '' }

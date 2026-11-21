@@ -5,6 +5,8 @@ const nextConfig = {
   // switched off. This closes the Next 14 Image Optimization advisories (RCE via AVIF/SVG, DoS, disk-cache
   // growth) until the upgrade to Next 15.5.x after MVP RC.
   images: { unoptimized: true },
+  // Next 14 loads src/instrumentation.ts (the 60 s hold-expiry scanner) only with this flag.
+  experimental: { instrumentationHook: true },
 };
 
 export default nextConfig;

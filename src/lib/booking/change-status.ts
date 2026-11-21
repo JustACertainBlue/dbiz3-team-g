@@ -6,10 +6,11 @@ import { loadBookingForActor } from './booking-access'
 import { hanoiTimestamp, systemClock, type Clock } from './clock'
 import { BookingError, invalid } from './create-booking'
 import { expireDueHoldsLocked } from './expire-holds'
+import { assertTransition } from './transitions'
 import { withBookingWriteLock } from './write-lock'
 
 // F-SCHED-05 Booking status transitions (spec-BKG US-5, FR-005).
-// Allowed: On hold → Booked (only while now < hold_expires_at, #45), On hold → Cancelled, Booked → Cancelled.
+// Edges and roles live in ./transitions. On hold → Booked only while now < hold_expires_at (#45).
 // Completed is reached only through F-SCHED-06 (AC-BKG-COMPLETE).
 
 export interface StatusHistoryEntry {
@@ -27,8 +28,6 @@ export interface ChangeStatusResult {
   agency_notification_message_id: string
 }
 
-const ALLOWED: Record<string, readonly string[]> = { 'On hold': ['Booked', 'Cancelled'], Booked: ['Cancelled'] }
-
 export async function changeBookingStatus(
   session: SessionLike,
   bookingId: string,
@@ -43,17 +42,13 @@ export async function changeBookingStatus(
   const repository = demoRepository()
 
   return (await withBookingWriteLock(async () => {
-    // BR-001 first: a denied request writes nothing. Then expiry, so a confirm at or after
-    // hold_expires_at finds the Booking already Cancelled (#45, #50), and a fresh read.
-    if ((await loadBookingForActor(session, bookingId)).view !== 'provider') throw new BookingError('FORBIDDEN', 'Only the Local Provider of this Booking can change its status')
+    // BR-001 first: only the owning Provider or Agency may open the Booking; a denied request writes nothing.
+    // Then expiry, so a confirm at or after hold_expires_at finds the Booking already Cancelled (#45, #50), and a fresh read.
+    await loadBookingForActor(session, bookingId)
     ;(await expireDueHoldsLocked(new Date(now)))
-    const { booking } = (await loadBookingForActor(session, bookingId))
-    if (booking.status === 'Completed' || booking.status === 'Cancelled') {
-      throw new BookingError('BOOKING_TERMINAL', `A ${booking.status} Booking cannot change status`) // BR-011
-    }
-    if (!(ALLOWED[booking.status] ?? []).includes(target)) {
-      throw new BookingError('INVALID_TRANSITION', `${booking.status} → ${target} is not an allowed transition`)
-    }
+    const { booking, view } = (await loadBookingForActor(session, bookingId))
+    // One guard for edges and roles (BR-011, UI v3 decisions #1, #5): the Agency may only cancel an On hold Booking.
+    assertTransition({ actor: view, from: booking.status, to: target, reason })
 
     const at = hanoiTimestamp(now)
     const entry: StatusHistoryEntry = {

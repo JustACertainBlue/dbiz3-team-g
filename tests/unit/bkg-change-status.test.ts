@@ -46,7 +46,7 @@ describe('T011 | changeBookingStatus (F-SCHED-05)', () => {
     const id = await onHold()
     await rejects(changeBookingStatus(provider, id, { target_status: 'Booked' }, { now: () => new Date(HOLD_END) }), 'BOOKING_TERMINAL')
     expect(row(id).status).toBe('Cancelled')
-    expect(historyOf(id).at(-1)).toMatchObject({ to_status: 'Cancelled', reason: 'Automatic expiry: 72-hour On hold elapsed', changed_by: '' })
+    expect(historyOf(id).at(-1)).toMatchObject({ to_status: 'Cancelled', reason: 'Hết hạn giữ chỗ', changed_by: '' })
   })
 
   it('AS-2 and #10: On hold and Booked can be cancelled only with a reason', async () => {

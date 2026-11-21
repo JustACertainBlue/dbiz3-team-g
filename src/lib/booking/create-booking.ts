@@ -4,7 +4,7 @@ import { demoRepository } from '../db/application-store'
 import type { DemoRow } from '../demo/types'
 import { bookingUpdateOperations } from './agency-sync'
 import { hanoiTimestamp, systemClock, type Clock } from './clock'
-import { findConflict } from './conflicts'
+import { findConflict, slotOccupancy } from './conflicts'
 import { expireDueHoldsLocked } from './expire-holds'
 import { fitsOperatingHours } from './operating-hours'
 import { withBookingWriteLock } from './write-lock'
@@ -161,6 +161,10 @@ export async function createBooking(
   const agencyUser = (await repository.find('user_accounts', row => row.user_id === agency.user_id))
   if (agencyUser?.account_status !== 'Approved') throw new BookingError('AGENCY_NOT_ELIGIBLE', 'The Agency account is not Approved')
 
+  // UI v3 decision #1: a Provider books only for an Agency that has already chatted with it (any Chat of the pair).
+  const chatted = (await repository.find('chat_sessions', row => row.agency_id === request.agency_id && row.provider_id === providerId))
+  if (!chatted) throw new BookingError('FORBIDDEN', 'The Agency has not chatted with this Provider')
+
   // OQ #7: group_size must not exceed the Experience's max_participants.
   if (request.group_size > Number(experience.max_participants)) invalid('group_size exceeds max_participants')
 
@@ -182,6 +186,11 @@ export async function createBooking(
     }
     if (findConflict((await repository.all('bookings')), providerId, startAt, endAt)) {
       throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time overlaps another Booking')
+    }
+    // Slot capacity inside the same transaction (UI v3 decision #7): concurrent creates cannot exceed it.
+    const max = Number((await repository.find('experiences', row => row.experience_id === request.experience_id))?.max_participants)
+    if (slotOccupancy((await repository.all('bookings')), request.experience_id, startAt, endAt) + request.group_size > max) {
+      throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time slot is full')
     }
     if (options.afterConflictCheck) await options.afterConflictCheck()
 

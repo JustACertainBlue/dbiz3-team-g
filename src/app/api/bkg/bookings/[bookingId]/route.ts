@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { getBookingDetail } from '@/lib/booking/booking-detail'
 import { BookingError } from '@/lib/booking/create-booking'
-import { startExpiryTimer } from '@/lib/booking/expire-holds'
 import { updateBooking } from '@/lib/booking/update-booking'
 
 // F-SCHED-07 Booking Detail (GET) and F-SCHED-04 Update Booking details (PATCH). Contract: specs/011-bkg-manage/contracts/manage-booking-api.md
-startExpiryTimer()
 
 type Context = { params: { bookingId: string } }
 

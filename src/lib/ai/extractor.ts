@@ -105,16 +105,16 @@ export async function extractTourContext(
 
   const followUps: string[] = []
   if (tourContext.group_size === undefined) {
-    followUps.push('Could you please specify your expected group size or number of guests/pax?')
+    followUps.push('Đoàn của bạn dự kiến có bao nhiêu người? Vui lòng cho biết số khách.')
   }
   if (!tourContext.target_date_or_range) {
-    followUps.push('What is your desired date or date range for the tour?')
+    followUps.push('Bạn muốn đi vào ngày nào, hoặc trong khoảng ngày nào?')
   }
   if (!tourContext.origin_or_route) {
-    followUps.push('Where will the group start from (for example "from Hoàn Kiếm")?')
+    followUps.push('Đoàn xuất phát từ đâu (ví dụ "từ Hoàn Kiếm")?')
   }
   if (!tourContext.craft_preference && !tourContext.experience_types?.length) {
-    followUps.push('Which craft or type of experience are you looking for (for example silk weaving, pottery or a hands-on workshop)?')
+    followUps.push('Bạn muốn trải nghiệm nghề nào hoặc loại hình nào (ví dụ dệt lụa, làm gốm hay xưởng thực hành)?')
   }
 
   const isComplete = followUps.length === 0

@@ -33,6 +33,7 @@ export function applyScoreThreshold<T extends { match_score?: number }>(candidat
 }
 
 const vnd = (amount: number) => amount.toLocaleString('en-US')
+const viNumber = (amount: number) => amount.toLocaleString('vi-VN')
 
 // #25: only factors that the scoring actually evaluated (match_factors), never a craft the Agency did not ask for.
 function explain(item: any, score: number): string {
@@ -125,11 +126,11 @@ export async function buildRelaxationSuggestions(
   const groupSize = criteria?.group_size
   const largest = options.largest_group_size
   let conversation_prompt =
-    'No experiences currently meet all criteria above 60/100. You can relax your budget or travel distance, or adjust group size to see more artisan options.'
+    'Chưa có trải nghiệm nào đạt đủ tiêu chí trên 60/100. Bạn có thể nới ngân sách hoặc khoảng cách di chuyển, hoặc đổi số khách để xem thêm lựa chọn.'
   if (groupSize !== undefined && largest !== undefined && groupSize > largest) {
-    conversation_prompt = `No Experience can take a group of ${groupSize} pax: the largest group an eligible Experience accepts is ${largest} pax. You can split the group or reduce the number of guests.`
+    conversation_prompt = `Chưa có trải nghiệm nào nhận đoàn ${groupSize} khách: đoàn lớn nhất một trải nghiệm phù hợp nhận được là ${largest} khách. Bạn có thể chia đoàn hoặc giảm số khách.`
   } else if (suggestions[0]?.criterion === 'Budget' && cheapest !== undefined) {
-    conversation_prompt = `No Experience fits a budget of ${vnd(budget)} VND per person. The lowest price that meets your other requirements is ${vnd(cheapest)} VND per person.`
+    conversation_prompt = `Chưa có trải nghiệm nào có giá trong ngân sách ${viNumber(budget)} ₫/khách. Giá thấp nhất đáp ứng các yêu cầu còn lại là ${viNumber(cheapest)} ₫/khách.`
   }
 
   return {

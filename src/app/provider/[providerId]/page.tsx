@@ -35,11 +35,11 @@ export default async function ProviderProfilePage({ params }: { params: { provid
 
   const id = params.providerId
   const repository = demoRepository()
-  const [bookings, experiences, allHours] = await Promise.all([repository.all('bookings'), repository.all('experiences'), repository.all('provider_operating_hours')])
+  const [bookings, experiences, allHours, agencies] = await Promise.all([repository.all('bookings'), repository.all('experiences'), repository.all('provider_operating_hours'), repository.all('agency_profiles')])
   const today = hanoiDate(Date.now())
   const { from, to } = monthWindow(today)
   const hours = allHours.filter(row => row.provider_id === id)
-  const cells = monthDays({ hours, bookings: bookings.filter(row => row.provider_id === id), experiences: experiences.filter(row => row.provider_id === id) }, from, to, today)
+  const cells = monthDays({ hours, bookings: bookings.filter(row => row.provider_id === id), experiences: experiences.filter(row => row.provider_id === id), agencies }, from, to, today)
 
   return <div className="v3p pv3-root">
     <div className="hab-band"><nav aria-label="Đường dẫn" className="v3-crumbs"><Link href={`/provider/${id}/dashboard`}>Trang chủ</Link><span aria-hidden="true">›</span><Link href={`/village/${view.villageId}`}>{view.villageTitle}</Link><span aria-hidden="true">›</span><span aria-current="page">{view.name}</span></nav></div>

@@ -34,7 +34,7 @@ export default async function ExperienceManagementPage({ params, searchParams }:
         <h2 className="pv3-xrow__name"><Link href={`${base}/${row.id}`}>{row.name}</Link></h2>
         <p className="pv3-xrow__meta">{[row.priceText, `${row.durationMinutes} phút`, `tối đa ${row.maxParticipants} khách/ca`, row.cancelText].filter(Boolean).join(' · ')}</p>
         <p className={row.upcomingBookings > 0 ? 'pv3-xrow__note pv3-xrow__note--on' : 'pv3-xrow__note'}>
-          {row.upcomingBookings > 0 ? `${row.upcomingBookings} đặt chỗ sắp tới` : 'Chưa có đặt chỗ sắp tới'}{row.updatedText ? ` · cập nhật ${row.updatedText}` : ''}
+          {row.totalBookings === 0 ? 'Chưa có đặt chỗ nào' : `${row.upcomingBookings > 0 ? `${row.upcomingBookings} đặt chỗ sắp tới` : 'Chưa có đặt chỗ sắp tới'}${row.updatedText ? ` · cập nhật ${row.updatedText}` : ''}`}
         </p>
       </div>
       <ExperienceRowActions providerId={params.providerId} experienceId={row.id} name={row.name} deletion={row.deletion} />

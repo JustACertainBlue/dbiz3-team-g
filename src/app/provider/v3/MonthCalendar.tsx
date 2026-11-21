@@ -8,7 +8,6 @@ import type { DayCell } from '@/lib/provider/month-calendar'
 const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
 const LONG = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
 const LEGEND: Array<[string, string]> = [['free', 'Còn trống'], ['hold', 'Có đoàn giữ chỗ'], ['booked', 'Đã có đoàn'], ['closed', 'Xưởng nghỉ']]
-const shortName = (name?: string) => name ?? ''
 
 function longDate(date: string) {
   const [y, m, d] = date.split('-').map(Number)
@@ -53,7 +52,7 @@ export default function MonthCalendar({ cells, today, variant, hoursByWeekday, b
             aria-label={`${longDate(cell.date)}, ${stateText}${cell.guests ? `, ${cell.guests} khách` : ''}`}
             className={`pv3-cal__day pv3-cal__day--${cell.state}${cell.past ? ' is-past' : ''}${cell.date === selected ? ' is-selected' : ''}`} onClick={() => setSelected(cell.date)}>
             <b>{day}</b>
-            {full && cell.guests ? <><span className="pv3-cal__sub">{cell.state === 'hold' ? shortName(cell.label) : shortName(cell.label)}</span><span className="pv3-cal__sub pv3-cal__sub--s">{cell.state === 'hold' ? 'Chờ thanh toán' : `${cell.guests} khách`}</span></> : null}
+            {full && cell.guests ? <><span className="pv3-cal__sub">{cell.company}</span><span className="pv3-cal__sub pv3-cal__sub--s">{cell.state === 'hold' ? 'Chờ thanh toán' : `${cell.guests} khách`}</span></> : null}
           </button>
         })}
       </div>
@@ -63,8 +62,8 @@ export default function MonthCalendar({ cells, today, variant, hoursByWeekday, b
       <h3 className="pv3-cal__date">{longDate(current.date)}</h3>
       {current.guests
         ? <>
-            <p className="pv3-cal__strong">{full ? `${shortName(current.label)} · ${current.guests} khách` : current.state === 'hold' ? 'Có đoàn giữ chỗ' : 'Đã có đoàn'}</p>
-            {full && <p className="pv3-cal__muted">{current.state === 'hold' ? 'Đang giữ chỗ, chờ thanh toán' : 'Đã đặt chỗ'} · {current.startTime}</p>}
+            <p className="pv3-cal__strong">{full ? `${current.company} · ${current.guests} khách` : current.state === 'hold' ? 'Có đoàn giữ chỗ' : 'Đã có đoàn'}</p>
+            {full && <p className="pv3-cal__muted">{current.experience} · {current.startTime} · {current.state === 'hold' ? 'Chờ thanh toán' : 'Đã đặt chỗ'}</p>}
             {full && <Link className="pv3-link" href={bookingHref.replace('__ID__', current.bookingId ?? '')}>Xem đặt chỗ ›</Link>}
             {!full && <Link className="pv3-link" href={scheduleHref}>Mở lịch xưởng ›</Link>}
           </>

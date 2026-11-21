@@ -99,3 +99,6 @@ a.pv3-stat:hover { border-color: var(--c-primary); }
 .pv3-chip input { width: 20px; height: 20px; accent-color: var(--c-primary); }
 .provider-workspace .pv3-form .pv3-ta { min-height: 120px; }
 .pv3-slots { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 8px; } .pv3-slots li { display: flex; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: var(--c-border-soft); }
+.pv3-stack { display: grid; gap: 20px; } .pv3-rowbetween { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pv3-ai { margin-top: 12px; padding: 18px 20px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface-green); }
+.pv3-ai__t { margin: 0 0 6px; font: 700 16px/24px var(--font-body); color: var(--c-primary-dark); } .pv3-ai__b { margin: 0 0 12px; font: 400 16px/24px var(--font-body); white-space: pre-line; } .pv3-ai__btns { display: flex; gap: 12px; flex-wrap: wrap; }

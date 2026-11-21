@@ -3,20 +3,21 @@ import { describe, expect, it } from 'vitest'
 import { monthDays, providerStats } from '@/lib/provider/month-calendar'
 
 const hours = [1, 2, 3, 4, 5].map(weekday => ({ provider_id: 'p1', weekday: String(weekday), local_start: '08:00', local_end: '17:00' }))
-const booking = (id: string, start: string, status: string, group = '10', exp = 'e1') => ({ booking_id: id, provider_id: 'p1', experience_id: exp, status, start_at: `${start}+07:00`, end_at: `${start.slice(0, 11)}10:00:00+07:00`, group_size: group })
+const booking = (id: string, start: string, status: string, group = '10', exp = 'e1') => ({ booking_id: id, agency_id: 'a1', provider_id: 'p1', experience_id: exp, status, start_at: `${start}+07:00`, end_at: `${start.slice(0, 11)}10:00:00+07:00`, group_size: group })
 const experiences = [{ experience_id: 'e1', name: 'Nặn gốm thủ công' }]
+const agencies = [{ agency_id: 'a1', company_name: 'Du lịch Tràng An' }]
 
 describe('monthDays', () => {
-  const days = (bookings: ReturnType<typeof booking>[], today = '2026-11-16') => Object.fromEntries(monthDays({ hours, bookings, experiences }, '2026-11-01', '2026-11-30', today).map(d => [d.date, d]))
+  const days = (bookings: ReturnType<typeof booking>[], today = '2026-11-16') => Object.fromEntries(monthDays({ hours, bookings, experiences, agencies }, '2026-11-01', '2026-11-30', today).map(d => [d.date, d]))
   it('is free on an operating weekday, closed on a day without hours', () => {
     const d = days([])
     expect(d['2026-11-17'].state).toBe('free')   // Tuesday
     expect(d['2026-11-21'].state).toBe('closed') // Saturday
   })
   it('marks past days', () => { expect(days([])['2026-11-10'].past).toBe(true); expect(days([])['2026-11-16'].past).toBe(false) })
-  it('On hold → hold, Booked → booked (Booked wins), with the guest count and experience name', () => {
+  it('On hold → hold, Booked → booked (Booked wins), with the guest count, agency and experience name', () => {
     const d = days([booking('b1', '2026-11-24T09:00:00', 'Booked'), booking('b2', '2026-11-25T09:00:00', 'On hold', '8'), booking('b3', '2026-11-26T09:00:00', 'On hold'), booking('b4', '2026-11-26T11:00:00', 'Booked', '3')])
-    expect(d['2026-11-24']).toMatchObject({ state: 'booked', guests: 10, label: 'Nặn gốm thủ công', bookingId: 'b1' })
+    expect(d['2026-11-24']).toMatchObject({ state: 'booked', guests: 10, company: 'Du lịch Tràng An', experience: 'Nặn gốm thủ công', bookingId: 'b1' })
     expect(d['2026-11-25']).toMatchObject({ state: 'hold', guests: 8 })
     expect(d['2026-11-26'].state).toBe('booked'); expect(d['2026-11-26'].guests).toBe(13)
   })

@@ -5,7 +5,7 @@ type Row = Record<string, string | undefined>
 export interface ExperienceListSeed { experiences: Row[]; bookings: Row[]; profile_media: Row[]; stored_files: Row[] }
 export interface ExperienceRowView {
   id: string; name: string; priceText: string; durationMinutes: number; maxParticipants: number; cancelText: string | null
-  upcomingBookings: number; updatedText: string; archived: boolean; image: ImageRef | null
+  upcomingBookings: number; totalBookings: number; updatedText: string; archived: boolean; image: ImageRef | null
   /** What the delete button does (same rule as deleteExperience): blocked by an active booking, archived when it has history, else removed. */
   deletion: 'blocked' | 'archive' | 'delete'
 }
@@ -39,7 +39,7 @@ export function providerExperienceRows(seed: ExperienceListSeed, providerId: str
       const upcoming = seed.bookings.filter(b => b.experience_id === id && (b.status === 'On hold' || b.status === 'Booked') && Date.parse(b.start_at as string) >= now).length
       return {
         id, name: row.name as string, priceText: `${Number(row.price_per_person).toLocaleString('vi-VN')} ₫/khách`, durationMinutes: Number(row.duration_minutes),
-        maxParticipants: Number(row.max_participants), cancelText: cancelClause(row.cancellation_policy), upcomingBookings: upcoming,
+        maxParticipants: Number(row.max_participants), cancelText: cancelClause(row.cancellation_policy), upcomingBookings: upcoming, totalBookings: seed.bookings.filter(b => b.experience_id === id).length,
         updatedText: vnDate(row.updated_at), archived: Boolean(row.archived_at), image, deletion: deletionOutcome(seed.bookings, id),
       }
     })

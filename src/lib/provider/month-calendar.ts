@@ -7,11 +7,11 @@ type Row = Record<string, string | undefined>
 export type DayState = 'free' | 'hold' | 'booked' | 'closed'
 export interface DayCell {
   date: string; state: DayState; past: boolean
-  /** Experience name of the first booking of the day, with the total guests of all On hold / Booked bookings. */
-  label?: string; guests?: number; bookingId?: string; startTime?: string; groups?: number
+  /** First booking of the day: the agency (calendar cell, panel line 1) and the experience; guests = total of all On hold / Booked bookings. */
+  company?: string; experience?: string; guests?: number; bookingId?: string; startTime?: string; groups?: number
 }
 
-export function monthDays(seed: { hours: Row[]; bookings: Row[]; experiences: Row[] }, from: string, to: string, today: string): DayCell[] {
+export function monthDays(seed: { hours: Row[]; bookings: Row[]; experiences: Row[]; agencies?: Row[] }, from: string, to: string, today: string): DayCell[] {
   const cells: DayCell[] = []
   for (let date = from; date <= to; date = addDays(date, 1)) {
     const weekday = isoWeekdayInHanoi(`${date}T12:00:00+07:00`)
@@ -25,7 +25,8 @@ export function monthDays(seed: { hours: Row[]; bookings: Row[]; experiences: Ro
       cell.groups = own.length
       cell.bookingId = own[0].booking_id
       cell.startTime = new Date(Date.parse(own[0].start_at as string)).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false })
-      cell.label = seed.experiences.find(e => e.experience_id === own[0].experience_id)?.name
+      cell.experience = seed.experiences.find(e => e.experience_id === own[0].experience_id)?.name
+      cell.company = seed.agencies?.find(a => a.agency_id === own[0].agency_id)?.company_name || cell.experience
     }
     cells.push(cell)
   }

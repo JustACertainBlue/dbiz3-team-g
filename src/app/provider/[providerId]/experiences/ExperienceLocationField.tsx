@@ -11,7 +11,7 @@ export default function ExperienceLocationField({ value, locked, onChange }: {
   return (
     <div className="prf-field-group">
       <label className="prf-label" htmlFor="experience-field-location">
-        Địa điểm diễn ra trải nghiệm *
+        Địa điểm tổ chức *
         {locked && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>Đang khóa</span>}
       </label>
       <input id="experience-field-location"

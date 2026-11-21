@@ -19,10 +19,10 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
     return <main className="pv3-page"><h1 className="pv3-h1">Tổng quan xưởng</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được Dashboard.</p><Button href="/login">Đăng nhập</Button></main>
   }
   const repository = demoRepository()
-  const [summary, profile, account, bookings, experiences, allHours, reviews] = await Promise.all([
+  const [summary, profile, account, bookings, experiences, allHours, reviews, agencies] = await Promise.all([
     providerBookingSummary(session), repository.find('provider_profiles', row => row.provider_id === params.providerId),
     repository.find('user_accounts', row => row.user_id === session.userId), repository.all('bookings'), repository.all('experiences'),
-    repository.all('provider_operating_hours'), repository.all('provider_verification_reviews'),
+    repository.all('provider_operating_hours'), repository.all('provider_verification_reviews'), repository.all('agency_profiles'),
   ])
   const now = Date.now(), today = hanoiDate(now)
   const own = bookings.filter(row => row.provider_id === params.providerId)
@@ -30,7 +30,7 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
   const ownExperiences = experiences.filter(row => row.provider_id === params.providerId)
   const stats = providerStats({ bookings: own, experiences }, params.providerId, now)
   const { from, to } = monthWindow(today)
-  const cells = monthDays({ hours, bookings: own, experiences: ownExperiences }, from, to, today)
+  const cells = monthDays({ hours, bookings: own, experiences: ownExperiences, agencies }, from, to, today)
   const revision = reviews.filter(row => row.provider_id === params.providerId && row.version_no === profile?.current_version_no && row.revision_comments).sort((a, b) => b.reviewed_at.localeCompare(a.reviewed_at))[0]
   const id = params.providerId
   const name = account?.full_name

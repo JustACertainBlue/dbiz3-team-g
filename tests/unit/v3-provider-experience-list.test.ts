@@ -31,6 +31,7 @@ describe('providerExperienceRows', () => {
     const rows = providerExperienceRows(base(), 'p1', { now: NOW })
     expect(rows[0].upcomingBookings).toBe(2)
     expect(rows[1].upcomingBookings).toBe(0)
+    expect([rows[0].totalBookings, rows[1].totalBookings]).toEqual([4, 0])
   })
   it('formats the cancellation clause only when a policy exists', () => {
     const rows = providerExperienceRows(base(), 'p1', { now: NOW })

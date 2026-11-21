@@ -44,6 +44,7 @@ export const SEEDED_TABLES = Object.keys(KEYS)
 
 const AGENCIES = [
   { slug: 'cho-duyet', company: 'Công ty Du lịch Hoa Sen Xanh', person: 'Trần Minh Quân (mẫu)', phone: '+84900000101', ageDays: 2, status: 'Pending Approval', label: 'Chờ duyệt' },
+  { slug: 'cho-duyet-2', company: 'Công ty Lữ hành Thăng Long Xanh', person: 'Võ Hải Đăng (mẫu)', phone: '+84900000104', ageDays: 1, status: 'Pending Approval', label: 'Chờ duyệt' },
   { slug: 'bo-sung', company: 'Công ty Lữ hành Sông Hồng Mới', person: 'Lê Thu Hà (mẫu)', phone: '+84900000102', ageDays: 5, status: 'Pending Approval', label: 'Cần bổ sung',
     decision: 'Request More Information', decidedDaysAgo: 3, comment: 'Giấy đăng ký kinh doanh bị mờ phần mã số thuế, vui lòng tải lại bản rõ.' },
   { slug: 'tu-choi', company: 'Công ty Du lịch Phố Cũ Việt', person: 'Phạm Quốc Bảo (mẫu)', phone: '+84900000103', ageDays: 9, status: 'Rejected', label: 'Bị từ chối',
@@ -168,6 +169,30 @@ export function buildDemoAdminData({ now, passwordHash, hdtUserId, village, newI
 /** Reverse-order deletes (table + primary key only) for an undo file. */
 export function undoOps(ops) { return [...ops].reverse().map(({ table, key }) => ({ table, key })) }
 
+/**
+ * Rows that other code writes about the seeded users, requests and workshops after the load (reviews, notifications, audit logs,
+ * logins) and whose foreign keys would block the undo. Only rows that point at a key listed in the undo file are named.
+ */
+export function undoDependants(ops) {
+  const keys = table => ops.filter(op => op.table === table).map(op => Object.values(op.key)[0])
+  const out = []
+  const add = (table, column, values) => { for (const value of values) out.push({ table, column, value }) }
+  const users = keys('user_accounts'), requests = keys('agency_registration_requests'), providers = keys('provider_profiles')
+  add('sessions', 'user_id', users)
+  add('password_reset_tokens', 'user_id', users)
+  add('notifications', 'recipient_user_id', users)
+  add('audit_logs', 'actor_user_id', users)
+  add('agency_review_records', 'hdt_user_id', users)
+  add('provider_verification_reviews', 'reviewer_user_id', users)
+  add('account_status_history', 'user_id', users)
+  add('account_status_history', 'changed_by', users)
+  add('registration_resubmission_tokens', 'registration_request_id', requests)
+  add('registration_otp_challenges', 'registration_request_id', requests)
+  add('agency_review_records', 'registration_request_id', requests)
+  add('provider_verification_reviews', 'provider_id', providers)
+  return out
+}
+
 /** Validates an undo file read from disk: only seeded tables, only the primary-key columns of each. */
 export function validateUndoFile(content) {
   if (!content || content.kind !== 'dev-seed-pending-reviews' || content.ref !== DEV_PROJECT_REF || !Array.isArray(content.ops)) throw new Error('Not an undo file of this script for the DEV project.')
@@ -246,8 +271,10 @@ async function main(argv) {
     await client.query('SET CONSTRAINTS ALL DEFERRED')
     if (undoFile) {
       const ops = validateUndoFile(JSON.parse(readFileSync(resolve(runDir, undoFile), 'utf8')))
-      // A demo user who logged in has session rows; they would block the delete of the account.
-      for (const op of ops) if (op.table === 'user_accounts') await db.remove('sessions', { user_id: op.key.user_id })
+      // Rows written about the demo users after the load (a login, a review decision) would block the deletes.
+      let dependants = 0
+      for (const dep of undoDependants(ops)) dependants += await db.remove(dep.table, { [dep.column]: dep.value }) ?? 0
+      if (dependants) console.log(`[dev-seed] undo: ${dependants} dependent rows (sessions, reviews, notifications, audit logs of the demo users) removed first.`)
       let removed = 0
       for (const op of ops) removed += await db.remove(op.table, op.key) ?? 0
       console.log(`[dev-seed] undo: ${removed} of ${ops.length} rows deleted.`)

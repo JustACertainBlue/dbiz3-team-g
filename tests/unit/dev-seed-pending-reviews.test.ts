@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  DEV_PROJECT_REF, assertDevTarget, buildDemoAdminData, buildPendingReviewData, demoAdminPlan, pickDemoVillages, undoOps, validateUndoFile,
+  DEV_PROJECT_REF, assertDevTarget, buildDemoAdminData, buildPendingReviewData, demoAdminPlan, pickDemoVillages, undoDependants, undoOps, validateUndoFile,
 } from '../../scripts/db/dev-seed-pending-reviews.mjs'
 import { demoRepository } from '../../src/lib/demo/json-repository'
 import { demoSessionContextFor } from '../../src/lib/auth/session'
@@ -71,11 +71,11 @@ describe('CLI order', () => {
 
 describe('buildPendingReviewData: Agencies', () => {
   const data = build()
-  it('three registrations: waiting, more information asked, rejected', () => {
+  it('four registrations: two waiting, more information asked, rejected', () => {
     const requests = rows(data, 'agency_registration_requests')
-    expect(requests.map((r: any) => r.current_status)).toEqual(['Pending Approval', 'Pending Approval', 'Rejected'])
+    expect(requests.map((r: any) => r.current_status)).toEqual(['Pending Approval', 'Pending Approval', 'Pending Approval', 'Rejected'])
     const accounts = rows(data, 'user_accounts').filter((r: any) => r.role_code === 'Tour_Agency')
-    expect(accounts.map((r: any) => r.account_status)).toEqual(['Pending Approval', 'Pending Approval', 'Rejected'])
+    expect(accounts.map((r: any) => r.account_status)).toEqual(['Pending Approval', 'Pending Approval', 'Pending Approval', 'Rejected'])
     const reviews = rows(data, 'agency_review_records')
     expect(reviews.map((r: any) => r.decision)).toEqual(['Request More Information', 'Reject'])
     for (const review of reviews) {
@@ -83,16 +83,16 @@ describe('buildPendingReviewData: Agencies', () => {
       expect(review.hdt_user_id).toBe('hdt-1')
       expect(review.major_change_id).toBeNull()
     }
-    expect(reviews[0].registration_request_id).toBe(requests[1].registration_request_id)
-    expect(reviews[1].registration_request_id).toBe(requests[2].registration_request_id)
+    expect(reviews[0].registration_request_id).toBe(requests[2].registration_request_id)
+    expect(reviews[1].registration_request_id).toBe(requests[3].registration_request_id)
   })
   it('each registration has its submission, profile and certificate record; synthetic tax ids differ', () => {
-    expect(rows(data, 'registration_submission_versions')).toHaveLength(3)
-    expect(rows(data, 'agency_profiles')).toHaveLength(3)
-    expect(rows(data, 'registration_documents')).toHaveLength(3)
-    expect(rows(data, 'stored_files')).toHaveLength(3)
+    expect(rows(data, 'registration_submission_versions')).toHaveLength(4)
+    expect(rows(data, 'agency_profiles')).toHaveLength(4)
+    expect(rows(data, 'registration_documents')).toHaveLength(4)
+    expect(rows(data, 'stored_files')).toHaveLength(4)
     const tax = rows(data, 'registration_submission_versions').map((r: any) => r.tax_id)
-    expect(new Set(tax).size).toBe(3)
+    expect(new Set(tax).size).toBe(4)
     for (const t of tax) expect(t).toMatch(/^[0-9]{10}$/)
     expect(rows(data, 'registration_resubmission_tokens')).toHaveLength(0)
   })
@@ -122,9 +122,9 @@ describe('buildPendingReviewData: safety', () => {
   const data = build()
   it('only fictional @example.invalid emails, unique ids, hash from the caller, no plain password', () => {
     const emails = rows(data, 'user_accounts').map((r: any) => r.email)
-    expect(emails).toHaveLength(5)
+    expect(emails).toHaveLength(6)
     for (const email of emails) expect(email).toMatch(/@example\.invalid$/)
-    expect(new Set(emails).size).toBe(5)
+    expect(new Set(emails).size).toBe(6)
     for (const user of rows(data, 'user_accounts')) { expect(user.password_hash).toBe(HASH); expect(user.must_change_password).toBe(false) }
     expect(JSON.stringify(data)).not.toContain(PASSWORD)
     const ids = data.ops.map((op: any) => JSON.stringify(op.key))
@@ -155,8 +155,8 @@ describe('buildPendingReviewData: safety', () => {
     expect(JSON.stringify(undo)).not.toContain(HASH)
   })
   it('the summary lists names and emails to create', () => {
-    expect(data.summary).toHaveLength(5)
-    expect(data.summary.map((s: any) => s.status)).toEqual(['Chờ duyệt', 'Cần bổ sung', 'Bị từ chối', 'Chờ UBND duyệt', 'Chờ UBND duyệt'])
+    expect(data.summary).toHaveLength(6)
+    expect(data.summary.map((s: any) => s.status)).toEqual(['Chờ duyệt', 'Chờ duyệt', 'Cần bổ sung', 'Bị từ chối', 'Chờ UBND duyệt', 'Chờ UBND duyệt'])
   })
 })
 
@@ -221,6 +221,43 @@ describe('demoAdminPlan: no duplicates', () => {
   })
 })
 
+describe('undoDependants: rows other code writes after the load (reviews, logins) that would block the delete', () => {
+  const ops = [
+    { table: 'user_accounts', key: { user_id: 'u1' } }, { table: 'user_accounts', key: { user_id: 'u2' } },
+    { table: 'agency_registration_requests', key: { registration_request_id: 'r1' } },
+    { table: 'provider_profiles', key: { provider_id: 'p1' } },
+    { table: 'agency_profiles', key: { agency_id: 'a1' } },
+  ]
+  const deps = undoDependants(ops)
+  const has = (table: string, column: string, value: string) => deps.some((d: any) => d.table === table && d.column === column && d.value === value)
+  it('for each user: sessions, notifications, audit logs, reset tokens, status history, and the reviews the user wrote', () => {
+    for (const u of ['u1', 'u2']) {
+      expect(has('sessions', 'user_id', u)).toBe(true)
+      expect(has('notifications', 'recipient_user_id', u)).toBe(true)
+      expect(has('audit_logs', 'actor_user_id', u)).toBe(true)
+      expect(has('password_reset_tokens', 'user_id', u)).toBe(true)
+      expect(has('account_status_history', 'user_id', u)).toBe(true)
+      expect(has('account_status_history', 'changed_by', u)).toBe(true)
+      expect(has('agency_review_records', 'hdt_user_id', u)).toBe(true)
+      expect(has('provider_verification_reviews', 'reviewer_user_id', u)).toBe(true)
+    }
+  })
+  it('for each registration request and workshop: their tokens, challenges and reviews', () => {
+    expect(has('registration_resubmission_tokens', 'registration_request_id', 'r1')).toBe(true)
+    expect(has('registration_otp_challenges', 'registration_request_id', 'r1')).toBe(true)
+    expect(has('agency_review_records', 'registration_request_id', 'r1')).toBe(true)
+    expect(has('provider_verification_reviews', 'provider_id', 'p1')).toBe(true)
+  })
+  it('nothing outside those keys: every criterion is one of the listed ids', () => {
+    expect(deps.every((d: any) => ['u1', 'u2', 'r1', 'p1'].includes(d.value))).toBe(true)
+  })
+  it('the CLI runs the dependants before the listed deletes', () => {
+    const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
+    expect(source.indexOf('undoDependants(ops)')).toBeGreaterThan(-1)
+    expect(source.indexOf('undoDependants(ops)')).toBeLessThan(source.indexOf('removed += await db.remove(op.table, op.key)'))
+  })
+})
+
 describe('where files go and how undo behaves', () => {
   const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
   it('the undo file goes to the directory the command was run from, resolved before the script changes to the repository root', () => {
@@ -229,9 +266,8 @@ describe('where files go and how undo behaves', () => {
     expect(source).toContain("join(runDir, '.demo-data', `dev-seed-undo-")
     expect(source).toContain('resolve(runDir, undoFile)')
   })
-  it('undo removes the sessions of the users it deletes first (login rows would block the delete)', () => {
-    expect(source.indexOf("db.remove('sessions'")).toBeGreaterThan(-1)
-    expect(source.indexOf("db.remove('sessions'")).toBeLessThan(source.indexOf('removed += await db.remove(op.table, op.key)'))
+  it('undo removes sessions and other rows written for the users it deletes before deleting them', () => {
+    expect(source.indexOf('undoDependants(ops)')).toBeLessThan(source.indexOf('removed += await db.remove(op.table, op.key)'))
   })
 })
 
@@ -245,14 +281,14 @@ describe('the built data shows up on the review screens (fixture repository, rea
     for (const op of data.ops as any[]) repo().insert(op.table, Object.fromEntries(Object.entries(op.row).map(([k, v]) => [k, asFixture(v)])))
     return { data, villages }
   }
-  it('HDT: three Agency rows (one waiting, one needing more information, one rejected) and both workshops view only', async () => {
+  it('HDT: four Agency rows (two waiting, one needing more information, one rejected) and both workshops view only', async () => {
     const { data } = await seed()
     const hdt = await demoSessionContextFor('hdt')
     const { rows: queue } = await loadReviewQueue(hdt)
     const names = (kind: string) => queue.filter(r => r.kind === kind).map(r => r.name)
     for (const item of data.summary.filter((s: any) => s.kind === 'agency')) expect(queue.map(r => r.name)).toContain(item.name)
     const mine = queue.filter(r => data.summary.some((s: any) => s.kind === 'agency' && s.name === r.name))
-    expect(mine.filter(r => !r.processed).map(r => r.statusLabel)).toEqual(['Chờ duyệt'])
+    expect(mine.filter(r => !r.processed).map(r => r.statusLabel)).toEqual(['Chờ duyệt', 'Chờ duyệt'])
     expect(mine.filter(r => r.processed).map(r => r.statusLabel).sort()).toEqual(['Cần bổ sung', 'Từ chối'])
     for (const item of data.summary.filter((s: any) => s.kind === 'workshop')) {
       const row = queue.find(r => r.name === item.name)!

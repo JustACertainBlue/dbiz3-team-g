@@ -1,3 +1,4 @@
+import React from 'react'
 import { redirect } from 'next/navigation'
 import { currentServerSession } from '@/lib/auth/server-session'
 import { sessionDisplayName } from '@/lib/auth/session'
@@ -8,5 +9,5 @@ import { AgencyNameProvider } from './agency-name'
 export default async function AiMatchingLayout({ children }: { children: React.ReactNode }) {
   const session = (await currentServerSession())
   if (aiMatchingAccess(session) === 'redirect-login') redirect('/login')
-  return <AgencyNameProvider value={await sessionDisplayName(session)}>{children}</AgencyNameProvider>
+  return <AgencyNameProvider name={await sessionDisplayName(session)}>{children}</AgencyNameProvider>
 }

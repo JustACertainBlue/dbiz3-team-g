@@ -22,8 +22,8 @@ describe('providerCraftLine / route', () => {
     expect(await providerCraftLine(BAT_TRANG)).toMatch(/ · Làng Bát Tràng$/)
     expect(await providerCraftLine('00000000-0000-0000-0000-000000000000')).toBe('')
   })
-  it('GET returns {craft_line}', async () => {
-    const response = await GET(new Request('http://localhost/x'), { params: { providerId: BAT_TRANG } })
+  it('GET returns {craft_line} to the owner (access rules: v3-provider-form-safety.test.ts)', async () => {
+    const response = await GET(new Request('http://localhost/x', { headers: { cookie: 'hab_demo_account=provider' } }), { params: { providerId: BAT_TRANG } })
     expect(response.status).toBe(200)
     expect((await response.json()).craft_line).toMatch(/Làng Bát Tràng$/)
   })

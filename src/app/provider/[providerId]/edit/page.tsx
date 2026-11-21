@@ -4,6 +4,7 @@
 // changed fields (decision Q1 2026-11-04: no hard-coded demo values, only FR-004 inputs).
 // Files are uploaded privately and attached to the editable Provider version on Save.
 
+import { useHydrated } from '@/app/provider/v3/useHydrated'
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import MediaImage from '@/app/components/MediaImage'
@@ -34,6 +35,7 @@ export default function EditProviderProfilePage({
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [status, setStatus] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const hydrated = useHydrated()
   const [saving, setSaving] = useState(false)
   const [aiDraft,setAiDraft]=useState<string|null>(null)
   const [certificate,setCertificate]=useState<{file_id:string;file_name:string;url:string;available?:boolean}|null>(null)
@@ -50,7 +52,7 @@ export default function EditProviderProfilePage({
     async function load() {
       try {
         const session = await readSessionContext()
-        const canEdit = session.role === 'Local_Provider' && session.providerId === params.providerId
+        const canEdit = session.role === 'Local_Provider' && session.providerId === params.providerId && !session.mustChangePassword // a temporary-password session is a guest here
         setAuthorized(canEdit)
         if (!canEdit) return
         const [profileRes, scheduleRes] = await Promise.all([
@@ -218,7 +220,7 @@ export default function EditProviderProfilePage({
             <Link href={`/provider/${params.providerId}`} className="spec-btn-white">
               Hủy thay đổi
             </Link>
-            <button onClick={handleSubmit} disabled={saving || uploading} className="spec-btn-black">
+            <button onClick={handleSubmit} disabled={saving || uploading || !hydrated} className="spec-btn-black">
               {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
             </button>
           </div>
@@ -231,7 +233,7 @@ export default function EditProviderProfilePage({
         )}
 
         {aiDraft!==null&&<section className="spec-form-section" aria-label="Xem trước mô tả AI"><h2>Bản nháp AI — chưa thay đổi mô tả</h2><label>Sửa bản nháp<textarea value={aiDraft} maxLength={1000} onChange={event=>setAiDraft(event.target.value)}/></label><button type="button" onClick={()=>{setFormData(current=>({...current,general_description:aiDraft}));setAiDraft(null)}}>Chấp nhận bản nháp</button><button type="button" disabled={refining} onClick={handleAIRefine}>Tạo lại</button><button type="button" onClick={()=>setAiDraft(null)}>Bỏ bản nháp</button></section>}
-        <form onSubmit={handleSubmit}>
+        <form method="post" onSubmit={handleSubmit}>
           <div className="spec-form-section">
             <div className="spec-form-section-header">
               <div className="spec-section-num">01 Thông tin xưởng</div>
@@ -333,7 +335,7 @@ export default function EditProviderProfilePage({
             <Link href={`/provider/${params.providerId}`} className="spec-btn-white">
               Hủy thay đổi
             </Link>
-            <button type="submit" disabled={saving || uploading} className="spec-btn-black">
+            <button type="submit" disabled={saving || uploading || !hydrated} className="spec-btn-black">
               {saving ? 'Đang lưu…' : 'Lưu hồ sơ xưởng'}
             </button>
           </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useHydrated } from '@/app/provider/v3/useHydrated'
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -21,6 +22,7 @@ export default function AddExperiencePage({
   params: { providerId: string }
 }) {
   const [content, setContent] = useState(emptyContentForm())
+  const hydrated = useHydrated()
   const [craftLine, setCraftLine] = useState('')
   useEffect(() => { fetch(`/api/prf/provider/${params.providerId}/craft-line`).then(r => r.ok ? r.json() : null).then(d => setCraftLine(d?.craft_line ?? '')).catch(() => {}) }, [params.providerId])
   const [slots, setSlots] = useState<SlotLine[]>([])
@@ -53,7 +55,7 @@ export default function AddExperiencePage({
   useEffect(() => {
     const applySession = async () => {
       const session = await readSessionContext()
-      setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
+      setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId && !session.mustChangePassword)
     }
     applySession().finally(() => setSessionReady(true))
     const onRoleChanged = () => {
@@ -209,7 +211,7 @@ export default function AddExperiencePage({
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form method="post" onSubmit={handleSubmit}>
         <ExperienceFormBody craftLine={craftLine} formData={formData} setFormData={setFormData} hasActiveBookings={false} images={images} setImages={setImages} setUploading={setUploading}
           content={content} setContent={setContent} slots={slots} policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}
           aiRefining={aiRefining} aiDraft={aiDraft} onAiRefine={handleAiRefine} onApplyDraft={handleApplyAiDraft} onDismissDraft={() => setAiDraft(null)} />
@@ -230,7 +232,7 @@ export default function AddExperiencePage({
               </Link>
               <button
                 type="submit"
-                disabled={saving || uploading}
+                disabled={saving || uploading || !hydrated}
                 className="prf-btn prf-btn-primary"
               >
                 {saving ? 'Đang tạo...' : 'Tạo trải nghiệm'}

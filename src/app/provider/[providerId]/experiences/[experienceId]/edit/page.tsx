@@ -1,5 +1,6 @@
 'use client'
 
+import { useHydrated } from '@/app/provider/v3/useHydrated'
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -22,6 +23,7 @@ export default function EditExperiencePage({
 }) {
   const [initialPolicy, setInitialPolicy] = useState<CancellationPolicy>({ rules: [] })
   const [content, setContent] = useState(emptyContentForm())
+  const hydrated = useHydrated()
   const [craftLine, setCraftLine] = useState('')
   useEffect(() => { fetch(`/api/prf/provider/${params.providerId}/craft-line`).then(r => r.ok ? r.json() : null).then(d => setCraftLine(d?.craft_line ?? '')).catch(() => {}) }, [params.providerId])
   const [slots, setSlots] = useState<SlotLine[]>([])
@@ -57,7 +59,7 @@ export default function EditExperiencePage({
   useEffect(() => {
     let alive = true
     readSessionContext().then(session => {
-      if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
+      if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId && !session.mustChangePassword)
       return fetch(`/api/prf/experience/${params.experienceId}`)
     }).then(response => response.ok ? response.json() : Promise.reject(new Error('Experience not found')))
       .then(data => {
@@ -80,7 +82,7 @@ export default function EditExperiencePage({
       }).catch(cause=>{if(alive)setLoadError(cause instanceof Error?cause.message:'Không thể tải trải nghiệm.')}).finally(() => { if (alive) setSessionReady(true) })
     const onRoleChanged = () => {
       readSessionContext()
-        .then(session => { if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId) })
+        .then(session => { if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId && !session.mustChangePassword) })
         .catch(() => { if (alive) setAuthorized(false) })
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
@@ -268,7 +270,7 @@ export default function EditExperiencePage({
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form method="post" onSubmit={handleSubmit}>
         <ExperienceFormBody craftLine={craftLine} formData={formData} setFormData={setFormData} hasActiveBookings={hasActiveBookings} images={images} setImages={setImages} setUploading={setUploading}
           content={content} setContent={setContent} slots={slots} policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}
           aiRefining={aiRefining} aiDraft={aiDraft} onAiRefine={handleAiRefine} onApplyDraft={handleApplyAiDraft} onDismissDraft={() => setAiDraft(null)} />
@@ -289,7 +291,7 @@ export default function EditExperiencePage({
               </Link>
               <button
                 type="submit"
-                disabled={saving || uploading}
+                disabled={saving || uploading || !hydrated}
                 className="prf-btn prf-btn-primary"
               >
                 {saving ? 'Đang lưu...' : 'Lưu thay đổi'}

@@ -1,5 +1,5 @@
 /* Screen 05 cards (mockup LichSuDatCho). Prefix v3g-. Shares header/tabs/pagination classes (v3l-) of the provider list. */
-.v3g-search{display:flex;align-items:center;gap:8px;min-height:46px;border:1px solid #9AA39E;border-radius:6px;padding:0 12px;min-width:320px;box-sizing:border-box;background:#fff}
+.v3g-search{display:flex;align-items:center;gap:8px;min-height:46px;border:1px solid #9AA39E;border-radius:6px;padding:0 12px;min-width:400px;box-sizing:border-box;background:#fff}
 .v3g-search input{border:0;outline:0;font:inherit;font-size:16px;flex:1;min-width:0}
 .v3g-banner{display:flex;gap:12px;align-items:center;background:#FFF7E6;border:1px solid #F0DDB0;border-radius:8px;padding:14px 18px;margin-top:20px}
 .v3g-list{display:flex;flex-direction:column;gap:16px}
@@ -25,3 +25,8 @@
 .v3g-links a{font-weight:700;color:#165235}
 .v3g-pay{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 24px;border-radius:6px;background:#165235;color:#fff!important;font-weight:700;text-decoration:none;margin-top:8px}
 .v3g-cal{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 20px;border-radius:6px;background:#fff;color:#165235;font-weight:700;text-decoration:none;box-shadow:inset 0 0 0 1.5px #165235;box-sizing:border-box}
+
+.v3g-total,.v3g-old,.v3g-disc,.v3g-tag{white-space:nowrap}
+.v3g-side{min-width:0}
+
+.v3l-head form{flex:0 1 440px;min-width:400px}

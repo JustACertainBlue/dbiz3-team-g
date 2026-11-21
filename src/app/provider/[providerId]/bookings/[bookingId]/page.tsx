@@ -69,7 +69,7 @@ export default async function ProviderBookingDetailPage({ params }: { params: { 
         <h2 id="pv-info" className="v3a-ct">Thông tin đặt chỗ</h2>
         <div className="v3a-sp"><span>Ngày giờ</span><b>{view.dateLong.split(', ')[1]} · {view.range.slice(0, 5)}</b></div>
         <div className="v3a-sp"><span>Số khách</span><b>{view.price.guests} khách</b></div>
-        <div className="v3a-sp"><span>Tổng tiền</span><b>{vnd(view.price.total)}</b></div>
+        <div className="v3a-sp"><span>Tổng tiền</span><b className="v3a-money">{vnd(view.price.total)}</b></div>
         <p className="v3a-cap">{vnd(view.price.perGuest)} × {view.price.guests}{view.price.discount > 0 ? `, giảm ${view.price.discountPct}% giá đoàn (− ${vnd(view.price.discount)})` : ''}{view.price.strike ? <> · giá gốc <s className="v3a-old">{vnd(view.price.listTotal)}</s></> : ''}</p>
         {view.price.adjustment !== 0 && <p className="v3a-cap" data-testid="adjustment">{adjustmentLine(view.price.adjustment)}</p>}
         <div className="v3a-sp"><span>Người phụ trách đoàn</span><b>{view.contactName || 'Chưa có'}</b></div>

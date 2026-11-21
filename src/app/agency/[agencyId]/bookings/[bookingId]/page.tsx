@@ -70,10 +70,10 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
         </div>
         <div className="v3a-card">
           <p className="v3a-ct">Tóm tắt giá</p>
-          <div className="v3a-sp"><span>Giá gốc</span><span>{vnd(view.price.listTotal)}</span></div><p className="v3a-cap">{vnd(view.price.perGuest)} × {view.price.guests} khách</p>
-          {view.price.discount > 0 && <><div className="v3a-sp"><span>Giảm giá đoàn</span><span>− {vnd(view.price.discount)}</span></div><p className="v3a-cap">Đoàn được giảm {view.price.discountPct}%.</p></>}
+          <div className="v3a-sp"><span>Giá gốc</span><span className="v3a-money">{vnd(view.price.listTotal)}</span></div><p className="v3a-cap">{vnd(view.price.perGuest)} × {view.price.guests} khách</p>
+          {view.price.discount > 0 && <><div className="v3a-sp"><span>Giảm giá đoàn</span><span className="v3a-money">− {vnd(view.price.discount)}</span></div><p className="v3a-cap">Đoàn được giảm {view.price.discountPct}%.</p></>}
           {view.price.adjustment !== 0 && <p className="v3a-sm" data-testid="adjustment">{adjustmentLine(view.price.adjustment)}</p>}
-          <div className="v3a-tot"><span>{view.status === 'On hold' ? 'Giá' : 'Giá đã thống nhất'}</span><span>{view.price.strike && <span className="v3a-old">{vnd(view.price.listTotal)}</span>}<b>{vnd(view.price.total)}</b></span></div>
+          <div className="v3a-tot"><span>Giá</span><span className="v3a-tot__r">{view.price.strike && <span className="v3a-old">{vnd(view.price.listTotal)}</span>}<b>{vnd(view.price.total)}</b></span></div>
         </div>
       </aside>
       {view.status === 'On hold'

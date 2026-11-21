@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -73,5 +74,49 @@ describe('price display on the booking screens', () => {
     const above = await pages(booking_id)
     expect(above.agency).not.toContain('v3a-old'); expect(above.list).not.toContain('v3g-old')
     for (const markup of Object.values(above)) expect(markup).toMatch(/Điều chỉnh theo thoả thuận: \+\d/)
+  })
+})
+
+// 21/11: final price block of 06/07 as in the mockup — label "Giá", right column stacked (struck price above, big price below), money never wraps.
+describe('final price block layout (06, 07)', () => {
+  beforeEach(() => demoRepository().reset())
+  const css = (file: string) => readFileSync(file, 'utf8')
+  const agencyCss = css('src/app/agency/[agencyId]/bookings/[bookingId]/agency-booking-v3.css')
+  const block = (re: RegExp) => agencyCss.match(re)?.[0] ?? ''
+
+  it('label is "Giá" on 06 (On hold) and on 07 (Booked)', async () => {
+    const { booking_id } = await book(0)
+    expect((await pages(booking_id)).agency).toMatch(/class="v3a-tot"><span>Giá<\/span>/)
+    demoRepository().update('bookings', r => r.booking_id === booking_id, { status: 'Booked' })
+    expect((await pages(booking_id)).agency).toMatch(/class="v3a-tot"><span>Giá<\/span>/)
+  })
+  it('right column stacks: struck list price first, then the big price', async () => {
+    const { booking_id } = await book(0)
+    const markup = (await pages(booking_id)).agency
+    const column = markup.match(/<span class="v3a-tot__r">([\s\S]*?)<\/span><\/div>/)?.[1] ?? ''
+    expect(column.indexOf('v3a-old')).toBeGreaterThan(-1)
+    expect(column.indexOf('v3a-old')).toBeLessThan(column.indexOf('<b>'))
+  })
+  it('CSS: the column is vertical and right aligned; every money element is nowrap', () => {
+    expect(block(/\.v3a-tot__r\{[^}]*\}/)).toMatch(/flex-direction:column/)
+    expect(block(/\.v3a-tot__r\{[^}]*\}/)).toMatch(/align-items:flex-end/)
+    for (const selector of ['.v3a-tot b', '.v3a-old', '.v3a-money']) expect(agencyCss).toMatch(new RegExp(`${selector.replace('.', '\\.')}[^{]*\\{[^}]*white-space:nowrap`))
+  })
+  it('05 and 10c/10 use the same nowrap rule for their money (cards and kv rows)', () => {
+    const cards = css('src/app/agency/[agencyId]/bookings/card-v3.css')
+    for (const selector of ['.v3g-total', '.v3g-old', '.v3g-disc', '.v3g-tag']) expect(cards).toMatch(new RegExp(`${selector.replace('.', '\\.')}[^{]*\\{[^}]*white-space:nowrap`))
+    // the provider detail uses .v3a-sp / .v3a-old / .v3a-cap from the agency stylesheet
+    expect(css('src/app/provider/[providerId]/bookings/[bookingId]/page.tsx')).toContain('v3a-sp')
+  })
+})
+
+describe('05 search box width (21/11)', () => {
+  const cards = readFileSync('src/app/agency/[agencyId]/bookings/card-v3.css', 'utf8')
+  it('is at least 400 px wide so the whole hint "Tìm theo mã đặt chỗ hoặc tên xưởng" shows (about 34 characters at 16 px, plus icon and padding)', () => {
+    const rule = cards.match(/\.v3g-search\{[^}]*\}/g)?.join('') ?? ''
+    expect(rule).toMatch(/min-width:(4\d\d|[5-9]\d\d)px/)
+  })
+  it('the form around it may not shrink below that either', () => {
+    expect(cards).toMatch(/\.v3l-head form\{[^}]*min-width:400px/)
   })
 })

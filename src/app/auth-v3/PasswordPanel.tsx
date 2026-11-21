@@ -2,7 +2,6 @@
 
 // Screen 19, password panel (png/19). Same request as the old page: POST /api/auth/change-password, then /login?password_changed=1.
 import React, { useState } from 'react'
-import { passwordChecks } from './rules'
 import { useHydrated } from './useHydrated'
 import './auth-v3.css'
 
@@ -24,9 +23,7 @@ export default function PasswordPanel({ forced }: { forced: boolean }) {
     <form method="post" onSubmit={submit} className="av3-form av3-form--edit">
       <div className="av3-field"><label htmlFor="cp-current">Mật khẩu hiện tại</label><input id="cp-current" name="current_password" type="password" autoComplete="current-password" required /></div>
       <div className="av3-field"><label htmlFor="cp-new">Mật khẩu mới</label><input id="cp-new" name="new_password" type="password" autoComplete="new-password" required minLength={8} maxLength={64} value={fresh} onChange={event => setFresh(event.target.value)} aria-describedby="cp-rules" /></div>
-      <ul id="cp-rules" className="av3-rules" aria-label="Yêu cầu mật khẩu">
-        {passwordChecks(fresh).map(check => <li key={check.id} className={check.ok ? 'av3-rules__ok' : ''}><span aria-hidden="true">{check.ok ? '✓' : '○'}</span>{check.label}<span className="av3-sr">{check.ok ? ' (đã đạt)' : ' (chưa đạt)'}</span></li>)}
-      </ul>
+      <p id="cp-rules" className="av3-field__hint">Ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt (!@#…).</p>
       <div className="av3-field"><label htmlFor="cp-confirm">Nhập lại mật khẩu mới</label><input id="cp-confirm" name="confirm_password" type="password" autoComplete="new-password" required /></div>
       <p className="av3-caption">Sau khi đổi, bạn cần đăng nhập lại.</p>
       {error && <div className="av3-alert av3-alert--danger" role="alert"><strong>{error}</strong></div>}

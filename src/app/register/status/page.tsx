@@ -4,11 +4,13 @@
 // Reads the same sessionStorage keys as before; the popup kind comes from the stored account status.
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { SubmittedPopup } from "../../auth-v3/RegistrationPopups";
 import { formatViDateTime, registrationPopupKind } from "../../auth-v3/rules";
 import "../../auth-v3/auth-v3.css";
 
 export default function StatusPage() {
+  const router = useRouter();
   const [accountStatus, setAccountStatus] = useState<string>("Pending Approval");
   const [agencyAccountId, setAgencyAccountId] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -49,7 +51,7 @@ export default function StatusPage() {
           <Link href="/explore" className="av3-btn av3-btn--secondary">Về trang khám phá</Link>
         </div>
       </section>
-      <SubmittedPopup open={open && registrationPopupKind(accountStatus) === "submitted"} onClose={() => setOpen(false)}
+      <SubmittedPopup open={open && registrationPopupKind(accountStatus) === "submitted"} onClose={() => { setOpen(false); router.push("/explore"); }}
         info={{ company, email, sentAt }} />
     </main>
   );

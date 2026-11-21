@@ -194,3 +194,28 @@ a093980c one tour-type / company-type list
 - Real-data check of the temporary-password forced page in a browser.
 - Screen 19a has no way in (a waiting account cannot sign in): "màn không dùng trong MVP".
 - Shared items for the shared-files session: standard guest header on `/register` (the mockup 17 simple top bar), screens 20/20a in `AppHeader`.
+
+## Round 7 (new mockup of 21/11)
+
+### Changes in the mockup (old `source-19-11-cu` vs `source`, account screens only)
+- **15, 16, 17a, 18d, 20, 20a:** no change (texts and markup). So nothing new for "Cần sửa chung".
+- **17:** password hint now "…chữ thường, số và ký tự đặc biệt (!@#…)."; removed Loại hình, Số nhân viên, Loại tour công ty thường tổ chức, Loại tour khác, Giới thiệu ngắn.
+- **18:** title "Xác minh email"; only the code card remains (the right card with the application status, history and the revise/rejected states is gone).
+- **18a:** sentence ends "Khi đăng nhập bằng email này, bạn cũng xem được trạng thái hồ sơ."; the close button goes to Khám phá (before: Tài khoản chờ duyệt).
+- **18b, 18c:** same texts; the close button goes to Đăng nhập (they are popups on the sign-in page).
+- **19, 19a:** password hint with the special character.
+- **28 (profile):** sample address now has the district ("…, quận Hai Bà Trưng, Hà Nội").
+- **28 edit:** added Loại hình (3 options), Số nhân viên (không bắt buộc), Địa chỉ as 4 boxes (Số nhà, đường / Phường/Xã / Quận/Huyện / Tỉnh/Thành phố), Loại tour (5 chips), Email công việc; order: name, tax, type, size, address, tour types, description, contact trio.
+
+### Done (fixture re-extracted; test was red in 5 places, now green)
+- 17 hint text; 18 right card removed (the countdown still reads the send time from `sessionStorage`); 18a sentence and close → `/explore` on `/register/status` (on `/login` the same popup just closes); 19 password panel shows the mockup hint line instead of the four-rule checklist (the checklist stays on the reset-password page, screen 16 step 3); 28 edit reordered with the 4 labelled address boxes and "(không bắt buộc)".
+- "nghệ nhân" kept on `/register` (two places) until the author of `aut-self-registration-agency-only` agrees.
+- lint, build and vitest (2 threads) pass: 1801 tests.
+
+### DEVIATIONS removed (the mockup now agrees)
+17: password hint, Loại hình options, Số nhân viên "(không bắt buộc)", Loại tour, Loại tour khác, Giới thiệu ngắn and its sample. 19: the checklist-vs-hint entry. The unused `28edit` block.
+### DEVIATIONS added or changed
+28: the sample address (data); Loại hình options "nội địa / quốc tế / Đại lý du lịch" (the stored enum is Travel Agency / Tour Operator / TMC; ours shows "Công ty lữ hành / điều hành tour / TMC"); "Khách quốc tế" (not in the tour-type enum; ours has Ẩm thực, Gia đình, Khác).
+
+### Open decision: screen 17 fields the mockup dropped
+The mockup no longer has Loại hình, Số nhân viên or Loại tour on the registration form, but `registrationFields` (zod) requires `company_type`, `team_size >= 1` and at least one `tour_types`, and the database has them `NOT NULL` (company type with a CHECK). `/register` therefore still shows them, so the form still works; the test cannot see extra fields. Removing them needs a decision on the server: defaults (which?) or relaxing the schema and the columns. Not done, not invented.

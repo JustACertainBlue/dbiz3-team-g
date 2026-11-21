@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { formatViDateTime, otpCountdown } from "../../auth-v3/rules";
+import { otpCountdown } from "../../auth-v3/rules";
 import { useHydrated } from "../../auth-v3/useHydrated";
 import "../../auth-v3/auth-v3.css";
 import { useRouter } from "next/navigation";
@@ -19,8 +18,6 @@ export default function OtpPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [attemptsUsed, setAttemptsUsed] = useState(0);
-  const [company, setCompany] = useState<string>("");
-  const [submittedAt, setSubmittedAt] = useState<string>("");
   // png/18 "Mã hết hạn sau 04:32": counts down the 10 minutes of the code from the send or resend time (display only).
   const [secondsLeft, setSecondsLeft] = useState(600);
   const boxes = useRef<Array<HTMLInputElement | null>>([]);
@@ -38,9 +35,7 @@ export default function OtpPage() {
       const storedEmail = sessionStorage.getItem("registration_email") || "";
       setRegistrationRequestId(storedId);
       setEmail(storedEmail);
-      setCompany(sessionStorage.getItem("registration_company") || "");
       const sent = sessionStorage.getItem("registration_submitted_at") || "";
-      setSubmittedAt(sent);
       const elapsed = sent ? Math.floor((Date.now() - Date.parse(sent)) / 1000) : 0;
       setSecondsLeft(Math.max(0, 600 - (Number.isFinite(elapsed) ? elapsed : 0)));
     }
@@ -152,7 +147,7 @@ export default function OtpPage() {
   // REG115 (mockup v3 png/18): code card on the left, application summary on the right. Verification, resend and limits are unchanged.
   const split = errorMessage ? errorMessage.split(". ") : [];
   return (
-    <main className="av3-center av3-center--two">
+    <main className="av3-center">
       <section className="av3-card">
         <h1 className="av3-h1 av3-h1--card">Nhập mã xác minh</h1>
         <form className="av3-form" method="post" onSubmit={handleVerify}>
@@ -173,19 +168,6 @@ export default function OtpPage() {
           <button type="submit" className="av3-btn av3-btn--primary" disabled={!hydrated || isVerifying || otpCode.length !== 6}>{isVerifying ? "Đang xác nhận…" : "Xác minh"}</button>
           <button type="button" className="av3-link av3-link-button av3-card__back" onClick={handleEditEmail}>‹ Sửa email đăng ký</button>
         </form>
-      </section>
-      <section className="av3-card" aria-label="Tình trạng hồ sơ">
-        <h2 className="av3-h1 av3-h1--card">Hồ sơ đăng ký{company ? <> của {company}</> : null}</h2>
-        <div className="av3-banner av3-banner--warn">
-          <strong>Chờ bạn xác minh email</strong>
-          <p>Sau khi xác minh, hồ sơ được gửi cho Sở Du lịch Hà Nội duyệt. Bạn sẽ nhận email khi có kết quả.</p>
-        </div>
-        <h3 className="av3-sub">Lịch sử hồ sơ</h3>
-        <ul className="av3-history">
-          {submittedAt && <li>Đã nhập hồ sơ đăng ký · {formatViDateTime(submittedAt)}</li>}
-          <li className="av3-history__todo">Chờ xác minh email</li>
-        </ul>
-        <Link href="/login" className="av3-link">‹ Về trang đăng nhập</Link>
       </section>
     </main>
   );

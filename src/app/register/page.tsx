@@ -237,7 +237,7 @@ export default function RegisterPage() {
             <h2><span className="av3-num">1</span>Tài khoản đăng nhập</h2>
             <div className="av3-cols">
               <Field id="email" label="Email đăng nhập" name="email" type="email" value={formData.email} placeholder="agency@example.com" hint="Mã OTP xác minh sẽ gửi về email này." autoComplete="email" />
-              <Field id="password" label="Mật khẩu" name="password" type="password" value={formData.password} hint="Ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt." autoComplete="new-password" />
+              <Field id="password" label="Mật khẩu" name="password" type="password" value={formData.password} hint="Ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt (!@#…)." autoComplete="new-password" />
               <Field id="confirm_password" label="Nhập lại mật khẩu" name="confirm_password" type="password" value={formData.confirm_password} autoComplete="new-password" />
             </div>
           </section>

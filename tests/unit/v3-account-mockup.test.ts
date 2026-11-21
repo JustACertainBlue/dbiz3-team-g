@@ -43,16 +43,6 @@ const DEVIATIONS: Record<string, Record<string, string>> = {
     'chính sách bảo mật': 'plain text, no privacy page yet',
     'Đã có tài khoản?': 'mockup top bar: shared header (SessionHeader), not this page',
     'Đăng nhập': 'mockup top bar link (see above)',
-    'Ít nhất 8 ký tự, có chữ hoa, chữ thường và số.': 'ours adds "và ký tự đặc biệt": the server rule needs one',
-    'Công ty lữ hành nội địa': 'company types are the stored enum Travel Agency / Tour Operator / TMC (label= shows Vietnamese names)',
-    'Công ty lữ hành quốc tế': 'same enum reason',
-    'Đại lý du lịch': 'same enum reason',
-    '(không bắt buộc)': 'team size is required by the registration schema; "Giới thiệu ngắn" has no field',
-    'Khách quốc tế': 'tour types are the stored enum (no "Khách quốc tế")',
-    'Loại tour khác': 'no field in the registration schema',
-    'Giúp AI gợi ý trải nghiệm hợp với đoàn của bạn.': 'no field (see above)',
-    'Giới thiệu ngắn': 'no field in the registration schema',
-    'Đơn vị tổ chức tour trải nghiệm văn hóa và làng nghề tại Hà Nội.': 'sample value of the missing "Giới thiệu ngắn" field',
     'Xưởng nghề sẽ thấy email này khi trao đổi với bạn.': 'register test forbids the word "xưởng" on /register; ours says "Nghệ nhân sẽ thấy…"',
     'Nhắn tin trực tiếp với xưởng': 'same guard test; ours says "với nghệ nhân"',
     'Giấy chứng nhận đăng ký doanh nghiệp, giấy phép lữ hành (nếu có). PDF, JPG hoặc PNG, tối đa 10 MB mỗi tệp.': 'ours adds ", tối đa 5 tệp" (server limit)',
@@ -69,7 +59,6 @@ const DEVIATIONS: Record<string, Record<string, string>> = {
     'Doanh nghiệp của tôi': 'the sidebar link shows only for an account with a business profile (the sample has one, see test)',
     'Không đổi được email đăng nhập. Thông tin công ty sửa ở mục Doanh nghiệp của tôi.': 'checked in the edit-mode test',
     'Sau khi đổi, các thiết bị khác đang đăng nhập sẽ phải đăng nhập lại.': 'ours signs out this device too: "Sau khi đổi, bạn cần đăng nhập lại."',
-    'Ít nhất 8 ký tự, có chữ hoa, chữ thường và số.': 'ours shows the four-rule checklist instead of one hint line',
     'Quản trị viên': 'data: the account title',
   },
   '19a': { 'Theo dõi trạng hồ sơ': 'typo in the .dc.html; png/19a and ours say "Theo dõi trạng thái hồ sơ"' },
@@ -77,15 +66,14 @@ const DEVIATIONS: Record<string, Record<string, string>> = {
     'Tổng quan': 'mockup provider sub-navigation, shared header', 'Trải nghiệm': 'same', 'Xưởng thủ công Bát Tràng': 'same',
     'Công ty lữ hành nội địa · Hà Nội': 'company type is the stored enum: ours says "Công ty lữ hành · Hà Nội"',
     'Văn hoá, di sản': 'tour types of the sample company, data', 'Làng nghề, trải nghiệm': 'tour types of the sample company, data',
-    '22 phố Huế, phường Phạm Đình Hổ, Hà Nội': 'data', 'Đơn vị tổ chức tour trải nghiệm văn hóa và làng nghề tại Hà Nội.': 'data',
+    '22 phố Huế, phường Phạm Đình Hổ, quận Hai Bà Trưng, Hà Nội': 'data (the sample address)',
+    'Công ty lữ hành nội địa': 'company type is the stored enum Travel Agency / Tour Operator / TMC; ours shows "Công ty lữ hành / điều hành tour / TMC"',
+    'Công ty lữ hành quốc tế': 'same enum reason', 'Đại lý du lịch': 'same enum reason',
+    'Khách quốc tế': 'tour types are the stored enum (no "Khách quốc tế"; ours has Ẩm thực, Gia đình, Khác)', 'Đơn vị tổ chức tour trải nghiệm văn hóa và làng nghề tại Hà Nội.': 'data',
   },
   // Screen 18 also holds, in the mockup, the states "Sở Du lịch cần bổ sung", "Lý do", "Bổ sung và gửi lại", "Bắt đầu khám phá": the product
   // shows them as the popups of /login (18b, 18c, 18d), by decision, not inside the OTP page; the OTP test stops before them.
   '18': { '(sau 60 giây)': 'resend cooldown: not in the spec (step 0 #10)' },
-  '28edit': {
-    'Số nhân viên': 'not in the mockup edit block, but the API takes it', 'Email công việc': 'same: the API takes it',
-    'Loại hình': 'same', 'Loại tour công ty thường tổ chức': 'same (tour types list is the one the edit API already had)',
-  },
 }
 
 function check(screen: string, html: string, options: { from?: number; to?: number; skip?: string[] } = {}) {

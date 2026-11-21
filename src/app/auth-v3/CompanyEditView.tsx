@@ -34,28 +34,31 @@ export default function CompanyEditView({ form, setForm, saving, hydrated, messa
           {text('company_name', 'Tên công ty', 'ce-name', { required: true })}
           {text('tax_id', 'Mã số thuế', 'ce-tax', { required: true })}
         </div>
-        <div className="av3-field av3-field--full"><span className="av3-label">Địa chỉ</span>
-          <div className="av3-cols">
-            <input aria-label="Số nhà, đường" value={form.street} onChange={event => setForm({ ...form, street: event.target.value })} />
-            <input aria-label="Phường" value={form.ward} onChange={event => setForm({ ...form, ward: event.target.value })} />
-            <input aria-label="Quận/Huyện" value={form.district} onChange={event => setForm({ ...form, district: event.target.value })} />
-            <input aria-label="Tỉnh/Thành phố" value={form.city_province} onChange={event => setForm({ ...form, city_province: event.target.value })} />
-          </div>
+        <div className="av3-cols">
+          <div className="av3-field"><label htmlFor="ce-type">Loại hình</label>
+            <select id="ce-type" value={form.company_type} onChange={event => setForm({ ...form, company_type: event.target.value })}>
+              {COMPANY_TYPES.map(value => <option key={value} value={value}>{COMPANY_LABELS[value] ?? value}</option>)}
+            </select></div>
+          <div className="av3-field"><label htmlFor="ce-size">Số nhân viên <span className="av3-caption">(không bắt buộc)</span></label>
+            <input id="ce-size" type="number" min={1} value={String(form.team_size)} onChange={event => setForm({ ...form, team_size: Number(event.target.value) })} /></div>
         </div>
+        <fieldset className="av3-field av3-field--full av3-address"><legend className="av3-label">Địa chỉ</legend>
+          <div className="av3-cols">
+            <div className="av3-field"><label htmlFor="ce-street" className="av3-caption">Số nhà, đường</label><input id="ce-street" value={form.street} onChange={event => setForm({ ...form, street: event.target.value })} /></div>
+            <div className="av3-field"><label htmlFor="ce-ward" className="av3-caption">Phường/Xã</label><input id="ce-ward" value={form.ward} onChange={event => setForm({ ...form, ward: event.target.value })} /></div>
+            <div className="av3-field"><label htmlFor="ce-district" className="av3-caption">Quận/Huyện</label><input id="ce-district" value={form.district} onChange={event => setForm({ ...form, district: event.target.value })} /></div>
+            <div className="av3-field"><label htmlFor="ce-city" className="av3-caption">Tỉnh/Thành phố</label><input id="ce-city" value={form.city_province} onChange={event => setForm({ ...form, city_province: event.target.value })} /></div>
+          </div>
+        </fieldset>
+        <fieldset className="av3-tours"><legend>Loại tour công ty thường tổ chức</legend>
+          <div>{[...TOUR_TYPES, ...form.tour_types.filter(type => !(TOUR_TYPES as readonly string[]).includes(type))].map(type => <label key={type} className={`av3-chipcheck${form.tour_types.includes(type) ? ' av3-chipcheck--on' : ''}`}><input type="checkbox" checked={form.tour_types.includes(type)} onChange={() => toggle(type)} />{TOUR_LABELS[type] ?? type}</label>)}</div>
+        </fieldset>
         <div className="av3-field"><label htmlFor="ce-desc">Giới thiệu</label><textarea id="ce-desc" rows={4} className="av3-textarea" value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} /></div>
         <div className="av3-cols">
           {text('contact_person_name', 'Người liên hệ', 'ce-contact', { required: true })}
           {text('phone_number', 'Điện thoại', 'ce-phone', { type: 'tel', required: true })}
           {text('business_email', 'Email công việc', 'ce-email', { type: 'email', required: true })}
-          {text('team_size', 'Số nhân viên', 'ce-size', { type: 'number' })}
         </div>
-        <div className="av3-field"><label htmlFor="ce-type">Loại hình</label>
-          <select id="ce-type" value={form.company_type} onChange={event => setForm({ ...form, company_type: event.target.value })}>
-            {COMPANY_TYPES.map(value => <option key={value} value={value}>{COMPANY_LABELS[value] ?? value}</option>)}
-          </select></div>
-        <fieldset className="av3-tours"><legend>Loại tour công ty thường tổ chức</legend>
-          <div>{[...TOUR_TYPES, ...form.tour_types.filter(type => !(TOUR_TYPES as readonly string[]).includes(type))].map(type => <label key={type} className={`av3-chipcheck${form.tour_types.includes(type) ? ' av3-chipcheck--on' : ''}`}><input type="checkbox" checked={form.tour_types.includes(type)} onChange={() => toggle(type)} />{TOUR_LABELS[type] ?? type}</label>)}</div>
-        </fieldset>
         <div className="av3-actions">
           <Link href={`/agency/${agencyId}`} className="av3-btn av3-btn--secondary">Huỷ</Link>
           <button type="submit" className="av3-btn av3-btn--primary" disabled={!hydrated || saving}>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button>

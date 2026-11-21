@@ -19,7 +19,7 @@ export type SubmittedInfo = { code?: string; company?: string; email?: string; s
 /** 18a: registration sent. */
 export function SubmittedPopup({ open, onClose, info }: { open: boolean; onClose: () => void; info: SubmittedInfo }) {
   return <Modal open={open} onClose={onClose} width={560} title="Đã gửi hồ sơ đăng ký thành công" icon={<span className="av3-pop-icon av3-pop-icon--solid"><Check /></span>}>
-    <p className="av3-pop-lead">Email của bạn đã được xác minh. Sở Du lịch Hà Nội sẽ kiểm tra hồ sơ, thường trong 2 ngày làm việc. Kết quả sẽ gửi về email đăng nhập. Bạn cũng theo dõi được ở mục Tài khoản của tôi.</p>
+    <p className="av3-pop-lead">Email của bạn đã được xác minh. Sở Du lịch Hà Nội sẽ kiểm tra hồ sơ, thường trong 2 ngày làm việc. Kết quả sẽ gửi về email đăng nhập. Khi đăng nhập bằng email này, bạn cũng xem được trạng thái hồ sơ.</p>
     <Rows rows={[['Mã hồ sơ', info.code ?? ''], ['Công ty', info.company ?? ''], ['Email đăng nhập', info.email ?? ''], ['Gửi lúc', info.sentAt ?? ''], ['Trạng thái', <span key="s" className="av3-warn-text">Chờ Sở Du lịch duyệt</span>]]} />
     <p className="av3-pop-note av3-pop-note--green">Trong lúc chờ duyệt, bạn vẫn xem được các trải nghiệm nhưng chưa đặt chỗ được.</p>
   </Modal>

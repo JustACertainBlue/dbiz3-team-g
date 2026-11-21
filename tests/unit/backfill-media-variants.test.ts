@@ -1,7 +1,7 @@
 // Step 2A (human request 2026-11-20): backfill WebP variants for every showcase image already stored. DEV only, dry run
 // by default, --apply writes an undo file first, --undo removes what the run created. Pure parts only.
 import { describe, expect, it } from 'vitest'
-import { DISPLAY_IMAGES_SQL, parseArgs, summarizeVariants, writeVariant } from '../../scripts/storage/backfill-media-variants.mjs'
+import { DISPLAY_IMAGES_SQL, capReport, parseArgs, summarizeVariants, writeVariant } from '../../scripts/storage/backfill-media-variants.mjs'
 
 describe('parseArgs', () => {
   it('is a dry run by default; --apply writes; --undo <file> writes unless --dry-run', () => {
@@ -44,6 +44,25 @@ describe('summarizeVariants', () => {
       1600: { count: 2, averageKB: 200, maxKB: 250 },
     })
     expect(summarizeVariants([])).toEqual({ 400: { count: 0, averageKB: 0, maxKB: 0 }, 800: { count: 0, averageKB: 0, maxKB: 0 }, 1600: { count: 0, averageKB: 0, maxKB: 0 } })
+  })
+})
+
+describe('capReport (human request 2026-11-21)', () => {
+  it('lists the variants made narrower than their nominal width (real width recorded) and those still over the cap at 75 %', () => {
+    const v = (width: number, outputWidth: number, quality: number, kb: number, overCap: boolean, narrowed: boolean) => ({ width, outputWidth, quality, overCap, narrowed, bytes: { length: kb * 1024 } })
+    const items = [
+      { file_id: 'a', variants: [v(400, 400, 72, 20, false, false), v(800, 800, 62, 110, false, false), v(1600, 1400, 72, 240, false, true)] },
+      { file_id: 'b', variants: [v(1600, 1200, 55, 280, true, true)] },
+      { file_id: 'c', variants: [v(1600, 1280, 72, 200, false, false)] },
+      { file_id: 'd', variants: [v(1600, 1200, 72, 200, false, false)] }, // original only 1200 wide: not narrowed,
+    ]
+    expect(capReport(items)).toEqual({
+      reducedWidth: [
+        { file_id: 'a', width: 1600, outputWidth: 1400, quality: 72, KB: 240 },
+        { file_id: 'b', width: 1600, outputWidth: 1200, quality: 55, KB: 280 },
+      ],
+      stillOverCap: [{ file_id: 'b', width: 1600, outputWidth: 1200, quality: 55, KB: 280 }],
+    })
   })
 })
 

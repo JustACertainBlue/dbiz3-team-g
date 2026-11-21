@@ -1,8 +1,9 @@
 // Pure helpers for screen AIT121: turn API responses into what the conversation shows.
 // No fabricated results on failure (FR-003, BR-017, #27); Quote/Chat open COM048 on success (#31).
+import type { ResultView } from '@/lib/explore/v3-search'
 
-export const AI_FAILURE_TEXT = "Temporary AI Failure — we couldn't process your request right now. Your conversation is saved."
-export const HANDOFF_FAILURE_TEXT = 'Could not complete the request. Nothing was created.'
+export const AI_FAILURE_TEXT = 'AI đang gặp sự cố tạm thời nên chưa xử lý được yêu cầu. Cuộc trò chuyện của bạn đã được lưu.'
+export const HANDOFF_FAILURE_TEXT = 'Chưa hoàn tất được yêu cầu. Chưa có gì được tạo.'
 
 export type ApiResult = { networkError: true } | { ok: boolean; status: number; body: any }
 
@@ -39,12 +40,14 @@ export function handoffOutcome(result: ApiResult): HandoffOutcome {
 export interface RecommendationView {
   experience_id: string; provider_id: string; experience_name: string; provider_name: string; village_name: string
   rank: number; match_score: number; price_per_person: number; max_participants: number; explanation: string
+  card?: ResultView | null // screen 22: card data of screen 02 added by /api/ait/matching
 }
 
 const recommendationView = (m: any): RecommendationView => ({
   experience_id: m.experience_id, provider_id: m.provider_id, experience_name: m.experience_name || m.name,
   provider_name: m.provider_name, village_name: m.village_name, rank: m.rank, match_score: m.match_score,
   price_per_person: m.price_per_person, max_participants: m.max_participants, explanation: m.explanation,
+  ...(m.card ? { card: m.card as ResultView } : {}),
 })
 
 /** FR-008 (#188): the Top 5 and up to 5 additional suggestions, both shown with the same card. */
@@ -55,24 +58,44 @@ export function matchResultsView(body: any): { top: RecommendationView[]; additi
   }
 }
 
+const CRITERION_LABELS: Record<string, string> = { Budget: 'Ngân sách', Dates: 'Ngày', Date: 'Ngày', 'Group size': 'Số khách' }
+
 export function noMatchView(body: any): { prompt: string; lines: string[] } {
   const relaxation = body?.relaxation_suggestions ?? {}
   const lines = (relaxation.relaxation_suggestions ?? []).map((s: { criterion: string; suggested_value: string | number }) =>
     s.criterion === 'Budget' && typeof s.suggested_value === 'number'
-      ? `Budget: ${s.suggested_value.toLocaleString('en-US')} VND per person`
-      : `${s.criterion}: ${s.suggested_value}`)
+      ? `Ngân sách: ${s.suggested_value.toLocaleString('vi-VN')} ₫/khách`
+      : `${CRITERION_LABELS[s.criterion] ?? s.criterion}: ${s.suggested_value}`)
   return { prompt: relaxation.conversation_prompt ?? '', lines }
 }
 
 // #156: show the date the assistant understood, so the Agency can correct it with a new message
 // (a later message replaces it, FR-009 / BR-008).
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const WEEKDAYS = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
 
-export function understoodDateLine(body: any): string | null {
-  const date = body?.extraction?.tour_context?.target_date_or_range?.start_date
+function isoParts(date: unknown): { weekday: string; d: string; m: string; y: number } | null {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
   const [y, m, d] = date.split('-').map(Number)
-  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
-  return `Tour date understood: ${weekday} ${d} ${MONTH_NAMES[m - 1]} ${y}. If this is wrong, send the correct date with the year.`
+  return { weekday: WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()], d: String(d).padStart(2, '0'), m: String(m).padStart(2, '0'), y }
+}
+
+export function understoodDateLine(body: any): string | null {
+  const parts = isoParts(body?.extraction?.tour_context?.target_date_or_range?.start_date)
+  if (!parts) return null
+  return `AI hiểu ngày đi là ${parts.weekday} ${parts.d}/${parts.m}/${parts.y}. Nếu chưa đúng, hãy gửi lại ngày kèm năm.`
+}
+
+/** Mockup 22 "AI đã hiểu": chips from the criteria the AI extracted (only what is present). */
+export function understoodChips(body: any): string[] {
+  const ctx = body?.extraction?.tour_context
+  if (!ctx) return []
+  const date = isoParts(ctx.target_date_or_range?.start_date)
+  const budget = ctx.budget?.max_per_person
+  return [
+    typeof ctx.group_size === 'number' ? `${ctx.group_size} khách` : '',
+    typeof ctx.visitor_profile === 'string' ? ctx.visitor_profile : '',
+    date ? `${date.weekday} ${date.d}/${date.m}` : '',
+    typeof budget === 'number' ? `≤ ${budget.toLocaleString('vi-VN')} ₫/khách` : '',
+    typeof ctx.craft_preference === 'string' ? ctx.craft_preference : '',
+  ].filter(Boolean)
 }

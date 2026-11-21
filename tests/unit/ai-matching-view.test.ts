@@ -4,8 +4,8 @@ import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, 
 // Round 3 screen helpers for AIT121: T045 (D2), T047 (D1), T049 (D10).
 describe('T047 | messageOutcome never shows fabricated results (FR-003, BR-017, #27, #33)', () => {
   it('uses the #27 wording', () => {
-    expect(AI_FAILURE_TEXT).toBe("Temporary AI Failure — we couldn't process your request right now. Your conversation is saved.")
-    expect(HANDOFF_FAILURE_TEXT).toBe('Could not complete the request. Nothing was created.')
+    expect(AI_FAILURE_TEXT).toBe('AI đang gặp sự cố tạm thời nên chưa xử lý được yêu cầu. Cuộc trò chuyện của bạn đã được lưu.')
+    expect(HANDOFF_FAILURE_TEXT).toBe('Chưa hoàn tất được yêu cầu. Chưa có gì được tạo.')
   })
 
   it.each([
@@ -61,6 +61,19 @@ describe('T045 | noMatchView renders every relaxation suggestion (BR-011, FR-012
       },
     })
     expect(view.prompt).toBe('No Experience fits a budget of 20,000 VND per person.')
-    expect(view.lines).toEqual(['Budget: 150,000 VND per person', 'Dates: Consider flexible dates (+/- 2 days)'])
+    expect(view.lines).toEqual(['Ngân sách: 150.000 ₫/khách', 'Ngày: Consider flexible dates (+/- 2 days)'])
+  })
+})
+
+import { understoodChips } from '@/app/ai-matching/matching-view'
+describe('understoodChips (mockup 22 "AI đã hiểu")', () => {
+  const body = { extraction: { tour_context: { group_size: 25, visitor_profile: 'Học sinh lớp 6', craft_preference: 'Gốm sứ',
+    target_date_or_range: { start_date: '2026-11-25' }, budget: { max_per_person: 200000 } } } }
+  it('lists the criteria the AI understood', () => {
+    expect(understoodChips(body)).toEqual(['25 khách', 'Học sinh lớp 6', 'Thứ Tư 25/11', '≤ 200.000 ₫/khách', 'Gốm sứ'])
+  })
+  it('skips what is missing', () => {
+    expect(understoodChips({ extraction: { tour_context: { group_size: 10 } } })).toEqual(['10 khách'])
+    expect(understoodChips(null)).toEqual([])
   })
 })

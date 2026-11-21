@@ -123,6 +123,14 @@
    "Hệ thống áp dụng chung cho mọi xưởng.",
    "Hình thức thanh toán"
   ],
-  "optional": []
+  "optional": [],
+  "deviations": [
+   {
+    "label": "Hình thức thanh toán",
+    "mockupValue": "Thanh toán QR · tài khoản của xưởng",
+    "value": "Thanh toán theo hướng dẫn của xưởng trong tin nhắn",
+    "note": "Lệch mockup theo chốt của Khánh Linh 21/11 (cùng câu với khối thanh toán ở 06/10c)."
+   }
+  ]
  }
 }

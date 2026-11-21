@@ -109,7 +109,7 @@ export default function ExperienceFormBody(p: Props) {
       <ExperienceCancellationField policy={p.policy} onPolicy={p.onPolicy} />
       <ChildPolicyField value={p.content} onChange={p.setContent} />
       <div className="prf-field-group"><label className="prf-label" htmlFor="experience-payment">Hình thức thanh toán</label>
-        <input id="experience-payment" type="text" disabled readOnly value="Thanh toán QR · tài khoản của xưởng" className="prf-input prf-input-locked" /></div>
+        <input id="experience-payment" type="text" disabled readOnly value="Thanh toán theo hướng dẫn của xưởng trong tin nhắn" className="prf-input prf-input-locked" /></div>
     </div>
   </div>
 }

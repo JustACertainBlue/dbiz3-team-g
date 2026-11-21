@@ -24,7 +24,7 @@ Not merged into build-log.md / ui-v3-spec-deviations.md (human merges the drafts
 | Câu hỏi thường gặp | none | — | — | hidden (FAQ is computed in code) |
 | "Rất được đoàn khách ưa thích" chips, "Người hướng dẫn" | none | — | — | hidden |
 | Trẻ em từ / cần người lớn dưới (tuổi) | none (child_policy is text) | — | — | hidden; one text line instead |
-| Nghề và làng nghề, Giữ chỗ 72 giờ, Hình thức thanh toán | not columns of experiences | — | — | shown read only: craft = villages.editorial_craft else craft_type label + "Làng <tên>" (GET /api/prf/provider/:id/craft-line), 72 = constant, payment text as mockup |
+| Nghề và làng nghề, Giữ chỗ 72 giờ, Hình thức thanh toán | not columns of experiences | — | — | shown read only: craft = villages.editorial_craft else craft_type label + "Làng <tên>" (GET /api/prf/provider/:id/craft-line), 72 = constant, payment sentence of 06/10c (see Differs) |
 
 ## Differs from the spec / mockup
 - 29 "Đã nhận qua QR tháng N": no payment data yet; shows "—".
@@ -32,6 +32,7 @@ Not merged into build-log.md / ui-v3-spec-deviations.md (human merges the drafts
 - 30 PRF128 (AI Refine) form not redesigned: the mockup has no edit screen.
 - 31 "show archived" checkbox removed (not in the mockup).
 - 33 "Hiển thị công khai" switch is a read-only pill: no visibility field. Default view: nearest day from tomorrow with a free slot, 10 guests (capped at the maximum), as the mockup example; `?date=&guests=` overrides.
+- 32 Hình thức thanh toán: dùng câu của 06/10c thay cho 'Thanh toán QR · tài khoản của xưởng' (Khánh Linh chốt 21/11).
 - 32 category select keeps the 5 DB values ("Tự tay làm" = Workshop/Hands-on, "Xem biểu diễn" = Cultural Show); the mockup has 2 radio cards.
 
 - Chip Rất hợp cho đoàn: sửa mockup theo bộ 10 từ DB (Khánh Linh chốt 21/11).

@@ -91,7 +91,10 @@ describe('provider screens follow the mockup blocks, order and words', () => {
 
   it('32 read-only facts: craft and village, 72 h hold (constant), payment method; all disabled, none is sent on save', () => {
     const markup = formMarkup()
-    for (const value of ['Gốm sứ · Làng Bát Tràng', '72', 'Thanh toán QR · tài khoản của xưởng']) {
+    // The payment sentence differs from the mockup on purpose (Khánh Linh, 21/11); it comes from the fixture's "deviations" entry.
+    const payment = (spec['32-FormTraiNghiem'] as unknown as { deviations: Array<{ value: string; mockupValue: string }> }).deviations[0]
+    expect(markup).not.toContain(payment.mockupValue)
+    for (const value of ['Gốm sứ · Làng Bát Tràng', '72', payment.value]) {
       const input = markup.match(new RegExp(`<input[^>]*value="${value}"[^>]*>`))?.[0]
       expect(input, value).toBeTruthy()
       expect(input).toMatch(/disabled=""/)

@@ -10,7 +10,7 @@ import { providerReviewState, reviewHistoryRows } from '@/lib/prf/provider-revie
 import { hanoiClock } from '@/lib/time/hanoi-time'
 import { adminGuestRedirect } from '../../admin-page-access'
 import { formatDate } from '@/lib/adm/v3-accounts'
-import { fileSize, readable } from '../../_v3/profile-format'
+import { fileSize, readable, viReviewHeading, viReviewStatus } from '../../_v3/profile-format'
 import DecisionForm from '../../_v3/DecisionForm'
 import { Button, Container, StatusPill } from '@/app/components/ui'
 import '../../_v3/admin-v3.css'
@@ -53,7 +53,7 @@ export default async function AdminProviderDetail({ params }: { params: { id: st
     <div className="av3-stack" style={{ marginTop: 8 }}>
       <section className="av3-card" aria-labelledby="av3-name">
         <div className="av3-profile-head"><div><h1 id="av3-name" style={{ fontSize: 30, lineHeight: '38px' }}>{String(version?.business_name || 'Hồ sơ xưởng')}</h1>
-          <p className="av3-lead">Xác minh xưởng · phiên bản {String(version?.version_no ?? '')}{version?.submitted_at ? ` · gửi ${hanoiClock(String(version.submitted_at))}, ${formatDate(String(version.submitted_at))}` : ''} · <StatusPill tone={tone}>{pending ? (session.adminType === 'HDT' ? 'Chờ UBND xã duyệt' : 'Chờ duyệt') : state.label}</StatusPill></p></div>
+          <p className="av3-lead">Xác minh xưởng · phiên bản {String(version?.version_no ?? '')}{version?.submitted_at ? ` · gửi ${hanoiClock(String(version.submitted_at))}, ${formatDate(String(version.submitted_at))}` : ''} · <StatusPill tone={tone}>{pending ? (session.adminType === 'HDT' ? 'Chờ UBND xã duyệt' : 'Chờ duyệt') : state.revision_open ? `Bản công khai v${state.published_version_no}: ${viReviewStatus(state.published_status ?? '')} · Bản đang xét v${state.review_version_no}: ${viReviewStatus(state.review_status)}` : viReviewStatus(state.review_status)}</StatusPill></p></div>
           {account && <Button href={`/admin/users/${account.user_id}`} variant="secondary" size="sm">Thông tin tài khoản</Button>}</div>
         {pending && session.adminType === 'HDT' && <p className="av3-notice">Sở chỉ xem hồ sơ này, UBND xã quyết định.</p>}
         <dl className="av3-dl">{rows.map(([k, v]) => <div className="av3-kv" key={k}><dt>{k}</dt><dd style={{ whiteSpace: 'pre-wrap' }}>{v || 'Chưa có'}</dd></div>)}</dl>
@@ -67,7 +67,7 @@ export default async function AdminProviderDetail({ params }: { params: { id: st
 
       {canDecide && <DecisionForm target={{ type: 'provider', id: params.id }} backHref="/admin/providers" />}
 
-      {reviews.length > 0 && <section className="av3-card" aria-labelledby="av3-hist"><h2 id="av3-hist">Lịch sử thẩm định</h2><ul className="av3-hist">{reviews.map(r => <li key={r.review_id}><span><b>{r.heading}</b> · {formatDate(r.reviewed_at)}{r.comments ? ` · ${r.comments}` : ''}</span></li>)}</ul></section>}
+      {reviews.length > 0 && <section className="av3-card" aria-labelledby="av3-hist"><h2 id="av3-hist">Lịch sử thẩm định</h2><ul className="av3-hist">{reviews.map(r => <li key={r.review_id}><span><b>{viReviewHeading(r.heading)}</b> · {formatDate(r.reviewed_at)}{r.comments ? ` · ${r.comments}` : ''}</span></li>)}</ul></section>}
     </div>
   </Container>
 }

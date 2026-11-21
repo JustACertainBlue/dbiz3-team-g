@@ -37,7 +37,7 @@ export default async function AccountInfoPage({ params }: { params: { userId: st
     <div className="av3-row2 av3-row2--wide" style={{ gridTemplateColumns: '2.4fr 1fr', alignItems: 'start' }}>
       <section className="av3-card" aria-labelledby="av3-sys"><h2 id="av3-sys">Thông tin hệ thống</h2>
         <dl className="av3-dl">
-          <div className="av3-kv"><dt>Mã tài khoản</dt><dd title={account.user_id}>{account.user_id.slice(0, 13)}…</dd></div>
+          <div className="av3-kv"><dt>Mã tài khoản</dt><dd title={account.user_id}>{account.user_id.slice(0, 18)}…</dd></div>
           <div className="av3-kv"><dt>Email</dt><dd>{account.email}</dd></div>
           <div className="av3-kv"><dt>Vai trò</dt><dd>{roleLabel(account.role, account.admin_type)}</dd></div>
           <div className="av3-kv"><dt>Trạng thái</dt><dd style={{ color: v.group === 'active' ? 'var(--c-success)' : undefined }}>{v.label}</dd></div>

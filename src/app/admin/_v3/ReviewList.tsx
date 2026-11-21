@@ -32,12 +32,12 @@ export default async function ReviewList({ basePath, searchParams }: { basePath:
     <div style={{ marginTop: 16 }}><QueueFilters showKind={scope.adminType === 'HDT'} /></div>
     <div className="av3-table-wrap" style={{ marginTop: 16 }}>
       {f.rows.length === 0 ? <p className="av3-empty" style={{ padding: 24 }}>{tab === 'pending' ? 'Không có hồ sơ nào đang chờ.' : 'Chưa có hồ sơ nào được xử lý.'}</p> :
-        <table className="av3-table av3-table--review"><thead><tr><th>Hồ sơ</th><th>Loại hồ sơ</th><th>Ngày gửi</th><th>Trạng thái</th><th><span className="sr-only" style={{ position: 'absolute', left: -9999 }}>Thao tác</span></th></tr></thead>
+        <table className="av3-table av3-table--review av3-table--stack"><thead><tr><th>Hồ sơ</th><th>Loại hồ sơ</th><th>Ngày gửi</th><th>Trạng thái</th><th><span className="sr-only" style={{ position: 'absolute', left: -9999 }}>Thao tác</span></th></tr></thead>
           <tbody>{f.rows.map(r => <tr key={r.key}>
-            <td><span className="av3-name">{r.name}</span><small>{r.subtitle}</small></td>
-            <td><span className="av3-tag">{r.kindLabel}</span></td>
-            <td>{formatDate(r.submitted)}</td>
-            <td><StatusPill tone={r.tone}>{r.statusLabel}</StatusPill>{r.note && <span className="av3-note">{r.note}</span>}</td>
+            <td data-label="Hồ sơ"><span className="av3-name">{r.name}</span><small>{r.subtitle}</small></td>
+            <td data-label="Loại hồ sơ"><span className="av3-tag">{r.kindLabel}</span></td>
+            <td data-label="Ngày gửi">{formatDate(r.submitted)}</td>
+            <td data-label="Trạng thái"><StatusPill tone={r.tone}>{r.statusLabel}</StatusPill>{r.note && <span className="av3-note">{r.note}</span>}</td>
             <td><Link className="av3-ul" href={r.href}>Xem chi tiết</Link></td></tr>)}</tbody></table>}
     </div>
     <Pagination from={f.from} to={f.to} total={f.total} unit="hồ sơ"

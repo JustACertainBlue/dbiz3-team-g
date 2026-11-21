@@ -15,7 +15,7 @@ export default function QueueFilters({ showKind }: { showKind: boolean }) {
     router.replace(`${path}${sp.toString() ? `?${sp}` : ''}`)
   }
   useEffect(() => () => clearTimeout(timer.current), [])
-  return <section className="av3-card av3-filters" aria-label="Bộ lọc hồ sơ" style={{ padding: 24, gridTemplateColumns: showKind ? '2fr 1fr 1fr' : '2fr 1fr' }}>
+  return <section className={`av3-card av3-filters ${showKind ? 'av3-filters--3' : 'av3-filters--2'}`} aria-label="Bộ lọc hồ sơ" style={{ padding: 24 }}>
     <label className="av3-field">Tìm<input type="search" placeholder="Tên công ty hoặc xưởng" value={q} onChange={e => { setQ(e.target.value); clearTimeout(timer.current); const v = e.target.value; timer.current = setTimeout(() => push({ q: v }), 350) }} /></label>
     {showKind && <label className="av3-field">Loại hồ sơ<Select value={params.get('kind') ?? ''} onChange={e => push({ kind: e.target.value })}><option value="">Tất cả</option><option value="registration">Đăng ký mới</option><option value="change">Đổi thông tin pháp lý</option><option value="workshop">Xác minh xưởng</option></Select></label>}
     <label className="av3-field">Sắp xếp<Select value={params.get('sort') ?? 'oldest'} onChange={e => push({ sort: e.target.value === 'oldest' ? '' : e.target.value })}><option value="oldest">Gửi sớm nhất trước</option><option value="newest">Gửi mới nhất trước</option></Select></label>

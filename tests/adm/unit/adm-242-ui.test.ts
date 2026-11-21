@@ -70,7 +70,7 @@ describe('#242 | v3 detail pages and confirmation dialog', () => {
 
   it('the review list is a table of all records (pending and processed tabs) with no STATUS_LABEL map', () => {
     const page = readFileSync('src/app/admin/_v3/ReviewList.tsx', 'utf8')
-    expect(page).toContain('<table className="av3-table av3-table--review">')
+    expect(page).toContain('<table className="av3-table av3-table--review av3-table--stack">')
     expect(page).toContain('Đã xử lý (')
     expect(page).not.toContain('STATUS_LABEL')
   })

@@ -68,13 +68,13 @@ export default function UsersPage() {
     <p className="av3-hint"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>Gạt công tắc ở cột Trạng thái để tắt hoặc bật lại tài khoản. Hệ thống sẽ hỏi lại trước khi thay đổi.</p>
 
     <div className="av3-table-wrap">
-      {loading ? <p className="av3-empty" style={{ padding: 24 }}>Đang tải…</p> : <table className="av3-table"><thead><tr><th>Người dùng</th><th>Tổ chức</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th></tr></thead>
+      {loading ? <p className="av3-empty" style={{ padding: 24 }}>Đang tải…</p> : <table className="av3-table av3-table--stack"><thead><tr><th>Người dùng</th><th>Tổ chức</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th></tr></thead>
         <tbody>{rows.map(u => { const v = accountStatusView(u.status); return <tr key={u.user_id}>
-          <td><Link className="av3-name" href={`/admin/users/${u.user_id}`}>{u.name}</Link><small>{u.email}</small></td>
-          <td>{u.organization}</td><td>{roleLabel(u.role, u.admin_type)}</td>
-          <td>{v.switchable ? <Switch checked={v.on} label={v.label} disabled={busy} onChange={() => { setReason(''); setTarget(u) }} />
+          <td data-label="Người dùng"><Link className="av3-name" href={`/admin/users/${u.user_id}`}>{u.name}</Link><small>{u.email}</small></td>
+          <td data-label="Tổ chức">{u.organization}</td><td data-label="Vai trò">{roleLabel(u.role, u.admin_type)}</td>
+          <td data-label="Trạng thái">{v.switchable ? <Switch checked={v.on} label={v.label} disabled={busy} onChange={() => { setReason(''); setTarget(u) }} />
             : <span className="av3-status"><StatusPill tone={v.group === 'rejected' ? 'danger' : 'warn'}>{v.label}</StatusPill>{v.group === 'pending' && <Link href={profileHref(u)} className="av3-ul" style={{ padding: 0 }}>Xem hồ sơ</Link>}</span>}</td>
-          <td>{formatLastLogin(u.last_login)}</td></tr> })}</tbody></table>}
+          <td data-label="Đăng nhập gần nhất">{formatLastLogin(u.last_login)}</td></tr> })}</tbody></table>}
       {!loading && filtered.length === 0 && <p className="av3-empty" style={{ padding: 24 }}>Không có tài khoản phù hợp.</p>}
     </div>
 

@@ -267,7 +267,7 @@ describe('the built data shows up on the review screens (fixture repository, rea
     const { data, villages } = await seed()
     const batTrang = repo().find('villages', r => r.name === 'Bát Tràng')!
     const hdt = repo().find('user_accounts', r => r.email === 'thanhvien9@example.invalid')!
-    const admins = buildDemoAdminData({ now: new Date(), passwordHash: HASH, hdtUserId: hdt.user_id, village: { village_id: batTrang.village_id, name: batTrang.name }, newId: () => crypto.randomUUID() })
+    const admins = buildDemoAdminData({ now: new Date(), passwordHash: HASH, hdtUserId: hdt.user_id, village: { village_id: batTrang.village_id, name: batTrang.name }, newId: (() => crypto.randomUUID()) as unknown as () => string })
     for (const op of admins.ops as any[]) repo().insert(op.table, Object.fromEntries(Object.entries(op.row).map(([k, v]) => [k, asFixture(v)])))
     const ubnd = (admins.ops as any[]).find(op => op.table === 'user_accounts' && op.row.admin_type === 'UBND').row
     const session = { authenticated: true, userId: ubnd.user_id, role: 'ADMIN', adminType: 'UBND', agencyId: null, providerId: null, assignedVillageId: batTrang.village_id, permissions: ['manage_users'], dataScope: null } as unknown as SessionContext

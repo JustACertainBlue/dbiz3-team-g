@@ -173,6 +173,7 @@
 
 /* Account (png/19, png/19a) and company profile (png/28) */
 .av3-account { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+.av3-account--single { grid-template-columns: minmax(0, 1fr); max-width: 720px; }
 .av3-account__main { display: flex; flex-direction: column; gap: 20px; }
 .av3-side { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--color-border-default); border-radius: 8px; background: #fff; }
 .av3-side a { display: block; padding: 10px 16px; border-radius: 6px; font: 700 16px/24px var(--font-body); color: var(--color-neutral-700); text-decoration: none; }
@@ -255,3 +256,5 @@
   .av3-reg__submit .av3-btn { width: 100%; }
   .av3-company__logo { width: 64px; height: 64px; font-size: 26px; }
 }
+.av3-label { font: 700 16px/22px var(--font-body); }
+.av3-textarea { width: 100%; box-sizing: border-box; min-height: 96px; padding: 10px 14px; border: 1px solid var(--color-border-input); border-radius: 8px; font: 400 16px/24px var(--font-body); }

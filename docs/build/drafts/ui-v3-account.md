@@ -115,3 +115,31 @@ Mobile layout already in the code is left as it is. Nothing new for phones, no 3
 - **PRF021 edit block of screen 28** ("Sửa hồ sơ công ty") and the same-page layout of 19: the edit form of the company is still the old page `/agency/[id]/edit` (574 lines, old styling); the personal edit and the password change stay as an inline form and a separate page `/account/change-password`, not panels of one page.
 - **Screen 18 states** inside the OTP page (revise, rejected, "Bắt đầu khám phá", "Bổ sung và gửi lại"): the repo shows these as popups on `/login`, not in the OTP page.
 - Mockup items listed in `DEVIATIONS` of the test (enum labels of screen 17, missing fields, copy forced by the "xưởng" guard test, etc.).
+
+## Round 5 (desktop only)
+
+### Round 3 confirmation (commit per item)
+| Item | Status | Commit |
+|---|---|---|
+| a. Forms 15/16/17/17a/18 are `method="post"`, submit locked until hydrated | done (change-password form too, now the password panel) | `f2f2b033` |
+| b. "Remember me" test and "wrong password does not leak the status" tests were red first | done; the red results are written in the Round 3 section of this draft | tests `08470e07`, proof recorded in `4884681d` |
+| c. Disabled account with the right password: generic refusal, no `registration_status` | done, tests added (code already correct) | `c09e8477` |
+| d. Department contact in one constant; empty hides the contact block and the "Liên hệ Sở Du lịch" button | done | `c09e8477` |
+
+### Done
+- **/login demo block removed:** no "Tài khoản thử nghiệm", no sample emails, no "nhập bất kỳ mật khẩu", in any environment. `tests/unit/login-demo-panel.test.ts` (issue #102) asserted the opposite for development; it was rewritten on purpose by your instruction (now: no block in development, production and test; production still refuses the prototype login on the server).
+- **Screen 19 panels:** `/account` has three panels: info, personal edit (pencil), password (`/account?tab=password`). `/account/change-password` now redirects to `/account?tab=password`.
+  - **Temporary password still forced:** login still answers `redirectTo: /account/change-password`; the page reads the session (`mustChangePassword`), shows only the password panel (no menu, no account request, because every other API sees a guest) and, after the change, goes to `/login?password_changed=1`. Tests first (`tests/unit/v3-account-panels.test.ts`): the 3 flow tests passed on the old code and still pass; the redirect, panel and forced-view tests were red, then green.
+  - In the dev server the redirect shows as a client redirect (status 200, the root `loading.tsx` streams first); the browser ends on `/account?tab=password`.
+- **PRF021 `/agency/[id]/edit` rebuilt on the mockup:** plain view `auth-v3/CompanyEditView.tsx`; the page keeps session guard, profile load, PATCH and the HDT re-review message. Mockup test `28 edit` added. The old fake-wireframe page (English labels, fake "approved legal status" panel, `spec-*` styles) is gone.
+
+### DEVIATIONS (in the test file, with reasons)
+- **17 terms box:** there is no terms or privacy page yet, and the agreement is not stored; the box only gates the submit button, the two names are plain text.
+- **17 fields** follow the registration schema (enum types, required team size, no "Loại tour khác" or "Giới thiệu ngắn"); password hint keeps "ký tự đặc biệt" (server rule).
+- **18 states** (needs documents, rejected, "Bổ sung và gửi lại", "Bắt đầu khám phá") stay as the popups of `/login`, not inside the OTP page.
+- **28 edit:** fields the mockup does not list but the API takes stay (company type, team size, business email, tour types, the four address parts).
+- **19 password panel:** keeps the four-rule checklist instead of one hint line; note says "Sau khi đổi, bạn cần đăng nhập lại." (this device is signed out too).
+
+### Not done / limits
+- Real-data look of 19, 28, 28 edit and the forced password page: not done (needs the sign-in; to be taken with the common script). 28 edit and the panels were only rendered in tests, and the password panel was opened in the browser as a guest.
+- Edit page keeps its old tour-type list (6 values) which differs from the registration enum; not changed (API/validation).

@@ -44,3 +44,11 @@ export function formatViDate(value: string | null | undefined): string {
   const full = formatViDateTime(value)
   return full ? full.split(', ')[1] : ''
 }
+
+export type AccountPanel = 'info' | 'edit' | 'password'
+
+/** Screen 19: which panel /account shows. A forced change of a temporary password always shows the password panel. */
+export function choosePanel(tab: string | null | undefined, forced: boolean): AccountPanel {
+  if (forced) return 'password'
+  return tab === 'password' ? 'password' : 'info'
+}

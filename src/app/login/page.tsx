@@ -5,19 +5,11 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AuthSplit from '../auth-v3/AuthSplit'
 import { useHydrated } from '../auth-v3/useHydrated'
-import { prototypeLoginEnabled } from '@/lib/auth/prototype-login'
 import { ContactDepartmentPopup, RejectedPopup, ReviseDocsPopup, SubmittedPopup } from '../auth-v3/RegistrationPopups'
 import { formatViDateTime } from '../auth-v3/rules'
 import { DEPARTMENT_CONTACT } from '../auth-v3/department-contact'
 
 type RegistrationStatus = { status: 'pending' | 'revise' | 'rejected'; reason: string; reviewed_at: string }
-
-const demoAccounts = [
-  ['Tour Agency', 'thanhvien13@example.invalid'],
-  ['Local Provider', 'thanhvien19@example.invalid'],
-  ['UBND Admin', 'thanhvien8@example.invalid'],
-  ['HDT Admin', 'thanhvien9@example.invalid'],
-] as const
 
 export default function LoginPage() {
   return <main><Suspense fallback={<AuthSplit><p>Đang tải…</p></AuthSplit>}><LoginForm /></Suspense></main>
@@ -86,12 +78,6 @@ function LoginForm() {
       {who === 'agency'
         ? <p className="av3-login__foot">Công ty lữ hành chưa có tài khoản? <Link href="/register" className="av3-link">Đăng ký tài khoản công ty lữ hành</Link></p>
         : <p className="av3-login__foot">Tài khoản xưởng nghề do UBND xã cấp. Hãy đăng nhập bằng email được cấp.</p>}
-      {/* #102: the demo panel only where the prototype login works (same condition as the server) */}
-      {prototypeLoginEnabled() && <aside className="av3-demo">
-        <strong>Tài khoản thử nghiệm</strong>
-        <p>Chọn một email mẫu bên dưới. Ở prototype hiện tại, nhập bất kỳ mật khẩu không rỗng.</p>
-        <div>{demoAccounts.map(([label, value]) => <button type="button" key={value} onClick={() => setEmail(value)}><span>{label}</span><small>{value}</small></button>)}</div>
-      </aside>}
     </form>
     {registration && <>
       <SubmittedPopup open={registration.status === 'pending'} onClose={() => setRegistration(null)} info={{ email }} />

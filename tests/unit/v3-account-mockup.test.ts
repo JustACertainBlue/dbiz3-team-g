@@ -21,7 +21,7 @@ import OtpPage from '@/app/register/otp/page'
 import AccountView, { type Account } from '@/app/auth-v3/AccountView'
 import ReviseView, { type Revision } from '@/app/auth-v3/ReviseView'
 import CompanyProfileView from '@/app/auth-v3/CompanyProfileView'
-import ChangePasswordPage from '@/app/account/change-password/page'
+import CompanyEditView, { type AgencyFormData } from '@/app/auth-v3/CompanyEditView'
 import { ContactDepartmentPopup, RejectedPopup, ReviseDocsPopup, SubmittedPopup } from '@/app/auth-v3/RegistrationPopups'
 
 const norm = (value: string) => value.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim()
@@ -38,6 +38,9 @@ const DEVIATIONS: Record<string, Record<string, string>> = {
   '15': { 'Email hoặc mật khẩu chưa đúng. Kiểm tra lại hoặc đặt lại mật khẩu.': 'error state, shown only after a failed sign-in (wording is in login/page.tsx)' },
   '16': { 'Chúng tôi đã gửi đường dẫn đặt lại mật khẩu đến': 'step 2 names the email only when step 1 kept it in sessionStorage; without it the page says "Nếu email đã đăng ký…"' },
   '17': {
+    'Tôi xác nhận thông tin trên là đúng và đồng ý với': 'the box is there, but there is no terms page yet and the agreement is not stored (it only gates the submit button)',
+    'điều khoản sử dụng': 'plain text, no terms page yet',
+    'chính sách bảo mật': 'plain text, no privacy page yet',
     'Đã có tài khoản?': 'mockup top bar: shared header (SessionHeader), not this page',
     'Đăng nhập': 'mockup top bar link (see above)',
     'Ít nhất 8 ký tự, có chữ hoa, chữ thường và số.': 'ours adds "và ký tự đặc biệt": the server rule needs one',
@@ -76,7 +79,13 @@ const DEVIATIONS: Record<string, Record<string, string>> = {
     'Văn hoá, di sản': 'tour types of the sample company, data', 'Làng nghề, trải nghiệm': 'tour types of the sample company, data',
     '22 phố Huế, phường Phạm Đình Hổ, Hà Nội': 'data', 'Đơn vị tổ chức tour trải nghiệm văn hóa và làng nghề tại Hà Nội.': 'data',
   },
+  // Screen 18 also holds, in the mockup, the states "Sở Du lịch cần bổ sung", "Lý do", "Bổ sung và gửi lại", "Bắt đầu khám phá": the product
+  // shows them as the popups of /login (18b, 18c, 18d), by decision, not inside the OTP page; the OTP test stops before them.
   '18': { '(sau 60 giây)': 'resend cooldown: not in the spec (step 0 #10)' },
+  '28edit': {
+    'Số nhân viên': 'not in the mockup edit block, but the API takes it', 'Email công việc': 'same: the API takes it',
+    'Loại hình': 'same', 'Loại tour công ty thường tổ chức': 'same (tour types list is the one the edit API already had)',
+  },
 }
 
 function check(screen: string, html: string, options: { from?: number; to?: number; skip?: string[] } = {}) {
@@ -114,7 +123,7 @@ describe('mockup texts, blocks and order', () => {
   it('18d popup', () => { const r = check('18d', render(ContactDepartmentPopup, { open: true, onClose: noop, info: { code: 'HS-2611-0007', email: 'a', phone: 'b', hours: 'c' } }), { from: 1 }); expect(r).toMatchObject({ missing: [], outOfOrder: [] }) })
 
   const account: Account = { full_name: 'Lý Gia Hân', title: 'Quản trị viên', phone: '+84 932 000 002', email: 'doanhnghiep3@example.invalid', account_status: 'Active', created_at: '2026-11-12T02:02:00.000Z', role: 'Tour_Agency', admin_type: null, data_scope: 'own', organization: 'Công ty Du lịch Tràng An', business_href: '/agency/ag-1' }
-  const view = (changes: Record<string, unknown> = {}) => render(AccountView, { account, editing: false, error: '', saving: false, saved: false, avatarVersion: 0, avatarFailed: true, onEdit: noop, onCancel: noop, onSubmit: noop, onAvatar: noop, onAvatarError: noop, ...changes })
+  const view = (changes: Record<string, unknown> = {}) => render(AccountView, { account, panel: 'info', forced: false, error: '', saving: false, saved: false, avatarVersion: 0, avatarFailed: true, onEdit: noop, onCancel: noop, onSubmit: noop, onAvatar: noop, onAvatarError: noop, ...changes })
   const at = (screen: string, text: string, after = 0) => (mockup as any)[screen].indexOf(text, after)
 
   it('19 my account (view): sidebar, profile, rows', () => {
@@ -124,13 +133,13 @@ describe('mockup texts, blocks and order', () => {
   })
   it('19 my account (edit): the edit block of the mockup', () => {
     const from = at('19', 'Sửa thông tin cá nhân')
-    const r = check('19', view({ editing: true }), { from, to: at('19', 'Đổi mật khẩu', from) })
+    const r = check('19', view({ panel: 'edit' }), { from, to: at('19', 'Đổi mật khẩu', from) })
     expect(r).toMatchObject({ missing: [], outOfOrder: [] })
-    expect(view({ editing: true })).toContain('Không đổi được email đăng nhập. Thông tin công ty sửa ở mục Doanh nghiệp của tôi.')
+    expect(view({ panel: 'edit' })).toContain('Không đổi được email đăng nhập. Thông tin công ty sửa ở mục Doanh nghiệp của tôi.')
   })
   it('19 change password: the password block of the mockup', () => {
     const from = at('19', 'Đổi mật khẩu', at('19', 'Sửa thông tin cá nhân'))
-    const r = check('19', render(ChangePasswordPage), { from })
+    const r = check('19', view({ panel: 'password' }), { from })
     expect(r).toMatchObject({ missing: [], outOfOrder: [] })
   })
   it('19a waiting account: banner, then the same profile', () => {
@@ -154,5 +163,14 @@ describe('mockup texts, blocks and order', () => {
     const r = check('17a', html, { from: 1 })
     expect(r).toMatchObject({ missing: [], outOfOrder: [] })
     expect(html).toContain('Tải lên bản mới hoặc')
+  })
+
+  it('28 edit (PRF021): note, fields in order, cancel, save, last note', () => {
+    const form: AgencyFormData = { company_name: 'Công ty Du lịch Tràng An', tax_id: '0107000002', company_type: 'Travel Agency', street: '22 phố Huế', ward: 'Phạm Đình Hổ', district: 'Hai Bà Trưng', city_province: 'Hà Nội', description: 'Đơn vị tổ chức tour.', team_size: 10, contact_person_name: 'Lý Gia Hân', phone_number: '+84 932 000 002', business_email: 'doanhnghiep3@example.invalid', tour_types: [] }
+    const html = render(CompanyEditView, { form, setForm: noop, saving: false, hydrated: true, message: null, onSubmit: noop, agencyId: 'ag-1' })
+    const from = at('28', 'Sửa hồ sơ công ty')
+    const r = check('28', html, { from, skip: ['Giới thiệu', 'Đơn vị tổ chức tour trải nghiệm văn hóa và làng nghề tại Hà Nội.', 'Địa chỉ'] })
+    expect(r).toMatchObject({ missing: [], outOfOrder: [] })
+    for (const text of ['Địa chỉ', 'Giới thiệu', 'Số nhân viên', 'Email công việc']) expect(html).toContain(text)
   })
 })

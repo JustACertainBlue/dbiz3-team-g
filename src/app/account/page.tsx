@@ -1,12 +1,17 @@
 'use client'
 
 // Screens 19 and 19a (mockup v3 png/19, png/19a). Same requests as before: GET/PATCH /api/auth/account,
-// POST/DELETE /api/auth/account/avatar. The account menu (png/20) and the logout popup (png/20a) are in the shared header.
-import { useEffect, useState } from 'react'
+// POST/DELETE /api/auth/account/avatar. View, personal edit and password change are panels of this page (?tab=password).
+// A temporary password is forced: the session says mustChangePassword, the other account API answers as a guest,
+// so then only the password panel is shown and the account is not requested.
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import AccountView, { type Account } from '../auth-v3/AccountView'
+import { choosePanel } from '../auth-v3/rules'
 
-
-export default function AccountPage() {
+function AccountPanels() {
+  const tab = useSearchParams().get('tab')
+  const [forced, setForced] = useState<boolean | null>(null)
   const [account, setAccount] = useState<Account | null>(null)
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState('')
@@ -23,7 +28,19 @@ export default function AccountPage() {
       setAvatarVersion(value => value + 1); setAvatarFailed(!file); setSaved(true)
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể cập nhật ảnh.') } finally { setSaving(false) }
   }
-  useEffect(() => { fetch('/api/auth/account').then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error); setAccount(body.data) }).catch(error => setError(error.message)) }, [])
+  useEffect(() => {
+    let alive = true
+    fetch('/api/auth/session', { cache: 'no-store' }).then(r => r.json()).then(async payload => {
+      const mustChange = Boolean(payload?.data?.session?.mustChangePassword)
+      if (!alive) return
+      setForced(mustChange)
+      if (mustChange) return
+      const response = await fetch('/api/auth/account'); const body = await response.json()
+      if (!response.ok) throw new Error(body.error)
+      if (alive) setAccount(body.data)
+    }).catch(cause => { if (alive) { setForced(false); setError(cause instanceof Error ? cause.message : 'Vui lòng đăng nhập.') } })
+    return () => { alive = false }
+  }, [])
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setError(''); setSaved(false)
     const fields = new FormData(event.currentTarget)
@@ -35,6 +52,12 @@ export default function AccountPage() {
     finally { setSaving(false) }
   }
 
-  return <AccountView account={account} editing={editing} error={error} saving={saving} saved={saved} avatarVersion={avatarVersion} avatarFailed={avatarFailed}
+  if (forced === null) return <main className="av3-page"><p>Đang tải tài khoản…</p></main>
+  const panel = choosePanel(tab, forced) === 'info' && editing ? 'edit' : choosePanel(tab, forced)
+  return <AccountView account={account} panel={panel} forced={forced} error={error} saving={saving} saved={saved} avatarVersion={avatarVersion} avatarFailed={avatarFailed}
     onEdit={() => { setEditing(true); setSaved(false) }} onCancel={() => setEditing(false)} onSubmit={submit} onAvatar={file => void avatar(file)} onAvatarError={() => setAvatarFailed(true)} />
+}
+
+export default function AccountPage() {
+  return <Suspense fallback={<main className="av3-page"><p>Đang tải tài khoản…</p></main>}><AccountPanels /></Suspense>
 }

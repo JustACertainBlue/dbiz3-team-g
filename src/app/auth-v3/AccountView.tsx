@@ -2,7 +2,8 @@
 import Link from 'next/link'
 import React from 'react'
 import AccountSidebar from './AccountSidebar'
-import { formatViDate, formatViDateTime } from './rules'
+import PasswordPanel from './PasswordPanel'
+import { formatViDate, formatViDateTime, type AccountPanel } from './rules'
 import { useHydrated } from './useHydrated'
 import './auth-v3.css'
 
@@ -10,20 +11,26 @@ export type Account = { full_name: string; title: string; phone: string; email: 
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(-2).map(part => part[0]).join('').toUpperCase() || '?'
 
 export type AccountViewProps = {
-  account: Account | null; editing: boolean; error: string; saving: boolean; saved: boolean; avatarVersion: number; avatarFailed: boolean
+  account: Account | null; panel: AccountPanel; forced: boolean; error: string; saving: boolean; saved: boolean; avatarVersion: number; avatarFailed: boolean
   onEdit: () => void; onCancel: () => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void; onAvatar: (file?: File) => void; onAvatarError: () => void
 }
 
-export default function AccountView({ account, editing, error, saving, saved, avatarVersion, avatarFailed, onEdit, onCancel, onSubmit, onAvatar, onAvatarError }: AccountViewProps) {
+export default function AccountView({ account, panel, forced, error, saving, saved, avatarVersion, avatarFailed, onEdit, onCancel, onSubmit, onAvatar, onAvatarError }: AccountViewProps) {
   const hydrated = useHydrated()
+  const editing = panel === 'edit'
   const pending = account?.account_status === 'Pending Approval'
   const statusText = !account ? '' : pending ? 'Chờ Sở Du lịch duyệt' : account.account_status === 'Active' ? 'Đang hoạt động' : account.account_status === 'Disabled' ? 'Đã khoá' : account.account_status || ''
   const subtitle = account ? [account.organization, account.title].filter(Boolean).join(' · ') : ''
 
+  if (forced) return <main className="av3-page">
+    <h1 className="av3-h1">Tài khoản của tôi</h1>
+    <div className="av3-account av3-account--single"><div className="av3-account__main"><PasswordPanel forced /></div></div>
+  </main>
+
   return <main className="av3-page">
     <h1 className="av3-h1">Tài khoản của tôi</h1>
     <div className="av3-account">
-      <AccountSidebar active="info" businessHref={account?.business_href} pending={pending} />
+      <AccountSidebar active={panel === 'password' ? 'password' : 'info'} businessHref={account?.business_href} pending={pending} />
       <div className="av3-account__main">
         {error && <div className="av3-alert av3-alert--danger" role="alert"><strong>{error}</strong>{!account && <p><Link href="/login" className="av3-link">Đăng nhập</Link></p>}</div>}
         {saved && <div className="av3-alert av3-alert--success" role="status"><strong>Đã lưu thông tin.</strong></div>}
@@ -32,7 +39,8 @@ export default function AccountView({ account, editing, error, saving, saved, av
           <div><h2>Đang chờ Sở Du lịch Hà Nội duyệt</h2><p>Thường có kết quả trong 2 ngày làm việc. Trong lúc chờ, bạn chưa đặt chỗ được.</p></div>
           <Link href="/register/status" className="av3-btn av3-btn--primary">Theo dõi trạng thái hồ sơ</Link>
         </div>}
-        {account && <section className="av3-card av3-card--account">
+        {panel === 'password' && <PasswordPanel forced={false} />}
+        {account && panel !== 'password' && <section className="av3-card av3-card--account">
           <div className="av3-profile">
             <span className="av3-avatar" aria-hidden={avatarFailed ? undefined : true}>
               {!avatarFailed ? <img src={`/api/auth/account/avatar?v=${avatarVersion}`} alt="Ảnh đại diện" width={72} height={72} onError={onAvatarError} /> : initials(account.full_name)}

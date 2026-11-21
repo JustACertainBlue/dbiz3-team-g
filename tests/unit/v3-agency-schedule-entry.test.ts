@@ -31,7 +31,7 @@ describe('screen 05 → screen 27', () => {
   })
   it('titles screen 27 "Lịch Công ty"', async () => {
     const html = renderToStaticMarkup(await AgencySchedulePage({ params: { agencyId: TRANG_AN }, searchParams: {} }))
-    expect(html).toMatch(/<h1>Lịch Công ty<\/h1>/)
+    expect(html).toMatch(/<h1[^>]*>Lịch Công ty<\/h1>/)
     expect(html).not.toContain('Agency Schedule</h1>')
   })
 })

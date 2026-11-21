@@ -1,0 +1,24 @@
+/* Screen 27 (mockup LichDaiLy). Prefix v3s-. Shares v3l- header classes. */
+.v3s-chips{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
+.v3s-chip{display:flex;gap:8px;align-items:baseline;padding:10px 16px;border:1px solid #E2DED2;border-radius:8px;background:#fff;font-size:16px}
+.v3s-chip b{font-size:22px;font-variant-numeric:tabular-nums}
+.v3s-grid{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.v3s-cal{flex:1 1 560px;min-width:0;background:#fff;border:1px solid #E2DED2;border-radius:8px;padding:20px 22px;box-sizing:border-box}
+.v3s-side{flex:0 1 340px;min-width:280px;background:#fff;border:1px solid #E2DED2;border-radius:8px;padding:24px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px}
+.v3s-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.v3s-head h2{margin:0;font-size:22px;line-height:30px;color:#0F3D2A}
+.v3s-nav{width:44px;height:44px;border-radius:999px;display:grid;place-items:center;border:1.5px solid #165235;color:#165235;text-decoration:none;font-size:20px}
+.v3s-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:#4B5851;margin-bottom:12px}
+.v3s-sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.k-hold{background:#FFF7E6;color:#7A4B00}.k-booked{background:#DCEFE2;color:#165235}.k-done{background:#165235;color:#fff}.k-sel{box-shadow:0 0 0 2px #165235}
+.v3s-mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.v3s-wd{text-align:center;font-size:14px;color:#5F6B64;font-weight:700}
+.v3s-cell{min-height:52px;border-radius:6px;display:grid;place-items:center;font-weight:700;text-decoration:none;color:#1F2A25;border:1px solid #F0EDE4;box-sizing:border-box}
+.v3s-cell.k-past{color:#C9C4B5}.v3s-blank{border:0}
+.v3s-eb{margin:0;font-size:14px;font-weight:700;letter-spacing:.06em;color:#5F6B64}
+.v3s-date{margin:0;font-size:24px;line-height:32px;font-weight:700;color:#0F3D2A}
+.v3s-list{margin-top:32px}
+.v3s-ev{display:flex;gap:16px;align-items:center;background:#fff;border:1px solid #E2DED2;border-radius:8px;padding:16px 20px;margin-top:12px;border-left-width:6px}
+.v3s-ev.k-hold{border-left-color:#D9A441;background:#fff;color:inherit}.v3s-ev.k-booked{border-left-color:#4FA06E;background:#fff;color:inherit}.v3s-ev.k-done{border-left-color:#165235;background:#fff;color:inherit}
+.v3s-evdate{min-width:72px;text-align:center;font-size:14px;color:#5F6B64}.v3s-evdate b{display:block;font-size:26px;line-height:32px;color:#1F2A25}
+.v3s-evbody{flex:1;min-width:0}.v3s-evbody p{margin:0;font-size:16px;line-height:23px}

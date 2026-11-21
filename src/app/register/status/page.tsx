@@ -1,90 +1,56 @@
 "use client";
 
+// REG116 (mockup v3 png/18a): popup "Đã gửi hồ sơ đăng ký thành công" over the application summary.
+// Reads the same sessionStorage keys as before; the popup kind comes from the stored account status.
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { SubmittedPopup } from "../../auth-v3/RegistrationPopups";
+import { formatViDateTime, registrationPopupKind } from "../../auth-v3/rules";
+import "../../auth-v3/auth-v3.css";
 
 export default function StatusPage() {
   const [accountStatus, setAccountStatus] = useState<string>("Pending Approval");
   const [agencyAccountId, setAgencyAccountId] = useState<string>("");
-  const [userId, setUserId] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [company, setCompany] = useState<string>("");
+  const [submittedAt, setSubmittedAt] = useState<string>("");
+  const [open, setOpen] = useState(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedStatus = sessionStorage.getItem("account_status") || "Pending Approval";
-      const storedAgencyId = sessionStorage.getItem("agency_account_id") || "";
-      const storedUserId = sessionStorage.getItem("user_id") || "";
-      const storedEmail = sessionStorage.getItem("registration_email") || "";
-
-      setAccountStatus(storedStatus);
-      setAgencyAccountId(storedAgencyId);
-      setUserId(storedUserId);
-      setEmail(storedEmail);
+      setAccountStatus(sessionStorage.getItem("account_status") || "Pending Approval");
+      setAgencyAccountId(sessionStorage.getItem("agency_account_id") || "");
+      setEmail(sessionStorage.getItem("registration_email") || "");
+      setCompany(sessionStorage.getItem("registration_company") || "");
+      setSubmittedAt(sessionStorage.getItem("registration_submitted_at") || "");
 
       // Task T027 requirement: Clears registration_request_id from sessionStorage
       sessionStorage.removeItem("registration_request_id");
     }
   }, []);
 
+  const sentAt = formatViDateTime(submittedAt);
   return (
-    <div className="card" style={{ maxWidth: "700px", margin: "2rem auto" }}>
-      <div className="card-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h1 className="card-title">Registration Status</h1>
-          <span className="badge badge-pending">{accountStatus}</span>
+    <main className="av3-center">
+      <section className="av3-card av3-card--status">
+        <h1 className="av3-h1 av3-h1--card">Hồ sơ đăng ký{company ? <> của {company}</> : null}</h1>
+        <div className="av3-banner av3-banner--warn">
+          <strong>Đang chờ Sở Du lịch Hà Nội duyệt</strong>
+          <p>Bạn sẽ nhận email khi có kết quả. Trong lúc chờ, bạn chưa đăng nhập để đặt trải nghiệm được. Email chỉ được gửi khi dịch vụ gửi email đã được cấu hình.</p>
         </div>
-        <p className="card-subtitle">
-          Your application has been received and verified.
-        </p>
-      </div>
-
-      <div className="alert alert-success">
-        <h3 style={{ marginBottom: "0.25rem", fontWeight: 700 }}>
-          Registration submitted — Pending Approval
-        </h3>
-        <p>Your application is pending HDT review.</p>
-      </div>
-
-      <div className="status-details">
-        <div className="status-row">
-          <span className="status-label">Account Status:</span>
-          <span><strong>{accountStatus}</strong></span>
+        <h2 className="av3-sub">Lịch sử hồ sơ</h2>
+        <ul className="av3-history">
+          <li>Đã xác minh email</li>
+          <li>Gửi hồ sơ đăng ký{sentAt ? ` · ${sentAt}` : ""}</li>
+        </ul>
+        {agencyAccountId && <p className="av3-caption">Mã tài khoản Agency: {agencyAccountId}</p>}
+        <div className="av3-actions">
+          <Link href="/login" className="av3-btn av3-btn--primary">Đăng nhập</Link>
+          <Link href="/explore" className="av3-btn av3-btn--secondary">Về trang khám phá</Link>
         </div>
-        {agencyAccountId && (
-          <div className="status-row">
-            <span className="status-label">Agency Account ID:</span>
-            <span className="status-value">{agencyAccountId}</span>
-          </div>
-        )}
-        {userId && (
-          <div className="status-row">
-            <span className="status-label">User ID:</span>
-            <span className="status-value">{userId}</span>
-          </div>
-        )}
-        {email && (
-          <div className="status-row">
-            <span className="status-label">Registered Email:</span>
-            <span>{email}</span>
-          </div>
-        )}
-      </div>
-
-      <div style={{ margin: "1.5rem 0", color: "var(--text-muted)", fontSize: "0.9rem" }}>
-        <p>
-          Hanoi Department of Tourism (HDT) officers will review your submitted business credentials and licensing documents.
-          Once approved, you can sign in. Email notifications require a configured email delivery service.
-        </p>
-      </div>
-
-      <div className="btn-group">
-        <Link href="/login" className="btn btn-primary">
-          Sign in
-        </Link>
-        <Link href="/" className="btn btn-secondary">
-          Return to Home
-        </Link>
-      </div>
-    </div>
+      </section>
+      <SubmittedPopup open={open && registrationPopupKind(accountStatus) === "submitted"} onClose={() => setOpen(false)}
+        info={{ company, email, sentAt }} />
+    </main>
   );
 }

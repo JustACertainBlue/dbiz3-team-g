@@ -1,6 +1,6 @@
 // Screens 39 and 40 (mockup v3): labels and filters of the account list.
 import { describe, expect, it } from 'vitest'
-import { accountStatusView, roleLabel, formatLastLogin, filterByStatusGroup, switchAction } from '@/lib/adm/v3-accounts'
+import { accountStatusView, roleLabel, formatLastLogin, formatDate, filterByStatusGroup, switchAction } from '@/lib/adm/v3-accounts'
 
 describe('accountStatusView', () => {
   it('maps stored statuses to the mockup labels', () => {
@@ -43,5 +43,14 @@ describe('switchAction', () => {
   it('turning an active account off disables it; turning an off account on enables it', () => {
     expect(switchAction('Active')).toBe('disable')
     expect(switchAction('Disabled')).toBe('enable')
+  })
+})
+
+describe('formatDate', () => {
+  it('Hanoi calendar date as dd/mm/yyyy; empty for no value', () => {
+    expect(formatDate('2026-10-31T18:00:00Z')).toBe('01/11/2026')
+    expect(formatDate('2026-11-12T02:00:00Z')).toBe('12/11/2026')
+    expect(formatDate(null)).toBe('')
+    expect(formatDate('')).toBe('')
   })
 })

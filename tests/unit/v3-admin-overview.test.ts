@@ -94,6 +94,19 @@ describe('buildOverview', () => {
   })
 })
 
+describe('buildOverview range edges', () => {
+  it('bookings on the first and the last day of the range both count; the day before and after do not', () => {
+    const rows = [
+      b('e1', 'p1', 'a1', 'Booked', '2026-08-31T17:00:00Z'), // 01/09 00:00 Hanoi, first day
+      b('e2', 'p1', 'a1', 'Booked', '2026-11-15T16:59:00Z'), // 15/11 23:59 Hanoi, last day
+      b('e3', 'p1', 'a1', 'Booked', '2026-08-31T16:59:00Z'), // 31/08 Hanoi, day before
+      b('e4', 'p1', 'a1', 'Booked', '2026-11-15T17:00:00Z'), // 16/11 Hanoi, day after
+    ]
+    const o = buildOverview(input({ bookings: rows }))
+    expect(o.monthly.reduce((n, m) => n + m.total, 0)).toBe(2)
+  })
+})
+
 describe('buildOverview transactions (card "Giao dịch T11")', () => {
   const bookings = [
     b('t1', 'p1', 'a1', 'Booked', '2026-10-20T03:00:00Z', 4, undefined, 2_000_000),

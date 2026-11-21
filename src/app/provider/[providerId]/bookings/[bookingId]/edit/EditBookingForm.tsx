@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import type { BookingDetail } from '@/lib/booking/booking-detail'
 import { hanoiInputValue } from '@/lib/time/hanoi-time'
+import '../../new/create-v3.css'
 
 type ApiError = { error?: { code: string; message: string } }
 
@@ -16,22 +17,18 @@ export default function EditBookingForm({ detail, backHref }: { detail: BookingD
     duration: Math.round((Date.parse(detail.end_at) - Date.parse(detail.start_at)) / 60_000),
     groupSize: detail.group_size,
     price: detail.agreed_price,
-    notice: detail.notice_period,
-    policy: JSON.stringify(detail.cancellation_policy),
   }
   const [start, setStart] = useState(initial.start)
   const [duration, setDuration] = useState(initial.duration)
   const [groupSize, setGroupSize] = useState(initial.groupSize)
   const [price, setPrice] = useState(initial.price)
-  const [notice, setNotice] = useState(initial.notice)
-  const [policy, setPolicy] = useState(initial.policy)
-  // F-SCHED-05 targets only; Completed is never offered (SR-003). Empty = keep the current status.
-  const [target, setTarget] = useState('')
+  // F-SCHED-05 targets only; Completed is never offered (SR-003). The chosen card; the current status = keep it.
+  const [choice, setChoice] = useState(detail.status)
+  const target = choice === detail.status ? '' : choice
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const targets = detail.status === 'On hold' ? ['Booked', 'Cancelled'] : ['Cancelled']
 
   const send = async (url: string, method: string, body: Record<string, unknown>): Promise<string | null> => {
     const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -43,20 +40,12 @@ export default function EditBookingForm({ detail, backHref }: { detail: BookingD
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError(null)
-    let cancellationPolicy: unknown
-    try {
-      cancellationPolicy = JSON.parse(policy)
-    } catch {
-      setError('Cancellation policy phải là JSON hợp lệ.')
-      return
-    }
     // F-SCHED-04 takes only the changed fields (#48).
     const changes: Record<string, unknown> = {}
     if (start !== initial.start) changes.start_at = `${start}:00+07:00`
     if (duration !== initial.duration) changes.duration = duration
     if (groupSize !== initial.groupSize) changes.group_size = groupSize
     if (price !== initial.price) changes.agreed_price = price
-    if (notice !== initial.notice || policy !== initial.policy) changes.booking_conditions = { notice_period: notice, cancellation_policy: cancellationPolicy }
     if (!Object.keys(changes).length && !target) {
       setError('Chưa có thay đổi nào để lưu.')
       return
@@ -91,41 +80,44 @@ export default function EditBookingForm({ detail, backHref }: { detail: BookingD
     }
   }
 
+  // Cards of the mockup "Trạng thái". Hoàn thành is only reached through "Xác nhận đoàn đã đến" (SR-003).
+  const cards: { value: string; title: string; sub: string }[] = [
+    { value: 'On hold', title: 'Đang giữ chỗ', sub: detail.status === 'On hold' ? 'Hiện tại' : 'Không quay lại được' },
+    { value: 'Booked', title: 'Đã thanh toán', sub: detail.status === 'Booked' ? 'Hiện tại' : 'Bấm khi đã nhận tiền' },
+    { value: 'Cancelled', title: 'Huỷ', sub: 'Cần ghi lý do' },
+  ]
+  // Same edges as assertTransition for the Provider: On hold → Booked | Cancelled, Booked → Cancelled.
+  const allowed = (value: string) => value === detail.status || (detail.status === 'On hold' && value !== 'On hold') || (detail.status === 'Booked' && value === 'Cancelled')
+  const locked = (value: string) => value === detail.status || !allowed(value)
   // Any field change clears the previous server error.
-  return <form className="bkg-form" onSubmit={submit} onChange={() => setError(null)}>
-    <div className="bkg-grid">
-      <label>Bắt đầu (giờ Hà Nội)
-        <input type="datetime-local" value={start} onChange={event => setStart(event.target.value)} required />
-      </label>
-      <label>Thời lượng (phút)
-        <input type="number" min={1} step={1} value={duration} onChange={event => setDuration(Number(event.target.value))} required />
-      </label>
-      <label>Số khách
-        <input type="number" min={1} step={1} value={groupSize} onChange={event => setGroupSize(Number(event.target.value))} required />
-      </label>
-      <label>Giá thỏa thuận cho cả đoàn (VND)
-        <input type="number" min={1} step="any" value={price} onChange={event => setPrice(Number(event.target.value))} required />
-      </label>
-      <label>Notice period (giờ)
-        <input type="number" min={0} step={1} value={notice} onChange={event => setNotice(Number(event.target.value))} required />
-      </label>
-      <label>Cancellation policy (JSON)
-        <textarea rows={2} value={policy} onChange={event => setPolicy(event.target.value)} required />
-      </label>
-      <label>Trạng thái mới
-        <select value={target} onChange={event => setTarget(event.target.value)}>
-          <option value="">Giữ nguyên ({detail.status})</option>
-          {targets.map(value => <option key={value} value={value}>{value}</option>)}
-        </select>
-      </label>
-      {target === 'Cancelled' && <label>Lý do hủy (bắt buộc)
-        <input value={reason} onChange={event => setReason(event.target.value)} required />
-      </label>}
-    </div>
-    {error && <p className="bkg-error" role="alert">{error}</p>}
-    <div className="bkg-actions">
-      <button type="submit" disabled={saving}>{saving ? 'Đang lưu…' : 'Save'}</button>
-      <Link href={backHref}>Discard</Link>
-    </div>
+  return <form className="v3b-form" method="post" onSubmit={submit} onChange={() => setError(null)} aria-label="Sửa đặt chỗ">
+    <section className="v3b-card">
+      <h2 className="v3b-h2">Trạng thái</h2>
+      <div className="v3b-row" role="radiogroup" aria-label="Trạng thái đặt chỗ">
+        {cards.map(card => <label key={card.value} className="v3b-st" data-on={choice === card.value ? 'true' : 'false'}>
+          <input type="radio" name="s" value={card.value} checked={choice === card.value} disabled={locked(card.value) && card.value !== choice} onChange={() => setChoice(card.value)} />
+          <span><b>{card.title}</b><br /><span className="v3b-help">{card.sub}</span></span>
+        </label>)}
+        <div className="v3b-st v3b-st--off" aria-disabled="true"><span><b>Hoàn thành</b><br /><span className="v3b-help">Chỉ qua “Xác nhận đoàn đã đến”</span></span></div>
+      </div>
+      {choice === 'Cancelled' && <div className="v3b-f"><label htmlFor="rs">Lý do huỷ <span className="v3b-req">*</span></label><input id="rs" value={reason} onChange={event => setReason(event.target.value)} required /></div>}
+    </section>
+    <section className="v3b-card">
+      <h2 className="v3b-h2">Đoàn &amp; trải nghiệm</h2>
+      <div className="v3b-row">
+        <div className="v3b-f"><label htmlFor="st">Bắt đầu (giờ Hà Nội) <span className="v3b-req">*</span></label><input id="st" type="datetime-local" value={start} onChange={event => setStart(event.target.value)} required /><p className="v3b-help">Đổi giờ không gia hạn thời gian giữ chỗ.</p></div>
+        <div className="v3b-f"><label htmlFor="du">Thời lượng (phút) <span className="v3b-req">*</span></label><input id="du" type="number" min={1} step={1} value={duration} onChange={event => setDuration(Number(event.target.value))} required /></div>
+        <div className="v3b-f"><label htmlFor="gs">Số khách <span className="v3b-req">*</span></label><input id="gs" type="number" min={1} step={1} value={groupSize} onChange={event => setGroupSize(Number(event.target.value))} required /></div>
+      </div>
+    </section>
+    <section className="v3b-card">
+      <h2 className="v3b-h2">Giá đã thống nhất</h2>
+      <div className="v3b-f"><label htmlFor="pr">Tổng giá cho cả đoàn (₫) <span className="v3b-req">*</span></label><input id="pr" type="number" min={1} step="any" value={price} onChange={event => setPrice(Number(event.target.value))} required /></div>
+      {error && <p className="v3b-err" role="alert">{error}</p>}
+      <div className="v3b-actions">
+        <Link className="v3b-btn v3b-btn--s" href={backHref}>Huỷ</Link>
+        <button type="submit" className="v3b-btn v3b-btn--p" disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button>
+      </div>
+    </section>
   </form>
 }

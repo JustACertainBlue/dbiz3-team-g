@@ -22,3 +22,8 @@
 
 .v3b-per{margin:0;font-size:20px;line-height:32px;font-weight:700;font-variant-numeric:tabular-nums}
 .v3b-old{color:#B3261E}
+
+.v3b-st{display:flex;gap:10px;align-items:flex-start;padding:14px 16px;border:1.5px solid #E2DED2;border-radius:8px;cursor:pointer;min-width:180px;box-sizing:border-box}
+.v3b-st[data-on="true"]{border-color:#165235;background:#F0F8F2}
+.v3b-st input{width:20px;height:20px;accent-color:#165235;margin:2px 0 0}
+.v3b-st--off{opacity:.6;cursor:not-allowed;border-style:dashed}

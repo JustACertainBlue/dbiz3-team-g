@@ -1,24 +1,27 @@
-// DEV only: demo data for the profile-review flow (screens 18b/18c, 41, 41a).
+// DEV only: demo data for the profile-review flow (screens 18b/18c, 41, 41a) and two NEW demo admin accounts.
 //
-//   node scripts/db/dev-seed-pending-reviews.mjs                     dry run: writes, then ROLLBACK (default)
-//   node scripts/db/dev-seed-pending-reviews.mjs --apply             writes for real and saves an undo file
-//   node scripts/db/dev-seed-pending-reviews.mjs --undo <file>       deletes exactly the rows listed in an undo file
-//   add --reset-admin-passwords                                       also sets DEV_TEST_PASSWORD on every Active ADMIN account (HDT + UBND)
-//   add --no-seed                                                     with --reset-admin-passwords: only the reset, no demo rows
+// Run it from ~/Desktop/dbiz3-devload so every undo file lands in one place:
+//   cd ~/Desktop/dbiz3-devload && node ../dbiz3-admin/scripts/db/dev-seed-pending-reviews.mjs [flags]
+//
+//   (no flag)                     dry run: writes, then ROLLBACK (default)
+//   --apply                       writes for real and saves .demo-data/dev-seed-undo-<time>.json in the directory you ran it from
+//   --undo <file>                 deletes exactly the rows listed in an undo file (and the sessions of the users it deletes)
+//   --create-demo-admins          also creates two NEW admin accounts: one HDT (Sở Du lịch) and one UBND assigned to Bát Tràng
+//   --no-seed                     with --create-demo-admins: only the admins, no review demo rows
 //
 // Target check first: DATABASE_APP_URL must name the DEV Supabase project (jfrpnffknjpgmkyquxql); any other ref stops the run
-// before a connection is opened. The password comes from DEV_TEST_PASSWORD (same rule as the app), is hashed with bcrypt cost 12
-// like the registration code, and is never printed or written to a file. The undo file holds table names and primary keys only.
-// The password reset is NOT covered by --undo (the old hashes are not stored); the dry run lists the emails it would change.
-// All names, people and emails are fictional (@example.invalid). No migration, no schema change: the rows use the tables the
-// code reads (agency_registration_requests, registration_submission_versions, agency_profiles, provider_profiles, ...).
+// before a connection is opened. The password of every new account comes from DEV_TEST_PASSWORD (same rule as the app), is hashed
+// with bcrypt cost 12 like the registration code, never printed and never written to a file. The undo file holds table names
+// and primary keys only. The script never changes an existing account (no UPDATE anywhere). An admin account whose email
+// already exists is skipped, not duplicated. All names, people and emails are fictional (@example.invalid). No migration, no
+// schema change: only tables the code already reads.
 import { createHash, randomUUID } from 'node:crypto'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { projectRefFromDatabaseUrl } from './lecturer-accounts.mjs'
 import { SEED_HDT_APPROVER, meetsPasswordRule } from './test-accounts.mjs'
 
 export const DEV_PROJECT_REF = 'jfrpnffknjpgmkyquxql'
-export const ADMIN_RESET_EMAIL_NOTE = 'Active ADMIN accounts (HDT and UBND); Disabled ones are left alone.'
 
 /** Stops (throws) unless DATABASE_APP_URL names the DEV project. Returns the ref; never includes the URL in a message. */
 export function assertDevTarget(env) {
@@ -34,7 +37,7 @@ const KEYS = {
   user_accounts: ['user_id'], agency_registration_requests: ['registration_request_id'],
   registration_submission_versions: ['registration_request_id', 'version_no'], agency_profiles: ['agency_id'], stored_files: ['file_id'],
   registration_documents: ['registration_request_id', 'version_no', 'file_id'], agency_review_records: ['review_id'],
-  account_status_history: ['history_id'], provider_profiles: ['provider_id'], provider_profile_versions: ['provider_id', 'version_no'],
+  account_status_history: ['history_id'], ubnd_village_assignments: ['ubnd_user_id'], provider_profiles: ['provider_id'], provider_profile_versions: ['provider_id', 'version_no'],
 }
 export const SEEDED_TABLES = Object.keys(KEYS)
 
@@ -133,6 +136,34 @@ export function buildPendingReviewData({ now, passwordHash, hdtUserId, villages,
   return { ops, summary }
 }
 
+export const DEMO_ADMINS = {
+  hdt: { email: 'demo-hdt-so-du-lich@example.invalid', name: 'Hoàng Thị Lan (mẫu)', title: 'Chuyên viên Sở Du lịch (mẫu)', phone: '+84900000301', admin_type: 'HDT', label: 'Sở Du lịch (HDT)' },
+  ubnd: { email: 'demo-ubnd-bat-trang@example.invalid', name: 'Vũ Đức Minh (mẫu)', title: 'Cán bộ UBND xã Bát Tràng (mẫu)', phone: '+84900000302', admin_type: 'UBND', label: 'UBND xã Bát Tràng (UBND)' },
+}
+
+/** Which demo admins still have to be created, given the emails already in the database (case-insensitive). */
+export function demoAdminPlan(existingEmails) {
+  const have = new Set(existingEmails.map(email => String(email).toLowerCase()))
+  return { create: Object.keys(DEMO_ADMINS).filter(key => !have.has(DEMO_ADMINS[key].email)) }
+}
+
+/** Pure builder for the two demo admins; the UBND is assigned to `village` through ubnd_village_assignments. */
+export function buildDemoAdminData({ now, passwordHash, hdtUserId, village, newId = randomUUID, create = ['hdt', 'ubnd'] }) {
+  const ops = [], summary = []
+  const at = now.toISOString()
+  const add = (table, row) => { ops.push({ table, row, key: Object.fromEntries(KEYS[table].map(column => [column, row[column]])) }); return row }
+  for (const key of create) {
+    const d = DEMO_ADMINS[key]
+    const user = add('user_accounts', {
+      user_id: newId(), email: d.email, password_hash: passwordHash, role_code: 'ADMIN', admin_type: d.admin_type, account_status: 'Active', full_name: d.name,
+      title: d.title, phone: d.phone, avatar_file_id: null, must_change_password: false, password_changed_at: at, last_login: null, created_at: at, updated_at: at,
+    })
+    if (key === 'ubnd') add('ubnd_village_assignments', { ubnd_user_id: user.user_id, village_id: village.village_id, assigned_by: hdtUserId, assigned_at: at })
+    summary.push({ kind: 'admin', name: d.label, person: d.name, email: d.email, status: 'Active', village: key === 'ubnd' ? village.name : '' })
+  }
+  return { ops, summary }
+}
+
 /** Reverse-order deletes (table + primary key only) for an undo file. */
 export function undoOps(ops) { return [...ops].reverse().map(({ table, key }) => ({ table, key })) }
 
@@ -144,13 +175,6 @@ export function validateUndoFile(content) {
     if (!columns || Object.keys(op.key ?? {}).sort().join() !== [...columns].sort().join()) throw new Error(`Undo file lists an unexpected table or key (${String(op.table)}).`)
   }
   return content.ops
-}
-
-/** Active ADMIN accounts whose password the reset would change. Carries emails and ids, never hashes. */
-export function planAdminPasswordReset(accounts) {
-  const admins = accounts.filter(row => row.role_code === 'ADMIN')
-  const targets = admins.filter(row => row.account_status === 'Active').map(row => ({ user_id: row.user_id, email: row.email, admin_type: row.admin_type }))
-  return { targets, skipped: admins.length - targets.length }
 }
 
 // ---------------------------------------------------------------------------------------------------------------- CLI
@@ -170,11 +194,6 @@ const port = client => ({
     const entries = Object.entries(row)
     await client.query(`INSERT INTO public.${quote(table)} (${entries.map(([k]) => quote(k)).join(',')}) VALUES (${entries.map((_, i) => `$${i + 1}`).join(',')})`, entries.map(([, v]) => sqlValue(v)))
   },
-  async update(table, criteria, changes) {
-    if (!Object.keys(criteria).length) throw new Error('Unscoped updates are forbidden')
-    const entries = Object.entries(changes), filter = where(criteria, entries.length + 1)
-    return (await client.query(`UPDATE public.${quote(table)} SET ${entries.map(([k], i) => `${quote(k)}=$${i + 1}`).join(',')} WHERE ${filter.sql}`, [...entries.map(([, v]) => sqlValue(v)), ...filter.values])).rowCount
-  },
   async remove(table, criteria) {
     if (!Object.keys(criteria).length) throw new Error('Unscoped deletes are forbidden')
     const filter = where(criteria, 1)
@@ -183,17 +202,20 @@ const port = client => ({
 })
 
 async function main(argv) {
-  const flags = new Set(['--apply', '--undo', '--reset-admin-passwords', '--no-seed'])
+  const runDir = process.cwd() // undo files are written to, and --undo paths are resolved against, the directory the command was run from
+  const flags = new Set(['--apply', '--undo', '--create-demo-admins', '--no-seed'])
   const undoIndex = argv.indexOf('--undo')
   const undoFile = undoIndex >= 0 ? argv[undoIndex + 1] : null
   const unknown = argv.filter((arg, i) => !flags.has(arg) && !(undoIndex >= 0 && i === undoIndex + 1))
   if (unknown.length) throw new Error(`Unknown option(s): ${unknown.join(' ')}. Nothing was changed.`)
   if (undoIndex >= 0 && !undoFile) throw new Error('--undo needs a file. Nothing was changed.')
-  const apply = argv.includes('--apply'), reset = argv.includes('--reset-admin-passwords'), seed = !argv.includes('--no-seed')
-  if (undoFile && (apply || reset)) throw new Error('--undo cannot be combined with --apply or --reset-admin-passwords. Nothing was changed.')
-  if (!seed && !reset) throw new Error('--no-seed is only for --reset-admin-passwords. Nothing was changed.')
+  const apply = argv.includes('--apply'), admins = argv.includes('--create-demo-admins'), seed = !argv.includes('--no-seed')
+  if (undoFile && (apply || admins)) throw new Error('--undo cannot be combined with --apply or --create-demo-admins. Nothing was changed.')
+  if (!seed && !admins) throw new Error('--no-seed is only for --create-demo-admins. Nothing was changed.')
 
-  const { readFileSync, writeFileSync, mkdirSync, unlinkSync } = await import('node:fs')
+  const { mkdirSync, readFileSync, writeFileSync, unlinkSync } = await import('node:fs')
+  // The db helpers (env files, TLS certificate) expect the repository root as the working directory.
+  process.chdir(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..'))
   // Same env loading as the other db scripts (.env.local etc.), done before the target check so DATABASE_APP_URL is visible.
   const nextEnv = (await import('@next/env')).default
   nextEnv.loadEnvConfig(process.cwd())
@@ -219,44 +241,50 @@ async function main(argv) {
     // provider_profiles.current_version_no points at a version row that needs the profile first; those two FKs are DEFERRABLE.
     await client.query('SET CONSTRAINTS ALL DEFERRED')
     if (undoFile) {
-      const ops = validateUndoFile(JSON.parse(readFileSync(undoFile, 'utf8')))
+      const ops = validateUndoFile(JSON.parse(readFileSync(resolve(runDir, undoFile), 'utf8')))
+      // A demo user who logged in has session rows; they would block the delete of the account.
+      for (const op of ops) if (op.table === 'user_accounts') await db.remove('sessions', { user_id: op.key.user_id })
       let removed = 0
       for (const op of ops) removed += await db.remove(op.table, op.key) ?? 0
       console.log(`[dev-seed] undo: ${removed} of ${ops.length} rows deleted.`)
       await client.query('COMMIT'); return
     }
 
+    const hdt = (await db.findAll('user_accounts', { email: SEED_HDT_APPROVER }))[0]
+    if (!hdt) throw new Error(`Seed HDT ${SEED_HDT_APPROVER} not found; needed to record decisions and village assignments. Rolled back.`)
+    const allUsers = await db.findAll('user_accounts')
+    const emails = new Set(allUsers.map(user => String(user.email).toLowerCase()))
+    const ops = [], summary = []
+
     if (seed) {
-      const hdt = (await db.findAll('user_accounts', { email: SEED_HDT_APPROVER }))[0]
-      if (!hdt) throw new Error(`Seed HDT ${SEED_HDT_APPROVER} not found; cannot record the HDT decisions. Rolled back.`)
-      const villages = pickDemoVillages({ villages: await db.findAll('villages'), assignments: await db.findAll('ubnd_village_assignments'), users: await db.findAll('user_accounts') })
+      const villages = pickDemoVillages({ villages: await db.findAll('villages'), assignments: await db.findAll('ubnd_village_assignments'), users: allUsers })
       const data = buildPendingReviewData({ now: new Date(), passwordHash: hash, hdtUserId: hdt.user_id, villages })
-      for (const item of data.summary) {
-        if ((await db.findAll('user_accounts', { email: item.email })).length) throw new Error(`${item.email} already exists: the demo data was loaded before. Undo it first. Rolled back.`)
-      }
-      for (const op of data.ops) await db.insert(op.table, op.row)
-      console.log('[dev-seed] rows to create (fictional data):')
-      for (const item of data.summary) console.log(`  - ${item.kind === 'agency' ? 'Agency ' : 'Workshop'} | ${item.name} | ${item.person} | ${item.email} | ${item.status}${item.village ? ` | làng ${item.village}` : ''}`)
-      console.log(`[dev-seed] ${data.ops.length} rows in ${new Set(data.ops.map(op => op.table)).size} tables.`)
-      if (apply) {
-        mkdirSync('.demo-data', { recursive: true })
-        undoPath = `.demo-data/dev-seed-undo-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
-        writeFileSync(undoPath, JSON.stringify({ kind: 'dev-seed-pending-reviews', ref, created_at: new Date().toISOString(), ops: undoOps(data.ops) }, null, 1), { mode: 0o600 })
-      }
+      const present = data.summary.filter(item => emails.has(item.email))
+      if (present.length === data.summary.length) console.log('[dev-seed] review demo data is already loaded: skipped, not duplicated.')
+      else if (present.length) throw new Error(`${present[0].email} already exists but the set is incomplete. Undo the earlier load first. Rolled back.`)
+      else { ops.push(...data.ops); summary.push(...data.summary) }
     }
 
-    if (reset) {
-      const plan = planAdminPasswordReset(await db.findAll('user_accounts'))
-      const now = new Date().toISOString()
-      console.log(`[dev-seed] admin passwords to set (${ADMIN_RESET_EMAIL_NOTE}) skipped: ${plan.skipped}:`)
-      for (const target of plan.targets) {
-        console.log(`  - ${target.email} (${target.admin_type})`)
-        await db.update('user_accounts', { user_id: target.user_id }, { password_hash: hash, must_change_password: false, password_changed_at: now, updated_at: now })
-        await db.update('sessions', { user_id: target.user_id, revoked_at: null }, { revoked_at: now })
-      }
+    if (admins) {
+      const village = (await db.findAll('villages')).find(row => row.name === 'Bát Tràng' && (row.is_active === true || row.is_active === 'true'))
+      if (!village) throw new Error('Active village "Bát Tràng" not found. Rolled back.')
+      const plan = demoAdminPlan([...emails])
+      for (const key of Object.keys(DEMO_ADMINS)) if (!plan.create.includes(key)) console.log(`[dev-seed] ${DEMO_ADMINS[key].email} already exists: skipped, not duplicated.`)
+      const data = buildDemoAdminData({ now: new Date(), passwordHash: hash, hdtUserId: hdt.user_id, village: { village_id: village.village_id, name: village.name }, create: plan.create })
+      ops.push(...data.ops); summary.push(...data.summary)
     }
 
-    if (apply) { await client.query('COMMIT'); wrote = true; console.log(`[dev-seed] APPLIED.${undoPath ? ` Undo file: ${undoPath}` : ''}`) }
+    for (const op of ops) await db.insert(op.table, op.row)
+    console.log('[dev-seed] rows to create (fictional data):')
+    for (const item of summary) console.log(`  - ${item.kind === 'agency' ? 'Agency ' : item.kind === 'workshop' ? 'Workshop' : 'Admin   '} | ${item.name} | ${item.person} | ${item.email} | ${item.status}${item.village ? ` | làng ${item.village}` : ''}`)
+    console.log(`[dev-seed] ${ops.length} rows in ${new Set(ops.map(op => op.table)).size} tables.`)
+    if (apply && ops.length) {
+      mkdirSync(join(runDir, '.demo-data'), { recursive: true }) // git-ignored folder, so undo files never show up as untracked
+      undoPath = join(runDir, '.demo-data', `dev-seed-undo-${new Date().toISOString().replace(/[:.]/g, '-')}.json`)
+      writeFileSync(undoPath, JSON.stringify({ kind: 'dev-seed-pending-reviews', ref, created_at: new Date().toISOString(), ops: undoOps(ops) }, null, 1), { mode: 0o600 })
+    }
+
+    if (apply) { await client.query('COMMIT'); wrote = true; console.log(`[dev-seed] APPLIED.${undoPath ? ` Undo file: ${undoPath}` : ' Nothing new to write.'}`) }
     else { await client.query('ROLLBACK'); console.log('[dev-seed] dry run finished: everything was rolled back, nothing was written.') }
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined)

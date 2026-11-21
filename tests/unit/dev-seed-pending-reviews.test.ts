@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  DEV_PROJECT_REF, ADMIN_RESET_EMAIL_NOTE, assertDevTarget, buildPendingReviewData, pickDemoVillages, planAdminPasswordReset, undoOps,
+  DEV_PROJECT_REF, assertDevTarget, buildDemoAdminData, buildPendingReviewData, demoAdminPlan, pickDemoVillages, undoOps, validateUndoFile,
 } from '../../scripts/db/dev-seed-pending-reviews.mjs'
 import { demoRepository } from '../../src/lib/demo/json-repository'
 import { demoSessionContextFor } from '../../src/lib/auth/session'
@@ -162,18 +162,66 @@ describe('pickDemoVillages', () => {
   })
 })
 
-describe('planAdminPasswordReset', () => {
-  it('lists Active ADMIN accounts (HDT and UBND) by email, skips Disabled and other roles, carries no hash', () => {
-    const plan = planAdminPasswordReset([
-      { user_id: '1', email: 'a@example.invalid', role_code: 'ADMIN', admin_type: 'HDT', account_status: 'Active', password_hash: 'secret-hash-1' },
-      { user_id: '2', email: 'b@example.invalid', role_code: 'ADMIN', admin_type: 'UBND', account_status: 'Active', password_hash: 'secret-hash-2' },
-      { user_id: '3', email: 'c@example.invalid', role_code: 'ADMIN', admin_type: 'UBND', account_status: 'Disabled', password_hash: 'x' },
-      { user_id: '4', email: 'd@example.invalid', role_code: 'Tour_Agency', admin_type: null, account_status: 'Approved', password_hash: 'x' },
-    ])
-    expect(plan.targets.map((t: any) => t.email)).toEqual(['a@example.invalid', 'b@example.invalid'])
-    expect(plan.skipped).toBe(1)
-    expect(JSON.stringify(plan)).not.toContain('secret-hash')
-    expect(typeof ADMIN_RESET_EMAIL_NOTE).toBe('string')
+describe('the script no longer touches existing accounts', () => {
+  const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
+  it('has no admin password reset', () => {
+    expect(source).not.toContain('reset-admin-passwords')
+    expect(source).not.toContain('planAdminPasswordReset')
+    expect(source).not.toMatch(/UPDATE public\./)
+    expect(source).not.toMatch(/db\.update\(/)
+  })
+})
+
+describe('buildDemoAdminData (--create-demo-admins)', () => {
+  const village = { village_id: 'v-bt', name: 'Bát Tràng' }
+  let n = 0
+  const data = buildDemoAdminData({ now: NOW, passwordHash: HASH, hdtUserId: 'hdt-1', village, newId: () => `20000000-0000-4000-8000-${String(++n).padStart(12, '0')}` })
+  it('one HDT of the Sở Du lịch and one UBND, both fictional, Active, with the caller\'s hash and no forced change', () => {
+    const users = data.ops.filter((op: any) => op.table === 'user_accounts').map((op: any) => op.row)
+    expect(users.map((u: any) => [u.role_code, u.admin_type, u.account_status])).toEqual([['ADMIN', 'HDT', 'Active'], ['ADMIN', 'UBND', 'Active']])
+    for (const u of users) { expect(u.email).toMatch(/^demo-[a-z-]+@example\.invalid$/); expect(u.password_hash).toBe(HASH); expect(u.must_change_password).toBe(false); expect(u.full_name).toContain('(mẫu)') }
+    expect(JSON.stringify(data)).not.toContain(PASSWORD)
+    expect(data.summary.map((s: any) => s.email)).toEqual(['demo-hdt-so-du-lich@example.invalid', 'demo-ubnd-bat-trang@example.invalid'])
+  })
+  it('the UBND is assigned to the village through ubnd_village_assignments, by the seed HDT, inserted after its user', () => {
+    const ops = data.ops as any[]
+    const user = ops.find(op => op.table === 'user_accounts' && op.row.admin_type === 'UBND')
+    const index = ops.findIndex(op => op.table === 'ubnd_village_assignments')
+    expect(index).toBeGreaterThan(ops.indexOf(user))
+    expect(ops[index].row).toMatchObject({ ubnd_user_id: user.row.user_id, village_id: 'v-bt', assigned_by: 'hdt-1' })
+    expect(ops[index].key).toEqual({ ubnd_user_id: user.row.user_id })
+    expect(ops).toHaveLength(3)
+  })
+  it('undo of the admins is valid for validateUndoFile', () => {
+    const file = { kind: 'dev-seed-pending-reviews', ref: DEV_PROJECT_REF, ops: undoOps(data.ops) }
+    expect(validateUndoFile(file)).toHaveLength(3)
+  })
+})
+
+describe('demoAdminPlan: no duplicates', () => {
+  it('creates only the admins whose email does not exist yet', () => {
+    expect(demoAdminPlan([]).create).toEqual(['hdt', 'ubnd'])
+    expect(demoAdminPlan(['demo-hdt-so-du-lich@example.invalid']).create).toEqual(['ubnd'])
+    expect(demoAdminPlan(['DEMO-UBND-BAT-TRANG@example.invalid', 'demo-hdt-so-du-lich@example.invalid']).create).toEqual([])
+  })
+  it('buildDemoAdminData builds only what the plan asks for', () => {
+    const only = buildDemoAdminData({ now: NOW, passwordHash: HASH, hdtUserId: 'hdt-1', village: { village_id: 'v-bt', name: 'Bát Tràng' }, create: ['hdt'] })
+    expect(only.ops.map((op: any) => op.table)).toEqual(['user_accounts'])
+    expect(buildDemoAdminData({ now: NOW, passwordHash: HASH, hdtUserId: 'hdt-1', village: { village_id: 'v-bt', name: 'Bát Tràng' }, create: [] }).ops).toEqual([])
+  })
+})
+
+describe('where files go and how undo behaves', () => {
+  const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
+  it('the undo file goes to the directory the command was run from, resolved before the script changes to the repository root', () => {
+    expect(source).toContain('const runDir = process.cwd()')
+    expect(source.indexOf('const runDir = process.cwd()')).toBeLessThan(source.indexOf('process.chdir('))
+    expect(source).toContain("join(runDir, '.demo-data', `dev-seed-undo-")
+    expect(source).toContain('resolve(runDir, undoFile)')
+  })
+  it('undo removes the sessions of the users it deletes first (login rows would block the delete)', () => {
+    expect(source.indexOf("db.remove('sessions'")).toBeGreaterThan(-1)
+    expect(source.indexOf("db.remove('sessions'")).toBeLessThan(source.indexOf('removed += await db.remove(op.table, op.key)'))
   })
 })
 
@@ -214,5 +262,18 @@ describe('the built data shows up on the review screens (fixture repository, rea
       expect(row).toMatchObject({ processed: false, canDecide: true })
       expect(queue.some(r => r.kind !== 'workshop')).toBe(false)
     }
+  })
+  it('the demo UBND of Bát Tràng sees the Bát Tràng workshop waiting and can decide it', async () => {
+    const { data, villages } = await seed()
+    const batTrang = repo().find('villages', r => r.name === 'Bát Tràng')!
+    const hdt = repo().find('user_accounts', r => r.email === 'thanhvien9@example.invalid')!
+    const admins = buildDemoAdminData({ now: new Date(), passwordHash: HASH, hdtUserId: hdt.user_id, village: { village_id: batTrang.village_id, name: batTrang.name }, newId: () => crypto.randomUUID() })
+    for (const op of admins.ops as any[]) repo().insert(op.table, Object.fromEntries(Object.entries(op.row).map(([k, v]) => [k, asFixture(v)])))
+    const ubnd = (admins.ops as any[]).find(op => op.table === 'user_accounts' && op.row.admin_type === 'UBND').row
+    const session = { authenticated: true, userId: ubnd.user_id, role: 'ADMIN', adminType: 'UBND', agencyId: null, providerId: null, assignedVillageId: batTrang.village_id, permissions: ['manage_users'], dataScope: null } as unknown as SessionContext
+    const { rows: queue } = await loadReviewQueue(session)
+    const workshop = data.summary.find((s: any) => s.kind === 'workshop' && s.village_id === batTrang.village_id)
+    if (workshop) expect(queue.find(r => r.name === workshop.name)).toMatchObject({ processed: false, canDecide: true })
+    else expect(villages.some((v: any) => v.village_id === batTrang.village_id)).toBe(false) // Bát Tràng not among the two picked in this fixture
   })
 })

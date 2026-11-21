@@ -72,3 +72,8 @@
   tests/integration/multi-turn-api.test.ts:54 (`silk weaving` → `Dệt lụa`); tests/unit/ai-matching-view.test.ts (understoodChips input `craft_preference: 'pottery'`, expected `Gốm sứ`).
   New tests: recommendations.test.ts "explanation wording (screen 22)", ai-matching-view.test.ts craft chip, ait-matching-card-data.test.ts `craftDisplay`, ai-matching-layout.test.ts.
 - The "Still English" note of Round 5 (craft label in the explanation) is resolved by item 4.
+
+## Round 7: security check
+- Forms: both composer forms of screen 22 now have `method="post"` (before: no method → a submit before hydration would GET `/ai-matching`). The inputs have no `name`, so no data could reach a URL either way. No other `<form>` in the screen.
+- Temporary-password sessions: no new API route was added; `/api/ait/matching` uses `sessionContextFromRequest`, which turns a `must_change_password` session into a Guest for every path except change-password/session/logout → 401, no recommendations or prices. The screen layout uses `currentServerSession` (same function, path `/internal/session`) → Guest → redirect to `/login`.
+- Tests: tests/unit/ai-matching-security.test.ts (forms POST; matching 401 and layout Guest for a must-change session, with a normal-session control).

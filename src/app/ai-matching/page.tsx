@@ -217,7 +217,7 @@ export default function AiMatchingScreen() {
         {isNew ? (
         <div className="aim__col aim__empty">
           <h1 className="aim__hello"><Sparkles aria-hidden="true" />Chào {agencyName || 'bạn'}, đoàn tiếp theo cần gì?</h1>
-          <form className="aim__comp" onSubmit={e => { e.preventDefault(); handleSendMessage() }}>
+          <form className="aim__comp" method="post" onSubmit={e => { e.preventDefault(); handleSendMessage() }}>
             <label className="v3-sr" htmlFor="matching-prompt-input">Tin nhắn cho Ghép tour AI</label>
             <textarea
               id="matching-prompt-input"
@@ -364,6 +364,7 @@ export default function AiMatchingScreen() {
         <div className="aim__col aim__dock">
           <form
             className="aim__comp"
+            method="post"
             onSubmit={e => {
               e.preventDefault()
               handleSendMessage()

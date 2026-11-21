@@ -4,7 +4,7 @@ import { demoRepository } from '@/lib/db/application-store'
 import { agencyReviews } from '@/lib/auth/agency-review'
 import { adminProviderQueue } from '@/lib/prf/provider-review-view'
 import { hanoiDate } from '@/lib/time/hanoi-time'
-import { loadAgencies, loadBookings, loadChatSessions, loadProviders } from '@/lib/db/seed-loader'
+import { loadAgencies, loadBookings, loadBookingStatusHistory, loadChatSessions, loadProviders } from '@/lib/db/seed-loader'
 import { providerReviewState } from '@/lib/prf/provider-review-view'
 import type { SessionContext } from '@/lib/auth/session'
 import { buildOverview } from './v3-overview'
@@ -40,8 +40,8 @@ export function resolveRange(today: string, from?: string, to?: string) {
 export async function loadOverview(session: SessionContext, from: string, to: string) {
   const scope = adminScope(session)
   if (!scope) throw new Error('FORBIDDEN')
-  const [bookings, chats, agencies, providers, versions] = await Promise.all([
-    loadBookings(), loadChatSessions(), loadAgencies(), loadProviders(), demoRepository().all('provider_profile_versions'),
+  const [bookings, chats, agencies, providers, versions, history] = await Promise.all([
+    loadBookings(), loadChatSessions(), loadAgencies(), loadProviders(), demoRepository().all('provider_profile_versions'), loadBookingStatusHistory(),
   ])
   const providerRows = await demoRepository().all('provider_profiles')
   return buildOverview({
@@ -51,7 +51,7 @@ export async function loadOverview(session: SessionContext, from: string, to: st
       review_status: providerReviewState(providerRows.find(r => r.provider_id === p.provider_id) ?? {}, versions).review_status,
     })),
     agencies: agencies.map(a => ({ agency_id: a.agency_id, company_name: a.company_name, account_status: a.account_status })),
-    bookings, chats,
+    bookings, chats, history,
   })
 }
 

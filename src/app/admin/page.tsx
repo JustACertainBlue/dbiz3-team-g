@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic'
 const COLORS: Record<OverviewStatus, string> = { Completed: '#165235', Booked: '#86C49A', 'On hold': '#E0928A', Cancelled: '#C9C4B5' }
 const NAMES: Record<OverviewStatus, string> = { Completed: 'Hoàn thành tour', Booked: 'Đã thanh toán', 'On hold': 'Chờ thanh toán', Cancelled: 'Đã huỷ' }
 const vi = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`
+const vnd = (n: number) => `${n.toLocaleString('vi-VN')} đ`
 const monthsBetween = (from: string, to: string) => (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5, 7)) - Number(from.slice(5, 7)) + 1
 
 export default async function AdminOverviewPage({ searchParams }: { searchParams: { from?: string; to?: string } }) {
@@ -69,7 +70,8 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
       <Rank title="5 Công ty lữ hành đặt nhiều nhất" rows={o.topAgencies} />
     </div>
 
-    <section className="av3-card av3-sect" aria-labelledby="av3-need" style={{ marginTop: 16 }}>
+    <div className="av3-row2 av3-row2--need">
+    <section className="av3-card" aria-labelledby="av3-need">
       <div className="av3-head"><h2 id="av3-need">Hồ sơ cần bạn xem</h2><Link href={reviewHref} className="av3-ul">Tất cả ›</Link></div>
       {pending.length === 0 ? <p className="av3-empty">Không có hồ sơ nào đang chờ.</p> : pending.map(r => <div className="av3-need" key={r.key}>
         <StatusPill tone="warn">{r.kindLabel}</StatusPill>
@@ -77,6 +79,12 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         <Link href={r.href} className="av3-ul">Xem chi tiết</Link>
       </div>)}
     </section>
+      <section className="av3-card" aria-labelledby="av3-tx"><h2 id="av3-tx">Giao dịch T{o.transactions.month}/{o.transactions.year}</h2>
+        <p className="av3-cap" style={{ marginTop: 6 }}>Chỉ hiện số tổng, không hiện giao dịch hay số tài khoản.</p>
+        <div className="av3-need" style={{ marginTop: 14, justifyContent: 'space-between' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}><i className="av3-sw" style={{ background: '#2B663C', borderRadius: '50%' }} />Đã nhận tiền</span><b>{o.transactions.count}</b></div>
+        <div className="av3-total"><b className="av3-total__label">Tổng giao dịch T{o.transactions.month}/{o.transactions.year}</b><span className="av3-total__value">{vnd(o.transactions.total)}</span></div>
+      </section>
+    </div>
   </Container>
 }
 

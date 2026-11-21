@@ -12,8 +12,9 @@ const agencies = [
   { agency_id: 'a2', company_name: 'Công ty 2', account_status: 'Pending Approval' },
   { agency_id: 'a3', company_name: 'Công ty 3', account_status: 'Approved' },
 ]
-const b = (id: string, provider_id: string, agency_id: string, status: string, created_at: string, group_size = 10, chat?: string) =>
-  ({ booking_id: id, provider_id, agency_id, status, created_at, group_size, source_chat_session_id: chat })
+const b = (id: string, provider_id: string, agency_id: string, status: string, created_at: string, group_size = 10, chat?: string, price = 1_000_000) =>
+  ({ booking_id: id, provider_id, agency_id, status, created_at, group_size, source_chat_session_id: chat, agreed_price_total: price })
+const h = (booking_id: string, to_status: string, changed_at: string) => ({ booking_id, to_status, changed_at })
 const input = (over: Partial<OverviewInput> = {}): OverviewInput => ({
   villageId: null, from: '2026-09-01', to: '2026-11-15', today: '2026-11-15',
   providers, agencies,
@@ -30,6 +31,7 @@ const input = (over: Partial<OverviewInput> = {}): OverviewInput => ({
     { chat_session_id: 'c3', agency_id: 'a3', provider_id: 'p2', created_at: '2026-11-01T03:00:00Z' },
     { chat_session_id: 'c4', agency_id: 'a3', provider_id: 'p2', created_at: '2026-07-01T03:00:00Z' }, // outside
   ],
+  history: [],
   ...over,
 })
 
@@ -89,5 +91,43 @@ describe('buildOverview', () => {
     const late = b('b9', 'p1', 'a1', 'Booked', '2026-11-15T18:00:00Z') // 16/11 01:00 Hanoi
     const o = buildOverview(input({ bookings: [late] }))
     expect(o.monthly.reduce((n, m) => n + m.total, 0)).toBe(0)
+  })
+})
+
+describe('buildOverview transactions (card "Giao dịch T11")', () => {
+  const bookings = [
+    b('t1', 'p1', 'a1', 'Booked', '2026-10-20T03:00:00Z', 4, undefined, 2_000_000),
+    b('t2', 'p1', 'a1', 'Booked', '2026-10-25T03:00:00Z', 4, undefined, 3_500_000),
+    b('t3', 'p2', 'a3', 'Booked', '2026-10-26T03:00:00Z', 4, undefined, 4_000_000),
+    b('t4', 'p1', 'a1', 'On hold', '2026-11-05T03:00:00Z', 4, undefined, 9_000_000),
+    b('t5', 'p1', 'a1', 'Completed', '2026-10-01T03:00:00Z', 4, undefined, 7_000_000),
+    b('t6', 'p1', 'a1', 'Booked', '2026-10-02T03:00:00Z', 4, undefined, 1_000_000),
+  ]
+  const history = [
+    h('t1', 'Booked', '2026-11-03T03:00:00Z'), h('t2', 'Booked', '2026-11-10T03:00:00Z'), h('t3', 'Booked', '2026-11-12T03:00:00Z'),
+    h('t4', 'On hold', '2026-11-05T03:00:00Z'), h('t5', 'Booked', '2026-11-04T03:00:00Z'), h('t6', 'Booked', '2026-10-30T03:00:00Z'),
+  ]
+  it('counts bookings now Booked whose move to Booked is in the selected month, and adds the agreed price', () => {
+    const o = buildOverview(input({ bookings, history, to: '2026-11-15' }))
+    expect(o.transactions).toEqual({ year: 2026, month: 11, count: 3, total: 9_500_000 })
+  })
+  it('the month is the one of the end date', () => {
+    const o = buildOverview(input({ bookings, history, from: '2026-06-01', to: '2026-10-31' }))
+    expect(o.transactions).toMatchObject({ month: 10, count: 1, total: 1_000_000 })
+  })
+  it('uses the latest move to Booked (a re-booked booking counts once, by its last date)', () => {
+    const twice = [...history, h('t6', 'Booked', '2026-11-08T03:00:00Z')]
+    expect(buildOverview(input({ bookings, history: twice })).transactions).toMatchObject({ count: 4, total: 10_500_000 })
+  })
+  it('UBND scope counts only its village', () => {
+    const o = buildOverview(input({ bookings, history, villageId: 'v1' }))
+    expect(o.transactions).toMatchObject({ count: 2, total: 5_500_000 })
+  })
+  it('a Hanoi date decides the month (UTC 31/10 18:00 is 1/11 in Hanoi)', () => {
+    const o = buildOverview(input({ bookings: [bookings[0]], history: [h('t1', 'Booked', '2026-10-31T18:00:00Z')] }))
+    expect(o.transactions.count).toBe(1)
+  })
+  it('no bookings: zero count and zero total', () => {
+    expect(buildOverview(input()).transactions).toMatchObject({ count: 0, total: 0 })
   })
 })

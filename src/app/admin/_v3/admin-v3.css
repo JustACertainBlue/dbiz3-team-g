@@ -16,6 +16,7 @@
 .av3-stack { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
 .av3-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
 .av3-row2--wide { grid-template-columns: 1.45fr 1fr; }
+.av3-row2--need { grid-template-columns: 1.6fr 1fr; align-items: start; margin-top: 32px; }
 .av3-ul { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; padding: 10px 0; }
 
 /* 38 overview */
@@ -55,6 +56,10 @@
 .av3-need .hab-pill { width: 180px; flex: none; justify-content: center; box-sizing: border-box; }
 .av3-need__main { flex: 1 1 200px; }
 .av3-need__main b { display: block; }
+
+.av3-total { margin-top: 16px; padding: 14px 16px; border: 1px solid #B9DCC5; border-radius: 8px; background: var(--c-surface-green); }
+.av3-total__label { display: block; font-size: 16px; line-height: 24px; color: var(--c-primary-dark); }
+.av3-total__value { display: block; font: 700 30px/38px var(--font-body); color: var(--c-primary-dark); font-variant-numeric: tabular-nums; }
 
 /* 39 account list */
 .av3-filters { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
@@ -112,7 +117,7 @@
 .av3-focus:focus-visible, .av3 input:focus-visible, .av3 textarea:focus-visible { outline: 3px solid var(--c-primary); outline-offset: 2px; }
 
 @media (max-width: 900px) {
-  .av3-row2, .av3-row2--wide { grid-template-columns: 1fr; }
+  .av3-row2, .av3-row2--wide, .av3-row2--need { grid-template-columns: 1fr; }
   .av3-filters { grid-template-columns: 1fr 1fr; }
   .av3-decs, .av3-decs--2 { grid-template-columns: 1fr; }
   .av3-gallery { grid-template-columns: 1fr 1fr; }

@@ -8,7 +8,8 @@ export const STATUS_ORDER: OverviewStatus[] = ['Completed', 'Booked', 'On hold',
 
 export interface OverviewProvider { provider_id: string; business_name: string; village_id: string; account_status: string; review_status: string }
 export interface OverviewAgency { agency_id: string; company_name: string; account_status: string }
-export interface OverviewBooking { booking_id: string; provider_id: string; agency_id: string; status: string; created_at: string; group_size: number; source_chat_session_id?: string }
+export interface OverviewBooking { booking_id: string; provider_id: string; agency_id: string; status: string; created_at: string; group_size: number; source_chat_session_id?: string; agreed_price_total: number }
+export interface OverviewStatusChange { booking_id: string; to_status: string; changed_at: string }
 export interface OverviewChat { chat_session_id: string; agency_id: string; provider_id: string; created_at: string }
 
 export interface OverviewInput {
@@ -22,6 +23,7 @@ export interface OverviewInput {
   agencies: OverviewAgency[]
   bookings: OverviewBooking[]
   chats: OverviewChat[]
+  history: OverviewStatusChange[]
 }
 
 export interface MonthBucket { key: string; label: string }
@@ -92,6 +94,17 @@ export function buildOverview(input: OverviewInput) {
     if (a) { const r = byAgency.get(a.agency_id) ?? { id: a.agency_id, name: a.company_name, bookings: 0, guests: 0 }; r.bookings++; r.guests += b.group_size; byAgency.set(a.agency_id, r) }
   }
 
+  // Card "Giao dịch T<m>/<year>": bookings now Booked whose latest move to Booked falls in the month of the end date.
+  const txMonth = to.slice(0, 7)
+  const bookedAt = new Map<string, string>()
+  for (const change of input.history) {
+    if (change.to_status !== 'Booked') continue
+    const day = hanoiDate(change.changed_at)
+    if (day && day > (bookedAt.get(change.booking_id) ?? '')) bookedAt.set(change.booking_id, day)
+  }
+  const paidInMonth = bookingsAll.filter(b => b.status === 'Booked' && (bookedAt.get(b.booking_id) ?? '').slice(0, 7) === txMonth)
+  const transactions = { year: Number(txMonth.slice(0, 4)), month: Number(txMonth.slice(5, 7)), count: paidInMonth.length, total: paidInMonth.reduce((sum, b) => sum + b.agreed_price_total, 0) }
+
   const month = today.slice(0, 7)
   return {
     cards: {
@@ -106,6 +119,7 @@ export function buildOverview(input: OverviewInput) {
     },
     monthly,
     funnel,
+    transactions,
     topProviders: top(byProvider),
     topAgencies: top(byAgency),
   }

@@ -7,6 +7,10 @@ import { canViewAgencyBooking } from '@/lib/booking/booking-access'
 import { getBookingDetail } from '@/lib/booking/booking-detail'
 import { bookingView } from '@/lib/booking/booking-view'
 import BookerForm from './BookerForm'
+import ExperienceCard from './ExperienceCard'
+import { resolveViewer } from '@/lib/explore/catalog'
+import { detailView } from '@/lib/explore/v3-detail'
+import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import './agency-booking-v3.css'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +34,9 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
   const version = provider && await repository.find('provider_profile_versions', row => row.provider_id === provider.provider_id && row.version_no === provider.published_version_no)
   const agency = await repository.find('agency_profiles', row => row.agency_id === booking.agency_id)
   const user = agency && await repository.find('user_accounts', row => row.user_id === agency.user_id)
+  // Same view model as screen 04 (image, workshop line, tags); null when the experience is no longer listed.
+  const seed = await loadExploreRuntime()
+  const card = detailView(seed, booking.experience_id, resolveViewer(seed, params.agencyId, true), { date: '', guests: null }, [], false)
   const view = bookingView({ booking, experience, providerName: version?.business_name ?? '', agencyName: agency?.company_name ?? '', now: new Date() })
   const history = (await repository.all('booking_status_history')).filter(row => row.booking_id === booking.booking_id).sort((a, b) => Date.parse(b.changed_at) - Date.parse(a.changed_at))
   const cancelled = history.find(row => row.to_status === 'Cancelled')
@@ -47,10 +54,8 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
     {view.status === 'Cancelled' && <div className="v3a-banner v3a-banner--x" role="status" style={{ margin: '20px 0' }}><b>Đặt chỗ đã huỷ</b><p className="v3a-sm">Lý do: {cancelled?.reason || '—'}</p></div>}
     <div className="v3a-grid">
       <aside className="v3a-left">
-        <div className="v3a-card">
-          <p className="v3a-name">{view.experienceName}</p>
-          <p className="v3a-sm">{view.providerName}{view.address && <><br />{view.address}</>}</p>
-        </div>
+        <ExperienceCard name={view.experienceName} image={card?.images[0] ?? null} providerLine={card?.providerLine ?? view.providerName}
+          address={view.address} tags={card?.highlights.map(item => item.title).slice(0, 4) ?? []} />
         <div className="v3a-card">
           <p className="v3a-ct">Chi tiết đặt chỗ của bạn</p>
           <p className="v3a-lbl">Ngày đến</p><p className="v3a-val">{view.dateLong}</p>

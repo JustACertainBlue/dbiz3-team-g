@@ -40,3 +40,10 @@
 .v3a-btn--d{background:#fff;color:#8A3A22;box-shadow:inset 0 0 0 1.5px #8A3A22}
 .v3a-err{margin:0;color:#B3261E}.v3a-ok{margin:0;color:#1F6641;font-weight:700}
 .v3a-row{display:flex;gap:10px;font-size:16px;line-height:23px;margin:0 0 8px}
+.v3a-xcard{padding:0;overflow:hidden}
+.v3a-photo{aspect-ratio:16/9;background:#F0EDE4;overflow:hidden}
+.v3a-photo .v3-cover{display:block;width:100%;height:100%;object-fit:cover}
+.v3a-photo .v3-cover--empty{display:block}
+.v3a-xbody{padding:20px 22px;display:flex;flex-direction:column;gap:6px}
+.v3a-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.v3a-tag{display:inline-flex;padding:4px 9px;border:1px solid #9AA39E;border-radius:4px;font-size:14px;line-height:20px;background:#fff}

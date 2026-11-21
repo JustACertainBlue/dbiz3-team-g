@@ -85,8 +85,6 @@ export interface DetailView {
   highlights: Highlight[]; maxGuests: number; durationText: string
   group: { guests: number | null; dateText: string; perGuest: string[]; guide: boolean; cancel: string; price: PriceView }
   about: Array<{ lead: string; text: string }>; suitableFor: string[]; halfDay: { lines: string[]; extras: string[] } | null
-  /** The "Hoàn hảo cho…" box: title = experiences.group_note (trimmed); null when the note is blank. */
-  perfect: { title: string; lines: string[]; extras: string[] } | null
   includes: InfoGroup[]; policies: Array<{ title: string; rows: Array<{ when?: string; what: string }> }>
   faq: Array<{ q: string; a: string }>; payments: boolean
 }
@@ -104,11 +102,6 @@ export function detailView(seed: ExploreSeed, id: string, viewer: Viewer, query:
   const cancel = cancellationRows(experience.cancellation_policy ?? '')
   const suitableFor = parseStringList(experience.suitable_for)
   const opening = openingLine(seed, provider.provider_id)
-  const groupNote = (experience.group_note ?? '').trim()
-  const perfectBody = {
-    lines: [`${durationLabel(minutes)} tại xưởng, đoàn vẫn kịp ghép thêm một điểm tham quan`, ...(opening ? [opening] : [])],
-    extras: [...(inclusions?.take_home ? ['Sản phẩm mang về cho từng khách'] : []), ...(inclusions?.included ?? [])].slice(0, 2),
-  }
   const km = parseDistance(village.distance_km)
   const craft = rowCraft(version.craft_type, village)
   const dateText = query.date ? `${WEEKDAY_LONG[isoWeekday(query.date)]} ${query.date.slice(8, 10)}/${query.date.slice(5, 7)}` : ''
@@ -153,8 +146,10 @@ export function detailView(seed: ExploreSeed, id: string, viewer: Viewer, query:
     group: { guests: query.guests, dateText, perGuest: inclusions?.per_guest ?? [], guide: Boolean(inclusions?.included.length), cancel: cancel[0]?.short ?? '',
       price: priceFor(seed, experience, query.guests, isAgency) },
     about: aboutParagraphs(experience.description ?? ''), suitableFor,
-    halfDay: suitableFor.includes('Tour nửa ngày') ? perfectBody : null,
-    perfect: groupNote ? { title: groupNote, ...perfectBody } : null,
+    halfDay: suitableFor.includes('Tour nửa ngày') ? {
+      lines: [`${durationLabel(minutes)} tại xưởng, đoàn vẫn kịp ghép thêm một điểm tham quan`, ...(opening ? [opening] : [])],
+      extras: [...(inclusions?.take_home ? ['Sản phẩm mang về cho từng khách'] : []), ...(inclusions?.included ?? [])].slice(0, 2),
+    } : null,
     includes, policies, faq, payments,
   }
 }

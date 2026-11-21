@@ -116,10 +116,10 @@ export default async function ExperienceEntry({ params, searchParams }: { params
           {view.about.length > 0 && <div className="v3d-stack"><h2 className="v3-h2">Về trải nghiệm này</h2>{view.about.map((item, index) => <p key={index} className="v3d-lead">{item.lead && <b>{item.lead}</b>}{item.text}</p>)}</div>}
           {view.suitableFor.length > 0 && <div><h2 className="v3-h3 v3d-mb">Rất hợp cho đoàn của bạn</h2><div className="v3d-gchips">{view.suitableFor.map(term => <span key={term} className="v3d-gchip"><Check aria-hidden="true" />{term}</span>)}</div></div>}
         </div>
-        {view.perfect && <aside className="v3d-about__side"><div className="v3d-perfect">
-          <p className="v3d-perfect__t">{view.perfect.title}</p>
-          {view.perfect.lines.map(line => <div key={line} className="v3d-perfect__i"><Clock aria-hidden="true" /><span>{line}</span></div>)}
-          {view.perfect.extras.length > 0 && <><p className="v3d-perfect__t v3d-perfect__t--sm">Có thêm:</p>{view.perfect.extras.map(line => <div key={line} className="v3d-perfect__i"><Check aria-hidden="true" /><span>{line}</span></div>)}</>}
+        {view.halfDay && <aside className="v3d-about__side"><div className="v3d-perfect">
+          <p className="v3d-perfect__t">Hoàn hảo cho tour nửa ngày!</p>
+          {view.halfDay.lines.map(line => <div key={line} className="v3d-perfect__i"><Clock aria-hidden="true" /><span>{line}</span></div>)}
+          {view.halfDay.extras.length > 0 && <><p className="v3d-perfect__t v3d-perfect__t--sm">Có thêm:</p>{view.halfDay.extras.map(line => <div key={line} className="v3d-perfect__i"><Check aria-hidden="true" /><span>{line}</span></div>)}</>}
           <a className="hab-btn hab-btn--primary" href="#lich">Chọn ngày</a>
         </div></aside>}
       </div>

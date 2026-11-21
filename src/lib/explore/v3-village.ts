@@ -9,6 +9,7 @@ import { experienceImages, mainCraft, placeLine, villageImage } from './v3-home'
 import { resultView, type ResultView } from './v3-search'
 import { SUITABLE_FOR, craftLabel, parseDistance, parseHighlights, parseStringList, parseTourDetail, parseVisitNotes, type TourDetail } from './vocabulary'
 import { initials } from '../../app/components/nav/nav-model'
+import { uniqueImages, type ImageRef } from '../prf/media-urls'
 
 export { villageImage }
 
@@ -31,7 +32,7 @@ const distanceText = (value: unknown) => {
 
 export interface VillageCard {
   village_id: string; name: string; craft: string; craftKey: string; area: string
-  providers: number; experiences: number; distance: string; image: string
+  providers: number; experiences: number; distance: string; image: ImageRef
 }
 
 /** Cards of 03a: active villages with live experiences and an image, most workshops first. */
@@ -82,7 +83,7 @@ export interface VillageHighlight { title: string; sub: string; counter: boolean
 export interface VillageProvider { id: string; name: string; initials: string; owner: string; line: string; firstExperienceId: string }
 export interface VillageNote { key: string; label: string; text: string }
 export interface VillageView {
-  id: string; name: string; eyebrow: string; title: string; place: string; images: string[]
+  id: string; name: string; eyebrow: string; title: string; place: string; images: ImageRef[]
   highlights: VillageHighlight[]; options: Array<{ id: string; name: string }>; about: string[]; why: string[]
   tour: TourDetail | null; info: Array<{ label: string; value: string }>; results: ResultView[]; experienceCount: number
   moreHref: string; providers: VillageProvider[]; notes: VillageNote[]
@@ -108,7 +109,7 @@ export function villageView(seed: ExploreSeed, villageId: string, viewer: Viewer
   const distance = distanceText(village.distance_km)
 
   const cover = villageImage(seed, villageId)
-  const images = [...new Set([...(cover ? [cover] : []), ...rows.flatMap(row => experienceImages(seed, row.experience.experience_id))])]
+  const images = uniqueImages([...(cover ? [cover] : []), ...rows.flatMap(row => experienceImages(seed, row.experience.experience_id))])
 
   const counter: VillageHighlight = { title: `${rows.length} trải nghiệm ở ${providerIds.length} xưởng`, sub: '', counter: true }
   const own = parseHighlights(village.highlights).map(item => ({ ...item, counter: false }))

@@ -13,6 +13,7 @@ import AiBox from './v3/AiBox';
 import ExperienceCard from './v3/ExperienceCard';
 import VillageGrid from './v3/VillageGrid';
 import CoverImage from './v3/CoverImage';
+import { BANNER_SIZES } from './v3/image-sizes';
 import './v3/explore-v3.css';
 
 // Rendered per request (cookies, searchParams, live catalog). Without this, `next build` tries to
@@ -73,7 +74,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
 
     {banner && <section className="hab-band v3x-sec v3x-sec--remind" aria-label="Đặt chỗ đang giữ">
       <div className="v3-remind" role="status">
-        <CoverImage src={banner.image} alt="" className="v3-remind__img" />
+        <CoverImage image={banner.image} alt="" sizes={BANNER_SIZES} priority="eager" className="v3-remind__img" />
         <p className="v3-remind__text"><b>{banner.title}</b><br />{banner.note}</p>
         <Link className="hab-btn hab-btn--primary" href={banner.href}>Thanh toán ngay</Link>
       </div>

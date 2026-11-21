@@ -4,21 +4,24 @@ import React from 'react'
 import Link from 'next/link'
 import { CalendarClock, Check, ChevronRight, Lock, Package, Users } from 'lucide-react'
 import type { ResultView } from '@/lib/explore/v3-search'
-import CoverImage from './CoverImage'
+import CoverImage, { type ImagePriority } from './CoverImage'
+import { RESULT_SIZES } from './image-sizes'
 import { vnd } from './ExperienceCard'
 
 type Params = Record<string, string | string[] | undefined>
 
 // variant "provider" (screen 24, mockup 19/11): no village · workshop line, no prepay line, CTA "Xem chi tiết".
 // showDistance=false on 03 (human review 2026-11-19): the distance line stays on 02 only.
-export default function ResultCard({ item, query, variant = 'search', showDistance = true }: { item: ResultView; query: Params; variant?: 'search' | 'provider'; showDistance?: boolean }) {
+// priority: the first card of 02 is the page's LCP image from 900 px (two-column layout), the second is in the first
+// screen too; cards on 03 and 24 are below the gallery (lazy).
+export default function ResultCard({ item, query, variant = 'search', showDistance = true, priority = 'lazy' }: { item: ResultView; query: Params; variant?: 'search' | 'provider'; showDistance?: boolean; priority?: ImagePriority }) {
   const keep = new URLSearchParams()
   for (const key of ['date', 'guests']) { const value = query[key]; if (typeof value === 'string' && value) keep.set(key, value); }
   const href = `/explore/experiences/${item.id}${keep.toString() ? `?${keep.toString()}` : ''}`
   const tagIcons = [CalendarClock, Users, Package, CalendarClock]
   const provider = variant === 'provider'
   return <article className={`v3-card v3r${provider ? ' v3r--provider' : ''}`}>
-    <Link href={href} className="v3r__media" tabIndex={-1} aria-hidden="true"><CoverImage src={item.image} alt="" /></Link>
+    <Link href={href} className="v3r__media" tabIndex={-1} aria-hidden="true"><CoverImage image={item.image} alt="" sizes={RESULT_SIZES} priority={priority} preloadMedia="(min-width: 900px)" /></Link>
     <div className="v3r__main">
       <div className="v3r__top">
         <div className="v3r__titles">

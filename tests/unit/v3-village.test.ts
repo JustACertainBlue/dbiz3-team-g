@@ -11,22 +11,25 @@ import { seed } from './v3-village-fixtures'
 import { villageTiles } from '@/lib/explore/v3-home'
 import { VILLAGE_PAGE_SIZE, villageCards, villageImage, villageList, villageView, villagesWithoutImage } from '@/lib/explore/v3-village'
 
+// Step 2B: images are { url, width, height }; this fixture has no stored size or dimensions, so no ?v= and 0×0.
+const img = (id: string) => ({ url: `/api/prf/media/${id}`, width: 0, height: 0 })
+
 describe('villageImage', () => {
   it('uses the cover image first, then the first experience image of the village, else null', () => {
-    expect(villageImage(seed(), 'v2')).toBe('/api/prf/media/fc')
-    expect(villageImage(seed(), 'v1')).toBe('/api/prf/media/f1')
+    expect(villageImage(seed(), 'v2')).toEqual(img('fc'))
+    expect(villageImage(seed(), 'v1')).toEqual(img('f1'))
     expect(villageImage(seed(), 'v3')).toBeNull()
   })
   it('drives the 01/21 village grid too (no workshop-image fallback, no imageless village)', () => {
-    expect(villageTiles(seed()).map(tile => [tile.village_id, tile.image])).toEqual([['v1', '/api/prf/media/f1'], ['v2', '/api/prf/media/fc']])
+    expect(villageTiles(seed()).map(tile => [tile.village_id, tile.image])).toEqual([['v1', img('f1')], ['v2', img('fc')]])
   })
 })
 
 describe('villageCards / villagesWithoutImage (03a)', () => {
   it('lists active villages with an image: craft · area, workshop and experience counts, distance only when known', () => {
     expect(villageCards(seed())).toEqual([
-      { village_id: 'v1', name: 'Bát Tràng', craft: 'Làm gốm', craftKey: 'Ceramics', area: 'Gia Lâm, Hà Nội', providers: 2, experiences: 4, distance: 'Cách trung tâm khoảng 13 km', image: '/api/prf/media/f1' },
-      { village_id: 'v2', name: 'Vạn Phúc', craft: 'Dệt lụa', craftKey: 'Silk/Textile', area: 'Hà Đông, Hà Nội', providers: 1, experiences: 1, distance: '', image: '/api/prf/media/fc' },
+      { village_id: 'v1', name: 'Bát Tràng', craft: 'Làm gốm', craftKey: 'Ceramics', area: 'Gia Lâm, Hà Nội', providers: 2, experiences: 4, distance: 'Cách trung tâm khoảng 13 km', image: img('f1') },
+      { village_id: 'v2', name: 'Vạn Phúc', craft: 'Dệt lụa', craftKey: 'Silk/Textile', area: 'Hà Đông, Hà Nội', providers: 1, experiences: 1, distance: '', image: img('fc') },
     ])
   })
   it('names the active villages left out for lack of an image', () => {
@@ -56,7 +59,7 @@ describe('villageView (03)', () => {
   })
   it('heads the page with craft, name, place and distance; gallery = cover/experience images without empty frames', () => {
     expect(view).toMatchObject({ eyebrow: 'LÀNG NGHỀ LÀM GỐM', title: 'Làng Bát Tràng', place: 'Bát Tràng, Gia Lâm, Hà Nội · Cách trung tâm khoảng 13 km' })
-    expect(view.images).toEqual(['/api/prf/media/f1', '/api/prf/media/f3', '/api/prf/media/f2'])
+    expect(view.images).toEqual([img('f1'), img('f3'), img('f2')])
     expect(villageView(seed(), 'v3', { kind: 'guest' }, { date: '', guests: null, ex: '' })!.images).toEqual([])
     expect(villageView(seed(), 'v2', { kind: 'guest' }, { date: '', guests: null, ex: '' })!.place).toBe('Vạn Phúc, Hà Đông, Hà Nội')
   })

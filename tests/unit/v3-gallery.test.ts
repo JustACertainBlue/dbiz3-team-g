@@ -10,7 +10,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import Gallery from '@/app/explore/v3/Gallery'
 
 ;(globalThis as { React?: typeof React }).React = React
-const images = (n: number) => Array.from({ length: n }, (_, i) => `/api/prf/media/f${i + 1}`)
+// Step 2B: images are { url, width, height } (0×0 = unknown, so no reordering here).
+const images = (n: number) => Array.from({ length: n }, (_, i) => ({ url: `/api/prf/media/f${i + 1}`, width: 0, height: 0 }))
 const render = (n: number) => renderToStaticMarkup(React.createElement(Gallery, { images: images(n), alt: 'Làng Bát Tràng' }))
 const tiles = (html: string) => [...html.matchAll(/<div class="v3g__t v3g__t(\d)">/g)].map(m => Number(m[1]))
 

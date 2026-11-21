@@ -5,6 +5,7 @@ import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import { VILLAGE_PAGE_SIZE, villageList } from '@/lib/explore/v3-village'
 import Pagination from '@/app/components/ui/Pagination'
 import CoverImage from '@/app/explore/v3/CoverImage'
+import { VILLAGE_CARD_SIZES } from '@/app/explore/v3/image-sizes'
 import '@/app/explore/v3/explore-v3.css'
 import '@/app/explore/v3/village-v3.css'
 
@@ -36,8 +37,8 @@ export default async function VillagesPage({ searchParams }: { searchParams: Par
       {list.facets.map(facet => <Link key={facet.value} className="v3l-chip" href={href(facet.value)} aria-current={list.craft === facet.value ? 'page' : undefined}>{facet.label} ({facet.n})</Link>)}
     </nav>
     {list.items.length === 0 && <p className="v3-empty">Chưa có làng nghề đang nhận đoàn.</p>}
-    <div className="v3l-grid">{list.items.map(card => <Link key={card.village_id} href={`/village/${card.village_id}`} className="v3-card v3l-card">
-      <CoverImage src={card.image} alt="" className="v3l-card__img" />
+    <div className="v3l-grid">{list.items.map((card, index) => <Link key={card.village_id} href={`/village/${card.village_id}`} className="v3-card v3l-card">
+      <CoverImage image={card.image} alt="" sizes={VILLAGE_CARD_SIZES} priority={index === 0 ? 'lcp' : index < 3 ? 'eager' : 'lazy'} className="v3l-card__img" />
       <span className="v3l-card__body">
         <h2 className="v3l-card__name">{card.name}</h2>
         <p className="v3l-card__craft">{[card.craft, card.area].filter(Boolean).join(' · ')}</p>

@@ -74,7 +74,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Param
         <p className="v3-cap v3s-note"><Info aria-hidden="true" />Thứ tự dựa trên mức khớp với từ khóa, ngày và số khách bạn chọn. Không có vị trí trả tiền.</p>
         {result.items.length === 0 && <p className="v3-empty">Không có trải nghiệm khớp tìm kiếm này.</p>}
         {result.items.map((item, index) => <React.Fragment key={item.id}>
-          <ResultCard item={item} query={searchParams} />
+          <ResultCard item={item} query={searchParams} priority={index === 0 ? 'lcp' : index === 1 ? 'eager' : 'lazy'} />
           {index === 2 && need(true)}
         </React.Fragment>)}
         {result.items.length > 0 && result.items.length < 3 && need(true)}

@@ -58,7 +58,7 @@ export default async function ExperienceEntry({ params, searchParams }: { params
         </div>
       </div>
       <div className="v3d-hero">
-        <Gallery images={view.images} alt={view.name} />
+        <Gallery images={view.images} alt={view.name} maxWidth={804} />
         <aside className="v3d-side">
           <div className="v3-card v3d-owner">
             <div className="v3d-owner__who"><span className="v3d-avatar" aria-hidden="true">{view.owner.initials}</span><div><p className="v3d-owner__name">{view.owner.name}</p><p className="v3-cap">{view.owner.title}</p></div></div>

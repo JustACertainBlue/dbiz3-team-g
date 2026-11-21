@@ -5,6 +5,7 @@ import type { CsvRow, ExploreSeed, Viewer } from './catalog'
 import { eligibleRows } from './catalog'
 import { calculateAvailability } from './availability'
 import { durationLabel, experienceImage, placeLine } from './v3-home'
+import type { ImageRef } from '../prf/media-urls'
 import { craftLabel, parseDistance, parseHighlights, parseInclusions, rowCraft } from './vocabulary'
 
 type Row = ReturnType<typeof eligibleRows>[number]
@@ -85,7 +86,7 @@ export function priceFor(seed: ExploreSeed, experience: CsvRow, guests: number |
 }
 
 export interface ResultView {
-  id: string; name: string; image: string | null; villageId: string; villageLine: string; providerName: string
+  id: string; name: string; image: ImageRef | null; villageId: string; villageLine: string; providerName: string
   distance: string; craft: string; tags: string[]; highlights: string[]; included: boolean
   availability: Availability | null; price: PriceView
 }

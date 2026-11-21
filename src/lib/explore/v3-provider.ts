@@ -8,6 +8,7 @@ import { resultView, type ResultView } from './v3-search'
 import { aboutParagraphs } from './v3-detail'
 import { craftLabel, parseDistance, parseStringList, SUITABLE_FOR, rowCraft } from './vocabulary'
 import { initials } from '../../app/components/nav/nav-model'
+import { uniqueImages, type ImageRef } from '../prf/media-urls'
 
 const WEEKDAY = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
 const STATUS: Record<string, string> = { 'On hold': 'đang chờ thanh toán', Booked: 'đã đặt', Completed: 'hoàn tất', Cancelled: 'đã huỷ' }
@@ -46,7 +47,7 @@ export function openingHoursText(rows: CsvRow[]): string {
 
 export interface ProviderView {
   id: string; initials: string; eyebrow: string; name: string; address: string; villageId: string; villageTitle: string
-  images: string[]; owner: { initials: string; name: string; title: string; phone: string | null; email: string | null }
+  images: ImageRef[]; owner: { initials: string; name: string; title: string; phone: string | null; email: string | null }
   together: { count: number; latest: string; status: string; href: string } | null
   highlights: Array<{ title: string; sub: string }>; about: Array<{ lead: string; text: string }>; suitableFor: string[]
   experiences: ResultView[]; firstExperienceId: string | null; similar: CardView[]
@@ -116,7 +117,7 @@ export function providerView(seed: ExploreSeed, providerId: string, viewer: View
   return {
     id: providerId, initials: initials(version.business_name), eyebrow: [craft, `Làng ${village.name}`].filter(Boolean).join(' · ').toUpperCase(),
     name: version.business_name, address: [village.name, village.district, village.city_province].filter(Boolean).join(', '), villageId: village.village_id, villageTitle: `Làng ${village.name}`,
-    images: [...new Set([...providerImages(seed, providerId, version.version_no), ...own.flatMap(row => experienceImages(seed, row.experience.experience_id))])],
+    images: uniqueImages([...providerImages(seed, providerId, version.version_no), ...own.flatMap(row => experienceImages(seed, row.experience.experience_id))]),
     owner: { initials: initials(owner || version.business_name), name: owner, title: 'Chủ xưởng', phone: isAgency ? contact.phone_number || null : null, email: isAgency ? contact.business_email || null : null },
     together, highlights, about: aboutParagraphs(version.description ?? ''), suitableFor,
     experiences: own.map(row => resultView(seed, row, query, isAgency)), firstExperienceId: own[0]?.experience.experience_id ?? null,

@@ -179,7 +179,8 @@
 .v3-tryai__btn { width: 100%; margin-top: 12px; }
 .v3-tryai__text { margin: 12px 0 0; font: 400 16px/23px var(--font-body); color: var(--c-text-2); }
 .v3r { padding: 20px; display: flex; flex-wrap: wrap; gap: 24px; }
-.v3r__media { flex: 0 0 220px; align-self: stretch; min-height: 240px; display: block; overflow: hidden; border-radius: 8px; }
+.v3r__media .v3-cover { position: absolute; inset: 0; }
+.v3r__media { flex: 0 0 220px; align-self: stretch; min-height: 240px; display: block; overflow: hidden; border-radius: 8px; position: relative; }
 .v3r__main { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .v3r__top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
 .v3r__titles { min-width: 0; }
@@ -211,7 +212,7 @@
 .v3r__incl { margin: 2px 0 0; }
 .v3r__cta { margin-top: 10px; min-height: 50px; padding: 0 22px; font-size: 17px; }
 .v3r__cta svg { width: 18px; height: 18px; }
-@media (max-width: 767px) { .v3s-aside { max-width: none; } .v3r__media { flex-basis: 100%; min-height: 180px; } .v3r__price { flex-basis: 100%; align-items: flex-start; text-align: left; } }
+@media (max-width: 767px) { .v3s-aside { max-width: none; } .v3r__media { flex-basis: 100%; min-height: 0; aspect-ratio: 5 / 8; align-self: auto; } .v3r__price { flex-basis: 100%; align-items: flex-start; text-align: left; } }
 
 /* ---- 04/23 experience detail ---- */
 .v3-mini { display: inline-flex; align-items: center; gap: 6px; margin: 0 6px 6px 0; padding: 3px 8px; border: 1px solid var(--c-input-border); border-radius: 4px; font: 400 14px/20px var(--font-body); }

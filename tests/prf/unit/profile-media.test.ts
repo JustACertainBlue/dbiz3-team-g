@@ -39,7 +39,8 @@ describe('Private Provider media storage and access',()=>{
     expect(uploaded).toMatchObject({width_px:1280,height_px:720,media_type:'image/png'})
     const {experience_id}=await createExperience(owner,{name:'Synthetic gallery experience',description:'Synthetic description',category:'Workshop/Hands-on',duration_minutes:60,price_per_person:100000,max_participants:10,notice_period_hours:24,images:(['Activity','Space','Product'] as const).map(category=>({...uploaded,category}))})
     const detail=getExperienceDetail((await loadExploreRuntime()),experience_id,{kind:'guest'})
-    expect(detail?.gallery).toEqual([uploaded.url,uploaded.url,uploaded.url])
+    const versioned=`${uploaded.url}?v=${uploaded.file_size_bytes}` // step 2B: Explore image URLs carry ?v= (the stored size)
+    expect(detail?.gallery).toEqual([versioned,versioned,versioned])
     expect((await readProfileMedia((await toSessionContext(guestSession())),uploaded.file_id)).bytes).toEqual(Buffer.from(await file.arrayBuffer()))
     for(const link of repo.all('profile_media').filter(row=>row.experience_id===experience_id)) {
       expect(link.provider_id).toBe('')

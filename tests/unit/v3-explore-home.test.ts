@@ -72,7 +72,7 @@ describe('cardView', () => {
   const row = (id: string) => rows.find(item => item.experience.experience_id === id)!
   it('shows craft label, full location, duration/capacity, the first 3 highlight titles and "Giá từ" for everyone', () => {
     const card = cardView(data, row('e1'), [])
-    expect(card).toMatchObject({ id: 'e1', craft: 'Làm gốm', location: 'Bát Tràng, Gia Lâm, Hà Nội', meta: '60 phút · Tối đa 12 khách/ca', priceFrom: 150000, image: '/api/prf/media/f1' })
+    expect(card).toMatchObject({ id: 'e1', craft: 'Làm gốm', location: 'Bát Tràng, Gia Lâm, Hà Nội', meta: '60 phút · Tối đa 12 khách/ca', priceFrom: 150000, image: { url: '/api/prf/media/f1', width: 0, height: 0 } })
     expect(card.highlights).toEqual(['Tự tay nặn', 'Mang bát về', 'Đã gồm đất'])
   })
   it('reads the old highlights shape and formats hours', () => {
@@ -105,7 +105,7 @@ describe('villageTiles', () => {
   it('lists only villages with an image, most workshops first, with craft and area', () => {
     const tiles = villageTiles(seed())
     expect(tiles.map(tile => tile.village_id)).toEqual(['v1'])
-    expect(tiles[0]).toMatchObject({ name: 'Bát Tràng', craft: 'Làm gốm', area: 'Gia Lâm, Hà Nội', providers: 2, image: '/api/prf/media/f1' })
+    expect(tiles[0]).toMatchObject({ name: 'Bát Tràng', craft: 'Làm gốm', area: 'Gia Lâm, Hà Nội', providers: 2, image: { url: '/api/prf/media/f1', width: 0, height: 0 } })
   })
 })
 
@@ -113,7 +113,7 @@ describe('holdBanner', () => {
   it('shows the Agency On hold booking that is still held, linking to its detail page', () => {
     expect(holdBanner(seed(), 'ag1', NOW)).toEqual({
       bookingId: 'b1', href: '/agency/ag1/bookings/b1', title: 'Nặn gốm · 24/11 · 10 khách',
-      note: 'Xưởng đang giữ chỗ đến 14:00, 17/11. Thanh toán để chốt lịch cho đoàn.', image: '/api/prf/media/f1',
+      note: 'Xưởng đang giữ chỗ đến 14:00, 17/11. Thanh toán để chốt lịch cho đoàn.', image: { url: '/api/prf/media/f1', width: 0, height: 0 },
     })
   })
   it('is null without an active hold', () => {

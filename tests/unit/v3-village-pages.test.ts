@@ -42,7 +42,7 @@ describe('screen 03 /village/[villageId]', () => {
     const html = renderToStaticMarkup(await VillagePage({ params: { villageId: 'v1' }, searchParams: {} }))
     const cards = html.match(/<article class="v3-card v3r">[\s\S]*?<\/article>/g) ?? []
     expect(cards).toHaveLength(3)
-    expect(cards[1]).toMatch(/<a class="v3r__media"[^>]*>[\s\S]*?<img[^>]*src="\/api\/prf\/media\/f1"/)
+    expect(cards[1]).toMatch(/<a class="v3r__media"[^>]*>[\s\S]*?<img[^>]*src="\/api\/prf\/media\/f1\?w=800"/)
     expect(text(cards[1])).toContain('Xưởng thủ công Bát Tràng')
     expect(text(cards[1])).toMatch(/Giá từ 150\.000\s?₫ \/khách/)
   })

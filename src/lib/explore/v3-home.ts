@@ -2,6 +2,7 @@
 // filters, the village grid and the hold banner (human decisions 2026-11-18 #1, #4, #5, #7, #9).
 import type { CsvRow, ExploreSeed } from './catalog'
 import { eligibleRows } from './catalog'
+import { imageRef, type ImageRef } from '../prf/media-urls'
 import { PREFERENCE_TO_SUITABLE_FOR, craftLabel, parseHighlights, parseStringList, rowCraft } from './vocabulary'
 
 type Row = ReturnType<typeof eligibleRows>[number]
@@ -28,41 +29,39 @@ export function durationLabel(minutes: number): string {
   return h && m ? `${h} giờ ${m} phút` : h ? `${h} giờ` : `${m} phút`
 }
 
-/** URL the browser can load: private Storage files go through /api/prf/media; seed placeholder keys are not images. */
-export function fileUrl(file: CsvRow): string | null {
-  if (file.storage_key.startsWith('prf-media/')) return `/api/prf/media/${file.file_id}`
-  return /^https?:\/\//.test(file.storage_key) ? file.storage_key : null
+/** Image the browser can load: Storage files go through /api/prf/media (URL with ?v=, stored size); seed placeholder keys are not images. */
+export function fileImage(file: CsvRow): ImageRef | null {
+  return imageRef({ storage_key: file.storage_key, file_id: file.file_id, file_size_bytes: file.file_size_bytes, width_px: file.width_px, height_px: file.height_px })
 }
 
 /** First image of an Experience (profile_media order), or null. */
-export function experienceImage(seed: ExploreSeed, experienceId: string): string | null {
-  const files = new Map(seed.stored_files.map(file => [file.file_id, file]))
+export function experienceImage(seed: ExploreSeed, experienceId: string): ImageRef | null {
   return experienceImages(seed, experienceId)[0] ?? null
 }
 
 /** Servable images of an Experience, in profile_media order. */
-export function experienceImages(seed: ExploreSeed, experienceId: string): string[] {
+export function experienceImages(seed: ExploreSeed, experienceId: string): ImageRef[] {
   const files = new Map(seed.stored_files.map(file => [file.file_id, file]))
   return seed.profile_media
     .filter(item => item.experience_id === experienceId && files.get(item.file_id)?.media_type?.startsWith('image/'))
     .sort((a, b) => Number(a.display_order) - Number(b.display_order))
-    .map(item => fileUrl(files.get(item.file_id)!)).filter((url): url is string => Boolean(url))
+    .map(item => fileImage(files.get(item.file_id)!)).filter((image): image is ImageRef => Boolean(image))
 }
 
 /** Images of a published workshop version, in display order. */
-export function providerImages(seed: ExploreSeed, providerId: string, versionNo: string): string[] {
+export function providerImages(seed: ExploreSeed, providerId: string, versionNo: string): ImageRef[] {
   const files = new Map(seed.stored_files.map(file => [file.file_id, file]))
   return (seed.provider_version_media ?? [])
     .filter(item => item.provider_id === providerId && item.version_no === versionNo && files.get(item.file_id)?.media_type?.startsWith('image/'))
     .sort((a, b) => Number(a.display_order) - Number(b.display_order))
-    .map(item => fileUrl(files.get(item.file_id)!)).filter((url): url is string => Boolean(url))
+    .map(item => fileImage(files.get(item.file_id)!)).filter((image): image is ImageRef => Boolean(image))
 }
 
 export const placeLine = (village: CsvRow) => [village.name, village.district, village.city_province].filter(Boolean).join(', ')
 
 export interface CardView {
   id: string; providerId: string; name: string; craft: string; location: string; meta: string
-  highlights: string[]; priceFrom: number; image: string | null; why: string | null
+  highlights: string[]; priceFrom: number; image: ImageRef | null; why: string | null
 }
 
 /** Card of 01/21/24: "Giá từ … /khách" is shown to everyone (human decision; group price stays hidden for Guests). */
@@ -100,17 +99,17 @@ export function mainCraft(rows: Row[]): string {
   return [...crafts].sort((a, b) => crafts.filter(c => c === b).length - crafts.filter(c => c === a).length)[0] ?? ''
 }
 
-export interface VillageTile { village_id: string; name: string; craft: string; area: string; providers: number; image: string }
+export interface VillageTile { village_id: string; name: string; craft: string; area: string; providers: number; image: ImageRef }
 
 /**
  * Image of a village (human decision 2026-11-19, mockup pack 19/11): villages.cover_image_id, else the first image of
  * the village's live experiences (eligible order, then profile_media order); null when there is none.
  */
-export function villageImage(seed: ExploreSeed, villageId: string): string | null {
+export function villageImage(seed: ExploreSeed, villageId: string): ImageRef | null {
   const village = seed.villages.find(row => row.village_id === villageId)
   const cover = village?.cover_image_id ? seed.stored_files.find(file => file.file_id === village.cover_image_id) : undefined
-  const coverUrl = cover?.media_type?.startsWith('image/') ? fileUrl(cover) : null
-  if (coverUrl) return coverUrl
+  const coverImage = cover?.media_type?.startsWith('image/') ? fileImage(cover) : null
+  if (coverImage) return coverImage
   for (const row of eligibleRows(seed)) {
     if (row.village.village_id !== villageId) continue
     const image = experienceImage(seed, row.experience.experience_id)
@@ -144,7 +143,7 @@ function parts(date: Date) {
 const dayMonth = (date: Date) => { const p = parts(date); return `${p.day}/${p.month}` }
 const hourMinute = (date: Date) => new Intl.DateTimeFormat('vi-VN', { timeZone: HANOI, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date)
 
-export interface HoldBanner { bookingId: string; href: string; title: string; note: string; image: string | null }
+export interface HoldBanner { bookingId: string; href: string; title: string; note: string; image: ImageRef | null }
 
 /** Banner of 21: the Agency's On hold booking whose hold has not expired (the one expiring first). */
 export function holdBanner(seed: ExploreSeed, agencyId: string, now: Date): HoldBanner | null {

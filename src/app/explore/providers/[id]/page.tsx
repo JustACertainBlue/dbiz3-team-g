@@ -11,6 +11,7 @@ import { paymentsEnabled } from '../../../../lib/flags';
 import ExploreTracker from '../../ExploreTracker';
 import CoverImage from '../../v3/CoverImage';
 import Gallery from '../../v3/Gallery';
+import { CARD_SIZES } from '../../v3/image-sizes';
 import ChatButton from '../../v3/ChatButton';
 import ResultCard from '../../v3/ResultCard';
 import MonthCalendar from './MonthCalendar';
@@ -59,7 +60,7 @@ export default async function ProviderPage({ params, searchParams }: { params: {
           : !isAgency && <Link href="/login" className="v3p-chat" aria-label="Nhắn tin cho xưởng" title="Nhắn tin cho xưởng"><MessageSquareText aria-hidden="true" /></Link>}
       </div>
       <div className="v3d-hero">
-        <Gallery images={view.images} alt={view.name} />
+        <Gallery images={view.images} alt={view.name} maxWidth={804} />
         <aside className="v3d-side">
           <div className="v3-card v3d-owner">
             <div className="v3d-owner__who"><span className="v3d-avatar v3p-avatar" aria-hidden="true">{view.owner.initials}</span><div><p className="v3d-owner__name">{view.owner.name}</p><p className="v3-cap">{view.owner.title}</p></div></div>
@@ -106,7 +107,7 @@ export default async function ProviderPage({ params, searchParams }: { params: {
     {view.similar.length > 0 && <section className="hab-band v3d-sec" aria-labelledby="v3p-sim">
       <div className="v3-head"><div><h2 id="v3p-sim" className="v3-h2">Trải nghiệm tương tự ở làng khác</h2></div></div>
       <div className="v3p-simgrid">{view.similar.map(card => <Link key={card.id} href={`/explore/experiences/${card.id}`} className="v3-card v3p-sim">
-        <CoverImage src={card.image} alt="" className="v3p-sim__img" />
+        <CoverImage image={card.image} alt="" sizes={CARD_SIZES} className="v3p-sim__img" />
         <span className="v3p-sim__body"><span className="v3-craft">{card.craft}</span><b className="v3p-sim__name">{card.name}</b><span className="v3-cap">{[card.location.split(',')[0], card.meta.split(' · ')[0], card.meta.split(' · ')[1]?.replace('Tối đa', 'tối đa').replace('/ca', '')].filter(Boolean).join(' · ')}</span></span>
       </Link>)}</div><div className="v3-more-row"><Link href="/explore/search" className="v3-more">Xem tất cả ›</Link></div>
     </section>}

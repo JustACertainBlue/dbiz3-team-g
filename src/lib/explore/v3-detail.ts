@@ -8,6 +8,7 @@ import { durationLabel, experienceImages, placeLine, providerImages } from './v3
 import { availabilityOn, priceFor, type PriceView } from './v3-search'
 import { craftLabel, parseDistance, parseHighlights, parseInclusions, parseSlots, parseStringList, type Highlight, rowCraft } from './vocabulary'
 import { initials } from '../../app/components/nav/nav-model'
+import { uniqueImages, type ImageRef } from '../prf/media-urls'
 
 export const HOLD_HOURS = 72 // src/lib/booking/create-booking.ts HOLD_HOURS (BKG BR-004)
 const WEEKDAY = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
@@ -79,7 +80,7 @@ function openingLine(seed: ExploreSeed, providerId: string): string {
 export interface InfoGroup { title: string; items: string[]; note?: string }
 export interface DetailView {
   id: string; providerId: string; villageId: string; villageName: string; name: string; eyebrow: string; providerLine: string; priceFrom: number
-  images: string[]; owner: { initials: string; name: string; title: string; phone: string | null }
+  images: ImageRef[]; owner: { initials: string; name: string; title: string; phone: string | null }
   highlights: Highlight[]; maxGuests: number; durationText: string
   group: { guests: number | null; dateText: string; perGuest: string[]; guide: boolean; cancel: string; price: PriceView }
   about: Array<{ lead: string; text: string }>; suitableFor: string[]; halfDay: { lines: string[]; extras: string[] } | null
@@ -138,7 +139,7 @@ export function detailView(seed: ExploreSeed, id: string, viewer: Viewer, query:
     id, providerId: provider.provider_id, villageId: village.village_id, villageName: village.name, name: experience.name,
     eyebrow: [craft, `Làng ${village.name}`].filter(Boolean).join(' · ').toUpperCase(),
     providerLine: `${version.business_name} · ${placeLine(village)}`, priceFrom: Number(experience.price_per_person),
-    images: [...new Set([...experienceImages(seed, id), ...providerImages(seed, provider.provider_id, version.version_no)])],
+    images: uniqueImages([...experienceImages(seed, id), ...providerImages(seed, provider.provider_id, version.version_no)]),
     owner: { initials: initials(owner || version.business_name), name: owner, title: `Chủ ${version.business_name}`, phone: isAgency ? contact.phone_number || null : null },
     highlights: parseHighlights(experience.highlights).slice(0, 4), maxGuests: max, durationText: durationLabel(minutes),
     group: { guests: query.guests, dateText, perGuest: inclusions?.per_guest ?? [], guide: Boolean(inclusions?.included.length), cancel: cancel[0]?.short ?? '',

@@ -10,6 +10,7 @@ import { providerReviewState, reviewHistoryRows } from '@/lib/prf/provider-revie
 import { hanoiClock } from '@/lib/time/hanoi-time'
 import { adminGuestRedirect } from '../../admin-page-access'
 import { formatDate } from '@/lib/adm/v3-accounts'
+import { rowCraft } from '@/lib/explore/vocabulary'
 import { fileSize, readable, viReviewHeading, viReviewStatus } from '../../_v3/profile-format'
 import DecisionForm from '../../_v3/DecisionForm'
 import { Button, Container, StatusPill } from '@/app/components/ui'
@@ -43,7 +44,7 @@ export default async function AdminProviderDetail({ params }: { params: { id: st
   const canDecide = pending && session.adminType === 'UBND'
   const tone = pending ? 'warn' : state.review_status === 'Verified' ? 'success' : 'warn'
   const rows: Array<[string, string]> = [
-    ['Mã đăng ký kinh doanh', String(version?.business_registration_number || '')], ['Làng nghề', String(village?.name || '')], ['Nghề', String(version?.craft_type || '')],
+    ['Mã đăng ký kinh doanh', String(version?.business_registration_number || '')], ['Làng nghề', String(village?.name || '')], ['Nghề', rowCraft(String(version?.craft_type || ''), village as { editorial_craft?: string } | undefined)],
     ['Địa chỉ', String(version?.location_address || '')], ['Nghệ nhân', readable(version?.artisan_names)],
     ['Liên hệ', [contact.phone_number, contact.business_email].filter(Boolean).join(' · ')], ['Mô tả', String(version?.description || '')],
   ]

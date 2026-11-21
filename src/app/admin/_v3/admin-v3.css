@@ -74,7 +74,8 @@
 .av3-table th { padding: 14px 12px; text-align: left; background: #F7F5EE; font: 700 15px/22px var(--font-body); color: var(--c-text-2); }
 .av3-table td { padding: 14px 12px; border-top: 1px solid var(--c-border-soft); vertical-align: middle; }
 .av3-table th:first-child, .av3-table td:first-child { padding-left: 16px; }
-.av3-table small { display: block; font-size: 14px; color: var(--c-muted); }
+.av3-table small { display: block; font-size: 14px; line-height: 20px; color: var(--c-muted); }
+.av3-table .av3-name { display: inline-block; line-height: 23px; }
 .av3-name { font-weight: 700; }
 .av3-status { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .av3-status__label { font-weight: 700; color: var(--c-text-2); }
@@ -96,6 +97,9 @@
 .av3-tabs { margin-top: 20px; }
 .av3-tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 800; background: var(--c-border-soft); color: var(--c-text-2); }
 .av3-table--review { min-width: 720px; }
+.av3-table-wrap--padded { padding: 28px; }
+.av3-table-wrap--padded .av3-table th:first-child, .av3-table-wrap--padded .av3-table td:first-child { padding-left: 16px; }
+.av3-table-wrap--padded .av3-table th { border-radius: 0; }
 .av3-table--review td:last-child { text-align: right; padding-right: 16px; }
 .av3-note { display: block; font-size: 14px; color: var(--c-muted); margin-top: 4px; }
 

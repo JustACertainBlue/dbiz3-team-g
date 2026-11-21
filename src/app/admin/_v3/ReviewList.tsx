@@ -30,7 +30,7 @@ export default async function ReviewList({ basePath, searchParams }: { basePath:
     <p className="av3-lead">{scope.adminType === 'HDT' ? 'Hồ sơ đăng ký và đổi thông tin pháp lý của công ty lữ hành. Hồ sơ xác minh xưởng do UBND xã quyết định.' : 'Hồ sơ xác minh xưởng của làng bạn quản lý. UBND xã quyết định duyệt hoặc yêu cầu bổ sung.'}</p>
     <div className="av3-tabs"><Tabs label="Trạng thái hồ sơ" items={[{ href: link({ tab: '', page: '' }), label: `Đang chờ (${f.counts.pending})`, active: tab === 'pending' }, { href: link({ tab: 'processed', page: '' }), label: `Đã xử lý (${f.counts.processed})`, active: tab === 'processed' }]} /></div>
     <div style={{ marginTop: 16 }}><QueueFilters showKind={scope.adminType === 'HDT'} /></div>
-    <div className="av3-table-wrap" style={{ marginTop: 16 }}>
+    <div className="av3-table-wrap av3-table-wrap--padded" style={{ marginTop: 16 }}>
       {f.rows.length === 0 ? <p className="av3-empty" style={{ padding: 24 }}>{tab === 'pending' ? 'Không có hồ sơ nào đang chờ.' : 'Chưa có hồ sơ nào được xử lý.'}</p> :
         <table className="av3-table av3-table--review av3-table--stack"><thead><tr><th>Hồ sơ</th><th>Loại hồ sơ</th><th>Ngày gửi</th><th>Trạng thái</th><th><span className="sr-only" style={{ position: 'absolute', left: -9999 }}>Thao tác</span></th></tr></thead>
           <tbody>{f.rows.map(r => <tr key={r.key}>

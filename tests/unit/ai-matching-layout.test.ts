@@ -19,7 +19,8 @@ describe('suggestions only in the new-conversation state', () => {
 
 describe('scrolling like the mockup', () => {
   it('no own scroll frame and no fixed viewport height anywhere in the screen CSS', () => {
-    expect(css).not.toMatch(/overflow(-y)?\s*:\s*(auto|scroll)/)
+    // Only the "Gần đây" list of the pinned left rail scrolls on its own (21/11); the page and the chat never do.
+    expect(css.replace(/\.aim__hist\s*\{[^}]*\}/g, '')).not.toMatch(/overflow(-y)?\s*:\s*(auto|scroll)/)
     expect(css).not.toMatch(/(^|[^-])height\s*:\s*100vh/)
     expect(page).not.toMatch(/overflowY|height: '100vh'/)
   })
@@ -43,5 +44,24 @@ describe('phone (< 768 px)', () => {
     expect(page).toMatch(/rows=\{1\}/)
     expect(page).toMatch(/style\.height/)
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.aim__dock \.aim__comp\s*\{[^}]*flex-direction:\s*row/)
+  })
+})
+
+describe('left rail stays in place while the chat scrolls (desktop)', () => {
+  const desktop = css.slice(css.indexOf('@media (min-width: 900px)'))
+  it('sticky below the navigation bar, as tall as the rest of the screen', () => {
+    expect(css).toContain('@media (min-width: 900px)')
+    const side = desktop.split('}').find(r => r.includes('.aim__side {')) ?? ''
+    expect(side).toMatch(/position:\s*sticky/)
+    expect(side).toMatch(/top:\s*var\(--nav-h\)/)
+    expect(side).toMatch(/height:\s*calc\(100vh - var\(--nav-h\)\)/)
+    expect(side).toMatch(/align-self:\s*flex-start/)
+  })
+  it('only the "Gần đây" list scrolls inside the rail', () => {
+    expect(rule('.aim__hist')).toMatch(/overflow-y:\s*auto/)
+    expect(rule('.aim__hist')).toMatch(/min-height:\s*0/)
+  })
+  it('the stacked layout below 900 px keeps a normal, non-sticky rail', () => {
+    expect(css.slice(0, css.indexOf('@media (min-width: 900px)'))).not.toMatch(/\.aim__side\s*\{[^}]*sticky/)
   })
 })

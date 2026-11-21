@@ -6,6 +6,10 @@ import Link from 'next/link'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
+import { recommendationCardView } from './card-view'
+import { ArrowUp, ChevronRight, MessageSquare, Plus, Sparkles, Users } from 'lucide-react'
+import '../explore/v3/explore-v3.css'
+import './ai-matching.css'
 
 interface Message {
   id: string
@@ -94,55 +98,11 @@ export default function AiMatchingScreen() {
   // Guest Access Guard (BR-001, BR-002)
   if (role === 'Guest') {
     return (
-      <div
-        id="guest-access-denied"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          padding: '24px',
-          background: '#0F172A',
-          color: '#F8FAFC',
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '460px',
-            background: 'rgba(30, 41, 59, 0.7)',
-            border: '1px solid #334155',
-            borderRadius: '16px',
-            padding: '36px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          }}
-        >
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-          <h2 style={{ fontFamily: 'var(--font-body)', fontSize: '24px', margin: '0 0 12px 0' }}>
-            Access Restricted to Tour Agencies
-          </h2>
-          <p style={{ color: '#94A3B8', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
-            {RESTRICTED_TEXT}
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <a
-              id="switch-to-agency-btn"
-              href="/login?next=/ai-matching"
-              style={{
-                backgroundColor: '#D97706',
-                color: '#FFF',
-                border: 'none',
-                padding: '10px 18px',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textDecoration: 'none',
-              }}
-            >
-              Sign In as Agency
-            </a>
-          </div>
+      <div id="guest-access-denied" className="aim aim__guest">
+        <div>
+          <h2>Chỉ dành cho công ty lữ hành</h2>
+          <p>{RESTRICTED_TEXT}</p>
+          <a id="switch-to-agency-btn" href="/login?next=/ai-matching" className="aim__btn aim__btn--p">Đăng nhập công ty lữ hành</a>
         </div>
       </div>
     )
@@ -235,458 +195,163 @@ export default function AiMatchingScreen() {
   const handleRequestQuote = (experienceId: string) => runHandoff('quote', experienceId, experienceId)
   const handleChat = (experienceId: string, providerId: string) => runHandoff('chat', experienceId, providerId)
 
+  const cardOf = recommendationCardView
+  const spark = <span className="aim__av" aria-hidden="true"><Sparkles /></span>
+  const quickPrompts = [
+    { label: 'Gốm, 15 khách ngày 15/11', text: '15 French tourists visiting on 2026-11-15 looking for hands-on pottery ceramic experiences near Hanoi under 500,000 VND per person.' },
+    { label: 'Xưởng lụa ở Vạn Phúc', text: 'We need an authentic silk workshop in Van Phuc' },
+    { label: 'Đoàn 100 khách, ngân sách thấp', text: 'Group of 100 tourists looking for craft tour on Dec 25 with budget 20,000 VND' },
+  ]
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '70vh', // #188: inside the app shell, no fixed 100vh frame under the shared header
-        background: 'linear-gradient(180deg, #0B1120 0%, #0F172A 100%)',
-        color: '#F8FAFC',
-      }}
-    >
-      {/* #188, screen-spec-AIT121 §3 #1: the screen heading; brand, navigation and account come from the shared shell. */}
-      <div style={{ padding: '20px 28px 0', maxWidth: '1000px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em' }}>
-          AI Tour Matching
-        </h1>
-      </div>
+    <div className="aim">
+      <aside className="aim__side" aria-label="Các cuộc ghép tour">
+        <a className="aim__new" href="/ai-matching"><Plus aria-hidden="true" />Cuộc ghép tour mới</a>
+      </aside>
 
-      {/* Main Content: Chat Stream */}
-      <main
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '24px 28px',
-          maxWidth: '1000px',
-          margin: '0 auto',
-          width: '100%',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px',
-        }}
-      >
-        {messages.map(msg => (
-          <div
-            key={msg.id}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: msg.sender === 'Agency' ? 'flex-end' : 'flex-start',
-            }}
-          >
-            <div
-              style={{
-                maxWidth: '85%',
-                background:
-                  msg.sender === 'Agency'
-                    ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)'
-                    : '#1E293B',
-                color: '#F8FAFC',
-                padding: '16px 20px',
-                borderRadius: msg.sender === 'Agency' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                border: msg.sender === 'Agency' ? 'none' : '1px solid #334155',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                fontSize: '14.5px',
-                lineHeight: 1.6,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '11px',
-                  color: msg.sender === 'Agency' ? '#93C5FD' : '#94A3B8',
-                  marginBottom: '6px',
-                  fontWeight: 600,
-                }}
-              >
-                {msg.sender === 'Agency' ? 'Tour Agency' : 'Artisan AI Matcher'} • {msg.sent_at}
-              </div>
+      <div className="aim__pane">
+        {/* #188, screen-spec-AIT121 §3 #1: the screen heading; brand, navigation and account come from the shared shell. */}
+        <div className="aim__top"><div className="aim__col">
+          <h1 className="aim__h1">AI Tour Matching</h1>
+        </div></div>
 
-              <div>{msg.text}</div>
+        <section className="aim__col aim__stream" aria-label="Cuộc trò chuyện với AI">
+          {messages.map(msg => msg.sender === 'Agency' ? (
+            <div key={msg.id} className="aim__me">{msg.text}</div>
+          ) : (
+            <div key={msg.id} className="aim__ai" style={msg.recommendations?.length ? { width: '100%' } : undefined}>
+              {spark}
+              <div className="aim__b">
+                <p>{msg.text}</p>
+                <div className="aim__meta">Artisan AI Matcher • {msg.sent_at}</div>
 
-              {/* #156: the date the assistant understood, so the Agency can correct it */}
-              {msg.dateLine && (
-                <div id="understood-date" style={{ marginTop: '8px', fontSize: '13px', color: '#FCD34D' }}>{msg.dateLine}</div>
-              )}
+                {/* #156: the date the assistant understood, so the Agency can correct it */}
+                {msg.dateLine && <p id="understood-date" className="aim__date">{msg.dateLine}</p>}
 
-              {/* Relaxation suggestions (BR-011, FR-012, #23, #24) */}
-              {msg.relaxationLines && msg.relaxationLines.length > 0 && (
-                <ul id="relaxation-suggestions" style={{ margin: '10px 0 0 0', paddingLeft: '18px', fontSize: '13px', color: '#CBD5E1' }}>
-                  {msg.relaxationLines.map(line => <li key={line}>{line}</li>)}
-                </ul>
-              )}
-
-              {/* Temporary AI Failure: Retry re-analyzes the saved conversation (#33) or resends an unsent message (#36) */}
-              {msg.retry && (
-                <button
-                  id="retry-analysis-btn"
-                  onClick={() => analyze(msg.retry === 'resend' && msg.retryText ? { sender: 'Agency', text: msg.retryText } : { retry: true })}
-                  disabled={loading}
-                  style={{ marginTop: '10px', backgroundColor: '#D97706', color: '#FFF', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
-                >
-                  Retry
-                </button>
-              )}
-
-              {/* Clarification questions follow-up list */}
-              {msg.clarificationQuestions && msg.clarificationQuestions.length > 0 && (
-                <div
-                  id="clarification-box"
-                  style={{
-                    marginTop: '12px',
-                    padding: '12px 14px',
-                    background: 'rgba(217, 119, 6, 0.15)',
-                    borderLeft: '3px solid #F59E0B',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <strong style={{ color: '#FBBF24', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                    Required Clarifications:
-                  </strong>
-                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#FEF3C7', fontSize: '13px' }}>
-                    {msg.clarificationQuestions.map((q, idx) => (
-                      <li key={idx} style={{ marginBottom: '4px' }}>
-                        {q}
-                      </li>
-                    ))}
+                {/* Relaxation suggestions (BR-011, FR-012, #23, #24) */}
+                {msg.relaxationLines && msg.relaxationLines.length > 0 && (
+                  <ul id="relaxation-suggestions" className="aim__list">
+                    {msg.relaxationLines.map(line => <li key={line}>{line}</li>)}
                   </ul>
-                </div>
-              )}
+                )}
 
-              {/* Recommendation Cards */}
-              {msg.recommendations && msg.recommendations.length > 0 && (
-                <div
-                  id="recommendations-container"
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '14px',
-                    marginTop: '16px',
-                  }}
-                >
-                  {[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (
-                    <React.Fragment key={rec.experience_id}>
-                    {index === msg.recommendations!.length && (
-                      <h4 style={{ margin: '10px 0 0', fontSize: '14px', color: '#94A3B8', fontWeight: 700 }}>Gợi ý thêm</h4>
-                    )}
-                    <div
-                      className="rec-card"
-                      style={{
-                        background: '#0F172A',
-                        border: '1px solid #334155',
-                        borderRadius: '12px',
-                        padding: '18px',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                            <span
-                              style={{
-                                background: '#D97706',
-                                color: '#FFF',
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                              }}
-                            >
-                              Rank #{rec.rank}
-                            </span>
-                            <span style={{ color: '#94A3B8', fontSize: '12px' }}>{rec.village_name}</span>
+                {/* Temporary AI Failure: Retry re-analyzes the saved conversation (#33) or resends an unsent message (#36) */}
+                {msg.retry && (
+                  <button
+                    id="retry-analysis-btn"
+                    className="aim__btn aim__btn--p aim__retry"
+                    onClick={() => analyze(msg.retry === 'resend' && msg.retryText ? { sender: 'Agency', text: msg.retryText } : { retry: true })}
+                    disabled={loading}
+                  >
+                    Thử lại
+                  </button>
+                )}
+
+                {/* Clarification questions follow-up list */}
+                {msg.clarificationQuestions && msg.clarificationQuestions.length > 0 && (
+                  <div id="clarification-box" className="aim__clar">
+                    <strong>Cần làm rõ thêm:</strong>
+                    <ul>{msg.clarificationQuestions.map((q, idx) => <li key={idx}>{q}</li>)}</ul>
+                  </div>
+                )}
+
+                {/* Recommendation cards: the card of screen 02 (mockup 22) */}
+                {msg.recommendations && msg.recommendations.length > 0 && (
+                  <div id="recommendations-container" className="aim__cards">
+                    {[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (
+                      <React.Fragment key={rec.experience_id}>
+                      {index === msg.recommendations!.length && <h4 className="aim__more">Gợi ý thêm</h4>}
+                      <article className="v3-card v3r aim__card">
+                        <div className="v3r__main">
+                          <div className="v3r__top">
+                            <div className="v3r__titles">
+                              <h3 className="v3r__name"><Link href={cardOf(rec).href}>{cardOf(rec).name}</Link></h3>
+                              <p className="v3r__where">
+                                <span className="aim__rank">#{rec.rank}</span><span className="v3r__dot"> · </span>
+                                {cardOf(rec).where}{cardOf(rec).providerName && <><span className="v3r__dot"> · </span><Link href={cardOf(rec).providerHref} className="v3r__village">{cardOf(rec).providerName}</Link></>}
+                              </p>
+                            </div>
+                            {cardOf(rec).score !== null && <span className="aim__score">Hợp {cardOf(rec).score}%</span>}
                           </div>
-                          <h3 style={{ margin: '4px 0 6px 0', fontSize: '17px', color: '#F1F5F9' }}>
-                            {rec.experience_name}
-                          </h3>
-                        </div>
-
-                        <div
-                          style={{
-                            textAlign: 'right',
-                            background: 'rgba(16, 185, 129, 0.1)',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                          }}
-                        >
-                          <div style={{ fontSize: '18px', fontWeight: 800, color: '#34D399' }}>
-                            {rec.match_score}%
+                          {cardOf(rec).tags.length > 0 && <div className="v3-ftags">{cardOf(rec).tags.map(tag => <span key={tag} className="v3-ftag"><Users aria-hidden="true" />{tag}</span>)}</div>}
+                          {cardOf(rec).why && <p className="aim__why"><Sparkles aria-hidden="true" /><span><b>Vì sao hợp:</b> {cardOf(rec).why}</span></p>}
+                          <div className="aim__foot">
+                            <div>{cardOf(rec).pricePerPerson && <><b className="aim__price">{cardOf(rec).pricePerPerson}</b><span className="v3-cap"> /khách</span></>}</div>
+                            <div className="aim__acts">
+                              <button
+                                id={`chat-btn-${rec.provider_id}`}
+                                className="aim__btn aim__btn--s aim__btn--icon"
+                                aria-label="Nhắn tin cho xưởng"
+                                title="Nhắn tin cho xưởng"
+                                onClick={() => handleChat(rec.experience_id, rec.provider_id)}
+                              >
+                                <MessageSquare aria-hidden="true" />
+                              </button>
+                              <button id={`quote-btn-${rec.experience_id}`} className="aim__btn aim__btn--s" onClick={() => handleRequestQuote(rec.experience_id)}>Yêu cầu báo giá</button>
+                              <Link className="aim__btn aim__btn--p" href={cardOf(rec).scheduleHref}>Xem lịch trống <ChevronRight aria-hidden="true" /></Link>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '10px', color: '#A7F3D0' }}>Match Score</div>
-                        </div>
-                      </div>
 
-                      <p style={{ color: '#CBD5E1', fontSize: '13px', margin: '10px 0 14px 0', lineHeight: 1.5 }}>
-                        💡 <strong>Why this matches:</strong> {rec.explanation}
-                      </p>
+                          {quoteStatus[rec.experience_id] && (
+                            <div className="aim__status">
+                              {quoteStatus[rec.experience_id] === HANDOFF_FAILURE_TEXT ? (
+                                <>{HANDOFF_FAILURE_TEXT}{' '}<button className="handoff-retry-btn" onClick={() => handleRequestQuote(rec.experience_id)}>Retry</button></>
+                              ) : quoteStatus[rec.experience_id]}
+                            </div>
+                          )}
 
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          paddingTop: '12px',
-                          borderTop: '1px solid #1E293B',
-                          fontSize: '12.5px',
-                        }}
-                      >
-                        <div style={{ color: '#94A3B8' }}>
-                          Price:{' '}
-                          <strong style={{ color: '#F8FAFC' }}>
-                            {rec.price_per_person?.toLocaleString()} VND/pax
-                          </strong>{' '}
-                          • Max Cap: <strong style={{ color: '#F8FAFC' }}>{rec.max_participants} pax</strong>
+                          {chatStatus[rec.provider_id] && (
+                            <div className="aim__status">
+                              {chatStatus[rec.provider_id] === HANDOFF_FAILURE_TEXT ? (
+                                <>{HANDOFF_FAILURE_TEXT}{' '}<button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Retry</button></>
+                              ) : chatStatus[rec.provider_id]}
+                            </div>
+                          )}
                         </div>
-
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                          <Link
-                            href={`/explore/experiences/${rec.experience_id}`}
-                            style={{ color: '#F8FAFC', border: '1px solid #475569', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
-                          >
-                            View Experience
-                          </Link>
-                          <Link
-                            href={`/explore/providers/${rec.provider_id}`}
-                            style={{ color: '#CBD5E1', border: '1px solid #334155', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}
-                          >
-                            Provider
-                          </Link>
-                          <button
-                            id={`quote-btn-${rec.experience_id}`}
-                            onClick={() => handleRequestQuote(rec.experience_id)}
-                            style={{
-                              background: '#D97706',
-                              color: '#FFF',
-                              border: 'none',
-                              padding: '8px 14px',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Request Quote
-                          </button>
-                          <button
-                            id={`chat-btn-${rec.provider_id}`}
-                            onClick={() => handleChat(rec.experience_id, rec.provider_id)}
-                            style={{
-                              background: '#334155',
-                              color: '#F8FAFC',
-                              border: '1px solid #475569',
-                              padding: '8px 14px',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Chat
-                          </button>
-                        </div>
-                      </div>
-
-                      {quoteStatus[rec.experience_id] && (
-                        <div
-                          style={{
-                            marginTop: '10px',
-                            fontSize: '12px',
-                            color: '#34D399',
-                            background: 'rgba(16, 185, 129, 0.1)',
-                            padding: '6px 10px',
-                            borderRadius: '4px',
-                          }}
-                        >
-                          {quoteStatus[rec.experience_id] === HANDOFF_FAILURE_TEXT ? (
-                            <>
-                              {HANDOFF_FAILURE_TEXT}{' '}
-                              <button className="handoff-retry-btn" onClick={() => handleRequestQuote(rec.experience_id)}>Retry</button>
-                            </>
-                          ) : quoteStatus[rec.experience_id]}
-                        </div>
-                      )}
-
-                      {chatStatus[rec.provider_id] && (
-                        <div
-                          style={{
-                            marginTop: '6px',
-                            fontSize: '12px',
-                            color: '#60A5FA',
-                            background: 'rgba(59, 130, 246, 0.1)',
-                            padding: '6px 10px',
-                            borderRadius: '4px',
-                          }}
-                        >
-                          {chatStatus[rec.provider_id] === HANDOFF_FAILURE_TEXT ? (
-                            <>
-                              {HANDOFF_FAILURE_TEXT}{' '}
-                              <button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Retry</button>
-                            </>
-                          ) : chatStatus[rec.provider_id]}
-                        </div>
-                      )}
-                    </div>
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
+                      </article>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+          ))}
+
+          {loading && (
+            <div className="aim__loading"><span className="aim__dot" />AI đang phân tích yêu cầu và đối chiếu các trải nghiệm đã xác minh…</div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </section>
+
+        <div className="aim__col aim__dock">
+          <div className="aim__sugg" aria-label="Gợi ý nhanh">
+            {quickPrompts.map(q => (
+              <button key={q.label} type="button" className="aim__sg" onClick={() => handleSendMessage(q.text)} disabled={loading}><Sparkles aria-hidden="true" />{q.label}</button>
+            ))}
           </div>
-        ))}
-
-        {loading && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94A3B8', fontSize: '13px' }}>
-            <div
-              style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                background: '#D97706',
-                animation: 'pulse 1s infinite',
-              }}
-            />
-            AI Engine is analyzing tour requirements & evaluating verified craft candidates...
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </main>
-
-      {/* Suggested Quick Prompts */}
-      <div
-        style={{
-          padding: '10px 28px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          borderTop: '1px solid #1E293B',
-          display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
-          maxWidth: '1000px',
-          margin: '0 auto',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        <span style={{ fontSize: '12px', color: '#94A3B8', alignSelf: 'center', whiteSpace: 'nowrap' }}>
-          Quick Prompts:
-        </span>
-        <button
-          onClick={() =>
-            handleSendMessage(
-              '15 French tourists visiting on 2026-11-15 looking for hands-on pottery ceramic experiences near Hanoi under 500,000 VND per person.'
-            )
-          }
-          style={{
-            background: '#1E293B',
-            color: '#CBD5E1',
-            border: '1px solid #334155',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Ceramic (Complete Requirements)
-        </button>
-        <button
-          onClick={() => handleSendMessage('We need an authentic silk workshop in Van Phuc')}
-          style={{
-            background: '#1E293B',
-            color: '#CBD5E1',
-            border: '1px solid #334155',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Silk (Triggers Clarification)
-        </button>
-        <button
-          onClick={() =>
-            handleSendMessage('Group of 100 tourists looking for craft tour on Dec 25 with budget 20,000 VND')
-          }
-          style={{
-            background: '#1E293B',
-            color: '#CBD5E1',
-            border: '1px solid #334155',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Tight Budget (Triggers Fallback)
-        </button>
-      </div>
-
-      {/* Input Box Footer */}
-      <footer
-        style={{
-          padding: '16px 28px 24px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          borderTop: '1px solid #1E293B',
-          maxWidth: '1000px',
-          margin: '0 auto',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        <form
-          onSubmit={e => {
-            e.preventDefault()
-            handleSendMessage()
-          }}
-          style={{ display: 'flex', gap: '12px', position: 'relative' }}
-        >
-          <input
-            id="matching-prompt-input"
-            type="text"
-            value={inputText}
-            maxLength={2000}
-            onChange={e => setInputText(e.target.value)}
-            placeholder="Describe your tour needs (e.g. 15 guests on Nov 15 looking for pottery under 500k VND)..."
-            style={{
-              flex: 1,
-              padding: '14px 18px',
-              borderRadius: '10px',
-              border: '1px solid #334155',
-              background: '#0F172A',
-              color: '#F8FAFC',
-              fontSize: '14px',
-              outline: 'none',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-            }}
-          />
-          <button
-            id="send-message-btn"
-            type="submit"
-            disabled={!inputText.trim() || loading}
-            style={{
-              backgroundColor: inputText.trim() && !loading ? '#D97706' : '#334155',
-              color: '#FFFFFF',
-              border: 'none',
-              padding: '0 24px',
-              borderRadius: '10px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: inputText.trim() && !loading ? 'pointer' : 'not-allowed',
-              transition: 'background-color 0.2s',
+          <form
+            className="aim__comp"
+            onSubmit={e => {
+              e.preventDefault()
+              handleSendMessage()
             }}
           >
-            Match
-          </button>
-        </form>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#64748B' }}>
-          <span>Press Enter to submit natural-language requirements</span>
-          <span>{inputText.length} / 2000 characters</span>
+            <textarea
+              id="matching-prompt-input"
+              value={inputText}
+              maxLength={2000}
+              rows={2}
+              aria-label="Mô tả nhu cầu của đoàn"
+              onChange={e => setInputText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage() } }}
+              placeholder="Hỏi thêm hoặc sửa yêu cầu…"
+            />
+            <button id="send-message-btn" type="submit" className="aim__send" aria-label="Gửi" disabled={!inputText.trim() || loading}><ArrowUp aria-hidden="true" /></button>
+          </form>
+          <p className="aim__note">AI có thể gợi ý chưa đúng. Kiểm tra lịch và giá ở trang trải nghiệm trước khi gửi yêu cầu.</p>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }

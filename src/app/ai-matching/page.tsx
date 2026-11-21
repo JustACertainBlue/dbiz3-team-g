@@ -7,6 +7,7 @@ import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodChips, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 import { historyDate, historyTitle } from './history-view'
+import { loadTurns, saveTurns, type StorageLike } from './turn-store'
 import { perGuest, recommendationCardView } from './card-view'
 import { useAgencyName } from './agency-name'
 import { ArrowUp, Check, ChevronDown, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users } from 'lucide-react'
@@ -26,9 +27,12 @@ interface Message {
   recommendations?: any[]
   additionalSuggestions?: any[] // FR-008 (#188): up to 5 after the Top 5
   relaxationLines?: string[]
+  recomputed?: boolean // answer rebuilt by re-running the analysis (no memory of the original on this browser)
   retry?: 'reanalyze' | 'resend'
   retryText?: string
 }
+
+const browserStorage = (): StorageLike | null => { try { return window.localStorage } catch { return null } }
 
 export default function AiMatchingScreen() {
   const agencyName = useAgencyName()
@@ -45,6 +49,7 @@ export default function AiMatchingScreen() {
   }, [])
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
+  const [reloading, setReloading] = useState(false)
   const [chips, setChips] = useState<string[]>([])
   const [history, setHistory] = useState<{ session_id: string; title: string; last_activity_at: string }[]>([])
   const [chatStatus, setChatStatus] = useState<Record<string, string>>({})
@@ -116,20 +121,43 @@ export default function AiMatchingScreen() {
     }
   }
 
-  // Reopen an earlier conversation: show the stored Agency messages, then re-analyze them with retry (adds no message).
+  // Reopen an earlier conversation. With the memory of this browser every turn shows at once and nothing is analyzed
+  // again. Without it (another machine) the stored Agency messages are re-analyzed with retry (adds no message).
   const resumeSession = async (id: string) => {
+    const remembered = loadTurns(browserStorage(), agencyId, id)
+    if (remembered) {
+      setSessionId(id)
+      setMessages(remembered.messages as unknown as Message[])
+      setChips(remembered.chips)
+    }
     try {
       const res = await fetch(`/api/ait/sessions/${id}`)
-      if (!res.ok) return initializeSession()
+      if (!res.ok) { setMessages([]); setChips([]); return initializeSession() }
+      if (remembered) return
       const data = await res.json() as { session_id: string; messages: { message_id: string; sender: string; text: string; sent_at: string }[] }
       setSessionId(data.session_id)
       const stored = data.messages.filter(m => m.sender === 'Agency')
       setMessages(stored.map(m => ({ id: m.message_id, sender: 'Agency' as const, text: m.text, sent_at: new Date(m.sent_at).toLocaleTimeString() })))
-      if (stored.length > 0) await analyze({ retry: true }, data.session_id)
+      if (stored.length === 0) return
+      setReloading(true)
+      try {
+        await analyze({ retry: true }, data.session_id)
+        setMessages(prev => {
+          const last = prev[prev.length - 1]
+          return last && last.sender === 'Assistant' && !last.retry ? [...prev.slice(0, -1), { ...last, recomputed: true }] : prev
+        })
+      } finally { setReloading(false) }
     } catch {
-      await initializeSession()
+      if (!remembered) await initializeSession()
     }
   }
+
+  // Keep every answered turn (answer, chips, cards) in this browser, newest 20 sessions per agency.
+  useEffect(() => {
+    const last = messages[messages.length - 1]
+    if (!sessionId || !agencyId || loading || !last || last.sender !== 'Assistant' || last.retry) return
+    saveTurns(browserStorage(), agencyId, sessionId, { messages: messages as never, chips })
+  }, [messages, chips, loading, sessionId, agencyId])
 
   // Guest Access Guard (BR-001, BR-002)
   if (role === 'Guest') {
@@ -295,6 +323,7 @@ export default function AiMatchingScreen() {
               {spark}
               <div className="aim__b">
                 <p>{msg.text}</p>
+                {msg.recomputed && <p className="aim__cap">Gợi ý được tính lại theo giá và lịch hiện tại.</p>}
                 <div className="aim__meta">Trợ lý AI • {msg.sent_at}</div>
 
                 {/* #156: the date the assistant understood, so the Agency can correct it */}
@@ -396,7 +425,7 @@ export default function AiMatchingScreen() {
           ))}
 
           {loading && (
-            <div className="aim__loading"><span className="aim__dot" />AI đang phân tích yêu cầu và đối chiếu các trải nghiệm đã xác minh…</div>
+            <div className="aim__loading"><span className="aim__dot" />{reloading ? 'Đang tải lại gợi ý…' : 'AI đang phân tích yêu cầu và đối chiếu các trải nghiệm đã xác minh…'}</div>
           )}
 
           <div ref={messagesEndRef} />

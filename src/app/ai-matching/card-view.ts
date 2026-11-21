@@ -1,5 +1,6 @@
 // Pure view model of one recommendation card (mockup 22). Only API fields are used; nothing is invented.
 import type { RecommendationView } from './matching-view'
+import type { PriceView } from '@/lib/explore/v3-search'
 
 const vnd = (value: number) => `${value.toLocaleString('vi-VN')} ₫`
 
@@ -21,6 +22,6 @@ export function recommendationCardView(rec: Partial<RecommendationView> & Pick<R
 }
 
 /** Per-guest price shown under the group total (mockup 22): total ÷ guests after the discount; null when there is no group price. */
-export function perGuest(price: { kind: string; guests?: number; total?: number }): number | null {
-  return price.kind === 'group' && price.guests && price.total !== undefined ? Math.round(price.total / price.guests) : null
+export function perGuest(price: PriceView): number | null {
+  return price.kind === 'group' && price.guests > 0 ? Math.round(price.total / price.guests) : null
 }

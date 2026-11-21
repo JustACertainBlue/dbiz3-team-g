@@ -38,8 +38,6 @@ const DEVIATIONS: Record<string, Record<string, string>> = {
   '15': { 'Email hoặc mật khẩu chưa đúng. Kiểm tra lại hoặc đặt lại mật khẩu.': 'error state, shown only after a failed sign-in (wording is in login/page.tsx)' },
   '16': { 'Chúng tôi đã gửi đường dẫn đặt lại mật khẩu đến': 'step 2 names the email only when step 1 kept it in sessionStorage; without it the page says "Nếu email đã đăng ký…"' },
   '17': {
-    // Màn 17: mockup 21/11 đã bỏ 3 trường (Loại hình, Số nhân viên, Loại tour); giữ lại vì schema + DB bắt buộc (NOT NULL); gỡ cần migration, để đợt sau.
-    '(3 fields)': 'Màn 17: mockup 21/11 đã bỏ 3 trường; giữ lại vì schema + DB bắt buộc (NOT NULL); gỡ cần migration, để đợt sau',
     'Tôi xác nhận thông tin trên là đúng và đồng ý với': 'the box is there, but there is no terms page yet and the agreement is not stored (it only gates the submit button)',
     'điều khoản sử dụng': 'plain text, no terms page yet',
     'chính sách bảo mật': 'plain text, no privacy page yet',

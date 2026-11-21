@@ -56,7 +56,8 @@ describe('#62 spec-AUT BR-001 / US-1 AS-3 | self-registration creates Tour Agenc
     const html = renderToStaticMarkup(React.createElement(RegisterPage))
     expect([...html.matchAll(/<select[^>]*name="([^"]+)"/g)].map(m => m[1])).toEqual(['company_type'])
     expect(html).not.toMatch(/type="radio"/)
-    expect([...html.matchAll(/<option[^>]*>([^<]*)</g)].map(m => m[1])).toEqual(['Travel Agency', 'Tour Operator', 'TMC'])
+    // UI v3 integration 21/11: the option text is Vietnamese (mockup 17); the enum is the option value.
+    expect([...html.matchAll(/<option[^>]*value="([^"]*)"/g)].map(m => m[1])).toEqual(['Travel Agency', 'Tour Operator', 'TMC'])
   })
 
   it('BR-001 (error): a Guest cannot create a Local Provider account through the account-creation route; nothing is written', async () => {

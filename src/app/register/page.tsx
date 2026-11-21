@@ -250,7 +250,7 @@ export default function RegisterPage() {
               <div className="av3-field">
                 <label htmlFor="company_type">Loại hình <span className="av3-req" aria-hidden="true">*</span></label>
                 <select id="company_type" name="company_type" value={formData.company_type} onChange={handleInputChange}>
-                  {COMPANY_TYPES.map((type) => <option key={type} value={type} label={COMPANY_LABELS[type] ?? type}>{type}</option>)}
+                  {COMPANY_TYPES.map((type) => <option key={type} value={type}>{COMPANY_LABELS[type] ?? type}</option>)}
                 </select>
               </div>
               <Field id="team_size" label="Số nhân viên" name="team_size" type="number" value={formData.team_size} />
@@ -268,6 +268,7 @@ export default function RegisterPage() {
                   </label>
                 ))}
               </div>
+              <p className="av3-field__hint">Chọn ít nhất một loại. Giúp AI gợi ý trải nghiệm hợp với đoàn của bạn.</p>
               {errors["tour_types"] && <span className="av3-field__err" role="alert">{errors["tour_types"]}</span>}
             </fieldset>
           </section>

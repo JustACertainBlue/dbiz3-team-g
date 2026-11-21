@@ -1,5 +1,6 @@
 // scripts/db/dev-seed-pending-reviews.mjs: the data it builds (no database). The rows are also loaded into the
 // fixture repository and read by the same code the review screens use, so the demo data is known to show up.
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   DEV_PROJECT_REF, ADMIN_RESET_EMAIL_NOTE, assertDevTarget, buildPendingReviewData, pickDemoVillages, planAdminPasswordReset, undoOps,
@@ -34,6 +35,17 @@ describe('assertDevTarget', () => {
       expect(message).not.toBe('')
       expect(message).not.toContain('secret-pw')
     }
+  })
+})
+
+describe('CLI order', () => {
+  it('loads the env files before the DEV target check, and the target check before any connection or hashing', () => {
+    const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
+    const at = (needle: string) => source.indexOf(needle)
+    expect(at('loadEnvConfig(process.cwd())')).toBeGreaterThan(-1)
+    expect(at('loadEnvConfig(process.cwd())')).toBeLessThan(at('assertDevTarget(process.env)'))
+    expect(at('assertDevTarget(process.env)')).toBeLessThan(at("import('bcryptjs')"))
+    expect(at('assertDevTarget(process.env)')).toBeLessThan(at("connection('application')"))
   })
 })
 

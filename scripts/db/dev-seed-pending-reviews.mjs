@@ -194,6 +194,9 @@ async function main(argv) {
   if (!seed && !reset) throw new Error('--no-seed is only for --reset-admin-passwords. Nothing was changed.')
 
   const { readFileSync, writeFileSync, mkdirSync, unlinkSync } = await import('node:fs')
+  // Same env loading as the other db scripts (.env.local etc.), done before the target check so DATABASE_APP_URL is visible.
+  const nextEnv = (await import('@next/env')).default
+  nextEnv.loadEnvConfig(process.cwd())
   const ref = assertDevTarget(process.env) // before any connection
 
   let hash = null

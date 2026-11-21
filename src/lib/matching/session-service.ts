@@ -110,3 +110,32 @@ export async function getMessages(sessionId: string): Promise<ConversationMessag
       sent_at: row.sent_at,
     }))
 }
+
+export interface MatchingSessionSummary {
+  session_id: string
+  title: string
+  started_at: string
+  last_activity_at: string
+}
+
+/** Screen 22 history: the company's own sessions with at least one Agency message, newest first (read-only). */
+export async function listMatchingSessions(agencyId: string, limit = 20): Promise<MatchingSessionSummary[]> {
+  const repository = demoRepository()
+  const sessions = (await repository.all('matching_sessions')).filter(row => row.agency_id === agencyId)
+  const messages = (await repository.all('matching_messages')).filter(row => row.sender === 'Agency')
+  const firstText = new Map<string, { sent_at: string; text: string }>()
+  for (const row of messages) {
+    const seen = firstText.get(row.matching_session_id)
+    if (!seen || Date.parse(row.sent_at) < Date.parse(seen.sent_at)) firstText.set(row.matching_session_id, { sent_at: row.sent_at, text: row.text })
+  }
+  return sessions
+    .filter(row => firstText.has(row.matching_session_id))
+    .sort((a, b) => Date.parse(b.last_activity_at) - Date.parse(a.last_activity_at))
+    .slice(0, limit)
+    .map(row => ({
+      session_id: row.matching_session_id,
+      title: firstText.get(row.matching_session_id)!.text,
+      started_at: row.started_at,
+      last_activity_at: row.last_activity_at,
+    }))
+}

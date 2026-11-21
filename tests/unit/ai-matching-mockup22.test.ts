@@ -1,8 +1,9 @@
 /**
  * Screen 22 (AIT121): blocks, order and wording follow hab-mockup-v3 source/GhepTourAI.dc.html.
  * The wording lists below are copied from that file. If the mockup folder is on this machine, they are also checked
- * against it. Accepted differences (human decision): no history/search in the left rail, quick prompts instead of
- * follow-up chips, no "2 ca liên tiếp" text.
+ * against it. Accepted differences (human decision): no "Tìm cuộc trò chuyện" in the left rail, quick prompts instead of
+ * follow-up chips, no "2 ca liên tiếp" text. 2026-11-21: the three pills (Số khách, Ngày đi, Ngân sách) were removed from the
+ * mockup's new-conversation composer, so they are removed here too.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -15,12 +16,12 @@ const view = code('src/app/ai-matching/matching-view.ts')
 const pageCode = code('src/app/ai-matching/page.tsx')
 const mockupFile = join(homedir(), 'Desktop/hab-mockup-v3/source/GhepTourAI.dc.html')
 
-const SIDEBAR = ['Các cuộc ghép tour', 'Cuộc ghép tour mới']
+const SIDEBAR = ['Các cuộc ghép tour', 'Cuộc ghép tour mới', 'Gần đây']
 const EMPTY_STATE = [
   'đoàn tiếp theo cần gì?',
   'Tin nhắn cho Ghép tour AI',
   'Kể về đoàn của bạn: bao nhiêu khách, đi ngày nào, ngân sách, muốn làm gì…',
-  'Số khách', 'Ngày đi', 'Ngân sách', 'Gửi',
+  'Gửi',
   '25 học sinh, muốn tự làm sản phẩm', 'Khách Hàn Quốc 15 người', 'Team building 30 người', 'Tour nửa ngày, dưới 200.000 ₫/khách',
   'AI chỉ gợi ý trải nghiệm và ngày còn trống. Bạn tự chọn và gửi yêu cầu đặt chỗ cho xưởng.',
 ]

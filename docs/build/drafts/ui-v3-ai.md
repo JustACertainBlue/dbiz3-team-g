@@ -77,3 +77,22 @@
 - Forms: both composer forms of screen 22 now have `method="post"` (before: no method → a submit before hydration would GET `/ai-matching`). The inputs have no `name`, so no data could reach a URL either way. No other `<form>` in the screen.
 - Temporary-password sessions: no new API route was added; `/api/ait/matching` uses `sessionContextFromRequest`, which turns a `must_change_password` session into a Guest for every path except change-password/session/logout → 401, no recommendations or prices. The screen layout uses `currentServerSession` (same function, path `/internal/session`) → Guest → redirect to `/login`.
 - Tests: tests/unit/ai-matching-security.test.ts (forms POST; matching 401 and layout Guest for a must-change session, with a normal-session control).
+
+## Round 8: pills removed, history ("Gần đây")
+
+**A. Phone.** Screen 22 phone layout is not finished (result cards push the text into the right column). Not touched, per decision 21/11 (desktop focus).
+
+**B. Mockup change.** The new-conversation composer has no "Số khách / Ngày đi / Ngân sách" pills any more; only the textarea and the send button remain. Removed from `page.tsx` and `ai-matching.css`. Test change: `tests/unit/ai-matching-mockup22.test.ts` — removed the line `'Số khách', 'Ngày đi', 'Ngân sách', 'Gửi',` → `'Gửi',` in `EMPTY_STATE`, and added `'Gần đây'` to `SIDEBAR` (plus the header comment).
+
+**C. History.**
+1. What is stored (checked in `data/schema.sql` and `src/lib/matching/session-service.ts`):
+   - `matching_sessions`: `matching_session_id`, `agency_id`, `conversation_context` (jsonb, always `{}`), `started_at`, `last_activity_at`.
+   - `matching_messages`: `message_id`, `matching_session_id`, `sender` (`Agency` | `Assistant`), `text`, `sent_at`.
+   - Only the Agency's messages are written (`/api/ait/sessions/[id]/messages` POST). The assistant's replies, the cards and the "AI đã hiểu" chips are built in the browser and never saved. `recommendation_results` exists in the schema but no code writes it.
+   - Enough for the sidebar (first Agency message + date) and for continuing (extraction reads all Agency messages). Not enough to show the old assistant replies as they were: they are rebuilt by re-running the analysis on the stored messages (`retry: true`, adds no message). The extractor and matching are rule-based, so the result is the same unless the catalogue or prices changed since. No migration.
+2. API (read-only, same access as `/api/ait/matching`): `GET /api/ait/sessions` (own company, newest first by `last_activity_at`, max 20, only sessions with at least one Agency message) and `GET /api/ait/sessions/[id]` (session + stored messages). 401 Guest; 403 not a Tour_Agency; 403 another company's or unknown session. Tests: `tests/unit/ai-matching-history.test.ts`.
+3. Sidebar: each row = first Agency message cut to 42 characters + "Hôm nay" or dd/mm (Hanoi time). A row opens `/ai-matching?session=<id>`: stored messages show, the analysis is re-run, and the next message goes to the same `session_id`. "Cuộc ghép tour mới" is still a plain link and starts a new session; the old one stays in "Gần đây".
+
+**Deviations:** no "Tìm cuộc trò chuyện" (decision); no "đang xem" chevron collapse for "Gần đây" (icon only); old assistant replies are rebuilt, not replayed; one session is created on every page load, but sessions with no message are hidden from the list. Not photographed: needs login.
+
+**Cần sửa chung:** none. Possible later (needs migration, not done): store assistant replies / `recommendation_results` so an old chat shows exactly what was said.

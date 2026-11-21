@@ -6,9 +6,10 @@ import Link from 'next/link'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodChips, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
+import { historyDate, historyTitle } from './history-view'
 import { recommendationCardView } from './card-view'
 import { useAgencyName } from './agency-name'
-import { ArrowUp, CalendarDays, Check, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users, Wallet } from 'lucide-react'
+import { ArrowUp, Check, ChevronDown, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users } from 'lucide-react'
 import CoverImage from '../explore/v3/CoverImage'
 import { RESULT_SIZES } from '../explore/v3/image-sizes'
 import { vnd } from '../explore/v3/ExperienceCard'
@@ -45,6 +46,7 @@ export default function AiMatchingScreen() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [chips, setChips] = useState<string[]>([])
+  const [history, setHistory] = useState<{ session_id: string; title: string; last_activity_at: string }[]>([])
   const [chatStatus, setChatStatus] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionInitializationRef = useRef(false)
@@ -68,7 +70,11 @@ export default function AiMatchingScreen() {
     if (role === 'Agency' && agencyId) {
       if (sessionInitializationRef.current) return
       sessionInitializationRef.current = true
-      initializeSession()
+      // "Gần đây": ?session=<id> reopens an earlier conversation; otherwise a new session starts.
+      const resume = new URLSearchParams(window.location.search).get('session')
+      if (resume) resumeSession(resume)
+      else initializeSession()
+      loadHistory()
     }
   }, [role, agencyId])
 
@@ -98,6 +104,30 @@ export default function AiMatchingScreen() {
     } catch {
       // Offline fallback for preview
       setSessionId(`session-local-${Date.now()}`)
+    }
+  }
+
+  const loadHistory = async () => {
+    try {
+      const res = await fetch('/api/ait/sessions')
+      if (res.ok) setHistory(((await res.json()) as { sessions?: typeof history }).sessions ?? [])
+    } catch {
+      // The rail stays empty; the screen keeps working.
+    }
+  }
+
+  // Reopen an earlier conversation: show the stored Agency messages, then re-analyze them with retry (adds no message).
+  const resumeSession = async (id: string) => {
+    try {
+      const res = await fetch(`/api/ait/sessions/${id}`)
+      if (!res.ok) return initializeSession()
+      const data = await res.json() as { session_id: string; messages: { message_id: string; sender: string; text: string; sent_at: string }[] }
+      setSessionId(data.session_id)
+      const stored = data.messages.filter(m => m.sender === 'Agency')
+      setMessages(stored.map(m => ({ id: m.message_id, sender: 'Agency' as const, text: m.text, sent_at: new Date(m.sent_at).toLocaleTimeString() })))
+      if (stored.length > 0) await analyze({ retry: true }, data.session_id)
+    } catch {
+      await initializeSession()
     }
   }
 
@@ -134,11 +164,11 @@ export default function AiMatchingScreen() {
   }
 
   // Analyze a new Agency message, or on Retry the stored conversation without adding a message (#33).
-  const analyze = async (body: Record<string, unknown>) => {
-    if (!sessionId) return
+  const analyze = async (body: Record<string, unknown>, id: string | null = sessionId) => {
+    if (!id) return
     setLoading(true)
     try {
-      const result = await postJson(`/api/ait/sessions/${sessionId}/messages`, body)
+      const result = await postJson(`/api/ait/sessions/${id}/messages`, body)
       const outcome = messageOutcome(result)
       // #156: show the date understood so the Agency can correct it.
       if ('body' in result) { const found = understoodChips(result.body); if (found.length > 0) setChips(found) }
@@ -146,7 +176,7 @@ export default function AiMatchingScreen() {
       if (outcome.kind === 'clarify') {
         addAssistant({ text: 'Mình cần thêm một vài thông tin để tìm trải nghiệm hợp với đoàn của bạn:', clarificationQuestions: outcome.questions, dateLine })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile, dateLine)
+        await fetchMatchingResults(outcome.profile, dateLine, id)
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
@@ -162,14 +192,15 @@ export default function AiMatchingScreen() {
     setMessages(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'Agency', text: textToSend, sent_at: new Date().toLocaleTimeString() }])
     if (!customPrompt) setInputText('')
     await analyze({ sender: 'Agency', text: textToSend })
+    loadHistory()
   }
 
   /**
    * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
    * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
-  const fetchMatchingResults = async (profile: unknown, dateLine?: string) => {
-    const result = await postJson('/api/ait/matching', { session_id: sessionId, tour_preference_profile: profile })
+  const fetchMatchingResults = async (profile: unknown, dateLine?: string, id: string | null = sessionId) => {
+    const result = await postJson('/api/ait/matching', { session_id: id, tour_preference_profile: profile })
     if ('networkError' in result || !result.ok) {
       addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
       return
@@ -204,13 +235,24 @@ export default function AiMatchingScreen() {
 
   const cardOf = recommendationCardView
   const isNew = messages.length === 0 && !loading
-  const addHint = (hint: string) => setInputText(prev => (prev ? `${prev.trimEnd()} ` : '') + hint)
   const spark = <span className="aim__av" aria-hidden="true"><Sparkles /></span>
 
   return (
     <div className="aim">
       <aside className="aim__side" aria-label="Các cuộc ghép tour">
         <a className="aim__new" href="/ai-matching"><Plus aria-hidden="true" />Cuộc ghép tour mới</a>
+        {history.length > 0 && <>
+          <p className="aim__shead">Gần đây <ChevronDown aria-hidden="true" /></p>
+          <ul className="aim__hist">
+            {history.map(item => (
+              <li key={item.session_id}>
+                <a href={`/ai-matching?session=${item.session_id}`} className={item.session_id === sessionId ? 'aim__cur' : undefined} aria-current={item.session_id === sessionId ? 'page' : undefined}>
+                  {historyTitle(item.title)}<span>{historyDate(item.last_activity_at)}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>}
       </aside>
 
       <div className="aim__pane">
@@ -229,9 +271,6 @@ export default function AiMatchingScreen() {
               placeholder="Kể về đoàn của bạn: bao nhiêu khách, đi ngày nào, ngân sách, muốn làm gì…"
             />
             <div className="aim__cbar">
-              <button type="button" className="aim__pill" onClick={() => addHint('Số khách: ')}><Users aria-hidden="true" />Số khách</button>
-              <button type="button" className="aim__pill" onClick={() => addHint('Ngày đi: ')}><CalendarDays aria-hidden="true" />Ngày đi</button>
-              <button type="button" className="aim__pill" onClick={() => addHint('Ngân sách: ')}><Wallet aria-hidden="true" />Ngân sách</button>
               <button id="send-message-btn" type="submit" className="aim__send" aria-label="Gửi" disabled={!inputText.trim() || loading}><ArrowUp aria-hidden="true" /></button>
             </div>
           </form>

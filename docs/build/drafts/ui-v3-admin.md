@@ -46,11 +46,26 @@ HDT sees workshops as view only ("Sở chỉ xem, UBND xã quyết định"); on
 11. Page size of the account list stays 20 (existing); the mockup shows 6 of 20.
 12. File sizes in 41a come from `stored_files.file_size_bytes`; "Mở" is shown only when the original file exists in storage.
 
-## Not verified
+## Screenshots (desktop 1440 only)
 
-- No screenshots at 1440 and 390 and no side-by-side with png: the DEV password hashes replaced the fixture login (401 for thanhvien8/9 with any
-  password) and the user chose to skip screenshots. Layout was written from the mockup CSS only, never seen in a browser.
-- Not tested against live data: the DEV DB was only read by the unit-test fixtures, not by these pages.
+Taken with a hand-made session of a **UBND xã Bát Tràng** account (saved outside the repo), compared with png/38–41a.
+Chưa chụp vì cần đăng nhập: the **HDT** view of 38, 39, 40, 41, 41a (no HDT test account was available), the **pending** tab with rows,
+the **decision form** (no pending workshop in DEV), and the **Agency** detail `/admin/agencies/[id]` (no Agency review rows in DEV).
+A shared script will take these in a batch later. Those parts were checked by the block/order/text test (below), not by eye.
+
+Seen and fixed after comparing with the png:
+- 41a showed raw English statuses ("Verified", "Approve · v1"): now "Đã duyệt", "Đã duyệt · phiên bản 1".
+- 40 account id was cut at 13 characters: now 18, as in png/40.
+- Lead line under each h1 sat 4 px too tight; switch label in 39 was regular weight: now bold green as in png/39.
+- Left as is: date inputs show dd/mm/yyyy (browser locale; png shows mm/dd/yyyy); the table in 41 has no inner card padding as in png/41; row height 77 px vs 71 px in png/39;
+  workshop "Nghề" shows the stored English value ("Ceramics").
+
+## Mockup block test
+
+`tests/unit/v3-admin-mockup-blocks.test.ts` + `tests/fixtures/v3-admin-mockup-blocks.json` (headings, labels, table headers, buttons taken from the
+`.dc.html` files): every phrase must be in the page, in the mockup order, with the same text. If the mockup folder is on the machine
+(`HAB_MOCKUP_DIR`, default `~/Desktop/hab-mockup-v3`) the fixture is also compared with the files. Mutation check: renaming "Lịch sử trạng thái" in screen 40 turns it red.
+Limits: it checks static text and order, not spacing, colours or data; split phrases (a label followed by a hint) are listed as two parts in the fixture.
 
 ## Cần sửa chung
 

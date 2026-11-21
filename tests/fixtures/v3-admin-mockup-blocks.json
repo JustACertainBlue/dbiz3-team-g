@@ -1,0 +1,71 @@
+{
+ "38": {
+  "file": "QuanTriTongQuan.dc.html",
+  "phrases": [
+   "Tổng quan",
+   "Hợp tác Xưởng nghề & Công ty lữ hành",
+   "Từ ngày",
+   "Đến ngày",
+   "Đặt chỗ theo tháng",
+   "Từ trò chuyện đến hoàn thành tour",
+   "5 Xưởng nghề nhận nhiều đặt chỗ nhất",
+   "5 Công ty lữ hành đặt nhiều nhất",
+   "Hồ sơ cần bạn xem",
+   "Giao dịch T{"
+  ]
+ },
+ "39": {
+  "file": "QuanLyNguoiDung.dc.html",
+  "phrases": [
+   "Quản lý tài khoản",
+   "Tìm",
+   "Vai trò",
+   "Trạng thái",
+   "Tạo từ ngày",
+   "Người dùng",
+   "Tổ chức",
+   "Vai trò",
+   "Trạng thái",
+   "Đăng nhập gần nhất"
+  ]
+ },
+ "40": {
+  "file": "ThongTinTaiKhoan.dc.html",
+  "phrases": [
+   "Thông tin hệ thống",
+   "Mã tài khoản",
+   "Email",
+   "Vai trò",
+   "Trạng thái",
+   "Ngày đăng ký",
+   "Đăng nhập gần nhất",
+   "Lịch sử trạng thái"
+  ]
+ },
+ "41": {
+  "file": "DuyetHoSo.dc.html",
+  "phrases": [
+   "Duyệt hồ sơ",
+   "Tìm",
+   "Loại hồ sơ",
+   "Sắp xếp",
+   "Hồ sơ",
+   "Loại hồ sơ",
+   "Ngày gửi",
+   "Trạng thái",
+   "Thao tác"
+  ]
+ },
+ "41a": {
+  "file": "ChiTietHoSo.dc.html",
+  "phrases": [
+   "Giấy tờ đính kèm",
+   "Quyết định",
+   "Yêu cầu bổ sung",
+   "Người gửi sửa và gửi lại",
+   "Nhận xét",
+   "(bắt buộc khi yêu cầu bổ sung",
+   "Gửi quyết định"
+  ]
+ }
+}

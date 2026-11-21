@@ -1,13 +1,16 @@
 'use client'
 // Screen 35 form (mockup TaoDatCho, "Tạo mới"): sections "Đoàn & trải nghiệm" and "Giá đã thống nhất".
-// Booking conditions stay a snapshot of the Experience (hidden); "Điều kiện đã thống nhất" is the booking note.
+// Booking conditions stay a snapshot of the Experience (hidden). "Điều kiện đã thống nhất" goes into the system message
+// "Xưởng đã giữ chỗ"; the price is the list price with the Group Discount (read only); contact columns are written by the Agency on 06.
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { useMemo, useState } from 'react'
+import { groupPrice, type DiscountRule } from '@/lib/booking/group-price'
 
 export interface ExperienceOption {
   experience_id: string; name: string; duration_minutes: number; max_participants: number; price_per_person: number
   conditions: { notice_period: number; cancellation_policy: Record<string, unknown> }
+  rules?: DiscountRule[]
 }
 export interface AgencyOption { agency_id: string; company_name: string }
 export interface SlotOption { experience_id: string; start: string; end: string; label: string }
@@ -18,31 +21,26 @@ const addMinutes = (clock: string, minutes: number) => {
   return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-export default function CreateBookingForm({ providerId, experiences, agencies, slots = [], initialAgencyId }: {
-  providerId: string; experiences: ExperienceOption[]; agencies: AgencyOption[]; slots?: SlotOption[]; initialAgencyId?: string
+export default function CreateBookingForm({ providerId, experiences, agencies, slots = [], initialAgencyId, requestMessageId, initial }: {
+  providerId: string; experiences: ExperienceOption[]; agencies: AgencyOption[]; slots?: SlotOption[]; initialAgencyId?: string; requestMessageId?: string
+  initial?: { experienceId?: string; date?: string; time?: string; guests?: string }
 }) {
   const router = useRouter()
-  const [experienceId, setExperienceId] = useState(experiences[0]?.experience_id ?? '')
+  const [experienceId, setExperienceId] = useState(experiences.find(e => e.experience_id === initial?.experienceId)?.experience_id ?? experiences[0]?.experience_id ?? '')
   const [agencyId, setAgencyId] = useState(agencies.find(a => a.agency_id === initialAgencyId)?.agency_id ?? agencies[0]?.agency_id ?? '')
-  const [date, setDate] = useState('')
-  const [time, setTime] = useState('')
-  const [groupSize, setGroupSize] = useState('')
+  const [date, setDate] = useState(initial?.date ?? '')
+  const [time, setTime] = useState(initial?.time ?? '')
+  const [groupSize, setGroupSize] = useState(initial?.guests ?? '')
   const experience = useMemo(() => experiences.find(row => row.experience_id === experienceId), [experiences, experienceId])
-  const [perGuest, setPerGuest] = useState(String(experiences[0]?.price_per_person ?? ''))
-  const [contactName, setContactName] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
-  const [note, setNote] = useState('')
+  const [conditions, setConditions] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const experienceSlots = slots.filter(slot => slot.experience_id === experienceId)
   const duration = experience?.duration_minutes ?? 60
-  const total = Number(perGuest) * Number(groupSize)
-  const selectExperience = (id: string) => {
-    setExperienceId(id); setTime('')
-    const next = experiences.find(row => row.experience_id === id)
-    if (next) setPerGuest(String(next.price_per_person))
-  }
+  const guests = Number(groupSize)
+  const price = experience && guests > 0 ? groupPrice(experience.price_per_person, guests, experience.rules ?? []) : null
+  const selectExperience = (id: string) => { setExperienceId(id); setTime('') }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -52,8 +50,8 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
       const response = await fetch('/api/bkg/bookings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          experience_id: experienceId, agency_id: agencyId, start_at: `${date}T${time}:00+07:00`, duration, group_size: Number(groupSize), agreed_price: total,
-          booking_conditions: experience.conditions, contact_name: contactName, contact_phone: contactPhone, note,
+          experience_id: experienceId, agency_id: agencyId, start_at: `${date}T${time}:00+07:00`, duration, group_size: guests,
+          booking_conditions: experience.conditions, agreed_conditions: conditions, request_message_id: requestMessageId || undefined,
         }),
       })
       const json = await response.json() as { data?: { booking_id: string }; error?: { code: string; message: string } }
@@ -86,21 +84,18 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
           <input id="gs" type="number" min={1} max={experience?.max_participants} step={1} value={groupSize} onChange={event => setGroupSize(event.target.value)} required />
           <p className="v3b-help">Tối đa {experience?.max_participants} khách/ca.</p></div>
       </div>
-      <div className="v3b-row">
-        <div className="v3b-f"><label htmlFor="cn">Người liên hệ</label><input id="cn" maxLength={120} value={contactName} onChange={event => setContactName(event.target.value)} /></div>
-        <div className="v3b-f"><label htmlFor="cp">Số điện thoại</label><input id="cp" type="tel" maxLength={32} value={contactPhone} onChange={event => setContactPhone(event.target.value)} /></div>
-      </div>
     </section>
     <section className="v3b-card">
       <h2 className="v3b-h2">Giá đã thống nhất</h2>
       <div className="v3b-row">
-        <div className="v3b-f"><label htmlFor="pp">Giá mỗi khách <span className="v3b-req">*</span></label>
-          <input id="pp" type="number" min={1} step="any" value={perGuest} onChange={event => setPerGuest(event.target.value)} required />
-          <p className="v3b-help">Mặc định theo giá niêm yết, sửa nếu đã thoả thuận khác trong tin nhắn.</p></div>
-        <div className="v3b-f"><span className="v3b-lab">Tổng</span><p className="v3b-total">{Number.isFinite(total) && total > 0 ? vnd(total) : '—'}</p></div>
+        <div className="v3b-f"><span className="v3b-lab">Giá mỗi khách</span><p className="v3b-per">{experience ? vnd(experience.price_per_person) : '—'}</p>
+          <p className="v3b-help">Giá niêm yết của trải nghiệm, không sửa ở đây.</p></div>
+        <div className="v3b-f"><span className="v3b-lab">Tổng</span><p className="v3b-total">{price ? vnd(price.total) : '—'}</p>
+          {price && price.old !== null && <p className="v3b-help"><s className="v3b-old">{vnd(price.old)}</s> · đã giảm {price.pct}% giá đoàn</p>}</div>
       </div>
-      <div className="v3b-f"><label htmlFor="nt">Điều kiện đã thống nhất <span className="v3b-opt">(không bắt buộc)</span></label>
-        <textarea id="nt" rows={3} maxLength={1000} value={note} onChange={event => setNote(event.target.value)} /></div>
+      <div className="v3b-f"><label htmlFor="cd">Điều kiện đã thống nhất <span className="v3b-opt">(không bắt buộc)</span></label>
+        <textarea id="cd" rows={3} maxLength={1000} value={conditions} onChange={event => setConditions(event.target.value)} />
+        <p className="v3b-help">Gửi cho công ty lữ hành trong tin nhắn "Xưởng đã giữ chỗ".</p></div>
       {error && <p className="v3b-err" role="alert">{error}</p>}
       <div className="v3b-actions">
         <Link className="v3b-btn v3b-btn--s" href={`/provider/${providerId}/bookings`}>Huỷ</Link>

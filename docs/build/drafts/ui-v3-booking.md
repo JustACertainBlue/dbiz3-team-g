@@ -26,6 +26,7 @@
 | `tests/unit/bkg-booking-actions.test.ts` "Agency" | agency has no action in any status | agency has `cancel: true` only while On hold; nothing otherwise | 5 |
 | `tests/integration/bkg-booking-detail-api.test.ts` agency GET | `actions` all false | `cancel: true` (fixture is On hold), others false | 5 |
 | `tests/unit/bkg-screens.test.ts` | provider button `Xác nhận` (disabled when not On hold) | button `Đã nhận tiền`, same disabled rule | 2, 3 |
+| `tests/unit/bkg-create-validation.test.ts` required-field list | `agreed_price` missing is rejected | `agreed_price` removed from the list; missing price is priced by the server (list price, Group Discount); a given price still wins; invalid price still rejected | Part B step 1 (35 shows the price, not editable) |
 | `tests/unit/bkg-change-status.test.ts`, `tests/unit/bkg-expire-holds.test.ts` | expiry reason `Automatic expiry: 72-hour On hold elapsed` | `Hết hạn giữ chỗ` | 11 |
 
 ## Checks (Part B step 0)

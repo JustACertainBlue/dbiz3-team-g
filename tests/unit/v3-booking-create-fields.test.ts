@@ -14,27 +14,6 @@ const body = (extra: Record<string, unknown> = {}) => ({
 })
 const code = (promise: Promise<unknown>) => promise.then(() => 'OK', (error: { code?: string }) => error.code)
 
-describe('createBooking contact fields', () => {
-  beforeEach(() => demoRepository().reset())
-
-  it('stores contact_name, contact_phone and note when given', async () => {
-    const { booking_id } = await createBooking(provider, body({ contact_name: 'Nguyễn Văn An', contact_phone: '0912 345 678', note: 'Đoàn đến trước 08:50.' }), options)
-    expect(demoRepository().find('bookings', r => r.booking_id === booking_id)).toMatchObject({ contact_name: 'Nguyễn Văn An', contact_phone: '0912 345 678', note: 'Đoàn đến trước 08:50.' })
-  })
-  it('writes no contact keys when none are given (the columns are optional)', async () => {
-    const { booking_id } = await createBooking(provider, body(), options)
-    const row = demoRepository().find('bookings', r => r.booking_id === booking_id)!
-    expect('contact_name' in row || 'contact_phone' in row || 'note' in row).toBe(false)
-  })
-  it('rejects a name over 120, a phone that is not a phone, a note over 1000; nothing is written', async () => {
-    const before = demoRepository().all('bookings').length
-    expect(await code(createBooking(provider, body({ contact_name: 'x'.repeat(121) }), options))).toBe('VALIDATION_ERROR')
-    expect(await code(createBooking(provider, body({ contact_phone: 'abc' }), options))).toBe('VALIDATION_ERROR')
-    expect(await code(createBooking(provider, body({ note: 'x'.repeat(1001) }), options))).toBe('VALIDATION_ERROR')
-    expect(demoRepository().all('bookings')).toHaveLength(before)
-  })
-})
-
 describe('chattedAgencies', () => {
   beforeEach(() => demoRepository().reset())
   it('lists approved agencies that have a chat with the provider, nobody else', async () => {

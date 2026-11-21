@@ -100,8 +100,9 @@ const EVENT_TITLE: Record<string, string> = {
   'Đã đặt': 'Xưởng đã nhận tiền',
   'Hoàn tất': 'Tour đã hoàn thành',
   'Đã huỷ': 'Đặt chỗ đã huỷ',
+  'Công ty báo đã thanh toán': 'Công ty báo đã thanh toán',
 }
 export function eventView(text: string): { title: string; sub: string } {
-  const label = /^Booking ([^:]+): /.exec(text)?.[1] ?? ''
+  const label = /^(?:Booking )?([^:]+): /.exec(text)?.[1] ?? ''
   return { title: EVENT_TITLE[label] ?? 'Cập nhật đặt chỗ', sub: text }
 }

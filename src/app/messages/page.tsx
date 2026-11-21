@@ -261,6 +261,7 @@ function MessagesContent() {
                       <div><dt>Số khách</dt><dd>{card.group_size}</dd></div>
                       {card.note && <div><dt>Ghi chú</dt><dd>{card.note}</dd></div>}
                     </dl>
+                    {!isAgency && history.chat_status === 'Active' && <Link className="ch9-btn ch9-btn--primary" href={`/provider/${session.providerId}/bookings/new?request=${encodeURIComponent(message.message_id)}`}>Tạo đặt chỗ từ yêu cầu</Link>}
                     <time>{hanoiClock(message.sent_at)}</time>
                   </article>
                 </Fragment>

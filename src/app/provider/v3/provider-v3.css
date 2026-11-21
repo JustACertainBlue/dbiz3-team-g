@@ -1,0 +1,29 @@
+/* Provider screens 29-33 (UI v3). Tokens only from tokens.css; nothing here touches shared files. */
+.pv3-page { max-width: 1100px; margin: 0 auto; padding: 28px 24px 72px; color: var(--c-text); font-family: var(--font-body); }
+.pv3-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.pv3-h1 { margin: 0; font: 700 36px/44px var(--font-body); color: var(--c-primary-dark); }
+.pv3-empty { padding: 32px; border: 1px dashed var(--c-border); border-radius: 8px; color: var(--c-text-3); }
+.pv3-error { color: var(--c-danger); }
+.pv3-list { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 16px; }
+.pv3-xrow { display: grid; grid-template-columns: 220px 1fr auto; gap: 24px; align-items: center; padding: 24px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-white); }
+.pv3-xrow__img { display: block; width: 220px; height: 124px; border-radius: 8px; overflow: hidden; background: var(--c-border-soft); }
+.pv3-xrow__img .v3-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pv3-xrow__noimg { display: grid; place-items: center; width: 100%; height: 100%; color: var(--c-text-3); font-weight: 700; }
+.pv3-xrow__name { margin: 0 0 8px; font: 700 22px/28px var(--font-body); }
+.pv3-xrow__name a { color: var(--c-primary-dark); text-decoration: none; }
+.pv3-xrow__meta, .pv3-xrow__note { margin: 0 0 6px; font: 400 16px/24px var(--font-body); color: var(--c-text-2); }
+.pv3-xrow__note { color: var(--c-text-3); }
+.pv3-xrow__note--on { color: var(--c-primary); font-weight: 700; }
+.pv3-xrow__actions { display: flex; gap: 8px; }
+.pv3-iconbtn { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--c-primary); cursor: pointer; }
+.pv3-iconbtn:hover { background: var(--c-surface-green); }
+.pv3-iconbtn--danger { color: var(--c-danger); }
+.pv3-iconbtn:focus-visible { outline: 3px solid var(--color-border-focus, var(--c-primary)); outline-offset: 2px; }
+@media (max-width: 767px) {
+  .pv3-page { padding: 20px 16px 72px; }
+  .pv3-h1 { font-size: 28px; line-height: 36px; }
+  .pv3-xrow { grid-template-columns: 112px 1fr; padding: 16px; gap: 14px; }
+  .pv3-xrow__img { width: 112px; height: 112px; }
+  .pv3-xrow__actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .pv3-xrow__name { font-size: 18px; line-height: 24px; }
+}

@@ -228,7 +228,7 @@ async function main(argv) {
   let hash = null
   if (!undoFile) {
     const password = process.env.DEV_TEST_PASSWORD
-    if (!password) throw new Error('DEV_TEST_PASSWORD is not set. Nothing was changed.')
+    if (!password) throw new Error(`DEV_TEST_PASSWORD is not set. Env directory used: ${envDir} (${existsSync(join(envDir, '.env.local')) ? 'has' : 'no'} .env.local). Add a line DEV_TEST_PASSWORD=... to the .env.local there, or export it in the shell. Nothing was changed.`)
     if (!meetsPasswordRule(password)) throw new Error('DEV_TEST_PASSWORD does not meet the password rule (8–64 chars, upper, lower, digit, special, no space). Nothing was changed.')
     const bcrypt = (await import('bcryptjs')).default
     hash = await bcrypt.hash(password, 12)

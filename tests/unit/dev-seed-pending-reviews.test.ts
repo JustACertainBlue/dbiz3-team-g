@@ -52,6 +52,11 @@ describe('CLI order', () => {
     expect(source).toMatch(/const envDir = existsSync\(join\(runDir, '\.env\.local'\)\) \? runDir : repoRoot/)
     expect(source).toContain('const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), \'..\', \'..\')')
   })
+  it('the missing-password message names the env directory (never a value)', () => {
+    const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
+    expect(source).toContain('Env directory used: ${envDir}')
+    expect(source).not.toMatch(/\$\{password\}/)
+  })
   it('defers the provider version foreign keys right after BEGIN (they are DEFERRABLE, but a migration made them INITIALLY IMMEDIATE)', () => {
     const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
     expect(source.indexOf("query('BEGIN')")).toBeLessThan(source.indexOf("query('SET CONSTRAINTS ALL DEFERRED')"))

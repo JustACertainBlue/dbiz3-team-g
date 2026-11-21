@@ -90,3 +90,12 @@ a.pv3-stat:hover { border-color: var(--c-primary); }
 .provider-workspace .pv3-form .prf-btn-outline { background: var(--c-white); color: var(--c-primary); border-color: var(--c-primary); border-radius: 8px; min-height: 48px; box-shadow: inset 0 0 0 .5px var(--c-primary); }
 .provider-workspace .pv3-form .prf-sticky-footer { background: transparent; border-top: 0; }
 .provider-workspace .pv3-form .prf-sticky-footer-content { justify-content: space-between; padding: 0; }
+
+/* Screen 32 content blocks */
+.provider-workspace .pv3-form .pv3-sec-h { margin: 0; font: 700 24px/32px var(--font-body); color: var(--c-primary-dark); text-transform: none; letter-spacing: 0; }
+.pv3-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; } .pv3-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; }
+.pv3-fieldset { margin: 0 0 16px; padding: 0; border: 0; } .pv3-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.pv3-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-white); font: 400 16px/24px var(--font-body); cursor: pointer; }
+.pv3-chip input { width: 20px; height: 20px; accent-color: var(--c-primary); }
+.provider-workspace .pv3-form .pv3-ta { min-height: 120px; }
+.pv3-slots { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 8px; } .pv3-slots li { display: flex; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: var(--c-border-soft); }

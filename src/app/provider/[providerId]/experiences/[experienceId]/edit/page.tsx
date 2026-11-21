@@ -9,6 +9,8 @@ import ExperienceTermsField from '../../ExperienceTermsField'
 import { readCancellationPolicy, cancellationPatch, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
 import ExperienceLocationField from '../../ExperienceLocationField'
+import { HighlightsCard, SuitableCard, InclusionsCard, ChildPolicyField, SlotsReadOnly, type SlotLine } from '../../ExperienceContentFields'
+import { contentFormFromRow, contentPayload, emptyContentForm } from '@/lib/prf/experience-content-form'
 import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 
@@ -18,6 +20,8 @@ export default function EditExperiencePage({
   params: { providerId: string; experienceId: string }
 }) {
   const [initialPolicy, setInitialPolicy] = useState<CancellationPolicy>({ rules: [] })
+  const [content, setContent] = useState(emptyContentForm())
+  const [slots, setSlots] = useState<SlotLine[]>([])
   const [policy, setPolicy] = useState<CancellationPolicy>({ rules: [] })
   const [group, setGroup] = useState<DiscountRule[]>([])
   const [special, setSpecial] = useState<DiscountRule[]>([])
@@ -69,6 +73,7 @@ export default function EditExperiencePage({
         })
         setHasActiveBookings(Boolean(data.has_active_bookings))
         setImages((data.images || []) as ExperienceImageItem[])
+        setContent(contentFormFromRow(data)); setSlots(data.slots || [])
       }).catch(cause=>{if(alive)setLoadError(cause instanceof Error?cause.message:'Không thể tải trải nghiệm.')}).finally(() => { if (alive) setSessionReady(true) })
     const onRoleChanged = () => {
       readSessionContext()
@@ -131,6 +136,7 @@ export default function EditExperiencePage({
         } : {}),
         ...cancellationPatch(initialPolicy, policy),
         group_discounts: group, special_rates: special,
+        ...contentPayload(content),
         images: toImagesPayload(images),
       }
 
@@ -396,6 +402,10 @@ export default function EditExperiencePage({
 
               <ExperienceImagesField images={images} onChange={setImages} onBusyChange={setUploading} />
             </div>
+
+            <HighlightsCard value={content} onChange={setContent} />
+            <SuitableCard value={content} onChange={setContent} />
+            <InclusionsCard value={content} onChange={setContent} />
           </div>
 
           {/* Right Column: Pricing & Booking conditions */}
@@ -454,6 +464,8 @@ export default function EditExperiencePage({
               </div>
 
               <ExperienceTermsField policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}/>
+              <ChildPolicyField value={content} onChange={setContent} />
+              <SlotsReadOnly slots={slots} />
             </div>
           </div>
         </div>

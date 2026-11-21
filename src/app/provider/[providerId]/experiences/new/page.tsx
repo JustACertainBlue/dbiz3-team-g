@@ -9,6 +9,8 @@ import ExperienceTermsField from '../ExperienceTermsField'
 import { readCancellationPolicy, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../ExperienceImagesField'
 import { missingCategories } from '@/lib/prf/experience-images'
+import { HighlightsCard, SuitableCard, InclusionsCard, ChildPolicyField, SlotsReadOnly, type SlotLine } from '../ExperienceContentFields'
+import { contentFormFromRow, contentPayload, emptyContentForm } from '@/lib/prf/experience-content-form'
 import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 
@@ -17,6 +19,8 @@ export default function AddExperiencePage({
 }: {
   params: { providerId: string }
 }) {
+  const [content, setContent] = useState(emptyContentForm())
+  const [slots, setSlots] = useState<SlotLine[]>([])
   const [policy, setPolicy] = useState<CancellationPolicy>({ rules: [] })
   const [group, setGroup] = useState<DiscountRule[]>([])
   const [special, setSpecial] = useState<DiscountRule[]>([])
@@ -110,6 +114,7 @@ export default function AddExperiencePage({
         experience_location_address: formData.experience_location_address,
         cancellation_policy: policy,
         group_discounts: group, special_rates: special,
+        ...contentPayload(content),
         images: toImagesPayload(images),
       }
 
@@ -359,6 +364,10 @@ export default function AddExperiencePage({
 
               <ExperienceImagesField images={images} onChange={setImages} onBusyChange={setUploading} />
             </div>
+
+            <HighlightsCard value={content} onChange={setContent} />
+            <SuitableCard value={content} onChange={setContent} />
+            <InclusionsCard value={content} onChange={setContent} />
           </div>
 
           {/* Right Sidebar: Capacity & Logistics */}
@@ -415,6 +424,8 @@ export default function AddExperiencePage({
               </div>
 
               <ExperienceTermsField policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}/>
+              <ChildPolicyField value={content} onChange={setContent} />
+              <SlotsReadOnly slots={slots} />
             </div>
           </div>
         </div>

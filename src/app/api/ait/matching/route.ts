@@ -22,7 +22,7 @@ import {
 } from '@/lib/matching/recommendation-service'
 import { loadExperiences } from '@/lib/db/seed-loader'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
-import { matchingCardView } from '@/lib/matching/card-data'
+import { matchingCardView, profileGuests } from '@/lib/matching/card-data'
 
 export async function POST(request: Request) {
   try {
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
     // Screen 22: card data of screen 02 added to every recommendation (additive; no existing field changes).
     const exploreSeed = await loadExploreRuntime()
-    const withCard = <T extends { experience_id: string }>(m: T) => ({ ...m, card: matchingCardView(exploreSeed, m.experience_id, null) })
+    const withCard = <T extends { experience_id: string }>(m: T) => ({ ...m, card: matchingCardView(exploreSeed, m.experience_id, profileGuests(profile)) })
 
     return NextResponse.json({
       top_matches: recs.top_matches.map(m => withCard({

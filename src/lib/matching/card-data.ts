@@ -9,3 +9,9 @@ export function matchingCardView(seed: ExploreSeed, experienceId: string, guests
   const row = eligibleRows(seed).find(item => item.experience.experience_id === experienceId)
   return row ? resultView(seed, row, { date: '', guests }, true) : null
 }
+
+/** The group size the AI understood (tour_preference_profile.hard_constraints.group_size); null when unknown. */
+export function profileGuests(profile: any): number | null {
+  const size = profile?.hard_constraints?.group_size
+  return Number.isInteger(size) && size > 0 ? size : null
+}

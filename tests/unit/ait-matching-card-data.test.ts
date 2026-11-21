@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { ExploreSeed } from '@/lib/explore/catalog'
-import { matchingCardView } from '@/lib/matching/card-data'
+import { matchingCardView, profileGuests } from '@/lib/matching/card-data'
 
 const seed = {
   villages: [{ village_id: 'v1', name: 'Bát Tràng', district: 'Gia Lâm', city_province: 'Hà Nội', is_active: 'true', distance_km: '13' }],
@@ -35,5 +35,17 @@ describe('matchingCardView', () => {
   })
   it('unknown experience → null', () => {
     expect(matchingCardView(seed, 'nope', 12)).toBeNull()
+  })
+})
+
+describe('profileGuests', () => {
+  it('reads the group size the AI understood', () => {
+    expect(profileGuests({ hard_constraints: { group_size: 25 } })).toBe(25)
+  })
+  it('missing or invalid → null (price per person)', () => {
+    expect(profileGuests({ hard_constraints: {} })).toBeNull()
+    expect(profileGuests({})).toBeNull()
+    expect(profileGuests(null)).toBeNull()
+    expect(profileGuests({ hard_constraints: { group_size: 0 } })).toBeNull()
   })
 })

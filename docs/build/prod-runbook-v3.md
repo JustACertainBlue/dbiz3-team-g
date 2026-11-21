@@ -110,25 +110,21 @@ line means the load would refuse those users: report it too.
 > run `--only-existing` or `--insert-missing` (they do not exist). Send the whole output and that file to the coordinating
 > chat, which decides what to do with the missing rows (Appendix B lists the options).
 
-**0.4 Seed-image dry runs, both sets (PROD, rolled back, nothing uploaded).** Set of 20/11:
+**0.4 Seed-image dry run, set of 20/11 only (PROD, rolled back, nothing uploaded):**
 
 ```bash
 CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod
 ```
 
-Set of 21/11:
+Expected: first line `"projectRef":"euxclvszgiknjosbwjya","isDev":false,"isProd":true,"mode":"dry-run (writes, then ROLLBACK; no upload)"`,
+a report with the counts, and `Dry run: every write was rolled back; nothing was uploaded.` Compare the counts with the DEV run
+of the same set.
 
-```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod
-```
+The set of 21/11 is **not** dry-run here. Its face-removal list was made on DEV after the 20/11 set was applied, so on PROD it
+only matches once 20/11 is applied: its dry run is Step 6, right after Step 5.
 
-Expected for each: first line `"projectRef":"euxclvszgiknjosbwjya","isDev":false,"isProd":true,"mode":"dry-run (writes, then ROLLBACK; no upload)"`,
-a report with the counts, and `Dry run: every write was rolled back; nothing was uploaded.` Compare the counts with the DEV run of
-the same set. The two sets touch the same experiences, so the counts of the 21/11 run can change once the 20/11 set is applied
-(inferred, not checked): here the point is that nothing refuses.
-
-> **If a dry run stops because a target row is not found, or `--faces` reports a difference: STOP**, as in 0.3: send the output
-> to the coordinating chat; do not retry with other options.
+> **If a dry run stops because a target row is not found: STOP**, as in 0.3: send the output to the coordinating chat; do not
+> retry with other options.
 > If it stops with a missing table or column (`does not exist`) and 0.2 listed pending migrations, that is expected before
 > Step 3: write the message down and repeat 0.4 after Step 3 (before Step 4); a second failure is a STOP.
 
@@ -226,19 +222,28 @@ CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target
 CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target-prod --undo <dir>/undo.json
 ```
 
+**Next: the dry run of Step 6, immediately after this step is applied.**
+
 ### Step 6. Seed images, set of 21/11
 
-Run it only after step 5 is applied and its undo file is noted, because the second set reorders the display photos the first set
-placed. Besides the photos it removes the face images listed in `go-anh-mat-nguoi-final.json` (by the SHA-256 of the stored
-object; a difference between the list and the database stops the run before any write) and adds the workshop photos.
+Run it only after step 5 is applied (and its undo file noted), and **dry-run first, right after step 5**: the list of face images
+to remove (`go-anh-mat-nguoi-final.json`) was made on DEV after the 20/11 set was applied, so it only matches PROD in that state.
+The set adds the photos of 21/11, removes the face images of the list (by the SHA-256 of the stored object; a difference between the
+list and the database stops the run before any write) and adds the workshop photos.
 
-Dry run:
+Dry run (PROD, rolled back, nothing uploaded):
 
 ```bash
 CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod
 ```
 
-Apply:
+Expected: same first line as step 5, a report, and `Dry run: every write was rolled back; nothing was uploaded.`
+
+> **If the dry run reports a hash that is not found (`The face-removal list does not match this database`) or a row count that
+> differs from the DEV run: STOP.** Do not apply and do not retry with other options; send the whole output to the coordinating
+> chat.
+
+Apply (only after a clean dry run):
 
 ```bash
 CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod --apply
@@ -252,6 +257,10 @@ Undo (preview, then real; undo the sets in reverse order, 21/11 first):
 CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target-prod --undo <dir>/undo.json --dry-run
 CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target-prod --undo <dir>/undo.json
 ```
+
+> **Do not use DEV to try this set again.** DEV already has the 21/11 set applied (its undo is in
+> `dbiz3-devload/.demo-data/seed-image-import-2111`), so a dry run there always stops at the face-removal check. That is by design,
+> not a defect of the script.
 
 ### Step 7. WebP variants backfill
 

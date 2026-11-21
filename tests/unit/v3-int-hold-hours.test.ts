@@ -1,7 +1,7 @@
 /** UI v3 integration Step 2 item 7: the 72 h hold lives in one constant (lib/provider/hold-hours.ts); nothing else hard-codes it. */
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { HOLD_HOURS } from '@/lib/provider/hold-hours'
 
 function sources(dir: string): string[] {
@@ -15,7 +15,7 @@ describe('hold hours', () => {
     expect((await import('@/lib/explore/v3-detail')).HOLD_HOURS).toBe(HOLD_HOURS)
   })
   it('no other source file defines the number or writes "72 giờ"', () => {
-    const offenders = sources('src').filter(file => !file.endsWith('lib/provider/hold-hours.ts'))
+    const offenders = sources('src').filter(file => !file.split(sep).join('/').endsWith('lib/provider/hold-hours.ts'))
       .filter(file => /HOLD_HOURS\s*=\s*72|\b72 giờ|\b72-hour/.test(readFileSync(file, 'utf8')))
     expect(offenders).toEqual([])
   })

@@ -24,11 +24,11 @@ describe('durable JSON synchronization', () => {
         child.stdin.end(script)
         let error = ''; child.stderr.on('data', data => { error += data })
         child.on('error', reject)
-        child.on('exit', code => code === 0 ? resolve() : reject(new Error(error)))
+        child.on('close', code => code === 0 ? resolve() : reject(new Error(error)))
       })))
       expect(first.all('sync_probe')).toHaveLength(47)
       expect(new Set(first.all('sync_probe').map(row => row.id)).size).toBe(47)
       expect(second.all('sync_probe')).toHaveLength(47)
-    } finally { rmSync(root, { recursive: true, force: true }) }
+    } finally { rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }) } // Windows can hold a handle briefly after the children exit (ENOTEMPTY)
   }, 20000)
 })

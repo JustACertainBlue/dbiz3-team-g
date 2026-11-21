@@ -166,7 +166,7 @@ export function changedSql(update) {
   return { text: `SELECT (${tests.join(' OR ')}) AS changed FROM ${update.table} WHERE ${where}`, values: [Object.values(update.key)[0], ...columns.map(column => update.set[column])] }
 }
 
-const slotKey = rows => JSON.stringify(rows.map(row => [row.label, row.start_time, row.end_time, [...row.weekdays].map(Number)]))
+export const slotKey = rows => JSON.stringify(rows.map(row => [row.label, row.start_time, row.end_time, [...row.weekdays].map(Number)]))
 
 export function updateSql(update) {
   const columns = Object.keys(update.set)
@@ -259,7 +259,7 @@ export async function run({ argv, env, connect, log, now = () => new Date(), jou
   }
 }
 
-async function replaceSlots(client, experienceId, rows) {
+export async function replaceSlots(client, experienceId, rows) {
   await client.query('DELETE FROM experience_slots WHERE experience_id = $1', [experienceId])
   for (const row of rows) {
     await client.query('INSERT INTO experience_slots (experience_id, label, start_time, end_time, weekdays) VALUES ($1, $2, $3, $4, $5::smallint[])',

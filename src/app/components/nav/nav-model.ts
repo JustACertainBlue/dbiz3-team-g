@@ -56,7 +56,7 @@ export function navItems(session: SessionContext | null): NavItem[] {
   if (session.role === 'ADMIN') return [
     { href: '/admin', label: 'Tổng quan' },
     session.adminType === 'UBND'
-      ? { href: '/admin/providers', label: 'Duyệt hồ sơ' }
+      ? { href: '/admin/providers', label: 'Duyệt hồ sơ', alsoActive: ['/admin/agencies'] }
       : { href: '/admin/agencies', label: 'Duyệt hồ sơ', alsoActive: ['/admin/providers'] },
     { href: '/admin/users', label: 'Quản lý tài khoản' },
   ]

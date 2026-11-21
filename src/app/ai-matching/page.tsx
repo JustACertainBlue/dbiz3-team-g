@@ -4,10 +4,13 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { readSessionContext } from '@/lib/auth/client-session'
-import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodDateLine, type ApiResult } from './matching-view'
+import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodChips, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 import { recommendationCardView } from './card-view'
-import { ArrowUp, ChevronRight, MessageSquare, Plus, Sparkles, Users } from 'lucide-react'
+import { ArrowUp, Check, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users } from 'lucide-react'
+import CoverImage from '../explore/v3/CoverImage'
+import { RESULT_SIZES } from '../explore/v3/image-sizes'
+import { vnd } from '../explore/v3/ExperienceCard'
 import '../explore/v3/explore-v3.css'
 import './ai-matching.css'
 
@@ -39,7 +42,7 @@ export default function AiMatchingScreen() {
   }, [])
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
-  const [quoteStatus, setQuoteStatus] = useState<Record<string, string>>({})
+  const [chips, setChips] = useState<string[]>([])
   const [chatStatus, setChatStatus] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionInitializationRef = useRef(false)
@@ -84,7 +87,7 @@ export default function AiMatchingScreen() {
           {
             id: 'welcome',
             sender: 'Assistant',
-            text: 'Welcome to Hanoi Artisan Bridge AI Tour Matching. Describe your tour needs (group size, target date, artisan craft preferences, budget), and I will recommend verified local experiences.',
+            text: 'Chào bạn! Hãy mô tả nhu cầu của đoàn (số khách, ngày đi, nghề muốn trải nghiệm, ngân sách), mình sẽ gợi ý các trải nghiệm phù hợp từ xưởng đã xác minh.',
             sent_at: new Date().toLocaleTimeString(),
           },
         ])
@@ -135,9 +138,10 @@ export default function AiMatchingScreen() {
       const result = await postJson(`/api/ait/sessions/${sessionId}/messages`, body)
       const outcome = messageOutcome(result)
       // #156: show the date understood so the Agency can correct it.
+      if ('body' in result) { const found = understoodChips(result.body); if (found.length > 0) setChips(found) }
       const dateLine = 'body' in result ? understoodDateLine(result.body) ?? undefined : undefined
       if (outcome.kind === 'clarify') {
-        addAssistant({ text: 'I need a few more details to find the best craft match for your tour:', clarificationQuestions: outcome.questions, dateLine })
+        addAssistant({ text: 'Mình cần thêm một vài thông tin để tìm trải nghiệm hợp với đoàn của bạn:', clarificationQuestions: outcome.questions, dateLine })
       } else if (outcome.kind === 'match') {
         await fetchMatchingResults(outcome.profile, dateLine)
       } else {
@@ -170,7 +174,7 @@ export default function AiMatchingScreen() {
     const { top: topMatches, additional } = matchResultsView(result.body)
     if (topMatches.length > 0) {
       addAssistant({
-        text: 'I have analyzed your tour requirements against verified Local Providers. Here are your ranked recommendations:',
+        text: 'Mình đã đối chiếu yêu cầu của đoàn với các xưởng đã xác minh. Đây là các trải nghiệm gợi ý:',
         dateLine,
         recommendations: topMatches,
         additionalSuggestions: additional,
@@ -185,8 +189,8 @@ export default function AiMatchingScreen() {
   // Request Quote / Chat: open Messages (COM048) with the Chat selected only after success (#31).
   const runHandoff = async (kind: 'quote' | 'chat', experienceId: string, statusKey: string) => {
     if (!sessionId) return
-    const setStatus = kind === 'quote' ? setQuoteStatus : setChatStatus
-    setStatus(prev => ({ ...prev, [statusKey]: kind === 'quote' ? 'Requesting quote…' : 'Opening chat…' }))
+    const setStatus = setChatStatus
+    setStatus(prev => ({ ...prev, [statusKey]: kind === 'quote' ? 'Đang gửi yêu cầu báo giá…' : 'Đang mở cuộc trò chuyện…' }))
     const outcome = handoffOutcome(await postJson(`/api/ait/sessions/${sessionId}/${kind}`, { experience_id: experienceId }))
     if (outcome.kind === 'success') router.push(outcome.navigateTo)
     else setStatus(prev => ({ ...prev, [statusKey]: outcome.text }))
@@ -211,8 +215,9 @@ export default function AiMatchingScreen() {
 
       <div className="aim__pane">
         {/* #188, screen-spec-AIT121 §3 #1: the screen heading; brand, navigation and account come from the shared shell. */}
-        <div className="aim__top"><div className="aim__col">
-          <h1 className="aim__h1">AI Tour Matching</h1>
+        <div className="aim__top"><div className="aim__col aim__topin">
+          <h1 className="aim__h1">Ghép tour AI</h1>
+          {chips.length > 0 && <><span className="aim__sub">AI đã hiểu:</span>{chips.map(chip => <span key={chip} className="aim__chip">{chip}</span>)}</>}
         </div></div>
 
         <section className="aim__col aim__stream" aria-label="Cuộc trò chuyện với AI">
@@ -223,7 +228,7 @@ export default function AiMatchingScreen() {
               {spark}
               <div className="aim__b">
                 <p>{msg.text}</p>
-                <div className="aim__meta">Artisan AI Matcher • {msg.sent_at}</div>
+                <div className="aim__meta">Trợ lý AI • {msg.sent_at}</div>
 
                 {/* #156: the date the assistant understood, so the Agency can correct it */}
                 {msg.dateLine && <p id="understood-date" className="aim__date">{msg.dateLine}</p>}
@@ -262,48 +267,52 @@ export default function AiMatchingScreen() {
                       <React.Fragment key={rec.experience_id}>
                       {index === msg.recommendations!.length && <h4 className="aim__more">Gợi ý thêm</h4>}
                       <article className="v3-card v3r aim__card">
+                        {rec.card && <Link href={cardOf(rec).href} className="v3r__media" tabIndex={-1} aria-hidden="true"><CoverImage image={rec.card.image} alt="" sizes={RESULT_SIZES} priority="lazy" /></Link>}
                         <div className="v3r__main">
                           <div className="v3r__top">
                             <div className="v3r__titles">
                               <h3 className="v3r__name"><Link href={cardOf(rec).href}>{cardOf(rec).name}</Link></h3>
                               <p className="v3r__where">
-                                <span className="aim__rank">#{rec.rank}</span><span className="v3r__dot"> · </span>
-                                {cardOf(rec).where}{cardOf(rec).providerName && <><span className="v3r__dot"> · </span><Link href={cardOf(rec).providerHref} className="v3r__village">{cardOf(rec).providerName}</Link></>}
+                                {rec.card
+                                  ? <Link href={`/village/${rec.card.villageId}`} className="v3r__village">{rec.card.villageLine}</Link>
+                                  : cardOf(rec).where}
+                                {cardOf(rec).providerName && <><span className="v3r__dot"> · </span><span>{cardOf(rec).providerName}</span></>}
                               </p>
                             </div>
-                            {cardOf(rec).score !== null && <span className="aim__score">Hợp {cardOf(rec).score}%</span>}
+                            {rec.card?.craft && <span className="v3r__craft">{rec.card.craft}</span>}
                           </div>
-                          {cardOf(rec).tags.length > 0 && <div className="v3-ftags">{cardOf(rec).tags.map(tag => <span key={tag} className="v3-ftag"><Users aria-hidden="true" />{tag}</span>)}</div>}
+                          {(rec.card?.tags ?? cardOf(rec).tags).length > 0 && <div className="v3-ftags">{(rec.card?.tags ?? cardOf(rec).tags).map((tag: string) => <span key={tag} className="v3-ftag">{tag.startsWith('Tối đa') ? <Users aria-hidden="true" /> : tag === 'Mang sản phẩm về' ? <Package aria-hidden="true" /> : <Clock aria-hidden="true" />}{tag}</span>)}</div>}
                           {cardOf(rec).why && <p className="aim__why"><Sparkles aria-hidden="true" /><span><b>Vì sao hợp:</b> {cardOf(rec).why}</span></p>}
-                          <div className="aim__foot">
-                            <div>{cardOf(rec).pricePerPerson && <><b className="aim__price">{cardOf(rec).pricePerPerson}</b><span className="v3-cap"> /khách</span></>}</div>
-                            <div className="aim__acts">
-                              <button
-                                id={`chat-btn-${rec.provider_id}`}
-                                className="aim__btn aim__btn--s aim__btn--icon"
-                                aria-label="Nhắn tin cho xưởng"
-                                title="Nhắn tin cho xưởng"
-                                onClick={() => handleChat(rec.experience_id, rec.provider_id)}
-                              >
-                                <MessageSquare aria-hidden="true" />
-                              </button>
-                              <button id={`quote-btn-${rec.experience_id}`} className="aim__btn aim__btn--s" onClick={() => handleRequestQuote(rec.experience_id)}>Yêu cầu báo giá</button>
-                              <Link className="aim__btn aim__btn--p" href={cardOf(rec).scheduleHref}>Xem lịch trống <ChevronRight aria-hidden="true" /></Link>
+                          <div className="v3r__cols">
+                            <div className="v3r__left">
+                              {rec.card && rec.card.highlights.length > 0 && <ul className="v3-ben" aria-label="Điểm nổi bật">{rec.card.highlights.map((text: string) => <li key={text}><Check aria-hidden="true" /><span>{text}</span></li>)}</ul>}
+                            </div>
+                            <div className="v3r__price">
+                              {rec.card?.price.kind === 'group' ? <>
+                                <p className="v3r__guests">{rec.card.price.guests} khách</p>
+                                <b className="v3r__total">{vnd(rec.card.price.total)}</b>
+                                {rec.card.price.old !== null && <span className="v3r__old">{vnd(rec.card.price.old)}</span>}
+                                {rec.card.price.note && <span className={rec.card.price.old !== null ? 'v3r__disc' : 'v3r__nodisc'}>{rec.card.price.note}</span>}
+                              </> : cardOf(rec).pricePerPerson && <><span className="v3-cap">Giá từ</span><b className="v3r__total">{cardOf(rec).pricePerPerson}<span className="v3-cap"> /khách</span></b></>}
+                              <div className="aim__acts">
+                                <button
+                                  id={`chat-btn-${rec.provider_id}`}
+                                  className="aim__btn aim__btn--s aim__btn--icon"
+                                  aria-label="Nhắn tin cho xưởng"
+                                  title="Nhắn tin cho xưởng"
+                                  onClick={() => handleChat(rec.experience_id, rec.provider_id)}
+                                >
+                                  <MessageSquare aria-hidden="true" />
+                                </button>
+                                <Link className="aim__btn aim__btn--p" href={cardOf(rec).scheduleHref}>Xem lịch trống <ChevronRight aria-hidden="true" /></Link>
+                              </div>
                             </div>
                           </div>
-
-                          {quoteStatus[rec.experience_id] && (
-                            <div className="aim__status">
-                              {quoteStatus[rec.experience_id] === HANDOFF_FAILURE_TEXT ? (
-                                <>{HANDOFF_FAILURE_TEXT}{' '}<button className="handoff-retry-btn" onClick={() => handleRequestQuote(rec.experience_id)}>Retry</button></>
-                              ) : quoteStatus[rec.experience_id]}
-                            </div>
-                          )}
 
                           {chatStatus[rec.provider_id] && (
                             <div className="aim__status">
                               {chatStatus[rec.provider_id] === HANDOFF_FAILURE_TEXT ? (
-                                <>{HANDOFF_FAILURE_TEXT}{' '}<button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Retry</button></>
+                                <>{HANDOFF_FAILURE_TEXT}{' '}<button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Thử lại</button></>
                               ) : chatStatus[rec.provider_id]}
                             </div>
                           )}

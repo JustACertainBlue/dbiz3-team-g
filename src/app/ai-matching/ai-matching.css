@@ -73,3 +73,8 @@
   .aim__acts { justify-content: flex-end; }
   .aim__me { max-width: 92%; }
 }
+
+.aim__topin { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.aim__sub { font: 700 14px/20px var(--font-body); color: var(--c-muted); }
+.aim__chip { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px; background: var(--c-surface-green); border: 1px solid #B5DDC1; color: var(--c-primary); font: 600 14px/20px var(--font-body); }
+.aim__card .v3r__price .aim__acts { margin-top: 10px; justify-content: flex-end; }

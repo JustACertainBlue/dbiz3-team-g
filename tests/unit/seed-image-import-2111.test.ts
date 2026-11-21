@@ -2,7 +2,9 @@
  * Seed image import 2111 (human request 2026-11-21): several photos per experience, the first photo of a village as its cover,
  * workshop gallery swap, the face-removal check that stops before any write, and PROD behind --target-prod + CONFIRM_PROJECT_REF.
  */
+import { createHash } from 'node:crypto'
 import { mkdtempSync, writeFileSync } from 'node:fs'
+import sharp from 'sharp'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
@@ -105,5 +107,96 @@ describe('importPhotos stops before any write when the face list does not match 
     const storage = { async read() { return null }, async write() { log.push('STORAGE WRITE') }, async remove() { log.push('STORAGE REMOVE') } }
     await expect(importPhotos({ json: approved, photosDir: dir, faces, apply: true }, { client, storage, notesDir: dir, projectRef: DEV_PROJECT_REF })).rejects.toThrow(/does not match/i)
     expect(log.every(word => word === 'SELECT')).toBe(true)
+  })
+})
+
+
+// --skip-missing-targets (human decision 2026-11-21, stage 1 of the PROD release)
+import { compareRemoval, parseRemovalList, restrictRemovalList } from '../../scripts/storage/seed-image-faces.mjs'
+
+const H = (c: string) => c.repeat(64)
+const faceDoc = () => ({
+  version: 2, tong: { profile_media: 2, provider_version_media: 1, giu_lai: 1 },
+  hashes: [{ sha256: H('a') }, { sha256: H('b') }, { sha256: H('c') }],
+  rows: [
+    { table: 'profile_media', sha256: H('a'), experience_id: E(1) },
+    { table: 'profile_media', sha256: H('b'), experience_id: E(2) },
+    { table: 'provider_version_media', sha256: H('c'), provider_id: P, version_no: 1 },
+  ],
+  giu_lai: [{ table: 'profile_media', sha256: H('a'), experience_id: E(2) }],
+})
+
+describe('parseArgs --skip-missing-targets', () => {
+  it('is an import option, off by default, refused with --undo', () => {
+    expect(parseArgs(['--json', 'a.json', '--photos-dir', 'd', '--skip-missing-targets'])).toMatchObject({ skipMissingTargets: true, apply: false })
+    expect(parseArgs(['--json', 'a.json', '--photos-dir', 'd'])).toMatchObject({ skipMissingTargets: false })
+    expect(() => parseArgs(['--undo', 'u.json', '--skip-missing-targets'])).toThrow(/--skip-missing-targets/)
+  })
+})
+
+describe('restrictRemovalList (face list limited to the targets this database has)', () => {
+  it('drops the rows, kept rows and hashes that belong only to missing experiences or providers, and recomputes the totals', () => {
+    const restricted = restrictRemovalList(parseRemovalList(faceDoc()), { experiences: new Set([E(1)]), providers: new Set<string>() })
+    expect(restricted.rows.map((row: any) => row.sha256)).toEqual([H('a')])
+    expect(restricted.retained).toEqual([])
+    expect([...restricted.hashes]).toEqual([H('a')])
+    expect(restricted.totals).toEqual({ profile_media: 1, provider_version_media: 0, giu_lai: 0 })
+    expect(restricted.skipped).toEqual({ rows: 2, retained: 1 })
+  })
+  it('keeps everything when every target exists', () => {
+    const restricted = restrictRemovalList(parseRemovalList(faceDoc()), { experiences: new Set([E(1), E(2)]), providers: new Set([P]) })
+    expect(restricted.rows).toHaveLength(3)
+    expect(restricted.skipped).toEqual({ rows: 0, retained: 0 })
+  })
+  it('the comparison against the database stays strict for what is left: a difference there still stops', () => {
+    const restricted = restrictRemovalList(parseRemovalList(faceDoc()), { experiences: new Set([E(1)]), providers: new Set<string>() })
+    const okRow = { table: 'profile_media', sha256: H('a'), experience_id: E(1) }
+    expect(compareRemoval([okRow], new Set([H('a')]), restricted).ok).toBe(true)
+    expect(compareRemoval([], new Set<string>(), restricted).ok).toBe(false)                                   // hash of an existing target not found
+    expect(compareRemoval([okRow, okRow], new Set([H('a')]), restricted).problems.join()).toMatch(/unexpected 1/) // one row too many
+  })
+})
+
+describe('importPhotos --skip-missing-targets', () => {
+  const absent = new Set<string>()
+  const fakeClient = (log: string[]) => ({
+    async query(sql: string, values?: unknown[]) {
+      const text = sql.replace(/\s+/g, ' ').trim()
+      log.push(text.split(' ')[0].toUpperCase() + (text.startsWith('INSERT INTO public.stored_files') ? ' stored_files' : ''))
+      const ids = (values?.[0] as string[] | undefined) ?? []
+      if (text.includes('FROM public.experiences WHERE')) return { rows: ids.filter(id => !absent.has(id)).map(id => ({ experience_id: id, name: 'x', archived_at: null })) }
+      if (text.includes('FROM public.villages WHERE')) return { rows: ids.filter(id => !absent.has(id)).map(id => ({ village_id: id, village_name: 'v', cover_image_id: null })) }
+      if (text.includes('FROM public.provider_profiles WHERE')) return { rows: ids.filter(id => !absent.has(id)).map(id => ({ provider_id: id, published_version_no: 1 })) }
+      return { rows: [], rowCount: 0 }
+    },
+  })
+  const storage = { async read() { return null }, async write() {}, async remove() {} }
+  async function photo(dir: string, item: ReturnType<typeof entry>) {
+    const data = await sharp({ create: { width: 1600, height: 1200, channels: 3, background: { r: 120, g: 90, b: 60 } } }).jpeg().toBuffer()
+    const target = join(dir, item.file); (await import('node:fs')).mkdirSync(join(dir, item.loai, item.id), { recursive: true }); writeFileSync(target, data)
+    return { ...item, sha256: createHash('sha256').update(data).digest('hex') }
+  }
+  it('imports the photos whose target exists, skips the rest and reports them; without the flag a missing target stops the run', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'import-skip-'))
+    const kept = [await photo(dir, entry('experience', E(1), 1)), await photo(dir, entry('experience', E(2), 1)), await photo(dir, entry('village', V(1), 1))]
+    const approved = join(dir, 'approved.json'); writeFileSync(approved, JSON.stringify(kept))
+    absent.clear(); absent.add(E(2)); absent.add(V(1))
+    const strictLog: string[] = []
+    await expect(importPhotos({ json: approved, photosDir: dir, apply: false }, { client: fakeClient(strictLog), storage, notesDir: dir, projectRef: DEV_PROJECT_REF })).rejects.toThrow(/Unknown experience, village or workshop ids/)
+    const log: string[] = []
+    const report = await importPhotos({ json: approved, photosDir: dir, apply: false, skipMissingTargets: true }, { client: fakeClient(log), storage, notesDir: dir, projectRef: DEV_PROJECT_REF })
+    expect(report.imported).toBe(1)
+    expect(log.filter(word => word === 'INSERT stored_files')).toHaveLength(1)
+    expect(report.skippedMissingTargets.photos.map((item: any) => `${item.loai}:${item.id}`).sort()).toEqual([`experience:${E(2)}`, `village:${V(1)}`])
+    expect(report.skippedMissingTargets.counts).toMatchObject({ photos: 2, workshopPhotos: 0, faceRows: 0 })
+  })
+  it('without --faces or --workshops nothing else changes: all targets present gives skipped 0', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'import-skip-'))
+    const kept = [await photo(dir, entry('experience', E(1), 1))]
+    const approved = join(dir, 'approved.json'); writeFileSync(approved, JSON.stringify(kept))
+    absent.clear()
+    const report = await importPhotos({ json: approved, photosDir: dir, apply: false, skipMissingTargets: true }, { client: fakeClient([]), storage, notesDir: dir, projectRef: DEV_PROJECT_REF })
+    expect(report.imported).toBe(1)
+    expect(report.skippedMissingTargets.counts).toMatchObject({ photos: 0, workshopPhotos: 0, faceRows: 0 })
   })
 })

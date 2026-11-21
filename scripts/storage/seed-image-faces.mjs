@@ -33,6 +33,23 @@ export function parseRemovalList(doc) {
   return { rows: doc.rows, retained: doc.giu_lai, hashes, totals: doc.tong }
 }
 
+/**
+ * The list limited to the targets this database has (--skip-missing-targets): a row whose experience or provider is not in
+ * `existing` is dropped from both the rows to remove and the rows to keep, and a hash used only by dropped rows is no longer
+ * required to be found. What is left is compared as strictly as before. Totals are recomputed; `skipped` counts what was dropped.
+ * @param {any} parsed @param {{ experiences: Set<string>, providers: Set<string> }} existing
+ */
+export function restrictRemovalList(parsed, existing) {
+  const here = row => row.experience_id ? existing.experiences.has(row.experience_id) : row.provider_id ? existing.providers.has(row.provider_id) : true
+  const rows = parsed.rows.filter(here), retained = parsed.retained.filter(here)
+  const count = table => rows.filter(row => row.table === table).length
+  return {
+    rows, retained, hashes: new Set([...rows, ...retained].map(row => row.sha256)),
+    totals: { profile_media: count('profile_media'), provider_version_media: count('provider_version_media'), giu_lai: retained.length },
+    skipped: { rows: parsed.rows.length - rows.length, retained: parsed.retained.length - retained.length },
+  }
+}
+
 const tally = keys => { const map = new Map(); for (const key of keys) map.set(key, (map.get(key) ?? 0) + 1); return map }
 
 /**

@@ -15,6 +15,10 @@
 //     BEFORE anything is written (a difference stops the run); then they are unlinked, except the rows the list keeps on purpose;
 //   - --workshops: the workshop photos are added to provider_version_media (the published version) and to the draft gallery
 //     (profile_media with provider_id) when the workshop has one.
+// --skip-missing-targets (2026-11-21, stage 1 of the PROD release): a photo whose village or experience, or a workshop photo whose
+// provider, is not in this database is left out and listed in the report (`skippedMissingTargets`, also in the undo file); the face
+// list is cut to the rows whose experience or provider this database has (and the hashes only they use), then compared as strictly
+// as before, so any other difference still stops the run. Without the flag a missing target stops the run.
 // The dry run (default) does all writes and rolls back; it uploads nothing. --apply writes <notes-dir>/seed-image-import-<UTC>/undo.json
 // first, uploads the objects (prf-media/<new file_id> and its WebP variants .w400/.w800/.w1600.webp with their size caps), then commits;
 // a failed upload or commit removes the uploaded objects. --undo restores every row it removed or moved and deletes what it added.
@@ -26,7 +30,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { assertTargets, resolveNotesDir } from './refresh-catalog-copies.mjs'
-import { compareRemoval, findFaceRows, parseRemovalList, removeFaceRows } from './seed-image-faces.mjs'
+import { compareRemoval, findFaceRows, parseRemovalList, removeFaceRows, restrictRemovalList } from './seed-image-faces.mjs'
 import { VARIANT_WIDTHS, makeVariants, variantKey } from './media-variants.mjs'
 import {
   DEV_PROJECT_REF, PROD_PROJECT_REF, filterEntries, groupEntries, orderPlan, processImage, toRecords, toWorkshopRecords, validateEntry, validateWorkshopEntry, verifySha256,
@@ -39,8 +43,8 @@ const refuse = message => { throw new Error(message) }
 
 /** @param {string[]} argv */
 export function parseArgs(argv) {
-  /** @type {{apply:boolean,targetProd:boolean,undo?:string,notesDir?:string,json?:string,photosDir?:string,faces?:string,workshops?:string}} */
-  const options = { apply: false, targetProd: false }
+  /** @type {{apply:boolean,targetProd:boolean,undo?:string,notesDir?:string,json?:string,photosDir?:string,faces?:string,workshops?:string,skipMissingTargets:boolean}} */
+  const options = { apply: false, targetProd: false, skipMissingTargets: false }
   let dryRun = false, apply = false
   const takes = { '--undo': 'undo', '--notes-dir': 'notesDir', '--json': 'json', '--photos-dir': 'photosDir', '--faces': 'faces', '--workshops': 'workshops' }
   for (let index = 0; index < argv.length; index += 1) {
@@ -48,14 +52,16 @@ export function parseArgs(argv) {
     if (arg === '--dry-run') dryRun = true
     else if (arg === '--apply') apply = true
     else if (arg === '--target-prod') options.targetProd = true
+    else if (arg === '--skip-missing-targets') options.skipMissingTargets = true
     else if (arg in takes) {
       const value = argv[index + 1]
       if (!value || value.startsWith('--')) refuse(`${arg} needs a value.`)
       Object.assign(options, { [/** @type {Record<string,string>} */ (takes)[arg]]: value })
       index += 1
-    } else refuse(`Unknown option ${arg}; use --json <file> --photos-dir <dir> [--faces <file>] [--workshops <file>] [--dry-run | --apply] [--target-prod] [--notes-dir <dir>] or --undo <file> [--dry-run].`)
+    } else refuse(`Unknown option ${arg}; use --json <file> --photos-dir <dir> [--faces <file>] [--workshops <file>] [--dry-run | --apply] [--target-prod] [--skip-missing-targets] [--notes-dir <dir>] or --undo <file> [--dry-run].`)
   }
   if (dryRun && apply) refuse('Choose either --dry-run or --apply.')
+  if (options.undo && options.skipMissingTargets) refuse('--skip-missing-targets belongs to an import, not to --undo.')
   if (options.undo && apply) refuse('--undo writes by itself; use --undo <file> --dry-run to preview.')
   if (!options.undo && (!options.json || !options.photosDir)) refuse('--json and --photos-dir are required.')
   options.apply = options.undo ? !dryRun : apply
@@ -70,17 +76,42 @@ export async function importPhotos(options, { client, storage, notesDir, project
   if (!Array.isArray(entries)) refuse('approved-photos.json must be an array.')
   const invalid = entries.map(item => ({ id: item.id, file: item.file, errors: validateEntry(item) })).filter(item => item.errors.length)
   if (invalid.length) refuse(`Invalid entries: ${JSON.stringify(invalid)}`)
-  const { kept, excluded } = filterEntries(entries)
-  const { plan: grouped, alternates } = groupEntries(kept)
-  const workshopEntries = options.workshops ? JSON.parse(readFileSync(options.workshops, 'utf8')) : []
-  if (!Array.isArray(workshopEntries)) refuse('The workshops file must be an array.')
-  const badWorkshops = workshopEntries.map(item => ({ provider_id: item.provider_id, file: item.file, errors: validateWorkshopEntry(item) })).filter(item => item.errors.length)
+  const { kept: keptAll, excluded } = filterEntries(entries)
+  const workshopAll = options.workshops ? JSON.parse(readFileSync(options.workshops, 'utf8')) : []
+  if (!Array.isArray(workshopAll)) refuse('The workshops file must be an array.')
+  const badWorkshops = workshopAll.map(item => ({ provider_id: item.provider_id, file: item.file, errors: validateWorkshopEntry(item) })).filter(item => item.errors.length)
   if (badWorkshops.length) refuse(`Invalid workshop entries: ${JSON.stringify(badWorkshops)}`)
+  let faceParsed = options.faces ? parseRemovalList(JSON.parse(readFileSync(options.faces, 'utf8'))) : null
+
+  // --skip-missing-targets (stage 1 of the PROD release): items whose village, experience or workshop is not in this database are
+  // left out and reported; the face list is cut to the targets this database has and compared as strictly as before.
+  let kept = keptAll, workshopEntries = workshopAll, skippedTargets = null
+  if (options.skipMissingTargets) {
+    const faceRows = faceParsed ? [...faceParsed.rows, ...faceParsed.retained] : []
+    const unique = list => [...new Set(list.filter(Boolean))]
+    const found = async (sql, ids, column) => new Set(ids.length ? (await client.query(sql, [ids])).rows.map(row => row[column]) : [])
+    const existing = {
+      experiences: await found('SELECT experience_id FROM public.experiences WHERE experience_id=ANY($1::uuid[])', unique([...keptAll.filter(item => item.loai === 'experience').map(item => item.id), ...faceRows.map(row => row.experience_id)]), 'experience_id'),
+      villages: await found('SELECT village_id FROM public.villages WHERE village_id=ANY($1::uuid[])', unique(keptAll.filter(item => item.loai === 'village').map(item => item.id)), 'village_id'),
+      providers: await found('SELECT provider_id FROM public.provider_profiles WHERE provider_id=ANY($1::uuid[])', unique([...workshopAll.map(item => item.provider_id), ...faceRows.filter(row => !row.experience_id).map(row => row.provider_id)]), 'provider_id'),
+    }
+    kept = keptAll.filter(item => (item.loai === 'village' ? existing.villages : existing.experiences).has(item.id))
+    workshopEntries = workshopAll.filter(item => existing.providers.has(item.provider_id))
+    if (faceParsed) faceParsed = restrictRemovalList(faceParsed, existing)
+    const skippedFaces = faceParsed?.skipped ?? { rows: 0, retained: 0 }
+    skippedTargets = {
+      photos: keptAll.filter(item => !kept.includes(item)).map(({ loai, id, ten, file }) => ({ loai, id, ten, file })),
+      workshopPhotos: workshopAll.filter(item => !workshopEntries.includes(item)).map(({ provider_id, xuong, file }) => ({ provider_id, xuong, file })),
+      faceRows: skippedFaces,
+    }
+    skippedTargets.counts = { photos: skippedTargets.photos.length, workshopPhotos: skippedTargets.workshopPhotos.length, faceRows: skippedFaces.rows + skippedFaces.retained }
+  }
+  const { plan: grouped, alternates } = groupEntries(kept)
 
   // The face list is compared with this database before anything is written; a difference stops the run.
   let faceList = null, faceFound = null
-  if (options.faces) {
-    faceList = parseRemovalList(JSON.parse(readFileSync(options.faces, 'utf8')))
+  if (faceParsed) {
+    faceList = faceParsed
     faceFound = await findFaceRows(client, storage, faceList)
     const check = compareRemoval(faceFound.rows, faceFound.hashesFound, faceList)
     if (!check.ok) refuse(`The face-removal list does not match this database; nothing was written. ${check.problems.slice(0, 12).join('; ')}`)
@@ -110,7 +141,7 @@ export async function importPhotos(options, { client, storage, notesDir, project
   const previousCover = new Map(villages.rows.map(row => [row.village_id, row.cover_image_id]))
 
   const plan = orderPlan(grouped, sharedExperiences)
-  const undo = { projectRef, createdAt: now.toISOString(), items: [], removedProfileMedia: [], shiftedProfileMedia: [], removedFaceRows: undefined, workshopItems: [] }
+  const undo = { projectRef, createdAt: now.toISOString(), items: [], removedProfileMedia: [], shiftedProfileMedia: [], removedFaceRows: undefined, workshopItems: [], skippedMissingTargets: skippedTargets }
   const uploads = []   // every new object: { file_id, storage_key, bytes }
   const focal = []
   for (const step of plan) {
@@ -200,7 +231,7 @@ export async function importPhotos(options, { client, storage, notesDir, project
     archivedExperiencesImported: experiences.rows.filter(row => row.archived_at).map(row => ({ id: row.experience_id, name: row.name })),
     villagesWithPreviousCover: villages.rows.filter(row => row.cover_image_id).map(row => row.village_name),
     unlinkedSharedRows: undo.removedProfileMedia.length, shiftedRows: undo.shiftedProfileMedia.length,
-    faces, workshopGalleries: galleries,
+    faces, workshopGalleries: galleries, skippedMissingTargets: skippedTargets,
     averageBytes: average(sizes), averageKB: Math.round(average(sizes) / 1024), minKB: sizes.length ? Math.round(Math.min(...sizes) / 1024) : 0, maxKB: sizes.length ? Math.round(Math.max(...sizes) / 1024) : 0,
     portraitsDefaultFocal: focal.length, focalNote: 'no focal/object-position column in the schema: reported only, nothing stored',
     focal,

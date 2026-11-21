@@ -30,8 +30,13 @@ export function parseVariantWidth(value) {
 
 /** Size cap per width in bytes (human request 2026-11-20): 400 ≤ 50 KB, 800 ≤ 120 KB, 1600 ≤ 250 KB. */
 export const VARIANT_CAPS = Object.freeze({ 400: 50 * 1024, 800: 120 * 1024, 1600: 250 * 1024 })
-/** Qualities tried in order until a variant fits its cap; the last result is kept (flagged) if none fits. */
-export const QUALITY_STEPS = Object.freeze([WEBP_QUALITY, 62, 52, 45])
+/** Qualities tried in order until a variant fits its cap; never below 55 (human request 2026-11-21). */
+export const QUALITY_STEPS = Object.freeze([WEBP_QUALITY, 62, 55])
+/**
+ * When quality 55 is still over the cap, the variant is made narrower in 12.5 % steps of its nominal width, down to 75 %
+ * (1600 → 1400 → 1200). The key keeps the nominal width (w1600); the real width is in outputWidth.
+ */
+export const WIDTH_STEPS = Object.freeze([1, 0.875, 0.75])
 
 /**
  * Widths whose stored size is over the cap; a missing size (null) is not oversize.
@@ -40,21 +45,28 @@ export const QUALITY_STEPS = Object.freeze([WEBP_QUALITY, 62, 52, 45])
 export const oversizeWidths = sizes => VARIANT_WIDTHS.filter(width => typeof sizes[width] === 'number' && /** @type {number} */ (sizes[width]) > /** @type {any} */ (VARIANT_CAPS)[width])
 
 /**
- * Turn by EXIF, resize to each width (never enlarged), WebP from quality 72 down the steps until under the cap;
- * sharp writes no metadata unless asked.
+ * Turn by EXIF, resize to each width (never enlarged), WebP from quality 72 down the steps until under the cap; if quality
+ * 55 is still over, the same at 87.5 % then 75 % of the nominal width. The widest result that fits wins (at the highest
+ * quality that fits it); if none fits, the 75 % width, quality 55 result is kept and flagged. sharp writes no metadata.
  * @param {Uint8Array} input
  * @param {{caps?: Record<number, number>}} [options]
- * @returns {Promise<Array<{width:number,bytes:Buffer,outputWidth:number,outputHeight:number,quality:number,overCap:boolean}>>}
+ * @returns {Promise<Array<{width:number,bytes:Buffer,outputWidth:number,outputHeight:number,quality:number,overCap:boolean,narrowed:boolean}>>}
  */
 export async function makeVariants(input, { caps = VARIANT_CAPS } = {}) {
   const variants = []
   for (const width of VARIANT_WIDTHS) {
-    const resized = await sharp(input).rotate().resize({ width, withoutEnlargement: true }).raw().toBuffer({ resolveWithObject: true })
-    const raw = sharp(resized.data, { raw: { width: resized.info.width, height: resized.info.height, channels: resized.info.channels } })
     /** @type {any} */ let result
-    for (const quality of QUALITY_STEPS) {
-      const { data, info } = await raw.clone().webp({ quality }).toBuffer({ resolveWithObject: true })
-      result = { width, bytes: data, outputWidth: info.width, outputHeight: info.height, quality, overCap: data.length > caps[width] }
+    let previousWidth = 0
+    for (const step of WIDTH_STEPS) {
+      const resized = await sharp(input).rotate().resize({ width: Math.round(width * step), withoutEnlargement: true }).raw().toBuffer({ resolveWithObject: true })
+      if (resized.info.width === previousWidth) continue // narrower original: this step gives the same picture
+      previousWidth = resized.info.width
+      const raw = sharp(resized.data, { raw: { width: resized.info.width, height: resized.info.height, channels: resized.info.channels } })
+      for (const quality of QUALITY_STEPS) {
+        const { data, info } = await raw.clone().webp({ quality }).toBuffer({ resolveWithObject: true })
+        result = { width, bytes: data, outputWidth: info.width, outputHeight: info.height, quality, overCap: data.length > caps[width], narrowed: step < 1 }
+        if (!result.overCap) break
+      }
       if (!result.overCap) break
     }
     variants.push(result)

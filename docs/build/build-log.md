@@ -1580,6 +1580,18 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` 0; `npx vitest run` 257 files, 1563 passed (22 skipped); `npm run build` passes |
 | Not done | Backfill `--only-oversize --apply` and `--apply` for the remaining 357 variants (human); migration after merge; UI `?w=`/`?v=` and portrait focal point (step 2B); 12 variants over the cap at quality 45 |
 
+### Entry 116: 21/11 Claude Code + human — variant size cap by width steps (`perf/variant-size-cap`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Opus 5.5); requested by linhkhanh-vu. Agent ran DEV read-only checks and a DEV dry run; every `--apply` on DEV run by linhkhanh-vu |
+| Trigger | PR #277 was squash-merged before this part. After the full backfill, DEV Storage held all 459 variants (153 images × 3, checked read-only) but 20 were over their cap even at quality 45: w400 avg 19 / max 57 KB, w800 56 / 199, w1600 128 / 454. Human decision 21/11: make them narrower instead of lowering the quality further |
+| Change | `scripts/storage/media-variants.mjs`: quality 72 → 62 → 55, never below 55; if quality 55 is still over the cap, the same at 87.5 % then 75 % of the nominal width (1600 → 1400 → 1200, 800 → 700 → 600, 400 → 350 → 300). The widest width that fits wins, at the highest quality that fits it. The key keeps the nominal width (`.w1600.webp`); the real width is in `outputWidth` and `narrowed`. Still over at 75 % / quality 55: kept as is, listed. Steps are taken from the nominal width; with a narrower original (never enlarged) a step that gives the same width is skipped. `backfill-media-variants.mjs`: `capReport` replaces `stillOverCapAt45` with `reducedWidth` and `stillOverCap` (file, nominal width, real width, quality, KB) |
+| Test-first | `tests/unit/media-variants.test.ts` (quality floor 55, width steps, nominal key, 75 % floor flagged, narrower original) and `tests/unit/backfill-media-variants.test.ts` (`capReport`): 7 red on `main` for the right reason (old quality steps, no `WIDTH_STEPS`, no `narrowed`, no `capReport`), then green. Changed tests from PR #277: the quality-steps and "quality 45 kept" cases now state the 21/11 decision (requirement change, not a fix to pass); the two sharp `describe` blocks get a 20 s timeout (they took 3.5–5.5 s and timed out under full-suite load); the noise helper fills a `Uint8Array` (same values, faster). No other test edited |
+| DEV dry run `--only-oversize` (no upload) | 14 images, 20 variants re-encoded, all 20 narrower. Under the cap after: 6 (`2451ff3d` w400 → 300 px 45 KB; `2fbb2244` w800 → 700 px 117 KB; `4a9bcfa5`, `a728146f`, `bd52c9d9` w800 → 600 px 113–116 KB; `8cd75aa9` w1600 → 1200 px 228 KB). Still over at 75 % / quality 55: 14 (`2451ff3d` w800 135 KB; w1600 → 1200 px: eight at 270–286 KB, `a728146f` 303, `bd52c9d9` 294, `4a9bcfa5` 348, `2fbb2244` 428, `2451ff3d` 430 KB). For some of these the new file is about the same size as the stored quality-45 one, at a smaller width (`bd52c9d9` w1600: 291 → 294 KB) |
+| Checks | `npm run lint` 0; `npx vitest run` 257 files, 1567 passed (22 skipped); `npm run build` passes |
+| Not done | Human: `--only-oversize` dry run then `--apply` on DEV after merge; decide what to do with the 14 variants still over the cap; step 2B (UI `?w=`/`?v=`) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

@@ -87,6 +87,19 @@ export function summarizeVariants(results) {
   return summary
 }
 
+/**
+ * Variants made narrower than their nominal width (real width recorded), and those still over the cap at 75 % width and
+ * quality 55, which are kept as they are (human request 2026-11-21).
+ * @param {Array<{file_id:string,variants:Array<{width:number,outputWidth:number,quality:number,overCap:boolean,narrowed:boolean,bytes:{length:number}}>}>} items
+ */
+export function capReport(items) {
+  const rows = items.flatMap(({ file_id, variants }) => variants.map(variant => ({ row: { file_id, width: variant.width, outputWidth: variant.outputWidth, quality: variant.quality, KB: Math.round(variant.bytes.length / 1024) }, variant })))
+  return {
+    reducedWidth: rows.filter(({ variant }) => variant.narrowed).map(({ row }) => row),
+    stillOverCap: rows.filter(({ variant }) => variant.overCap).map(({ row }) => row),
+  }
+}
+
 /** @param {any} options @param {any} deps @returns {Promise<any>} */
 async function backfill(options, { client, storage, notesDir, projectRef, now = new Date() }) {
   const files = (await client.query(DISPLAY_IMAGES_SQL)).rows
@@ -118,7 +131,7 @@ async function backfill(options, { client, storage, notesDir, projectRef, now = 
     byWidth: summarizeVariants(results), heaviest1600: heaviest,
     caps: VARIANT_CAPS, onlyOversize: options.onlyOversize, variantsToWrite: work.reduce((sum, item) => sum + item.missing.length, 0),
     qualityUsed: Object.fromEntries(VARIANT_WIDTHS.map(width => [width, results.flat().filter(item => item.width === width).reduce((/** @type {Record<string,number>} */ count, item) => ({ ...count, [item.quality]: (count[item.quality] ?? 0) + 1 }), {})])),
-    stillOverCapAt45: results.flat().filter(item => item.overCap).map(item => item.width),
+    ...capReport(work.filter(({ file }) => made.has(file.file_id)).map(({ file, missing }) => ({ file_id: file.file_id, variants: /** @type {any[]} */ (made.get(file.file_id)).filter(variant => missing.includes(variant.width)) }))),
   }
   if (!options.apply) return report
   const dir = join(notesDir, `media-variants-${now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}`)

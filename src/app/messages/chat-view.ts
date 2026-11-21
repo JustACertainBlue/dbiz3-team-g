@@ -55,28 +55,15 @@ export function groupByDay<T extends { sent_at: string }>(messages: T[], now: Da
 
 export const attachmentLine = (file: { file_name: string; file_size: number }) => `Đính kèm: ${file.file_name} · ${sizeLabel(file.file_size)}`
 
-export type ChatAction = { key: 'create_booking' | 'close' | 'bookings' | 'schedule'; label: string; href?: string }
+export type ChatAction = { key: 'create_booking'; label: string; href: string }
 
 /**
- * Screen actions next to the conversation header. Close Chat only while Active (F-CHAT-04: Closed is terminal).
- * Leaving through Bookings / Schedule never closes the Chat (COM048 #9–#10, COM065 #10).
+ * Header buttons of the thread (screen 25, decision 21/11): "Đóng hội thoại", "Đặt chỗ" and "Lịch" are gone for both
+ * roles. The Local Provider keeps "Tạo đặt chỗ"; the request card has its own "Tạo đặt chỗ từ yêu cầu" button.
  */
-export function chatActions(session: { role: string | null; agencyId?: string | null; providerId?: string | null }, status: string): ChatAction[] {
-  const active = status === 'Active'
-  if (session.role === 'Local_Provider') {
-    const base = `/provider/${session.providerId}`
-    return [
-      { key: 'create_booking', label: 'Tạo đặt chỗ', href: `${base}/bookings/new` },
-      ...(active ? [{ key: 'close', label: 'Đóng hội thoại' } as ChatAction] : []),
-      { key: 'bookings', label: 'Đặt chỗ', href: `${base}/bookings` },
-    ]
-  }
-  const base = `/agency/${session.agencyId}`
-  return [
-    ...(active ? [{ key: 'close', label: 'Đóng hội thoại' } as ChatAction] : []),
-    { key: 'bookings', label: 'Đặt chỗ', href: `${base}/bookings` },
-    { key: 'schedule', label: 'Lịch', href: `${base}/schedule` },
-  ]
+export function chatActions(session: { role: string | null; agencyId?: string | null; providerId?: string | null }, _status: string): ChatAction[] {
+  if (session.role === 'Local_Provider') return [{ key: 'create_booking', label: 'Tạo đặt chỗ', href: `/provider/${session.providerId}/bookings/new` }]
+  return []
 }
 
 // #158: a poll fetches the latest page of the open Chat. Messages the user already loaded with
@@ -91,4 +78,27 @@ export function mergeLatestPage<M extends { message_id: string }, H extends { ch
   if (firstIndex <= 0) return latest
   const older = current.message_history.slice(0, firstIndex).filter(message => !latestIds.has(message.message_id))
   return { ...latest, message_history: [...older, ...latest.message_history], has_more_messages: current.has_more_messages }
+}
+
+// Pill of a Booking Update message (mockup 25 ".evt", UI v3 decision #6). The stored sentence (spec-BKG #49,
+// "Booking {status label}: …") stays the sub line; the title is derived from its status label.
+const EVENT_TITLE: Record<string, string> = {
+  'Tạm giữ': 'Xưởng đã giữ chỗ',
+  'Đã đặt': 'Xưởng đã nhận tiền',
+  'Hoàn tất': 'Tour đã hoàn thành',
+  'Đã huỷ': 'Đặt chỗ đã huỷ',
+  'Công ty báo đã thanh toán': 'Công ty báo đã thanh toán',
+}
+export function eventView(text: string): { title: string; sub: string } {
+  const label = /^(?:Booking )?([^:]+): /.exec(text)?.[1] ?? ''
+  return { title: EVENT_TITLE[label] ?? 'Cập nhật đặt chỗ', sub: text }
+}
+
+const fold = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase().trim()
+
+/** Screen 25 search box: keeps the chats whose organization, participant or experience contains the text (no case, no accents). */
+export function filterChats<T extends { organization: string; participant_name: string; experience_name: string }>(chats: readonly T[], query: string): T[] {
+  const needle = fold(query)
+  if (!needle) return [...chats]
+  return chats.filter(chat => [chat.organization, chat.participant_name, chat.experience_name].some(field => fold(field).includes(needle)))
 }

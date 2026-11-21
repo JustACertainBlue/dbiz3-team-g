@@ -1,60 +1,93 @@
 import Link from 'next/link'
-import { listAgencyBookings } from '@/lib/booking/agency-bookings'
-import { addDays, hanoiDate } from '@/lib/booking/clock'
-import { BookingError } from '@/lib/booking/create-booking'
-import { BOOKING_STATUSES } from '@/lib/booking/list-bookings'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import AutoRefresh from '@/app/components/AutoRefresh'
-import CalendarGrid, { calendarStyles } from '@/app/schedule-calendar/CalendarGrid'
-import { bookingDetailStyles } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
+import { listAgencyBookings } from '@/lib/booking/agency-bookings'
+import { STATE_LABEL, scheduleModel } from '@/lib/booking/agency-schedule'
+import { hanoiDate } from '@/lib/booking/clock'
+import { BookingError } from '@/lib/booking/create-booking'
 import { agencyPageSession } from '../agency-booking-gate'
-import { sessionDisplayName } from '@/lib/auth/session'
-import { statusLabel } from '@/lib/status-labels'
+import '@/app/provider/[providerId]/bookings/list-v3.css'
+import './schedule-v3.css'
 
 export const dynamic = 'force-dynamic'
 
-// Screen SCH141 Agency Schedule, titled "Lịch Công ty" per mockup v3 png/27 (F-SCHED-02 calendar, #68): own Bookings in all canonical statuses,
-// date range (default today .. +29, UI choice #71) and status filter (analyze M1).
+const WD = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+const LONG = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
+const validMonth = (value: string | undefined) => (value && /^\d{4}-(0[1-9]|1[0-2])$/.test(value) ? value : '')
+
+// Screen 27 (SCH141) "Lịch Công ty", mockup 19/11: summary chips, month grid with three trip states, selected day, month list.
+// Own Bookings only, read-only. Month and day are links (?thang=YYYY-MM, ?ngay=YYYY-MM-DD): no client state.
 export default async function AgencySchedulePage({ params, searchParams }: { params: { agencyId: string }; searchParams: Record<string, string | undefined> }) {
-  const session = (await agencyPageSession(params.agencyId))
-  const styles = bookingDetailStyles + calendarStyles + scheduleStyles
+  const session = await agencyPageSession(params.agencyId)
   if (!session) {
-    return <main className="bkg-page bkg-state"><h1>Lịch Công ty</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch này.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
+    return <main className="v3l"><h1 className="v3l-h1">Lịch Công ty</h1><p>Chỉ công ty lữ hành của tài khoản này mới xem được lịch này.</p><Link href="/login" className="v3l-btn">Đăng nhập</Link></main>
   }
   const base = `/agency/${params.agencyId}/schedule`
-  const dateFrom = searchParams.date_from || hanoiDate(Date.now())
-  const dateTo = searchParams.date_to || addDays(dateFrom, 29)
-  const status = searchParams.status ?? ''
+  const today = hanoiDate(Date.now())
   let rows
   try {
-    rows = (await listAgencyBookings(session, { status, date_from: dateFrom, date_to: dateTo })).bookings
+    rows = (await listAgencyBookings(session, {})).bookings
   } catch (error) {
-    const message = error instanceof BookingError ? `${error.code}: ${error.message}` : 'Không tải được lịch.'
-    return <main className="bkg-page bkg-state"><h1>Lịch Công ty</h1><p className="bkg-error" role="alert">{message}</p><Link href={base}>Về hôm nay</Link><style>{styles}</style></main>
+    return <main className="v3l"><h1 className="v3l-h1">Lịch Công ty</h1><p role="alert">{error instanceof BookingError ? error.message : 'Không tải được lịch.'}</p></main>
   }
-  const days: string[] = []
-  for (let day = dateFrom; day <= dateTo && days.length < 62; day = addDays(day, 1)) days.push(day)
-  const blocks = rows.map(row => ({ start_at: row.start_at, end_at: row.end_at, status: row.status, booking_id: row.booking_id }))
+  const month = validMonth(searchParams.thang) || today.slice(0, 7)
+  const model = scheduleModel(rows, month, today)
+  const selected = model.days.find(day => day.date === searchParams.ngay) ?? model.days.find(day => day.state === 'hold' || day.state === 'booked') ?? null
+  const trip = selected?.bookingId ? model.events.find(event => event.bookingId === selected.bookingId) : null
+  const detail = (id: string) => `/agency/${params.agencyId}/bookings/${id}`
+  const longDate = selected ? `${LONG[new Date(`${selected.date}T00:00:00Z`).getUTCDay()]}, ${selected.day}/${month.slice(5, 7)}/${month.slice(0, 4)}` : 'Chọn một ngày trên lịch'
 
-  return <main className="bkg-page bkg-list">
-    {/* #157: Provider changes show within ~10 s without a reload (FR-008) */}
+  return <main className="v3l">
     <AutoRefresh />
-    <header><p>HANOI ARTISAN BRIDGE · SCH141</p><h1>Lịch Công ty</h1><span>{(await sessionDisplayName(session))} · Booking của chính Agency, chỉ xem</span></header>
-    <form className="bkg-filters" method="get" action={base}>
-      <label>Trạng thái
-        <select name="status" defaultValue={status}>
-          <option value="">Tất cả</option>
-          {BOOKING_STATUSES.map(value => <option key={value} value={value}>{statusLabel('booking', value)}</option>)}
-        </select>
-      </label>
-      <label>Từ ngày<input type="date" name="date_from" defaultValue={dateFrom} /></label>
-      <label>Đến ngày<input type="date" name="date_to" defaultValue={dateTo} /></label>
-      <div className="bkg-actions"><button type="submit">Lọc</button><Link href={base}>Về hôm nay</Link></div>
-    </form>
-    <p className="bkg-panel" style={{ marginTop: 14 }}>{rows.length} Booking trong khoảng {dateFrom} → {dateTo}</p>
-    <CalendarGrid days={days} blocks={blocks} hrefFor={block => `/agency/${params.agencyId}/bookings/${block.booking_id}`} />
-    <p className="bkg-actions"><Link href={`/agency/${params.agencyId}/bookings`}>Booking History</Link><Link href="/messages">Chat</Link></p>
-    <style>{styles}</style>
+    <Link className="v3l-link" href={`/agency/${params.agencyId}/bookings`}>‹ Lịch sử đặt chỗ</Link>
+    <div className="v3l-head"><h1 className="v3l-h1">Lịch Công ty</h1></div>
+    <div className="v3s-chips">
+      <span className="v3s-chip">Sắp tới <b>{model.summary.upcoming}</b> chuyến</span>
+      <span className="v3s-chip">Chờ thanh toán <b>{model.summary.pending}</b></span>
+    </div>
+    <div className="v3s-grid">
+      <section className="v3s-cal" aria-label="Lịch tháng">
+        <div className="v3s-head">
+          <Link className="v3s-nav" href={`${base}?thang=${model.prev}`} aria-label="Tháng trước"><ChevronLeft size={20} aria-hidden="true" /></Link>
+          <h2>{model.title}</h2>
+          <Link className="v3s-nav" href={`${base}?thang=${model.next}`} aria-label="Tháng sau"><ChevronRight size={20} aria-hidden="true" /></Link>
+        </div>
+        <div className="v3s-legend">
+          <span><i className="v3s-sw k-hold" />Chờ thanh toán</span><span><i className="v3s-sw k-booked" />Đã thanh toán</span>
+          <span><i className="v3s-sw k-done" />Hoàn thành tour</span><span><i className="v3s-sw k-sel" style={{ background: '#fff' }} />Ngày đang chọn</span>
+        </div>
+        <div className="v3s-mgrid">
+          {WD.map(name => <span key={name} className="v3s-wd">{name}</span>)}
+          {Array.from({ length: model.leading }, (_, index) => <span key={`b${index}`} className="v3s-cell v3s-blank" aria-hidden="true" />)}
+          {model.days.map(day => <Link key={day.date} href={`${base}?thang=${month}&ngay=${day.date}`} scroll={false}
+            className={`v3s-cell k-${day.state}${day.date === selected?.date ? ' k-sel' : ''}`} aria-current={day.date === selected?.date ? 'date' : undefined}
+            aria-label={`${day.day}/${month.slice(5, 7)}${day.state === 'hold' || day.state === 'booked' || day.state === 'done' ? ` ${STATE_LABEL[day.state]}` : ''}`}>{day.day}</Link>)}
+        </div>
+      </section>
+      <aside className="v3s-side" aria-label="Ngày đã chọn">
+        <p className="v3s-eb">NGÀY ĐÃ CHỌN</p>
+        <p className="v3s-date">{longDate}</p>
+        {trip ? <>
+          <span className={`v3l-pill v3l-pill--${trip.state === 'hold' ? 'hold' : trip.state === 'booked' ? 'booked' : 'done'}`} style={{ alignSelf: 'flex-start' }}>{STATE_LABEL[trip.state]}</span>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 18 }}>{trip.name}</p>
+          <p style={{ margin: 0 }}>{trip.time} · {trip.provider} · {trip.guests} khách</p>
+          <Link className="v3l-link" href={detail(trip.bookingId)}>Xem chi tiết ›</Link>
+        </> : selected && <>
+          <p style={{ margin: 0 }}>Chưa có chuyến nào trong ngày này.</p>
+          <Link className="v3l-btn" href="/explore">Tìm trải nghiệm cho ngày này</Link>
+        </>}
+      </aside>
+    </div>
+    <section className="v3s-list" aria-label={model.title}>
+      <h2 style={{ margin: 0, fontSize: 22, color: '#0F3D2A' }}>{model.title}</h2>
+      {model.events.length === 0 ? <p className="v3l-empty" style={{ marginTop: 12 }}>Chưa có chuyến nào trong tháng này.</p>
+        : model.events.map(event => <div key={event.bookingId} className={`v3s-ev k-${event.state}`}>
+          <div className="v3s-evdate">{event.weekday}<b>{event.day}</b></div>
+          <div className="v3s-evbody"><span className={`v3l-pill v3l-pill--${event.state === 'hold' ? 'hold' : event.state === 'booked' ? 'booked' : 'done'}`}>{STATE_LABEL[event.state]}</span>
+            <p style={{ fontWeight: 700 }}>{event.name}</p><p>{event.time} · {event.provider} · {event.guests} khách</p></div>
+          <Link className="v3l-link" href={detail(event.bookingId)}>Xem chi tiết</Link>
+        </div>)}
+    </section>
+    <div className="v3s-more"><Link href={`/agency/${params.agencyId}/bookings`}>Xem thêm</Link></div>
   </main>
 }
-
-const scheduleStyles = `.bkg-list{max-width:1080px}.bkg-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:20px;padding:16px;background:#f4efe5;border-radius:14px}.bkg-filters label{display:grid;gap:4px;font-weight:700;font-size:13px}.bkg-filters input,.bkg-filters select{padding:8px 10px;border:1px solid #ddd6ca;border-radius:10px;font:inherit;background:white}.bkg-filters .bkg-actions{margin-top:0}`

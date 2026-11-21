@@ -21,27 +21,27 @@ import BookingManagementPage from '@/app/provider/[providerId]/bookings/page'
 const BAT_TRANG = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
 const decode = (s: string) => s.replace(/&amp;/g, '&')
 
-describe('#190 | BKG133 stat cards and Create at the top', () => {
+describe('#190 (screen 34, mockup 19/11) | tabs with counts and Tạo đặt chỗ at the top', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('four stat cards show the status_counts and link to that status filter; the current one is marked', async () => {
-    const searchParams = { date_from: '', status: 'Booked', date_to: '', page: '1' }
-    const expected = (await listProviderBookings((await currentServerSession()), searchParams)).status_counts
+  it('six tabs show the status counts and link to their filter; the current one is marked', async () => {
+    const searchParams = { tab: 'booked', page: '1' }
+    const expected = (await listProviderBookings((await currentServerSession()), {})).status_counts
     const html = renderToStaticMarkup(await BookingManagementPage({ params: { providerId: BAT_TRANG }, searchParams }))
-    const cards = html.match(/<nav[^>]*class="bkg-stat-cards"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? ''
-    const links = [...cards.matchAll(/<a([^>]*)>([\s\S]*?)<\/a>/g)].map(m => ({ attrs: decode(m[1]), text: m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() }))
+    const nav = html.match(/<nav[^>]*class="v3l-tabs"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? ''
+    const links = [...nav.matchAll(/<a([^>]*)>([\s\S]*?)<\/a>/g)].map(m => ({ attrs: decode(m[1]), text: m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() }))
+    const total = expected['On hold'] + expected.Booked + expected.Completed + expected.Cancelled
     expect(links.map(l => l.text)).toEqual([
-      `Tạm giữ ${expected['On hold']}`, `Đã đặt ${expected.Booked}`, `Hoàn tất ${expected.Completed}`, `Đã huỷ ${expected.Cancelled}`,
+      `Tất cả (${total})`, `Cần xử lý (${expected['On hold']})`, `Đang giữ chỗ (${expected['On hold']})`, `Đã thanh toán (${expected.Booked})`, `Hoàn thành tour (${expected.Completed})`, `Đã huỷ (${expected.Cancelled})`,
     ])
-    expect(links[0].attrs).toContain('status=On+hold')
-    expect(links.filter(l => l.attrs.includes('aria-current="page"')).map(l => l.text)).toEqual([`Đã đặt ${expected.Booked}`])
-    expect(html.indexOf('class="bkg-stat-cards"')).toBeLessThan(html.indexOf('class="bkg-filters"'))
+    expect(links[1].attrs).toContain('tab=todo')
+    expect(links.filter(l => l.attrs.includes('aria-current="page"')).map(l => l.text)).toEqual([`Đã thanh toán (${expected.Booked})`])
   })
 
-  it('Create (to BKG134) is in the header area, before the filters', async () => {
+  it('Tạo đặt chỗ (to screen 35) is in the header, before the tabs', async () => {
     const html = renderToStaticMarkup(await BookingManagementPage({ params: { providerId: BAT_TRANG }, searchParams: {} }))
     const create = html.indexOf(`href="/provider/${BAT_TRANG}/bookings/new"`)
     expect(create).toBeGreaterThan(-1)
-    expect(create).toBeLessThan(html.indexOf('class="bkg-filters"'))
+    expect(create).toBeLessThan(html.indexOf('class="v3l-tabs"'))
   })
 })

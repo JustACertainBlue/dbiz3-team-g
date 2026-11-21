@@ -5,6 +5,9 @@ import type { DemoRow } from '../demo/types'
 import { bookingUpdateOperations } from './agency-sync'
 import { hanoiTimestamp, systemClock, type Clock } from './clock'
 import { findConflict } from './conflicts'
+import { groupPrice } from './group-price'
+import { assertSlotAndCapacity } from './slot-rules'
+import { parseBookingRequest } from './request-card'
 import { expireDueHoldsLocked } from './expire-holds'
 import { fitsOperatingHours } from './operating-hours'
 import { withBookingWriteLock } from './write-lock'
@@ -65,9 +68,11 @@ interface ValidInput {
   start: number
   duration: number
   group_size: number
-  agreed_price: number
+  agreed_price: number | null
   conditions: BookingConditions
   source_chat_session_id: string
+  request_message_id: string
+  agreed_conditions: string
 }
 
 export const isPositiveInteger = (value: unknown): value is number => Number.isInteger(value) && (value as number) > 0
@@ -111,8 +116,13 @@ function validateInput(input: Record<string, unknown>): ValidInput {
   // Any duration > 0 is accepted; it need not equal the Experience's duration (#38).
   if (!isPositiveInteger(input.duration)) invalid('duration must be an integer > 0')
   if (!isPositiveInteger(input.group_size)) invalid('group_size must be an integer > 0')
+  // Omitted: the server prices the Booking from the Experience list price and Group Discount (screen 35 does not edit it).
   const price = input.agreed_price
-  if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) invalid('agreed_price must be > 0')
+  if (price !== undefined && price !== null && (typeof price !== 'number' || !Number.isFinite(price) || price <= 0)) invalid('agreed_price must be > 0')
+  const requestId = input.request_message_id
+  if (requestId !== undefined && requestId !== null && typeof requestId !== 'string') invalid('request_message_id must be an ID')
+  const conditionsText = typeof input.agreed_conditions === 'string' ? input.agreed_conditions.trim() : ''
+  if ([...conditionsText].length > 1000) invalid('agreed_conditions is longer than 1000 characters')
   const chat = input.source_chat_session_id
   if (chat !== undefined && chat !== null && typeof chat !== 'string') invalid('source_chat_session_id must be an ID')
   return {
@@ -121,9 +131,11 @@ function validateInput(input: Record<string, unknown>): ValidInput {
     start,
     duration: input.duration,
     group_size: input.group_size,
-    agreed_price: price,
+    agreed_price: typeof price === 'number' ? price : null,
     conditions: validateConditions(input.booking_conditions),
     source_chat_session_id: chat ?? '',
+    request_message_id: typeof requestId === 'string' ? requestId : '',
+    agreed_conditions: conditionsText,
   }
 }
 
@@ -161,6 +173,25 @@ export async function createBooking(
   const agencyUser = (await repository.find('user_accounts', row => row.user_id === agency.user_id))
   if (agencyUser?.account_status !== 'Approved') throw new BookingError('AGENCY_NOT_ELIGIBLE', 'The Agency account is not Approved')
 
+  // UI v3 decision #1: a Provider books only for an Agency that has already chatted with it (any Chat of the pair).
+  const chatted = (await repository.find('chat_sessions', row => row.agency_id === request.agency_id && row.provider_id === providerId))
+  if (!chatted) throw new BookingError('FORBIDDEN', 'The Agency has not chatted with this Provider')
+
+  // Screen 35 (UI v3): the request note of 04/24 is copied to bookings.note; only a Quote Request of this pair counts.
+  let requestNote = ''
+  if (request.request_message_id) {
+    const message = (await repository.find('chat_messages', row => row.message_id === request.request_message_id && row.message_kind === 'Quote Request'))
+    const chat = message && (await repository.find('chat_sessions', row => row.chat_session_id === message.chat_session_id))
+    const card = chat && chat.agency_id === request.agency_id && chat.provider_id === providerId ? parseBookingRequest(message.text) : null
+    if (!card) invalid('request_message_id is not a booking request of this Agency and Provider')
+    requestNote = card.note
+  }
+  // List price with the Group Discount when no price is given.
+  const rules = (await repository.all('experience_discount_rules'))
+    .filter(row => row.experience_id === request.experience_id && row.rule_kind === 'Group Discount')
+    .map(row => ({ pax: Number(row.pax_threshold), pct: Number(row.discount_percentage) }))
+  const agreedPrice = request.agreed_price ?? groupPrice(Number(experience.price_per_person), request.group_size, rules).total
+
   // OQ #7: group_size must not exceed the Experience's max_participants.
   if (request.group_size > Number(experience.max_participants)) invalid('group_size exceeds max_participants')
 
@@ -183,6 +214,9 @@ export async function createBooking(
     if (findConflict((await repository.all('bookings')), providerId, startAt, endAt)) {
       throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time overlaps another Booking')
     }
+    // Slot + capacity inside the same transaction (UI v3 decision #7), shared with the edit.
+    const lockedExperience = (await repository.find('experiences', row => row.experience_id === request.experience_id)) ?? experience
+    await assertSlotAndCapacity(repository, { experience: lockedExperience, startAt, endAt, groupSize: request.group_size })
     if (options.afterConflictCheck) await options.afterConflictCheck()
 
     const bookingId = randomUUID()
@@ -197,7 +231,7 @@ export async function createBooking(
       start_at: startAt,
       duration_minutes: String(request.duration),
       group_size: String(request.group_size),
-      agreed_price_total: request.agreed_price.toFixed(2),
+      agreed_price_total: agreedPrice.toFixed(2),
       conditions_snapshot: JSON.stringify({
         notice_period_hours: request.conditions.notice_period,
         cancellation_policy: request.conditions.cancellation_policy,
@@ -208,6 +242,7 @@ export async function createBooking(
       hold_expires_at: holdExpiresAt,
       end_at: endAt,
       arrival_at: '',
+      ...(requestNote ? { note: requestNote } : {}),
     }
     const history: DemoRow = {
       history_id: randomUUID(),
@@ -222,7 +257,7 @@ export async function createBooking(
     ;(await repository.applyBatch([
       { table: 'bookings', row: booking },
       { table: 'booking_status_history', row: history },
-      ...(await bookingUpdateOperations(booking, createdAt)).operations,
+      ...(await bookingUpdateOperations(booking, createdAt, [], request.agreed_conditions ? { suffix: `. Điều kiện đã thống nhất: ${request.agreed_conditions}` } : {})).operations,
     ]))
 
     return {

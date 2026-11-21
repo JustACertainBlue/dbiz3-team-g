@@ -51,7 +51,7 @@ export default function BookingActionsBar({ providerId, bookingId, actions, stat
       <button type="button" className="bkg-btn bkg-btn--outline" disabled={!actions.update || pending} onClick={() => router.push(`${base}/edit`)}>Cập nhật</button>
       <button type="button" className="bkg-btn bkg-btn--danger" disabled={!actions.cancel || pending} onClick={() => setCancelling(true)}>Huỷ</button>
       <button type="button" className="bkg-btn bkg-btn--outline bkg-btn--lockable" disabled={!actions.mark_arrival || pending} aria-describedby={arrivalReason ? 'bkg-arrival-reason' : undefined} onClick={() => router.push(`${base}/arrival`)}>Đánh dấu đoàn đã đến</button>
-      <button type="button" className="bkg-btn bkg-btn--primary" disabled={!actions.confirm || pending} onClick={() => changeStatus({ target_status: 'Booked' })}>Xác nhận</button>
+      <button type="button" className="bkg-btn bkg-btn--primary" disabled={!actions.confirm || pending} onClick={() => changeStatus({ target_status: 'Booked' })}>Đã nhận tiền</button>
     </div>
     {arrivalReason && <p id="bkg-arrival-reason" className="bkg-reason">{arrivalReason}</p>}
     {cancelling && actions.cancel && <form className="bkg-form" onSubmit={event => { event.preventDefault(); changeStatus({ target_status: 'Cancelled', cancellation_reason: reason }) }}>

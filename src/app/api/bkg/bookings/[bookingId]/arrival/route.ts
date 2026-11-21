@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { BookingError } from '@/lib/booking/create-booking'
-import { startExpiryTimer } from '@/lib/booking/expire-holds'
 import { markGroupArrival } from '@/lib/booking/mark-arrival'
 
 // F-SCHED-06 Mark Group Arrival. A rejected arrival is 200 with transition_applied = false (FR-006).
 // Contract: specs/011-bkg-manage/contracts/manage-booking-api.md
-startExpiryTimer()
 
 type Context = { params: { bookingId: string } }
 

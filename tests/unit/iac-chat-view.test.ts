@@ -62,26 +62,22 @@ describe('attachmentLine', () => {
   })
 })
 
-describe('chatActions (COM048 #8–#10, COM065 #8–#10)', () => {
+// Decision 21/11 (screen 25): the header of the thread has no "Đóng hội thoại", "Đặt chỗ" or "Lịch" button, for both roles.
+// Only the Provider keeps "Tạo đặt chỗ"; the request card has its own "Tạo đặt chỗ từ yêu cầu" button.
+describe('chatActions (screen 25, decision 21/11)', () => {
   const agency = { role: 'Tour_Agency', agencyId: 'AG1', providerId: '' }
   const provider = { role: 'Local_Provider', agencyId: '', providerId: 'PR1' }
   const keys = (list: { key: string }[]) => list.map(item => item.key)
 
-  it('Agency, Active: Close Chat, Bookings (BKG137), Schedule (SCH141)', () => {
-    const list = chatActions(agency, 'Active')
-    expect(keys(list)).toEqual(['close', 'bookings', 'schedule'])
-    expect(list.find(item => item.key === 'bookings')?.href).toBe('/agency/AG1/bookings')
-    expect(list.find(item => item.key === 'schedule')?.href).toBe('/agency/AG1/schedule')
+  it('Agency: no header button at all (no Close, Bookings or Schedule)', () => {
+    expect(keys(chatActions(agency, 'Active'))).toEqual([])
+    expect(keys(chatActions(agency, 'Closed'))).toEqual([])
   })
-  it('Provider, Active: Create booking (BKG134), Close Chat, Bookings (BKG133); no Schedule', () => {
+  it('Provider: only Tạo đặt chỗ (BKG134); no Close, no Bookings', () => {
     const list = chatActions(provider, 'Active')
-    expect(keys(list)).toEqual(['create_booking', 'close', 'bookings'])
-    expect(list.find(item => item.key === 'create_booking')?.href).toBe('/provider/PR1/bookings/new')
-    expect(list.find(item => item.key === 'bookings')?.href).toBe('/provider/PR1/bookings')
-  })
-  it('Closed is terminal: no Close Chat for either role (F-CHAT-04)', () => {
-    expect(keys(chatActions(agency, 'Closed'))).not.toContain('close')
-    expect(keys(chatActions(provider, 'Closed'))).not.toContain('close')
+    expect(keys(list)).toEqual(['create_booking'])
+    expect(list[0].href).toBe('/provider/PR1/bookings/new')
+    expect(list[0].label).toBe('Tạo đặt chỗ')
   })
   it('Agency never gets Create booking (Provider-owned lifecycle)', () => {
     expect(keys(chatActions(agency, 'Active'))).not.toContain('create_booking')

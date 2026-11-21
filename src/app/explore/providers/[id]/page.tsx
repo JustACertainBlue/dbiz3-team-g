@@ -96,7 +96,7 @@ export default async function ProviderPage({ params, searchParams }: { params: {
 
     <section id="lich" className="hab-band v3d-sec">
       <h2 className="v3-h2 v3d-mb">Lịch trống</h2>
-      <MonthCalendar month={month} basePath={`/explore/providers/${view.id}`} isAgency={isAgency} initial={chosen} />
+      <MonthCalendar month={month} basePath={`/explore/providers/${view.id}`} isAgency={isAgency} initial={chosen} experiences={view.experiences.map(item => ({ id: item.id, name: item.name, max: Number(seed.experiences.find(row => row.experience_id === item.id)?.max_participants) || undefined }))} />
     </section>
 
     {view.info.length > 0 && <section id="thong-tin" className="hab-band v3d-sec">

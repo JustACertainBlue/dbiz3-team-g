@@ -5,7 +5,7 @@ import { hanoiTimestamp } from './clock'
 import { withBookingWriteLock } from './write-lock'
 
 // Automatic 72-hour expiry (BR-004, #40, #45, #46, #50, AC-BKG-EXPIRY).
-export const EXPIRY_REASON = 'Automatic expiry: 72-hour On hold elapsed'
+export const EXPIRY_REASON = 'Hết hạn giữ chỗ'
 const TIMER_MS = 60_000
 
 // Cancels every On hold whose hold has ended. Takes no lock: callers already inside
@@ -43,6 +43,7 @@ declare global {
 // One timer per dev-server process (#50); never under tests (analyze M1).
 export function startExpiryTimer(): void {
   if (process.env.NODE_ENV === 'test' || globalThis.__habBookingExpiryTimer) return
+  console.info(`[hab] hold-expiry scanner started (every ${TIMER_MS / 1000} s)`)
   globalThis.__habBookingExpiryTimer = setInterval(async () => {
     ;(await expireDueHolds(new Date()).catch(() => undefined))
   }, TIMER_MS)

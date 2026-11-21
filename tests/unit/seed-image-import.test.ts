@@ -18,28 +18,41 @@ const entry = (over: Record<string, string> = {}) => ({
 })
 const MIGRATION = (ref: string) => `postgresql://postgres.${ref}:test-only@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres`
 
+// The three photos rejected on 2026-11-20, as in that day's approved-photos.json (id, title, SHA-256 of the file).
+const REJECTED = [
+  { id: '0c56e775-3b91-5ef0-8e6d-86d0f954aca9', ten: 'Thêu khăn tay 1 · Xưởng 12', lang: 'Quất Động', sha256: 'ca05b2a567315feca3f221ff48d7c7aaa201f913593b7022deb58cdf276535a2', reason: 'chữ "LOVE" trên vải, không phải ảnh nghề' },
+  { id: '7720b6b1-ae8d-5fa1-8cee-2583bd79a8d9', ten: 'Thêu khăn tay 1 · Xưởng 5', lang: 'Quất Động', sha256: 'e0f489d5de677fb581651eb488907749c2db078e06557ec97690ad97fe6f6522', reason: 'chữ "YES" trên vải, không phải ảnh nghề' },
+  { id: '096fc4d8-1eed-5d09-8c6f-a93037bb5225', ten: 'Tìm hiểu nghề dệt lụa 1 · Xưởng 7', lang: 'Vạn Phúc', sha256: 'c667be3c32852f8730cabdda2d552d07d511ebde31f791b999108418cd9123ee', reason: 'ảnh người mẫu, không thấy nghề dệt' },
+]
 describe('filterEntries', () => {
-  it('drops the three images the human rejected on 2026-11-20, with reasons', () => {
-    expect(EXCLUDED_ENTRIES.map(item => item.id)).toEqual([
-      '0c56e775-3b91-5ef0-8e6d-86d0f954aca9', '7720b6b1-ae8d-5fa1-8cee-2583bd79a8d9', '096fc4d8-1eed-5d09-8c6f-a93037bb5225'])
-    const rejected = EXCLUDED_ENTRIES.map(item => entry({ id: item.id, ten: item.ten, lang: item.lang }))
+  it('drops the three images the human rejected on 2026-11-20 by their SHA-256, with reasons (same result on that day\'s JSON)', () => {
+    expect(EXCLUDED_ENTRIES.map(item => item.sha256)).toEqual(REJECTED.map(item => item.sha256))
+    const rejected = REJECTED.map(item => entry({ id: item.id, ten: item.ten, lang: item.lang, sha256: item.sha256 }))
     const keep = entry()
     const { kept, excluded } = filterEntries([...rejected, keep])
     expect(kept).toEqual([keep])
-    expect(excluded.map(item => [item.entry.id, item.reason])).toEqual([
-      ['0c56e775-3b91-5ef0-8e6d-86d0f954aca9', 'chữ "LOVE" trên vải, không phải ảnh nghề'],
-      ['7720b6b1-ae8d-5fa1-8cee-2583bd79a8d9', 'chữ "YES" trên vải, không phải ảnh nghề'],
-      ['096fc4d8-1eed-5d09-8c6f-a93037bb5225', 'ảnh người mẫu, không thấy nghề dệt'],
-    ])
+    expect(excluded.map(item => [item.entry.id, item.reason])).toEqual(REJECTED.map(item => [item.id, item.reason]))
+  })
+  it('drops a rejected photo wherever it appears: under another id, title or village', () => {
+    const { kept, excluded } = filterEntries([entry({ sha256: REJECTED[2].sha256, ten: 'Xem các công đoạn làm lụa Vạn Phúc' })])
+    expect(kept).toEqual([])
+    expect(excluded[0].reason).toBe(REJECTED[2].reason)
+  })
+  it('keeps a new photo for an experience whose old photo was rejected (different SHA-256), no stale-list error', () => {
+    const renewed = entry({ id: REJECTED[2].id, ten: 'Xem các công đoạn làm lụa Vạn Phúc', lang: 'Vạn Phúc', sha256: 'b'.repeat(64) })
+    const { kept, excluded } = filterEntries([renewed])
+    expect(kept).toEqual([renewed])
+    expect(excluded).toEqual([])
+  })
+  it('every rule carries a 64-hex SHA-256, a title, a village and a reason; hashes are unique', () => {
+    for (const rule of EXCLUDED_ENTRIES) { expect(rule.sha256).toMatch(/^[0-9a-f]{64}$/); expect(rule.ten && rule.lang && rule.reason).toBeTruthy() }
+    expect(new Set(EXCLUDED_ENTRIES.map(rule => rule.sha256)).size).toBe(EXCLUDED_ENTRIES.length)
   })
   it('drops images with clearly visible faces (no consent on file; image_sources_consent_chk)', () => {
     const face = entry({ co_nguoi_ro_mat: 'co' })
     const { kept, excluded } = filterEntries([face])
     expect(kept).toEqual([])
     expect(excluded[0].reason).toMatch(/rõ mặt/)
-  })
-  it('refuses an excluded id whose title no longer matches (stale exclusion list)', () => {
-    expect(() => filterEntries([entry({ id: EXCLUDED_ENTRIES[0].id, ten: 'Tên khác' })])).toThrow(/0c56e775/)
   })
 })
 

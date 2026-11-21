@@ -48,6 +48,7 @@ export default function AiMatchingScreen() {
   const [chatStatus, setChatStatus] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionInitializationRef = useRef(false)
+  const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     readSessionContext()
@@ -70,6 +71,14 @@ export default function AiMatchingScreen() {
       initializeSession()
     }
   }, [role, agencyId])
+
+  // Chat composer: one line that grows with the text (phone), back to one line after sending.
+  useEffect(() => {
+    const el = chatInputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    if (inputText) el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+  }, [inputText])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -197,11 +206,6 @@ export default function AiMatchingScreen() {
   const isNew = messages.length === 0 && !loading
   const addHint = (hint: string) => setInputText(prev => (prev ? `${prev.trimEnd()} ` : '') + hint)
   const spark = <span className="aim__av" aria-hidden="true"><Sparkles /></span>
-  const quickPrompts = [
-    { label: 'Gốm, 15 khách ngày 15/11', text: '15 French tourists visiting on 2026-11-15 looking for hands-on pottery ceramic experiences near Hanoi under 500,000 VND per person.' },
-    { label: 'Xưởng lụa ở Vạn Phúc', text: 'We need an authentic silk workshop in Van Phuc' },
-    { label: 'Đoàn 100 khách, ngân sách thấp', text: 'Group of 100 tourists looking for craft tour on Dec 25 with budget 20,000 VND' },
-  ]
 
   return (
     <div className="aim">
@@ -358,11 +362,6 @@ export default function AiMatchingScreen() {
         </section>
 
         <div className="aim__col aim__dock">
-          <div className="aim__sugg" aria-label="Gợi ý nhanh">
-            {quickPrompts.map(q => (
-              <button key={q.label} type="button" className="aim__sg" onClick={() => handleSendMessage(q.text)} disabled={loading}><Sparkles aria-hidden="true" />{q.label}</button>
-            ))}
-          </div>
           <form
             className="aim__comp"
             onSubmit={e => {
@@ -374,7 +373,8 @@ export default function AiMatchingScreen() {
               id="matching-prompt-input"
               value={inputText}
               maxLength={2000}
-              rows={2}
+              rows={1}
+              ref={chatInputRef}
               aria-label="Tin nhắn cho Ghép tour AI"
               onChange={e => setInputText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage() } }}

@@ -35,7 +35,7 @@ describe('screen 22 new-conversation state renders', () => {
     const html = text(renderToString(React.createElement(AgencyNameProvider as React.ComponentType<any>, { name: 'Lý Gia Hân' }, React.createElement(Screen))))
     expect(html).toContain('Chào Lý Gia Hân, đoàn tiếp theo cần gì?')
     expect(html).toContain('Kể về đoàn của bạn')
-  })
+  }, 30_000) // first import of the whole screen (icons, CSS) can be slow on a busy machine
 
   it('without a name the greeting is "Chào bạn, đoàn tiếp theo cần gì?"', async () => {
     const { AgencyNameProvider } = await import('@/app/ai-matching/agency-name')

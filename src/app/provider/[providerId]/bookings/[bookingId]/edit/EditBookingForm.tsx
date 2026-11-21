@@ -10,15 +10,27 @@ import '../../new/create-v3.css'
 type ApiError = { error?: { code: string; message: string } }
 
 // BKG144 form. Duration is not in the F-SCHED-07 output (#57), so it is prefilled from end_at − start_at.
-export default function EditBookingForm({ detail, backHref }: { detail: BookingDetail; backHref: string }) {
+export interface EditSlot { start: string; end: string; label: string }
+const addMinutes = (clock: string, minutes: number) => {
+  const total = Number(clock.slice(0, 2)) * 60 + Number(clock.slice(3, 5)) + minutes
+  return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+export default function EditBookingForm({ detail, backHref, slots = [] }: { detail: BookingDetail; backHref: string; slots?: EditSlot[] }) {
   const router = useRouter()
   const initial = {
-    start: hanoiInputValue(detail.start_at), // read as Hanoi time; saved back with +07:00 (#87)
+    date: hanoiInputValue(detail.start_at).slice(0, 10), // read as Hanoi time; saved back with +07:00 (#87)
+    time: hanoiInputValue(detail.start_at).slice(11, 16),
     duration: Math.round((Date.parse(detail.end_at) - Date.parse(detail.start_at)) / 60_000),
     groupSize: detail.group_size,
     price: detail.agreed_price,
   }
-  const [start, setStart] = useState(initial.start)
+  const [date, setDate] = useState(initial.date)
+  const [time, setTime] = useState(initial.time)
+  const start = `${date}T${time}`
+  const initialStart = `${initial.date}T${initial.time}`
+  // Slots of the experience; a current start that is not a slot stays selectable so the form never moves it silently.
+  const options = slots.some(slot => slot.start === initial.time) || !slots.length ? slots.map(slot => slot.start) : [...slots.map(slot => slot.start), initial.time].sort()
   const [duration, setDuration] = useState(initial.duration)
   const [groupSize, setGroupSize] = useState(initial.groupSize)
   const [price, setPrice] = useState(initial.price)
@@ -42,7 +54,7 @@ export default function EditBookingForm({ detail, backHref }: { detail: BookingD
     setError(null)
     // F-SCHED-04 takes only the changed fields (#48).
     const changes: Record<string, unknown> = {}
-    if (start !== initial.start) changes.start_at = `${start}:00+07:00`
+    if (start !== initialStart) changes.start_at = `${start}:00+07:00`
     if (duration !== initial.duration) changes.duration = duration
     if (groupSize !== initial.groupSize) changes.group_size = groupSize
     if (price !== initial.price) changes.agreed_price = price
@@ -105,7 +117,12 @@ export default function EditBookingForm({ detail, backHref }: { detail: BookingD
     <section className="v3b-card">
       <h2 className="v3b-h2">Đoàn &amp; trải nghiệm</h2>
       <div className="v3b-row">
-        <div className="v3b-f"><label htmlFor="st">Bắt đầu (giờ Hà Nội) <span className="v3b-req">*</span></label><input id="st" type="datetime-local" value={start} onChange={event => setStart(event.target.value)} required /><p className="v3b-help">Đổi giờ không gia hạn thời gian giữ chỗ.</p></div>
+        <div className="v3b-f"><label htmlFor="dt">Ngày <span className="v3b-req">*</span></label><input id="dt" type="date" value={date} onChange={event => setDate(event.target.value)} required /></div>
+        <div className="v3b-f"><label htmlFor="tm">Giờ bắt đầu <span className="v3b-req">*</span></label>
+          {options.length
+            ? <select id="tm" value={time} onChange={event => setTime(event.target.value)} required>{options.map(value => <option key={value} value={value}>{value}</option>)}</select>
+            : <input id="tm" type="time" value={time} onChange={event => setTime(event.target.value)} required />}
+          <p className="v3b-help">Kết thúc {addMinutes(time, duration)} ({duration} phút). Đổi giờ không gia hạn thời gian giữ chỗ.</p></div>
         <div className="v3b-f"><label htmlFor="du">Thời lượng (phút) <span className="v3b-req">*</span></label><input id="du" type="number" min={1} step={1} value={duration} onChange={event => setDuration(Number(event.target.value))} required /></div>
         <div className="v3b-f"><label htmlFor="gs">Số khách <span className="v3b-req">*</span></label><input id="gs" type="number" min={1} step={1} value={groupSize} onChange={event => setGroupSize(Number(event.target.value))} required /></div>
       </div>

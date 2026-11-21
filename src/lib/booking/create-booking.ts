@@ -4,8 +4,9 @@ import { demoRepository } from '../db/application-store'
 import type { DemoRow } from '../demo/types'
 import { bookingUpdateOperations } from './agency-sync'
 import { hanoiTimestamp, systemClock, type Clock } from './clock'
-import { findConflict, slotOccupancy } from './conflicts'
+import { findConflict } from './conflicts'
 import { groupPrice } from './group-price'
+import { assertSlotAndCapacity } from './slot-rules'
 import { parseBookingRequest } from './request-card'
 import { expireDueHoldsLocked } from './expire-holds'
 import { fitsOperatingHours } from './operating-hours'
@@ -213,11 +214,9 @@ export async function createBooking(
     if (findConflict((await repository.all('bookings')), providerId, startAt, endAt)) {
       throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time overlaps another Booking')
     }
-    // Slot capacity inside the same transaction (UI v3 decision #7): concurrent creates cannot exceed it.
-    const max = Number((await repository.find('experiences', row => row.experience_id === request.experience_id))?.max_participants)
-    if (slotOccupancy((await repository.all('bookings')), request.experience_id, startAt, endAt) + request.group_size > max) {
-      throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time slot is full')
-    }
+    // Slot + capacity inside the same transaction (UI v3 decision #7), shared with the edit.
+    const lockedExperience = (await repository.find('experiences', row => row.experience_id === request.experience_id)) ?? experience
+    await assertSlotAndCapacity(repository, { experience: lockedExperience, startAt, endAt, groupSize: request.group_size })
     if (options.afterConflictCheck) await options.afterConflictCheck()
 
     const bookingId = randomUUID()

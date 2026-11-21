@@ -244,6 +244,8 @@
   .av3-side { flex-direction: row; overflow-x: auto; }
   .av3-side a { white-space: nowrap; }
   .av3-rows--wide > div { grid-template-columns: 1fr; gap: 2px; }
+  .av3-rows:not(.av3-rows--wide) > div { flex-direction: column; gap: 2px; }
+  .av3-rows:not(.av3-rows--wide) :is(dt, dd) { text-align: left; }
   .av3-banner--row { flex-direction: column; align-items: stretch; }
   .av3-role { font-size: 15px; padding: 0 10px; gap: 8px; }
   .av3-role--on { padding: 0 9px; }

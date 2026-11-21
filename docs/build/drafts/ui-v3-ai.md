@@ -56,3 +56,19 @@
   - tests/unit/recommendations.test.ts: `up to 13` → `tối đa 13 khách`; `group of 10` → `đoàn 10 khách`; `estimated` → `ước tính`; `175,000` → `175\.000`; `200,000` → `200\.000`; `budget` → `ngân sách`.
   - tests/integration/ait-matching-api.test.ts (T039): `group of 10` → `đoàn 10 khách`; `estimated` → `ước tính`.
   - Unchanged and still passing: `silk weaving` (multi-turn-api.test.ts:54) and `/silk/i` (recommendations.test.ts), because the craft label stays English.
+
+## Round 6: review of the real screen (21/11)
+1. Suggestions: the old three quick prompts are removed; only the four mockup examples of the new-conversation state remain. Deviation: no follow-up
+   chips in the chat state (mockup has them) because there is no data to build them.
+2. Scroll: the whole page scrolls (no own scroll frame, no 100vh); only composer + note stick to the bottom (`position: sticky; bottom: 0`, white fade
+   `linear-gradient(180deg, rgba(255,255,255,0), #FFF 28%)`, padding 20px 0 16px) as in the mockup. Test: tests/unit/ai-matching-layout.test.ts.
+3. Phone (< 768 px): the card no longer has its own phone layout; it uses the `.v3r` rules of screen 02 (image 112 px, 5:8; own desktop padding only from 768 px).
+   Chat composer: one-line textarea that grows while typing (max 160 px) and the send button on the same row.
+4. `explain()` ("Vì sao hợp"): no "Điểm phù hợp xx/100"; the craft is the Vietnamese label of the card (`craft_display` = villages.editorial_craft, else the label of
+   craft_type, added by `/api/ait/matching` before building recommendations; fallback label of the wanted craft_type). Never the raw "pottery"/"Ceramics".
+   When no factor was evaluated the text is "Đáp ứng các yêu cầu bắt buộc của đoàn." (BR-007: never empty).
+5. "AI đã hiểu" chip for the craft shows the Vietnamese label ("Gốm sứ", "Dệt lụa"); an unknown preference is shown as written.
+- Test wording lines changed in this round: tests/unit/recommendations.test.ts ("silk preference" line: `/silk/i` → `/Dệt lụa/`);
+  tests/integration/multi-turn-api.test.ts:54 (`silk weaving` → `Dệt lụa`); tests/unit/ai-matching-view.test.ts (understoodChips input `craft_preference: 'pottery'`, expected `Gốm sứ`).
+  New tests: recommendations.test.ts "explanation wording (screen 22)", ai-matching-view.test.ts craft chip, ait-matching-card-data.test.ts `craftDisplay`, ai-matching-layout.test.ts.
+- The "Still English" note of Round 5 (craft label in the explanation) is resolved by item 4.

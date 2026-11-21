@@ -75,14 +75,24 @@ describe('provider screens follow the mockup blocks, order and words', () => {
     if (at >= 0) { let pos = at; for (const head of spec['33-TraiNghiemChuXuong'].tableHeaders!) { const found = text.indexOf(head, pos); expect(found, head).toBeGreaterThanOrEqual(0); pos = found + head.length } }
   })
 
-  it('32 Form trải nghiệm: sections and labels in the mockup order', () => {
+  const formMarkup = (extra: Record<string, unknown> = {}) => {
     const noop = () => {}
-    const markup = renderToStaticMarkup(React.createElement(ExperienceFormBody, {
+    return renderToStaticMarkup(React.createElement(ExperienceFormBody, {
       formData: { name: 'Nặn gốm', category: 'Workshop/Hands-on', duration_minutes: 60, price_per_person: 150000, max_participants: 12, notice_period_hours: 24, experience_location_address: 'Bát Tràng', cancellation_rules_text: '', description: 'Mô tả đủ dài.' },
       setFormData: noop, hasActiveBookings: false, images: [], setImages: noop, setUploading: noop, content: emptyContentForm(), setContent: noop, slots: [],
       policy: { rules: [] }, group: [], special: [], onPolicy: noop, onGroup: noop, onSpecial: noop,
-      aiRefining: false, aiDraft: null, onAiRefine: noop, onApplyDraft: noop, onDismissDraft: noop,
+      aiRefining: false, aiDraft: null, onAiRefine: noop, onApplyDraft: noop, onDismissDraft: noop, craftLine: 'Gốm sứ · Làng Bát Tràng', ...extra,
     } as never))
-    expectBlocks(markup, '32-FormTraiNghiem')
+  }
+
+  it('32 Form trải nghiệm: sections and labels in the mockup order', () => {
+    expectBlocks(formMarkup(), '32-FormTraiNghiem')
+  })
+
+  it('32 group and special discounts sit in "Giá & ca" (before the slots), the cancellation rules stay in "Chính sách của xưởng"', () => {
+    const text = visible(formMarkup())
+    const at = (item: string, from = 0) => { const found = text.indexOf(item, from); expect(found, item).toBeGreaterThanOrEqual(0); return found }
+    let pos = at('Giá & ca trải nghiệm')
+    for (const item of ['Chiết khấu đoàn', 'Giá đặc biệt', 'Các ca trong ngày', 'Bao gồm & tiện ích', 'Chính sách của xưởng', 'Chính sách hủy']) pos = at(item, pos)
   })
 })

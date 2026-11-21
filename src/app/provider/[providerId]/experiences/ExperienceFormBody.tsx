@@ -5,7 +5,7 @@
 // Not shown (no column to store them): "Câu hỏi thường gặp", the "Rất được đoàn khách ưa thích" chips, "Người hướng dẫn",
 // child ages, and the editable "Các ca trong ngày" (read only here).
 import React from 'react'
-import ExperienceTermsField from './ExperienceTermsField'
+import { ExperienceCancellationField, ExperienceDiscountsField } from './ExperienceTermsField'
 import ExperienceLocationField from './ExperienceLocationField'
 import ExperienceImagesField, { type ExperienceImageItem } from './ExperienceImagesField'
 import { HighlightsCard, SuitableCard, InclusionsCard, ChildPolicyField, SlotsReadOnly, type SlotLine } from './ExperienceContentFields'
@@ -84,6 +84,7 @@ export default function ExperienceFormBody(p: Props) {
         <div className="prf-field-group"><label className="prf-label" htmlFor="experience-field-5">Tối đa mỗi ca (khách) *<Locked on={locked} /></label>
           <input id="experience-field-5" type="number" required min={1} disabled={locked} value={formData.max_participants} onChange={e => set('max_participants', Number(e.target.value))} className="prf-input prf-input-locked" /></div>
       </div>
+      <ExperienceDiscountsField group={p.group} special={p.special} onGroup={p.onGroup} onSpecial={p.onSpecial} />
       <SlotsReadOnly slots={p.slots} />
     </div>
 
@@ -94,7 +95,7 @@ export default function ExperienceFormBody(p: Props) {
       <div className="prf-field-group"><label className="prf-label" htmlFor="experience-field-6">Đặt trước ít nhất (giờ) *</label>
         <input id="experience-field-6" type="number" required min={0} value={formData.notice_period_hours} onChange={e => set('notice_period_hours', Number(e.target.value))} className="prf-input" />
         <span className="prf-field-helper">Thời gian tối thiểu công ty lữ hành phải chốt đoàn để xưởng chuẩn bị.</span></div>
-      <ExperienceTermsField policy={p.policy} group={p.group} special={p.special} onPolicy={p.onPolicy} onGroup={p.onGroup} onSpecial={p.onSpecial} />
+      <ExperienceCancellationField policy={p.policy} onPolicy={p.onPolicy} />
       <ChildPolicyField value={p.content} onChange={p.setContent} />
     </div>
   </div>

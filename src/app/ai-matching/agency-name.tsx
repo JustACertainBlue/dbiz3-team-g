@@ -1,13 +1,16 @@
 'use client'
-// The contact name of the signed-in Agency for the greeting of the new-conversation state. layout.tsx (server) passes
-// only a string `name`; this is a real client component (a function), not the raw Context.Provider object: a
-// Provider exported from a 'use client' file cannot be rendered by a server component (React: "Element type is invalid").
+// What the server layout knows about the signed-in account: the contact name for the greeting, the role and the Agency id.
+// layout.tsx (server) passes plain strings; this is a real client component (a function), not the raw Context.Provider
+// object: a Provider exported from a 'use client' file cannot be rendered by a server component (React: "Element type is invalid").
 import React, { createContext, useContext } from 'react'
 
-const AgencyNameContext = createContext('')
+export interface AgencySession { name: string; role: 'Agency' | 'Guest'; agencyId: string }
 
-export function AgencyNameProvider({ name, children }: { name: string; children: React.ReactNode }) {
-  return <AgencyNameContext.Provider value={name}>{children}</AgencyNameContext.Provider>
+const AgencySessionContext = createContext<AgencySession>({ name: '', role: 'Guest', agencyId: '' })
+
+export function AgencyNameProvider({ name, role = 'Agency', agencyId = '', children }: { name: string; role?: 'Agency' | 'Guest'; agencyId?: string; children: React.ReactNode }) {
+  return <AgencySessionContext.Provider value={{ name, role, agencyId }}>{children}</AgencySessionContext.Provider>
 }
 
-export const useAgencyName = () => useContext(AgencyNameContext)
+export const useAgencyName = () => useContext(AgencySessionContext).name
+export const useAgencySession = () => useContext(AgencySessionContext)

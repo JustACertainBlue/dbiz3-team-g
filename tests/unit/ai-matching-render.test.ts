@@ -13,7 +13,7 @@ vi.mock('react', async importOriginal => {
   const useState = ((initial: unknown) => actual.useState(initial === 'Guest' ? 'Agency' : initial)) as typeof actual.useState
   return { ...actual, default: { ...actual, useState }, useState }
 })
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }), redirect: () => { throw new Error('redirect') } }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {}, replace: () => {} }), useSearchParams: () => new URLSearchParams(), redirect: () => { throw new Error('redirect') } }))
 vi.mock('@/lib/auth/server-session', () => ({ currentServerSession: async () => ({ authenticated: true, role: 'Tour_Agency', agencyId: 'a1', userId: 'u1' }) }))
 vi.mock('@/lib/auth/session', () => ({ sessionDisplayName: async () => 'Lý Gia Hân' }))
 
@@ -41,6 +41,9 @@ describe('screen 22 new-conversation state renders', () => {
     const { AgencyNameProvider } = await import('@/app/ai-matching/agency-name')
     const { default: Screen } = await import('@/app/ai-matching/page')
     expect(text(renderToString(React.createElement(AgencyNameProvider as React.ComponentType<any>, { name: '' }, React.createElement(Screen))))).toContain('Chào bạn, đoàn tiếp theo cần gì?')
-    expect(text(renderToString(React.createElement(Screen)))).toContain('Chào bạn, đoàn tiếp theo cần gì?')
+    // Role comes from the server layout: without it the screen is the restricted one, in Vietnamese, never the greeting.
+    const restricted = text(renderToString(React.createElement(Screen)))
+    expect(restricted).toContain('Chỉ dành cho công ty lữ hành')
+    expect(restricted).not.toMatch(/Tour Agencies|available only/)
   })
 })

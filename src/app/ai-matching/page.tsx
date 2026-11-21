@@ -1,15 +1,14 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodChips, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 import { historyDate, historyTitle } from './history-view'
 import { loadTurns, saveTurns, type StorageLike } from './turn-store'
 import { perGuest, recommendationCardView } from './card-view'
-import { useAgencyName } from './agency-name'
+import { useAgencySession } from './agency-name'
 import { ArrowUp, Check, ChevronDown, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users } from 'lucide-react'
 import CoverImage from '../explore/v3/CoverImage'
 import { RESULT_SIZES } from '../explore/v3/image-sizes'
@@ -35,11 +34,11 @@ interface Message {
 const browserStorage = (): StorageLike | null => { try { return window.localStorage } catch { return null } }
 
 export default function AiMatchingScreen() {
-  const agencyName = useAgencyName()
+  // Name, role and Agency id come from the server layout: nothing to wait for, no flash of the restricted screen.
+  const { name: agencyName, role, agencyId } = useAgencySession()
   const router = useRouter()
-  const [role, setRole] = useState<'Agency' | 'Guest'>('Guest')
+  const wanted = useSearchParams().get('session')
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [agencyId, setAgencyId] = useState<string>('')
   const [inputText, setInputText] = useState('')
   // UI v3 (human decision 2026-11-18 #2): Explore / detail pages open this page with ?prompt=…; the text is filled in
   // the input and never sent automatically.
@@ -54,34 +53,18 @@ export default function AiMatchingScreen() {
   const [history, setHistory] = useState<{ session_id: string; title: string; last_activity_at: string }[]>([])
   const [chatStatus, setChatStatus] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const sessionInitializationRef = useRef(false)
+  const epochRef = useRef(0) // bumps when another conversation is opened: late answers of the old one are dropped
+  const shownRef = useRef<string | null | undefined>(undefined) // session id of the URL the screen shows (null = new)
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
+  // First visit and browser back/forward: the URL (?session=<id>) decides which conversation shows. A click on the rail
+  // changes the state itself and the URL with router.push, so this effect finds nothing to do.
   useEffect(() => {
-    readSessionContext()
-      .then(session => {
-        if (session.role === 'Tour_Agency' && session.agencyId) {
-          setAgencyId(session.agencyId)
-          setRole('Agency')
-        } else {
-          setRole('Guest')
-        }
-      })
-      .catch(() => setRole('Guest'))
-  }, [])
-
-  // Create a matching session only after the shared cookie session identifies an Agency.
-  useEffect(() => {
-    if (role === 'Agency' && agencyId) {
-      if (sessionInitializationRef.current) return
-      sessionInitializationRef.current = true
-      // "Gần đây": ?session=<id> reopens an earlier conversation; otherwise a new session starts.
-      const resume = new URLSearchParams(window.location.search).get('session')
-      if (resume) resumeSession(resume)
-      else initializeSession()
-      loadHistory()
-    }
-  }, [role, agencyId])
+    if (role !== 'Agency' || wanted === shownRef.current) return
+    if (shownRef.current === undefined) { shownRef.current = wanted; loadHistory(); if (wanted) resumeSession(wanted) }
+    else if (wanted) openSession(wanted, false)
+    else startNew(false)
+  }, [role, wanted])
 
   // Chat composer: one line that grows with the text (phone), back to one line after sending.
   useEffect(() => {
@@ -95,21 +78,41 @@ export default function AiMatchingScreen() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  const initializeSession = async () => {
+  // A matching session is created when the first message is sent (not when the page or a new conversation opens).
+  const initializeSession = async (): Promise<string | null> => {
     try {
       const res = await fetch('/api/ait/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
-      if (res.ok) {
-        const data = await res.json()
-        setSessionId(data.matching_session_id || data.session_id)
-      }
+      if (!res.ok) return null
+      const data = await res.json()
+      const id = (data.matching_session_id || data.session_id) as string
+      setSessionId(id)
+      shownRef.current = id
+      router.replace(`/ai-matching?session=${id}`, { scroll: false })
+      return id
     } catch {
-      // Offline fallback for preview
-      setSessionId(`session-local-${Date.now()}`)
+      return null
     }
+  }
+
+  const resetConversation = () => {
+    epochRef.current += 1
+    setMessages([]); setChips([]); setSessionId(null); setChatStatus({}); setInputText('')
+    setLoading(false); setReloading(false)
+  }
+  const openSession = (id: string, push = true) => {
+    resetConversation()
+    shownRef.current = id
+    if (push) router.push(`/ai-matching?session=${id}`, { scroll: false })
+    resumeSession(id)
+  }
+  const startNew = (push = true) => {
+    resetConversation()
+    shownRef.current = null
+    if (push) router.push('/ai-matching', { scroll: false })
   }
 
   const loadHistory = async () => {
@@ -132,7 +135,7 @@ export default function AiMatchingScreen() {
     }
     try {
       const res = await fetch(`/api/ait/sessions/${id}`)
-      if (!res.ok) { setMessages([]); setChips([]); return initializeSession() }
+      if (!res.ok) { startNew(); return }
       if (remembered) return
       const data = await res.json() as { session_id: string; messages: { message_id: string; sender: string; text: string; sent_at: string }[] }
       setSessionId(data.session_id)
@@ -148,7 +151,7 @@ export default function AiMatchingScreen() {
         })
       } finally { setReloading(false) }
     } catch {
-      if (!remembered) await initializeSession()
+      if (!remembered) startNew()
     }
   }
 
@@ -192,11 +195,15 @@ export default function AiMatchingScreen() {
   }
 
   // Analyze a new Agency message, or on Retry the stored conversation without adding a message (#33).
-  const analyze = async (body: Record<string, unknown>, id: string | null = sessionId) => {
-    if (!id) return
+  const analyze = async (body: Record<string, unknown>, idArg: string | null = null) => {
+    const epoch = epochRef.current
     setLoading(true)
     try {
+      const id = idArg ?? sessionId ?? await initializeSession()
+      if (epoch !== epochRef.current) return
+      if (!id) { addAssistant({ text: AI_FAILURE_TEXT, retry: 'resend', retryText: typeof body.text === 'string' ? body.text : undefined }); return }
       const result = await postJson(`/api/ait/sessions/${id}/messages`, body)
+      if (epoch !== epochRef.current) return
       const outcome = messageOutcome(result)
       // #156: show the date understood so the Agency can correct it.
       if ('body' in result) { const found = understoodChips(result.body); if (found.length > 0) setChips(found) }
@@ -209,13 +216,13 @@ export default function AiMatchingScreen() {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
     } finally {
-      setLoading(false)
+      if (epoch === epochRef.current) setLoading(false)
     }
   }
 
   const handleSendMessage = async (customPrompt?: string) => {
     const textToSend = customPrompt || inputText
-    if (!textToSend.trim() || !sessionId) return
+    if (!textToSend.trim() || loading) return
 
     setMessages(prev => [...prev, { id: `msg-${Date.now()}`, sender: 'Agency', text: textToSend, sent_at: new Date().toLocaleTimeString() }])
     if (!customPrompt) setInputText('')
@@ -228,7 +235,9 @@ export default function AiMatchingScreen() {
    * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
   const fetchMatchingResults = async (profile: unknown, dateLine?: string, id: string | null = sessionId) => {
+    const epoch = epochRef.current
     const result = await postJson('/api/ait/matching', { session_id: id, tour_preference_profile: profile })
+    if (epoch !== epochRef.current) return
     if ('networkError' in result || !result.ok) {
       addAssistant({ text: AI_FAILURE_TEXT, retry: 'reanalyze' })
       return
@@ -268,13 +277,13 @@ export default function AiMatchingScreen() {
   return (
     <div className="aim">
       <aside className="aim__side" aria-label="Các cuộc ghép tour">
-        <a className="aim__new" href="/ai-matching"><Plus aria-hidden="true" />Cuộc ghép tour mới</a>
+        <a className="aim__new" href="/ai-matching" onClick={e => { e.preventDefault(); startNew() }}><Plus aria-hidden="true" />Cuộc ghép tour mới</a>
         {history.length > 0 && <>
           <p className="aim__shead">Gần đây <ChevronDown aria-hidden="true" /></p>
           <ul className="aim__hist">
             {history.map(item => (
               <li key={item.session_id}>
-                <a href={`/ai-matching?session=${item.session_id}`} className={item.session_id === sessionId ? 'aim__cur' : undefined} aria-current={item.session_id === sessionId ? 'page' : undefined}>
+                <a href={`/ai-matching?session=${item.session_id}`} onClick={e => { e.preventDefault(); openSession(item.session_id) }} className={item.session_id === sessionId ? 'aim__cur' : undefined} aria-current={item.session_id === sessionId ? 'page' : undefined}>
                   {historyTitle(item.title)}<span>{historyDate(item.last_activity_at)}</span>
                 </a>
               </li>

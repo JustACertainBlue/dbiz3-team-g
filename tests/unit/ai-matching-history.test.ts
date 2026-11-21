@@ -92,11 +92,11 @@ describe('screen wiring', () => {
   it('the three quick-entry pills are gone from the new-conversation composer (mockup change)', () => {
     for (const text of ['Số khách', 'Ngày đi', 'Ngân sách', 'aim__pill', 'addHint']) expect(page, text).not.toContain(text)
   })
-  it('the rail lists "Gần đây" and opens a chat with ?session=; "Cuộc ghép tour mới" stays a plain link', () => {
+  it('the rail lists "Gần đây" and opens a chat with ?session=; "Cuộc ghép tour mới" keeps a real href (open in new tab) and starts a new chat', () => {
     expect(page).toContain('Gần đây')
     expect(page).toContain('/api/ait/sessions')
     expect(page).toMatch(/\?session=/)
-    expect(page).toContain('href="/ai-matching">')
+    expect(page).toContain('href="/ai-matching" onClick')
     expect(page).not.toContain('Tìm cuộc trò chuyện')
   })
   it('opening an old chat replays the stored conversation without writing a message (retry analysis)', () => {

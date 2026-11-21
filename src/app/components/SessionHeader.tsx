@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 import type { SessionContext } from '@/lib/auth/session'
 import AppHeader, { type HeaderAccount } from './header/AppHeader'
+import SimpleAuthBar, { usesSimpleAuthBar } from './header/SimpleAuthBar'
 
 export default function SessionHeader() {
   const [session, setSession] = useState<SessionContext | null>(null)
@@ -31,6 +32,7 @@ export default function SessionHeader() {
     return () => { alive = false }
   }, [session, pathname])
 
+  if (usesSimpleAuthBar(pathname) && !session?.authenticated) return <SimpleAuthBar />
   if (!session) return null
   if (pathname === '/login' || pathname === '/register/otp') return null
   return <AppHeader session={session} pathname={pathname} account={account} unread={unread} />

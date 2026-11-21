@@ -6,10 +6,12 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const page = readFileSync('src/app/admin/users/page.tsx', 'utf8')
+const page = readFileSync('src/app/admin/users/[userId]/page.tsx', 'utf8') // v3 screen 40 replaced the modal
 
 describe('#186 | ADM118 identity block includes the role', () => {
   it('the selected-account panel lists "Vai trò" with role and admin type, before the status', () => {
-    expect(page).toMatch(/<dt>Tổ chức<\/dt><dd>\{selected\.organization\}<\/dd><dt>Vai trò<\/dt><dd>\{selected\.role\} \{selected\.admin_type\}<\/dd><dt>Trạng thái<\/dt>/)
+    expect(page.indexOf('<dt>Vai trò</dt>')).toBeGreaterThan(-1)
+    expect(page.indexOf('<dt>Vai trò</dt>')).toBeLessThan(page.indexOf('<dt>Trạng thái</dt>'))
+    expect(page).toContain('roleLabel(account.role, account.admin_type)')
   })
 })

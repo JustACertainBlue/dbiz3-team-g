@@ -96,3 +96,6 @@
 **Deviations:** no "Tìm cuộc trò chuyện" (decision); no "đang xem" chevron collapse for "Gần đây" (icon only); old assistant replies are rebuilt, not replayed; one session is created on every page load, but sessions with no message are hidden from the list. Not photographed: needs login.
 
 **Cần sửa chung:** none. Possible later (needs migration, not done): store assistant replies / `recommendation_results` so an old chat shows exactly what was said.
+
+## Round 9: browser test, 6 items
+- **6. "Vì sao hợp" for a different craft:** `Không hợp sở thích {nghề} của bạn.` → `Gợi ý thêm, khác nghề {nghề} bạn chọn.` (`recommendation-service.ts` `explain()`). Test wording line changed: `tests/unit/recommendations.test.ts:163` (`toContain('Không hợp sở thích Gốm sứ')` → `toContain('Gợi ý thêm, khác nghề Gốm sứ bạn chọn.')`).

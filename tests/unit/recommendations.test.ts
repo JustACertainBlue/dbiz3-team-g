@@ -160,6 +160,6 @@ describe('explanation wording (screen 22)', () => {
   })
   it('a craft that does not match is named by its Vietnamese label', async () => {
     const text = await explain([candidate], 'pottery')
-    expect(text).toContain('Không hợp sở thích Gốm sứ')
+    expect(text).toContain('Gợi ý thêm, khác nghề Gốm sứ bạn chọn.')
   })
 })

@@ -42,7 +42,7 @@ function explain(item: any, _score: number): string {
   if (f.craft) {
     // Vietnamese label as on the card: the candidate's displayed craft when it matches, else the label of the wanted craft_type.
     const label = (f.craft.matched ? item.craft_display : undefined) || (f.craft.craft_type ? craftTypeLabel(f.craft.craft_type) : '') || f.craft.label
-    parts.push(f.craft.matched ? `Hợp sở thích ${label} của bạn.` : `Không hợp sở thích ${label} của bạn.`)
+    parts.push(f.craft.matched ? `Hợp sở thích ${label} của bạn.` : `Gợi ý thêm, khác nghề ${label} bạn chọn.`)
   }
   if (f.experience_types) {
     const types = f.experience_types.requested.join(' / ')

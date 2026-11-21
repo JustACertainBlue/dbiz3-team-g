@@ -59,8 +59,8 @@ export default async function ProviderPage({ params, searchParams }: { params: {
           ? <ChatButton experienceId={view.firstExperienceId} className="v3p-chat" label="Nhắn tin cho xưởng"><MessageSquareText aria-hidden="true" /></ChatButton>
           : !isAgency && <Link href="/login" className="v3p-chat" aria-label="Nhắn tin cho xưởng" title="Nhắn tin cho xưởng"><MessageSquareText aria-hidden="true" /></Link>}
       </div>
-      <div className="v3d-hero">
-        <Gallery images={view.images} alt={view.name} maxWidth={804} />
+      <div className={`v3d-hero${view.images.length ? '' : ' v3d-hero--nogal'}`}>
+        {view.images.length > 0 && <Gallery images={view.images} alt={view.name} maxWidth={804} />}
         <aside className="v3d-side">
           <div className="v3-card v3d-owner">
             <div className="v3d-owner__who"><span className="v3d-avatar v3p-avatar" aria-hidden="true">{view.owner.initials}</span><div><p className="v3d-owner__name">{view.owner.name}</p><p className="v3-cap">{view.owner.title}</p></div></div>

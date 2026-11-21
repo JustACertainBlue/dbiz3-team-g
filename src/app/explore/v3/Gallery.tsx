@@ -4,13 +4,10 @@
 // Step 2B: landscape images come first (stable), so the large tile gets a landscape image when there is one; tile 1 is the
 // page's LCP image, the other tiles are eager with fetchpriority=low.
 import React from 'react'
-import { isLandscape, type ImageRef } from '@/lib/prf/media-urls'
+import { landscapeFirst, type ImageRef } from '@/lib/prf/media-urls'
 import CoverImage from './CoverImage'
 
-/** Landscape images (width > height) first, everything else after them; both groups keep their order. */
-export function landscapeFirst(images: ImageRef[]): ImageRef[] {
-  return [...images.filter(isLandscape), ...images.filter(image => !isLandscape(image))]
-}
+export { landscapeFirst }
 
 // Share of the gallery width of each tile, per number of tiles (CSS: .v3g--nN in explore-v3.css).
 const SHARE: Record<number, number[]> = { 1: [1], 2: [0.5, 0.5], 3: [2 / 3, 1 / 3, 1 / 3], 4: [0.5, 0.5, 0.25, 0.25], 5: [0.5, 0.25, 0.25, 0.25, 0.25] }

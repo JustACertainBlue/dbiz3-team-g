@@ -241,6 +241,7 @@
 .v3d-mosaic__main { grid-column: span 3; grid-row: span 2; border-radius: 8px 4px 4px 4px !important; }
 .v3d-mosaic > div:only-child { grid-column: 1 / -1; grid-row: 1 / -1; }
 .v3d-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10,43,29,.62); color: var(--c-white); font-weight: 700; }
+.v3d-hero--nogal .v3d-side { max-width: none; }
 .v3d-side { flex: 1 1 280px; min-width: 0; max-width: 340px; display: flex; flex-direction: column; gap: 12px; }
 .v3d-owner { padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; }
 .v3d-owner__who { display: flex; gap: 12px; align-items: center; }

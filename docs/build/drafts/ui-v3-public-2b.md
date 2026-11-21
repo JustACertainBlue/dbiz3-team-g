@@ -337,7 +337,7 @@ Quy tắc áp dụng: loại mọi ảnh rối dây; giữ ảnh rối không th
 
 Tính trên 20 làng có trải nghiệm đang chạy: bỏ các file có mặt người (28 file), thêm ảnh bìa và ảnh trải nghiệm đã duyệt. **Chỉ Phùng Xá, Mỹ Đức không còn ảnh nào** (không có bìa, trải nghiệm tơ sen không có ảnh), nên làng bị ẩn khỏi trang chủ và danh sách làng (quyết định #9: làng không ảnh không hiện). Mọi làng khác còn ít nhất một ảnh bìa hoặc ảnh trải nghiệm. Trải nghiệm không còn ảnh: chỉ tơ sen (Phùng Xá); "In thủy ấn trên giấy dó" (Yên Thái) giữ tạm ảnh có mặt người hiện tại (quyết định sau, xem dưới); 5 trải nghiệm rối ("Xem múa rối nước" và 4 trải nghiệm có ứng viên toàn rối dây) vẫn giữ ảnh hiện tại, không có mặt người, cho đến khi có ảnh chụp.
 
-Gói chốt được chép ra `~/Desktop/dbiz3-photos/2111/` (xem cuối mục này).
+Gói chốt được chép ra `~/Documents/dbiz3-assets/photos-2111/` (xem cuối mục này).
 
 ### Quyết định bổ sung (21/11) và mô phỏng sau khi nhập + gỡ
 
@@ -368,8 +368,20 @@ Mỗi hàng ghi bảng, sha256, `experience_id` hoặc `provider_id`, `profile_m
 
 ### Gói chốt
 
-Gói nằm ngoài repo và ngoài thư mục phiên: `~/Desktop/dbiz3-photos/2111/` gồm `approved-photos-2111-final.json`, `xuong-2111-final.json`, `go-anh-mat-nguoi-final.json`, `can-tu-chup-final.json`, `review.html` và cây ảnh `village/`, `experience/`, `workshop/` (83 ảnh, 44 MB). `SHA256SUMS` có 88 dòng (5 tệp + 83 ảnh); kiểm bằng `shasum -a 256 -c SHA256SUMS` cho 88/88 OK; sha256 trong hai file JSON khớp với file ảnh 83/83; `review.html` trỏ tới 83 ảnh, không thiếu ảnh nào.
+Gói nằm ngoài repo và ngoài thư mục phiên: `~/Documents/dbiz3-assets/photos-2111/` gồm `approved-photos-2111-final.json`, `xuong-2111-final.json`, `go-anh-mat-nguoi-final.json`, `can-tu-chup-final.json`, `review.html` và cây ảnh `village/`, `experience/`, `workshop/` (83 ảnh, 44 MB). `SHA256SUMS` có 88 dòng (5 tệp + 83 ảnh); kiểm bằng `shasum -a 256 -c SHA256SUMS` cho 88/88 OK; sha256 trong hai file JSON khớp với file ảnh 83/83; `review.html` trỏ tới 83 ảnh, không thiếu ảnh nào.
 
-Lưu ý: `~/Desktop/dbiz3-photos` là một worktree git của repo (nhánh `chore/replace-licensed-photos`), nên thư mục `2111/` nằm trong một checkout. Đã thêm `/2111/` vào `.git/info/exclude` để không bị `git add` nhầm; nếu muốn đặt hẳn ngoài mọi worktree thì chuyển sang thư mục khác.
+Gói đã được chuyển ra ngoài mọi worktree (ban đầu đặt ở `~/Desktop/dbiz3-photos/2111/`, là một checkout git nên đã dời); `shasum -a 256 -c SHA256SUMS` chạy lại ở chỗ mới cho 88/88 OK. Thư mục cũ đã xoá và dòng `/2111/` trong `.git/info/exclude` đã gỡ.
 
 **2B xong, sẵn sàng nhập.** Trước khi nhập vẫn cần: (1) sửa `EXCLUDED_ENTRIES` sang sha256 (mục 4); (2) quyết định cách gỡ hàng ảnh có mặt người (script hiện tại chỉ gỡ hàng của file dùng chung); (3) đối chiếu 7 hash trên PROD (mục 6).
+
+## 9. Màn 24 (Hồ sơ xưởng): gallery khi xưởng không có ảnh (21/11)
+
+Quy tắc mới (`providerView` trong `src/lib/explore/v3-provider.ts`):
+
+- Xưởng **có** ảnh trong `provider_version_media`: giữ nguyên như trước (ảnh xưởng, rồi ảnh các trải nghiệm).
+- Xưởng **không có** ảnh trong `provider_version_media`: gallery lấy **ảnh đầu tiên của mỗi trải nghiệm đang hiển thị** của chính xưởng (bỏ trải nghiệm đã lưu trữ, trải nghiệm không có ảnh không thêm gì), bỏ ảnh trùng, **ảnh ngang lên trước** (ổn định, như bước 2B), **tối đa 5 ảnh**. Thứ tự áp dụng trước khi cắt 5, nên khi đủ 5 ảnh ngang thì ảnh dọc không vào.
+- **Không có ảnh nào**: không vẽ `Gallery` và khối hero thêm lớp `v3d-hero--nogal`, cột bên phải (chủ xưởng, "Bạn và xưởng này") chiếm cả hàng; không còn khung trống.
+
+Tác động trên DEV (từ mô phỏng mục 8): 23 xưởng không có ảnh trong `provider_version_media` sẽ dùng quy tắc này; xưởng nào có trải nghiệm có ảnh thì có gallery từ 1 đến 5 ảnh, xưởng không có ảnh nào thì ẩn khối.
+
+Kiểm: `tests/unit/v3-provider-gallery.test.ts` (8 test; 4 đỏ trước khi sửa vì đúng lý do: chưa có quy tắc dự phòng, chưa ẩn khối), `npm test` 1725 passed, `npm run lint` 0.

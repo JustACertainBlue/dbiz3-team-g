@@ -52,5 +52,8 @@ export function variantSrc(url: string, width: number) {
 /** srcset with the 400w, 800w and 1600w variants; null for URLs the media route does not serve. */
 export const variantSrcSet = (url: string) => isMedia(url) ? MEDIA_VARIANT_WIDTHS.map(width => `${variantSrc(url, width)} ${width}w`).join(', ') : null
 
+/** Landscape images (width > height) first, everything else after them; both groups keep their order. */
+export const landscapeFirst = <T extends { width: number; height: number }>(images: T[]): T[] => [...images.filter(isLandscape), ...images.filter(image => !isLandscape(image))]
+
 export const isPortrait = (image: { width: number; height: number }) => image.width > 0 && image.height > 0 && image.height > image.width
 export const isLandscape = (image: { width: number; height: number }) => image.width > 0 && image.height > 0 && image.width > image.height

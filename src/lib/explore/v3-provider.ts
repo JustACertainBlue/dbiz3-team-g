@@ -3,12 +3,12 @@
 import type { CsvRow, ExploreSeed, Viewer } from './catalog'
 import { eligibleRows } from './catalog'
 import { calculateAvailability } from './availability'
-import { cardView, experienceImages, providerImages, type CardView } from './v3-home'
+import { cardView, experienceImage, experienceImages, providerImages, type CardView } from './v3-home'
 import { resultView, type ResultView } from './v3-search'
 import { aboutParagraphs } from './v3-detail'
 import { craftLabel, parseDistance, parseStringList, SUITABLE_FOR, rowCraft } from './vocabulary'
 import { initials } from '../../app/components/nav/nav-model'
-import { uniqueImages, type ImageRef } from '../prf/media-urls'
+import { landscapeFirst, uniqueImages, type ImageRef } from '../prf/media-urls'
 
 const WEEKDAY = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
 const STATUS: Record<string, string> = { 'On hold': 'đang chờ thanh toán', Booked: 'đã đặt', Completed: 'hoàn tất', Cancelled: 'đã huỷ' }
@@ -112,12 +112,19 @@ export function providerView(seed: ExploreSeed, providerId: string, viewer: View
     ...(payments ? [{ q: 'Thanh toán cho xưởng thế nào?', a: 'Sau khi xưởng giữ chỗ, bạn thanh toán bằng mã QR trong trang chi tiết đặt chỗ. Tiền vào thẳng tài khoản của xưởng.' }] : []),
   ]
 
+  // Gallery (human request 2026-11-21): the workshop's own images (provider_version_media) plus its experiences' images; a workshop
+  // without any shows the first image of each of its live experiences instead, landscape first, at most 5; none at all hides the block.
+  const workshopImages = providerImages(seed, providerId, version.version_no)
+  const images = workshopImages.length
+    ? uniqueImages([...workshopImages, ...own.flatMap(row => experienceImages(seed, row.experience.experience_id))])
+    : landscapeFirst(uniqueImages(own.flatMap(row => experienceImage(seed, row.experience.experience_id) ?? []))).slice(0, 5)
+
   const craft = rowCraft(version.craft_type, village)
   const otherVillages = all.filter(row => row.village.village_id !== village.village_id && row.version.craft_type === version.craft_type)
   return {
     id: providerId, initials: initials(version.business_name), eyebrow: [craft, `Làng ${village.name}`].filter(Boolean).join(' · ').toUpperCase(),
     name: version.business_name, address: [village.name, village.district, village.city_province].filter(Boolean).join(', '), villageId: village.village_id, villageTitle: `Làng ${village.name}`,
-    images: uniqueImages([...providerImages(seed, providerId, version.version_no), ...own.flatMap(row => experienceImages(seed, row.experience.experience_id))]),
+    images,
     owner: { initials: initials(owner || version.business_name), name: owner, title: 'Chủ xưởng', phone: isAgency ? contact.phone_number || null : null, email: isAgency ? contact.business_email || null : null },
     together, highlights, about: aboutParagraphs(version.description ?? ''), suitableFor,
     experiences: own.map(row => resultView(seed, row, query, isAgency)), firstExperienceId: own[0]?.experience.experience_id ?? null,

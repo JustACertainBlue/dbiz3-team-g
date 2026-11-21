@@ -58,14 +58,19 @@ export function matchResultsView(body: any): { top: RecommendationView[]; additi
   }
 }
 
-const CRITERION_LABELS: Record<string, string> = { Budget: 'Ngân sách', Dates: 'Ngày', Date: 'Ngày', 'Group size': 'Số khách' }
+const CRITERION_LABELS: Record<string, string> = { Budget: 'Ngân sách', Dates: 'Ngày', Date: 'Ngày', Distance: 'Khoảng cách', 'Group size': 'Số khách' }
+// Relaxation values come from the server in English; shown in Vietnamese here (view layer).
+const VALUE_TEXT: Record<string, string> = {
+  'Expand radius by 15km to include outer craft villages': 'Mở rộng bán kính thêm 15 km để gồm các làng nghề vùng ven',
+  'Consider flexible dates (+/- 2 days)': 'Có thể linh hoạt ngày đi (± 2 ngày)',
+}
 
 export function noMatchView(body: any): { prompt: string; lines: string[] } {
   const relaxation = body?.relaxation_suggestions ?? {}
   const lines = (relaxation.relaxation_suggestions ?? []).map((s: { criterion: string; suggested_value: string | number }) =>
     s.criterion === 'Budget' && typeof s.suggested_value === 'number'
       ? `Ngân sách: ${s.suggested_value.toLocaleString('vi-VN')} ₫/khách`
-      : `${CRITERION_LABELS[s.criterion] ?? s.criterion}: ${s.suggested_value}`)
+      : `${CRITERION_LABELS[s.criterion] ?? s.criterion}: ${typeof s.suggested_value === 'string' ? VALUE_TEXT[s.suggested_value] ?? s.suggested_value : s.suggested_value}`)
   return { prompt: relaxation.conversation_prompt ?? '', lines }
 }
 

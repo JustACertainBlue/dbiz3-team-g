@@ -61,7 +61,7 @@ describe('T045 | noMatchView renders every relaxation suggestion (BR-011, FR-012
       },
     })
     expect(view.prompt).toBe('No Experience fits a budget of 20,000 VND per person.')
-    expect(view.lines).toEqual(['Ngân sách: 150.000 ₫/khách', 'Ngày: Consider flexible dates (+/- 2 days)'])
+    expect(view.lines).toEqual(['Ngân sách: 150.000 ₫/khách', 'Ngày: Có thể linh hoạt ngày đi (± 2 ngày)'])
   })
 })
 
@@ -75,5 +75,18 @@ describe('understoodChips (mockup 22 "AI đã hiểu")', () => {
   it('skips what is missing', () => {
     expect(understoodChips({ extraction: { tour_context: { group_size: 10 } } })).toEqual(['10 khách'])
     expect(understoodChips(null)).toEqual([])
+  })
+})
+
+describe('noMatchView maps the relaxation values shown to the Agency to Vietnamese (view layer)', () => {
+  it('Distance and Dates values', () => {
+    const view = noMatchView({ relaxation_suggestions: { conversation_prompt: 'x', relaxation_suggestions: [
+      { criterion: 'Distance', suggested_value: 'Expand radius by 15km to include outer craft villages' },
+      { criterion: 'Dates', suggested_value: 'Consider flexible dates (+/- 2 days)' },
+    ] } })
+    expect(view.lines).toEqual(['Khoảng cách: Mở rộng bán kính thêm 15 km để gồm các làng nghề vùng ven', 'Ngày: Có thể linh hoạt ngày đi (± 2 ngày)'])
+  })
+  it('unknown values pass through unchanged', () => {
+    expect(noMatchView({ relaxation_suggestions: { relaxation_suggestions: [{ criterion: 'Other', suggested_value: 'abc' }] } }).lines).toEqual(['Other: abc'])
   })
 })

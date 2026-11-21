@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // Screen 25 (mockup TinNhan) tokens in the desktop override block; the phone rules stay untouched (human decision 21/11).
@@ -63,5 +63,19 @@ describe('request card rows (screen 25)', () => {
   it('shows "Khung giờ HH:mm–HH:mm" and the note row only when there is a note', () => {
     expect(page).toContain('<dt>Khung giờ</dt><dd>{card.slot_start}–{card.slot_end}</dd>')
     expect(page).toMatch(/\{card\.note && <div><dt>Ghi chú<\/dt>/)
+  })
+})
+
+describe('the close-chat dialog UI is gone from the messages page (21/11); the close API stays', () => {
+  const page = readFileSync('src/app/messages/page.tsx', 'utf8')
+  it('no state, handler, request or dialog for closing a chat', () => {
+    for (const token of ['closeOpen', 'setCloseOpen', 'closeReason', 'confirmClose', '/close`', 'aria-label="Đóng hội thoại"', 'closeReasonState', 'ch9-notice']) expect(page).not.toContain(token)
+  })
+  it('the read-only notice of an already Closed chat and the attach dialog remain', () => {
+    expect(page).toContain('closedNotice')
+    expect(page).toContain('aria-label="Đính kèm tài liệu"')
+  })
+  it('the close API route is untouched', () => {
+    expect(existsSync('src/app/api/iac/chats/[id]/close/route.ts')).toBe(true)
   })
 })

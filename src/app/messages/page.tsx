@@ -7,7 +7,7 @@ import type { SessionContext } from '@/lib/auth/session'
 import { readSessionContext } from '@/lib/auth/client-session'
 import { renderChatMarkdown } from '@/lib/iac/markdown-utils'
 import { composerState } from './composer-state'
-import { closedNotice, closeReasonState } from './close-chat'
+import { closedNotice } from './close-chat'
 import { ACCEPT_ATTRIBUTE, ATTACH_ERROR_TEXT, attachState, typeLabel } from './attach-state'
 import { ChevronLeft, Paperclip, Search } from 'lucide-react'
 import { hanoiClock } from '@/lib/time/hanoi-time'
@@ -45,10 +45,6 @@ function MessagesContent() {
   const [messageText, setMessageText] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-  const [closeOpen, setCloseOpen] = useState(false)
-  const [closeReason, setCloseReason] = useState('')
-  const [closing, setClosing] = useState(false)
   const [attachOpen, setAttachOpen] = useState(false)
   const [attachFiles, setAttachFiles] = useState<File[]>([])
   const [attaching, setAttaching] = useState(false)
@@ -135,30 +131,7 @@ function MessagesContent() {
     }
   }
 
-  const closeState = closeReasonState({ text: closeReason, pending: closing })
   const closed = history ? closedNotice(history) : null
-
-  // F-CHAT-04 (spec-IAC #33): confirm with an optional reason; Cancel sends nothing.
-  async function confirmClose() {
-    if (!history || !closeState.canConfirm) return
-    setClosing(true)
-    setError('')
-    try {
-      const response = await fetch(`/api/iac/chats/${encodeURIComponent(history.chat_session_id)}/close`, {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(closeReason.trim() ? { close_reason: closeReason } : {}),
-      })
-      const body = await response.json()
-      if (!response.ok) return setError(body.error?.message || 'Không thể đóng hội thoại')
-      setNotice(body.data.success_message)
-      setCloseOpen(false)
-      setCloseReason('')
-      await Promise.all([loadList(), loadHistory(history.chat_session_id)])
-    } catch {
-      setError('Không thể đóng hội thoại')
-    } finally {
-      setClosing(false)
-    }
-  }
 
   const attach = attachState(attachFiles, attaching)
   const resetAttach = () => { setAttachOpen(false); setAttachFiles([]) }
@@ -194,7 +167,7 @@ function MessagesContent() {
   const now = new Date()
   const actions = history ? chatActions(session, history.chat_status) : []
   const openChat = (chatId: string) => {
-    setSelectedId(chatId); setThreadOpen(true); setCloseOpen(false); setCloseReason(''); setNotice(''); resetAttach()
+    setSelectedId(chatId); setThreadOpen(true); resetAttach()
   }
 
   return <main className={threadOpen ? 'ch9 is-thread' : 'ch9'}>
@@ -218,7 +191,6 @@ function MessagesContent() {
     </aside>
     <section className="ch9-thread" aria-label="Hội thoại">
       {error && <p className="ch9-alert" role="alert">{error}</p>}
-      {notice && <p className="ch9-notice" role="status">{notice}</p>}
       {!selected || !history ? <div className="ch9-placeholder"><h2>Chọn một hội thoại</h2><p>Mỗi cặp Agency–Provider có một hội thoại đang mở; Experience, Quote và Booking là ngữ cảnh trong cùng hội thoại.</p></div> : <>
         <header className="ch9-head">
           <button type="button" className="ch9-back" onClick={() => setThreadOpen(false)} aria-label="Quay lại danh sách hội thoại"><ChevronLeft size={22} aria-hidden="true" /></button>
@@ -227,13 +199,6 @@ function MessagesContent() {
             <p>{selected.experience_name ? `Trải nghiệm: ${selected.experience_name}` : selected.participant_name}<span className={history.chat_status === 'Active' ? 'ch9-state-text is-active' : 'ch9-state-text'}> · {chatStatusLine(history.chat_status)}</span></p></div>
           <div className="ch9-actions">{actions.map(action => <Link key={action.key} href={action.href} className="ch9-btn ch9-btn--primary">{action.label}</Link>)}</div>
         </header>
-        {closeOpen && history.chat_status === 'Active' && <div className="ch9-dialog" role="dialog" aria-label="Đóng hội thoại">
-          <p><strong>Đóng hội thoại này?</strong> Lịch sử vẫn được giữ; hội thoại đã đóng không mở lại được.</p>
-          <label>Lý do (không bắt buộc)<textarea value={closeReason} onChange={event => setCloseReason(event.target.value)} rows={2} /></label>
-          <small className={closeState.canConfirm || closing ? '' : 'is-over'}>{closeState.counter}</small>
-          <div><button type="button" className="ch9-btn" onClick={() => { setCloseOpen(false); setCloseReason('') }}>Hủy</button>
-            <button type="button" className="ch9-btn ch9-btn--danger" disabled={!closeState.canConfirm} onClick={confirmClose}>{closing ? 'Đang đóng…' : 'Đóng hội thoại'}</button></div>
-        </div>}
         <div className="ch9-log" ref={logRef}>
           {history.has_more_messages && <button type="button" className="ch9-older" onClick={loadOlder}>Tải tin nhắn cũ hơn</button>}
           {history.message_history.length === 0 && <p className="ch9-empty">Chưa có tin nhắn.</p>}

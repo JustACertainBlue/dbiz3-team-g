@@ -26,13 +26,28 @@ function projectRef(value) {
 }
 
 /**
- * Target check for `--dry-run`, before any connection: the migration URL must name a Supabase project ref and it
- * must not be PROD. Only the ref is returned; the URL is never printed.
+ * Target check, before any connection (human request 2026-11-21, same pattern as storage:catalog-copies). Only the ref is
+ * returned; the URL is never printed.
+ *  - DEV or any other non-PROD project: dry run and apply need no flag; --target-prod is refused there.
+ *  - PROD dry run: only with CONFIRM_PROJECT_REF equal to the PROD ref (it still ends in ROLLBACK).
+ *  - PROD apply: --target-prod AND CONFIRM_PROJECT_REF equal to the PROD ref.
+ * `env.CONFIRM_PROJECT_REF` must come from the shell, not from a .env file (migrate.mjs captures it before loading .env).
  */
-export function dryRunTarget(env) {
+export function migrationTarget(env, { dryRun = false, targetProd = false } = {}) {
   if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not configured')
   const ref = projectRef(env.DATABASE_URL)
-  if (!ref) throw new Error('DATABASE_URL does not name a Supabase project ref; dry run refused')
-  if (ref === PROD_PROJECT_REF) throw new Error('Refusing to run against PROD, even with --dry-run')
+  if (!ref) throw new Error('DATABASE_URL does not name a Supabase project ref; refused')
+  const isProd = ref === PROD_PROJECT_REF
+  if (targetProd && !isProd) throw new Error('--target-prod is only for the PROD project; DATABASE_URL names another project')
+  if (isProd) {
+    if (env.CONFIRM_PROJECT_REF !== PROD_PROJECT_REF) throw new Error(`Refusing to run against PROD without CONFIRM_PROJECT_REF=${PROD_PROJECT_REF} (missing or different)${dryRun ? ', even with --dry-run' : ''}`)
+    if (!dryRun && !targetProd) throw new Error('Refusing to apply migrations to PROD without --target-prod')
+  }
+  return { projectRef: ref, isProd }
+}
+
+/** Target check for `--dry-run` (kept for callers and tests): PROD is refused unless CONFIRM_PROJECT_REF names it. */
+export const dryRunTarget = env => {
+  const { projectRef: ref } = migrationTarget(env, { dryRun: true })
   return { projectRef: ref }
 }

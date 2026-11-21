@@ -10,7 +10,7 @@ describe('parseArgs', () => {
     expect(parseArgs(['--undo', 'x/undo.json'])).toMatchObject({ apply: true, undo: 'x/undo.json' })
     expect(parseArgs(['--undo', 'x/undo.json', '--dry-run'])).toMatchObject({ apply: false, undo: 'x/undo.json' })
     expect(() => parseArgs(['--dry-run', '--apply'])).toThrow()
-    expect(() => parseArgs(['--target-prod'])).toThrow()
+    expect(() => parseArgs(['--force'])).toThrow() // was '--target-prod' while the script was DEV only; allowed since 2026-11-21
     expect(() => parseArgs(['--undo'])).toThrow()
   })
   it('--only-oversize redoes only the variants over their cap (dry run unless --apply); not with --undo', () => {

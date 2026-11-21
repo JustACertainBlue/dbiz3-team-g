@@ -9,13 +9,13 @@ import { groupPrice } from './group-price'
 import { assertSlotAndCapacity } from './slot-rules'
 import { parseBookingRequest } from './request-card'
 import { expireDueHoldsLocked } from './expire-holds'
+import { HOLD_HOURS } from '../provider/hold-hours'
 import { fitsOperatingHours } from './operating-hours'
 import { withBookingWriteLock } from './write-lock'
 
 // F-SCHED-03 Create Booking (spec-BKG US-4). Contract: specs/004-bkg-core/contracts/create-booking-api.md
 
 const HOUR = 3_600_000
-const HOLD_HOURS = 72
 
 export type BookingErrorCode =
   | 'VALIDATION_ERROR'

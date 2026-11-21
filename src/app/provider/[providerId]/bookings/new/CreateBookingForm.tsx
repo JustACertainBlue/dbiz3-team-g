@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { useMemo, useState } from 'react'
 import { groupPrice, priceBreakdown, type DiscountRule } from '@/lib/booking/group-price'
+import { HOLD_HOURS } from '@/lib/provider/hold-hours'
 import { adjustmentLine } from '@/lib/booking/display'
 import GuestsInput, { guestsError } from '@/app/explore/v3/GuestsInput'
 
@@ -115,7 +116,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
       {error && <p className="v3b-err" role="alert">{error}</p>}
       <div className="v3b-actions">
         <Link className="v3b-btn v3b-btn--s" href={`/provider/${providerId}/bookings`}>Huỷ</Link>
-        <button type="submit" className="v3b-btn v3b-btn--p" disabled={saving}>{saving ? 'Đang tạo…' : 'Tạo và giữ chỗ 72 giờ'}</button>
+        <button type="submit" className="v3b-btn v3b-btn--p" disabled={saving}>{saving ? 'Đang tạo…' : `Tạo và giữ chỗ ${HOLD_HOURS} giờ`}</button>
       </div>
     </section>
   </form>

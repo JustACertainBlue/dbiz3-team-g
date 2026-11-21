@@ -2,6 +2,8 @@
 // The fields are those the existing API takes (PATCH /api/prf/agency/[id]); the mockup lists only some of them.
 import React from 'react'
 import Link from 'next/link'
+import { COMPANY_TYPES, TOUR_TYPES } from '@/lib/auth/registration-validation'
+import { COMPANY_LABELS, TOUR_LABELS } from './labels'
 import './auth-v3.css'
 
 export interface AgencyFormData {
@@ -9,8 +11,6 @@ export interface AgencyFormData {
   description: string; team_size: number; contact_person_name: string; phone_number: string; business_email: string; tour_types: string[]
 }
 export type EditMessage = { type: 'success' | 'warning' | 'error'; text: string } | null
-
-export const EDIT_TOUR_TYPES = ['Cultural/Heritage', 'Craft Village/Experiential', 'Educational/Study Tour', 'Artisan Apprenticeship & Masterclasses', 'Eco-Tourism & Rural Gastronomy', 'High-End MICE & VIP Delegations']
 
 export default function CompanyEditView({ form, setForm, saving, hydrated, message, onSubmit, agencyId }: {
   form: AgencyFormData; setForm: (form: AgencyFormData) => void; saving: boolean; hydrated: boolean; message: EditMessage
@@ -51,10 +51,10 @@ export default function CompanyEditView({ form, setForm, saving, hydrated, messa
         </div>
         <div className="av3-field"><label htmlFor="ce-type">Loại hình</label>
           <select id="ce-type" value={form.company_type} onChange={event => setForm({ ...form, company_type: event.target.value })}>
-            {['Tour Operator', 'Travel Agency', 'TMC', 'DMC'].map(value => <option key={value} value={value}>{value}</option>)}
+            {COMPANY_TYPES.map(value => <option key={value} value={value}>{COMPANY_LABELS[value] ?? value}</option>)}
           </select></div>
         <fieldset className="av3-tours"><legend>Loại tour công ty thường tổ chức</legend>
-          <div>{EDIT_TOUR_TYPES.map(type => <label key={type} className={`av3-chipcheck${form.tour_types.includes(type) ? ' av3-chipcheck--on' : ''}`}><input type="checkbox" checked={form.tour_types.includes(type)} onChange={() => toggle(type)} />{type}</label>)}</div>
+          <div>{[...TOUR_TYPES, ...form.tour_types.filter(type => !(TOUR_TYPES as readonly string[]).includes(type))].map(type => <label key={type} className={`av3-chipcheck${form.tour_types.includes(type) ? ' av3-chipcheck--on' : ''}`}><input type="checkbox" checked={form.tour_types.includes(type)} onChange={() => toggle(type)} />{TOUR_LABELS[type] ?? type}</label>)}</div>
         </fieldset>
         <div className="av3-actions">
           <Link href={`/agency/${agencyId}`} className="av3-btn av3-btn--secondary">Huỷ</Link>

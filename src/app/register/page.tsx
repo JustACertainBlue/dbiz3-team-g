@@ -3,22 +3,10 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarCheck, MessageSquare, Sparkles, Tag } from "lucide-react";
-import { registrationSchema } from "@/lib/auth/registration-validation";
+import { COMPANY_TYPES, TOUR_TYPES, registrationSchema } from "@/lib/auth/registration-validation";
 import { COMPANY_LABELS, TOUR_LABELS } from "../auth-v3/labels";
 import { useHydrated } from "../auth-v3/useHydrated";
 import "../auth-v3/auth-v3.css";
-
-const TOUR_TYPES = [
-  "Cultural/Heritage",
-  "Craft Village/Experiential",
-  "Culinary",
-  "Educational/Study Tour",
-  "Corporate/MICE",
-  "Family/Leisure",
-  "Other",
-] as const;
-
-const COMPANY_TYPES = ["Travel Agency", "Tour Operator", "TMC"] as const;
 
 const FieldContext = React.createContext<{ errors: Record<string, string>; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void }>({ errors: {}, onChange: () => {} });
 

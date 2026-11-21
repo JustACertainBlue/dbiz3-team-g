@@ -27,16 +27,17 @@ export function SubmittedPopup({ open, onClose, info }: { open: boolean; onClose
 
 export type ReviewNote = { field?: string; message: string; by?: string; at?: string }
 /** 18b: documents must be supplemented. */
-export function ReviseDocsPopup({ open, onClose, company, note, reviseHref }: { open: boolean; onClose: () => void; company: string; note: ReviewNote; reviseHref: string }) {
+export function ReviseDocsPopup({ open, onClose, company, note, reviseHref }: { open: boolean; onClose: () => void; company?: string; note: ReviewNote; reviseHref?: string }) {
   return <Modal open={open} onClose={onClose} width={560} title="Hồ sơ cần bổ sung giấy tờ" icon={<span className="av3-pop-icon av3-pop-icon--danger"><FileWarning size={30} /></span>}
-    actions={<a className={buttonClass('primary')} href={reviseHref}>Bổ sung giấy tờ</a>}>
-    <p className="av3-pop-lead">Sở Du lịch Hà Nội đã xem hồ sơ của {company} và cần bạn bổ sung trước khi duyệt.</p>
+    actions={reviseHref ? <a className={buttonClass('primary')} href={reviseHref}>Bổ sung giấy tờ</a> : undefined}>
+    <p className="av3-pop-lead">Sở Du lịch Hà Nội đã xem hồ sơ{company ? ` của ${company}` : ''} và cần bạn bổ sung trước khi duyệt.</p>
     <div className="av3-pop-box av3-pop-box--danger">
       <h3>Cần bổ sung</h3>
       {note.field && <p><strong>{note.field}</strong>: tải lại bản rõ hơn.</p>}
       <p className="av3-pop-quote">“{note.message}”</p>
       <small>{[note.by ?? 'Sở Du lịch Hà Nội', note.at].filter(Boolean).join(' · ')}</small>
     </div>
+    {!reviseHref && <p className="av3-pop-lead av3-pop-lead--sm">Hãy mở đường dẫn bổ sung hồ sơ mà Sở Du lịch đã gửi qua email.</p>}
   </Modal>
 }
 
@@ -51,18 +52,18 @@ export function ContactDepartmentPopup({ open, onClose, info }: { open: boolean;
 }
 
 /** 18c: registration not approved; opens 18d from "Liên hệ Sở Du lịch". */
-export function RejectedPopup({ open, onClose, company, note, reviseHref, contact }: { open: boolean; onClose: () => void; company: string; note: ReviewNote; reviseHref: string; contact: ContactInfo }) {
+export function RejectedPopup({ open, onClose, company, note, reviseHref, contact }: { open: boolean; onClose: () => void; company?: string; note: ReviewNote; reviseHref?: string; contact: ContactInfo }) {
   const [contactOpen, setContactOpen] = useState(false)
   return <>
     <Modal open={open && !contactOpen} onClose={onClose} width={560} title="Hồ sơ đăng ký chưa được duyệt" icon={<span className="av3-pop-icon av3-pop-icon--solid av3-pop-icon--danger-solid"><X size={30} strokeWidth={2.8} /></span>}
-      actions={<><button type="button" className={buttonClass('secondary')} onClick={() => setContactOpen(true)}>Liên hệ Sở Du lịch</button><a className={buttonClass('primary')} href={reviseHref}>Sửa và gửi lại hồ sơ</a></>}>
-      <p className="av3-pop-lead">Sở Du lịch Hà Nội không duyệt hồ sơ của {company}. Tài khoản chưa dùng được để đặt trải nghiệm.</p>
+      actions={<><button type="button" className={buttonClass(reviseHref ? 'secondary' : 'primary')} onClick={() => setContactOpen(true)}>Liên hệ Sở Du lịch</button>{reviseHref && <a className={buttonClass('primary')} href={reviseHref}>Sửa và gửi lại hồ sơ</a>}</>}>
+      <p className="av3-pop-lead">Sở Du lịch Hà Nội không duyệt hồ sơ{company ? ` của ${company}` : ''}. Tài khoản chưa dùng được để đặt trải nghiệm.</p>
       <div className="av3-pop-box">
         <h3>Lý do</h3>
         <p className="av3-pop-quote">“{note.message}”</p>
         <small>{[note.by ?? 'Sở Du lịch Hà Nội', note.at].filter(Boolean).join(' · ')}</small>
       </div>
-      <p className="av3-pop-lead av3-pop-lead--sm">Bạn có thể sửa thông tin theo lý do trên rồi gửi lại hồ sơ. Các thông tin khác đã nhập vẫn được giữ. Nếu cho rằng có nhầm lẫn, hãy liên hệ Sở Du lịch Hà Nội.</p>
+      <p className="av3-pop-lead av3-pop-lead--sm">{reviseHref ? 'Bạn có thể sửa thông tin theo lý do trên rồi gửi lại hồ sơ. Các thông tin khác đã nhập vẫn được giữ. ' : ''}Nếu cho rằng có nhầm lẫn, hãy liên hệ Sở Du lịch Hà Nội.</p>
     </Modal>
     <ContactDepartmentPopup open={open && contactOpen} onClose={() => setContactOpen(false)} info={contact} />
   </>

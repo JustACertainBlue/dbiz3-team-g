@@ -5,6 +5,12 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AuthSplit from '../auth-v3/AuthSplit'
 import { prototypeLoginEnabled } from '@/lib/auth/prototype-login'
+import { ContactDepartmentPopup, RejectedPopup, ReviseDocsPopup, SubmittedPopup } from '../auth-v3/RegistrationPopups'
+import { formatViDateTime } from '../auth-v3/rules'
+
+// png/18d. The repo holds no real support contact; these are the mockup's example values (example.invalid).
+const DEPARTMENT_CONTACT = { email: 'hotro.sodulich@example.invalid', phone: '(024) 0000 0000', hours: '08:00 – 17:00, Thứ 2 – Thứ 6' }
+type RegistrationStatus = { status: 'pending' | 'revise' | 'rejected'; reason: string; reviewed_at: string }
 
 const demoAccounts = [
   ['Tour Agency', 'thanhvien13@example.invalid'],
@@ -26,6 +32,8 @@ function LoginForm() {
   // png/15 "Bạn là": only changes the hint under the button. The sign-in itself needs email and password only.
   const [who, setWho] = useState<'agency' | 'workshop'>('agency')
   const [busy, setBusy] = useState(false)
+  const [remember, setRemember] = useState(false)
+  const [registration, setRegistration] = useState<RegistrationStatus | null>(null)
   const [error, setError] = useState<{ code?: string; message: string } | null>(null)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -33,9 +41,10 @@ function LoginForm() {
     setBusy(true); setError(null)
     try {
       const response = await fetch('/api/auth/login', {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password }),
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password, remember }),
       })
-      const payload = await response.json() as { data?: { redirectTo: string }; error?: { code?: string; message?: string } }
+      const payload = await response.json() as { data?: { redirectTo: string }; error?: { code?: string; message?: string }; registration_status?: RegistrationStatus }
+      if (!response.ok && payload.registration_status) { setRegistration(payload.registration_status); setBusy(false); return }
       if (!response.ok || !payload.data) { setError({ code: payload.error?.code, message: payload.error?.message || 'Không thể đăng nhập.' }); setBusy(false); return }
       const requested = searchParams.get('next')
       const safeRequested = requested?.startsWith('/') && !requested.startsWith('//') ? requested : null
@@ -68,7 +77,7 @@ function LoginForm() {
           <button type="button" onClick={() => setShowPassword(value => !value)} aria-pressed={showPassword}>{showPassword ? 'Ẩn' : 'Hiện'}</button></div>
       </div>
       <div className="av3-login__row">
-        <label className="av3-check"><input type="checkbox" name="remember" />Ghi nhớ đăng nhập</label>
+        <label className="av3-check"><input type="checkbox" name="remember" checked={remember} onChange={event => setRemember(event.target.checked)} />Ghi nhớ đăng nhập (30 ngày)</label>
         <Link href="/forgot-password" className="av3-link">Quên mật khẩu?</Link>
       </div>
       <button className="av3-btn av3-btn--primary" type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
@@ -83,5 +92,10 @@ function LoginForm() {
         <div>{demoAccounts.map(([label, value]) => <button type="button" key={value} onClick={() => setEmail(value)}><span>{label}</span><small>{value}</small></button>)}</div>
       </aside>}
     </form>
+    {registration && <>
+      <SubmittedPopup open={registration.status === 'pending'} onClose={() => setRegistration(null)} info={{ email }} />
+      <ReviseDocsPopup open={registration.status === 'revise'} onClose={() => setRegistration(null)} note={{ message: registration.reason || 'Sở Du lịch cần bạn bổ sung hồ sơ.', at: formatViDateTime(registration.reviewed_at) }} />
+      <RejectedPopup open={registration.status === 'rejected'} onClose={() => setRegistration(null)} note={{ message: registration.reason || 'Không có lý do được ghi lại.', at: formatViDateTime(registration.reviewed_at) }} contact={DEPARTMENT_CONTACT} />
+    </>}
   </AuthSplit>
 }

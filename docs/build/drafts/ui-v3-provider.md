@@ -24,15 +24,17 @@ Not merged into build-log.md / ui-v3-spec-deviations.md (human merges the drafts
 | Câu hỏi thường gặp | none | — | — | hidden (FAQ is computed in code) |
 | "Rất được đoàn khách ưa thích" chips, "Người hướng dẫn" | none | — | — | hidden |
 | Trẻ em từ / cần người lớn dưới (tuổi) | none (child_policy is text) | — | — | hidden; one text line instead |
-| Nghề và làng nghề, Giữ chỗ 72 giờ, Hình thức thanh toán | read-only facts, not columns of experiences | — | — | not shown |
+| Nghề và làng nghề, Giữ chỗ 72 giờ, Hình thức thanh toán | not columns of experiences | — | — | shown read only: craft = villages.editorial_craft else craft_type label + "Làng <tên>" (GET /api/prf/provider/:id/craft-line), 72 = constant, payment text as mockup |
 
 ## Differs from the spec / mockup
-- 29 "Đã nhận qua QR tháng N": no payment data yet; shows "—". Panel status for a Booked day reads "Đã đặt chỗ" (mockup "Đã thanh toán": payment is a later phase).
+- 29 "Đã nhận qua QR tháng N": no payment data yet; shows "—".
 - 29 greeting: "Chào <full name>" (no gender field, not guessed). Dropped from the old page (not in the mockup): profile completion bar, recent chats, booking status counts, module tile grid. Kept: one UBND revision line when a revision comment exists. "Xem lịch đầy đủ ›" is not in the mockup; added so the full schedule page stays reachable.
 - 30 PRF128 (AI Refine) form not redesigned: the mockup has no edit screen.
 - 31 "show archived" checkbox removed (not in the mockup).
 - 33 "Hiển thị công khai" switch is a read-only pill: no visibility field. Default view: nearest day from tomorrow with a free slot, 10 guests (capped at the maximum), as the mockup example; `?date=&guests=` overrides.
-- 32 category select keeps the 5 DB values ("Tự tay làm" = Workshop/Hands-on, "Xem biểu diễn" = Cultural Show); the mockup has 2 radio cards. Group and special discounts sit inside "Chính sách của xưởng" (one existing component), not in "Giá & ca". Chips come from the DB vocabulary (10 terms); mockup chips "Có tạp dề cho khách", "Người cao tuổi", "Team building công ty" are not in it.
+- 32 category select keeps the 5 DB values ("Tự tay làm" = Workshop/Hands-on, "Xem biểu diễn" = Cultural Show); the mockup has 2 radio cards.
+
+- Chip Rất hợp cho đoàn: sửa mockup theo bộ 10 từ DB (Khánh Linh chốt 21/11).
 
 ## Old tests changed (requirement changed: the approved v3 mockup replaced the screen; asserts are as strict as before)
 - `tests/unit/dsh018-module-links.test.ts`: the tile grid is gone. Now: the dashboard links to Experiences, Bookings, the full Schedule, Create booking (existing route), profile and edit; the header gives Tổng quan / Trải nghiệm / Lịch sử đặt chỗ and the Messages button.
@@ -40,6 +42,7 @@ Not merged into build-log.md / ui-v3-spec-deviations.md (human merges the drafts
 - `tests/unit/exp070-location-field.test.ts`: label "Địa điểm tổ chức" (mockup), and the field now lives in `ExperienceFormBody`.
 
 ## Needs a shared / other-owner change (Cần sửa chung)
+- Screen 29 panel: "Đã thanh toán" for a Booked day is mapped in the screen only (MonthCalendar). The shared Booking status label (`statusLabel('booking','Booked')`) is unchanged; it is not payment data, so the booking screens may want the same decision.
 - `src/app/provider/provider-ui.css`: heading and link rules wrapped in `:where()` so v3 classes win (legacy pages unchanged).
 - "Các ca trong ngày" editable: needs INSERT/UPDATE/DELETE grant on `experience_slots` for the app role and a write path (migration/grant not done, by instruction).
 - Public detail page: the "Hoàn hảo cho…" box title is hard-coded; to show `group_note` the explore `detailView` must read it.

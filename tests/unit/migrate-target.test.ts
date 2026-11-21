@@ -7,6 +7,14 @@ import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import { dryRunTarget, migrationTarget, PROD_PROJECT_REF } from '../../scripts/db/migrate-plan.mjs'
 
+// Keep what Node needs on every OS (PATH, SystemRoot and ComSpec on Windows, HOME, TEMP) and drop anything that could aim
+// the command at a real project from the developer's shell; the test then adds only the values it means to test.
+const cliEnv = (extra: Record<string, string>) => {
+  const env: Record<string, string | undefined> = { ...process.env }
+  for (const name of ['DATABASE_URL', 'DATABASE_APP_URL', 'SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'CONFIRM_PROJECT_REF', 'DATABASE_SSL_CA_FILE']) delete env[name]
+  return { ...env, ...extra } as unknown as NodeJS.ProcessEnv
+}
+
 const DEV = 'jfrpnffknjpgmkyquxql'
 const url = (ref: string) => `postgresql://postgres.${ref}:test-only@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres`
 const dev = { DATABASE_URL: url(DEV) }
@@ -57,7 +65,7 @@ describe('migrationTarget: PROD apply', () => {
 
 describe('db:migrate command line refuses before connecting', () => {
   const cli = (args: string[], env: Record<string, string>) =>
-    spawnSync(process.execPath, ['scripts/db/migrate.mjs', ...args], { cwd: process.cwd(), env: { PATH: process.env.PATH ?? '', ...env } as unknown as NodeJS.ProcessEnv, encoding: 'utf8', timeout: 20000 })
+    spawnSync(process.execPath, ['scripts/db/migrate.mjs', ...args], { cwd: process.cwd(), env: cliEnv(env), encoding: 'utf8', timeout: 20000 })
   it.each([
     ['apply, no flags', [], prod],
     ['apply, --target-prod without confirmation', ['--target-prod'], prod],

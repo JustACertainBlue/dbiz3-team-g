@@ -7,6 +7,14 @@ import { DEV_PROJECT_REF, PROD_PROJECT_REF } from '../../scripts/storage/seed-im
 import { assertImportTarget, parseArgs as parseSeed } from '../../scripts/storage/import-seed-images.mjs'
 import { parseArgs as parseVariants } from '../../scripts/storage/backfill-media-variants.mjs'
 
+// Keep what Node needs on every OS (PATH, SystemRoot and ComSpec on Windows, HOME, TEMP) and drop anything that could aim
+// the command at a real project from the developer's shell; the test then adds only the values it means to test.
+const cliEnv = (extra: Record<string, string>) => {
+  const env: Record<string, string | undefined> = { ...process.env }
+  for (const name of ['DATABASE_URL', 'DATABASE_APP_URL', 'SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'CONFIRM_PROJECT_REF', 'DATABASE_SSL_CA_FILE']) delete env[name]
+  return { ...env, ...extra } as unknown as NodeJS.ProcessEnv
+}
+
 const db = (ref: string) => `postgresql://postgres.${ref}:test-only@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres`
 const storage = (ref: string) => `https://${ref}.supabase.co`
 const envFor = (ref: string, extra: Record<string, string> = {}) => ({ DATABASE_URL: db(ref), SUPABASE_URL: storage(ref), ...extra })
@@ -40,7 +48,7 @@ describe('parseArgs accepts --target-prod and stays a dry run', () => {
 
 describe('command lines refuse before connecting', () => {
   const cli = (script: string, args: string[], env: Record<string, string>) =>
-    spawnSync(process.execPath, [script, ...args], { cwd: process.cwd(), env: { PATH: process.env.PATH ?? '', ...env } as unknown as NodeJS.ProcessEnv, encoding: 'utf8', timeout: 20000 })
+    spawnSync(process.execPath, [script, ...args], { cwd: process.cwd(), env: cliEnv(env), encoding: 'utf8', timeout: 20000 })
   const seedArgs = ['--json', 'missing.json', '--photos-dir', 'missing']
   const cases: Array<[string, string[], Record<string, string>, string]> = [
     ['scripts/storage/import-seed-images.mjs', seedArgs, prod, 'PROD env without --target-prod'],

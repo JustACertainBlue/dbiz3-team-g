@@ -42,8 +42,8 @@ export function InclusionsCard(props: Props) {
   return <div className="prf-section-card">
     {heading('Bao gồm & tiện ích', 'Mỗi dòng là một mục. Thêm “(phụ phí)” ở cuối dòng nếu mục đó tính thêm tiền.')}
     <div className="pv3-grid3">
-      {note('per_guest', 'Mỗi khách có', props)}
       {note('included', 'Đã gồm trong giá', props)}
+      {note('per_guest', 'Mỗi khách có', props)}
       {note('trong_buoi', 'Trong buổi trải nghiệm', props)}
       <div className="prf-field-group"><label className="pv3-chip pv3-chip--solo"><input type="checkbox" checked={value.take_home} onChange={e => onChange({ ...value, take_home: e.target.checked })} />Sản phẩm mang về</label>
         <span className="prf-field-helper">Hiện dòng “Mỗi khách một sản phẩm tự làm”.</span></div>

@@ -42,7 +42,7 @@ export default async function ProviderProfilePage({ params }: { params: { provid
   const cells = monthDays({ hours, bookings: bookings.filter(row => row.provider_id === id), experiences: experiences.filter(row => row.provider_id === id) }, from, to, today)
 
   return <div className="v3p pv3-root">
-    <div className="hab-band"><nav aria-label="Đường dẫn" className="v3-crumbs"><Link href={`/provider/${id}/dashboard`}>Trang chủ</Link><span aria-hidden="true">›</span><span>{view.villageTitle}</span><span aria-hidden="true">›</span><span aria-current="page">{view.name}</span></nav></div>
+    <div className="hab-band"><nav aria-label="Đường dẫn" className="v3-crumbs"><Link href={`/provider/${id}/dashboard`}>Trang chủ</Link><span aria-hidden="true">›</span><Link href={`/village/${view.villageId}`}>{view.villageTitle}</Link><span aria-hidden="true">›</span><span aria-current="page">{view.name}</span></nav></div>
     <nav className="v3d-tabs" aria-label="Mục trên trang"><div className="hab-band v3d-tabs__in">
       <a href="#tong-quan">Tổng quan</a><a href="#trai-nghiem">Trải nghiệm</a><a href="#lich">Lịch trống</a><a href="#thong-tin">Thông tin &amp; liên hệ</a><a href="#hoi-dap">Câu hỏi thường gặp</a>
     </div></nav>

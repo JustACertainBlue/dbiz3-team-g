@@ -44,7 +44,7 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
       <div className="pv3-stat"><span className="pv3-stat__t">Đã nhận qua QR tháng {Number(today.slice(5, 7))}</span><b className="pv3-stat__v">—</b></div>
       <Link className="pv3-stat" href={`/provider/${id}/experiences`}><span className="pv3-stat__t">Trải nghiệm đang hiển thị</span><b className="pv3-stat__v">{stats.activeExperiences}</b></Link>
     </section>
-    <div id="lich" className="pv3-head pv3-head--cal"><h2 className="pv3-h2">Lịch xưởng</h2><Button size="sm" href={`/provider/${id}/bookings/new`}>+ Tạo đặt chỗ</Button></div>
+    <div id="lich" className="pv3-head pv3-head--cal"><h2 className="pv3-h2">Lịch xưởng</h2><div className="pv3-head__btns"><Link className="pv3-link" href={`/provider/${id}/schedule`}>Xem lịch đầy đủ ›</Link><Button size="sm" href={`/provider/${id}/bookings/new`}>+ Tạo đặt chỗ</Button></div></div>
     <div className="pv3-dash">
       <MonthCalendar cells={cells} today={today} variant="full" hoursByWeekday={hoursByWeekday(hours)}
         bookingHref={`/provider/${id}/bookings/__ID__`} scheduleHref={`/provider/${id}/schedule`} />

@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 export default async function ProviderDashboardPage({ params }: { params: { providerId: string } }) {
   const session = await currentServerSession()
   if (!(await canOpenCreateBooking(session, params.providerId))) {
-    return <main className="pv3-page"><h1 className="pv3-h1">Tổng quan xưởng</h1><p>Chỉ chủ xưởng sở hữu hồ sơ này mới xem được trang này.</p><Button href="/login">Đăng nhập</Button></main>
+    return <main className="pv3-page"><h1 className="pv3-h1">Tổng quan xưởng</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được Dashboard.</p><Button href="/login">Đăng nhập</Button></main>
   }
   const repository = demoRepository()
   const [summary, profile, account, bookings, experiences, allHours, reviews] = await Promise.all([

@@ -57,3 +57,11 @@ describe('screen 25 header has no Đóng hội thoại / Đặt chỗ / Lịch b
     expect(page).toContain('Tạo đặt chỗ từ yêu cầu')
   })
 })
+
+describe('request card rows (screen 25)', () => {
+  const page = readFileSync('src/app/messages/page.tsx', 'utf8')
+  it('shows "Khung giờ HH:mm–HH:mm" and the note row only when there is a note', () => {
+    expect(page).toContain('<dt>Khung giờ</dt><dd>{card.slot_start}–{card.slot_end}</dd>')
+    expect(page).toMatch(/\{card\.note && <div><dt>Ghi chú<\/dt>/)
+  })
+})

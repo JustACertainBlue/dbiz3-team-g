@@ -6,6 +6,7 @@ import { POST as postRequest } from '@/app/api/bkg/requests/route'
 import { POST as postBookerInfo } from '@/app/api/bkg/bookings/[bookingId]/booker-info/route'
 import { POST as postStatus } from '@/app/api/bkg/bookings/[bookingId]/status/route'
 import { POST as postBooking } from '@/app/api/bkg/bookings/route'
+import { addSlots } from '../helpers/slots'
 
 // A session that must still change its temporary password may only use the change-password panel:
 // every new booking API treats it as a guest (sessionContextFromRequest).
@@ -25,7 +26,7 @@ const call = (handler: (request: NextRequest, context: { params: { bookingId: st
   handler(new NextRequest(url, { method: 'POST', headers: { cookie: `${PRODUCT_SESSION_COOKIE}=${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body) }), { params: { bookingId } })
 
 describe('temporary-password session on the new booking APIs', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addSlots() })
 
   it('agency: request, booker-info and status are refused (403) and nothing is written', async () => {
     const token = await tokenFor(AGENCY_EMAIL, true)
@@ -47,7 +48,7 @@ describe('temporary-password session on the new booking APIs', () => {
   })
   it('control: the same agency session without the flag can send a request', async () => {
     const token = await tokenFor(AGENCY_EMAIL, false)
-    const response = await call(postRequest as never, 'http://localhost/api/bkg/requests', token, { experience_id: EXPERIENCE, date: '2099-12-01', group_size: 5 })
+    const response = await call(postRequest as never, 'http://localhost/api/bkg/requests', token, { experience_id: EXPERIENCE, date: '2099-01-05', slot_start: '09:00', slot_end: '10:00', group_size: 5 })
     expect(response.status).toBe(201)
   })
 })

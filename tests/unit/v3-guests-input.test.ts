@@ -71,3 +71,26 @@ describe('guests field in the booking flow', () => {
     expect(bar).toContain('<GuestsField'); expect(bar).not.toContain('<select name="guests"')
   })
 })
+
+describe('request form needs a free slot (21/11)', () => {
+  const render = (props: Record<string, unknown>) => renderToStaticMarkup(React.createElement(RequestButton, { experiences: [{ id: 'e', name: 'N', max: 12 }], date: '2026-11-30', guests: 5, initialOpen: true, ...props }))
+  it('a day without a free slot: message, no slot select, submit disabled', () => {
+    const markup = render({ initialSlots: [] })
+    expect(markup).toContain('Ngày này xưởng không có ca trống')
+    expect(markup).not.toContain('<select')
+    expect(markup).toMatch(/<button[^>]*type="submit"[^>]*disabled|<button[^>]*disabled[^>]*type="submit"/)
+  })
+  it('free slots: a required select "Ca" with one option per slot, none chosen yet, submit disabled until chosen', () => {
+    const markup = render({ initialSlots: [{ start: '09:00', end: '10:00', label: 'Ca sáng' }, { start: '14:00', end: '15:00', label: 'Ca chiều' }] })
+    const select = markup.match(/<select[\s\S]*?<\/select>/)?.[0] ?? ''
+    expect(select).toContain('required')
+    expect(select).toContain('Ca sáng 09:00–10:00'); expect(select).toContain('Ca chiều 14:00–15:00')
+    expect(markup).not.toContain('Ngày này xưởng không có ca trống')
+    expect(markup).toMatch(/<button[^>]*type="submit"[^>]*disabled|<button[^>]*disabled[^>]*type="submit"/)
+  })
+  it('the slot picked on 04 is preselected when it is still free', () => {
+    const markup = render({ slotTime: '09:00 – 10:00', initialSlots: [{ start: '09:00', end: '10:00', label: 'Ca sáng' }] })
+    expect(markup).toMatch(/<option[^>]*selected[^>]*value="09:00"|<option[^>]*value="09:00"[^>]*selected/)
+    expect(markup).not.toMatch(/<button[^>]*type="submit"[^>]*disabled/)
+  })
+})

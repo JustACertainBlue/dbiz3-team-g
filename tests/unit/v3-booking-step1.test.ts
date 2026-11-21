@@ -6,6 +6,7 @@ import { createBookingRequest } from '@/lib/booking/booking-request'
 import { groupPrice } from '@/lib/booking/group-price'
 import { confirmBookerInfo } from '@/lib/booking/booker-info'
 import { changeBookingStatus } from '@/lib/booking/change-status'
+import { addSlots } from '../helpers/slots'
 
 // Part B step 1: price shown (not edited) in 35, request note copied to the booking, agreed conditions go into the
 // "Xưởng đã giữ chỗ" message, and the contact columns are written by the agency on 06 ("Hoàn tất đặt chỗ").
@@ -34,7 +35,7 @@ describe('groupPrice', () => {
 })
 
 describe('createBooking price, request note, conditions', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addSlots() })
 
   it('without agreed_price the server stores the list price with the group discount', async () => {
     const experience = demoRepository().find('experiences', r => r.experience_id === EXPERIENCE)!

@@ -5,6 +5,7 @@ import { createBookingRequest } from '@/lib/booking/booking-request'
 import { listChats } from '@/lib/iac/chat-service'
 import { eventView, filterChats } from '@/app/messages/chat-view'
 import { toSessionContext } from '@/lib/auth/session'
+import { addSlots } from '../helpers/slots'
 
 // Screen 25 (UI v3): the request card, and one pill per status change (decision #6).
 describe('chat pills for Booking Update messages', () => {
@@ -22,20 +23,20 @@ describe('chat pills for Booking Update messages', () => {
 })
 
 describe('chat list preview of a request', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addSlots() })
   it('shows a sentence, not the stored JSON', async () => {
     const agency = DEMO_IDENTITIES.agency
-    await createBookingRequest(agency, { experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69', date: '2026-11-24', slot_start: '08:30', slot_end: '09:30', group_size: 10, note: '' }, { now: () => new Date('2026-11-21T09:00:00+07:00') })
+    await createBookingRequest(agency, { experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69', date: '2026-11-30', slot_start: '09:00', slot_end: '10:00', group_size: 10, note: '' }, { now: () => new Date('2026-11-21T09:00:00+07:00') })
     const list = await listChats(await toSessionContext(agency))
-    expect(list[0].last_message_preview).toMatch(/^Yêu cầu đặt chỗ: .*24\/11\/2026 08:30–09:30, 10 khách$/)
+    expect(list[0].last_message_preview).toMatch(/^Yêu cầu đặt chỗ: .*30\/11\/2026 09:00–10:00, 10 khách$/)
   })
 })
 
 describe('chat list: experience line and search (screen 25)', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addSlots() })
   const agency = DEMO_IDENTITIES.agency
   it('each entry carries the experience name of the chat context ("" when none)', async () => {
-    await createBookingRequest(agency, { experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69', date: '2026-11-24', group_size: 10 }, { now: () => new Date('2026-11-21T09:00:00+07:00') })
+    await createBookingRequest(agency, { experience_id: 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69', date: '2026-11-30', slot_start: '09:00', slot_end: '10:00', group_size: 10 }, { now: () => new Date('2026-11-21T09:00:00+07:00') })
     const list = await listChats(await toSessionContext(agency))
     const name = demoRepository().find('experiences', r => r.experience_id === 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69')!.name
     expect(list.find(entry => entry.experience_name === name)).toBeTruthy()

@@ -4,6 +4,7 @@ import { demoRepository } from '../db/application-store'
 import { messageOperations, nextSentAt, pairChatPlan, pairUserIds } from '../iac/chat-pairs'
 import { hanoiDate } from '../time/hanoi-time'
 import { BookingError, invalid, isPositiveInteger } from './create-booking'
+import { freeSlotsOn } from './free-slots'
 import { encodeBookingRequest } from './request-card'
 import { withBookingWriteLock } from './write-lock'
 
@@ -37,17 +38,22 @@ export async function createBookingRequest(
   const date = typeof input.date === 'string' ? input.date : ''
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(`${date}T00:00:00+07:00`))) invalid('date must be YYYY-MM-DD')
   if (date < hanoiDate(now)) invalid('date cannot be in the past')
+  // 21/11: a free slot of that day is required (Ngày này xưởng không có ca trống → nothing to send).
   const slotStart = typeof input.slot_start === 'string' ? input.slot_start : ''
   const slotEnd = typeof input.slot_end === 'string' ? input.slot_end : ''
-  if (slotStart || slotEnd) {
-    if (!CLOCK.test(slotStart) || !CLOCK.test(slotEnd)) invalid('slot_start and slot_end must both be HH:mm')
-    if (slotEnd <= slotStart) invalid('slot_end must be after slot_start')
-  }
+  if (!slotStart || !slotEnd) invalid('slot_start and slot_end are required: choose a free slot of the day')
+  if (!CLOCK.test(slotStart) || !CLOCK.test(slotEnd)) invalid('slot_start and slot_end must both be HH:mm')
+  if (slotEnd <= slotStart) invalid('slot_end must be after slot_start')
   const groupSize = input.group_size
   if (!isPositiveInteger(groupSize)) invalid('group_size must be an integer > 0')
   if (groupSize > Number(experience.max_participants)) invalid('group_size exceeds max_participants')
   const note = typeof input.note === 'string' ? input.note.trim() : ''
   if ([...note].length > NOTE_MAX) invalid(`note is longer than ${NOTE_MAX} characters`)
+
+  const free = await freeSlotsOn(experienceId, date)
+  if (!free.some(slot => slot.start === slotStart && slot.end === slotEnd)) {
+    throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: this is not a free slot of the Experience on that day')
+  }
 
   return withBookingWriteLock(async () => {
     const at = now.toISOString()

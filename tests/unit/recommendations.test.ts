@@ -91,21 +91,21 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
   it('no craft preference → no craft named; capacity, group and estimated distance are stated', async () => {
     const text = await explain(profileWith())
     expect(text).not.toMatch(/silk|lụa|pottery|weaving/i)
-    expect(text).toMatch(/up to 13/)
-    expect(text).toMatch(/group of 10/)
-    expect(text).toMatch(/estimated/i)
+    expect(text).toMatch(/tối đa 13 khách/)
+    expect(text).toMatch(/đoàn 10 khách/)
+    expect(text).toMatch(/ước tính/)
     expect(text).toMatch(/Hoàn Kiếm/)
   })
 
   it('silk preference → the preference is named', async () => {
-    expect(await explain(profileWith({}, [{ type: 'craft_preference', value: 'silk' }]))).toMatch(/silk/i)
+    expect(await explain(profileWith({}, [{ type: 'craft_preference', value: 'silk' }]))).toMatch(/Dệt lụa/)
   })
 
   it('budget given → price against budget is stated', async () => {
     const text = await explain(profileWith({ max_budget_per_person: 200000 }))
-    expect(text).toMatch(/175,000/)
-    expect(text).toMatch(/200,000/)
-    expect(text).toMatch(/budget/i)
+    expect(text).toMatch(/175\.000/)
+    expect(text).toMatch(/200\.000/)
+    expect(text).toMatch(/ngân sách/)
   })
 })
 
@@ -140,5 +140,26 @@ describe('T043 | Useful relaxation suggestions (BR-011, FR-012, #23, #24)', () =
     expect(budget(result)).toBeUndefined()
     expect(result.conversation_prompt).toMatch(/16/)
     expect(JSON.stringify(result)).not.toContain('600000')
+  })
+})
+
+describe('explanation wording (screen 22)', () => {
+  const candidate = { experience_id: 'e', provider_id: 'p', experience_name: 'Dệt lụa truyền thống', provider_name: 'X', village_name: 'Vạn Phúc',
+    craft_type: 'Silk/Textile', category: 'Workshop/Hands-on', price_per_person: 175000, max_participants: 13, distance_km: 8 }
+  const profile = (value: string) => ({ hard_constraints: { group_size: 10 }, matching_attributes: [{ type: 'craft_preference', value }] })
+  const explain = async (items: any[], value = 'silk') => (await buildRecommendations(await rankCandidates(items, profile(value)))).top_matches[0].explanation
+
+  it('does not show the numeric score; the craft is a Vietnamese label, never the raw value', async () => {
+    const text = await explain([candidate])
+    expect(text).not.toMatch(/Điểm phù hợp|\/100/)
+    expect(text).toContain('Dệt lụa')
+    expect(text).not.toMatch(/silk|Silk\/Textile/)
+  })
+  it('uses the displayed craft of the card (editorial_craft or craft_type label) when given', async () => {
+    expect(await explain([{ ...candidate, craft_display: 'Lụa Vạn Phúc' }])).toContain('Lụa Vạn Phúc')
+  })
+  it('a craft that does not match is named by its Vietnamese label', async () => {
+    const text = await explain([candidate], 'pottery')
+    expect(text).toContain('Gợi ý thêm, khác nghề Gốm sứ bạn chọn.')
   })
 })

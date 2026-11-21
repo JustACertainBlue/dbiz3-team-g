@@ -26,7 +26,7 @@ describe('T011 | Intent Extraction & Clarification (FR-003, FR-004, BR-004, BR-0
     const result = await extractTourContext(messages)
     expect(result.is_complete).toBe(false)
     expect(result.follow_up_questions.length).toBeGreaterThan(0)
-    expect(result.follow_up_questions.some((q: string) => /group|guests|pax/i.test(q))).toBe(true)
+    expect(result.follow_up_questions.some((q: string) => /số khách/i.test(q))).toBe(true)
   })
 
   it('FR-003 / AC-AIT-CLARIFY: returns follow-up when target_date is missing', async () => {
@@ -35,7 +35,7 @@ describe('T011 | Intent Extraction & Clarification (FR-003, FR-004, BR-004, BR-0
     ]
     const result = await extractTourContext(messages)
     expect(result.is_complete).toBe(false)
-    const hasDateQuestion = result.follow_up_questions.some((q: string) => /date|when|time/i.test(q))
+    const hasDateQuestion = result.follow_up_questions.some((q: string) => /ngày/i.test(q))
     expect(hasDateQuestion).toBe(true)
   })
 
@@ -97,14 +97,14 @@ describe('T035 | Completeness per OQ #4 (FR-003, BR-004, #29, #34, #35)', () => 
   it('#29: no origin → incomplete with an origin follow-up and no default origin', async () => {
     const result = await extract('silk weaving, 10 pax on 2026-11-20')
     expect(result.is_complete).toBe(false)
-    expect(result.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(true)
+    expect(result.follow_up_questions.some((q: string) => /xuất phát/i.test(q))).toBe(true)
     expect(result.tour_context.origin_or_route).toBeUndefined()
   })
 
   it('#29: no Experience preference → incomplete with a preference follow-up and no default experience_types', async () => {
     const result = await extract('10 pax on 2026-11-20 from Hoàn Kiếm')
     expect(result.is_complete).toBe(false)
-    expect(result.follow_up_questions.some((q: string) => /craft|experience/i.test(q))).toBe(true)
+    expect(result.follow_up_questions.some((q: string) => /nghề|loại hình/i.test(q))).toBe(true)
     expect(result.tour_context.experience_types).toBeUndefined()
   })
 
@@ -122,7 +122,7 @@ describe('T035 | Completeness per OQ #4 (FR-003, BR-004, #29, #34, #35)', () => 
     expect(longBien.tour_context.origin_or_route?.origin_address).toBe('Long Biên')
     const destination = await extract('pottery workshop in Bat Trang, 10 pax on 2026-11-20')
     expect(destination.is_complete).toBe(false)
-    expect(destination.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(true)
+    expect(destination.follow_up_questions.some((q: string) => /xuất phát/i.test(q))).toBe(true)
   })
 
   it('#29: the profile has no Experience type attribute the Agency did not state', async () => {

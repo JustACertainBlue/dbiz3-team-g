@@ -186,7 +186,7 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
     const noOrigin = await send(await openSession(), 'silk weaving, 10 pax on 2026-11-20')
     expect(noOrigin.json.extraction.is_complete).toBe(false)
     expect(noOrigin.json.tour_preference_profile).toBeNull()
-    expect(noOrigin.json.extraction.follow_up_questions.some((q: string) => /start|origin|from/i.test(q))).toBe(true)
+    expect(noOrigin.json.extraction.follow_up_questions.some((q: string) => /xuất phát/i.test(q))).toBe(true)
 
     const destinationOnly = await send(await openSession(), 'pottery workshop in Bat Trang, 10 pax on 2026-11-20')
     expect(destinationOnly.json.extraction.is_complete).toBe(false)
@@ -211,8 +211,8 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
     expect(result.matching!.top_matches.length).toBeGreaterThan(0)
     for (const match of result.matching!.top_matches) {
       expect(match.explanation).not.toMatch(/silk|pottery|ceramic|embroider|conical|bamboo|lụa|gốm/i)
-      expect(match.explanation).toMatch(/group of 10/)
-      expect(match.explanation).toMatch(/estimated/i)
+      expect(match.explanation).toMatch(/đoàn 10 khách/)
+      expect(match.explanation).toMatch(/ước tính/)
     }
   })
 

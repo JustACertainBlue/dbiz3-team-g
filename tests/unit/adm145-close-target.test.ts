@@ -9,8 +9,9 @@ import { describe, expect, it } from 'vitest'
 
 const page = readFileSync('src/app/admin/providers/[id]/page.tsx', 'utf8')
 
-describe('#187 | ADM145 Close goes to ADM095', () => {
-  it('renders a "Đóng" (Close) link to /admin/users', () => {
-    expect(page).toMatch(/<Link[^>]*href="\/admin\/users"[^>]*>Đóng<\/Link>/)
+describe('#187 | ADM145 leaves through the list (v3 png/41a: "‹ Danh sách hồ sơ")', () => {
+  it('renders a back link to the review list and no mutation of its own', () => {
+    expect(page).toMatch(/<Link href=\{listHref\} className="av3-back">‹ Danh sách hồ sơ<\/Link>/)
+    expect(page).toContain("const listHref = session.adminType === 'UBND' ? '/admin/providers' : '/admin/agencies'")
   })
 })

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Breadcrumb } from '@/app/components/ui'
+import '../../../../v3/provider-v3.css'
 import ExperienceTermsField from '../../ExperienceTermsField'
 import { readCancellationPolicy, cancellationPatch, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
@@ -165,23 +167,18 @@ export default function EditExperiencePage({
   const isLocalProvider = authorized
 
   return (
-    <div className="prf-container" style={{ paddingBottom: '7rem' }}>
-      {/* Header */}
+    <div className="prf-container pv3-form" style={{ paddingBottom: '7rem' }}>
+      {/* Header (screen 32, mockup 32) */}
+      <Breadcrumb items={[{ label: 'Tổng quan', href: `/provider/${params.providerId}/dashboard` }, { label: 'Trải nghiệm của xưởng', href: `/provider/${params.providerId}/experiences` }, { label: formData.name ? `Sửa “${formData.name}”` : 'Sửa trải nghiệm' }]} />
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">CHỈNH SỬA TRẢI NGHIỆM</span>
-          <h1 className="prf-spec-title">Chỉnh sửa Hoạt động Trải nghiệm</h1>
+          <h1 className="prf-spec-title">{formData.name ? `Sửa “${formData.name}”` : 'Sửa trải nghiệm'}</h1>
           <p className="prf-spec-subtitle">
-            Cập nhật nội dung mô tả, bộ sưu tập hình ảnh và điều kiện đón tiếp
+            Các phần được đặt đúng thứ tự trên trang chi tiết trải nghiệm mà công ty lữ hành thấy.
           </p>
         </div>
         <div className="prf-spec-actions">
-          <Link
-            href={`/provider/${params.providerId}/experiences`}
-            className="prf-btn prf-btn-outline"
-          >
-            ← Danh sách trải nghiệm
-          </Link>
+          <Link href={`/provider/${params.providerId}/experiences/${params.experienceId}`} className="pv3-link">Xem trang chi tiết ›</Link>
         </div>
       </div>
 

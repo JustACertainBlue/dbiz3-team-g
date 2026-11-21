@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Breadcrumb } from '@/app/components/ui'
+import '../../../v3/provider-v3.css'
 import ExperienceTermsField from '../ExperienceTermsField'
 import { readCancellationPolicy, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../ExperienceImagesField'
@@ -136,23 +138,15 @@ export default function AddExperiencePage({
   const isLocalProvider = authorized
 
   return (
-    <div className="prf-container" style={{ paddingBottom: '7rem' }}>
-      {/* Header */}
+    <div className="prf-container pv3-form" style={{ paddingBottom: '7rem' }}>
+      {/* Header (screen 32, mockup 32) */}
+      <Breadcrumb items={[{ label: 'Tổng quan', href: `/provider/${params.providerId}/dashboard` }, { label: 'Trải nghiệm của xưởng', href: `/provider/${params.providerId}/experiences` }, { label: 'Thêm trải nghiệm' }]} />
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">THÊM TRẢI NGHIỆM</span>
-          <h1 className="prf-spec-title">Tạo mới Hoạt động Trải nghiệm Làng nghề</h1>
+          <h1 className="prf-spec-title">Thêm trải nghiệm</h1>
           <p className="prf-spec-subtitle">
-            Thiết lập biểu phí B2B, quy mô đoàn khách, thời lượng thực hành và 3 danh mục hình ảnh quy chuẩn
+            Các phần được đặt đúng thứ tự trên trang chi tiết trải nghiệm mà công ty lữ hành thấy.
           </p>
-        </div>
-        <div className="prf-spec-actions">
-          <Link
-            href={`/provider/${params.providerId}/experiences`}
-            className="prf-btn prf-btn-outline"
-          >
-            ← Danh sách trải nghiệm
-          </Link>
         </div>
       </div>
 

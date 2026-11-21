@@ -88,6 +88,13 @@ describe('confirmBookerInfo (06 "Hoàn tất đặt chỗ")', () => {
     expect(await code(confirmBookerInfo(agency, id, { ...info, note: 'x'.repeat(1001) }, { now }))).toBe('VALIDATION_ERROR')
     expect('contact_name' in bookingRow(id)).toBe(false)
   })
+  it('called twice: the info is saved both times but only one "Công ty báo đã thanh toán" message exists', async () => {
+    const id = await hold(); const before = updates(id).length
+    await confirmBookerInfo(agency, id, info, { now })
+    await confirmBookerInfo(agency, id, { ...info, contact_phone: '0911 111 111' }, { now })
+    expect(updates(id).slice(before)).toHaveLength(1)
+    expect(bookingRow(id).contact_phone).toBe('0911 111 111')
+  })
   it('only the owning agency; only while On hold', async () => {
     const id = await hold()
     expect(await code(confirmBookerInfo(provider, id, info, { now }))).toBe('FORBIDDEN')

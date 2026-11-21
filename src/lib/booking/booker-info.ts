@@ -34,7 +34,9 @@ export async function confirmBookerInfo(session: SessionLike, bookingId: string,
     if (booking.status !== 'On hold') throw new BookingError(booking.status === 'Cancelled' || booking.status === 'Completed' ? 'BOOKING_TERMINAL' : 'INVALID_TRANSITION', `Booker information is saved while the Booking is On hold, not ${booking.status}`)
     const at = hanoiTimestamp(now.getTime())
     const changes = { contact_name: name, contact_phone: phone, note, updated_at: at }
-    const sync = await bookingUpdateOperations({ ...booking, ...changes }, at, [], { label: PAID_MESSAGE })
+    // One "Công ty báo đã thanh toán" per booking: a repeat press still saves the info but posts nothing.
+    const already = (await repository.all('chat_messages')).some(row => row.booking_id === bookingId && row.message_kind === 'Booking Update' && row.text.startsWith(PAID_MESSAGE))
+    const sync = already ? { operations: [] } : await bookingUpdateOperations({ ...booking, ...changes }, at, [], { label: PAID_MESSAGE })
     await repository.applyBatch([
       { table: 'bookings', match: row => row.booking_id === bookingId && row.status === 'On hold', changes },
       ...sync.operations,

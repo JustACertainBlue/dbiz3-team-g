@@ -148,6 +148,8 @@ export interface ChatListEntry {
   chat_status: 'Active' | 'Closed'
   participant_name: string
   organization: string
+  /** Experience of the chat context (screen 25 second line); '' when the chat has none. */
+  experience_name: string
   last_message_preview?: string
   last_message_at?: string
   unread_count: number
@@ -167,6 +169,7 @@ export async function listChats(session: SessionContext): Promise<ChatListEntry[
         chat_session_id: chat.chat_session_id,
         chat_status: chat.status as 'Active' | 'Closed',
         ...(await counterpart(actor, chat)),
+        experience_name: chat.experience_id ? (await repository.find('experiences', row => row.experience_id === chat.experience_id))?.name ?? '' : '',
         unread_count: Number(own?.unread_count || 0),
       }
       const preview = latest && (await previewOf(latest))

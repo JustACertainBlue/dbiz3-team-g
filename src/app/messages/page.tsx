@@ -9,9 +9,9 @@ import { renderChatMarkdown } from '@/lib/iac/markdown-utils'
 import { composerState } from './composer-state'
 import { closedNotice, closeReasonState } from './close-chat'
 import { ACCEPT_ATTRIBUTE, ATTACH_ERROR_TEXT, attachState, typeLabel } from './attach-state'
-import { ChevronLeft, Paperclip } from 'lucide-react'
+import { ChevronLeft, Paperclip, Search } from 'lucide-react'
 import { hanoiClock } from '@/lib/time/hanoi-time'
-import { attachmentLine, chatActions, chatStatusLine, eventView, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
+import { attachmentLine, chatActions, chatStatusLine, eventView, filterChats, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
 import { parseBookingRequest } from '@/lib/booking/request-card'
 import { usePolling } from '@/lib/client/use-polling'
 import './chat-v9.css'
@@ -20,7 +20,7 @@ import './chat-v9.css'
 // the attach dialog is COM125 (Agency) / COM126 (Provider), spec-IAC #49.
 // Design wave 4 screen 4: Figma "Màn 4" layout; content per the screen specs (see chat-view.ts).
 type ChatEntry = {
-  chat_session_id: string; chat_status: 'Active' | 'Closed'; participant_name: string; organization: string;
+  chat_session_id: string; chat_status: 'Active' | 'Closed'; participant_name: string; organization: string; experience_name: string;
   last_message_preview?: string; last_message_at?: string; unread_count: number
 }
 type Attachment = { attachment_id: string; file_name: string; file_type: string; file_size: number }
@@ -41,6 +41,7 @@ function MessagesContent() {
   const [chats, setChats] = useState<ChatEntry[]>([])
   const [selectedId, setSelectedId] = useState(requestedId || '')
   const [history, setHistory] = useState<History | null>(null)
+  const [query, setQuery] = useState('')
   const [messageText, setMessageText] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
@@ -110,6 +111,7 @@ function MessagesContent() {
     setHistory(current => current && { ...current, message_history: [...body.data.message_history, ...current.message_history], has_more_messages: body.data.has_more_messages })
   }
 
+  const visibleChats = filterChats(chats, query)
   const selected = chats.find(chat => chat.chat_session_id === selectedId)
   const composer = composerState({ text: messageText, pending, chatStatus: history?.chat_status ?? 'Closed' })
 
@@ -197,17 +199,19 @@ function MessagesContent() {
 
   return <main className={threadOpen ? 'ch9 is-thread' : 'ch9'}>
     <aside className="ch9-list" aria-label="Danh sách hội thoại">
-      <h1>Tin nhắn</h1>
-      <p className="ch9-count">{chats.length} hội thoại</p>
+      <h1 className="ch9-sr">Tin nhắn</h1>
+      <label className="ch9-search"><span className="ch9-sr">Tìm cuộc trò chuyện</span><Search size={18} aria-hidden="true" />
+        <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Tìm theo tên hoặc trải nghiệm" /></label>
       {chats.length === 0 && <p className="ch9-empty">Chưa có hội thoại. {isAgency ? 'Agency có thể bắt đầu từ Explore hoặc AI Tour Matching.' : 'Mở Chat từ một Booking.'}</p>}
-      <ul>{chats.map(chat => <li key={chat.chat_session_id}>
+      {chats.length > 0 && visibleChats.length === 0 && <p className="ch9-empty">Không có hội thoại khớp.</p>}
+      <ul>{visibleChats.map(chat => <li key={chat.chat_session_id}>
         <button type="button" className={chat.chat_session_id === selectedId ? 'ch9-item is-selected' : 'ch9-item'} aria-current={chat.chat_session_id === selectedId ? 'true' : undefined} onClick={() => openChat(chat.chat_session_id)}>
           <span className="ch9-avatar" aria-hidden="true">{initials(chat.organization)}</span>
           <span className="ch9-item__body">
-            <span className="ch9-item__top"><strong>{chat.organization}</strong><time>{listTime(chat.last_message_at, now)}</time>
+            <span className="ch9-item__top"><strong>{chat.organization}</strong>
               {chat.unread_count > 0 && <em className="ch9-unread" aria-label={`${chat.unread_count} tin chưa đọc`}>{chat.unread_count}</em>}</span>
-            <span className="ch9-item__bottom"><span className="ch9-preview">{chat.last_message_preview || 'Hội thoại mới'}</span>
-              <span className={chat.chat_status === 'Active' ? 'ch9-state-text is-active' : 'ch9-state-text'}>{chatStatusLine(chat.chat_status).split(' · ')[0]}</span></span>
+            <span className="ch9-item__exp">{chat.experience_name || chat.last_message_preview || 'Hội thoại mới'}</span>
+            <span className="ch9-item__time"><time>{listTime(chat.last_message_at, now)}</time>{chat.chat_status !== 'Active' && <span className="ch9-state-text"> · {chatStatusLine(chat.chat_status).split(' · ')[0]}</span>}</span>
           </span>
         </button>
       </li>)}</ul>
@@ -220,7 +224,7 @@ function MessagesContent() {
           <button type="button" className="ch9-back" onClick={() => setThreadOpen(false)} aria-label="Quay lại danh sách hội thoại"><ChevronLeft size={22} aria-hidden="true" /></button>
           <span className="ch9-avatar" aria-hidden="true">{initials(selected.organization)}</span>
           <div className="ch9-head__name"><h2>{selected.organization}</h2>
-            <p><span className={history.chat_status === 'Active' ? 'ch9-state-text is-active' : 'ch9-state-text'}>{chatStatusLine(history.chat_status)}</span> · {selected.participant_name}</p></div>
+            <p>{selected.experience_name ? `Trải nghiệm: ${selected.experience_name}` : selected.participant_name}<span className={history.chat_status === 'Active' ? 'ch9-state-text is-active' : 'ch9-state-text'}> · {chatStatusLine(history.chat_status)}</span></p></div>
           <div className="ch9-actions">{actions.map(action => action.href
             ? <Link key={action.key} href={action.href} className={action.key === 'create_booking' ? 'ch9-btn ch9-btn--primary' : 'ch9-btn'}>{action.label}</Link>
             : <button key={action.key} type="button" className="ch9-btn ch9-btn--danger" onClick={() => { setCloseOpen(true); setNotice('') }}>{action.label}</button>)}</div>

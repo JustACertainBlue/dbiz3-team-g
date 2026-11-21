@@ -145,3 +145,12 @@
   .ch9-composer { background: #fff; border-top: 1px solid #E2DED2; padding: 12px; }
   .ch9-input, .ch9-clip { border: 1px solid #C9C4B5; border-radius: 6px; background: #fff; }
 }
+
+/* UI v3 screen 25: list search and three-line items (desktop and phone share these; phone keeps its own rules above). */
+.ch9-sr { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.ch9-search { position: relative; display: flex; align-items: center; margin: 4px 4px 10px; }
+.ch9-search svg { position: absolute; left: 14px; color: #5F6B64; }
+.ch9-search input { width: 100%; min-height: 44px; border: 1px solid #C9C4B5; border-radius: 6px; padding: 0 14px 0 42px; font: 400 16px/24px inherit; font-family: inherit; box-sizing: border-box; background: #fff; color: #1F2A25; }
+.ch9-item__body { gap: 0; }
+.ch9-item__exp { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; line-height: 23px; color: #34403A; }
+.ch9-item__time { display: block; font-size: 14px; line-height: 20px; color: #5F6B64; font-variant-numeric: tabular-nums; }

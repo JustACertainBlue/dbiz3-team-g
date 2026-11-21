@@ -106,3 +106,12 @@ export function eventView(text: string): { title: string; sub: string } {
   const label = /^(?:Booking )?([^:]+): /.exec(text)?.[1] ?? ''
   return { title: EVENT_TITLE[label] ?? 'Cập nhật đặt chỗ', sub: text }
 }
+
+const fold = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase().trim()
+
+/** Screen 25 search box: keeps the chats whose organization, participant or experience contains the text (no case, no accents). */
+export function filterChats<T extends { organization: string; participant_name: string; experience_name: string }>(chats: readonly T[], query: string): T[] {
+  const needle = fold(query)
+  if (!needle) return [...chats]
+  return chats.filter(chat => [chat.organization, chat.participant_name, chat.experience_name].some(field => fold(field).includes(needle)))
+}

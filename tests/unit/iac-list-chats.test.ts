@@ -14,6 +14,7 @@ describe('T015 | listChats', () => {
       chat_session_id: PROVIDER_CHAT, chat_status: 'Active', participant_name: 'Chu Nhật Minh',
       organization: 'Công ty Du lịch Sông Hồng', last_message_preview: 'Tệp thông tin đoàn khách.',
       last_message_at: '2026-09-23T10:00:00+07:00', unread_count: 5,
+      experience_name: expect.any(String), // added for screen 25 (second line of the list item)
     })
   })
 

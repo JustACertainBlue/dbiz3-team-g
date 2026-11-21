@@ -22,3 +22,25 @@ describe('screen 25 desktop style', () => {
     expect(css.slice(0, css.indexOf('/* UI v3 screen 25 desktop'))).toContain('@media (max-width: 767px)')
   })
 })
+
+describe('screen 25 list and header markup (mockup TinNhan)', () => {
+  const page = readFileSync('src/app/messages/page.tsx', 'utf8')
+  it('the list starts with a search box filtering by name or experience', () => {
+    expect(page).toContain('placeholder="Tìm theo tên hoặc trải nghiệm"')
+    expect(page).toContain('filterChats(chats, query)')
+    expect(page).toContain('className="ch9-search"')
+  })
+  it('a list item has three lines: organization, experience, time', () => {
+    expect(page).toContain('className="ch9-item__exp"')
+    expect(page).toContain('chat.experience_name')
+    expect(page).toContain('className="ch9-item__time"')
+  })
+  it('the thread header shows "Trải nghiệm: …"', () => {
+    expect(page).toContain('Trải nghiệm: ')
+    expect(page).toContain('selected.experience_name')
+  })
+  it('the old "N hội thoại" counter is gone and the title is kept for screen readers only', () => {
+    expect(page).not.toContain('className="ch9-count"')
+    expect(page).toContain('className="ch9-sr"')
+  })
+})

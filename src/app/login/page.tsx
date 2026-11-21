@@ -1,8 +1,9 @@
 'use client'
 
 import { FormEvent, Suspense, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import AuthShell, { AuthAlert } from '../components/AuthShell'
+import AuthSplit from '../auth-v3/AuthSplit'
 import { prototypeLoginEnabled } from '@/lib/auth/prototype-login'
 
 const demoAccounts = [
@@ -13,7 +14,7 @@ const demoAccounts = [
 ] as const
 
 export default function LoginPage() {
-  return <main><Suspense fallback={<AuthShell title="Đăng nhập"><p>Đang tải…</p></AuthShell>}><LoginForm /></Suspense></main>
+  return <main><Suspense fallback={<AuthSplit><p>Đang tải…</p></AuthSplit>}><LoginForm /></Suspense></main>
 }
 
 function LoginForm() {
@@ -21,6 +22,9 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  // png/15 "Bạn là": only changes the hint under the button. The sign-in itself needs email and password only.
+  const [who, setWho] = useState<'agency' | 'workshop'>('agency')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<{ code?: string; message: string } | null>(null)
 
@@ -43,22 +47,41 @@ function LoginForm() {
     }
   }
 
-  // AUT009 elements: Email, Password, Login, Forgot password, Register (Figma "Màn 1 · Đăng nhập").
-  return <AuthShell title="Đăng nhập">
-    <form className="auth-v9__form" onSubmit={submit} noValidate={false}>
+  // AUT009 elements: Email, Password, Login, Forgot password, Register (mockup v3 png/15).
+  return <AuthSplit>
+    <form className="av3-login" onSubmit={submit} noValidate={false} aria-label="Đăng nhập">
+      <Link href="/explore" className="av3-link av3-login__back">‹ Tiếp tục khám phá mà không đăng nhập</Link>
+      <h1 className="av3-h1">Đăng nhập</h1>
+      <fieldset className="av3-roles">
+        <legend>Bạn là:</legend>
+        <div>
+          <label className={`av3-role${who === 'agency' ? ' av3-role--on' : ''}`}><input type="radio" name="who" checked={who === 'agency'} onChange={() => setWho('agency')} />Công ty lữ hành</label>
+          <label className={`av3-role${who === 'workshop' ? ' av3-role--on' : ''}`}><input type="radio" name="who" checked={who === 'workshop'} onChange={() => setWho('workshop')} />Xưởng nghề</label>
+        </div>
+      </fieldset>
       {error && (error.code === 'INVALID_CREDENTIALS'
-        ? <AuthAlert title="Sai email hoặc mật khẩu.">Kiểm tra lại hoặc đặt lại mật khẩu.</AuthAlert>
-        : <AuthAlert title={error.message} />)}
-      <label className="auth-v9__field">Email<input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="username" required aria-describedby="login-email-hint" /><small id="login-email-hint">Email đã đăng ký với cổng</small></label>
-      <label className="auth-v9__field">Mật khẩu<input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" required /></label>
-      <button className="auth-v9__primary" type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
-      <div className="auth-v9__links"><a href="/forgot-password">Quên mật khẩu?</a><a href="/register">Đăng ký Agency</a></div>
+        ? <div className="av3-alert av3-alert--danger" role="alert"><strong>Sai email hoặc mật khẩu.</strong><p>Kiểm tra lại hoặc đặt lại mật khẩu.</p></div>
+        : <div className="av3-alert av3-alert--danger" role="alert"><strong>{error.message}</strong></div>)}
+      <div className="av3-field"><label htmlFor="login-email">Email</label><input id="login-email" type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="username" required /></div>
+      <div className="av3-field"><label htmlFor="login-password">Mật khẩu</label>
+        <div className="av3-field__pw"><input id="login-password" type={showPassword ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" required />
+          <button type="button" onClick={() => setShowPassword(value => !value)} aria-pressed={showPassword}>{showPassword ? 'Ẩn' : 'Hiện'}</button></div>
+      </div>
+      <div className="av3-login__row">
+        <label className="av3-check"><input type="checkbox" name="remember" />Ghi nhớ đăng nhập</label>
+        <Link href="/forgot-password" className="av3-link">Quên mật khẩu?</Link>
+      </div>
+      <button className="av3-btn av3-btn--primary" type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
+      <hr className="av3-login__rule" />
+      {who === 'agency'
+        ? <p className="av3-login__foot">Công ty lữ hành chưa có tài khoản? <Link href="/register" className="av3-link">Đăng ký tài khoản công ty lữ hành</Link></p>
+        : <p className="av3-login__foot">Tài khoản xưởng nghề do UBND xã cấp. Hãy đăng nhập bằng email được cấp.</p>}
+      {/* #102: the demo panel only where the prototype login works (same condition as the server) */}
+      {prototypeLoginEnabled() && <aside className="av3-demo">
+        <strong>Tài khoản thử nghiệm</strong>
+        <p>Chọn một email mẫu bên dưới. Ở prototype hiện tại, nhập bất kỳ mật khẩu không rỗng.</p>
+        <div>{demoAccounts.map(([label, value]) => <button type="button" key={value} onClick={() => setEmail(value)}><span>{label}</span><small>{value}</small></button>)}</div>
+      </aside>}
     </form>
-    {/* #102: the demo panel only where the prototype login works (same condition as the server) */}
-    {prototypeLoginEnabled() && <aside className="auth-v9__demo">
-      <strong>Tài khoản thử nghiệm</strong>
-      <p>Chọn một email mẫu bên dưới. Ở prototype hiện tại, nhập bất kỳ mật khẩu không rỗng.</p>
-      <div>{demoAccounts.map(([label, value]) => <button type="button" key={value} onClick={() => setEmail(value)}><span>{label}</span><small>{value}</small></button>)}</div>
-    </aside>}
-  </AuthShell>
+  </AuthSplit>
 }

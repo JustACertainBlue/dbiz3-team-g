@@ -2,7 +2,7 @@
 // no env loading. Input is the reviewed approved-photos.json.
 import { createHash } from 'node:crypto'
 import sharp from 'sharp'
-import { DEV_PROJECT_REF, PROD_PROJECT_REF, assertDevTargets } from './refresh-catalog-copies.mjs'
+import { DEV_PROJECT_REF, PROD_PROJECT_REF, assertTargets } from './refresh-catalog-copies.mjs'
 
 export { DEV_PROJECT_REF, PROD_PROJECT_REF }
 export const SOURCE_TYPES = ['unsplash', 'pexels', 'pixabay', 'commons_cc0', 'flickr_pd', 'tu_chup']
@@ -97,5 +97,8 @@ export async function processImage(input) {
   return { bytes: data, width: info.width, height: info.height, sha256: createHash('sha256').update(data).digest('hex') }
 }
 
-/** DEV only: both DATABASE_URL and SUPABASE_URL must name the DEV project; PROD is always refused. */
-export const assertImportTarget = env => assertDevTargets(env)
+/**
+ * DEV by default: both DATABASE_URL and SUPABASE_URL must name the DEV project. With --target-prod (human request 2026-11-21)
+ * both must name PROD and CONFIRM_PROJECT_REF must equal that ref. Same rules as storage:catalog-copies.
+ */
+export const assertImportTarget = (env, { targetProd = false } = {}) => assertTargets(env, { targetProd })

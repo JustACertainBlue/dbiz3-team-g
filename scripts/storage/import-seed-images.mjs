@@ -1,6 +1,7 @@
-// Seed image import, DEV only (human decisions 2026-11-18 and 2026-11-20).
+// Seed image import, DEV by default, PROD with --target-prod (human decisions 2026-11-18, 2026-11-20 and 2026-11-21).
 //   npm run storage:seed-images -- --json <approved-photos.json> --photos-dir <dir> [--dry-run | --apply] [--notes-dir <dir>]
 //   npm run storage:seed-images -- --undo <dir>/undo.json [--dry-run]
+//   CONFIRM_PROJECT_REF=<prod ref> npm run storage:seed-images -- --json ... --photos-dir ... --target-prod [--apply]
 // Reads the reviewed approved-photos.json and the photos under --photos-dir (<loai>/<id>/<n>.jpg), checks each file's SHA-256,
 // leaves out the rejected and the face images (seed-image-import-plan.mjs), and processes each photo with sharp (EXIF turn,
 // no metadata, longest side 1600 px or 1280 px wide for portraits, progressive JPEG q80). Then, in one transaction:
@@ -10,7 +11,8 @@
 //   - village: villages.cover_image_id.
 // The dry run (default) does all writes and rolls back; it uploads nothing. --apply writes <notes-dir>/seed-image-import-<UTC>/undo.json
 // first, uploads the objects (prf-media/<new file_id> and its WebP variants .w400/.w800/.w1600.webp), then commits; a failed upload or commit removes the uploaded objects.
-// Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project. Never reads a .env file itself: the
+// Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project, or, with --target-prod, both name PROD and
+// CONFIRM_PROJECT_REF equals that ref (typed in the shell, not read from a .env file); checked before any connection. Never reads a .env file itself: the
 // environment comes from @next/env in the folder the command runs from.
 import { randomUUID } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -19,7 +21,7 @@ import { pathToFileURL } from 'node:url'
 import { resolveNotesDir } from './refresh-catalog-copies.mjs'
 import { VARIANT_WIDTHS, makeVariants, variantKey } from './media-variants.mjs'
 import {
-  DEV_PROJECT_REF, assertImportTarget, filterEntries, orderPlan, processImage, toRecords, validateEntry, verifySha256,
+  DEV_PROJECT_REF, PROD_PROJECT_REF, assertImportTarget, filterEntries, orderPlan, processImage, toRecords, validateEntry, verifySha256,
 } from './seed-image-import-plan.mjs'
 
 export const DEFAULT_NOTES_DIR = '.demo-data/seed-image-import'
@@ -27,20 +29,21 @@ const refuse = message => { throw new Error(message) }
 
 /** @param {string[]} argv */
 export function parseArgs(argv) {
-  /** @type {{apply:boolean,undo?:string,notesDir?:string,json?:string,photosDir?:string}} */
-  const options = { apply: false }
+  /** @type {{apply:boolean,targetProd:boolean,undo?:string,notesDir?:string,json?:string,photosDir?:string}} */
+  const options = { apply: false, targetProd: false }
   let dryRun = false, apply = false
   const takes = { '--undo': 'undo', '--notes-dir': 'notesDir', '--json': 'json', '--photos-dir': 'photosDir' }
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--dry-run') dryRun = true
     else if (arg === '--apply') apply = true
+    else if (arg === '--target-prod') options.targetProd = true
     else if (arg in takes) {
       const value = argv[index + 1]
       if (!value || value.startsWith('--')) refuse(`${arg} needs a value.`)
       Object.assign(options, { [/** @type {Record<string,string>} */ (takes)[arg]]: value })
       index += 1
-    } else refuse(`Unknown option ${arg}; use --json <file> --photos-dir <dir> [--dry-run | --apply] [--notes-dir <dir>] or --undo <file> [--dry-run].`)
+    } else refuse(`Unknown option ${arg}; use --json <file> --photos-dir <dir> [--dry-run | --apply] [--notes-dir <dir>] [--target-prod] or --undo <file> [--dry-run].`)
   }
   if (dryRun && apply) refuse('Choose either --dry-run or --apply.')
   if (options.undo && apply) refuse('--undo writes by itself; use --undo <file> --dry-run to preview.')
@@ -192,12 +195,13 @@ async function undoImport(options, { client, storage, projectRef }) {
 async function main() {
   const options = parseArgs(process.argv.slice(2))
   const { default: nextEnv } = await import('@next/env')
+  const confirmFromShell = process.env.CONFIRM_PROJECT_REF // typed with the command, not read from a .env file
   nextEnv.loadEnvConfig(process.cwd())
-  const projectRef = assertImportTarget(process.env)
+  const projectRef = assertImportTarget({ ...process.env, CONFIRM_PROJECT_REF: confirmFromShell }, { targetProd: options.targetProd })
   const notesDir = resolveNotesDir(process.cwd(), options.notesDir ?? DEFAULT_NOTES_DIR)
   const { connection } = await import('../db/shared.mjs')
   const { storageClient } = await import('./client.mjs')
-  console.log(JSON.stringify({ projectRef, isDev: projectRef === DEV_PROJECT_REF, mode: options.undo ? `undo${options.apply ? '' : ' (dry run)'}` : options.apply ? 'apply' : 'dry-run (writes, then ROLLBACK; no upload)' }))
+  console.log(JSON.stringify({ projectRef, isDev: projectRef === DEV_PROJECT_REF, isProd: projectRef === PROD_PROJECT_REF, mode: options.undo ? `undo${options.apply ? '' : ' (dry run)'}` : options.apply ? 'apply' : 'dry-run (writes, then ROLLBACK; no upload)' }))
   const client = connection('migration')
   await client.connect()
   try {

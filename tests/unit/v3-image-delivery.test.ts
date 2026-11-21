@@ -158,15 +158,26 @@ describe('Gallery', () => {
   })
 })
 
-describe('result card frame below 768 px (human decision 2026-11-21)', () => {
+describe('result card below 768 px keeps the desktop layout (Khánh Linh, 2026-11-21)', () => {
   const css = readFileSync('src/app/explore/v3/explore-v3.css', 'utf8')
-  const mobile = css.match(/@media \(max-width: 767px\) \{[^\n]*\.v3r__media \{[^}]*\}/)![0]
-  it('has a fixed aspect ratio (the desktop frame, 220 × 352), not the image ratio', () => {
-    expect(mobile).toMatch(/\.v3r__media \{[^}]*aspect-ratio: 5 \/ 8/)
+  const mobile = css.match(/@media \(max-width: 767px\) \{[^\n]*\.v3r__media \{[^\n]*/)![0]
+  it('image on the left, 112 px wide, 5/8 frame, cover; text on the right (no wrapping row, no full-width image)', () => {
+    expect(mobile).toMatch(/\.v3r \{[^}]*flex-wrap: nowrap/)
+    expect(mobile).toMatch(/\.v3r__media \{[^}]*flex: 0 0 112px[^}]*aspect-ratio: 5 \/ 8/)
+    expect(mobile).not.toMatch(/\.v3r__media \{[^}]*flex-basis: 100%/)
     expect(mobile).not.toMatch(/\.v3r__media \{[^}]*min-height: 180px/)
+  })
+  it('the text column can shrink, the price and button never overflow it', () => {
+    expect(mobile).toMatch(/\.v3r__main \{[^}]*min-width: 0/)
+    expect(mobile).toMatch(/\.v3r__price \{[^}]*flex: 1 1 100%/)
+    expect(mobile).toMatch(/overflow-wrap: anywhere/)
+    expect(mobile).toMatch(/\.v3r__total \{[^}]*font-size: 24px[^}]*white-space: normal/) // 360 px wide: 30 px nowrap price overflowed
   })
   it('the image only fills the frame (cover, never sets its size)', () => {
     expect(css).toMatch(/\.v3r__media \.v3-cover \{[^}]*position: absolute; inset: 0/)
+  })
+  it('sizes: 520 px from 768 px, 112 px (the w400 variant) below', () => {
+    expect(readFileSync('src/app/explore/v3/image-sizes.ts', 'utf8')).toContain("export const RESULT_SIZES = '(min-width: 768px) 520px, 112px'")
   })
 })
 

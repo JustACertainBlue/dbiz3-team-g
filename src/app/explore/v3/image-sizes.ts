@@ -14,7 +14,7 @@ export const VILLAGE_TILE_SIZES = '(min-width: 1140px) 360px, (min-width: 600px)
 /** 03a village card: 3 columns from 900 px, 2 from 600 px (349 × 218 px at 1440, 340 × 212 at 390). */
 export const VILLAGE_CARD_SIZES = '(min-width: 1140px) 350px, (min-width: 900px) 34vw, (min-width: 600px) 50vw, 100vw'
 /** 02 result card, also used on 03 and 24: 220 px wide × 260–384 px high from 768 px (the height needs up to 512 px of
- *  image), full card width (300 px at 390: viewport minus 90) below. */
-export const RESULT_SIZES = '(min-width: 768px) 520px, calc(100vw - 90px)'
+ *  image); below 768 px the image stays on the left, 112 × 180 px (frame 5/8): the w400 variant. */
+export const RESULT_SIZES = '(min-width: 768px) 520px, 112px'
 /** 21 hold banner: fixed 96 px wide. */
 export const BANNER_SIZES = '96px'

@@ -22,7 +22,7 @@ these branches; each row below is a known gap between the built UI and the writt
 
 | # | Màn | Mockup / trước đây | Bây giờ | Quyết định |
 |---|---|---|---|---|
-| M1 | Thẻ kết quả 02, 03, 24 (`ResultCard`) | Khung ảnh `min-height: 180px`, chiều cao chạy theo tỉ lệ ảnh (ảnh dọc làm khung cao 450 px) | Khung tỉ lệ cố định `aspect-ratio: 5 / 8` (bằng khung 220 × 352 ở desktop), ảnh `object-fit: cover` phủ khung, điểm lấy nét `50% 40%` cho ảnh dọc. Khung không còn chạy theo ảnh. Ở desktop, khung 220 px cao 260–384 px tuỳ nội dung thẻ; 5/8 là mức điển hình | Human, 21/11 (bước 2B) |
+| M1 | Thẻ kết quả 02, 03, 24 (`ResultCard`) | Ảnh trên cả chiều rộng, khung `min-height: 180px` chạy theo tỉ lệ ảnh (ảnh dọc làm khung cao 450 px) | Giữ bố cục desktop: ảnh bên trái rộng 112 px, khung tỉ lệ cố định `5 / 8` (≈ 112 × 180), `object-fit: cover`, ảnh dọc lấy nét `50% 40%`; chữ, giá, nút bên phải theo đúng thứ tự thẻ desktop. Thẻ không xuống dòng (`flex-wrap: nowrap`), chữ dài xuống dòng (`overflow-wrap: anywhere`), giá 24 px được phép xuống dòng; kiểm không tràn ngang ở 320, 360, 390, 600, 767 px | Khánh Linh, 21/11 (bước 2B, thay quyết định khung 5/8 ngang cả thẻ trước đó) |
 | M2 | Ô nhỏ gallery 03, 04/23, 24 | Cùng ưu tiên tải với ô lớn | Ô nhỏ `loading=eager`, `fetchpriority=low`; chỉ ô lớn (ảnh LCP) là `high` | Human, 21/11 (bước 2B) |
 
 ## Follow-ups recorded with the deviations

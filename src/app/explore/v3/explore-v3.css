@@ -212,7 +212,7 @@
 .v3r__incl { margin: 2px 0 0; }
 .v3r__cta { margin-top: 10px; min-height: 50px; padding: 0 22px; font-size: 17px; }
 .v3r__cta svg { width: 18px; height: 18px; }
-@media (max-width: 767px) { .v3s-aside { max-width: none; } .v3r__media { flex-basis: 100%; min-height: 0; aspect-ratio: 5 / 8; align-self: auto; } .v3r__price { flex-basis: 100%; align-items: flex-start; text-align: left; } }
+@media (max-width: 767px) { .v3s-aside { max-width: none; } .v3r { flex-wrap: nowrap; gap: 12px; padding: 14px; } .v3r__media { flex: 0 0 112px; min-height: 0; aspect-ratio: 5 / 8; align-self: flex-start; } .v3r__main { flex: 1 1 0; min-width: 0; } .v3r__name, .v3r__where, .v3r__distance, .v3r__prepay, .v3r__lock, .v3r__incl { overflow-wrap: anywhere; } .v3r__cols { gap: 12px; } .v3r__price { flex: 1 1 100%; align-items: flex-start; text-align: left; } .v3r__total { font-size: 24px; line-height: 32px; white-space: normal; } .v3r__cta { max-width: 100%; padding: 0 14px; white-space: normal; text-align: center; } }
 
 /* ---- 04/23 experience detail ---- */
 .v3-mini { display: inline-flex; align-items: center; gap: 6px; margin: 0 6px 6px 0; padding: 3px 8px; border: 1px solid var(--c-input-border); border-radius: 4px; font: 400 14px/20px var(--font-body); }

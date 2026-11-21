@@ -166,13 +166,13 @@ Mỗi trang 1 lần mở trước, rồi 3 lần, trung vị (điểm và từng
 |---|---|---|---|---|---|---|---|---|---|
 | 01 `/explore` | mobile | **88** (87, 88, 88) | 2,9 s | chữ H1 | 20 ms | 0,083 | 1 280 KB | 15 / 952 | 5,97 s; 12 ảnh / 2 393 KB |
 | 01 | desktop | **95** (95, 93, 95) | 0,7 s | chữ H1 | 0 | 0,048 | 697 KB | 15 / 345 | 4,82 s; 2 595 KB |
-| 02 `/explore/search` | mobile | **94** (94, 94, 94) | 2,9 s | chữ H1 | 14 ms | 0,083 | 872 KB | 9 / 573 | 2,60 s; 1 228 KB |
+| 02 `/explore/search` | mobile | **94** (94, 94, 94) | 2,9 s | chữ H1 | 19 ms | 0,083 | 492 KB | 9 / 192 | 2,60 s; 1 228 KB |
 | 02 | desktop | **99** | 0,7 s | ảnh thẻ đầu | 0 | 0,048 | 898 KB | 9 / 573 | 19,18 s; 1 228 KB |
 | 03 `/village/c0d0…` | mobile | **89** (89, 87, 89) | 3,7 s | ảnh gallery ô lớn | 11 ms | 0,017 | 634 KB | 9 / 349 | 19,62 s; 1 020 KB |
 | 03 | desktop | **99** | 0,8 s | ảnh gallery ô lớn | 0 | 0,009 | 659 KB | 9 / 349 | 10,05 s; 1 020 KB |
 | 04 `/explore/experiences/07ef…` | mobile | **92** (90, 92, 93) | 3,0 s | chữ H1 | 17 ms | 0,083 | 479 KB | 5 / 128 | 3,93 s; 510 KB |
 | 04 | desktop | **99** (99, 99, 98) | 0,8 s | ảnh gallery ô lớn | 0 | 0,048 | 526 KB | 5 / 155 | 19,43 s; 510 KB |
-| 24 `/explore/providers/4142…` | mobile | **89** (89, 86, 89) | 3,3 s | ảnh gallery ô lớn | 27 ms | 0,083 | 765 KB | 8 / 419 | 25,75 s; 1 618 KB |
+| 24 `/explore/providers/4142…` | mobile | **88** (87, 89, 88) | 3,4 s | ảnh gallery ô lớn | 13 ms | 0,083 | 699 KB | 8 / 353 | 25,75 s; 1 618 KB |
 | 24 | desktop | **97** (97, 96, 97) | 0,7 s | ảnh gallery ô lớn | 0 | 0,048 | 644 KB | 8 / 278 | 26,01 s; 1 618 KB |
 
 Đọc kỹ:
@@ -192,5 +192,9 @@ Mỗi trang 1 lần mở trước, rồi 3 lần, trung vị (điểm và từng
 3 lần, trung vị. 03: 85 → **89**, LCP 4,3 → 3,7 s; 04: 92 → **92** (LCP là chữ, không đổi); 24: 86 → **89**, LCP 3,6 → 3,3 s. Các hàng mobile 03, 04, 24 ở bảng trên
 là số mới; desktop và 01, 02 giữ số lần đo trước. Ảnh 24 tăng 337 → 419 KB vì khung thẻ cố định làm danh sách thẻ khác đi nên Chrome tải trước thêm vài ảnh lazy;
 không phải ảnh LCP. Điểm lên một phần nhờ ô nhỏ không còn tranh băng thông với ảnh LCP; phần chờ server (xem trên) vẫn là giới hạn chính.
+
+**Đo lại lần 3 (21/11, thẻ kết quả mobile: ảnh trái 112 px, `sizes` 112px)**: mobile 02, 03, 24, 3 lần, trung vị. 02: **94** (LCP 2,9 s, ảnh 9 / 192 KB, trước 573 KB);
+03: **90** (LCP 3,5 s, ảnh 7 / 179 KB, trước 349 KB); 24: **88** (LCP 3,4 s, **ảnh 353 KB**, so với 419 KB ở lần đo trước và 337 KB ở lần đo đầu). Điểm 24 dao động 86–89 giữa các lần đo
+(chờ server), nên chênh 1 điểm không phải do thẻ. Các hàng mobile 02, 03, 24 ở bảng trên là số mới nhất.
 
 Ảnh chụp (chỉ ở máy, không commit): `docs/build/ui-v3-2b-screens/` (1440 và 390; `-before-center-crop` = cùng trang nhưng ảnh dọc cắt giữa 50 % 50 %, để so với `-after`).

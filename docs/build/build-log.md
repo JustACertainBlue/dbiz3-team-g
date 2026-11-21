@@ -1592,6 +1592,17 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` 0; `npx vitest run` 257 files, 1567 passed (22 skipped); `npm run build` passes |
 | Not done | Human: `--only-oversize` dry run then `--apply` on DEV after merge; decide what to do with the 14 variants still over the cap; step 2B (UI `?w=`/`?v=`) |
 
+### Entry 118: 21/11 Claude Code + human — seed image import 2111: face removal, workshop galleries, PROD mode (`feat/seed-image-import-2111`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Sonnet 5.5); requested by linhkhanh-vu. Env copied with `cp` from `../dbiz3-devload/.env.local`, not read. One DEV dry run (every write rolled back, nothing uploaded); no `--apply`, nothing on PROD |
+| Change | `import-seed-images.mjs`: (1) rejected photos matched by SHA-256 (`EXCLUDED_ENTRIES`), so a renamed experience no longer stops the run; (2) several photos per experience (gallery order = file number; old rows move down once; a village uses its first photo, the rest are reported as alternates); (3) `--faces <go-anh-mat-nguoi-final.json>`: rows that show a visible person are found by the SHA-256 of the object bytes (new `seed-image-faces.mjs`), compared with the list (7 hashes, rows per table, retained row) BEFORE any write; any difference stops the run; then unlinked except the retained row (In thủy ấn); (4) `--workshops <xuong-2111-final.json>`: workshop photos into `provider_version_media` (published version) and the draft gallery (`profile_media` with `provider_id`) when there is one; (5) `--target-prod` + `CONFIRM_PROJECT_REF` (typed in the shell), same rule as `storage:catalog-copies`; (6) undo file also holds removed face rows and workshop items; `--undo` restores them. New photos still get WebP 400/800/1600 with the size caps |
+| Test-first | `tests/unit/seed-image-faces.test.ts` (7), `tests/unit/seed-image-import-2111.test.ts` (9), and the SHA-256 block of `seed-image-import.test.ts`; each red for the right reason (missing module/exports, old id+title rule), then green. `filterEntries` no longer has the stale-list error |
+| DEV dry run (approved 63 photos, 20 workshop photos, 69 face rows) | 54 photos imported (5 village covers + 49 experience photos), 9 village alternates not imported, 20 workshop photos; face list matched exactly (70 rows found = 52 + 17 + 1 retained, 7 hashes); 36 face rows unlinked by the hash step + 33 already unlinked by the importer; workshop galleries after: Hà Vân, Thục Khuê, Mai Khê, Thanh Liễu, Diệp Hà, Hà Liên 3 photos, Hoài Thu 2; positions still empty: 1 experience (tơ sen, Phùng Xá) and 1 village (Phùng Xá) |
+| Checks | `npm run lint` 0; related vitest files 8 passed (77 tests); `npm run build` passes |
+| Not done | `--apply` on DEV; PROD (evening 22/11 from `dbiz3-prod`: its dry run will stop if PROD has different rows or lacks a listed hash); draft gallery rows are only added, the old ones are removed by the face step |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

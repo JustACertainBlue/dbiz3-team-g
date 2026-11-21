@@ -1,106 +1,65 @@
 import Link from 'next/link'
-import { sessionDisplayName } from '@/lib/auth/session'
 import { currentServerSession } from '@/lib/auth/server-session'
-import { hanoiDate } from '@/lib/booking/clock'
 import { BookingError, canOpenCreateBooking } from '@/lib/booking/create-booking'
-import { BOOKING_STATUSES, countActionsOutsideFilter, listProviderBookings, type ListQuery } from '@/lib/booking/list-bookings'
-import { bookingListRowView } from '@/lib/booking/list-row-view'
-import { bookingDetailStyles } from './[bookingId]/BookingDetailView'
-import StatusBadge from '@/app/components/StatusBadge'
-import { statusLabel } from '@/lib/status-labels'
+import { listProviderBookings } from '@/lib/booking/list-bookings'
+import { BOOKING_PILL, LIST_TABS, PAY_LABEL, parseTab, tabCount } from '@/lib/booking/list-tabs'
+import { hanoiClock, hanoiDate } from '@/lib/time/hanoi-time'
+import './list-v3.css'
 
 export const dynamic = 'force-dynamic'
 
-type SearchParams = Record<string, string | undefined>
+const PAGE = 5
+const dmy = (value: string) => hanoiDate(value).split('-').reverse().join('/')
 
-// Screen BKG133 Booking Management (F-SCHED-10, Local Provider). Same gate as BKG134: the owning
-// Provider on its own URL (analyze L2).
-export default async function BookingManagementPage({ params, searchParams }: { params: { providerId: string }; searchParams: SearchParams }) {
-  const session = (await currentServerSession())
+// Screen 34 (BKG133) Quản lý đặt chỗ, mockup 19/11: tabs with counts, table, "Hiển thị x–y / N đặt chỗ".
+// "Cần xử lý" = On hold, soonest hold_expires_at first (UI v3 decision #10).
+export default async function BookingManagementPage({ params, searchParams }: { params: { providerId: string }; searchParams: { tab?: string; page?: string } }) {
+  const session = await currentServerSession()
   if (!(await canOpenCreateBooking(session, params.providerId))) {
-    return <main className="bkg-page bkg-state"><h1>Booking Management</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được danh sách Booking.</p><Link href="/login">Đăng nhập</Link><style>{bookingDetailStyles + listStyles}</style></main>
+    return <main className="v3l"><h1 className="v3l-h1">Lịch sử đặt chỗ</h1><p>Chỉ xưởng sở hữu hồ sơ này mới xem được danh sách đặt chỗ.</p><Link href="/login" className="v3l-btn">Đăng nhập</Link></main>
   }
-
-  // UI choice (plan.md): date_from defaults to today in Asia/Ho_Chi_Minh; an empty value means no filter.
-  const query: ListQuery = {
-    status: searchParams.status ?? '',
-    date_from: searchParams.date_from ?? hanoiDate(Date.now()),
-    date_to: searchParams.date_to ?? '',
-    page: searchParams.page ?? '1',
-  }
+  const tab = parseTab(searchParams.tab)
+  const def = LIST_TABS.find(item => item.id === tab)!
+  const page = Math.max(1, Number(searchParams.page) || 1)
   const base = `/provider/${params.providerId}/bookings`
-  const href = (changes: SearchParams) => {
-    const next = new URLSearchParams()
-    for (const [key, value] of Object.entries({ ...query, ...changes })) next.set(key, String(value ?? ''))
-    return `${base}?${next.toString()}`
-  }
-  const allHref = `${base}?date_from=&status=&date_to=&page=1`
-
   let list
-  let outside = 0
   try {
-    list = await listProviderBookings(session, query)
-    outside = await countActionsOutsideFilter(session, query) // analyze H2
+    list = await listProviderBookings(session, { tab: def.todo ? 'todo' : undefined, status: def.todo ? undefined : def.status, page: String(page), page_size: String(PAGE) })
   } catch (error) {
-    const message = error instanceof BookingError ? `${error.code}: ${error.message}` : 'Không tải được danh sách Booking.'
-    return <main className="bkg-page bkg-state"><h1>Booking Management</h1><p className="bkg-error" role="alert">{message}</p><Link href={allHref}>Xoá bộ lọc</Link><style>{bookingDetailStyles + listStyles}</style></main>
+    return <main className="v3l"><h1 className="v3l-h1">Lịch sử đặt chỗ</h1><p role="alert">{error instanceof BookingError ? error.message : 'Không tải được danh sách đặt chỗ.'}</p></main>
   }
-
-  const page = Number(query.page)
-  const lastPage = Math.max(1, Math.ceil(list.total_count / 20))
-  const rows = list.bookings.map(row => bookingListRowView(row, params.providerId))
-
-  return <main className="bkg-page bkg-list">
-    <header><p>HANOI ARTISAN BRIDGE · BKG133</p><h1>Booking Management</h1><span>{(await sessionDisplayName(session))} · sắp theo giờ bắt đầu</span></header>
-    {/* #190: §3 #4 Create in the header area; §8 four stat cards = F-SCHED-10 status_counts, each filters by its status. */}
-    <p className="bkg-actions bkg-head-actions"><Link className="bkg-link-btn" href={`/provider/${params.providerId}/bookings/new`}>Create</Link></p>
-    <nav className="bkg-stat-cards" aria-label="Số Booking theo trạng thái">
-      {BOOKING_STATUSES.map(status => <Link key={status} href={href({ status, page: '1' })} aria-current={query.status === status ? 'page' : undefined}>
-        <span>{statusLabel('booking', status)}</span><strong>{list.status_counts[status]}</strong>
-      </Link>)}
+  const last = Math.max(1, Math.ceil(list.total_count / PAGE))
+  const from = (page - 1) * PAGE
+  const href = (nextTab: string, nextPage = 1) => `${base}?tab=${nextTab}&page=${nextPage}`
+  return <main className="v3l">
+    <div className="v3l-head">
+      <div><h1 className="v3l-h1">Lịch sử đặt chỗ</h1><p className="v3l-sub">Tạo đặt chỗ sau khi đã thống nhất với công ty lữ hành trong tin nhắn.</p></div>
+      <Link className="v3l-btn" href={`${base}/new`}>Tạo đặt chỗ</Link>
+    </div>
+    <nav className="v3l-tabs" aria-label="Lọc đặt chỗ">
+      {LIST_TABS.map(item => <Link key={item.id} className="v3l-tab" href={href(item.id)} aria-current={item.id === tab ? 'page' : undefined}>{item.label} ({tabCount(item.id, list.status_counts)})</Link>)}
     </nav>
-
-    <form className="bkg-filters" method="get" action={base}>
-      <label>Trạng thái
-        <select name="status" defaultValue={String(query.status ?? '')}>
-          <option value="">Tất cả</option>
-          {BOOKING_STATUSES.map(status => <option key={status} value={status}>{statusLabel('booking', status)} ({list.status_counts[status]})</option>)}
-        </select>
-      </label>
-      <label>Từ ngày<input type="date" name="date_from" defaultValue={String(query.date_from ?? '')} /></label>
-      <label>Đến ngày<input type="date" name="date_to" defaultValue={String(query.date_to ?? '')} /></label>
-      <input type="hidden" name="page" value="1" />
-      <div className="bkg-actions"><button type="submit">Lọc</button><Link href={allHref}>Xoá bộ lọc</Link></div>
-    </form>
-
-    <p className="bkg-panel bkg-outside">⚑ <strong>{outside}</strong> Booking cần xử lý nằm ngoài bộ lọc · <Link href={allHref}>Xem tất cả</Link></p>
-
-    {rows.length === 0
-      ? <p className="bkg-panel bkg-empty">Không có Booking nào khớp bộ lọc này. Thử “Xoá bộ lọc” để xem cả lịch sử.</p>
-      : <table className="bkg-table">
-          <thead><tr><th>Thời gian</th><th>Agency</th><th>Experience</th><th>Khách</th><th>Trạng thái</th><th></th></tr></thead>
-          <tbody>
-            {rows.map(row => <tr key={row.booking_id} className={row.needs_action_label ? 'bkg-needs' : undefined}>
-              <td>{row.when}{row.hold_expiry && <small>Giữ chỗ đến {row.hold_expiry}</small>}</td>
-              <td>{row.agency_name}</td>
-              <td>{row.experience_name}</td>
-              <td>{row.group_size}</td>
-              <td><span className="bkg-badges"><StatusBadge family="booking" status={row.status} />{row.needs_action_label && <StatusBadge family="flag" status="Needs action" />}</span></td>
-              <td><Link href={row.detail_href}>Detail</Link></td>
-            </tr>)}
-          </tbody>
-        </table>}
-
-    <p className="bkg-actions">
-      {page > 1 && <Link href={href({ page: String(page - 1) })}>← Trang trước</Link>}
-      <span>Trang {page}/{lastPage} · {list.total_count} Booking</span>
-      {page < lastPage && <Link href={href({ page: String(page + 1) })}>Trang sau →</Link>}
-    </p>
-    <p className="bkg-actions">
-      <Link href="/messages">Messages</Link>
-    </p>
-    <style>{bookingDetailStyles + listStyles}</style>
+    {list.bookings.length === 0
+      ? <p className="v3l-empty">Chưa có đặt chỗ.</p>
+      : <table className="v3l-table">
+        <thead><tr><th scope="col">Ngày</th><th scope="col">Công ty lữ hành</th><th scope="col">Trải nghiệm</th><th scope="col">Khách</th><th scope="col">Đặt chỗ</th><th scope="col">Thanh toán</th><th scope="col">Thao tác</th></tr></thead>
+        <tbody>{list.bookings.map(row => {
+          const pill = BOOKING_PILL[row.status]
+          return <tr key={row.booking_id}>
+            <td>{dmy(row.start_at)}<span className="v3l-time">{hanoiClock(row.start_at)} – {hanoiClock(row.end_at)}</span></td>
+            <td>{row.agency_name}</td><td>{row.experience_name}</td><td>{row.group_size}</td>
+            <td><span className={`v3l-pill v3l-pill--${pill?.cls}`}>{pill?.label ?? row.status}</span></td>
+            <td>{PAY_LABEL[row.status]}</td>
+            <td><Link className="v3l-link" href={`${base}/${row.booking_id}`}>Xem chi tiết</Link></td>
+          </tr>
+        })}</tbody>
+      </table>}
+    <div className="v3l-foot">
+      <p className="v3l-note">{list.total_count ? `Hiển thị ${from + 1}–${from + list.bookings.length} / ${list.total_count} đặt chỗ` : 'Chưa có đặt chỗ'}</p>
+      <div className="v3l-arrows">
+        <Link className="v3l-arrow" href={href(tab, page - 1)} aria-label="Trang trước" aria-disabled={page <= 1}>‹</Link>
+        <Link className="v3l-arrow" href={href(tab, page + 1)} aria-label="Trang sau" aria-disabled={page >= last}>›</Link>
+      </div>
+    </div>
   </main>
 }
-
-const listStyles = `.bkg-list{max-width:1080px}.bkg-head-actions{margin-top:12px}.bkg-stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}.bkg-stat-cards a{display:grid;gap:6px;padding:14px 16px;border:1px solid #ddd6ca;border-radius:14px;background:white;color:#203229;text-decoration:none}.bkg-stat-cards span{font-size:13px;font-weight:700;color:#66746d}.bkg-stat-cards strong{font-size:26px;color:#355b46}.bkg-stat-cards a[aria-current="page"]{border-color:#203229;box-shadow:inset 0 0 0 1px #203229}@media(max-width:720px){.bkg-stat-cards{grid-template-columns:1fr}}.bkg-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:20px;padding:16px;background:#f4efe5;border-radius:14px}.bkg-filters label{display:grid;gap:4px;font-weight:700;font-size:13px}.bkg-filters input,.bkg-filters select{padding:8px 10px;border:1px solid #ddd6ca;border-radius:10px;font:inherit;background:white}.bkg-filters .bkg-actions{margin-top:0}.bkg-outside{margin-top:14px}.bkg-empty{margin-top:14px}.bkg-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}.bkg-table th,.bkg-table td{padding:10px 8px;border-bottom:1px solid #e4ddd0;text-align:left;vertical-align:top}.bkg-table small{display:block;color:#66746d}.bkg-needs{background:#fff4e0}.bkg-needs td:first-child{border-left:4px solid #9a4a2a}.bkg-flag{display:inline-block;margin-left:8px;font-weight:800;color:#8a1f11}@media(max-width:720px){.bkg-table thead{display:none}.bkg-table tr{display:grid;padding:8px 0}.bkg-table td{border:0;padding:2px 8px}}`

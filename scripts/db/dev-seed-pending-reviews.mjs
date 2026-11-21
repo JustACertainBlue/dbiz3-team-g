@@ -216,6 +216,8 @@ async function main(argv) {
   let wrote = false, undoPath = null
   try {
     await client.query('BEGIN')
+    // provider_profiles.current_version_no points at a version row that needs the profile first; those two FKs are DEFERRABLE.
+    await client.query('SET CONSTRAINTS ALL DEFERRED')
     if (undoFile) {
       const ops = validateUndoFile(JSON.parse(readFileSync(undoFile, 'utf8')))
       let removed = 0
@@ -266,7 +268,9 @@ async function main(argv) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main(process.argv.slice(2)).catch(async error => {
     const { safeDatabaseError } = await import('./config.mjs')
-    console.error(error?.code ? safeDatabaseError(error) : `[dev-seed] ${error?.message ?? error}`)
+    // Table and constraint names carry no row values (error.detail would, so it is never printed).
+    const where = error?.code && (error.table || error.constraint) ? ` [table=${error.table ?? '?'}, constraint=${error.constraint ?? '?'}]` : ''
+    console.error(error?.code ? `${safeDatabaseError(error)}${where}` : `[dev-seed] ${error?.message ?? error}`)
     process.exitCode = 1
   })
 }

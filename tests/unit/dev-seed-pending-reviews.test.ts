@@ -47,6 +47,16 @@ describe('CLI order', () => {
     expect(at('assertDevTarget(process.env)')).toBeLessThan(at("import('bcryptjs')"))
     expect(at('assertDevTarget(process.env)')).toBeLessThan(at("connection('application')"))
   })
+  it('defers the provider version foreign keys right after BEGIN (they are DEFERRABLE, but a migration made them INITIALLY IMMEDIATE)', () => {
+    const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
+    expect(source.indexOf("query('BEGIN')")).toBeLessThan(source.indexOf("query('SET CONSTRAINTS ALL DEFERRED')"))
+    expect(source.indexOf("query('SET CONSTRAINTS ALL DEFERRED')")).toBeLessThan(source.indexOf('db.insert(op.table, op.row)'))
+  })
+  it('database errors print table and constraint names but never error.detail', () => {
+    const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
+    expect(source).toContain('error.constraint')
+    expect(source).not.toContain('error.detail')
+  })
 })
 
 describe('buildPendingReviewData: Agencies', () => {

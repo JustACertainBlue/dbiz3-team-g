@@ -44,7 +44,12 @@ async function main() {
       await page.fill('#login-password', password!)
       await page.click('form button[type=submit]')
       try { await page.waitForURL((url: URL) => !url.pathname.startsWith('/login'), { timeout: 20000 }) }
-      catch { console.error('Sign-in did not leave /login (wrong credentials, or the account cannot sign in). Stopping.'); process.exit(1) }
+      catch {
+        // Say why, from what the page shows (never the credentials): the error alert, or the registration status popup title.
+        const shown = (await page.locator('.av3-alert, .hab-modal__title').first().textContent({ timeout: 2000 }).catch(() => null))?.trim()
+        console.error(`Sign-in did not leave /login. The page says: ${shown ? `"${shown}"` : 'nothing (is the dev server on 3201 up?)'}. Stopping.`)
+        process.exit(1)
+      }
 
       const session = await (await context.request.get(`${BASE}/api/auth/session`)).json() as { data?: { session?: { agencyId?: string | null } } }
       const agencyId = session.data?.session?.agencyId

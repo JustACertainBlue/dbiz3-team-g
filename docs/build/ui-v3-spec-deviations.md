@@ -18,6 +18,23 @@ these branches; each row below is a known gap between the built UI and the writt
 | 10 | Removed elements | Various screen-spec elements (breadcrumbs, verified badges, "Lịch của xưởng" link, separate detail-page footers, village catalogue box, inactive-provider text) | Removed because the approved mockup does not show them; `/explore/providers/[id]/schedule` stays until the embedded calendar on 24 works | Human, 18/11 (Đợt 1 #10) |
 | 11 | Gallery order | Mockups 03/04/23/24 show the images in data order | The gallery puts landscape images (width > height) first, then the rest in their old order (stable), so the large tile gets a landscape image when the workshop has one; portrait images use `object-position: 50% 40%`. Only the order of the images changes, not the layout; an image without stored width/height counts as "not landscape". Applies to 03, 04/23 and 24 (shared `Gallery`). Also: the first image of each page (03 gallery, 04/24 large tile, 02 first card from 900 px, 03a first card) is the LCP image: eager, `fetchpriority=high`, preloaded | Human, 21/11 (step 2B image delivery; "ảnh ngang lên trước") |
 
+## Integration of the five branches (21/11)
+
+Added when `ui/v3-admin`, `ui/v3-account`, `ui/v3-provider`, `ui/v3-ai` and `ui/v3-booking` were merged into `ui/v3-public` (build-log Entry 118).
+Screen 17 is not listed here: the new mockup shows Loại hình / Số nhân viên / Loại tour again and the form matches it.
+
+| # | Area | Spec says | UI v3 does | Decision |
+|---|---|---|---|---|
+| 12 | DSH018 (screen 29) | Items 2 "Profile completion and review status" and 5 "Recent conversations" | Both panels are dropped (not in mockup 29). One line shows when UBND asked for changes; chats are reached through Tin nhắn | Human, 21/11 (accepted deviation) |
+| 13 | Payments | Payment flow outside the current MVP slice | No gateway. The company reports "Công ty báo đã thanh toán" in chat and the workshop presses "Đã nhận tiền" (On hold → Booked). Wording on every screen: On hold = "Chờ thanh toán", Booked = "Đã thanh toán"; the chat pill keeps "Xưởng đã nhận tiền". The payment line of 32 and the payment block of 06/10c point to the workshop's instructions in chat. The card "Giao dịch" of 38 counts Booked only. Card "Đã nhận qua QR" of 29 shows "—" | Human, 21/11 |
+| 14 | Screens 08–14b (payment and refund set) | Described in the screen specs | Not built; left for the last wave | Human, 21/11 |
+| 15 | BKG hold expiry (`spec-BKG.md` lines 453 and 542, #46) | "Automatic expiry: 72-hour On hold elapsed" | The history reason is "Hết hạn giữ chỗ" | Human, decision 11 of the booking brief; the spec owner must update the two lines |
+| 16 | Request quote (BKG BR-002, F-EXPLORE-11) | `quote_requests` row | The request is a chat message of kind `Quote Request` (JSON text) because the table has no column for date, slot, guests or note; it needs a free slot of the chosen day | Booking brief, 21/11 |
+| 17 | Admin review (ADM) | Workshop decision may include Reject | Workshop: Duyệt / Yêu cầu bổ sung only (the verify API has no Reject), HDT sees workshops view-only, UBND does not see Agency rows; Agency detail is HDT only | ui/v3-admin, mockup 41a |
+| 18 | Experience images (decision 9 extended) | None | A card without its own photo shows the village image; an experience whose village has no image at all is hidden from lists, search, the village and workshop pages and AI results (its detail page still opens) | Human, 21/11 (integration item 11) |
+| 19 | Guests field | "Số khách" as a choice list | A typed number in the search bars and the booking forms; the booking forms show the experience maximum | Human, 21/11 (integration item 5) |
+| 20 | Registration refusals | AUT screens 18b–18d as pages | Popups on `/login` from `registration_status` of the 403; department contact is empty until the team gives it (button and popup hidden) | ui/v3-account |
+
 ## Điện thoại (dưới 768 px)
 
 | # | Màn | Mockup / trước đây | Bây giờ | Quyết định |

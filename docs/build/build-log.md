@@ -1642,6 +1642,112 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | 04/24 gallery (width 804 at 1440), 4 tiles: large / wide / small | 398 × 440 / 398 × 216 / 195 × 216 | 167 × 280 / 167 × 136 / 79.5 × 136 | `gallerySizes(4, i, 804)` (same formula, share 1/2, 1/2, 1/4, 1/4) |
 | Chat | no image (attachments are links) | | n/a |
 
+### Entry 118: 21/11 Claude Code + human — integration of the five UI v3 branches into `ui/v3-public`
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Sonnet 5.5); requested by linhkhanh-vu. The human ran the five merges (the push-guard hook lets the agent merge only origin/main); the agent checked the merged tree, then did the shared fixes. No push, no PR merged, no migration, `docs/spec` and `data/` untouched, no `.env*` read. |
+| Merges (`--no-ff`, in this order) | `ui/v3-admin` @ `d150d868` (PR #280, base `ui/v3-public`: close it on GitHub, do not merge) → `ui/v3-account` @ `25dd200e` → `ui/v3-provider` @ `32749009` → `ui/v3-ai` @ `cb1add87` → `ui/v3-booking` @ `37243c6b`. All five merges used the "ort" strategy with no conflict. One file was merged automatically from both sides: `src/app/explore/providers/[id]/page.tsx` (screen 24). Read after the merge: it keeps the fallback gallery of 2B (first image of each experience, at most 5, hidden when there is none) and the "Gửi yêu cầu đặt ngày này" flow (in `MonthCalendar`). |
+| Checks of the merged tree before the shared fixes | `tsc --noEmit`, `npm run lint`, `npm run build` green; full vitest (2 threads) 333 files, 2197 tests, 0 failed. |
+| Shared fixes (one commit each) | **1** screen 17 simple bar (`SimpleAuthBar`, only `/register`); **2** account menu 20 and logout popup 20a (item height 48 px, icon colour, 285 px text); **3** "Duyệt hồ sơ" one destination per admin type, active on `/admin/agencies/*` and `/admin/providers/*` for HDT and UBND; **4** shared `.sr-only`; **5** guests typed number (`GuestsField`) in `SearchBar` (01/21/02/04/23) and village page 03; **10** payment wording everywhere: On hold = "Chờ thanh toán", Booked = "Đã thanh toán" (`status-labels.ts`; the chat pill keeps "Xưởng đã nhận tiền", and older stored sentences "Tạm giữ"/"Đã đặt" still map to the pills); **11** an experience card without a photo uses the village image (`cardImage`); a village with no image at all hides the experience from lists, search, village page, workshop page list and AI results (`listableRows`; detail and booking pages still use `eligibleRows`); **13** the account text fixture was regenerated from the new mockup (`extract-mockup-texts.py`), the admin and AI-22 tests already read the mockup folder, the provider fixture was compared with the new mockup text by script (only the documented payment deviation differs); **14** screen 17 shows Loại hình / Số nhân viên / Loại tour with the Vietnamese labels of `auth-v3/labels.ts` and the mockup hint, and the DEVIATIONS entry of 17 was removed. |
+| Not done (reduced scope, human decision 21/11) | Items 6 (card "Đã nhận qua QR tháng N", screen 29), 7 (one constant for the 72 h hold), 8 (box "Hoàn hảo cho…" from `group_note`), 9 (form-safety test for the whole app), 12 (`demo-login.md`). Items 6–8 were built before the decision and then reverted (commits `921d6fc4`, `4e1fd0e0`, `a509167f` can be cherry-picked back). All five are in `docs/build/bug-list-sau-v3.md` with screen, files and priority, together with the forms that are still unsafe before hydration. |
+| Red-first note | A failing run before the code was seen for item 1 (missing module), item 5, item 10, item 11 and the reverted 8. For items 2, 3 and 4 the tests and the code were written in one step and the tests were not run red first. |
+
+**Item 11 fixtures:** `tests/unit/v3-int-card-images.test.ts`; old fixtures got a village cover through `tests/helpers/village-covers.ts` (fixture change only, no assertion changed) in `v3-explore-search`, `v3-provider-profile`, `explore-runtime`, `ait-matching-api`, `exp-handoff-signal` and `v3-provider-max-guests`.
+
+#### Old tests changed in the shared fixes (this entry)
+
+| File | Old assert | New assert | Why |
+|---|---|---|---|
+| `status-labels.test.ts` | booking labels `Tạm giữ`, `Đã đặt` (also in the badge test) | `Chờ thanh toán`, `Đã thanh toán` | item 10, payment wording everywhere |
+| `bkg-agency-sync.test.ts` | message template `Booking (Tạm giữ\|Đã đặt\|…)`, `startsWith('Booking Đã đặt')` | `Chờ thanh toán\|Đã thanh toán` | item 10 |
+| `bkg-iac-message-order.test.ts` | `Booking Tạm giữ`, `Booking Đã đặt` | `Booking Chờ thanh toán`, `Booking Đã thanh toán` | item 10 |
+| `hanoi-time-display.test.ts` | calendar text `Đã đặt`, `Tạm giữ` | `Đã thanh toán`, `Chờ thanh toán` | item 10 |
+| `v3-provider-month-calendar.test.ts` | "the shared Booking status label is not changed" (`Booked` is not `Đã thanh toán`) | the shared label is `Đã thanh toán` | item 10 reverses the earlier provider decision |
+| `v3-explore-home.test.ts` | `cardView` of an experience without image: `image` is null | image equals the village image; still null with no village image and for a seed placeholder key | item 11 |
+| `aut-self-registration-agency-only.test.ts` | option texts equal `Travel Agency, Tour Operator, TMC` | option values equal that enum (the text is Vietnamese) | item 14, mockup 17 shows Vietnamese options |
+| `v3-account-mockup.test.ts` + fixture | DEVIATIONS entry `(3 fields)` for screen 17; fixture of the earlier mockup without those fields | entry removed; fixture regenerated from `source` (screens 17 and 28 changed) | item 14; the code was changed to match, not the fixture |
+
+#### Branch `ui/v3-admin` (screens 38–41a, PR #280)
+Done: 38 `/admin` (date range, cards, funnel, top five), 39 `/admin/users`, 40 `/admin/users/[userId]`, 41 `/admin/agencies` and `/admin/providers` (same merged list), 41a `/admin/agencies/[id]` and `/admin/providers/[id]` with the decision form; the scope comes from the session only (HDT whole city, UBND assigned village). `/admin/create-account` redirects to `/admin/users`. Mutation checks, the DEV demo-review script and the click-through are in the draft (git history).
+Gaps accepted: the transaction card comes only from Booked (no payment data); the workshop decision has Duyệt / Yêu cầu bổ sung (no Từ chối: the verify API has none); "Đã xác minh email" is not shown; company-type wording of 41a is ours; the HDT view and the decision form were not photographed.
+
+**Old test files: assert before → after**
+
+"Looser?" is my own judgment; please confirm each row marked yes.
+
+| File | Old assert | New assert | Looser? |
+|---|---|---|---|
+| adm095-review-entry-last-login | page renders `reviewSubmissionLinks(adminType).map(...)` links | page does NOT contain `reviewSubmissionLinks` nor `/admin/create-account` | Inverted on purpose (png/39 has none). `reviewSubmissionLinks()` unit asserts unchanged |
+| adm095-review-entry-last-login | page reads `readSessionContext().then(... setAdminType ...)` | removed | Dropped: the list no longer needs the admin type |
+| adm095-review-entry-last-login | header `<th>Trạng thái</th><th>Đăng nhập gần nhất</th><th>Thao tác</th>` | `...Đăng nhập gần nhất</th>` and no `<th>Thao tác</th>` | Stricter on the action column |
+| adm095-review-entry-last-login | cell `{user.last_login \|\| 'Chưa đăng nhập'}` | regex `<td[^>]*data-label="Đăng nhập gần nhất"[^>]*>{formatLastLogin(u.last_login)}</td>`: the cell must be a `<td>` with the data-label of that exact column, followed by the value. Mutation check: removing the data-label turns the test red. "Chưa đăng nhập" and the format are also covered in the v3-admin-accounts test | No (stricter than the old one: it also pins the column name) |
+| adm-242-ui (data-label round) | `<table className="av3-table av3-table--review">` | `<table className="av3-table av3-table--review av3-table--stack">` | Same assert plus the new modifier class (the table stacks into cards below 640 px; added when screenshots showed a cut-off status column) |
+| adm118-identity-role | page (list modal) has `<dt>Tổ chức</dt><dd>{organization}</dd><dt>Vai trò</dt><dd>{role} {admin_type}</dd><dt>Trạng thái</dt>` in this order | detail page: `<dt>Vai trò</dt>` exists, comes before `<dt>Trạng thái</dt>`, uses `roleLabel(account.role, account.admin_type)` | **Yes**: organization-before-role order no longer asserted (organization is the subtitle, png/40) |
+| adm145-close-target | `<Link href="/admin/users">Đóng</Link>` | back link `‹ Danh sách hồ sơ` to `listHref`, and the `listHref` expression | Different behaviour by design (png/41a has no Đóng) |
+| ver119-account-fields | agencies page labels `user_id:'Mã tài khoản'`, `role:'Vai trò'`, `organization:'Tổ chức'` | detail page has `<dt>` Mã tài khoản, Vai trò, Ngày đăng ký, Đăng nhập gần nhất; shows `{account.organization}`; agency page links to `/admin/users/${item.account.user_id}` | **Yes**: no "Tổ chức" label (png/40 shows organization in the subtitle) |
+| adm-242-ui | `/admin` redirect from an effect: `const target = adminGuestRedirect(session); if (target) { router.replace(target); return }` | `const guest = adminGuestRedirect(session); if (guest) redirect(guest)` (server component) | Equivalent for the new page |
+| adm-242-ui | users and agencies detail are `<div className="overlay" role="dialog" aria-modal="true" aria-label=...>` closed by backdrop and Escape | users page has `<Modal open={target !== null}`; Modal.tsx has `role="dialog" aria-modal="true"` and Escape | **Yes**: backdrop click and `aria-label` of the detail dialogs no longer asserted; the detail screens are pages now |
+| adm-242-ui | agencies page has `<table className="review-table">`, no `Hiển thị cả hồ sơ đã xử lý`, no `STATUS_LABEL` | `ReviewList.tsx` has `<table className="av3-table av3-table--review">` and `Đã xử lý (`, no `STATUS_LABEL` | **Yes**: "no `Hiển thị cả hồ sơ đã xử lý`" dropped (that text is gone with the old page) |
+| adm117-cancel | reads `create-account/page.tsx` | reads `create-account/CreateAccountForm.tsx` (same code, moved there because the page now only redirects) | No (path only, every assert unchanged) |
+| adm117-ubnd-empty-suggestions | reads `create-account/page.tsx` | reads `create-account/CreateAccountForm.tsx` (same reason) | No (path only, every assert unchanged) |
+
+#### Branch `ui/v3-account` (screens 15–20a, 28)
+Done: restyle of sign-in, reset (4 steps), registration 17/17a/18/18a, popups 18b–18d (built; only 18a–18c reachable through the `/login` refusal), account 19/19a with three panels, company profile 28 and its edit view (PRF021), remember-me (30 days), forms POST and locked until hydrated, one tour/company type list. API additions: `registration_status` in the 403 of a right password on a waiting or rejected Agency; `ownAccount()` returns `account_status` and `created_at`.
+Gaps accepted: the department contact is `null` (button and popup 18d hidden) until the team gives the real email, phone and hours; no terms or privacy pages; 19a unreachable ("màn không dùng trong MVP"); `AuthShell.tsx` and `auth-v9.css` kept because `guest-landing.test.ts` imports them; real-data look of 19, 28, 28 edit and the forced password page not photographed.
+
+**Old test rewritten:** `tests/unit/login-demo-panel.test.ts` (issue #102). It required the "Tài khoản thử nghiệm" block, the four sample emails and the "any password" sentence on `/login` in development. By human instruction (Round 5) the block is gone in every environment, so the test now asserts there is none (development, production, test) and keeps the check that production refuses the prototype login on the server. `aut-self-registration-agency-only` was kept on this branch (copy and `label=` adjusted); the integration then changed it, see the table above.
+
+#### Branch `ui/v3-provider` (screens 29–33)
+Done: 29 dashboard, 30 owner profile, 31 experience list with delete popup, 32 add/edit form (writes the content columns through `experience-content.ts`), 33 owner detail view.
+Gaps accepted: 29 "Đã nhận qua QR tháng N" shows "—" (bug list); 32 payment line uses the sentence of 06/10c; `experience_slots` is read-only for the app role; the public detail box title "Hoàn hảo cho…" is still hard-coded (bug list); 30–33 not photographed.
+
+**\1**
+- `tests/unit/dsh018-module-links.test.ts`: the tile grid is gone. Now: the dashboard links to Experiences, Bookings, the full Schedule, Create booking (existing route), profile and edit; the header gives Tổng quan / Trải nghiệm / Lịch sử đặt chỗ and the Messages button.
+- `tests/prf/unit/prf127-links.test.ts`: the owner page links to `/provider/{id}/experiences` and to the village; the previous page (other viewers) still renders both links from the view.
+- `tests/unit/exp070-location-field.test.ts`: label "Địa điểm tổ chức" (mockup), and the field now lives in `ExperienceFormBody`.
+
+#### Branch `ui/v3-ai` (screen 22)
+Done: restyle, `card` added to every recommendation (`card-data.ts`), Vietnamese copy and relaxation values, history "Gần đây" (`GET /api/ait/sessions`, `GET /api/ait/sessions/[id]`), answers kept in the browser (`turn-store.ts`, localStorage, no migration), pinned rail, POST forms.
+Gaps accepted: no search in the left rail; quick example chips instead of follow-up chips; old assistant replies are rebuilt or come from the same browser only (a server copy needs a migration); the screen was not photographed (needs sign-in).
+Item 11 of this entry also filters the matching candidates in `/api/ait/matching` (experiences with no card image are not recommended).
+
+Test lines changed on this branch (wording only):
+
+- `tests/unit/ai-matching-view.test.ts`: `AI_FAILURE_TEXT`, `HANDOFF_FAILURE_TEXT` and the noMatchView lines (Budget, Dates) now expect Vietnamese; understoodChips input `craft_preference: 'pottery'` expects `Gốm sứ`; new tests for `understoodChips` and the value mapping.
+- `tests/unit/ait-date-year.test.ts`: line 77 `understoodDateLine` (Vietnamese); line 70 `/date/i` → `/ngày/i`.
+- `tests/unit/ait121-additional-suggestions.test.ts`: test title and the `<h1>` regex ("Ghép tour AI").
+- `tests/unit/clarification.test.ts` lines 29, 38, 100, 107, 125: regexes on question wording → Vietnamese words.
+- `tests/integration/ait-matching-api.test.ts`: line 189 `/start|origin|from/i` → `/xuất phát/i`; T039 `group of 10` → `đoàn 10 khách`, `estimated` → `ước tính`.
+- `tests/unit/recommendations.test.ts`: `up to 13` → `tối đa 13 khách`; `group of 10` → `đoàn 10 khách`; `estimated` → `ước tính`; `175,000` → `175\.000`; `200,000` → `200\.000`; `budget` → `ngân sách`; "silk preference" `/silk/i` → `/Dệt lụa/`; line 163 `Không hợp sở thích Gốm sứ` → `Gợi ý thêm, khác nghề Gốm sứ bạn chọn.`
+- `tests/integration/multi-turn-api.test.ts`:54 `silk weaving` → `Dệt lụa`.
+- `tests/unit/ai-matching-mockup22.test.ts`: removed the pills `Số khách`, `Ngày đi`, `Ngân sách` from `EMPTY_STATE` and added `Gần đây` to `SIDEBAR` (the mockup changed).
+- `tests/unit/ai-matching-render.test.ts`: the `next/navigation` mock gained `useSearchParams` and `replace`; the case "no provider" expects the Vietnamese restricted screen. `tests/unit/ai-matching-history.test.ts`: the "plain link" assert is `href="/ai-matching" onClick`.
+- `tests/unit/ai-matching-layout.test.ts`: the "no own scroll frame" and "no `height: 100vh`" asserts ignore the `.aim__hist` and `.aim__side` rules; new asserts for the pinned rail (`top: 0`, `height: 100vh`).
+
+#### Branch `ui/v3-booking` (04/24 request, 05–07, 10–10d, 25, 27, 34, 35)
+Done: one transition guard, `createBooking` only with a Chat, slot rules and capacity inside the write lock, the request as a chat message of kind `Quote Request` (`request-card.ts`; `quote_requests` has no column for it), booker info and the "Công ty báo đã thanh toán" message, "Đã nhận tiền" On hold → Booked, expiry reason "Hết hạn giữ chỗ", scanner in `src/instrumentation.ts`, migration `20261121100000_hab_booking_contact_fields.sql` (applied to DEV by the human), `GuestsInput`/`GuestsField` in the booking flow.
+Gaps accepted: `docs/spec/specs/spec-BKG.md` lines 453 and 542 still say "Automatic expiry: 72-hour On hold elapsed" (spec owner to update); test shim `tests/setup/booking-pair-chat.ts` stays until the seed has a chat row for the demo pair; booking `735d8056-5521-4448-9d59-04abc7cfb5a5` is left in DEV (Booked, 30/11) from the API click-through; 10d is only unit-tested; 06 hides "Ai dẫn đoàn", "Hoá đơn công ty", "Giờ xe đoàn đến" (no column).
+
+**\1**
+| Test | Old assertion | New assertion | Decision |
+|---|---|---|---|
+| `tests/unit/bkg134-cancel-target.test.ts` | Cancel link text `Cancel` (regex `>Cancel</a>`) | `Huỷ`; href still `/provider/p1/bookings` | 3 (mockup wording) |
+| `tests/unit/bkg-booking-actions.test.ts` "Agency" | agency has no action in any status | agency has `cancel: true` only while On hold; nothing otherwise | 5 |
+| `tests/integration/bkg-booking-detail-api.test.ts` agency GET | `actions` all false | `cancel: true` (fixture is On hold), others false | 5 |
+| `tests/unit/bkg-screens.test.ts` | provider button `Xác nhận` (disabled when not On hold) | button `Đã nhận tiền`, same disabled rule | 2, 3 |
+| `tests/unit/bkg133-stat-cards.test.ts` | four stat cards (Tạm giữ/Đã đặt/Hoàn tất/Đã huỷ) in `nav.bkg-stat-cards`, `Create` before `.bkg-filters` | six tabs in `nav.v3l-tabs` with counts (Tất cả … Đã huỷ, `tab=todo`), `Tạo đặt chỗ` before the tabs | #10, 3 (screen 34 mockup) |
+| `tests/unit/bkg-screens.test.ts` access tests | denied text `Chỉ Local Provider sở hữu hồ sơ này mới xem được danh sách Booking.` | `Chỉ xưởng sở hữu hồ sơ này mới xem được danh sách đặt chỗ.` | 3 |
+| `tests/unit/bkg-create-validation.test.ts` required-field list | `agreed_price` missing is rejected | `agreed_price` removed from the list; missing price is priced by the server (list price, Group Discount); a given price still wins; invalid price still rejected | Part B step 1 (35 shows the price, not editable) |
+| `tests/unit/bkg-change-status.test.ts`, `tests/unit/bkg-expire-holds.test.ts` | expiry reason `Automatic expiry: 72-hour On hold elapsed` | `Hết hạn giữ chỗ` | 11 |
+
+Later rounds: `bkg137-status-tabs`, `hanoi-time-display` (FR-002 looks for `HH:mm–HH:mm` on the card; FR-004 date and time of day instead of one datetime-local value), `v3-agency-schedule-entry`, `bkg136-arrival-guard-ui` (labels "Xác nhận đoàn đã đến" and "Quay lại"), `iac-list-chats` (new field `experience_name`); `iac-chat-view` (chatActions: Agency = [], Provider = [create_booking]; decision 21/11); tests that send requests got slot fixtures (`tests/helpers/slots.ts`; the demo workshop is open on Mondays only).
+
+#### Step 2B of `ui/v3-public` (photos, from `ui-v3-public-2b.md`)
+Research notes of 21/11 on DEV (read-only): 34 image positions (6 village covers + 28 experiences), 31 with a candidate and the rest to shoot; 7 workshops (Hà Vân, Hà Liên, Thục Khuê in Vạn Phúc; Mai Khê, Thanh Liễu, Diệp Hà, Hoài Thu in Chuông) whose 17 images all show faces; 7 hashes of face photos to remove (28 files, 52 `profile_media` rows, 17 `provider_version_media` rows). After the human review: 63 entries for 26 positions, 20 workshop images, 8 positions to shoot yourself; only Phùng Xá (Mỹ Đức) is left with no image and is hidden. The final package (JSON files, `review.html`, 83 images, `SHA256SUMS` 88/88) is outside the repo in `~/Documents/dbiz3-assets/photos-2111/`. Before importing: change `EXCLUDED_ENTRIES` of `scripts/storage/seed-image-import-plan.mjs` to SHA-256 (the proposal and its tests were written in a temporary worktree: 4 red, then 17/17), decide how face rows are removed (the script only removes rows of files shared by several experiences), and check the 7 hashes on PROD. The screen 24 fallback gallery (test `v3-provider-gallery.test.ts`) is kept after the merge.
+
+The full text of the six drafts stays in git history (last draft commit `e65cfb7d` and the commits of the five branches).
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

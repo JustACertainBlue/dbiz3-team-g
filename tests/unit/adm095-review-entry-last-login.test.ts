@@ -34,6 +34,6 @@ describe('#184 | ADM095 Last login column', () => {
     const page = readFileSync('src/app/admin/users/page.tsx', 'utf8')
     expect(page).toContain('<th>Trạng thái</th><th>Đăng nhập gần nhất</th>')
     expect(page).not.toContain('<th>Thao tác</th>')
-    expect(page).toContain('{formatLastLogin(u.last_login)}</td>')
+    expect(page).toMatch(/<td[^>]*data-label="Đăng nhập gần nhất"[^>]*>\{formatLastLogin\(u\.last_login\)\}<\/td>/)
   })
 })

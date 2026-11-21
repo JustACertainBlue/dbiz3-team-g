@@ -61,7 +61,7 @@ Seen and fixed after comparing with the png:
 - Changed after: workshop "Nghề" row now uses `rowCraft()` from `lib/explore/vocabulary.ts` (village editorial_craft, else the Vietnamese label of craft_type; no shared file edited);
   the table of screen 41 sits in a padded card (28 px) as in png/41; rows of 39 target ~71 px (line-height of name/email set in `admin-v3.css`). Not re-photographed.
 
-## Not looked at by eye (only the text/order test covers them)
+## Chưa kiểm bằng mắt (chỉ có test chữ và thứ tự)
 
 - The HDT view of all five screens (38, 39, 40, 41, 41a).
 - Screen 41, tab "Đang chờ" with rows.
@@ -116,7 +116,7 @@ Script outside the repo; each mutation applied to a copy, the module's own test 
 | adm095-review-entry-last-login | page renders `reviewSubmissionLinks(adminType).map(...)` links | page does NOT contain `reviewSubmissionLinks` nor `/admin/create-account` | Inverted on purpose (png/39 has none). `reviewSubmissionLinks()` unit asserts unchanged |
 | adm095-review-entry-last-login | page reads `readSessionContext().then(... setAdminType ...)` | removed | Dropped: the list no longer needs the admin type |
 | adm095-review-entry-last-login | header `<th>Trạng thái</th><th>Đăng nhập gần nhất</th><th>Thao tác</th>` | `...Đăng nhập gần nhất</th>` and no `<th>Thao tác</th>` | Stricter on the action column |
-| adm095-review-entry-last-login | cell `{user.last_login \|\| 'Chưa đăng nhập'}` | `{formatLastLogin(u.last_login)}</td>` (first version `<td>{formatLastLogin(u.last_login)}</td>`; relaxed to drop `<td>` when `data-label` was added to the cells); "Chưa đăng nhập" and the format are covered in the v3-admin-accounts test | **Yes, slightly**: the opening `<td>` is no longer part of the string. Behaviour moved to a unit test |
+| adm095-review-entry-last-login | cell `{user.last_login \|\| 'Chưa đăng nhập'}` | regex `<td[^>]*data-label="Đăng nhập gần nhất"[^>]*>{formatLastLogin(u.last_login)}</td>`: the cell must be a `<td>` with the data-label of that exact column, followed by the value. Mutation check: removing the data-label turns the test red. "Chưa đăng nhập" and the format are also covered in the v3-admin-accounts test | No (stricter than the old one: it also pins the column name) |
 | adm-242-ui (data-label round) | `<table className="av3-table av3-table--review">` | `<table className="av3-table av3-table--review av3-table--stack">` | Same assert plus the new modifier class (the table stacks into cards below 640 px; added when screenshots showed a cut-off status column) |
 | adm118-identity-role | page (list modal) has `<dt>Tổ chức</dt><dd>{organization}</dd><dt>Vai trò</dt><dd>{role} {admin_type}</dd><dt>Trạng thái</dt>` in this order | detail page: `<dt>Vai trò</dt>` exists, comes before `<dt>Trạng thái</dt>`, uses `roleLabel(account.role, account.admin_type)` | **Yes**: organization-before-role order no longer asserted (organization is the subtitle, png/40) |
 | adm145-close-target | `<Link href="/admin/users">Đóng</Link>` | back link `‹ Danh sách hồ sơ` to `listHref`, and the `listHref` expression | Different behaviour by design (png/41a has no Đóng) |

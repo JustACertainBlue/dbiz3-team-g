@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-// Issue #102. docs/build/demo-login.md and ADR 0001: the "any non-empty password" prototype login is a
-// development aid; production refuses it (authenticatePrototype). The /login page must offer the demo panel
-// under exactly the same condition, so testers on the hosted version are not told to use a login that fails.
+// Issue #102, changed on purpose (human instruction, round 5): /login no longer has a "Tài khoản thử nghiệm" block,
+// sample emails or the "any password" sentence, in any environment. The prototype login stays on the server
+// (authenticatePrototype); only its page hint is gone. Production still refuses it.
 ;(globalThis as { React?: typeof React }).React = React
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: () => {}, refresh: () => {} }), useSearchParams: () => new URLSearchParams() }))
 
@@ -12,31 +12,22 @@ import LoginPage from '@/app/login/page'
 import { authenticatePrototype } from '@/lib/auth/product-session'
 
 const render = () => renderToStaticMarkup(React.createElement(LoginPage))
-const PANEL = 'Tài khoản thử nghiệm'
-const ANY_PASSWORD = 'nhập bất kỳ mật khẩu không rỗng'
 
-describe('#102 AUT /login | demo panel only where the prototype login works', () => {
+describe('/login has no demo block', () => {
   afterEach(() => vi.unstubAllEnvs())
 
-  it('production (error case of the old page): no demo panel, no seed emails, no "any password" text', () => {
-    vi.stubEnv('NODE_ENV', 'production')
+  it.each(['development', 'production', 'test'])('%s: no demo block, no sample emails, no "any password" text, still a password field', env => {
+    vi.stubEnv('NODE_ENV', env)
     const html = render()
     expect(html).toContain('type="password"')
-    expect(html).not.toContain(PANEL)
-    expect(html).not.toContain(ANY_PASSWORD)
-    expect(html).not.toContain('thanhvien13@example.invalid')
+    expect(html).not.toContain('Tài khoản thử nghiệm')
+    expect(html).not.toMatch(/nhập bất kỳ mật khẩu/i)
+    expect(html).not.toMatch(/thanhvien\d+@example\.invalid/)
+    expect(html).not.toMatch(/prototype/i)
   })
 
-  it('development (normal): the demo panel and the four seed identities are offered', () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    const html = render()
-    expect(html).toContain(PANEL)
-    for (const email of ['thanhvien13', 'thanhvien19', 'thanhvien8', 'thanhvien9']) expect(html).toContain(`${email}@example.invalid`)
-  })
-
-  it('same condition as the server: in production the panel is hidden and the prototype login is refused', async () => {
+  it('production still refuses the prototype login on the server', async () => {
     vi.stubEnv('NODE_ENV', 'production')
-    expect(render()).not.toContain(PANEL)
     expect(await authenticatePrototype('thanhvien13@example.invalid', 'demo')).toEqual({ ok: false, reason: 'INVALID_CREDENTIALS' })
   })
 })

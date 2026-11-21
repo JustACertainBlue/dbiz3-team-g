@@ -1,84 +1,32 @@
 "use client";
 
-import React from "react";
+// Screen 16 step 2 (png/16). The email is read from sessionStorage, written by the previous page; no new request here.
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import "../../auth-v3/auth-v3.css";
 
 export default function ForgotPasswordSentPage() {
+  const [email, setEmail] = useState("");
+  useEffect(() => {
+    try { setEmail(sessionStorage.getItem("forgot_password_email") || ""); } catch { /* generic line below */ }
+  }, []);
+
   return (
-    <div style={{ maxWidth: "480px", margin: "3rem auto", padding: "0 1rem" }}>
-      <div
-        className="card"
-        style={{
-          padding: "2rem",
-          backgroundColor: "var(--card-bg, #ffffff)",
-          borderRadius: "var(--radius, 8px)",
-          boxShadow: "var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,0.1))",
-          textAlign: "center",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "1.75rem",
-            fontWeight: "700",
-            marginBottom: "1.25rem",
-            color: "var(--text-main, #0f172a)",
-          }}
-        >
-          Recovery Request Recorded
-        </h1>
-
-        <div
-          style={{
-            padding: "1rem",
-            backgroundColor: "var(--success-bg, #f0fdf4)",
-            border: "1px solid var(--success-border, #bbf7d0)",
-            borderRadius: "var(--radius, 6px)",
-            color: "#166534",
-            fontSize: "0.95rem",
-            lineHeight: "1.6",
-            marginBottom: "1.75rem",
-            textAlign: "left",
-          }}
-        >
-          If this email is registered, a recovery link is available through the configured delivery channel. In local dev-outbox mode, no real email is sent. Follow the link within 15 minutes. Didn&apos;t receive it? Check spam or request a new link.
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          <Link
-            href="/login"
-            style={{
-              display: "block",
-              width: "100%",
-              padding: "0.75rem 1rem",
-              backgroundColor: "var(--primary, #2563eb)",
-              color: "#ffffff",
-              textDecoration: "none",
-              borderRadius: "var(--radius, 6px)",
-              fontSize: "1rem",
-              fontWeight: "600",
-            }}
-          >
-            Back to login
-          </Link>
-          <Link
-            href="/forgot-password"
-            style={{
-              display: "block",
-              width: "100%",
-              padding: "0.75rem 1rem",
-              backgroundColor: "transparent",
-              color: "var(--primary, #2563eb)",
-              border: "1px solid var(--border-color, #cbd5e1)",
-              textDecoration: "none",
-              borderRadius: "var(--radius, 6px)",
-              fontSize: "0.95rem",
-              fontWeight: "500",
-            }}
-          >
-            Resend
-          </Link>
-        </div>
-      </div>
-    </div>
+    <main className="av3-center">
+      <section className="av3-card av3-card--narrow">
+        <span className="av3-badge-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 8 8 5.5L20 8" /></svg>
+        </span>
+        <h1 className="av3-h1 av3-h1--card av3-center-text">Kiểm tra hộp thư của bạn</h1>
+        <p className="av3-lead">
+          {email ? <>Chúng tôi đã gửi đường dẫn đặt lại mật khẩu đến <strong>{email}</strong>. </> : <>Nếu email đã đăng ký, đường dẫn đặt lại mật khẩu đã được gửi. </>}
+          Đường dẫn có hiệu lực trong <strong>15 phút</strong>.
+        </p>
+        <p className="av3-lead">Chưa thấy thư? Xem trong mục Thư rác hoặc gửi lại.</p>
+        <p className="av3-caption">Chế độ thử nghiệm cục bộ không gửi email thật.</p>
+        <Link href="/forgot-password" className="av3-btn av3-btn--secondary">Gửi lại đường dẫn</Link>
+        <Link href="/login" className="av3-link av3-card__back">‹ Quay lại đăng nhập</Link>
+      </section>
+    </main>
   );
 }

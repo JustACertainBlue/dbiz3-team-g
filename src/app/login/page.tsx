@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AuthSplit from '../auth-v3/AuthSplit'
+import { useHydrated } from '../auth-v3/useHydrated'
 import { prototypeLoginEnabled } from '@/lib/auth/prototype-login'
 import { ContactDepartmentPopup, RejectedPopup, ReviseDocsPopup, SubmittedPopup } from '../auth-v3/RegistrationPopups'
 import { formatViDateTime } from '../auth-v3/rules'
@@ -32,6 +33,7 @@ function LoginForm() {
   // png/15 "Bạn là": only changes the hint under the button. The sign-in itself needs email and password only.
   const [who, setWho] = useState<'agency' | 'workshop'>('agency')
   const [busy, setBusy] = useState(false)
+  const hydrated = useHydrated()
   const [remember, setRemember] = useState(false)
   const [registration, setRegistration] = useState<RegistrationStatus | null>(null)
   const [error, setError] = useState<{ code?: string; message: string } | null>(null)
@@ -58,7 +60,7 @@ function LoginForm() {
 
   // AUT009 elements: Email, Password, Login, Forgot password, Register (mockup v3 png/15).
   return <AuthSplit>
-    <form className="av3-login" onSubmit={submit} noValidate={false} aria-label="Đăng nhập">
+    <form className="av3-login" method="post" onSubmit={submit} noValidate={false} aria-label="Đăng nhập">
       <Link href="/explore" className="av3-link av3-login__back">‹ Tiếp tục khám phá mà không đăng nhập</Link>
       <h1 className="av3-h1">Đăng nhập</h1>
       <fieldset className="av3-roles">
@@ -80,7 +82,7 @@ function LoginForm() {
         <label className="av3-check"><input type="checkbox" name="remember" checked={remember} onChange={event => setRemember(event.target.checked)} />Ghi nhớ đăng nhập (30 ngày)</label>
         <Link href="/forgot-password" className="av3-link">Quên mật khẩu?</Link>
       </div>
-      <button className="av3-btn av3-btn--primary" type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
+      <button className="av3-btn av3-btn--primary" type="submit" disabled={!hydrated || busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
       <hr className="av3-login__rule" />
       {who === 'agency'
         ? <p className="av3-login__foot">Công ty lữ hành chưa có tài khoản? <Link href="/register" className="av3-link">Đăng ký tài khoản công ty lữ hành</Link></p>

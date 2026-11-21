@@ -4,9 +4,11 @@
 import { useState } from 'react'
 import AccountSidebar from '../../auth-v3/AccountSidebar'
 import { passwordChecks } from '../../auth-v3/rules'
+import { useHydrated } from '../../auth-v3/useHydrated'
 import '../../auth-v3/auth-v3.css'
 
 export default function ChangePasswordPage() {
+  const hydrated = useHydrated()
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [fresh, setFresh] = useState('')
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError('')
@@ -23,7 +25,7 @@ export default function ChangePasswordPage() {
       <AccountSidebar active="password" />
       <section className="av3-card av3-card--account">
         <p className="av3-lead">Mật khẩu tạm phải được đổi trước khi vào không gian làm việc. Sau khi đổi, bạn đăng nhập lại bằng mật khẩu mới.</p>
-        <form onSubmit={submit} className="av3-form av3-form--edit">
+        <form method="post" onSubmit={submit} className="av3-form av3-form--edit">
           <div className="av3-field"><label htmlFor="cp-current">Mật khẩu hiện tại</label><input id="cp-current" name="current_password" type="password" autoComplete="current-password" required /></div>
           <div className="av3-field"><label htmlFor="cp-new">Mật khẩu mới</label><input id="cp-new" name="new_password" type="password" autoComplete="new-password" required minLength={8} maxLength={64} value={fresh} onChange={event => setFresh(event.target.value)} aria-describedby="cp-rules" /></div>
           <ul id="cp-rules" className="av3-rules" aria-label="Yêu cầu mật khẩu">
@@ -31,7 +33,7 @@ export default function ChangePasswordPage() {
           </ul>
           <div className="av3-field"><label htmlFor="cp-confirm">Nhập lại mật khẩu mới</label><input id="cp-confirm" name="confirm_password" type="password" autoComplete="new-password" required /></div>
           {error && <div className="av3-alert av3-alert--danger" role="alert"><strong>{error}</strong></div>}
-          <div className="av3-actions"><button className="av3-btn av3-btn--primary" disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu và đăng nhập lại'}</button></div>
+          <div className="av3-actions"><button className="av3-btn av3-btn--primary" disabled={!hydrated || busy}>{busy ? 'Đang lưu…' : 'Lưu và đăng nhập lại'}</button></div>
         </form>
       </section>
     </div>

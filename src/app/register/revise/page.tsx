@@ -4,12 +4,14 @@
 // GET /api/register/resubmit?token=… and POST /api/register/resubmit (FormData). Fields the mockup does not list sit under "Thông tin khác".
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useHydrated } from '../../auth-v3/useHydrated'
 import '../../auth-v3/auth-v3.css'
 
 type Revision = { comments: string; full_name: string; email: string; company_name: string; company_type: string; tax_id: string; team_size: number; tour_types: string[]; location: Record<string,string>; contact_information: Record<string,string> }
 const LABELS: Record<string, string> = { street: 'Địa chỉ', ward: 'Phường', district: 'Quận/Huyện', city_province: 'Tỉnh/Thành phố', contact_person_name: 'Người liên hệ', phone_number: 'Số điện thoại', business_email: 'Email công việc' }
 
 function RevisionForm() {
+  const hydrated = useHydrated()
   const [files, setFiles] = useState<File[]>([])
   const token = useSearchParams().get('token') || ''
   const [data, setData] = useState<Revision | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [done, setDone] = useState(false), [confirmed, setConfirmed] = useState(false)
@@ -36,7 +38,7 @@ function RevisionForm() {
       {data && <p className="av3-lead">{data.company_name}</p>}
     </header>
     {error && <div className="av3-alert av3-alert--danger" role="alert"><strong>{error}</strong></div>}
-    {data && <form onSubmit={submit} className="av3-reg__form">
+    {data && <form method="post" onSubmit={submit} className="av3-reg__form">
       <div className="av3-banner av3-banner--danger" role="note">
         <strong>Sở Du lịch cần bạn bổ sung</strong>
         <p>“{data.comments}”</p>
@@ -70,7 +72,7 @@ function RevisionForm() {
         {files.length > 0 && <ul className="av3-files">{files.map((file, index) => <li key={`${file.name}-${index}`}><span><strong>{file.name}</strong> · {(file.size / (1024 * 1024)).toFixed(1).replace('.', ',')} MB</span><button type="button" aria-label={`Xoá ${file.name}`} onClick={() => setFiles(files.filter((_, i) => i !== index))}>✕</button></li>)}</ul>}
       </section>
       <label className="av3-check av3-check--block"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />Tôi xác nhận thông tin sửa đổi là đúng.</label>
-      <div className="av3-reg__submit av3-reg__submit--rule"><button className="av3-btn av3-btn--primary" disabled={busy || !confirmed}>{busy ? 'Đang gửi…' : 'Gửi lại hồ sơ'}</button></div>
+      <div className="av3-reg__submit av3-reg__submit--rule"><button className="av3-btn av3-btn--primary" disabled={!hydrated || busy || !confirmed}>{busy ? 'Đang gửi…' : 'Gửi lại hồ sơ'}</button></div>
     </form>}
   </main>
 }

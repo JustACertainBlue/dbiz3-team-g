@@ -5,10 +5,12 @@ import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { passwordChecks } from "../auth-v3/rules";
+import { useHydrated } from "../auth-v3/useHydrated";
 import "../auth-v3/auth-v3.css";
 
 function ResetPasswordForm() {
   const router = useRouter();
+  const hydrated = useHydrated();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
 
@@ -72,7 +74,7 @@ function ResetPasswordForm() {
 
         {errorMessage && <div role="alert" className="av3-alert av3-alert--danger"><strong>{errorMessage}</strong></div>}
 
-        <form onSubmit={handleSubmit} noValidate className="av3-form">
+        <form method="post" onSubmit={handleSubmit} noValidate className="av3-form">
           <div className="av3-field">
             <label htmlFor="new_password">Mật khẩu mới</label>
             <input id="new_password" name="new_password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
@@ -88,7 +90,7 @@ function ResetPasswordForm() {
             <input id="confirm_password" name="confirm_password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password" disabled={loading} />
           </div>
-          <button type="submit" disabled={loading} className="av3-btn av3-btn--primary">{loading ? "Đang cập nhật…" : "Cập nhật mật khẩu"}</button>
+          <button type="submit" disabled={!hydrated || loading} className="av3-btn av3-btn--primary">{loading ? "Đang cập nhật…" : "Cập nhật mật khẩu"}</button>
         </form>
 
         <Link href="/login" className="av3-link av3-card__back">‹ Quay lại đăng nhập</Link>

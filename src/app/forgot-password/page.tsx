@@ -4,10 +4,12 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useHydrated } from "../auth-v3/useHydrated";
 import "../auth-v3/auth-v3.css";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const hydrated = useHydrated();
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,13 +57,13 @@ export default function ForgotPasswordPage() {
 
         {errorMessage && <div role="alert" className="av3-alert av3-alert--danger"><strong>{errorMessage}</strong></div>}
 
-        <form onSubmit={handleSubmit} noValidate className="av3-form">
+        <form method="post" onSubmit={handleSubmit} noValidate className="av3-form">
           <div className="av3-field">
             <label htmlFor="email">Email đã đăng ký</label>
             <input id="email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com" autoComplete="email" disabled={loading} />
           </div>
-          <button type="submit" disabled={loading} className="av3-btn av3-btn--primary">{loading ? "Đang gửi…" : "Gửi đường dẫn đặt lại"}</button>
+          <button type="submit" disabled={!hydrated || loading} className="av3-btn av3-btn--primary">{loading ? "Đang gửi…" : "Gửi đường dẫn đặt lại"}</button>
         </form>
 
         <Link href="/login" className="av3-link av3-card__back">‹ Quay lại đăng nhập</Link>

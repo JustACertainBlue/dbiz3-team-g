@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CalendarCheck, MessageSquare, Sparkles, Tag } from "lucide-react";
 import { registrationSchema } from "@/lib/auth/registration-validation";
 import { COMPANY_LABELS, TOUR_LABELS } from "../auth-v3/labels";
+import { useHydrated } from "../auth-v3/useHydrated";
 import "../auth-v3/auth-v3.css";
 
 const TOUR_TYPES = [
@@ -38,6 +39,7 @@ function Field({ id, label, name, type = "text", value, placeholder, hint, full,
 
 export default function RegisterPage() {
   const router = useRouter();
+  const hydrated = useHydrated();
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -241,7 +243,7 @@ export default function RegisterPage() {
 
       <div className="av3-reg__grid">
         <FieldContext.Provider value={{ errors, onChange: handleInputChange }}>
-        <form onSubmit={handleSubmit} className="av3-reg__form">
+        <form method="post" onSubmit={handleSubmit} className="av3-reg__form">
           <section className="av3-section">
             <h2><span className="av3-num">1</span>Tài khoản đăng nhập</h2>
             <div className="av3-cols">
@@ -314,7 +316,7 @@ export default function RegisterPage() {
           </section>
 
           <div className="av3-reg__submit">
-            <button type="submit" className="av3-btn av3-btn--primary" disabled={isSubmitting}>{isSubmitting ? "Đang gửi…" : "Xác minh email ›"}</button>
+            <button type="submit" className="av3-btn av3-btn--primary" disabled={!hydrated || isSubmitting}>{isSubmitting ? "Đang gửi…" : "Xác minh email ›"}</button>
           </div>
         </form>
         </FieldContext.Provider>

@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatViDateTime, otpCountdown } from "../../auth-v3/rules";
+import { useHydrated } from "../../auth-v3/useHydrated";
 import "../../auth-v3/auth-v3.css";
 import { useRouter } from "next/navigation";
 
 export default function OtpPage() {
   const router = useRouter();
+  const hydrated = useHydrated();
 
   const [registrationRequestId, setRegistrationRequestId] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -153,7 +155,7 @@ export default function OtpPage() {
     <main className="av3-center av3-center--two">
       <section className="av3-card">
         <h1 className="av3-h1 av3-h1--card">Nhập mã xác minh</h1>
-        <form className="av3-form" onSubmit={handleVerify}>
+        <form className="av3-form" method="post" onSubmit={handleVerify}>
           <p className="av3-lead">Chúng tôi đã gửi mã 6 số đến <strong>{email || "email đăng ký"}</strong>.</p>
           {errorMessage && <div className="av3-alert av3-alert--danger" role="alert"><strong>{split[0].replace(/\.$/, "") + "."}</strong>{split.length > 1 && <p>{errorMessage.slice(errorMessage.indexOf(". ") + 2)}</p>}</div>}
           {successMessage && <div className="av3-alert av3-alert--success" role="status"><strong>{successMessage}</strong></div>}
@@ -168,7 +170,7 @@ export default function OtpPage() {
             Chưa nhận được? <button type="button" className="av3-link av3-link-button" onClick={handleResend} disabled={isResending}>{isResending ? "Đang gửi lại…" : "Gửi lại mã"}</button>
             <br />Tối đa 5 lần nhập.
           </p>
-          <button type="submit" className="av3-btn av3-btn--primary" disabled={isVerifying || otpCode.length !== 6}>{isVerifying ? "Đang xác nhận…" : "Xác minh"}</button>
+          <button type="submit" className="av3-btn av3-btn--primary" disabled={!hydrated || isVerifying || otpCode.length !== 6}>{isVerifying ? "Đang xác nhận…" : "Xác minh"}</button>
           <button type="button" className="av3-link av3-link-button av3-card__back" onClick={handleEditEmail}>‹ Sửa email đăng ký</button>
         </form>
       </section>

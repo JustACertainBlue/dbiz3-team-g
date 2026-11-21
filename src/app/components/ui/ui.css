@@ -99,6 +99,7 @@
 .hab-modal__title { margin: 0; font: 800 26px/34px var(--font-body); color: var(--c-primary-dark); }
 .hab-modal__body { font: 400 16px/24px var(--font-body); color: var(--c-text-2); }
 .hab-modal__body p { margin: 0; }
+.hab-modal__lead { width: 285px; max-width: 100%; margin: 0 auto !important; }
 .hab-modal__error { margin-top: 8px !important; color: var(--c-error); }
 .hab-modal__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 4px; }
 @media (max-width: 599px) { .hab-modal { padding-top: 72px; } .hab-modal__box { padding: 24px; } }

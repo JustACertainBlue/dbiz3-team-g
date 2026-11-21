@@ -137,7 +137,7 @@ export default function AppHeader({ session, pathname, account = {}, unread = 0,
     <Modal open={confirmLogout} onClose={() => setConfirmLogout(false)} closeDisabled={loggingOut} tone="danger" width={460}
       title="Đăng xuất khỏi tài khoản?" icon={<LogOut size={28} />}
       actions={<button type="button" className={buttonClass('danger')} disabled={loggingOut} onClick={logout} data-autofocus>{loggingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}</button>}>
-      <p>Bạn sẽ cần đăng nhập lại để xem giá, tin nhắn và đặt chỗ.</p>
+      <p className="hab-modal__lead">Bạn sẽ cần đăng nhập lại để xem giá, tin nhắn và đặt chỗ.</p>
       {logoutError && <p role="alert" className="hab-modal__error">{logoutError}</p>}
     </Modal>
   </>

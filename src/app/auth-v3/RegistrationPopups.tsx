@@ -52,19 +52,19 @@ export function ContactDepartmentPopup({ open, onClose, info }: { open: boolean;
 }
 
 /** 18c: registration not approved; opens 18d from "Liên hệ Sở Du lịch". */
-export function RejectedPopup({ open, onClose, company, note, reviseHref, contact }: { open: boolean; onClose: () => void; company?: string; note: ReviewNote; reviseHref?: string; contact: ContactInfo }) {
+export function RejectedPopup({ open, onClose, company, note, reviseHref, contact }: { open: boolean; onClose: () => void; company?: string; note: ReviewNote; reviseHref?: string; contact?: ContactInfo | null }) {
   const [contactOpen, setContactOpen] = useState(false)
   return <>
     <Modal open={open && !contactOpen} onClose={onClose} width={560} title="Hồ sơ đăng ký chưa được duyệt" icon={<span className="av3-pop-icon av3-pop-icon--solid av3-pop-icon--danger-solid"><X size={30} strokeWidth={2.8} /></span>}
-      actions={<><button type="button" className={buttonClass(reviseHref ? 'secondary' : 'primary')} onClick={() => setContactOpen(true)}>Liên hệ Sở Du lịch</button>{reviseHref && <a className={buttonClass('primary')} href={reviseHref}>Sửa và gửi lại hồ sơ</a>}</>}>
+      actions={<>{contact && <button type="button" className={buttonClass(reviseHref ? 'secondary' : 'primary')} onClick={() => setContactOpen(true)}>Liên hệ Sở Du lịch</button>}{reviseHref && <a className={buttonClass('primary')} href={reviseHref}>Sửa và gửi lại hồ sơ</a>}</>}>
       <p className="av3-pop-lead">Sở Du lịch Hà Nội không duyệt hồ sơ{company ? ` của ${company}` : ''}. Tài khoản chưa dùng được để đặt trải nghiệm.</p>
       <div className="av3-pop-box">
         <h3>Lý do</h3>
         <p className="av3-pop-quote">“{note.message}”</p>
         <small>{[note.by ?? 'Sở Du lịch Hà Nội', note.at].filter(Boolean).join(' · ')}</small>
       </div>
-      <p className="av3-pop-lead av3-pop-lead--sm">{reviseHref ? 'Bạn có thể sửa thông tin theo lý do trên rồi gửi lại hồ sơ. Các thông tin khác đã nhập vẫn được giữ. ' : ''}Nếu cho rằng có nhầm lẫn, hãy liên hệ Sở Du lịch Hà Nội.</p>
+      <p className="av3-pop-lead av3-pop-lead--sm">{reviseHref ? 'Bạn có thể sửa thông tin theo lý do trên rồi gửi lại hồ sơ. Các thông tin khác đã nhập vẫn được giữ. ' : ''}{contact ? 'Nếu cho rằng có nhầm lẫn, hãy liên hệ Sở Du lịch Hà Nội.' : ''}</p>
     </Modal>
-    <ContactDepartmentPopup open={open && contactOpen} onClose={() => setContactOpen(false)} info={contact} />
+    {contact && <ContactDepartmentPopup open={open && contactOpen} onClose={() => setContactOpen(false)} info={contact} />}
   </>
 }

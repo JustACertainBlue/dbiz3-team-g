@@ -8,9 +8,8 @@ import { useHydrated } from '../auth-v3/useHydrated'
 import { prototypeLoginEnabled } from '@/lib/auth/prototype-login'
 import { ContactDepartmentPopup, RejectedPopup, ReviseDocsPopup, SubmittedPopup } from '../auth-v3/RegistrationPopups'
 import { formatViDateTime } from '../auth-v3/rules'
+import { DEPARTMENT_CONTACT } from '../auth-v3/department-contact'
 
-// png/18d. The repo holds no real support contact; these are the mockup's example values (example.invalid).
-const DEPARTMENT_CONTACT = { email: 'hotro.sodulich@example.invalid', phone: '(024) 0000 0000', hours: '08:00 – 17:00, Thứ 2 – Thứ 6' }
 type RegistrationStatus = { status: 'pending' | 'revise' | 'rejected'; reason: string; reviewed_at: string }
 
 const demoAccounts = [

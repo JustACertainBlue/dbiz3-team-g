@@ -90,4 +90,36 @@ describe('login returns the registration status only after the right password', 
     expect(res.status).toBe(200)
     expect(res.body.registration_status).toBeUndefined()
   })
+
+  it('disabled Local Provider with the right password: only the existing "Account disabled", no registration_status', async () => {
+    const PROVIDER = 'thanhvien20@example.invalid'
+    repo().update('user_accounts', row => row.email === PROVIDER, { password_hash: await hashPassword(PASSWORD), must_change_password: 'false', account_status: 'Disabled' })
+    const res = await post(PASSWORD, PROVIDER)
+    expect(res.status).toBe(403)
+    expect(res.body.error_message).toBe('Account disabled')
+    expect(res.body.registration_status).toBeUndefined()
+    expect(res.cookie ?? '').not.toContain('hab_session=')
+  })
+
+  it('a non-Agency account labelled Pending Approval gets no registration_status', async () => {
+    const PROVIDER = 'thanhvien20@example.invalid'
+    repo().update('user_accounts', row => row.email === PROVIDER, { password_hash: await hashPassword(PASSWORD), must_change_password: 'false', account_status: 'Pending Approval' })
+    const res = await post(PASSWORD, PROVIDER)
+    expect(res.body.registration_status).toBeUndefined()
+  })
+
+  it('an Approved Agency that cannot enter (no agency profile) is inactive but gets no registration_status', async () => {
+    repo().remove('agency_profiles', row => row.user_id === userId())
+    const res = await post()
+    expect(res.status).toBe(403)
+    expect(res.body.registration_status).toBeUndefined()
+  })
+
+  it('a Disabled Agency with a leftover Rejected registration request still gets only "Account disabled"', async () => {
+    setRegistration('Disabled', 'Rejected', { decision: 'Reject', comments: 'Lý do cũ.', decided_at: '2026-11-13T15:40:00+07:00' })
+    const res = await post()
+    expect(res.body.error_message).toBe('Account disabled')
+    expect(res.body.registration_status).toBeUndefined()
+    expect(JSON.stringify(res.body)).not.toContain('Lý do cũ')
+  })
 })

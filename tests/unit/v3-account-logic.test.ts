@@ -98,4 +98,14 @@ describe('registration status popups', () => {
     const contact = renderToStaticMarkup(React.createElement(ContactDepartmentPopup, { open: true, onClose: noop, info: { code: 'HS-1', email: 'h@example.invalid', phone: '0', hours: '08:00' } }))
     expect(contact).toContain('mailto:h@example.invalid?subject=')
   })
+  it('18c hides the contact button and the contact sentence while the contact is empty', () => {
+    const html = renderToStaticMarkup(React.createElement(RejectedPopup, { open: true, onClose: noop, note: { message: 'Sai MST.' }, contact: null }))
+    expect(html).toContain('Hồ sơ đăng ký chưa được duyệt')
+    expect(html).not.toContain('Liên hệ Sở Du lịch')
+    expect(html).not.toContain('example.invalid')
+  })
+  it('the contact constant is empty until the team supplies a real one (no example.invalid)', async () => {
+    const { DEPARTMENT_CONTACT } = await import('@/app/auth-v3/department-contact')
+    expect(DEPARTMENT_CONTACT === null || !JSON.stringify(DEPARTMENT_CONTACT).includes('example.invalid')).toBe(true)
+  })
 })

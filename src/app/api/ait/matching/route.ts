@@ -21,6 +21,9 @@ import {
   buildRelaxationSuggestions,
 } from '@/lib/matching/recommendation-service'
 import { loadExperiences } from '@/lib/db/seed-loader'
+import { loadExploreRuntime } from '@/lib/explore/seed-repository'
+import { listableRows } from '@/lib/explore/v3-home'
+import { craftDisplay, matchingCardView, profileGuests } from '@/lib/matching/card-data'
 
 export async function POST(request: Request) {
   try {
@@ -46,7 +49,10 @@ export async function POST(request: Request) {
     }
 
     // 1. Retrieve verified candidates from seed catalog (BR-003)
-    const rawCandidates = await getVerifiedCandidates(profile)
+    const exploreSeed = await loadExploreRuntime()
+    // Experiences with no card image (own or village cover) are not recommended (UI v3 integration 21/11).
+    const listedIds = new Set(listableRows(exploreSeed).map(row => row.experience.experience_id))
+    const rawCandidates = (await getVerifiedCandidates(profile)).filter(candidate => listedIds.has(candidate.experience_id))
 
     // Enrich candidates with village_name for display (look up from experience location)
     const allExperiences = await loadExperiences()
@@ -86,10 +92,12 @@ export async function POST(request: Request) {
     }
 
     // 5. Build recommendation output (FR-008, BR-007, #25)
-    const recs = await buildRecommendations(ranked)
+    // Screen 22: card data of screen 02 added to every recommendation (additive; no existing field changes).
+    const recs = await buildRecommendations(ranked.map(c => ({ ...c, craft_display: craftDisplay(exploreSeed, c.experience_id) })))
+    const withCard = <T extends { experience_id: string }>(m: T) => ({ ...m, card: matchingCardView(exploreSeed, m.experience_id, profileGuests(profile)) })
 
     return NextResponse.json({
-      top_matches: recs.top_matches.map(m => ({
+      top_matches: recs.top_matches.map(m => withCard({
         ...m,
         // Carry through display fields
         village_name: ranked.find(r => r.experience_id === m.experience_id)?.village_name ?? '',
@@ -97,7 +105,7 @@ export async function POST(request: Request) {
         max_participants: ranked.find(r => r.experience_id === m.experience_id)?.max_participants,
         provider_name: ranked.find(r => r.experience_id === m.experience_id)?.provider_name ?? '',
       })),
-      additional_suggestions: recs.additional_suggestions,
+      additional_suggestions: recs.additional_suggestions.map(withCard),
     })
   } catch (err: any) {
     return NextResponse.json(

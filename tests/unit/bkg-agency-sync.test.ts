@@ -18,7 +18,7 @@ const SONG_HONG = '2a1f0cc1-d7df-587d-afd4-445d25a5c5b0' // Active Chat with PRO
 const BOOKED_EBF = '4bf17b30-9819-5c47-b745-06be7171087b'
 const options = { now: () => new Date(SEED_NOW) }
 // spec-BKG #49 as amended 2026-11-08: {status_label} is the Vietnamese display label (spec changed → expectation changed).
-const TEMPLATE = /^Booking (Tạm giữ|Đã đặt|Đã huỷ|Hoàn tất): Nặn gốm thủ công, .+–.+, \d+ pax, .+ VND/
+const TEMPLATE = /^Booking (Chờ thanh toán|Đã thanh toán|Đã huỷ|Hoàn tất): Nặn gốm thủ công, .+–.+, \d+ pax, .+ VND/
 
 const repo = () => demoRepository()
 const activeChats = (agencyId: string) => repo().all('chat_sessions').filter(r => r.agency_id === agencyId && r.provider_id === PROVIDER_ID && r.status === 'Active')
@@ -107,7 +107,7 @@ describe('T014 | Agency sync through Chat (F-SCHED-08)', () => {
     const confirm = await changeBookingStatus(provider, booking_id, { target_status: 'Booked' }, options)
     const message = repo().find('chat_messages', r => r.message_id === confirm.agency_notification_message_id)!
     expectBookingUpdate(message, booking_id)
-    expect(message.text.startsWith('Booking Đã đặt')).toBe(true) // #49 amended: label, not the stored value
+    expect(message.text.startsWith('Booking Đã thanh toán')).toBe(true) // #49 amended: label, not the stored value
   })
 
   it('BR-012: rejected and no-op actions send no message', async () => {

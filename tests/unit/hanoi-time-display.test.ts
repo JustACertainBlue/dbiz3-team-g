@@ -82,15 +82,16 @@ describe('#87 spec-BKG #31 | Booking times from PostgreSQL (UTC) are shown in As
       start_at: new Date(row.start_at).toISOString(), end_at: new Date(row.end_at).toISOString(),
     })
     cookie.account = 'agency'
-    const page = await html(AgencyBookingHistoryPage({ params: { agencyId: TRANG_AN }, searchParams: {} }))
-    expect(page).toContain(`${startLocal} → ${endLocal}`)
+    const page = await html(AgencyBookingHistoryPage({ params: { agencyId: TRANG_AN }, searchParams: { tab: 'all', q: `HAB-${row.booking_id.slice(0, 6)}` } }))
+    expect(page).toContain(`${startLocal.slice(11)}–${endLocal}`) // screen 05 card shows "HH:mm–HH:mm" in Hanoi time
   })
 
   it('FR-004: the edit form pre-fills the start in Hanoi time, so saving it with +07:00 does not move the Booking', () => {
     const detail = { booking_id: 'b1', start_at: START_UTC, end_at: END_UTC, group_size: 7, agreed_price: 1440000, booking_conditions: { notice_period: 12, cancellation_policy: { before_hours: 24, refund_percent: 80 } } } as unknown as BookingDetail
     const markup = renderToStaticMarkup(React.createElement(EditBookingForm, { detail, backHref: '/back' }))
-    expect(markup).toContain('value="2026-11-23T09:00"')
-    expect(markup).not.toContain('value="2026-11-23T02:00"')
+    expect(markup).toContain('value="2026-11-23"') // date input, Hanoi day
+    expect(markup).toContain('value="09:00"') // time of day in Hanoi time
+    expect(markup).not.toContain('value="02:00"')
   })
 
   it('FR-001 #70: the calendar puts a UTC block on its Hanoi day with Hanoi times', () => {
@@ -100,9 +101,9 @@ describe('#87 spec-BKG #31 | Booking times from PostgreSQL (UTC) are shown in As
     }))
     const day = (d: string) => markup.match(new RegExp(`<section[^>]*aria-label="${d}"[\\s\\S]*?</section>`))?.[0] ?? ''
     // spec đổi (nhãn tiếng Việt, DSH018/SCH139 amended 2026-11-08) → kỳ vọng đổi; phần kiểm giờ #70/#87 không đổi.
-    expect(day('2026-11-23')).toContain('09:00–10:30 Đã đặt')
-    expect(day('2026-11-23')).toContain('06:30–07:30 Tạm giữ')
-    expect(day('2026-11-22')).not.toContain('Tạm giữ')
+    expect(day('2026-11-23')).toContain('09:00–10:30 Đã thanh toán')
+    expect(day('2026-11-23')).toContain('06:30–07:30 Chờ thanh toán')
+    expect(day('2026-11-22')).not.toContain('Chờ thanh toán')
   })
 })
 

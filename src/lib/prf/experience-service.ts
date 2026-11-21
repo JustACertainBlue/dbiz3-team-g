@@ -5,7 +5,9 @@ import { ExperienceCreateSchema, ExperienceImageSchema, INVALID_CATEGORY_MESSAGE
 import type { DiscountRule } from './experience-terms'
 import { mediaUrl } from './media-urls'
 import { missingCategories, type ExperienceImageCategory } from './experience-images'
+import { parseSlots } from '../explore/vocabulary'
 import { ZodError } from 'zod'
+import { ContentFieldError, parseExperienceContent, type ContentChanges } from './experience-content'
 import { recordAuditLog } from './audit-logger'
 
 export interface ExperienceImageInput {
@@ -37,6 +39,20 @@ export interface ExperienceInput {
   group_discounts?: DiscountRule[]
   special_rates?: DiscountRule[]
   images: ExperienceImageInput[]
+  // Screen 32 content columns (src/lib/prf/experience-content.ts); validated there.
+  highlights?: unknown
+  suitable_for?: unknown
+  group_note?: unknown
+  inclusions?: unknown
+  guide_languages?: unknown
+  child_policy?: unknown
+}
+
+function contentOf(input: object): ContentChanges {
+  try { return parseExperienceContent(input as Record<string, unknown>) } catch (error) {
+    if (error instanceof ContentFieldError) throw new ExperienceError(error.message, 400)
+    throw error
+  }
 }
 
 export class ExperienceError extends Error {
@@ -130,6 +146,7 @@ export async function createExperience(
 
   ;(await Promise.all(parsed.images.map(async image=>(await assertUploadedImage(image,actor.userId || '')))))
   for (const rules of [parsed.group_discounts,parsed.special_rates]) if (rules && new Set(rules.map(rule=>rule.pax_threshold)).size!==rules.length) throw new ExperienceError('Discount thresholds must be unique',400)
+  const content = contentOf(input)
   const repository = demoRepository()
   const expId = randomUUID()
   const now = new Date().toISOString()
@@ -149,6 +166,7 @@ export async function createExperience(
     archived_at: '',
     created_at: now,
     updated_at: now,
+    ...(content as Record<string, string>),
   }))
   ;(await Promise.all(parsed.images.map(async (image, index) => {
     const fileId = (await insertStoredFile(image, actor.userId || '', now))
@@ -201,6 +219,7 @@ export async function updateExperience(
   if (input.category !== undefined && !ExperienceCreateSchema.shape.category.safeParse(input.category).success) throw new ExperienceError(INVALID_CATEGORY_MESSAGE, 400) // #88
   if (input.cancellation_policy!==undefined && !ExperienceCreateSchema.shape.cancellation_policy.safeParse(input.cancellation_policy).success)throw new ExperienceError('Invalid cancellation policy',400)
 
+  const content = contentOf(input)
   const repository = demoRepository()
   const stored = (await repository.find('experiences', row => row.experience_id === experienceId))
 
@@ -246,7 +265,7 @@ export async function updateExperience(
     if (input.notice_period_hours !== undefined) changes.notice_period_hours = String(input.notice_period_hours)
     if (input.experience_location_address !== undefined) changes.experience_location_address = input.experience_location_address
     if (input.cancellation_policy !== undefined) changes.cancellation_policy = JSON.stringify(input.cancellation_policy)
-    ;(await repository.update('experiences', row => row.experience_id === experienceId, changes))
+    ;(await repository.update('experiences', row => row.experience_id === experienceId, { ...changes, ...(content as Record<string, string>) }))
     if (input.images) (await applyImageUpdate(experienceId, stored.provider_id, input.images as unknown[], actor.userId || ''))
     ;(await saveDiscounts(experienceId, input))
   }
@@ -401,7 +420,15 @@ export async function getExperienceById(experienceId: string): Promise<unknown> 
     group_discounts: (await repository.all('experience_discount_rules')).filter(item => item.experience_id === experienceId && item.rule_kind === 'Group Discount').map(item => ({ pax_threshold: Number(item.pax_threshold), discount_percentage: Number(item.discount_percentage) })),
     special_rates: (await repository.all('experience_discount_rules')).filter(item => item.experience_id === experienceId && item.rule_kind === 'Special Rate').map(item => ({ pax_threshold: Number(item.pax_threshold), discount_percentage: Number(item.discount_percentage) })),
     images: media,
+    slots: await readSlots(experienceId),
   }
+}
+
+/** experience_slots of one experience, read only (the app role has no write grant). */
+async function readSlots(experienceId: string) {
+  try {
+    return parseSlots((await demoRepository().all('experience_slots')).filter(row => row.experience_id === experienceId))
+  } catch { return [] }
 }
 
 export async function listProviderExperiences(providerId: string, actorSession: SessionLike, includeArchived = false) {

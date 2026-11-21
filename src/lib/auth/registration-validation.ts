@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const TOUR_TYPES = [
+/** The one list of tour types (registration, and the company edit page). Values are stored as they are. */
+export const TOUR_TYPES = [
   "Cultural/Heritage",
   "Craft Village/Experiential",
   "Culinary",
@@ -10,7 +11,7 @@ const TOUR_TYPES = [
   "Other",
 ] as const;
 
-const COMPANY_TYPES = ["Travel Agency", "Tour Operator", "TMC"] as const;
+export const COMPANY_TYPES = ["Travel Agency", "Tour Operator", "TMC"] as const;
 
 export const registrationFields = z
   .object({

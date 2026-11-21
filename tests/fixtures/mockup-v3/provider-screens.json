@@ -1,0 +1,136 @@
+{
+ "29-TongQuanXuong": {
+  "source": "29-TongQuanXuong.html",
+  "required": [
+   "Xem hồ sơ xưởng",
+   "Xem trải nghiệm",
+   "Cần bạn xử lý",
+   "Đoàn sắp tới (30 ngày)",
+   "Đã nhận qua QR tháng",
+   "Trải nghiệm đang hiển thị",
+   "Lịch xưởng",
+   "+ Tạo đặt chỗ",
+   "Còn trống",
+   "Có đoàn giữ chỗ",
+   "Đã có đoàn",
+   "Xưởng nghỉ",
+   "Ngày đang chọn",
+   "T2",
+   "T3",
+   "T4",
+   "T5",
+   "T6",
+   "T7",
+   "CN",
+   "NGÀY ĐÃ CHỌN",
+   "Giờ mở cửa"
+  ],
+  "optional": []
+ },
+ "31-QuanLyTraiNghiem": {
+  "source": "31-QuanLyTraiNghiem.html",
+  "required": [
+   "Trải nghiệm của xưởng",
+   "Thêm trải nghiệm"
+  ],
+  "optional": []
+ },
+ "30-HoSoXuongCuaToi": {
+  "source": "30-HoSoXuongCuaToi.html",
+  "required": [
+   "Trang chủ",
+   "Tổng quan",
+   "Trải nghiệm",
+   "Lịch trống",
+   "Thông tin & liên hệ",
+   "Câu hỏi thường gặp",
+   "Trải nghiệm của xưởng (",
+   "Lịch trống",
+   "Câu hỏi thường gặp về xưởng"
+  ],
+  "optional": [
+   "Điểm nổi bật của xưởng",
+   "Giới thiệu xưởng",
+   "Xưởng hợp với",
+   "Thông tin & liên hệ",
+   "Trải nghiệm tương tự ở làng khác"
+  ]
+ },
+ "33-TraiNghiemChuXuong": {
+  "source": "33-TraiNghiemChuXuong.html",
+  "required": [
+   "Trải nghiệm của xưởng",
+   "Tổng quan",
+   "Giá & lịch trống",
+   "Bao gồm & tiện ích",
+   "Chính sách",
+   "Câu hỏi thường gặp",
+   "Giá từ",
+   "Giá & lịch trống",
+   "Chính sách của xưởng",
+   "Câu hỏi thường gặp về"
+  ],
+  "optional": [
+   "Điểm nổi bật của trải nghiệm",
+   "Về trải nghiệm này",
+   "Rất hợp cho đoàn của bạn",
+   "Bao gồm & tiện ích của"
+  ],
+  "tableHeaders": [
+   "Ca trải nghiệm",
+   "Số khách",
+   "Giá cho đoàn",
+   "Bao gồm & chính sách",
+   "Chọn"
+  ]
+ },
+ "32-FormTraiNghiem": {
+  "source": "32-FormTraiNghiem.html",
+  "required": [
+   "Thông tin chung",
+   "Tên trải nghiệm",
+   "Nghề và làng nghề",
+   "Lấy theo hồ sơ xưởng, không đổi được ở đây.",
+   "Loại hoạt động",
+   "Địa điểm tổ chức",
+   "Ảnh trải nghiệm",
+   "Điểm nổi bật của trải nghiệm",
+   "Ô 1 · Tiêu đề",
+   "Ô 2 · Tiêu đề",
+   "Ô 3 · Tiêu đề",
+   "Ô 4 · Tiêu đề",
+   "Về trải nghiệm này",
+   "Mô tả",
+   "✦ Nhờ AI mô tả",
+   "Rất hợp cho đoàn",
+   "Hộp “Hoàn hảo cho…” bên phải mô tả",
+   "Giá & ca trải nghiệm",
+   "Giá mỗi khách",
+   "Thời lượng mỗi ca",
+   "Tối đa mỗi ca",
+   "Các ca trong ngày",
+   "Bao gồm & tiện ích",
+   "Đã gồm trong giá",
+   "Trong buổi trải nghiệm",
+   "Sản phẩm mang về",
+   "Ngôn ngữ hướng dẫn",
+   "Chụp ảnh, quay phim",
+   "Lưu ý cho đoàn",
+   "An toàn",
+   "Chính sách của xưởng",
+   "Đặt trước ít nhất",
+   "Giữ chỗ chờ thanh toán",
+   "Hệ thống áp dụng chung cho mọi xưởng.",
+   "Hình thức thanh toán"
+  ],
+  "optional": [],
+  "deviations": [
+   {
+    "label": "Hình thức thanh toán",
+    "mockupValue": "Thanh toán QR · tài khoản của xưởng",
+    "value": "Thanh toán theo hướng dẫn của xưởng trong tin nhắn",
+    "note": "Lệch mockup theo chốt của Khánh Linh 21/11 (cùng câu với khối thanh toán ở 06/10c)."
+   }
+  ]
+ }
+}

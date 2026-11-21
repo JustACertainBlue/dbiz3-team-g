@@ -8,7 +8,7 @@ import StatusBadge from '@/app/components/StatusBadge'
 // 2026-11-08): one shared table turns canonical statuses into Vietnamese labels; stored/API values stay canonical.
 describe('Status labels and badge (design wave 2)', () => {
   it('BKG #49 / DSH018 (normal): every canonical Booking status has its Figma label', () => {
-    expect(['On hold', 'Booked', 'Completed', 'Cancelled'].map(s => statusLabel('booking', s))).toEqual(['Tạm giữ', 'Đã đặt', 'Hoàn tất', 'Đã huỷ'])
+    expect(['On hold', 'Booked', 'Completed', 'Cancelled'].map(s => statusLabel('booking', s))).toEqual(['Chờ thanh toán', 'Đã thanh toán', 'Hoàn tất', 'Đã huỷ'])
   })
 
   it('schema enums (normal): every canonical value of each family (data/schema.sql) has a Vietnamese label', () => {
@@ -38,14 +38,14 @@ describe('Status labels and badge (design wave 2)', () => {
 
   it('badge (normal): icon + label, canonical value kept in data-status, v9 status tokens; Booked is outlined, On hold is not', () => {
     const booked = renderToStaticMarkup(createElement(StatusBadge, { family: 'booking', status: 'Booked' }))
-    expect(booked).toContain('Đã đặt')
+    expect(booked).toContain('Đã thanh toán')
     expect(booked).toContain('<svg')
     expect(booked).toContain('aria-hidden="true"')
     expect(booked).toContain('data-status="Booked"')
     expect(booked).toContain('var(--color-status-booking-booked-fg)')
     expect(booked).toContain('inset 0 0 0 2px var(--color-status-booking-booked-border)')
     const onHold = renderToStaticMarkup(createElement(StatusBadge, { family: 'booking', status: 'On hold' }))
-    expect(onHold).toContain('Tạm giữ')
+    expect(onHold).toContain('Chờ thanh toán')
     expect(onHold).not.toContain('inset')
     expect(renderToStaticMarkup(createElement(StatusBadge, { family: 'flag', status: 'Needs action' }))).toContain('Cần xử lý')
   })

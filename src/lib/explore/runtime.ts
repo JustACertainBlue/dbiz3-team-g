@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DemoRow } from '../demo/types';
-import { eligibleRows, resolveViewer, type ExploreSeed, type Viewer } from './catalog';
+import { resolveViewer, type ExploreSeed, type Viewer } from './catalog';
+import { listableRows } from './v3-home';
 import { analyzeSession, rankCatalog, updatePreferenceWeights, type ExploreAction, type ExploreEvent, type RankingVersion } from './learning';
 
 type TrackingScope = 'Personalized' | 'Anonymous Analytics' | 'No Non-essential Tracking';
@@ -93,7 +94,7 @@ export class ExploreRuntime {
   }
 
   private catalog() {
-    return eligibleRows(this.seed).map(({ experience, provider }) => ({
+    return listableRows(this.seed).map(({ experience, provider }) => ({
       id: experience.experience_id, provider_id: provider.provider_id, type: experience.category,
       price: Number(experience.price_per_person), name: experience.name
     }));

@@ -1,3 +1,4 @@
+import { craftLabel as craftTypeLabel } from '../explore/vocabulary'
 import type { MatchFactors } from '@/lib/matching/scoring-engine'
 
 export interface RecommendationItem {
@@ -32,30 +33,32 @@ export function applyScoreThreshold<T extends { match_score?: number }>(candidat
   return candidates.filter(candidate => candidate.match_score === undefined || candidate.match_score >= SCORE_THRESHOLD)
 }
 
-const vnd = (amount: number) => amount.toLocaleString('en-US')
+const viNumber = (amount: number) => amount.toLocaleString('vi-VN')
 
 // #25: only factors that the scoring actually evaluated (match_factors), never a craft the Agency did not ask for.
-function explain(item: any, score: number): string {
+function explain(item: any, _score: number): string {
   const f: MatchFactors = item.match_factors || {}
-  const parts = [`Match score ${score}/100.`]
+  const parts = []
   if (f.craft) {
-    parts.push(f.craft.matched
-      ? `Matches your ${f.craft.label} preference (${f.craft.craft_type}).`
-      : `Does not match your ${f.craft.label} preference.`)
+    // Vietnamese label as on the card: the candidate's displayed craft when it matches, else the label of the wanted craft_type.
+    const label = (f.craft.matched ? item.craft_display : undefined) || (f.craft.craft_type ? craftTypeLabel(f.craft.craft_type) : '') || f.craft.label
+    parts.push(f.craft.matched ? `Hợp sở thích ${label} của bạn.` : `Gợi ý thêm, khác nghề ${label} bạn chọn.`)
   }
   if (f.experience_types) {
     const types = f.experience_types.requested.join(' / ')
-    parts.push(f.experience_types.matched ? `A ${types} experience, as requested.` : `Not a ${types} experience.`)
+    parts.push(f.experience_types.matched ? `Là trải nghiệm ${types}, đúng yêu cầu.` : `Không phải trải nghiệm ${types}.`)
   }
   if (f.max_participants !== undefined && f.group_size !== undefined) {
-    parts.push(`Takes up to ${f.max_participants} pax for your group of ${f.group_size}.`)
+    parts.push(`Nhận tối đa ${f.max_participants} khách cho đoàn ${f.group_size} khách.`)
   }
   if (f.budget_per_person !== undefined && f.price_per_person !== undefined) {
-    parts.push(`${vnd(f.price_per_person)} VND per person, within your ${vnd(f.budget_per_person)} VND budget.`)
+    parts.push(`${viNumber(f.price_per_person)} ₫/khách, trong ngân sách ${viNumber(f.budget_per_person)} ₫/khách.`)
   }
   if (f.distance_km !== undefined) {
-    parts.push(`About ${f.distance_km} km from ${f.origin ?? 'your starting point'} (estimated).`)
+    parts.push(`Cách ${f.origin ?? 'điểm xuất phát của bạn'} khoảng ${f.distance_km} km (ước tính).`)
   }
+  // Every shown experience passed the hard constraints, so this is always true when no factor was evaluated (BR-007: never empty).
+  if (parts.length === 0) parts.push('Đáp ứng các yêu cầu bắt buộc của đoàn.')
   return parts.join(' ')
 }
 
@@ -125,11 +128,11 @@ export async function buildRelaxationSuggestions(
   const groupSize = criteria?.group_size
   const largest = options.largest_group_size
   let conversation_prompt =
-    'No experiences currently meet all criteria above 60/100. You can relax your budget or travel distance, or adjust group size to see more artisan options.'
+    'Chưa có trải nghiệm nào đạt đủ tiêu chí trên 60/100. Bạn có thể nới ngân sách hoặc khoảng cách di chuyển, hoặc đổi số khách để xem thêm lựa chọn.'
   if (groupSize !== undefined && largest !== undefined && groupSize > largest) {
-    conversation_prompt = `No Experience can take a group of ${groupSize} pax: the largest group an eligible Experience accepts is ${largest} pax. You can split the group or reduce the number of guests.`
+    conversation_prompt = `Chưa có trải nghiệm nào nhận đoàn ${groupSize} khách: đoàn lớn nhất một trải nghiệm phù hợp nhận được là ${largest} khách. Bạn có thể chia đoàn hoặc giảm số khách.`
   } else if (suggestions[0]?.criterion === 'Budget' && cheapest !== undefined) {
-    conversation_prompt = `No Experience fits a budget of ${vnd(budget)} VND per person. The lowest price that meets your other requirements is ${vnd(cheapest)} VND per person.`
+    conversation_prompt = `Chưa có trải nghiệm nào có giá trong ngân sách ${viNumber(budget)} ₫/khách. Giá thấp nhất đáp ứng các yêu cầu còn lại là ${viNumber(cheapest)} ₫/khách.`
   }
 
   return {

@@ -1,41 +1,47 @@
 import Link from 'next/link'
-import { sessionDisplayName } from '@/lib/auth/session'
 import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/db/application-store'
 import { bookingConditionsFromExperience, canOpenCreateBooking } from '@/lib/booking/create-booking'
-import CreateBookingForm, { type AgencyOption, type ExperienceOption } from './CreateBookingForm'
+import { chattedAgencies } from '@/lib/booking/chatted-agencies'
+import { parseBookingRequest } from '@/lib/booking/request-card'
+import CreateBookingForm, { type ExperienceOption, type SlotOption } from './CreateBookingForm'
+import './create-v3.css'
 
 export const dynamic = 'force-dynamic'
 
-// Screen BKG134 Create Booking (F-SCHED-03).
-export default async function CreateBookingPage({ params }: { params: { providerId: string } }) {
+// Screen 35 (BKG134) Tạo đặt chỗ (F-SCHED-03), mockup 19/11. Only Tour Agencies that already chatted with the Provider
+// are offered (UI v3 decision #1). The default values come from the chat request card when `?yeu_cau=` is not used: none.
+export default async function CreateBookingPage({ params, searchParams }: { params: { providerId: string }; searchParams: { agency_id?: string; request?: string } }) {
   const session = (await currentServerSession())
   if (!(await canOpenCreateBooking(session, params.providerId))) {
-    return <main className="bkg-state"><h1>Create Booking</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới tạo được Booking.</p><Link href="/login">Đăng nhập</Link><style>{bookingStyles}</style></main>
+    return <main className="v3b-wrap"><h1 className="v3b-h1">Tạo đặt chỗ</h1><p>Chỉ xưởng sở hữu hồ sơ này mới tạo được đặt chỗ.</p><Link href="/login" className="v3b-btn v3b-btn--p">Đăng nhập</Link></main>
   }
-
   const repository = demoRepository()
   const experiences: ExperienceOption[] = (await repository.all('experiences'))
     .filter(row => row.provider_id === params.providerId && !row.archived_at)
     .map(row => ({
-      experience_id: row.experience_id,
-      name: row.name,
-      duration_minutes: Number(row.duration_minutes),
-      max_participants: Number(row.max_participants),
-      price_per_person: Number(row.price_per_person),
-      conditions: bookingConditionsFromExperience(row),
+      experience_id: row.experience_id, name: row.name, duration_minutes: Number(row.duration_minutes), max_participants: Number(row.max_participants),
+      price_per_person: Number(row.price_per_person), conditions: bookingConditionsFromExperience(row),
     }))
-  const approvedUsers = new Set((await repository.all('user_accounts')).filter(row => row.account_status === 'Approved').map(row => row.user_id))
-  const agencies: AgencyOption[] = (await repository.all('agency_profiles'))
-    .filter(row => approvedUsers.has(row.user_id))
-    .map(row => ({ agency_id: row.agency_id, company_name: row.company_name }))
-    .sort((a, b) => a.company_name.localeCompare(b.company_name))
-
-  return <main className="bkg-create">
-    <header><p>HANOI ARTISAN BRIDGE · BKG134</p><h1>Create Booking</h1><span>{(await sessionDisplayName(session))} · Booking mới luôn ở trạng thái On hold trong 72 giờ</span></header>
-    <CreateBookingForm providerId={params.providerId} experiences={experiences} agencies={agencies} />
-    <style>{bookingStyles}</style>
+  const rules = await repository.all('experience_discount_rules')
+  for (const experience of experiences) {
+    experience.rules = rules.filter(row => row.experience_id === experience.experience_id && row.rule_kind === 'Group Discount')
+      .map(row => ({ pax: Number(row.pax_threshold), pct: Number(row.discount_percentage) }))
+  }
+  // From a request card of the chat: prefill experience, date, time and guests (the note is copied by the server).
+  const card = searchParams.request ? parseBookingRequest((await repository.find('chat_messages', row => row.message_id === searchParams.request && row.message_kind === 'Quote Request'))?.text) : null
+  const ids = new Set(experiences.map(row => row.experience_id))
+  let slots: SlotOption[] = []
+  try {
+    slots = (await repository.all('experience_slots')).filter(row => ids.has(row.experience_id))
+      .map(row => ({ experience_id: row.experience_id, start: String(row.start_time).slice(0, 5), end: String(row.end_time).slice(0, 5), label: row.label }))
+  } catch { slots = [] }
+  const agencies = await chattedAgencies(params.providerId)
+  return <main className="v3b-wrap">
+    <Link href={`/provider/${params.providerId}/bookings`} className="v3b-back">‹ Đặt chỗ</Link>
+    <h1 className="v3b-h1">Tạo đặt chỗ</h1>
+    <p className="v3b-sub">Sau khi đã thống nhất với công ty lữ hành trong tin nhắn.</p>
+    <CreateBookingForm providerId={params.providerId} experiences={experiences} agencies={agencies} slots={slots} initialAgencyId={searchParams.agency_id} requestMessageId={card ? searchParams.request : undefined}
+      initial={card ? { experienceId: card.experience_id, date: card.date, time: card.slot_start, guests: String(card.group_size) } : undefined} />
   </main>
 }
-
-const bookingStyles = `.bkg-create,.bkg-state{max-width:880px;margin:auto;padding:42px 24px 80px;color:#1e2f27}.bkg-create header p{font-size:11px;letter-spacing:.14em;color:#9a4a2a;font-weight:800}.bkg-create h1,.bkg-state h1{font:600 40px var(--font-body);margin:8px 0}.bkg-create header span{color:#66746d}.bkg-form{display:grid;gap:16px;margin-top:28px;padding:24px;background:#f4efe5;border-radius:14px}.bkg-form label{display:grid;gap:6px;font-weight:700;font-size:14px}.bkg-form input,.bkg-form select,.bkg-form textarea{padding:10px 12px;border:1px solid #ddd6ca;border-radius:10px;font:inherit;background:white}.bkg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.bkg-panel{padding:14px 16px;background:white;border-radius:10px;font-size:14px;color:#3d4b44}.bkg-actions{display:flex;gap:12px;align-items:center}.bkg-actions button{padding:12px 20px;border:0;border-radius:999px;background:#243b30;color:white;font-weight:800;cursor:pointer}.bkg-actions button:disabled{opacity:.6;cursor:wait}.bkg-actions a{color:#9a4a2a;font-weight:800}.bkg-error{padding:12px 16px;border-radius:10px;background:#fbe4e1;color:#8a1f11}.bkg-result{padding:18px;border-radius:14px;background:#e3f1e8}.bkg-result dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:10px 0 0}.bkg-result dt{font-weight:700}.bkg-state{text-align:center}@media(max-width:720px){.bkg-grid{grid-template-columns:1fr}}`

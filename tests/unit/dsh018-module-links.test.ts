@@ -1,4 +1,5 @@
 /**
+ * (2026-11-21) The mockup v3 dashboard replaced the tile grid below: see the two tests on navigation.
  * Issues #128 / #203 — DSH018 Local Provider Dashboard.
  * - screen-spec-DSH018.md:32-36 §3 #6–#10: the navigation is exactly Complete/edit profile (PRF128), Experiences (EXP067),
  *   Bookings (BKG133), Schedule (SCH139), Messages (COM065). The extra "Hồ sơ xưởng" tile (→ PRF127) is not in the spec
@@ -24,18 +25,26 @@ const BAT_TRANG = '50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374'
 describe('#128 / #203 | DSH018 navigation tiles and narrow status summary', () => {
   beforeEach(() => demoRepository().reset())
 
-  it('the module grid holds exactly the five §3 navigation targets, in spec order, and no "Hồ sơ xưởng" tile', async () => {
+  // Mockup v3 (approved, screen 29) replaced the old tile grid: the provider reaches Experiences, Bookings, Schedule and
+  // Messages from the header (Tổng quan · Trải nghiệm · Lịch sử đặt chỗ, message button) and from links inside the page.
+  it('from the dashboard the provider reaches Experiences, Bookings and the full Schedule; Create booking goes to the existing route', async () => {
     const page = renderToStaticMarkup(await ProviderDashboardPage({ params: { providerId: BAT_TRANG } }))
-    const grid = page.match(/<div class="provider-module-grid">([\s\S]*?)<\/div>/)?.[1] ?? ''
-    const hrefs = [...grid.matchAll(/<a href="([^"]+)"/g)].map(m => m[1])
-    expect(hrefs).toEqual([
-      `/provider/${BAT_TRANG}/edit`,
-      `/provider/${BAT_TRANG}/experiences`,
-      `/provider/${BAT_TRANG}/bookings`,
-      `/provider/${BAT_TRANG}/schedule`,
-      '/messages',
-    ])
-    expect(grid).not.toContain('Hồ sơ xưởng')
+    const hrefs = [...page.matchAll(/<a [^>]*href="([^"]+)"/g)].map(m => m[1])
+    expect(hrefs).toContain(`/provider/${BAT_TRANG}/experiences`)
+    expect(hrefs).toContain(`/provider/${BAT_TRANG}/bookings`)
+    expect(hrefs).toContain(`/provider/${BAT_TRANG}/schedule`)
+    expect(hrefs).toContain(`/provider/${BAT_TRANG}/bookings/new`)
+    expect(hrefs).toContain(`/provider/${BAT_TRANG}`)
+    expect(hrefs).toContain(`/provider/${BAT_TRANG}/edit`)
+    expect(page).not.toContain('provider-module-grid')
+  })
+
+  it('the header gives the provider the dashboard, Experiences and Bookings, and every signed-in role the Messages button', () => {
+    const nav = readFileSync('src/app/components/nav/nav-model.ts', 'utf8')
+    expect(nav).toContain("`${base}/dashboard`")
+    expect(nav).toContain("`${base}/experiences`")
+    expect(nav).toContain("`${base}/bookings`")
+    expect(readFileSync('src/app/components/header/AppHeader.tsx', 'utf8')).toMatch(/variant !== 'admin' && <Link href="\/messages"/)
   })
 
   it('below 760 px the status summary uses two columns', () => {

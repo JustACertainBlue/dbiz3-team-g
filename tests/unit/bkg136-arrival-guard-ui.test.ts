@@ -14,14 +14,14 @@ import ConfirmArrival from '@/app/provider/[providerId]/bookings/[bookingId]/arr
 
 const render = (allowed: boolean, lockReason = '') => renderToStaticMarkup(React.createElement(ConfirmArrival,
   { bookingId: 'b1', backHref: '/provider/p1/bookings/b1', allowed, lockReason }))
-const confirmButton = (html: string) => html.match(/<button[^>]*>[^<]*Confirm Group Arrival<\/button>/)![0]
+const confirmButton = (html: string) => html.match(/<button[^>]*>[^<]*Xác nhận đoàn đã đến<\/button>/)![0]
 
 describe('#192 | BKG136 Confirm Group Arrival follows the F-SCHED-06 guard', () => {
   it('guard fails (e.g. Cancelled): the button is disabled and the reason is shown; Cancel still links back', () => {
     const html = render(false, 'Đánh dấu đoàn đã đến: đặt chỗ đã huỷ, chỉ xem')
     expect(confirmButton(html)).toMatch(/disabled=""/)
     expect(html).toContain('Đánh dấu đoàn đã đến: đặt chỗ đã huỷ, chỉ xem')
-    expect(html).toMatch(/<a[^>]*href="\/provider\/p1\/bookings\/b1"[^>]*>Cancel<\/a>/)
+    expect(html).toMatch(/<a[^>]*href="\/provider\/p1\/bookings\/b1"[^>]*>Quay lại<\/a>/)
   })
 
   it('guard succeeds (Booked, start reached): the button is enabled and no reason is shown', () => {

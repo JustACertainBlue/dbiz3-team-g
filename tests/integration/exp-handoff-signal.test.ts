@@ -17,6 +17,7 @@ import { demoSessionContextFor } from '@/lib/auth/session'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { createQuoteHandoff, hasQuoteRequest } from '@/lib/demo/commercial-handoff-service'
 import { demoRuntime } from '@/lib/explore/demo-runtime'
+import { addVillageCovers } from '../helpers/village-covers'
 
 const EXPERIENCE = 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69'
 const TRANG_AN = DEMO_IDENTITIES.agency.agencyId!
@@ -38,7 +39,7 @@ const strongEvents = async (sessionId: string) => (await (await demoRuntime()).e
   .filter(event => event.action_type === 'request_quote' || event.action_type === 'open_chat')
 
 describe('Slice C | FR-007 signal from the live handoff (spec-EXP #29, #32, #33)', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addVillageCovers(demoRepository()) })
 
   it('Request Quote from the detail page logs one request_quote with source_context in filter_values', async () => {
     const session = (await agencyExploreSession())
@@ -85,7 +86,7 @@ describe('Slice C | FR-007 signal from the live handoff (spec-EXP #29, #32, #33)
 })
 
 describe('Slice C | FR-011 Request Quote hidden after use (Q8)', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addVillageCovers(demoRepository()) })
 
   it('hasQuoteRequest is false before and true after this Agency asked for this Experience', async () => {
     expect((await hasQuoteRequest(AGENCY, EXPERIENCE))).toBe(false)

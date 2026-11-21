@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import AuthShell, { AuthAlert } from "../../components/AuthShell";
+import { otpCountdown } from "../../auth-v3/rules";
+import { useHydrated } from "../../auth-v3/useHydrated";
+import "../../auth-v3/auth-v3.css";
 import { useRouter } from "next/navigation";
 
 export default function OtpPage() {
   const router = useRouter();
+  const hydrated = useHydrated();
 
   const [registrationRequestId, setRegistrationRequestId] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -15,6 +18,8 @@ export default function OtpPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [attemptsUsed, setAttemptsUsed] = useState(0);
+  // png/18 "Mã hết hạn sau 04:32": counts down the 10 minutes of the code from the send or resend time (display only).
+  const [secondsLeft, setSecondsLeft] = useState(600);
   const boxes = useRef<Array<HTMLInputElement | null>>([]);
   const digits = Array.from({ length: 6 }, (_, i) => otpCode[i] ?? "");
   function setDigit(index: number, raw: string) {
@@ -30,7 +35,15 @@ export default function OtpPage() {
       const storedEmail = sessionStorage.getItem("registration_email") || "";
       setRegistrationRequestId(storedId);
       setEmail(storedEmail);
+      const sent = sessionStorage.getItem("registration_submitted_at") || "";
+      const elapsed = sent ? Math.floor((Date.now() - Date.parse(sent)) / 1000) : 0;
+      setSecondsLeft(Math.max(0, 600 - (Number.isFinite(elapsed) ? elapsed : 0)));
     }
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setSecondsLeft((value) => Math.max(0, value - 1)), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -117,6 +130,7 @@ export default function OtpPage() {
       } else {
         setOtpCode("");
         setAttemptsUsed(0);
+        setSecondsLeft(600);
         setSuccessMessage("Đã gửi mã 6 số mới. Kiểm tra hộp thư (hoặc dev-outbox).");
       }
     } catch (err: any) {
@@ -130,27 +144,31 @@ export default function OtpPage() {
     router.push("/register");
   };
 
-  // REG115 elements: Email, OTP code, Verify email, Resend OTP (F-AUTH-23 limits; no countdown), Edit registration email
-  // (Figma "Màn 1 · Nhập OTP"; the resend timer of the mock-up is not in the spec, step 0 #10).
+  // REG115 (mockup v3 png/18): code card on the left, application summary on the right. Verification, resend and limits are unchanged.
+  const split = errorMessage ? errorMessage.split(". ") : [];
   return (
-    <AuthShell title="Nhập mã OTP">
-      <form className="auth-v9__form" onSubmit={handleVerify}>
-        <p className="auth-v9__lead">Mã 6 số đã gửi tới {email || "email đăng ký"}</p>
-        {errorMessage && <AuthAlert title={errorMessage.split(". ")[0].replace(/\.$/, "") + "."}>{errorMessage.includes(". ") ? errorMessage.slice(errorMessage.indexOf(". ") + 2) : "Nhập lại."}</AuthAlert>}
-        {successMessage && <AuthAlert tone="success" title={successMessage} />}
-        <fieldset className="auth-v9__otp" aria-label="Mã OTP gồm 6 chữ số" aria-describedby="otp-hint">
-          {digits.map((digit, index) => <input key={index} ref={element => { boxes.current[index] = element; }} id={index === 0 ? "otp_code" : undefined}
-            inputMode="numeric" autoComplete={index === 0 ? "one-time-code" : "off"} maxLength={6} aria-label={`Số thứ ${index + 1}`} value={digit}
-            autoFocus={index === 0} onChange={event => setDigit(index, event.target.value)}
-            onKeyDown={event => { if (event.key === "Backspace" && !digit && index > 0) { boxes.current[index - 1]?.focus(); setOtpCode(otpCode.slice(0, index - 1)); } }} />)}
-        </fieldset>
-        <p id="otp-hint" className="auth-v9__hint">Mã có hiệu lực 10 phút, tối đa 5 lần nhập.</p>
-        <button type="submit" className="auth-v9__primary" disabled={isVerifying || otpCode.length !== 6}>{isVerifying ? "Đang xác nhận…" : "Xác nhận"}</button>
-        <div className="auth-v9__links">
-          <button type="button" className="auth-v9__link-button" onClick={handleResend} disabled={isResending}>{isResending ? "Đang gửi lại…" : "Gửi lại mã"}</button>
-          <button type="button" className="auth-v9__link-button" onClick={handleEditEmail}>Đổi email đăng ký</button>
-        </div>
-      </form>
-    </AuthShell>
+    <main className="av3-center">
+      <section className="av3-card">
+        <h1 className="av3-h1 av3-h1--card">Nhập mã xác minh</h1>
+        <form className="av3-form" method="post" onSubmit={handleVerify}>
+          <p className="av3-lead">Chúng tôi đã gửi mã 6 số đến <strong>{email || "email đăng ký"}</strong>.</p>
+          {errorMessage && <div className="av3-alert av3-alert--danger" role="alert"><strong>{split[0].replace(/\.$/, "") + "."}</strong>{split.length > 1 && <p>{errorMessage.slice(errorMessage.indexOf(". ") + 2)}</p>}</div>}
+          {successMessage && <div className="av3-alert av3-alert--success" role="status"><strong>{successMessage}</strong></div>}
+          <fieldset className="av3-otp" aria-label="Mã OTP gồm 6 chữ số" aria-describedby="otp-hint">
+            {digits.map((digit, index) => <input key={index} ref={element => { boxes.current[index] = element; }} id={index === 0 ? "otp_code" : undefined}
+              inputMode="numeric" autoComplete={index === 0 ? "one-time-code" : "off"} maxLength={6} aria-label={`Số thứ ${index + 1}`} value={digit}
+              autoFocus={index === 0} onChange={event => setDigit(index, event.target.value)}
+              onKeyDown={event => { if (event.key === "Backspace" && !digit && index > 0) { boxes.current[index - 1]?.focus(); setOtpCode(otpCode.slice(0, index - 1)); } }} />)}
+          </fieldset>
+          <p id="otp-hint" className="av3-lead av3-lead--sm">
+            {secondsLeft > 0 ? <>Mã hết hạn sau <strong>{otpCountdown(secondsLeft)}</strong>. </> : <>Mã đã hết hạn. </>}
+            Chưa nhận được? <button type="button" className="av3-link av3-link-button" onClick={handleResend} disabled={isResending}>{isResending ? "Đang gửi lại…" : "Gửi lại mã"}</button>
+            <br />Tối đa 5 lần nhập.
+          </p>
+          <button type="submit" className="av3-btn av3-btn--primary" disabled={!hydrated || isVerifying || otpCode.length !== 6}>{isVerifying ? "Đang xác nhận…" : "Xác minh"}</button>
+          <button type="button" className="av3-link av3-link-button av3-card__back" onClick={handleEditEmail}>‹ Sửa email đăng ký</button>
+        </form>
+      </section>
+    </main>
   );
 }

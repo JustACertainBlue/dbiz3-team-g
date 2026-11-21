@@ -24,8 +24,9 @@ export interface MediaDecision { allowed: boolean, public: boolean }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-/** The cache/ETag version of a file: changes when the stored bytes are replaced (refresh scripts update the size). */
-export const mediaVersion = (file: { file_size_bytes: string | number }) => String(file.file_size_bytes)
+/** The cache/ETag version of a file: changes when the stored bytes are replaced (refresh scripts update the size).
+ * Defined in media-urls.ts so the URLs the UI gets carry the same ?v= the route compares. */
+export { mediaVersion } from './media-urls'
 
 export function decideMediaAccess(session: SessionContext, facts: MediaFacts): MediaDecision {
   const image = facts.file.media_type.startsWith('image/')

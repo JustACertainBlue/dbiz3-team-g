@@ -13,7 +13,7 @@ describe('#191 | BKG134 Cancel goes to BKG133', () => {
   it('the Cancel link points to the Provider booking list, not the profile', () => {
     const html = renderToStaticMarkup(React.createElement(CreateBookingForm, { providerId: 'p1', agencies: [{ agency_id: 'a1', company_name: 'Synthetic Agency' }],
       experiences: [{ experience_id: 'e1', name: 'Synthetic workshop', duration_minutes: 60, max_participants: 10, price_per_person: 100000, conditions: { notice_period: 24, cancellation_policy: {} } }] }))
-    const cancel = html.match(/<a[^>]*>Cancel<\/a>/)
+    const cancel = html.match(/<a[^>]*>Huỷ<\/a>/)
     expect(cancel?.[0]).toMatch(/href="\/provider\/p1\/bookings"/)
   })
 })

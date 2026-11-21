@@ -16,10 +16,13 @@ function money(value: string): string {
 
 // #49 (amended 2026-11-08): "Booking {status_label}: {experience}, {start}–{end}, {group_size} pax, {agreed_price} VND"
 // (+ changed fields); {status_label} is the Vietnamese display label, the stored status stays canonical.
-function messageText(booking: DemoRow, experienceName: string, changedFields: readonly string[]): string {
+// UI v3: `label` replaces the "Booking {status}" lead (e.g. "Công ty báo đã thanh toán"); `suffix` is appended
+// (e.g. the conditions agreed in screen 35).
+export interface MessageExtra { label?: string; suffix?: string }
+function messageText(booking: DemoRow, experienceName: string, changedFields: readonly string[], extra: MessageExtra = {}): string {
   const when = `${hanoiDate(booking.start_at)} ${hanoiClock(booking.start_at)}–${hanoiClock(booking.end_at)}` // spec-BKG #31, #87
-  const text = `Booking ${statusLabel('booking', booking.status)}: ${experienceName}, ${when}, ${booking.group_size} pax, ${money(booking.agreed_price_total)} VND`
-  return changedFields.length ? `${text}; changed: ${changedFields.join(', ')}` : text
+  const text = `${extra.label ?? `Booking ${statusLabel('booking', booking.status)}`}: ${experienceName}, ${when}, ${booking.group_size} pax, ${money(booking.agreed_price_total)} VND`
+  return (changedFields.length ? `${text}; changed: ${changedFields.join(', ')}` : text) + (extra.suffix ?? '')
 }
 
 // FR-008 order (#13): Active source Chat of the same pair (#56), else the latest Active Chat of the pair.
@@ -39,6 +42,7 @@ export async function bookingUpdateOperations(
   booking: DemoRow,
   at: string,
   changedFields: readonly string[] = [],
+  extra: MessageExtra = {},
 ): Promise<{ operations: BatchOperation[]; messageId: string }> {
   const repository = demoRepository()
   const experience = (await repository.find('experiences', row => row.experience_id === booking.experience_id))
@@ -75,7 +79,7 @@ export async function bookingUpdateOperations(
     table: 'chat_messages',
     row: {
       message_id: messageId, chat_session_id: chat.chat_session_id, sender_user_id: '',
-      text: messageText(booking, experience?.name ?? '', changedFields), message_kind: 'Booking Update',
+      text: messageText(booking, experience?.name ?? '', changedFields, extra), message_kind: 'Booking Update',
       experience_id: booking.experience_id, quote_request_id: '', booking_id: booking.booking_id, sent_at: sentAt,
     },
   })

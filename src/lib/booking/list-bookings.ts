@@ -30,10 +30,11 @@ export interface BookingList {
 }
 
 // Query values arrive as URL strings; an empty string means "not set" (e.g. after "Xoá bộ lọc").
-export type ListQuery = Partial<Record<'provider_id' | 'status' | 'date_from' | 'date_to' | 'page' | 'page_size', unknown>>
+export type ListQuery = Partial<Record<'provider_id' | 'status' | 'tab' | 'date_from' | 'date_to' | 'page' | 'page_size', unknown>>
 
 interface ValidQuery {
   status?: string
+  todo: boolean
   date_from?: string
   date_to?: string
   page: number
@@ -66,11 +67,14 @@ function validInteger(value: unknown, name: string, fallback: number, max = Infi
 function validateQuery(query: ListQuery): ValidQuery {
   const status = present(query.status) ? query.status : undefined
   if (status && !(BOOKING_STATUSES as readonly string[]).includes(status)) invalid(`status must be one of ${BOOKING_STATUSES.join(', ')}`)
+  // Screen 34 tab "Cần xử lý" (UI v3 decision #10): On hold only, soonest hold_expires_at first.
+  if (present(query.tab) && query.tab !== 'todo') invalid('tab must be todo')
+  const todo = query.tab === 'todo'
   const date_from = validDate(query.date_from, 'date_from')
   const date_to = validDate(query.date_to, 'date_to')
   if (date_from && date_to && date_from > date_to) invalid('date_from must not be after date_to') // #62
   return {
-    status, date_from, date_to,
+    status: todo ? 'On hold' : status, todo, date_from, date_to,
     page: validInteger(query.page, 'page', 1),
     page_size: validInteger(query.page_size, 'page_size', DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE),
   }
@@ -97,7 +101,7 @@ export async function listProviderBookings(session: SessionLike, query: ListQuer
 
   const matching = inRange
     .filter(row => !valid.status || row.status === valid.status)
-    .sort((a, b) => Date.parse(a.start_at) - Date.parse(b.start_at) || (a.booking_id < b.booking_id ? -1 : a.booking_id > b.booking_id ? 1 : 0)) // #60
+    .sort((a, b) => (valid.todo ? Date.parse(a.hold_expires_at) - Date.parse(b.hold_expires_at) : 0) || Date.parse(a.start_at) - Date.parse(b.start_at) || (a.booking_id < b.booking_id ? -1 : a.booking_id > b.booking_id ? 1 : 0)) // #60
   const page = matching.slice((valid.page - 1) * valid.page_size, valid.page * valid.page_size) // #63
 
   const bookings = (await Promise.all(page.map(async row => {

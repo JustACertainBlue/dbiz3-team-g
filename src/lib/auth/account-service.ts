@@ -14,7 +14,7 @@ export async function ownAccount(session: SessionContext) {
   const assignment = session.adminType === 'UBND' ? (await repo.find('ubnd_village_assignments', item => item.ubnd_user_id === session.userId)) : undefined
   const village = assignment ? (await repo.find('villages', item => item.village_id === assignment.village_id)) : undefined
   const unit = village?.name ? `UBND xã ${village.name}` : ''
-  return { full_name: row.full_name, title: row.title, phone: row.phone, email: row.email, role: session.role, admin_type: session.adminType, data_scope: session.dataScope, organization: agency?.company_name || version?.business_name || unit, business_href: session.agencyId ? `/agency/${session.agencyId}` : session.providerId ? `/provider/${session.providerId}` : null }
+  return { full_name: row.full_name, title: row.title, phone: row.phone, email: row.email, account_status: row.account_status, created_at: row.created_at, role: session.role, admin_type: session.adminType, data_scope: session.dataScope, organization: agency?.company_name || version?.business_name || unit, business_href: session.agencyId ? `/agency/${session.agencyId}` : session.providerId ? `/provider/${session.providerId}` : null }
 }
 
 export async function updateOwnAccount(session: SessionContext, input: Record<string, unknown>) {

@@ -40,8 +40,8 @@ describe('G3 audit | BKG135 action buttons (011 M7, SC-007, BR-017)', () => {
     const markup = renderToStaticMarkup(React.createElement(BookingActionsBar, { providerId: BAT_TRANG, bookingId: 'b1', actions }))
     // spec đổi (nhãn tiếng Việt, FR-007 / screen-spec-BKG135 amended 2026-11-08) → kỳ vọng đổi; logic bật/khoá không đổi.
     const button = (label: string) => markup.match(new RegExp(`<button[^>]*>${label.replace('/', '\\/')}</button>`))?.[0] ?? ''
-    for (const label of ['Xác nhận', 'Cập nhật', 'Huỷ', 'Đánh dấu đoàn đã đến']) expect(button(label)).not.toBe('')
-    expect(button('Xác nhận')).toContain('disabled')
+    for (const label of ['Đã nhận tiền', 'Cập nhật', 'Huỷ', 'Đánh dấu đoàn đã đến']) expect(button(label)).not.toBe('')
+    expect(button('Đã nhận tiền')).toContain('disabled')
     expect(button('Đánh dấu đoàn đã đến')).toContain('disabled')
     expect(button('Cập nhật')).not.toContain('disabled')
     expect(button('Huỷ')).not.toContain('disabled')
@@ -55,7 +55,7 @@ describe('G3 audit | BKG133 and DSH018 access (012 M2, #66, #67)', () => {
     it(`${account} gets the access-denied page without Booking data`, async () => {
       cookie.account = account
       const list = await html(BookingManagementPage({ params: { providerId: BAT_TRANG }, searchParams: {} }))
-      expect(list).toContain('Chỉ Local Provider sở hữu hồ sơ này mới xem được danh sách Booking.')
+      expect(list).toContain('Chỉ xưởng sở hữu hồ sơ này mới xem được danh sách đặt chỗ.')
       expect(list).not.toContain('/bookings/')
       const dashboard = await html(ProviderDashboardPage({ params: { providerId: BAT_TRANG } }))
       expect(dashboard).toContain('Chỉ Local Provider sở hữu hồ sơ này mới xem được Dashboard.')
@@ -65,13 +65,13 @@ describe('G3 audit | BKG133 and DSH018 access (012 M2, #66, #67)', () => {
   it('another Local Provider is denied on a Provider id that is not its own', async () => {
     cookie.account = 'provider'
     const list = await html(BookingManagementPage({ params: { providerId: OTHER_PROVIDER }, searchParams: {} }))
-    expect(list).toContain('Chỉ Local Provider sở hữu hồ sơ này mới xem được danh sách Booking.')
+    expect(list).toContain('Chỉ xưởng sở hữu hồ sơ này mới xem được danh sách đặt chỗ.')
   })
 
   it('the owning Provider sees BKG133 and DSH018, and DSH018 links to BKG133 (#66)', async () => {
     cookie.account = 'provider'
     const list = await html(BookingManagementPage({ params: { providerId: BAT_TRANG }, searchParams: {} }))
-    expect(list).not.toContain('Chỉ Local Provider sở hữu')
+    expect(list).not.toContain('Chỉ xưởng sở hữu')
     const dashboard = await html(ProviderDashboardPage({ params: { providerId: BAT_TRANG } }))
     expect(dashboard).toContain(`href="/provider/${BAT_TRANG}/bookings"`)
   })

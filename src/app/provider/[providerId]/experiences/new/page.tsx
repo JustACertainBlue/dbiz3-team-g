@@ -1,12 +1,18 @@
 'use client'
 
+import { useHydrated } from '@/app/provider/v3/useHydrated'
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Breadcrumb } from '@/app/components/ui'
+import '../../../v3/provider-v3.css'
+import ExperienceFormBody from '../ExperienceFormBody'
 import ExperienceTermsField from '../ExperienceTermsField'
 import { readCancellationPolicy, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../ExperienceImagesField'
 import { missingCategories } from '@/lib/prf/experience-images'
+import { HighlightsCard, SuitableCard, InclusionsCard, ChildPolicyField, SlotsReadOnly, type SlotLine } from '../ExperienceContentFields'
+import { contentFormFromRow, contentPayload, emptyContentForm } from '@/lib/prf/experience-content-form'
 import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 
@@ -15,6 +21,11 @@ export default function AddExperiencePage({
 }: {
   params: { providerId: string }
 }) {
+  const [content, setContent] = useState(emptyContentForm())
+  const hydrated = useHydrated()
+  const [craftLine, setCraftLine] = useState('')
+  useEffect(() => { fetch(`/api/prf/provider/${params.providerId}/craft-line`).then(r => r.ok ? r.json() : null).then(d => setCraftLine(d?.craft_line ?? '')).catch(() => {}) }, [params.providerId])
+  const [slots, setSlots] = useState<SlotLine[]>([])
   const [policy, setPolicy] = useState<CancellationPolicy>({ rules: [] })
   const [group, setGroup] = useState<DiscountRule[]>([])
   const [special, setSpecial] = useState<DiscountRule[]>([])
@@ -44,7 +55,7 @@ export default function AddExperiencePage({
   useEffect(() => {
     const applySession = async () => {
       const session = await readSessionContext()
-      setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
+      setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId && !session.mustChangePassword)
     }
     applySession().finally(() => setSessionReady(true))
     const onRoleChanged = () => {
@@ -108,6 +119,7 @@ export default function AddExperiencePage({
         experience_location_address: formData.experience_location_address,
         cancellation_policy: policy,
         group_discounts: group, special_rates: special,
+        ...contentPayload(content),
         images: toImagesPayload(images),
       }
 
@@ -136,23 +148,15 @@ export default function AddExperiencePage({
   const isLocalProvider = authorized
 
   return (
-    <div className="prf-container" style={{ paddingBottom: '7rem' }}>
-      {/* Header */}
+    <div className="prf-container pv3-form" style={{ paddingBottom: '7rem' }}>
+      {/* Header (screen 32, mockup 32) */}
+      <Breadcrumb items={[{ label: 'Tổng quan', href: `/provider/${params.providerId}/dashboard` }, { label: 'Trải nghiệm của xưởng', href: `/provider/${params.providerId}/experiences` }, { label: 'Thêm trải nghiệm' }]} />
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">THÊM TRẢI NGHIỆM</span>
-          <h1 className="prf-spec-title">Tạo mới Hoạt động Trải nghiệm Làng nghề</h1>
+          <h1 className="prf-spec-title">Thêm trải nghiệm</h1>
           <p className="prf-spec-subtitle">
-            Thiết lập biểu phí B2B, quy mô đoàn khách, thời lượng thực hành và 3 danh mục hình ảnh quy chuẩn
+            Các phần được đặt đúng thứ tự trên trang chi tiết trải nghiệm mà công ty lữ hành thấy.
           </p>
-        </div>
-        <div className="prf-spec-actions">
-          <Link
-            href={`/provider/${params.providerId}/experiences`}
-            className="prf-btn prf-btn-outline"
-          >
-            ← Danh sách trải nghiệm
-          </Link>
         </div>
       </div>
 
@@ -207,223 +211,10 @@ export default function AddExperiencePage({
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1.2fr)', gap: '1.75rem' }}>
-          {/* Main Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-            {/* Section 01: Core Information */}
-            <div className="prf-section-card">
-              <div className="prf-section-heading">
-                <span className="prf-step-badge">01</span>
-                <div>
-                  <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Thông tin Trải nghiệm Cơ bản
-                  </h2>
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                    Tên gọi, phân loại văn hóa và thời lượng hoạt động
-                  </span>
-                </div>
-              </div>
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-1">Tên hoạt động trải nghiệm *</label>
-                <input id="experience-field-1"
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="prf-input"
-                  placeholder="VD: Nặn gốm vuốt tay trên bàn xoay truyền thống"
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="prf-field-group">
-                  <label className="prf-label" htmlFor="experience-field-2">Phân loại hoạt động *</label>
-                  <select id="experience-field-2"
-                    value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                    className="prf-select"
-                  >
-                    <option value="Workshop/Hands-on">Workshop / Thực hành nặn gốm</option>
-                    <option value="Sightseeing">Tham quan làng nghề / Lò nung cổ</option>
-                    <option value="Culinary/Tasting">Ẩm thực làng nghề & Trà đạo</option>
-                    <option value="Combo">Combo Trọn gói Trải nghiệm</option>
-                  </select>
-                </div>
-
-                <div className="prf-field-group">
-                  <label className="prf-label" htmlFor="experience-field-3">Thời lượng (phút) *</label>
-                  <input id="experience-field-3"
-                    type="number"
-                    required
-                    min={15}
-                    value={formData.duration_minutes}
-                    onChange={e => setFormData({ ...formData, duration_minutes: Number(e.target.value) })}
-                    className="prf-input"
-                  />
-                </div>
-              </div>
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-4">Địa điểm diễn ra trải nghiệm *</label>
-                <input id="experience-field-4"
-                  type="text"
-                  required
-                  value={formData.experience_location_address}
-                  onChange={e => setFormData({ ...formData, experience_location_address: e.target.value })}
-                  className="prf-input"
-                  placeholder="Địa chỉ cụ thể tại làng nghề..."
-                />
-              </div>
-            </div>
-
-            {/* Section 02: Narrative & AI Refine */}
-            <div className="prf-section-card">
-              <div className="prf-section-heading">
-                <span className="prf-step-badge">02</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      Mô tả Nội dung Chi tiết
-                    </h2>
-                    <button
-                      type="button"
-                      onClick={handleAiRefine}
-                      disabled={aiRefining}
-                      className="prf-btn prf-btn-outline"
-                      style={{ fontSize: '0.75rem', borderColor: '#b84c24', color: '#b84c24' }}
-                    >
-                      {aiRefining ? 'Đang tinh chỉnh AI...' : '✨ AI Refine Chuẩn Hóa'}
-                    </button>
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                    Mô tả quy trình thực hành nghệ nhân, vật phẩm du khách nhận được
-                  </span>
-                </div>
-              </div>
-
-              <div className="prf-field-group">
-                <textarea
-                  rows={4}
-                  required
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  className="prf-textarea"
-                />
-              </div>
-
-              {aiDraft && (
-                <div
-                  style={{
-                    padding: '0.85rem 1rem',
-                    background: '#fffbeb',
-                    border: '1px solid #fcd34d',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem',
-                    color: '#78350f',
-                    marginTop: '0.75rem',
-                  }}
-                >
-                  <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Gợi ý mô tả chuẩn hóa từ AI:</div>
-                  <div style={{ lineHeight: 1.5, marginBottom: '0.75rem' }}>{aiDraft}</div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      type="button"
-                      onClick={handleApplyAiDraft}
-                      className="prf-btn prf-btn-primary"
-                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.75rem' }}
-                    >
-                      Áp dụng bản thảo này
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAiDraft(null)}
-                      className="prf-btn prf-btn-outline"
-                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.75rem' }}
-                    >
-                      Bỏ qua
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Section 03: 3 Mandatory Images (BR-009) */}
-            <div className="prf-section-card">
-              <div className="prf-section-heading">
-                <span className="prf-step-badge">03</span>
-                <div>
-                  <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    3 Danh mục Hình ảnh Bắt buộc
-                  </h2>
-                  <span style={{ fontSize: '0.75rem', color: '#b84c24', fontWeight: 700 }}>
-                    Quy chuẩn bắt buộc: Phải cung cấp đủ cả 3 loại ảnh mới có thể xuất bản trải nghiệm
-                  </span>
-                </div>
-              </div>
-
-              <ExperienceImagesField images={images} onChange={setImages} onBusyChange={setUploading} />
-            </div>
-          </div>
-
-          {/* Right Sidebar: Capacity & Logistics */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-            <div className="prf-section-card">
-              <div className="prf-section-heading">
-                <span className="prf-step-badge">04</span>
-                <div>
-                  <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Biểu phí & Quy mô Đoàn
-                  </h2>
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                    Định giá B2B và giới hạn tiếp đón
-                  </span>
-                </div>
-              </div>
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-5">Giá niêm yết / khách (VND) *</label>
-                <input id="experience-field-5"
-                  type="number"
-                  required
-                  min={1000}
-                  step="any"
-                  value={formData.price_per_person}
-                  onChange={e => setFormData({ ...formData, price_per_person: Number(e.target.value) })}
-                  className="prf-input"
-                />
-              </div>
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-6">Số khách tối đa / lượt  *</label>
-                <input id="experience-field-6"
-                  type="number"
-                  required
-                  min={1}
-                  value={formData.max_participants}
-                  onChange={e => setFormData({ ...formData, max_participants: Number(e.target.value) })}
-                  className="prf-input"
-                />
-              </div>
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-7">Thời gian báo trước (giờ) *</label>
-                <input id="experience-field-7"
-                  type="number"
-                  required
-                  min={0}
-                  value={formData.notice_period_hours}
-                  onChange={e => setFormData({ ...formData, notice_period_hours: Number(e.target.value) })}
-                  className="prf-input"
-                />
-                <span className="prf-field-helper">Thời gian tối thiểu agency phải chốt đoàn để xưởng chuẩn bị đất sét & bàn xoay.</span>
-              </div>
-
-              <ExperienceTermsField policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}/>
-            </div>
-          </div>
-        </div>
+      <form method="post" onSubmit={handleSubmit}>
+        <ExperienceFormBody craftLine={craftLine} formData={formData} setFormData={setFormData} hasActiveBookings={false} images={images} setImages={setImages} setUploading={setUploading}
+          content={content} setContent={setContent} slots={slots} policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}
+          aiRefining={aiRefining} aiDraft={aiDraft} onAiRefine={handleAiRefine} onApplyDraft={handleApplyAiDraft} onDismissDraft={() => setAiDraft(null)} />
 
         {/* Sticky Actions Bar */}
         <div className="prf-sticky-footer">
@@ -441,7 +232,7 @@ export default function AddExperiencePage({
               </Link>
               <button
                 type="submit"
-                disabled={saving || uploading}
+                disabled={saving || uploading || !hydrated}
                 className="prf-btn prf-btn-primary"
               >
                 {saving ? 'Đang tạo...' : 'Tạo trải nghiệm'}

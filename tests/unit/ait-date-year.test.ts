@@ -67,14 +67,14 @@ describe('#156 | no invented date', () => {
   it('an impossible date ("31/02") is not extracted, so the date follow-up question is asked', async () => {
     const result = await extractTourContext([{ sender: 'Agency', text: '12 pax on 31/02 from Hoàn Kiếm, pottery' }], { now: NOV_9 })
     expect(result.tour_context.target_date_or_range).toBeUndefined()
-    expect(result.follow_up_questions.some(q => /date/i.test(q))).toBe(true)
+    expect(result.follow_up_questions.some(q => /ngày/i.test(q))).toBe(true)
   })
 })
 
 describe('#156 | the extracted date is shown so the Agency can correct it', () => {
   it('names the date the assistant understood and how to change it', () => {
     const body = { extraction: { tour_context: { target_date_or_range: { start_date: '2026-12-20' } } } }
-    expect(understoodDateLine(body)).toBe('Tour date understood: Sun 20 Dec 2026. If this is wrong, send the correct date with the year.')
+    expect(understoodDateLine(body)).toBe('AI hiểu ngày đi là Chủ nhật 20/12/2026. Nếu chưa đúng, hãy gửi lại ngày kèm năm.')
   })
 
   it('shows nothing when no date was extracted or the response has no extraction', () => {

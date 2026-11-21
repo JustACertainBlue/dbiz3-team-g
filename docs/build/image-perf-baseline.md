@@ -151,3 +151,50 @@ Lighthouse 13 đã gộp các audit cũ thành "insights"; tên trong yêu cầu
 - Ảnh LCP: mobile /explore là ảnh hero `0c22e70d…` (412×340); desktop /explore là thẻ đầu dải; chi tiết là ảnh chính `706a077a…`.
 - Vì sao LCP ở đây thấp hơn bảng 1 (5,0 s so với 7,4 s): Lighthouse mobile mặc định dùng throttling *simulated* (ước tính từ một
   lần tải không throttle), còn bảng 1 throttle thật trên mạng. Báo thầy dùng bảng này (số chuẩn); bảng 1 cho thấy độ dao động thật.
+
+## Sau bước 2B (21/11/2026)
+
+Giao diện `ui/v3-public` sau khi áp ảnh WebP 400/800/1600 (`?w=&v=`, `srcset`/`sizes`, ảnh LCP `fetchpriority=high` + preload, thứ tự tải,
+gallery ảnh ngang lên trước). Bản build local (`npm run build` + `next start`, cổng 3100) trên dữ liệu DEV.
+`npx lighthouse@13.5.0` (không thêm vào package.json), chỉ Performance, mobile = mặc định (throttling *simulated*), desktop = `--preset=desktop`.
+Mỗi trang 1 lần mở trước, rồi 3 lần, trung vị (điểm và từng chỉ số lấy trung vị riêng; LCP/ảnh lấy từ lần có LCP trung vị). Chỉ GET, không đăng nhập.
+
+**So sánh có giới hạn**: "trước" ở Bảng 1 đo bằng Chrome + CDP throttle thật, "sau" đo bằng Lighthouse (simulated), nên LCP không so thẳng
+được. Số **số ảnh** và **KB ảnh** so được (cùng đo byte truyền). Chưa đo "trước" bằng Lighthouse cho v3 vì bản build cũ đã bị thay.
+
+| Màn | Thiết bị | Điểm (3 lần) | LCP | Phần tử LCP | TBT | CLS | Tổng tải | Ảnh (số / KB) | Trước (Bảng 1: LCP, ảnh KB) |
+|---|---|---|---|---|---|---|---|---|---|
+| 01 `/explore` | mobile | **88** (87, 88, 88) | 2,9 s | chữ H1 | 20 ms | 0,083 | 1 280 KB | 15 / 952 | 5,97 s; 12 ảnh / 2 393 KB |
+| 01 | desktop | **95** (95, 93, 95) | 0,7 s | chữ H1 | 0 | 0,048 | 697 KB | 15 / 345 | 4,82 s; 2 595 KB |
+| 02 `/explore/search` | mobile | **94** (94, 94, 94) | 2,9 s | chữ H1 | 19 ms | 0,083 | 492 KB | 9 / 192 | 2,60 s; 1 228 KB |
+| 02 | desktop | **99** | 0,7 s | ảnh thẻ đầu | 0 | 0,048 | 898 KB | 9 / 573 | 19,18 s; 1 228 KB |
+| 03 `/village/c0d0…` | mobile | **89** (89, 87, 89) | 3,7 s | ảnh gallery ô lớn | 11 ms | 0,017 | 634 KB | 9 / 349 | 19,62 s; 1 020 KB |
+| 03 | desktop | **99** | 0,8 s | ảnh gallery ô lớn | 0 | 0,009 | 659 KB | 9 / 349 | 10,05 s; 1 020 KB |
+| 04 `/explore/experiences/07ef…` | mobile | **92** (90, 92, 93) | 3,0 s | chữ H1 | 17 ms | 0,083 | 479 KB | 5 / 128 | 3,93 s; 510 KB |
+| 04 | desktop | **99** (99, 99, 98) | 0,8 s | ảnh gallery ô lớn | 0 | 0,048 | 526 KB | 5 / 155 | 19,43 s; 510 KB |
+| 24 `/explore/providers/4142…` | mobile | **88** (87, 89, 88) | 3,4 s | ảnh gallery ô lớn | 13 ms | 0,083 | 699 KB | 8 / 353 | 25,75 s; 1 618 KB |
+| 24 | desktop | **97** (97, 96, 97) | 0,7 s | ảnh gallery ô lớn | 0 | 0,048 | 644 KB | 8 / 278 | 26,01 s; 1 618 KB |
+
+Đọc kỹ:
+- **Ảnh LCP đúng ý**: LCP discovery "đạt" ở mọi màn có ảnh LCP (02 desktop, 03, 04 desktop, 24); `fetchpriority=high`, `loading=eager`, có preload.
+  01, 02 mobile, 04 mobile: LCP là chữ H1 (ảnh gallery 04 nằm dưới màn đầu ở 390 px), nên không có ảnh LCP để ưu tiên.
+- **LCP mobile 03 (4,3 s) và 24 (3,6 s) vẫn chậm** và do **chờ server**, không do byte: ảnh LCP 84 KB mất ~6 s từ lúc gửi request đến lúc xong
+  trong lần quan sát (server local gọi Supabase Storage, 5 ảnh gallery tải cùng lúc). Giảm byte không sửa được phần này.
+- **CLS 0,083 (mobile) / 0,048 (desktop)** đến từ `div#page-content` dịch chuyển, giống nhau ở mọi màn, nên không phải ảnh (ảnh có `width`/`height`).
+  Chưa kiểm xem nó có từ trước hay không: baseline v3 không đo CLS bằng Lighthouse.
+- Insight "image delivery" còn báo tiết kiệm 63–413 KB mỗi màn: do chỉ có 3 cỡ (400/800/1600) nên ảnh cần 525 px phải lấy 800w, và nén chưa
+  hết ở vài ảnh ~83 KB. Không thể xuống nữa nếu không thêm cỡ ảnh.
+- Ảnh vẫn nhiều ở 01 (15 ảnh / 952 KB mobile): Chrome tải trước ảnh `lazy` trong ~1 250–2 500 px dưới màn hình; 01 không có ảnh nào trong khung nhìn.
+- React của Next tự thêm `<link rel=preload as=image>` cho mọi ảnh `eager` (kể cả ô nhỏ gallery), nên các ô nhỏ cùng ưu tiên "High" với ảnh LCP.
+  Nếu muốn LCP nhanh hơn: đặt `fetchpriority=low` cho ô nhỏ (lệch yêu cầu "ưu tiên bình thường", chưa làm).
+
+**Đo lại 21/11 (cùng ngày, sau khi đổi thẻ kết quả mobile sang khung 5/8 và đặt `fetchpriority=low` cho ô nhỏ gallery)**: chỉ mobile 03, 04, 24,
+3 lần, trung vị. 03: 85 → **89**, LCP 4,3 → 3,7 s; 04: 92 → **92** (LCP là chữ, không đổi); 24: 86 → **89**, LCP 3,6 → 3,3 s. Các hàng mobile 03, 04, 24 ở bảng trên
+là số mới; desktop và 01, 02 giữ số lần đo trước. Ảnh 24 tăng 337 → 419 KB vì khung thẻ cố định làm danh sách thẻ khác đi nên Chrome tải trước thêm vài ảnh lazy;
+không phải ảnh LCP. Điểm lên một phần nhờ ô nhỏ không còn tranh băng thông với ảnh LCP; phần chờ server (xem trên) vẫn là giới hạn chính.
+
+**Đo lại lần 3 (21/11, thẻ kết quả mobile: ảnh trái 112 px, `sizes` 112px)**: mobile 02, 03, 24, 3 lần, trung vị. 02: **94** (LCP 2,9 s, ảnh 9 / 192 KB, trước 573 KB);
+03: **90** (LCP 3,5 s, ảnh 7 / 179 KB, trước 349 KB); 24: **88** (LCP 3,4 s, **ảnh 353 KB**, so với 419 KB ở lần đo trước và 337 KB ở lần đo đầu). Điểm 24 dao động 86–89 giữa các lần đo
+(chờ server), nên chênh 1 điểm không phải do thẻ. Các hàng mobile 02, 03, 24 ở bảng trên là số mới nhất.
+
+Ảnh chụp (chỉ ở máy, không commit): `docs/build/ui-v3-2b-screens/` (1440 và 390; `-before-center-crop` = cùng trang nhưng ảnh dọc cắt giữa 50 % 50 %, để so với `-after`).

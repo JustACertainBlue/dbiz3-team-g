@@ -20,17 +20,20 @@ describe('#184 | ADM095 Review submission entry (→ VER146)', () => {
     expect(reviewSubmissionLinks(undefined)).toEqual([])
   })
 
-  it('the page renders those links from the signed-in admin type', () => {
+  // v3 mockup (png/39): the review queues are reached from the admin navigation ("Duyệt hồ sơ"), so the account list
+  // no longer repeats them; the nav targets are in nav-model.ts and tested in app-header.test.ts.
+  it('the v3 account list does not repeat the review links or offer account creation (png/39)', () => {
     const page = readFileSync('src/app/admin/users/page.tsx', 'utf8')
-    expect(page).toContain('reviewSubmissionLinks(adminType).map(link => <Link key={link.href} href={link.href}>{link.label} →</Link>)')
-    expect(page).toMatch(/readSessionContext\(\)\.then\(session => setAdminType\(session\.adminType\)\)/)
+    expect(page).not.toContain('reviewSubmissionLinks')
+    expect(page).not.toContain('/admin/create-account')
   })
 })
 
 describe('#184 | ADM095 Last login column', () => {
   it('the account table has a "Đăng nhập gần nhất" column filled from last_login', () => {
     const page = readFileSync('src/app/admin/users/page.tsx', 'utf8')
-    expect(page).toContain('<th>Trạng thái</th><th>Đăng nhập gần nhất</th><th>Thao tác</th>')
-    expect(page).toContain("<td>{user.last_login || 'Chưa đăng nhập'}</td>")
+    expect(page).toContain('<th>Trạng thái</th><th>Đăng nhập gần nhất</th>')
+    expect(page).not.toContain('<th>Thao tác</th>')
+    expect(page).toMatch(/<td[^>]*data-label="Đăng nhập gần nhất"[^>]*>\{formatLastLogin\(u\.last_login\)\}<\/td>/)
   })
 })

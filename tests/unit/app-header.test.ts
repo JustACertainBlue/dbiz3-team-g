@@ -1,11 +1,13 @@
 /**
  * UI v3 foundation (Đợt 0): one shared header with four variants taken from the session.
  * Source: hab-mockup-v3 png/01 (Guest), png/21 (Tour Agency), png/29 (Local Provider), png/38 (Admin HDT/UBND),
- * png/20 (account menu) and png/20a (logout confirmation). Human decisions 2026-11-18: no "Lịch" item on the bar;
+ * png/20 (account menu) and png/20a (logout confirmation). Human decisions 2026-11-18; 2026-11-19 (new mockup pack):
+ * Tour Agency bar Khám phá · Lịch sử đặt chỗ · Lịch (SCH141) · Ghép tour AI (png/05, png/27); provider and admin unchanged;
  * HDT "Duyệt hồ sơ" → /admin/agencies and stays selected on /admin/providers; UBND "Duyệt hồ sơ" → /admin/providers;
  * guest button label "Đăng ký tài khoản"; bar colour #0F3D2A (guest, agency, provider) and #1F2A25 (admin).
  */
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { SessionContext } from '@/lib/auth/session'
@@ -66,6 +68,10 @@ describe('Guest (png/01)', () => {
     expect(html).toContain('Hanoi Artisan Bridge')
     expect(mainNav(html)).toEqual([['/explore', 'Khám phá', true]])
   })
+  it('keeps "Khám phá" selected on the village pages 03 (png/03) and 03a (png/03a)', () => {
+    expect(mainNav(render(guest, '/villages'))).toEqual([['/explore', 'Khám phá', true]])
+    expect(mainNav(render(guest, '/village/v-1'))).toEqual([['/explore', 'Khám phá', true]])
+  })
   it('shows "Đăng nhập" and the white "Đăng ký tài khoản" button on the right', () => {
     expect(html).toMatch(/<a[^>]*href="\/login"[^>]*>Đăng nhập<\/a>/)
     expect(linkTag(html, '/register')).toMatch(/class="[^"]*hab-btn--white/)
@@ -82,19 +88,24 @@ describe('Guest (png/01)', () => {
 
 describe('Tour Agency (png/21)', () => {
   const account = { full_name: 'Lý Gia Hân', organization: 'Du lịch Tràng An' }
-  it('shows Khám phá · Lịch sử đặt chỗ · Ghép tour AI with no Lịch item', () => {
+  it('shows Khám phá · Lịch sử đặt chỗ · Lịch · Ghép tour AI (Lịch → SCH141)', () => {
     expect(mainNav(render(agency, '/explore', account))).toEqual([
       ['/explore', 'Khám phá', true],
       [`/agency/${AG}/bookings`, 'Lịch sử đặt chỗ', false],
+      [`/agency/${AG}/schedule`, 'Lịch', false],
       ['/ai-matching', 'Ghép tour AI', false],
     ])
   })
   it('selects "Lịch sử đặt chỗ" on a booking detail page and "Ghép tour AI" on /ai-matching', () => {
-    expect(mainNav(render(agency, `/agency/${AG}/bookings/b-1`, account)).map(i => i[2])).toEqual([false, true, false])
-    expect(mainNav(render(agency, '/ai-matching', account)).map(i => i[2])).toEqual([false, false, true])
+    expect(mainNav(render(agency, `/agency/${AG}/bookings/b-1`, account)).map(i => i[2])).toEqual([false, true, false, false])
+    expect(mainNav(render(agency, '/ai-matching', account)).map(i => i[2])).toEqual([false, false, false, true])
   })
-  it('selects nothing on the schedule page (no Lịch item on the bar)', () => {
-    expect(mainNav(render(agency, `/agency/${AG}/schedule`, account)).map(i => i[2])).toEqual([false, false, false])
+  it('selects "Khám phá" on the village pages 03 and 03a (pack 19/11)', () => {
+    expect(mainNav(render(agency, '/villages', account)).map(i => i[2])).toEqual([true, false, false, false])
+    expect(mainNav(render(agency, '/village/v-1', account)).map(i => i[2])).toEqual([true, false, false, false])
+  })
+  it('selects "Lịch" on the schedule page (png/27)', () => {
+    expect(mainNav(render(agency, `/agency/${AG}/schedule`, account)).map(i => i[2])).toEqual([false, false, true, false])
   })
   it('has a round message button with an aria-label and the unread count', () => {
     const html = render(agency, '/explore', account, 2)
@@ -233,5 +244,19 @@ describe('footerVisible (footer only on /explore for Guest and Tour Agency)', ()
     expect(footerVisible(provider, '/explore')).toBe(false)
     expect(footerVisible(hdt, '/explore')).toBe(false)
     expect(footerVisible(ubnd, '/explore')).toBe(false)
+  })
+})
+
+describe('Guest header below 900 px (human review 2026-11-19)', () => {
+  // At 390 px the white "Đăng ký tài khoản" button stayed visible (.hab-btn sets display:flex with the same specificity as
+  // the media rule) and pushed the menu button off screen. The collapse rule must outrank .hab-btn.
+  const css = readFileSync('src/app/shell.css', 'utf8')
+  const block = css.match(/@media \(max-width: 899px\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+  it('hides Đăng nhập and Đăng ký tài khoản with a rule stronger than .hab-btn, and shows the menu button', () => {
+    expect(block).toMatch(/\.hab-nav__end \.hab-nav__login, \.hab-nav__end \.hab-nav__register \{ display: none; \}/)
+    expect(block).toMatch(/\.hab-nav__burger \{ display: grid; \}/)
+  })
+  it('the guest menu button has an aria-label', () => {
+    expect(render(guest, '/explore')).toMatch(/<button type="button" class="hab-nav__burger" aria-expanded="false" aria-label="Mở menu">/)
   })
 })

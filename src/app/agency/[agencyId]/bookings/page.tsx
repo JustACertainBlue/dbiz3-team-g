@@ -1,77 +1,112 @@
+import { CalendarDays, Search } from 'lucide-react'
 import Link from 'next/link'
-import { listAgencyBookings } from '@/lib/booking/agency-bookings'
-import { BookingError } from '@/lib/booking/create-booking'
-import { BOOKING_STATUSES } from '@/lib/booking/list-bookings'
-import { bookingDetailStyles, formatVnd, hanoiTime } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
-import { agencyPageSession, ownVillages } from '../agency-booking-gate'
-import { sessionDisplayName } from '@/lib/auth/session'
-import { hanoiClock } from '@/lib/time/hanoi-time'
-import StatusBadge from '@/app/components/StatusBadge'
 import AutoRefresh from '@/app/components/AutoRefresh'
-import { statusLabel } from '@/lib/status-labels'
+import CoverImage from '@/app/explore/v3/CoverImage'
+import { listAgencyBookings } from '@/lib/booking/agency-bookings'
+import { AGENCY_TABS, agencyRowChips, agencyTabCount, parseAgencyTab } from '@/lib/booking/agency-list'
+import { bookingView } from '@/lib/booking/booking-view'
+import { adjustmentLine } from '@/lib/booking/display'
+import { rulesOf } from '@/lib/booking/group-price'
+import { BookingError } from '@/lib/booking/create-booking'
+import { demoRepository } from '@/lib/db/application-store'
+import { loadExploreRuntime } from '@/lib/explore/seed-repository'
+import { experienceImage } from '@/lib/explore/v3-home'
+import { agencyPageSession } from '../agency-booking-gate'
+import '@/app/provider/[providerId]/bookings/list-v3.css'
+import './card-v3.css'
 
 export const dynamic = 'force-dynamic'
 
-// Screen BKG137 Booking History (F-SCHED-02, Tour Agency, #68): own Bookings only, read-only.
+const PAGE = 5
+const vnd = (value: number) => `${value.toLocaleString('vi-VN')} ₫`
+
+// Screen 05 (BKG137) Lịch sử đặt chỗ, mockup 19/11: search, pay banner, tabs + "Xem lịch" (→ 27), cards, paging.
+// Own Bookings only, read-only; the village/date filters of the old screen are not in the mockup.
 export default async function AgencyBookingHistoryPage({ params, searchParams }: { params: { agencyId: string }; searchParams: Record<string, string | undefined> }) {
-  const session = (await agencyPageSession(params.agencyId))
-  const styles = bookingDetailStyles + historyStyles
+  const session = await agencyPageSession(params.agencyId)
   if (!session) {
-    return <main className="bkg-page bkg-state"><h1>Booking History</h1><p>Chỉ Tour Agency của tài khoản này mới xem được lịch sử Booking.</p><Link href="/login">Đăng nhập</Link><style>{styles}</style></main>
+    return <main className="v3l"><h1 className="v3l-h1">Lịch sử đặt chỗ</h1><p>Chỉ công ty lữ hành của tài khoản này mới xem được lịch sử đặt chỗ.</p><Link href="/login" className="v3l-btn">Đăng nhập</Link></main>
   }
   const base = `/agency/${params.agencyId}/bookings`
-  const query = { status: searchParams.status ?? '', village_id: searchParams.village_id ?? '', date_from: searchParams.date_from ?? '', date_to: searchParams.date_to ?? '' }
-  let rows
+  let all
   try {
-    rows = (await listAgencyBookings(session, query)).bookings
+    all = (await listAgencyBookings(session, {})).bookings
   } catch (error) {
-    const message = error instanceof BookingError ? `${error.code}: ${error.message}` : 'Không tải được danh sách Booking.'
-    return <main className="bkg-page bkg-state"><h1>Booking History</h1><p className="bkg-error" role="alert">{message}</p><Link href={base}>Xoá bộ lọc</Link><style>{styles}</style></main>
+    return <main className="v3l"><h1 className="v3l-h1">Lịch sử đặt chỗ</h1><p role="alert">{error instanceof BookingError ? error.message : 'Không tải được danh sách đặt chỗ.'}</p></main>
   }
+  const repository = demoRepository()
+  const seed = await loadExploreRuntime()
+  const bookings = new Map((await repository.all('bookings')).filter(row => row.agency_id === params.agencyId).map(row => [row.booking_id, row]))
+  const ruleRows = await repository.all('experience_discount_rules')
+  const experiences = new Map((await repository.all('experiences')).map(row => [row.experience_id, row]))
+  const q = (searchParams.q ?? '').trim().toLowerCase()
+  const matches = (row: typeof all[number]) => !q || `HAB-${row.booking_id.slice(0, 6)} ${row.provider_name} ${row.experience_name}`.toLowerCase().includes(q)
+  const searched = all.filter(matches)
+  const tab = parseAgencyTab(searchParams.tab)
+  const def = AGENCY_TABS.find(item => item.id === tab)!
+  const visible = searched.filter(row => !def.statuses || def.statuses.includes(row.status))
+  const page = Math.max(1, Number(searchParams.page) || 1)
+  const last = Math.max(1, Math.ceil(visible.length / PAGE))
+  const from = (page - 1) * PAGE
+  const pageRows = visible.slice(from, from + PAGE)
+  const pending = searched.filter(row => row.status === 'On hold')
+  const href = (nextTab: string, nextPage = 1) => `${base}?${new URLSearchParams({ ...(q ? { q: searchParams.q! } : {}), tab: nextTab, page: String(nextPage) })}`
+  const history = await repository.all('booking_status_history')
 
-  return <main className="bkg-page bkg-list">
-    {/* BKG FR-002: Provider changes show within ~10 s without a reload (#157 hook) */}
+  return <main className="v3l">
     <AutoRefresh />
-    <header><p>HANOI ARTISAN BRIDGE · BKG137</p><h1>Booking History</h1><span>{(await sessionDisplayName(session))} · chỉ xem, sắp theo giờ bắt đầu</span></header>
-    <form className="bkg-filters" method="get" action={base}>
-      {query.status && <input type="hidden" name="status" value={query.status} />}
-      <label>Làng nghề
-        <select name="village_id" defaultValue={query.village_id}>
-          <option value="">Tất cả</option>
-          {(await ownVillages(params.agencyId)).map(village => <option key={village.village_id} value={village.village_id}>{village.name}</option>)}
-        </select>
-      </label>
-      <label>Từ ngày<input type="date" name="date_from" defaultValue={query.date_from} /></label>
-      <label>Đến ngày<input type="date" name="date_to" defaultValue={query.date_to} /></label>
-      <div className="bkg-actions"><button type="submit">Lọc</button><Link href={base}>Xoá bộ lọc</Link></div>
-    </form>
-    {/* #193, screen-spec-BKG137 §8: status filter tabs below the date/village filters; each tab keeps those filters. */}
-    <nav className="bkg-status-tabs" aria-label="Lọc theo trạng thái">
-      {['', ...BOOKING_STATUSES].map(status => {
-        const params = new URLSearchParams(Object.entries({ ...query, status }).filter(([, value]) => value))
-        const href = params.size ? `${base}?${params}` : base
-        return <Link key={status || 'all'} href={href} aria-current={query.status === status ? 'page' : undefined}>{status ? statusLabel('booking', status) : 'Tất cả'}</Link>
+    <div className="v3l-head">
+      <div><h1 className="v3l-h1">Lịch sử đặt chỗ</h1><p className="v3l-sub">Theo dõi mọi chuyến đi làng nghề của đoàn bạn. Cần đổi ngày hay số khách, hãy nhắn xưởng. Chỉ xưởng mới cập nhật được đặt chỗ.</p></div>
+      <form method="get" action={base} role="search"><label className="v3g-search"><Search size={18} aria-hidden="true" /><span style={{ position: 'absolute', left: -9999 }}>Tìm đặt chỗ</span>
+        <input name="q" defaultValue={searchParams.q ?? ''} placeholder="Tìm theo mã đặt chỗ hoặc tên xưởng" /></label></form>
+    </div>
+    {pending.length > 0 && <div className="v3g-banner" role="status"><p className="v3g-sm"><b>{pending.length} đặt chỗ đang chờ bạn thanh toán.&nbsp;</b><Link href={`${base}/${pending[0].booking_id}`}>Xem ngay</Link></p></div>}
+    <div className="v3l-tabs" style={{ alignItems: 'center' }}>
+      <nav className="v3l-tabs" aria-label="Lọc theo trạng thái" style={{ margin: 0, border: 0, flex: 1 }}>
+        {AGENCY_TABS.map(item => <Link key={item.id} className="v3l-tab" href={href(item.id)} aria-current={item.id === tab ? 'page' : undefined}>{item.label} ({agencyTabCount(item.id, searched)})</Link>)}
+      </nav>
+      <Link className="v3g-cal" href={`/agency/${params.agencyId}/schedule`}><CalendarDays aria-hidden="true" size={18} />Xem lịch</Link>
+    </div>
+    {pageRows.length === 0 ? <p className="v3l-empty">Chưa có đặt chỗ.</p> : <div className="v3g-list">
+      {pageRows.map((row, index) => {
+        const booking = bookings.get(row.booking_id)!
+        const experience = experiences.get(booking.experience_id)
+        const view = bookingView({ booking, experience, rules: rulesOf(ruleRows, booking.experience_id), providerName: row.provider_name, agencyName: '', now: new Date() })
+        const chips = agencyRowChips(row.status)
+        const reason = row.status === 'Cancelled' ? history.filter(item => item.booking_id === row.booking_id && item.to_status === 'Cancelled').at(-1)?.reason ?? '' : ''
+        const detail = `${base}/${row.booking_id}`
+        return <article key={row.booking_id} className="v3g-card">
+          <Link href={detail} className="v3g-photo" aria-label={row.experience_name}><CoverImage image={experienceImage(seed, booking.experience_id)} alt="" sizes="260px" priority={index === 0 ? 'eager' : 'lazy'} /></Link>
+          <div className="v3g-body">
+            <div className="v3g-main">
+              <div className="v3g-chips"><span className={`v3l-pill v3l-pill--${row.status === 'On hold' ? 'hold' : row.status === 'Booked' ? 'booked' : row.status === 'Completed' ? 'done' : 'cancel'}`}>{chips.status}</span>{chips.pay && <span className="v3l-pill">{chips.pay}</span>}</div>
+              <h2 className="v3g-name"><Link href={detail}>{row.experience_name}</Link></h2>
+              <p className="v3g-sm">{row.village_name} · {row.provider_name}</p>
+              <div className="v3g-tags"><span className="v3g-tag">{view.dateLong}</span><span className="v3g-tag">{view.range}</span><span className="v3g-tag">{view.price.guests} khách</span></div>
+              {view.holdUntil && <p className="v3g-note v3g-note--warn">Giữ chỗ đến {view.holdUntil}, còn {view.holdLeft} để thanh toán</p>}
+              {reason && <p className="v3g-note">Lý do huỷ: {reason}</p>}
+            </div>
+            <div className="v3g-side">
+              <span className="v3g-cap">Mã đặt chỗ: {view.code}</span>
+              <p className="v3g-sm">{view.price.guests} khách</p>
+              <b className="v3g-total">{vnd(view.price.total)}</b>
+              {view.price.strike && <span className="v3g-old">{vnd(view.price.listTotal)}</span>}
+              {view.price.discount > 0 && <span className="v3g-disc">Giảm {view.price.discountPct}% giá đoàn</span>}
+              {view.price.adjustment !== 0 && <span className="v3g-cap" data-testid="adjustment">{adjustmentLine(view.price.adjustment)}</span>}
+              {chips.payNow && <Link className="v3g-pay" href={detail}>Thanh toán ngay</Link>}
+              <div className="v3g-links"><Link href={detail}>Xem chi tiết</Link><Link href="/messages" aria-label="Nhắn xưởng" title="Nhắn xưởng">Nhắn xưởng</Link></div>
+            </div>
+          </div>
+        </article>
       })}
-    </nav>
-    {rows.length === 0
-      ? <p className="bkg-panel" style={{ marginTop: 14 }}>Không có Booking nào khớp bộ lọc này.</p>
-      : <table className="bkg-table">
-          <thead><tr><th>Thời gian</th><th>Làng · Provider</th><th>Experience</th><th>Khách</th><th>Giá</th><th>Trạng thái</th><th></th></tr></thead>
-          <tbody>
-            {rows.map(row => <tr key={row.booking_id}>
-              <td>{hanoiTime(row.start_at)} → {hanoiClock(row.end_at)}<small>Cập nhật {hanoiTime(row.last_updated_at)}</small></td>
-              <td>{row.village_name} · {row.provider_name}</td>
-              <td>{row.experience_name}</td>
-              <td>{row.group_size}</td>
-              <td>{formatVnd(row.agreed_price)}</td>
-              <td><StatusBadge family="booking" status={row.status} /></td>
-              <td><Link href={`${base}/${row.booking_id}`}>Booking detail</Link></td>
-            </tr>)}
-          </tbody>
-        </table>}
-    <p className="bkg-actions"><Link href={`/agency/${params.agencyId}/schedule`}>Schedule</Link><Link href="/messages">Chat</Link></p>
-    <style>{styles}</style>
+    </div>}
+    <div className="v3l-foot">
+      <p className="v3l-note">{visible.length ? `Hiển thị ${from + 1}–${from + pageRows.length} / ${visible.length} đặt chỗ` : 'Chưa có đặt chỗ'}</p>
+      <div className="v3l-arrows">
+        <Link className="v3l-arrow" href={href(tab, page - 1)} aria-label="Trang trước" aria-disabled={page <= 1}>‹</Link>
+        <Link className="v3l-arrow" href={href(tab, page + 1)} aria-label="Trang sau" aria-disabled={page >= last}>›</Link>
+      </div>
+    </div>
   </main>
 }
 
-const historyStyles = `.bkg-list{max-width:1080px}.bkg-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:20px;padding:16px;background:#f4efe5;border-radius:14px}.bkg-filters label{display:grid;gap:4px;font-weight:700;font-size:13px}.bkg-filters input,.bkg-filters select{padding:8px 10px;border:1px solid #ddd6ca;border-radius:10px;font:inherit;background:white}.bkg-filters .bkg-actions{margin-top:0}.bkg-status-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.bkg-status-tabs a{padding:8px 16px;border:1px solid #ddd6ca;border-radius:999px;color:#203229;font-weight:700;font-size:14px;text-decoration:none;background:white}.bkg-status-tabs a[aria-current="page"]{background:#203229;border-color:#203229;color:white}.bkg-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}.bkg-table th,.bkg-table td{padding:10px 8px;border-bottom:1px solid #e4ddd0;text-align:left;vertical-align:top}.bkg-table small{display:block;color:#66746d}@media(max-width:720px){.bkg-table thead{display:none}.bkg-table tr{display:grid;padding:8px 0}.bkg-table td{border:0;padding:2px 8px}}`

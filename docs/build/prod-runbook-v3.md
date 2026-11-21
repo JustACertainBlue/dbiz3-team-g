@@ -23,13 +23,13 @@ PROD project ref: `euxclvszgiknjosbwjya`. DEV project ref: `jfrpnffknjpgmkyquxql
 | Command | PROD dry run | PROD real run | Undo |
 |---|---|---|---|
 | `npm run db:migrate` | `-- --dry-run` + `CONFIRM_PROJECT_REF` (transaction, then ROLLBACK) | `-- --target-prod` + `CONFIRM_PROJECT_REF` | none (migrations are forward only; new migration to fix) |
-| `npm run db:content-load` | `-- --target-prod` (default, writes then ROLLBACK) | `-- --target-prod --apply` | `-- --target-prod --undo <file>` |
-| `npm run storage:seed-images` | `-- --json … --photos-dir … --target-prod` (default, rolls back, uploads nothing) | add `--apply` | `-- --target-prod --undo <dir>/undo.json` |
+| `npm run db:content-load` | `-- --list-missing --target-prod` (survey, read only); `-- --target-prod` (default, writes then ROLLBACK) | `-- --target-prod --apply` | `-- --target-prod --undo <file>` |
+| `npm run storage:seed-images` | `-- --json … --photos-dir … [--faces …] [--workshops …] --target-prod` (default, rolls back, uploads nothing) | add `--apply` | `-- --target-prod --undo <dir>/undo.json` |
 | `npm run storage:media-variants` | `-- --target-prod` (default, reads and encodes only) | add `--apply` | `-- --target-prod --undo <dir>/undo.json` |
 | `npm run storage:catalog-copies` | `-- --target-prod` | add `--apply` | `-- --target-prod --undo <dir>/undo.json` |
 
 Before this branch `db:migrate` had **no ref check on a real run at all** (only `--dry-run` refused PROD), and
-`storage:seed-images` and `storage:media-variants` were DEV only. `storage:catalog-copies` was already done on PROD on
+`storage:media-variants` was DEV only (`storage:seed-images` got its `--target-prod` in #279 on `main`, merged into this branch). `storage:catalog-copies` was already done on PROD on
 2026-11-19 (build log Entry 114); it is listed for completeness and needs no run unless its dry run reports a count.
 
 ## 2. Before the day (no PROD write)
@@ -53,18 +53,20 @@ Before this branch `db:migrate` had **no ref check on a real run at all** (only 
    ```
 
    If `dbiz3-prod/.demo-data/prod-content/snapshot.json` already exists, do not overwrite it: move the old one aside first.
-4. Have the photo sets ready on disk: `<JSON_20_11>` + `<DIR_20_11>` (set of 20/11) and `<JSON_21_11>` + `<DIR_21_11>`
-   (set of 21/11), each an `approved-photos.json` and its `--photos-dir`.
+4. The photo sets are on disk (checked 2026-11-21):
+   - set of 20/11: `~/Documents/dbiz3-assets/photos-2011/`, with `approved-photos.json` in it (86 entries);
+   - set of 21/11: `~/Documents/dbiz3-assets/photos-2111/`, with `approved-photos-2111-final.json` (63 entries), `go-anh-mat-nguoi-final.json`
+     (`--faces`) and `xuong-2111-final.json` (`--workshops`, 20 entries). The folder also holds `can-tu-chup-final.json`, which
+     no command in this runbook uses.
 
 ## 3. Go-live sequence
 
-### Step 1. Turn off Render auto-deploy
+### Step 0. Survey PROD (read only, before every write)
 
-Render dashboard → the web service → Settings → Build & Deploy → Auto-Deploy → **Off**. Check: the setting shows Off.
-Why: step 4 changes the schema and the later steps change content; a push or merge must not deploy half-way.
-Undo: switch it back on (step 9 does it anyway).
+Nothing in this step changes PROD data: the migration dry run and the seed-image dry runs end in ROLLBACK and upload nothing,
+and `--list-missing` is a READ ONLY transaction. Do 0.1 first.
 
-### Step 2. Get main
+**0.1 Prepare the folder (local only).** In `~/Desktop/dbiz3-prod`:
 
 ```bash
 cd ~/Desktop/dbiz3-prod
@@ -74,16 +76,78 @@ git --no-pager log --oneline -3
 npm ci
 ```
 
-Expected: branch `main`, the pull fast-forwards, the log shows the merge of `feat/prod-content-load`. If the branch is not
-`main`, stop (do not switch it from this runbook).
-
+Expected: branch `main`, the log shows the merge of `feat/prod-content-load` (if it does not, the script is not there: stop).
 Check the env points at PROD, without printing any secret:
 
 ```bash
 node -e "require('@next/env').loadEnvConfig(process.cwd());const u=new URL(process.env.DATABASE_URL);console.log('DB ref:',decodeURIComponent(u.username).split('.')[1]);console.log('Storage ref:',new URL(process.env.SUPABASE_URL).hostname.split('.')[0])"
 ```
 
-Expected: both lines `euxclvszgiknjosbwjya`. Any other value: stop.
+Expected: both lines `euxclvszgiknjosbwjya`. Any other value: stop. Then copy the snapshot (section 2, item 3).
+
+**0.2 Which migrations are pending (dry run, ROLLBACK):**
+
+```bash
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:migrate -- --dry-run
+```
+
+Expected: `[dry-run] project ref euxclvszgiknjosbwjya (PROD)`, the pending list, `OK` for each, `rolled back; ledger unchanged`.
+Write the pending list down. It decides whether 0.4 can pass (see there).
+
+**0.3 Which snapshot rows PROD lacks (read only):**
+
+```bash
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:content-load -- --list-missing --target-prod
+```
+
+Expected: first line `"projectRef":"euxclvszgiknjosbwjya","isProd":true,"mode":"list-missing (read only)"`, a `survey` line with, per
+table, `inSnapshot`, `present`, `missing`, and `Nothing missing: every snapshot row exists on this database.` (exit code 0).
+It works before the migrations are applied. A `Note: N target user_accounts row(s) have an e-mail that is not @example.invalid`
+line means the load would refuse those users: report it too.
+
+> **If anything is missing: STOP.** The command prints `STOP: N snapshot row(s) are missing…`, exits with code 2 and writes
+> the ids to `.demo-data/prod-content/content-missing-<UTC>.json` (ids only). Do not continue with any later step and do not
+> run `--only-existing` or `--insert-missing` (they do not exist). Send the whole output and that file to the coordinating
+> chat, which decides what to do with the missing rows (Appendix B lists the options).
+
+**0.4 Seed-image dry runs, both sets (PROD, rolled back, nothing uploaded).** Set of 20/11:
+
+```bash
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod
+```
+
+Set of 21/11:
+
+```bash
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod
+```
+
+Expected for each: first line `"projectRef":"euxclvszgiknjosbwjya","isDev":false,"isProd":true,"mode":"dry-run (writes, then ROLLBACK; no upload)"`,
+a report with the counts, and `Dry run: every write was rolled back; nothing was uploaded.` Compare the counts with the DEV run of
+the same set. The two sets touch the same experiences, so the counts of the 21/11 run can change once the 20/11 set is applied
+(inferred, not checked): here the point is that nothing refuses.
+
+> **If a dry run stops because a target row is not found, or `--faces` reports a difference: STOP**, as in 0.3: send the output
+> to the coordinating chat; do not retry with other options.
+> If it stops with a missing table or column (`does not exist`) and 0.2 listed pending migrations, that is expected before
+> Step 3: write the message down and repeat 0.4 after Step 3 (before Step 4); a second failure is a STOP.
+
+### Step 1. Turn off Render auto-deploy
+
+Render dashboard → the web service → Settings → Build & Deploy → Auto-Deploy → **Off**. Check: the setting shows Off.
+Why: step 4 changes the schema and the later steps change content; a push or merge must not deploy half-way.
+Undo: switch it back on (step 9 does it anyway).
+
+### Step 2. Confirm main did not move
+
+```bash
+cd ~/Desktop/dbiz3-prod
+git branch --show-current
+git pull origin main
+```
+
+Expected: branch `main` and `Already up to date.` (the pull of step 0.1 was the real one). If the pull brings new commits, repeat
+Step 0 before going on, because the surveys were made on older code.
 
 ### Step 3. Migrations
 
@@ -141,7 +205,7 @@ CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:content-load -- --target-pro
 Dry run (all writes, then ROLLBACK; uploads nothing):
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json <JSON_20_11> --photos-dir <DIR_20_11> --target-prod
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod
 ```
 
 Expected: first line `"projectRef":"euxclvszgiknjosbwjya","isDev":false,"isProd":true,"mode":"dry-run (writes, then ROLLBACK; no upload)"`,
@@ -151,7 +215,7 @@ DEV run of the same set (DEV counts: in the build log entry of that run).
 Apply:
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json <JSON_20_11> --photos-dir <DIR_20_11> --target-prod --apply
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod --apply
 ```
 
 Expected: the report ends with the undo folder `.demo-data/seed-image-import/seed-image-import-<UTC>/undo.json`. Note it.
@@ -164,8 +228,30 @@ CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target
 
 ### Step 6. Seed images, set of 21/11
 
-Same three commands as step 5 with `<JSON_21_11>` and `<DIR_21_11>`. Run it only after step 5 is applied and its undo file is
-noted, because the second set reorders the display photos the first set placed. Undo the sets in reverse order (21/11 first).
+Run it only after step 5 is applied and its undo file is noted, because the second set reorders the display photos the first set
+placed. Besides the photos it removes the face images listed in `go-anh-mat-nguoi-final.json` (by the SHA-256 of the stored
+object; a difference between the list and the database stops the run before any write) and adds the workshop photos.
+
+Dry run:
+
+```bash
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod
+```
+
+Apply:
+
+```bash
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod --apply
+```
+
+Expected: same first line as step 5 with `"mode":"apply"`, a report, and the undo folder
+`.demo-data/seed-image-import/seed-image-import-<UTC>/undo.json`. Note it.
+Undo (preview, then real; undo the sets in reverse order, 21/11 first):
+
+```bash
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target-prod --undo <dir>/undo.json --dry-run
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target-prod --undo <dir>/undo.json
+```
 
 ### Step 7. WebP variants backfill
 
@@ -227,7 +313,9 @@ did rename those two columns, `db:content-load` carries exactly them: `user_acco
 e-mail ends in `@example.invalid` are exported (all 79 on DEV); the load refuses if a target user has any other e-mail; a
 snapshot with "[DEMO]" in any name is refused; the row counts of both tables are checked unchanged after the write.
 
-## Appendix B. If PROD lacks experiences, villages, providers, users or agencies of the snapshot (proposal only, not built)
+## Appendix B. If PROD lacks experiences, villages, providers, users or agencies of the snapshot
+
+Only `--list-missing` (option 1) is built. Options 2 to 5 are proposals; none of them is to be run before the coordinating chat decides.
 
 What is known (DEV, read only): the snapshot holds 93 experiences, 22 villages, 49 provider profiles, 79 users, 16 agencies.
 The seed has only 8, 8, 8, 26 and 8 of them. The other rows came from the older runtime data (experiences created
@@ -238,14 +326,15 @@ the load before any write and prints the count and the first five table/id pairs
 
 Options, in the order the agent would try them:
 
-1. **Find out exactly what is missing (read only).** Add `--list-missing` to `db:content-load`: opens the PROD connection
-   in a READ ONLY transaction, prints for each table the number of snapshot ids PROD has and lacks, and the lacking ids. No write.
-2. **`--only-existing`.** Load the content of the rows PROD has and skip the rest, printing the skipped counts per table
+1. **Find out exactly what is missing (read only). Built.** `db:content-load -- --list-missing --target-prod` (Step 0.3) opens
+   the connection in a READ ONLY transaction, prints for each table the number of snapshot ids PROD has and lacks, and writes the
+   lacking ids to `.demo-data/prod-content/content-missing-<UTC>.json`. No write.
+2. **`--only-existing` (not built).** Load the content of the rows PROD has and skip the rest, printing the skipped counts per table
    and writing them into the undo file and the audit row. Good if the missing rows are DEV-only test data (the 2026-11-15 to
    2026-11-20 rows are very likely that). Cost: a small flag plus tests; the human reads the skipped list before `--apply`.
 3. **Leave the missing rows out of the snapshot.** `--export` takes only ids that appear in a list the human approves
    (for example the ids of PROD's own experiences, listed by a read-only query run by the human). No change to the load itself.
-4. **Copy the missing rows from DEV to PROD** with a new `--insert-missing` mode: inserts the parent rows first (users,
+4. **Copy the missing rows from DEV to PROD** with a new `--insert-missing` mode (not built): inserts the parent rows first (users,
    villages, provider profiles and versions) and then experiences, in one transaction with an undo file that deletes them. Only if
    the human decides those rows must exist on PROD. It touches accounts and foreign keys, so it needs its own plan and review, and
    `import-legacy --apply` stays forbidden on PROD (`deploy-runbook.md` §5).

@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
 import {
-  ALLOWED_COLUMNS, DEV_PROJECT_REF, PROD_PROJECT_REF, REQUIRED_MIGRATIONS, assertTarget, checksum, exportSnapshot, parseArgs, run, validateSnapshot,
+  ALLOWED_COLUMNS, DEV_PROJECT_REF, PROD_PROJECT_REF, REQUIRED_MIGRATIONS, assertTarget, checksum, exportSnapshot, listMissing, parseArgs, run, validateSnapshot,
 } from '../../scripts/db/prod-content-load.mjs'
 
 const url = (ref: string) => `postgresql://postgres.${ref}:test-only@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres`
@@ -94,6 +94,11 @@ describe('parseArgs', () => {
     expect(parseArgs(['--apply', '--target-prod', '--snapshot', 'a.json'])).toMatchObject({ apply: true, targetProd: true, snapshot: 'a.json' })
     expect(parseArgs(['--undo', 'u.json'])).toMatchObject({ undo: 'u.json', apply: true })
     expect(parseArgs(['--undo', 'u.json', '--dry-run'])).toMatchObject({ undo: 'u.json', apply: false })
+  })
+  it('--list-missing is a read-only survey: it takes --target-prod and --snapshot but no write mode', () => {
+    expect(parseArgs(['--list-missing', '--target-prod', '--snapshot', 's.json'])).toMatchObject({ listMissing: true, targetProd: true, apply: false, snapshot: 's.json' })
+    expect(parseArgs([])).toMatchObject({ listMissing: false })
+    for (const other of [['--apply'], ['--dry-run'], ['--export'], ['--undo', 'u.json']]) expect(() => parseArgs(['--list-missing', ...other])).toThrow(/--list-missing/)
   })
   it('refuses contradictory or unknown options', () => {
     expect(() => parseArgs(['--apply', '--dry-run'])).toThrow(/either/)
@@ -297,6 +302,61 @@ describe('exportSnapshot (DEV, read only)', () => {
   })
 })
 
-function readdirOut(out: string) {
-  try { return require('node:fs').readdirSync(out).some((name: string) => name.startsWith('content-load-undo-')) } catch { return false }
+describe('listMissing (read only survey, Step 0 of the PROD runbook)', () => {
+  const allIds = () => makeSnapshot().updates.map(u => Object.values(u.key)[0] as string)
+  function surveyClient({ absent = [] as string[], nonSynthetic = 0, ledger = false } = {}) {
+    const log: string[] = [], queries: string[] = []
+    return {
+      log, queries,
+      async query(text: string, values?: unknown[]) {
+        queries.push(text)
+        const word = text.split(/\s/)[0]
+        if (['BEGIN', 'ROLLBACK', 'COMMIT'].includes(word)) { log.push(word); return { rows: [] } }
+        if (word === 'SET') { log.push('READONLY'); return { rows: [] } }
+        if (text.includes('to_regclass')) return { rows: [{ present: ledger }] }
+        if (text.includes('hab_internal.migrations')) return { rows: REQUIRED_MIGRATIONS.map(name => ({ name })) }
+        if (text.includes('NOT LIKE')) return { rows: [{ n: nonSynthetic }] }
+        if (/^(UPDATE|INSERT|DELETE)/.test(text)) throw new Error('a survey must not write')
+        return { rows: (values![0] as string[]).filter(id => !absent.includes(id)).map(id => ({ id })) }
+      },
+    }
+  }
+  const survey = (client: ReturnType<typeof surveyClient>, snapshot = makeSnapshot()) => {
+    const log = quiet(), out = dir()
+    return { log, out, promise: listMissing(client, { snapshot, vocab: VOCAB, outDir: out, now: new Date('2026-11-21T10:00:00Z'), projectRef: PROD_PROJECT_REF, log }) }
+  }
+  it('everything present: 0 missing, READ ONLY transaction rolled back, no file, works before the migrations are applied', async () => {
+    const client = surveyClient()
+    const { promise, out } = survey(client)
+    const report = await promise
+    expect(report.missingTotal).toBe(0)
+    expect(report.tables.experiences).toMatchObject({ inSnapshot: 2, present: 2, missing: 0 })
+    expect(client.log).toEqual(['BEGIN', 'READONLY', 'ROLLBACK'])
+    expect(readdirOut(out)).toBe(false)
+  })
+  it('lists the missing ids per table, the slots that would be lost, and writes the ids to a file; says STOP', async () => {
+    const client = surveyClient({ absent: [E2, V, U] })
+    const { promise, out, log } = survey(client)
+    const report = await promise
+    expect(report.missingTotal).toBe(3)
+    expect(report.tables.experiences).toMatchObject({ inSnapshot: 2, present: 1, missing: 1, missingIds: [E2] })
+    expect(report.tables.villages.missingIds).toEqual([V])
+    expect(report.tables.user_accounts.missingIds).toEqual([U])
+    expect(report.slotsOfMissingExperiences).toBe(2)
+    expect(readdirOut(out, 'content-missing-')).toBe(true)
+    expect(log.lines.join('\n')).toMatch(/STOP/)
+    expect(client.log.at(-1)).toBe('ROLLBACK')
+  })
+  it('reports target users whose e-mail is not @example.invalid (the load would refuse them)', async () => {
+    const { promise } = survey(surveyClient({ nonSynthetic: 2 }))
+    expect((await promise).nonSyntheticUsers).toBe(2)
+  })
+  it('refuses a snapshot that fails validation', async () => {
+    const { promise } = survey(surveyClient(), { ...makeSnapshot(), sha256: 'x' })
+    await expect(promise).rejects.toThrow(/checksum/)
+  })
+})
+
+function readdirOut(out: string, prefix = 'content-load-undo-') {
+  try { return require('node:fs').readdirSync(out).some((name: string) => name.startsWith(prefix)) } catch { return false }
 }

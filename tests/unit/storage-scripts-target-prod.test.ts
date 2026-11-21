@@ -3,8 +3,8 @@
 // naming PROD; checked before any connection. Dry run stays the default and undo files stay bound to the project they came from.
 import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
-import { assertImportTarget, DEV_PROJECT_REF, PROD_PROJECT_REF } from '../../scripts/storage/seed-image-import-plan.mjs'
-import { parseArgs as parseSeed } from '../../scripts/storage/import-seed-images.mjs'
+import { DEV_PROJECT_REF, PROD_PROJECT_REF } from '../../scripts/storage/seed-image-import-plan.mjs'
+import { assertImportTarget, parseArgs as parseSeed } from '../../scripts/storage/import-seed-images.mjs'
 import { parseArgs as parseVariants } from '../../scripts/storage/backfill-media-variants.mjs'
 
 const db = (ref: string) => `postgresql://postgres.${ref}:test-only@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres`

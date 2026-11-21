@@ -1,5 +1,6 @@
 // Load the content DEV holds into PROD (human request 2026-11-21), modelled on storage:catalog-copies.
 //   node scripts/db/prod-content-load.mjs --export [--snapshot <file>]                       (DEV only, read only)
+//   node scripts/db/prod-content-load.mjs --list-missing [--target-prod] [--snapshot <file>]  (read only survey, see below)
 //   node scripts/db/prod-content-load.mjs [--dry-run | --apply] [--snapshot <file>]          (DEV by default)
 //   CONFIRM_PROJECT_REF=<prod ref> node scripts/db/prod-content-load.mjs --target-prod [--apply] [--snapshot <file>]
 //   CONFIRM_PROJECT_REF=<prod ref> node scripts/db/prod-content-load.mjs --target-prod --undo <file> [--dry-run]
@@ -11,6 +12,10 @@
 // allowlist, so a snapshot that names them is refused), only synthetic accounts (e-mail @example.invalid) are exported, and
 // the load refuses if a target user has any other e-mail. --export takes every experience, village, provider profile, synthetic
 // user and agency DEV has; a row PROD lacks makes the load refuse (nothing written).
+// - --list-missing (human request 2026-11-21, Step 0 of docs/build/prod-runbook-v3.md): READ ONLY transaction, always rolled back.
+//   For each table it counts the snapshot ids the connected database has and lacks, lists the lacking ids (also written to
+//   <out dir>/content-missing-<UTC>.json, ids only), the snapshot slots that belong to lacking experiences, and the target users
+//   whose e-mail is not @example.invalid. It does not need the migrations applied. It never writes; exit code 2 when rows are missing.
 // - --export reads DEV (ref guarded, READ ONLY transaction) and writes a checksummed snapshot under .demo-data/prod-content/.
 // - The load refuses unless DATABASE_URL names DEV, or, with --target-prod, PROD and CONFIRM_PROJECT_REF equals the PROD ref
 //   (typed in the shell, not read from a .env file). Checked before any connection.
@@ -57,7 +62,7 @@ export const checksum = content => createHash('sha256').update(JSON.stringify(co
 const keyOf = update => Object.values(update.key)[0]
 
 export function parseArgs(argv) {
-  const options = { apply: false, targetProd: false, export: false, undo: undefined, snapshot: DEFAULT_SNAPSHOT }
+  const options = { apply: false, targetProd: false, export: false, listMissing: false, undo: undefined, snapshot: DEFAULT_SNAPSHOT }
   let dryRun = false, apply = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
@@ -65,15 +70,17 @@ export function parseArgs(argv) {
     else if (arg === '--apply') apply = true
     else if (arg === '--target-prod') options.targetProd = true
     else if (arg === '--export') options.export = true
+    else if (arg === '--list-missing') options.listMissing = true
     else if (arg === '--undo' || arg === '--snapshot') {
       const value = argv[index + 1]
       if (!value || value.startsWith('--')) refuse(`${arg} needs a file.`)
       options[arg === '--undo' ? 'undo' : 'snapshot'] = value
       index += 1
-    } else refuse(`Unknown option ${arg}; use --export, --dry-run (default), --apply, --undo <file>, --snapshot <file> or --target-prod.`)
+    } else refuse(`Unknown option ${arg}; use --export, --list-missing, --dry-run (default), --apply, --undo <file>, --snapshot <file> or --target-prod.`)
   }
   if (dryRun && apply) refuse('Choose either --dry-run or --apply.')
   if (options.export && (apply || dryRun || options.targetProd || options.undo)) refuse('--export is DEV only and takes no other mode (only --snapshot).')
+  if (options.listMissing && (apply || dryRun || options.export || options.undo)) refuse('--list-missing is a read-only survey and takes no other mode (only --snapshot and --target-prod).')
   if (options.undo && apply) refuse('--undo writes by itself; use --undo <file> --dry-run to preview.')
   options.apply = options.undo ? !dryRun : apply
   return options
@@ -293,6 +300,52 @@ async function undoRun(options, { client, doc, now, log }) {
   return { commit: true, result: { restored: doc.before.length, applied: true } }
 }
 
+const PRESENT_SQL = {
+  provider_profile_versions: `SELECT v.provider_id::text AS id FROM provider_profile_versions v JOIN provider_profiles p ON p.provider_id = v.provider_id AND p.published_version_no = v.version_no WHERE v.provider_id = ANY($1::uuid[])`,
+}
+const presentSql = table => PRESENT_SQL[table] ?? `SELECT ${ALLOWED_COLUMNS[table].key}::text AS id FROM ${table} WHERE ${ALLOWED_COLUMNS[table].key} = ANY($1::uuid[])`
+
+/**
+ * Read only survey of which snapshot rows the connected database lacks. Never writes; always ends in ROLLBACK.
+ * @param {any} client @param {{snapshot: any, vocab?: string[], outDir: string, now?: Date, projectRef: string, log?: {log: Function}}} deps
+ * @returns {Promise<any>}
+ */
+export async function listMissing(client, { snapshot, vocab, outDir, now = new Date(), projectRef, log = console }) {
+  const { updates, slots } = validateSnapshot(snapshot, vocab)
+  const ids = {}
+  for (const update of updates) (ids[update.table] ??= []).push(keyOf(update))
+  await client.query('BEGIN')
+  await client.query('SET TRANSACTION READ ONLY')
+  try {
+    const tables = {}
+    for (const [table, list] of Object.entries(ids)) {
+      const have = new Set((await client.query(presentSql(table), [list])).rows.map(row => row.id))
+      const missingIds = list.filter(id => !have.has(id))
+      tables[table] = { inSnapshot: list.length, present: list.length - missingIds.length, missing: missingIds.length, missingIds }
+    }
+    const lacking = new Set(tables.experiences?.missingIds ?? [])
+    const slotsOfMissingExperiences = Object.entries(slots).filter(([id]) => lacking.has(id)).reduce((n, [, rows]) => n + rows.length, 0)
+    let nonSyntheticUsers = 0
+    if (ids.user_accounts) nonSyntheticUsers = (await client.query(`SELECT count(*)::int AS n FROM public.user_accounts WHERE user_id = ANY($1::uuid[]) AND email NOT LIKE '%@example.invalid'`, [ids.user_accounts])).rows[0].n
+    const missingTotal = Object.values(tables).reduce((n, entry) => n + entry.missing, 0)
+    const report = { projectRef, missingTotal, tables, slotsOfMissingExperiences, nonSyntheticUsers }
+    log.log(JSON.stringify({ projectRef, isProd: projectRef === PROD_PROJECT_REF, mode: 'list-missing (read only)' }))
+    log.log(JSON.stringify({ survey: Object.fromEntries(Object.entries(tables).map(([table, { inSnapshot, present, missing }]) => [table, { inSnapshot, present, missing }])), slotsOfMissingExperiences, nonSyntheticUsers }))
+    if (missingTotal) {
+      mkdirSync(outDir, { recursive: true })
+      const file = join(resolve(outDir), `content-missing-${stamp(now)}.json`)
+      writeFileSync(file, `${JSON.stringify({ kind: 'hab-content-missing', version: 1, projectRef, createdAt: now.toISOString(), snapshotSha256: snapshot.sha256, tables: Object.fromEntries(Object.entries(tables).map(([table, entry]) => [table, entry.missingIds])) }, null, 1)}\n`, { flag: 'wx' })
+      report.file = file
+      log.log(`Missing ids written to ${file}`)
+      log.log(`STOP: ${missingTotal} snapshot row(s) are missing on this database; do not run --apply, --only-existing or --insert-missing. Send this output and the file above to the coordinating chat.`)
+    } else log.log('Nothing missing: every snapshot row exists on this database.')
+    if (nonSyntheticUsers) log.log(`Note: ${nonSyntheticUsers} target user_accounts row(s) have an e-mail that is not @example.invalid; the load would refuse them.`)
+    return report
+  } finally {
+    await client.query('ROLLBACK')
+  }
+}
+
 const SELECT_COLUMNS = columns => columns.map(column => JSON_COLUMNS.includes(column) ? `${column}::text AS ${column}` : column === 'distance_km' ? `${column}::float8 AS ${column}` : column).join(', ')
 
 /** DEV only: read the allowlisted content of the given ids. `ids` = { experiences, provider_profiles, villages, user_accounts?, agency_profiles? } (uuid lists). */
@@ -353,6 +406,14 @@ async function main() {
     return
   }
   const snapshot = options.undo ? null : JSON.parse(readFileSync(snapshotFile, 'utf8'))
+  if (options.listMissing) {
+    await client.connect()
+    try {
+      const report = await listMissing(client, { snapshot, outDir, projectRef })
+      if (report.missingTotal) process.exitCode = 2
+    } finally { await client.end() }
+    return
+  }
   await client.connect()
   try {
     const report = await run(options, { client, snapshot, outDir, projectRef })

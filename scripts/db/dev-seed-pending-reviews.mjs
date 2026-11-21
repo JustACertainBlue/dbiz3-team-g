@@ -268,7 +268,7 @@ async function main(argv) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main(process.argv.slice(2)).catch(async error => {
     const { safeDatabaseError } = await import('./config.mjs')
-    // Table and constraint names carry no row values (error.detail would, so it is never printed).
+    // Table and constraint names carry no row values (the driver's detail text would, so it is never printed).
     const where = error?.code && (error.table || error.constraint) ? ` [table=${error.table ?? '?'}, constraint=${error.constraint ?? '?'}]` : ''
     console.error(error?.code ? `${safeDatabaseError(error)}${where}` : `[dev-seed] ${error?.message ?? error}`)
     process.exitCode = 1

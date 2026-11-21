@@ -158,23 +158,46 @@ describe('Gallery', () => {
   })
 })
 
-describe('result card below 768 px keeps the desktop layout (Khánh Linh, 2026-11-21)', () => {
+describe('result card below 768 px: image + title row, full-width rest (Khánh Linh, 2026-11-21)', () => {
   const css = readFileSync('src/app/explore/v3/explore-v3.css', 'utf8')
   const mobile = css.match(/@media \(max-width: 767px\) \{[^\n]*\.v3r__media \{[^\n]*/)![0]
-  it('image on the left, 112 px wide, 5/8 frame, cover; text on the right (no wrapping row, no full-width image)', () => {
-    expect(mobile).toMatch(/\.v3r \{[^}]*flex-wrap: nowrap/)
-    expect(mobile).toMatch(/\.v3r__media \{[^}]*flex: 0 0 112px[^}]*aspect-ratio: 5 \/ 8/)
+  it('top row: image 112 px wide on the left (frame 5/8, cover), craft label, name, place and distance on its right', () => {
+    expect(mobile).toMatch(/\.v3r \{[^}]*display: grid[^}]*grid-template-columns: 112px minmax\(0, 1fr\)/)
+    expect(mobile).toMatch(/\.v3r__media \{[^}]*aspect-ratio: 5 \/ 8/)
+    expect(mobile).toMatch(/\.v3r__main \{[^}]*display: contents/)
+    expect(mobile).toMatch(/\.v3r__top \{[^}]*grid-column: 2[^}]*column-reverse/) // craft label above the name
     expect(mobile).not.toMatch(/\.v3r__media \{[^}]*flex-basis: 100%/)
-    expect(mobile).not.toMatch(/\.v3r__media \{[^}]*min-height: 180px/)
   })
-  it('the text column can shrink, the price and button never overflow it', () => {
-    expect(mobile).toMatch(/\.v3r__main \{[^}]*min-width: 0/)
+  it('the name is about 20 px, at most 3 lines, then an ellipsis', () => {
+    expect(mobile).toMatch(/\.v3r__name \{[^}]*font-size: 20px/)
+    expect(mobile).toMatch(/\.v3r__name a \{[^}]*-webkit-line-clamp: 3/)
+  })
+  it('the rest spans the full card width in desktop order: chips (wrapping, 13 px), ticks, prepay line, price, button', () => {
+    expect(mobile).toMatch(/\.v3-ftags \{[^}]*grid-column: 1 \/ -1/)
+    expect(mobile).toMatch(/\.v3-ftag \{[^}]*font-size: 13px/)
+    expect(mobile).toMatch(/\.v3r__cols \{[^}]*grid-column: 1 \/ -1/)
     expect(mobile).toMatch(/\.v3r__price \{[^}]*flex: 1 1 100%/)
+    expect(css).toMatch(/\.v3-ftags \{ display: flex; gap: 8px; flex-wrap: wrap; \}/)
+  })
+  it('is compact: ticks 15 px, prepay 14 px, "Giá từ" and the amount on one line, button 44 px', () => {
+    expect(mobile).toMatch(/\.v3r \.v3-ben li \{[^}]*font-size: 15px/)
+    expect(mobile).toMatch(/\.v3r__prepay \{[^}]*font-size: 14px/)
+    expect(mobile).toMatch(/\.v3r__price \{[^}]*display: block/)
+    expect(mobile).toMatch(/\.v3r__cta \{[^}]*min-height: 44px/)
+    expect(mobile).toMatch(/\.v3r__price > \.v3-cap:first-child \{[^}]*margin-right: 6px/) // "Giá từ" must not touch the amount
+  })
+  it('long text wraps and nothing overflows the card', () => {
     expect(mobile).toMatch(/overflow-wrap: anywhere/)
-    expect(mobile).toMatch(/\.v3r__total \{[^}]*font-size: 24px[^}]*white-space: normal/) // 360 px wide: 30 px nowrap price overflowed
+    expect(mobile).toMatch(/\.v3r__total \{[^}]*white-space: normal/)
+    expect(mobile).toMatch(/\.v3r__cta \{[^}]*max-width: 100%/)
   })
   it('the image only fills the frame (cover, never sets its size)', () => {
     expect(css).toMatch(/\.v3r__media \.v3-cover \{[^}]*position: absolute; inset: 0/)
+  })
+  it('desktop rules are untouched', () => {
+    expect(css).toMatch(/\.v3r \{ padding: 20px; display: flex; flex-wrap: wrap; gap: 24px; \}/)
+    expect(css).toMatch(/\.v3r__name \{ margin: 0; font: 800 26px\/32px var\(--font-body\); \}/)
+    expect(css).toMatch(/\.v3r__main \{ flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 10px; \}/)
   })
   it('sizes: 520 px from 768 px, 112 px (the w400 variant) below', () => {
     expect(readFileSync('src/app/explore/v3/image-sizes.ts', 'utf8')).toContain("export const RESULT_SIZES = '(min-width: 768px) 520px, 112px'")

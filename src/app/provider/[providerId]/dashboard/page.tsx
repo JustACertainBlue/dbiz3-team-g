@@ -8,7 +8,6 @@ import { demoRepository } from '@/lib/db/application-store'
 import { Button } from '@/app/components/ui'
 import { hoursByWeekday, hoursSummary, monthDays, providerStats } from '@/lib/provider/month-calendar'
 import { monthWindow } from '@/lib/provider/month-window'
-import { formatReceived, receivedViaQr } from '@/lib/provider/qr-received'
 import MonthCalendar from '../../v3/MonthCalendar'
 import '../../v3/provider-v3.css'
 
@@ -20,10 +19,10 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
     return <main className="pv3-page"><h1 className="pv3-h1">Tổng quan xưởng</h1><p>Chỉ Local Provider sở hữu hồ sơ này mới xem được Dashboard.</p><Button href="/login">Đăng nhập</Button></main>
   }
   const repository = demoRepository()
-  const [summary, profile, account, bookings, experiences, allHours, reviews, agencies, history] = await Promise.all([
+  const [summary, profile, account, bookings, experiences, allHours, reviews, agencies] = await Promise.all([
     providerBookingSummary(session), repository.find('provider_profiles', row => row.provider_id === params.providerId),
     repository.find('user_accounts', row => row.user_id === session.userId), repository.all('bookings'), repository.all('experiences'),
-    repository.all('provider_operating_hours'), repository.all('provider_verification_reviews'), repository.all('agency_profiles'), repository.all('booking_status_history'),
+    repository.all('provider_operating_hours'), repository.all('provider_verification_reviews'), repository.all('agency_profiles'),
   ])
   const now = Date.now(), today = hanoiDate(now)
   const own = bookings.filter(row => row.provider_id === params.providerId)
@@ -42,7 +41,7 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
     <section className="pv3-stats" aria-label="Số liệu">
       <Link className="pv3-stat" href={`/provider/${id}/bookings`}><span className="pv3-stat__t">Cần bạn xử lý</span><b className={summary.requires_action_count ? 'pv3-stat__v pv3-stat__v--alert' : 'pv3-stat__v'}>{summary.requires_action_count} việc</b></Link>
       <div className="pv3-stat"><span className="pv3-stat__t">Đoàn sắp tới (30 ngày)</span><b className="pv3-stat__v">{stats.upcomingGroups} đoàn · {stats.upcomingGuests} khách</b></div>
-      <div className="pv3-stat"><span className="pv3-stat__t">Đã nhận qua QR tháng {Number(today.slice(5, 7))}</span><b className="pv3-stat__v">{formatReceived(receivedViaQr({ bookings: own, history }, params.providerId, today.slice(0, 7)))}</b></div>
+      <div className="pv3-stat"><span className="pv3-stat__t">Đã nhận qua QR tháng {Number(today.slice(5, 7))}</span><b className="pv3-stat__v">—</b></div>
       <Link className="pv3-stat" href={`/provider/${id}/experiences`}><span className="pv3-stat__t">Trải nghiệm đang hiển thị</span><b className="pv3-stat__v">{stats.activeExperiences}</b></Link>
     </section>
     <div id="lich" className="pv3-head pv3-head--cal"><h2 className="pv3-h2">Lịch xưởng</h2><div className="pv3-head__btns"><Link className="pv3-link" href={`/provider/${id}/schedule`}>Xem lịch đầy đủ ›</Link><Button size="sm" href={`/provider/${id}/bookings/new`}>+ Tạo đặt chỗ</Button></div></div>

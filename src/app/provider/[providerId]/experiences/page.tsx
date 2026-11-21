@@ -1,189 +1,45 @@
-'use client'
-
-import React, { useEffect, useState } from 'react'
+// Screen 31 (EXP067): "Trải nghiệm của xưởng". Mockup hab-mockup-v3/png/31. Server page; delete (EXP132) is a popup.
 import Link from 'next/link'
-import { readSessionContext } from '@/lib/auth/client-session'
+import { currentServerSession } from '@/lib/auth/server-session'
+import { demoRepository } from '@/lib/db/application-store'
+import { providerExperienceRows, EXPERIENCE_PAGE_SIZE } from '@/lib/provider/experience-list-view'
+import CoverImage from '@/app/explore/v3/CoverImage'
+import { Button, Pagination } from '@/app/components/ui'
+import ExperienceRowActions from './ExperienceRowActions'
+import '../../v3/provider-v3.css'
 
-interface ExperienceItem {
-  archived_at?: string
-  experience_id: string
-  name: string
-  category: string
-  duration_minutes: number
-  price_per_person: number
-  max_participants: number
-  notice_period_hours?: number
-  has_active_bookings?: boolean
-}
+export const dynamic = 'force-dynamic'
+const SIZES = '(min-width: 768px) 220px, 112px'
 
-export default function ExperienceManagementPage({
-  params,
-}: {
-  params: { providerId: string }
-}) {
-  const [authorized, setAuthorized] = useState(false)
-  const [showArchived,setShowArchived]=useState(false)
-  const [experiences, setExperiences] = useState<ExperienceItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState(false)
-
-  useEffect(() => {
-    let alive = true
-    const applySession = async () => {
-      const session = await readSessionContext()
-      if (!alive) return
-      const canManage = session.role === 'Local_Provider' && session.providerId === params.providerId
-      setAuthorized(canManage)
-      if (!canManage) {
-        setLoading(false)
-        return
-      }
-      setLoadError(false)
-      await fetch(`/api/prf/experience?provider_id=${encodeURIComponent(params.providerId)}&include_archived=true`)
-        .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load experiences')))
-        .then(data => { if (alive) setExperiences(data.experiences || []) })
-        .finally(() => { if (alive) setLoading(false) })
-    }
-    applySession().catch(() => { if (alive) { setLoadError(true); setLoading(false) } })
-    const onRoleChanged = () => {
-      applySession().catch(() => { if (alive) setAuthorized(false) })
-    }
-    window.addEventListener('hab_role_changed', onRoleChanged)
-
-    return () => { alive = false; window.removeEventListener('hab_role_changed', onRoleChanged) }
-  }, [params.providerId])
-
-  const isLocalProvider = authorized
-
-  return (
-    <div className="prf-container" style={{ paddingBottom: '5rem' }}>
-      {/* Header */}
-      <div className="prf-spec-header">
-        <div>
-          <span className="prf-spec-code">QUẢN LÝ TRẢI NGHIỆM</span>
-          <h1 className="prf-spec-title">Quản lý Hoạt động Trải nghiệm Làng nghề</h1>
-          <p className="prf-spec-subtitle">
-            Danh mục các hoạt động văn hóa, nặn gốm và tham quan do xưởng trực tiếp cung cấp cho du khách và tour B2B
-          </p>
-        </div>
-        <div className="prf-spec-actions">
-          <Link
-            href={`/provider/${params.providerId}`}
-            className="prf-btn prf-btn-outline"
-          >
-            ← Hồ sơ xưởng
-          </Link>
-          <Link
-            href={`/provider/${params.providerId}/experiences/new`}
-            className="prf-btn prf-btn-primary"
-          >
-            + Thêm trải nghiệm mới
-          </Link>
-        </div>
+export default async function ExperienceManagementPage({ params, searchParams }: { params: { providerId: string }; searchParams: { page?: string } }) {
+  const session = await currentServerSession()
+  if (!session.authenticated || session.role !== 'Local_Provider' || session.providerId !== params.providerId) {
+    return <main className="pv3-page"><h1 className="pv3-h1">Trải nghiệm của xưởng</h1><p>Chỉ chủ xưởng sở hữu hồ sơ này mới quản lý được trải nghiệm.</p><Button href="/login">Đăng nhập</Button></main>
+  }
+  const repository = demoRepository()
+  const [experiences, bookings, profile_media, stored_files] = await Promise.all(['experiences', 'bookings', 'profile_media', 'stored_files'].map(name => repository.all(name as 'experiences')))
+  const rows = providerExperienceRows({ experiences, bookings, profile_media, stored_files }, params.providerId)
+  const pages = Math.max(1, Math.ceil(rows.length / EXPERIENCE_PAGE_SIZE))
+  const page = Math.min(pages, Math.max(1, Number(searchParams.page) || 1))
+  const shown = rows.slice((page - 1) * EXPERIENCE_PAGE_SIZE, page * EXPERIENCE_PAGE_SIZE)
+  const base = `/provider/${params.providerId}/experiences`
+  return <main className="pv3-page">
+    <div className="pv3-head"><h1 className="pv3-h1">Trải nghiệm của xưởng</h1><Button href={`${base}/new`}>Thêm trải nghiệm</Button></div>
+    {shown.length === 0 && <p className="pv3-empty">Xưởng chưa có trải nghiệm nào. Bấm “Thêm trải nghiệm” để bắt đầu.</p>}
+    <ul className="pv3-list">{shown.map(row => <li key={row.id} className="pv3-xrow">
+      <Link href={`${base}/${row.id}`} className="pv3-xrow__img" aria-label={`Xem ${row.name}`}>
+        {row.image ? <CoverImage image={row.image} alt="" sizes={SIZES} /> : <span className="pv3-xrow__noimg">Chưa có ảnh</span>}
+      </Link>
+      <div className="pv3-xrow__body">
+        <h2 className="pv3-xrow__name"><Link href={`${base}/${row.id}`}>{row.name}</Link></h2>
+        <p className="pv3-xrow__meta">{[row.priceText, `${row.durationMinutes} phút`, `tối đa ${row.maxParticipants} khách/ca`, row.cancelText].filter(Boolean).join(' · ')}</p>
+        <p className={row.upcomingBookings > 0 ? 'pv3-xrow__note pv3-xrow__note--on' : 'pv3-xrow__note'}>
+          {row.totalBookings === 0 ? 'Chưa có đặt chỗ nào' : `${row.upcomingBookings > 0 ? `${row.upcomingBookings} đặt chỗ sắp tới` : 'Chưa có đặt chỗ sắp tới'}${row.updatedText ? ` · cập nhật ${row.updatedText}` : ''}`}
+        </p>
       </div>
-
-      {/* Warning if not Local Provider */}
-      {!isLocalProvider && (
-        <div
-          style={{
-            background: '#fffbeb',
-            border: '1px solid #f59e0b',
-            borderRadius: '4px',
-            padding: '1rem',
-            marginBottom: '1.5rem',
-            fontSize: '0.82rem',
-            color: '#92400e',
-          }}
-        >
-          ℹ️ Tài khoản hiện tại không sở hữu Provider này. Chỉ <strong>Local Provider</strong> (Chủ xưởng) đúng tổ chức mới có quyền tạo mới, chỉnh sửa giá và điều kiện đặt trải nghiệm.
-        </div>
-      )}
-
-      {/* Stat Bar */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '1rem',
-          marginBottom: '1.75rem',
-        }}
-      >
-        <div className="prf-section-card" style={{ padding: '1rem 1.25rem' }}>
-          <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#6b7280', fontWeight: 700 }}>
-            Tổng trải nghiệm hoạt động
-          </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginTop: '0.25rem' }}>
-            {experiences.filter(item=>!item.archived_at).length} đang hoạt động · {experiences.filter(item=>item.archived_at).length} đã lưu trữ
-          </div>
-        </div>
-
-      </div>
-
-      <label><input type="checkbox" checked={showArchived} onChange={event=>setShowArchived(event.target.checked)}/> Hiển thị trải nghiệm đã lưu trữ</label>
-      {/* Experiences List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {loading && <p>Đang tải trải nghiệm…</p>}
-        {loadError && <p role="alert">Không thể tải trải nghiệm. Vui lòng tải lại trang.</p>}
-        {!loading && !loadError && authorized && experiences.filter(exp=>showArchived || !exp.archived_at).length === 0 && <p>Không có trải nghiệm trong danh sách này. Thêm trải nghiệm mới hoặc bật hiển thị trải nghiệm đã lưu trữ.</p>}
-        {experiences.filter(exp=>showArchived || !exp.archived_at).map(exp => (
-          <div
-            key={exp.experience_id}
-            className="prf-section-card"
-            style={{
-              padding: '1.5rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '1rem',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <span className="prf-badge prf-badge-verified">{exp.category}</span>
-                <span className="prf-badge" style={{ background: '#f3f4f6', color: '#374151' }}>
-                  ⏱️ {exp.duration_minutes} phút
-                </span>
-                {exp.has_active_bookings && (
-                  <span className="prf-badge prf-badge-warning">
-                    Một số thông tin bị khóa do có booking đang hoạt động
-                  </span>
-                )}
-              </div>
-
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 0.35rem 0', color: '#111827' }}>
-                {exp.name}{exp.archived_at && <span className="prf-badge"> · Đã lưu trữ</span>}
-              </h3>
-
-              <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.82rem', color: '#4b5563', flexWrap: 'wrap' }}>
-                <div>
-                  <strong>Giá niêm yết:</strong>{' '}
-                  <span style={{ color: '#b84c24', fontWeight: 700 }}>
-                    {exp.price_per_person.toLocaleString('vi-VN')} VND / khách
-                  </span>
-                </div>
-                <div>
-                  <strong>Sức chứa tối đa:</strong> {exp.max_participants} người / lượt
-                </div>
-                <div>
-                  <strong>Thời gian báo trước:</strong> {exp.notice_period_hours} giờ
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <Link href={`/provider/${params.providerId}/experiences/${exp.experience_id}`} className="prf-btn prf-btn-outline">Xem chi tiết</Link>
-              <Link
-                href={`/provider/${params.providerId}/experiences/${exp.experience_id}/edit`}
-                className="prf-btn prf-btn-primary"
-               
-              >
-                Chỉnh sửa
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+      <ExperienceRowActions providerId={params.providerId} experienceId={row.id} name={row.name} deletion={row.deletion} />
+    </li>)}</ul>
+    <Pagination from={(page - 1) * EXPERIENCE_PAGE_SIZE + 1} to={Math.min(rows.length, page * EXPERIENCE_PAGE_SIZE)} total={rows.length} unit="trải nghiệm"
+      prev={page > 1 ? { href: `${base}?page=${page - 1}` } : undefined} next={page < pages ? { href: `${base}?page=${page + 1}` } : undefined} />
+  </main>
 }

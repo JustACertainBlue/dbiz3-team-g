@@ -1,271 +1,109 @@
-'use client'
-
-// PRF127 Provider profile (US-3, FR-003; UBND review US-6). Everything shown comes from
-// GET /api/prf/provider/:id (checklist §3 #40): no fixed demo text. Edit / Create Booking only for the
-// owning Local Provider; the UBND review panel only for UBND while a version is Pending Verification (#33).
-
-import React, { useCallback, useEffect, useState } from 'react'
+// Screen 30 (PRF127 + entry to PRF128): "Hồ sơ xưởng của tôi". Mockup hab-mockup-v3/png/30: the owner sees the same page as
+// screen 24 plus an edit button, links to their own experience pages and the workshop calendar (compact month grid).
+// Anyone else (UBND review panel), and a profile that is not published yet, get the previous page unchanged.
+import React from 'react'
 import Link from 'next/link'
-import MediaImage from '@/app/components/MediaImage'
-import { readSessionContext } from '@/lib/auth/client-session'
-import type { SessionContext } from '@/lib/auth/session'
-import { providerPageView } from '@/lib/prf/provider-page-view'
-import { providerBkgLinks } from '@/lib/booking/nav-links'
-import StatusBadge from '@/app/components/StatusBadge'
-import { statusLabel } from '@/lib/status-labels'
+import { Bus, Check, CircleCheck, Clock, Info, Languages, Mail, MapPin, PencilLine, Phone, QrCode, Users, type LucideIcon } from 'lucide-react'
+import { currentServerSession } from '@/lib/auth/server-session'
+import { demoRepository } from '@/lib/db/application-store'
+import { hanoiDate } from '@/lib/booking/clock'
+import { paymentsEnabled } from '@/lib/flags'
+import { loadExploreRuntime } from '@/lib/explore/seed-repository'
+import { providerView } from '@/lib/explore/v3-provider'
+import { hoursByWeekday, monthDays } from '@/lib/provider/month-calendar'
+import { monthWindow } from '@/lib/provider/month-window'
+import CoverImage from '@/app/explore/v3/CoverImage'
+import Gallery from '@/app/explore/v3/Gallery'
+import { CARD_SIZES } from '@/app/explore/v3/image-sizes'
+import LegacyProviderProfile from './LegacyProviderProfile'
+import OwnerExperienceCard from '../v3/OwnerExperienceCard'
+import MonthCalendar from '../v3/MonthCalendar'
+import '@/app/explore/v3/explore-v3.css'
+import '../v3/provider-v3.css'
 
-interface ProviderExperience {
-  experience_id: string
-  name: string
-  category?: string
-  duration_minutes?: number
-  max_participants?: number
-  price_per_person?: number
-}
+export const dynamic = 'force-dynamic'
 
-interface ProviderData {
-  provider_id: string
-  provider_name: string
-  craft_type: string
-  general_description: string
-  village_id?: string
-  village_name?: string
-  village_district?: string
-  village_city?: string
-  location_address?: string
-  artisan_names?: string[]
-  business_registration_number?: string
-  contact?: { phone_number?: string; business_email?: string }
-  verification_status?: string
-  pricing?: number
-  capacity?: number
-  availability?: unknown
-  public_images?: string[]
-  booking_conditions?: unknown
-  experiences?: ProviderExperience[]
-}
+const INFO_ICONS: Record<string, LucideIcon> = { 'Địa chỉ': MapPin, 'Giờ nhận đoàn': Clock, 'Sức chứa': Users, 'Ngôn ngữ hướng dẫn': Languages, 'Đỗ xe': Bus, 'Thanh toán': QrCode, 'Điện thoại': Phone, 'Email': Mail }
 
-const vnd = (value?: number) => (value ?? 0).toLocaleString('vi-VN')
+export default async function ProviderProfilePage({ params }: { params: { providerId: string } }) {
+  const session = await currentServerSession()
+  const owner = session.authenticated && session.role === 'Local_Provider' && session.providerId === params.providerId
+  const seed = owner ? await loadExploreRuntime() : null
+  // An agency-shaped viewer makes the view show the group prices and contact lines; nothing is looked up for the placeholder id.
+  const view = seed ? providerView(seed, params.providerId, { kind: 'agency', agencyId: '__provider-owner__' }, new Date(), paymentsEnabled()) : null
+  if (!view) return <LegacyProviderProfile params={params} />
 
-export default function ProviderProfilePage({
-  params,
-}: {
-  params: { providerId: string }
-}) {
-  const [provider, setProvider] = useState<ProviderData | null>(null)
-  const [session, setSession] = useState<SessionContext | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const id = params.providerId
+  const repository = demoRepository()
+  const [bookings, experiences, allHours, agencies] = await Promise.all([repository.all('bookings'), repository.all('experiences'), repository.all('provider_operating_hours'), repository.all('agency_profiles')])
+  const today = hanoiDate(Date.now())
+  const { from, to } = monthWindow(today)
+  const hours = allHours.filter(row => row.provider_id === id)
+  const cells = monthDays({ hours, bookings: bookings.filter(row => row.provider_id === id), experiences: experiences.filter(row => row.provider_id === id), agencies }, from, to, today)
 
-  const [revisionComments, setRevisionComments] = useState('')
-  const [reviewing, setReviewing] = useState(false)
-  const [reviewMessage, setReviewMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  return <div className="v3p pv3-root">
+    <div className="hab-band"><nav aria-label="Đường dẫn" className="v3-crumbs"><Link href={`/provider/${id}/dashboard`}>Trang chủ</Link><span aria-hidden="true">›</span><Link href={`/village/${view.villageId}`}>{view.villageTitle}</Link><span aria-hidden="true">›</span><span aria-current="page">{view.name}</span></nav></div>
+    <nav className="v3d-tabs" aria-label="Mục trên trang"><div className="hab-band v3d-tabs__in">
+      <a href="#tong-quan">Tổng quan</a><a href="#trai-nghiem">Trải nghiệm</a><a href="#lich">Lịch trống</a><a href="#thong-tin">Thông tin &amp; liên hệ</a><a href="#hoi-dap">Câu hỏi thường gặp</a>
+    </div></nav>
 
-  const loadProfile = useCallback(async () => {
-    const res = await fetch(`/api/prf/provider/${params.providerId}`)
-    if (!res.ok) {
-      throw new Error(res.status === 404 ? 'Hồ sơ làng nghề chưa công bố hoặc không tồn tại' : 'Lỗi tải dữ liệu')
-    }
-    setProvider(await res.json())
-  }, [params.providerId])
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const [viewer] = await Promise.all([readSessionContext(), loadProfile()])
-        setSession(viewer)
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Lỗi kết nối')
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [loadProfile])
-
-  const handleReview = async (decision: 'Approve' | 'Request Revision') => {
-    setReviewing(true)
-    setReviewMessage(null)
-    try {
-      const res = await fetch(`/api/prf/provider/${params.providerId}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision, revision_comments: revisionComments }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Lỗi khi thẩm định hồ sơ')
-      setReviewMessage({ type: 'success', text: `Đã cập nhật trạng thái thẩm định: ${statusLabel('provider', data.verification_status)}` })
-      await loadProfile()
-    } catch (err: unknown) {
-      setReviewMessage({ type: 'error', text: err instanceof Error ? err.message : 'Không thể thực hiện thẩm định' })
-    } finally {
-      setReviewing(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="spec-portal" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <p style={{ fontWeight: 700, color: '#4b5563' }}>Đang tải hồ sơ xưởng…</p>
-      </div>
-    )
-  }
-
-  if (error || !provider || !session) {
-    return (
-      <div className="spec-portal" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-        <h2 style={{ color: '#be123c', marginBottom: '1rem' }}>Hồ sơ Làng nghề Không tồn tại</h2>
-        <p style={{ color: '#6b7280', marginBottom: '2rem' }}>{error || 'Nhà cung cấp chưa được kích hoạt.'}</p>
-        <Link href="/" className="spec-btn-black">Trang chủ</Link>
-      </div>
-    )
-  }
-
-  const view = providerPageView(provider, session)
-  const village = [provider.village_name, provider.village_district, provider.village_city].filter(Boolean).join(', ')
-  const experienceHref = (id: string) => view.canEdit
-    ? `/provider/${params.providerId}/experiences/${id}`
-    : `/explore/experiences/${id}`
-
-  return (
-    <div className="spec-portal">
-
-      <div className="spec-content-wrap"><section className="prf-section-card"><h2>Hình ảnh xưởng</h2><div className="provider-media-grid">{provider.public_images?.length?provider.public_images.map((url,index)=><MediaImage key={url} src={url} alt={`Ảnh xưởng ${index+1}`}/>):<p>Xưởng chưa có ảnh công khai.</p>}</div></section>
-        {(view.canEdit || view.canCreateBooking) && (
-          <div className="spec-action-bar">
-            <div className="spec-action-label">Quản lý xưởng</div>
-            {view.canEdit && (
-              <Link href={`/provider/${params.providerId}/edit`} className="spec-btn-black">Chỉnh sửa hồ sơ</Link>
-            )}
-            {view.canCreateBooking && (
-              <Link href={`/provider/${params.providerId}/bookings/new`} className="spec-btn-black">+ Tạo booking</Link>
-            )}
-            {view.experiencesHref && (
-              <Link href={view.experiencesHref} className="spec-btn-black">Quản lý trải nghiệm</Link>
-            )}
-          </div>
-        )}
-
-        <div className="spec-hero-box">
-          <div>
-            {provider.verification_status && (
-              <div className="spec-badge-pill">{provider.verification_status === 'Verified' ? '✔ VERIFIED PROVIDER' : `⏳ ${provider.verification_status.toUpperCase()}`}</div>
-            )}
-            <h1 className="spec-hero-title">{provider.provider_name}</h1>
-            <div className="spec-hero-subtitle">{provider.craft_type}</div>
-            {village && (
-              <div className="spec-hero-location"><span>📍</span><span>{view.villageHref ? <Link href={view.villageHref}>{village}</Link> : village}</span></div>
-            )}
-            {provider.location_address && (
-              <div style={{ fontSize: '0.85rem', color: '#4b5563', marginBottom: '0.75rem' }}>{provider.location_address}</div>
-            )}
-            {(view.pricingLine || view.capacityLine) && (
-              <div data-testid="prf127-pricing" style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-                {[view.pricingLine, view.capacityLine].filter(Boolean).join(' · ')}
-              </div>
-            )}
-            {provider.artisan_names && provider.artisan_names.length > 0 && (
-              <div className="spec-chips-row">
-                {provider.artisan_names.map(name => <span key={name} className="spec-chip">{name}</span>)}
-              </div>
-            )}
-          </div>
-          <div>
-            <p style={{ fontSize: '0.95rem', color: '#374151', lineHeight: 1.6 }}>{provider.general_description}</p>
-            {provider.business_registration_number && (
-              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.75rem' }}>
-                Mã đăng ký kinh doanh: <strong>{provider.business_registration_number}</strong>
-              </div>
-            )}
-          </div>
+    <section id="tong-quan" className="hab-band v3d-sec v3d-sec--top">
+      <div className="v3p-head">
+        <div className="v3p-head__who">
+          <span className="v3p-mark" aria-hidden="true">{view.initials}</span>
+          <div><p className="v3d-eyebrow">{view.eyebrow}</p><h1 className="v3d-h1 v3p-h1">{view.name}</h1><p className="v3d-provider">{view.address}</p></div>
         </div>
-
-        {provider.experiences && (
-          <>
-            <h2 className="spec-section-title">Trải nghiệm</h2>
-            {provider.experiences.length === 0 && <p style={{ color: '#6b7280' }}>Chưa có trải nghiệm.</p>}
-            <div className="spec-exp-grid">
-              {provider.experiences.map(exp => (
-                <div key={exp.experience_id} className="spec-exp-card">
-                  <div className="spec-exp-body">
-                    <div className="spec-exp-header-tag"><span>{exp.category}</span></div>
-                    <div className="spec-exp-specs">🕒 {exp.duration_minutes} phút · 👥 Tối đa {exp.max_participants} khách</div>
-                    <div className="spec-exp-title">{exp.name}</div>
-                    <div className="spec-exp-pricing-box">
-                      <span className="spec-exp-b2b-rate">{vnd(exp.price_per_person)} ₫ <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>/ khách</span></span>
-                    </div>
-                    <div className="spec-exp-actions">
-                      <Link href={experienceHref(exp.experience_id)} style={{ fontSize: '0.78rem', color: '#111827', fontWeight: 700 }}>Xem chi tiết</Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {(provider.contact || view.operatingHours.length > 0 || view.bookingConditions.length > 0) && (
-          <div className="spec-info-box">
-            <div className="spec-dispatch-grid">
-              {provider.contact && (
-                <div className="spec-dispatch-col">
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Liên hệ</div>
-                  {provider.contact.phone_number && <div style={{ fontWeight: 800 }}>{provider.contact.phone_number}</div>}
-                  {provider.contact.business_email && <div style={{ fontSize: '0.85rem' }}>{provider.contact.business_email}</div>}
-                </div>
-              )}
-              {provider.availability !== undefined && (
-                <div className="spec-dispatch-col">
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Giờ hoạt động</div>
-                  {view.operatingHours.length === 0 && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Chưa có giờ mở cửa.</div>}
-                  {view.operatingHours.map(line => <div key={line} style={{ fontSize: '0.85rem' }}>{line}</div>)}
-                </div>
-              )}
-              {provider.booking_conditions !== undefined && (
-                <div className="spec-dispatch-col">
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6b7280' }}>Điều kiện đón đoàn</div>
-                  {view.bookingConditions.length === 0 && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>—</div>}
-                  {view.bookingConditions.map(line => <div key={line} style={{ fontSize: '0.85rem' }}>{line}</div>)}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {view.canReview && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '1.5rem', marginTop: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div style={{ fontWeight: 800, color: '#991b1b', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                UBND thẩm định hồ sơ (US-6, BR-005)
-              </div>
-              <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#991b1b' }}>
-                Trạng thái: <StatusBadge family="provider" status={provider.verification_status} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <input
-                type="text"
-                aria-label="Nhận xét yêu cầu sửa đổi"
-                value={revisionComments}
-                onChange={e => setRevisionComments(e.target.value)}
-                placeholder="Nhập nhận xét / lý do yêu cầu sửa đổi..."
-                style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.8rem', border: '1px solid #d1d5db' }}
-              />
-              <button onClick={() => handleReview('Request Revision')} disabled={reviewing} className="spec-btn-white" style={{ fontSize: '0.75rem', borderColor: '#b91c1c', color: '#b91c1c' }}>
-                {reviewing ? 'Đang gửi...' : 'Yêu cầu sửa đổi'}
-              </button>
-              <button onClick={() => handleReview('Approve')} disabled={reviewing} className="spec-btn-black" style={{ fontSize: '0.75rem', background: '#059669' }}>
-                {reviewing ? 'Đang duyệt...' : '✔ Phê duyệt (Approve)'}
-              </button>
-            </div>
-          </div>
-        )}
-        {reviewMessage && (
-          <div role="status" style={{ padding: '0.75rem', background: '#ffffff', border: '1px solid #d1d5db', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>
-            {reviewMessage.text}
-          </div>
-        )}
+        <Link href={`/provider/${id}/edit`} className="v3p-chat" aria-label="Sửa hồ sơ xưởng" title="Sửa hồ sơ xưởng"><PencilLine aria-hidden="true" /></Link>
       </div>
-    </div>
-  )
+      <div className="v3d-hero">
+        <Gallery images={view.images} alt={view.name} maxWidth={804} />
+        <aside className="v3d-side"><div className="v3-card v3d-owner">
+          <div className="v3d-owner__who"><span className="v3d-avatar v3p-avatar" aria-hidden="true">{view.owner.initials}</span><div><p className="v3d-owner__name">{view.owner.name}</p><p className="v3-cap">{view.owner.title}</p></div></div>
+          {view.owner.phone && <p className="v3d-owner__phone v3-tnum">{view.owner.phone}</p>}
+          {view.owner.email && <p className="v3d-owner__phone v3p-brk">{view.owner.email}</p>}
+        </div></aside>
+      </div>
+
+      {view.highlights.length > 0 && <section aria-labelledby="v3p-hl" className="v3d-block">
+        <h2 id="v3p-hl" className="v3-h3 v3d-mb v3p-hl__h">Điểm nổi bật của xưởng</h2>
+        <div className="v3p-hls">{view.highlights.map(item => <div key={item.title} className="v3p-hl"><span className="v3p-hl__i" aria-hidden="true"><CircleCheck /></span><span><b>{item.title}</b><span className="v3p-hl__s">{item.sub}</span></span></div>)}</div>
+      </section>}
+
+      <div className="v3d-about">
+        <div className="v3d-about__main">{view.about.length > 0 && <div className="v3d-stack"><h2 className="v3-h2">Giới thiệu xưởng</h2>{view.about.map((item, index) => <p key={index} className="v3d-lead v3p-lead">{item.lead && <b>{item.lead}</b>}{item.text}</p>)}</div>}</div>
+        {view.suitableFor.length > 0 && <aside className="v3d-about__side"><h2 className="v3-h3 v3d-mb">Xưởng hợp với</h2><div className="v3d-gchips">{view.suitableFor.map(term => <span key={term} className="v3d-gchip"><Check aria-hidden="true" />{term}</span>)}</div></aside>}
+      </div>
+    </section>
+
+    <section id="trai-nghiem" className="hab-band v3d-sec">
+      <div className="v3-head"><div><h2 className="v3-h2">Trải nghiệm của xưởng ({view.experiences.length})</h2></div></div>
+      <div className="v3p-exlist">{view.experiences.slice(0, 3).map(item => <OwnerExperienceCard key={item.id} item={item} href={`/provider/${id}/experiences/${item.id}`} />)}</div>
+      <div className="v3-more-row"><Link href={`/provider/${id}/experiences`} className="v3-more">Xem tất cả trải nghiệm ›</Link></div>
+    </section>
+
+    <section id="lich" className="hab-band v3d-sec">
+      <h2 className="v3-h2 v3d-mb">Lịch trống</h2>
+      <MonthCalendar cells={cells} today={today} variant="compact" hoursByWeekday={hoursByWeekday(hours)} bookingHref={`/provider/${id}/bookings/__ID__`} scheduleHref={`/provider/${id}/dashboard#lich`} />
+    </section>
+
+    {view.info.length > 0 && <section id="thong-tin" className="hab-band v3d-sec">
+      <h2 className="v3-h2 v3d-mb">Thông tin &amp; liên hệ</h2>
+      <div className="v3-card v3p-kv"><div className="v3p-kvg">{view.info.map(row => { const Icon = INFO_ICONS[row.label] ?? Info; return <div key={row.label} className="v3p-kvi"><Icon aria-hidden="true" /><div><b>{row.label}</b><span className={row.label === 'Email' ? 'v3p-brk' : undefined}>{row.value}</span></div></div> })}</div></div>
+    </section>}
+
+    {view.similar.length > 0 && <section className="hab-band v3d-sec" aria-labelledby="v3p-sim">
+      <div className="v3-head"><div><h2 id="v3p-sim" className="v3-h2">Trải nghiệm tương tự ở làng khác</h2></div></div>
+      <div className="v3p-simgrid">{view.similar.map(card => <Link key={card.id} href={`/explore/experiences/${card.id}`} className="v3-card v3p-sim">
+        <CoverImage image={card.image} alt="" sizes={CARD_SIZES} className="v3p-sim__img" />
+        <span className="v3p-sim__body"><span className="v3-craft">{card.craft}</span><b className="v3p-sim__name">{card.name}</b><span className="v3-cap">{[card.location.split(',')[0], card.meta.split(' · ')[0], card.meta.split(' · ')[1]?.replace('Tối đa', 'tối đa').replace('/ca', '')].filter(Boolean).join(' · ')}</span></span>
+      </Link>)}</div><div className="v3-more-row"><Link href="/explore/search" className="v3-more">Xem tất cả ›</Link></div>
+    </section>}
+
+    <section id="hoi-dap" className="hab-band v3d-sec v3d-sec--last">
+      <h2 className="v3-h2">Câu hỏi thường gặp về xưởng</h2>
+      <div className="v3d-faqg">{[view.faq.slice(0, Math.ceil(view.faq.length / 2)), view.faq.slice(Math.ceil(view.faq.length / 2))].map((column, index) => <div key={index} className="v3d-faqc">
+        {column.map(item => <details key={item.q} className="v3d-fq"><summary>{item.q}</summary><p>{item.a}</p></details>)}
+      </div>)}</div>
+    </section>
+  </div>
 }

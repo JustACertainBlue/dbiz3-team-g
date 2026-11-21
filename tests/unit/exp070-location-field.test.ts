@@ -18,7 +18,7 @@ const input = (html: string) => html.match(/<input[^>]*>/)![0]
 describe('#208 | EXP070 §3 #14 Experience location address', () => {
   it('no active booking: an editable, required text input of at most 500 characters, labelled', () => {
     const html = render(false)
-    expect(html).toContain('Địa điểm diễn ra trải nghiệm')
+    expect(html).toContain('Địa điểm tổ chức')
     expect(input(html)).toMatch(/type="text"/)
     expect(input(html)).toMatch(/\srequired=""/)
     expect(input(html)).toMatch(/maxLength="500"/i)
@@ -34,9 +34,13 @@ describe('#208 | EXP070 §3 #14 Experience location address', () => {
     expect(input(html)).toContain('value="Thôn 1, Bát Tràng, Gia Lâm"')
   })
 
+  // Mockup v3 (approved, screen 32): both forms render their sections through ExperienceFormBody; the requirement is unchanged.
   it('the EXP070 page renders the field from the loaded value and locks it with the other BR-014 fields', () => {
+    const body = readFileSync('src/app/provider/[providerId]/experiences/ExperienceFormBody.tsx', 'utf8')
+    expect(body).toMatch(/<ExperienceLocationField\b[^>]*value=\{formData\.experience_location_address\}/)
+    expect(body).toMatch(/<ExperienceLocationField\b[^>]*locked=\{locked\}/)
+    expect(body).toMatch(/hasActiveBookings: locked/)
     const page = readFileSync('src/app/provider/[providerId]/experiences/[experienceId]/edit/page.tsx', 'utf8')
-    expect(page).toMatch(/<ExperienceLocationField\b[^>]*value=\{formData\.experience_location_address\}/)
-    expect(page).toMatch(/<ExperienceLocationField\b[^>]*locked=\{hasActiveBookings\}/)
+    expect(page).toMatch(/<ExperienceFormBody\b[^>]*hasActiveBookings=\{hasActiveBookings\}/)
   })
 })

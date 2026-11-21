@@ -33,8 +33,15 @@ describe('#217 | PRF127 Experiences → EXP067 and Village → VIL030', () => {
     expect(providerPageView({ provider_id: BAT_TRANG }, owner).villageHref).toBeNull()
   })
 
-  it('the page renders both links from the view', () => {
+  // Mockup v3 (approved, screen 30): the owner sees a new page; the view-based links stay on the page everyone else gets.
+  it('the owner page links to EXP067 (Experiences) and to the village (VIL030)', () => {
     const page = readFileSync('src/app/provider/[providerId]/page.tsx', 'utf8')
+    expect(page).toMatch(/<Link href=\{`\/provider\/\$\{id\}\/experiences`\}[^>]*>Xem tất cả trải nghiệm ›<\/Link>/)
+    expect(page).toMatch(/<Link href=\{`\/village\/\$\{view\.villageId\}`\}>\{view\.villageTitle\}<\/Link>/)
+  })
+
+  it('the page for other viewers (and unpublished profiles) still renders both links from the view', () => {
+    const page = readFileSync('src/app/provider/[providerId]/LegacyProviderProfile.tsx', 'utf8')
     expect(page).toMatch(/<Link href=\{view\.experiencesHref\}[^>]*>[^<]*<\/Link>/)
     expect(page).toMatch(/<Link href=\{view\.villageHref\}[^>]*>\{village\}<\/Link>/)
   })

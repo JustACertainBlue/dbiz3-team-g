@@ -124,4 +124,9 @@ Script outside the repo; each mutation applied to a copy, the module's own test 
 | adm-242-ui | `/admin` redirect from an effect: `const target = adminGuestRedirect(session); if (target) { router.replace(target); return }` | `const guest = adminGuestRedirect(session); if (guest) redirect(guest)` (server component) | Equivalent for the new page |
 | adm-242-ui | users and agencies detail are `<div className="overlay" role="dialog" aria-modal="true" aria-label=...>` closed by backdrop and Escape | users page has `<Modal open={target !== null}`; Modal.tsx has `role="dialog" aria-modal="true"` and Escape | **Yes**: backdrop click and `aria-label` of the detail dialogs no longer asserted; the detail screens are pages now |
 | adm-242-ui | agencies page has `<table className="review-table">`, no `Hiển thị cả hồ sơ đã xử lý`, no `STATUS_LABEL` | `ReviewList.tsx` has `<table className="av3-table av3-table--review">` and `Đã xử lý (`, no `STATUS_LABEL` | **Yes**: "no `Hiển thị cả hồ sơ đã xử lý`" dropped (that text is gone with the old page) |
-| adm117-cancel, adm117-ubnd-empty-suggestions | read `create-account/page.tsx` | read `create-account/CreateAccountForm.tsx` (same code, moved) | Path only |
+| adm117-cancel | reads `create-account/page.tsx` | reads `create-account/CreateAccountForm.tsx` (same code, moved there because the page now only redirects) | No (path only, every assert unchanged) |
+| adm117-ubnd-empty-suggestions | reads `create-account/page.tsx` | reads `create-account/CreateAccountForm.tsx` (same reason) | No (path only, every assert unchanged) |
+
+## Screenshot helpers
+
+The login-session and screenshot scripts (`save-session.mjs`, `shoot-admin.mjs`) are not in the repo. They live in `~/.dbiz3-auth/` next to the saved sessions and the Playwright install (`~/.dbiz3-auth/pw`). They hold no password, cookie or token; the sessions they write are the `*.json` files in the same folder. Usage: `node ~/.dbiz3-auth/save-session.mjs <name>`, `node ~/.dbiz3-auth/shoot-admin.mjs <name> <outDir> <path>...`.

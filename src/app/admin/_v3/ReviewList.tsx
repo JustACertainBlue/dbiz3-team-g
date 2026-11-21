@@ -32,7 +32,7 @@ export default async function ReviewList({ basePath, searchParams }: { basePath:
     <div style={{ marginTop: 16 }}><QueueFilters showKind={scope.adminType === 'HDT'} /></div>
     <div className="av3-table-wrap av3-table-wrap--padded" style={{ marginTop: 16 }}>
       {f.rows.length === 0 ? <p className="av3-empty" style={{ padding: 24 }}>{tab === 'pending' ? 'Không có hồ sơ nào đang chờ.' : 'Chưa có hồ sơ nào được xử lý.'}</p> :
-        <table className="av3-table av3-table--review av3-table--stack"><thead><tr><th>Hồ sơ</th><th>Loại hồ sơ</th><th>Ngày gửi</th><th>Trạng thái</th><th><span className="sr-only" style={{ position: 'absolute', left: -9999 }}>Thao tác</span></th></tr></thead>
+        <table className="av3-table av3-table--review av3-table--stack"><thead><tr><th>Hồ sơ</th><th>Loại hồ sơ</th><th>Ngày gửi</th><th>Trạng thái</th><th><span className="sr-only">Thao tác</span></th></tr></thead>
           <tbody>{f.rows.map(r => <tr key={r.key}>
             <td data-label="Hồ sơ"><span className="av3-name">{r.name}</span><small>{r.subtitle}</small></td>
             <td data-label="Loại hồ sơ"><span className="av3-tag">{r.kindLabel}</span></td>

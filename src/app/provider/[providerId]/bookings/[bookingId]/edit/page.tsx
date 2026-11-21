@@ -22,11 +22,12 @@ export default async function EditBookingPage({ params }: { params: { providerId
   const booking = await demoRepository().find('bookings', row => row.booking_id === params.bookingId)
   let slotRows: Awaited<ReturnType<ReturnType<typeof demoRepository>['all']>> = []
   try { slotRows = (await demoRepository().all('experience_slots')).filter(row => row.experience_id === booking?.experience_id) } catch { slotRows = [] }
+  const maxGuests = Number((await demoRepository().find('experiences', row => row.experience_id === booking?.experience_id))?.max_participants) || null
   const slots = parseSlots(slotRows).map(slot => ({ start: slot.start, end: slot.end, label: slot.label }))
   return <main className="bkg-page">
     <header><p>HANOI ARTISAN BRIDGE · BKG144</p><h1>Edit Booking Detail</h1><span>Booking ID {detail.booking_id} · đổi giờ không gia hạn thời gian giữ chỗ</span></header>
     <BookingDetailView detail={detail} />
-    <EditBookingForm detail={detail} backHref={back} slots={slots} />
+    <EditBookingForm detail={detail} backHref={back} slots={slots} maxGuests={maxGuests} />
     <style>{bookingDetailStyles}</style>
   </main>
 }

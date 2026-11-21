@@ -41,7 +41,7 @@ export default function SlotTable({ experienceId, date, name, slots, guests, max
       </table></div>
       <div className="v3d-selp">
         {isAgency
-          ? <RequestButton experiences={[{ id: experienceId, name }]} date={date} guests={guests} slotTime={selected?.time ?? ''} />
+          ? <RequestButton experiences={[{ id: experienceId, name, max }]} date={date} guests={guests} slotTime={selected?.time ?? ''} />
           : <Link className="hab-btn hab-btn--primary" href="/login">Đăng nhập để đặt chỗ</Link>}
         {selected && <p className="v3d-chosen">Đã chọn: <b>{selected.label}, {selected.time}</b></p>}
         {isAgency

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import React, { useMemo, useState } from 'react'
 import { groupPrice, priceBreakdown, type DiscountRule } from '@/lib/booking/group-price'
 import { adjustmentLine } from '@/lib/booking/display'
+import GuestsInput, { guestsError } from '@/app/explore/v3/GuestsInput'
 
 export interface ExperienceOption {
   experience_id: string; name: string; duration_minutes: number; max_participants: number; price_per_person: number
@@ -53,7 +54,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
-    if (!experience) return
+    if (!experience || guestsError(groupSize, experience.max_participants)) return
     setError(null); setSaving(true)
     try {
       const response = await fetch('/api/bkg/bookings', {
@@ -90,7 +91,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
             : <input id="tm" type="time" value={time} onChange={event => setTime(event.target.value)} required />}
           {time && <p className="v3b-help">Kết thúc {addMinutes(time, duration)} ({duration} phút).</p>}</div>
         <div className="v3b-f"><label htmlFor="gs">Số khách <span className="v3b-req">*</span></label>
-          <input id="gs" type="number" min={1} max={experience?.max_participants} step={1} value={groupSize} onChange={event => setGroupSize(event.target.value)} required />
+          <GuestsInput id="gs" value={groupSize} max={experience?.max_participants ?? null} onChange={setGroupSize} />
           <p className="v3b-help">Tối đa {experience?.max_participants} khách/ca.</p></div>
       </div>
     </section>

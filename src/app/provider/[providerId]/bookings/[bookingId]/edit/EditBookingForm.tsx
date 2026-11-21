@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import type { BookingDetail } from '@/lib/booking/booking-detail'
 import { hanoiInputValue } from '@/lib/time/hanoi-time'
 import '../../new/create-v3.css'
+import GuestsInput, { guestsError } from '@/app/explore/v3/GuestsInput'
 
 type ApiError = { error?: { code: string; message: string } }
 
@@ -16,7 +17,7 @@ const addMinutes = (clock: string, minutes: number) => {
   return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-export default function EditBookingForm({ detail, backHref, slots = [] }: { detail: BookingDetail; backHref: string; slots?: EditSlot[] }) {
+export default function EditBookingForm({ detail, backHref, slots = [], maxGuests = null }: { detail: BookingDetail; backHref: string; slots?: EditSlot[]; maxGuests?: number | null }) {
   const router = useRouter()
   const initial = {
     date: hanoiInputValue(detail.start_at).slice(0, 10), // read as Hanoi time; saved back with +07:00 (#87)
@@ -51,6 +52,7 @@ export default function EditBookingForm({ detail, backHref, slots = [] }: { deta
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (guestsError(String(groupSize), maxGuests)) return
     setError(null)
     // F-SCHED-04 takes only the changed fields (#48).
     const changes: Record<string, unknown> = {}
@@ -124,7 +126,7 @@ export default function EditBookingForm({ detail, backHref, slots = [] }: { deta
             : <input id="tm" type="time" value={time} onChange={event => setTime(event.target.value)} required />}
           <p className="v3b-help">Kết thúc {addMinutes(time, duration)} ({duration} phút). Đổi giờ không gia hạn thời gian giữ chỗ.</p></div>
         <div className="v3b-f"><label htmlFor="du">Thời lượng (phút) <span className="v3b-req">*</span></label><input id="du" type="number" min={1} step={1} value={duration} onChange={event => setDuration(Number(event.target.value))} required /></div>
-        <div className="v3b-f"><label htmlFor="gs">Số khách <span className="v3b-req">*</span></label><input id="gs" type="number" min={1} step={1} value={groupSize} onChange={event => setGroupSize(Number(event.target.value))} required /></div>
+        <div className="v3b-f"><label htmlFor="gs">Số khách <span className="v3b-req">*</span></label><GuestsInput id="gs" value={String(groupSize)} max={maxGuests} onChange={value => setGroupSize(Number(value))} /></div>
       </div>
     </section>
     <section className="v3b-card">

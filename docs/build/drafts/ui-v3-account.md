@@ -40,7 +40,6 @@ One read-only addition in logic: `ownAccount()` (`src/lib/auth/account-service.t
 
 ## Mockup missing
 
-- No 390 px mockup for any of these screens. Mobile follows the desktop layout: sign-in photo becomes a top banner with the role cards hidden, two-column forms become one column, the account menu becomes a horizontal strip.
 - Screen 16 PNG shows four cards with "BƯỚC n" tags; those tags are notes for the reader and are not on the pages.
 - Screen 20 / 20a: nothing to do in page content (see "Cần sửa chung").
 
@@ -64,7 +63,6 @@ One read-only addition in logic: `ownAccount()` (`src/lib/auth/account-service.t
 
 ### Not done / limits
 - **Real-data review of 19, 28, `/account`, `/agency/[id]` not done.** DEV refuses the fixture login (password `demo` gives 401, DEV has real passwords) and the shared test password was not given. Those screens were only checked with a browser fetch stub (round 1).
-- **18a–c checked on the browser with a fetch stub only** (rejected popup, then the 18d contact popup; both match png/18c, png/18d at 1440). Not looked at: pending and revise popups, 390 px.
 - **DEV seed has no Agency account in Pending Approval, Rejected or Request More Information.** The seed requests of `doanhnghiep9` (Rejected) and `doanhnghiep10` (Request More Information) have no `agency_user_id`, so there is nothing to log in with. No DEV data written.
 - **AuthShell.tsx and auth-v9.css kept:** `tests/unit/guest-landing.test.ts` still imports AuthShell (the test is not edited). Delete them together with that test case if wanted.
 - **19a still has no way in:** a Pending Approval account still cannot sign in, and the login now answers with the popup instead of a session. Not created.
@@ -86,7 +84,6 @@ One read-only addition in logic: `ownAccount()` (`src/lib/auth/account-service.t
   - Wrong password does not leak the status: with the lookup made on every failure, "wrong password on a Pending Approval account" and "... on a Rejected account" fail (2 failed, 11 passed).
 - **Disabled and other cases** (tests added, code already correct, no change): a disabled Local Provider with the right password gets only "Account disabled"; a non-Agency account marked Pending Approval, an Approved Agency without a profile, and a Disabled Agency with a leftover Rejected request all get no `registration_status` and no cookie.
 - **Department contact:** one constant, `src/app/auth-v3/department-contact.ts`, `null` for now. While it is null the "Liên hệ Sở Du lịch" button, the contact popup (18d) and the sentence "liên hệ Sở Du lịch" are hidden. **Waiting for the team to give the real email, phone and hours.** The mockup's example values were removed.
-- **Popups on `/login` with a fetch stub** (not real data): pending at 1440 and 390, revise at 1440 and 390, rejected at 1440 and 390, 18d at 390 (with a temporary contact, removed after). They match png/18a–18d apart from the known gaps (no company, no "Mã hồ sơ", no field line in 18b, no action buttons). Found and fixed: in 18a and 18d rows at 390 the labels wrapped badly; rows now stack on phones.
 - **Script for real sign-in screenshots:** `scripts/local/account-screens.ts` (details below). Not run with a real password.
 
 ### Command for Khánh Linh
@@ -98,7 +95,23 @@ Dev server on port 3201 running (`npx next dev -p 3201`), then, with the real DE
 ```
 E2E_EMAIL='<email>' E2E_PASSWORD='<password>' npx -y tsx scripts/local/account-screens.ts
 ```
-Pictures go to `.local-shots/account/` (git-ignored): `account-{1440,390}.png`, `agency-{1440,390}.png`, `header-menu-{1440,390}.png` (png/20), `header-logout-{1440,390}.png` (png/20a, opened, not confirmed). Without the two variables it stops at once with a message. Credentials are never printed.
 
 ### Screen 19a
 **"Màn không dùng trong MVP."** A waiting account cannot sign in, and login now shows the registration popup instead. The pending banner in `/account` stays in code but has no way in; no entry was created.
+
+## Round 4 (desktop only, decision of 21/11)
+
+Mobile layout already in the code is left as it is. Nothing new for phones, no 390 or Lighthouse mobile.
+
+### Done
+- **Test against the mockup `.dc.html`:** `tests/unit/v3-account-mockup.test.ts` with the fixture `tests/fixtures/v3-account-mockup-texts.json` (made by `scripts/local/extract-mockup-texts.py <mockup>/source`). For each screen it renders the page and checks that the mockup's static texts are all there and in the mockup's order. Data, placeholders, the shared header and annotations are not compared. Every other difference is a named entry (with the reason) in `DEVIATIONS` in the test. 17 tests: 15, 16 (4 steps), 17, 17a, 18, 18a, 18b, 18c, 18d, 19 (view, edit, change password), 19a, 28.
+- To make the sign-in screens testable without a sign-in, the page bodies became plain views: `auth-v3/AccountView.tsx` (19, 19a), `CompanyProfileView.tsx` (28), `ReviseView.tsx` (17a). Pages keep their requests and logic.
+- **Code changed to match the mockup:** error wording of sign-in ("Email hoặc mật khẩu chưa đúng."), checklist label "(!@#…)", screen 17 confirm-and-terms checkbox (submit stays disabled until ticked; the two links are plain text, no terms page exists), account edit block (title "Sửa thông tin cá nhân", "Họ và tên", read-only email with its note, "Huỷ"), change-password button "Đổi mật khẩu" with the note "Sau khi đổi, bạn cần đăng nhập lại.", sidebar "Doanh nghiệp của tôi ›" for a waiting account.
+
+### Not photographed because it needs a sign-in
+19 and 19a (`/account`), 28 (`/agency/[id]`), 17a (`/register/revise?token=…` needs a token), account menu and logout popup in the header (20, 20a), `/account/change-password`. To be taken later with the common script. Public screens (15, 16, 17, 18, 18a on `/login`) were looked at at 1440.
+
+### Not done (mockup has it, code does not)
+- **PRF021 edit block of screen 28** ("Sửa hồ sơ công ty") and the same-page layout of 19: the edit form of the company is still the old page `/agency/[id]/edit` (574 lines, old styling); the personal edit and the password change stay as an inline form and a separate page `/account/change-password`, not panels of one page.
+- **Screen 18 states** inside the OTP page (revise, rejected, "Bắt đầu khám phá", "Bổ sung và gửi lại"): the repo shows these as popups on `/login`, not in the OTP page.
+- Mockup items listed in `DEVIATIONS` of the test (enum labels of screen 17, missing fields, copy forced by the "xưởng" guard test, etc.).

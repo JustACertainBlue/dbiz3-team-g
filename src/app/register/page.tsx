@@ -40,6 +40,7 @@ function Field({ id, label, name, type = "text", value, placeholder, hint, full,
 export default function RegisterPage() {
   const router = useRouter();
   const hydrated = useHydrated();
+  const [agreed, setAgreed] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -315,8 +316,12 @@ export default function RegisterPage() {
             {errors["registration_documents"] && <span className="av3-field__err" role="alert">{errors["registration_documents"]}</span>}
           </section>
 
+          <label className="av3-check av3-check--block">
+            <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+            <span>Tôi xác nhận thông tin trên là đúng và đồng ý với <span className="av3-link">điều khoản sử dụng</span> và <span className="av3-link">chính sách bảo mật</span>.</span>
+          </label>
           <div className="av3-reg__submit">
-            <button type="submit" className="av3-btn av3-btn--primary" disabled={!hydrated || isSubmitting}>{isSubmitting ? "Đang gửi…" : "Xác minh email ›"}</button>
+            <button type="submit" className="av3-btn av3-btn--primary" disabled={!hydrated || isSubmitting || !agreed}>{isSubmitting ? "Đang gửi…" : "Xác minh email ›"}</button>
           </div>
         </form>
         </FieldContext.Provider>

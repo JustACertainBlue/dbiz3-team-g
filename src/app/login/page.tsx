@@ -70,7 +70,7 @@ function LoginForm() {
         </div>
       </fieldset>
       {error && (error.code === 'INVALID_CREDENTIALS'
-        ? <div className="av3-alert av3-alert--danger" role="alert"><strong>Sai email hoặc mật khẩu.</strong><p>Kiểm tra lại hoặc đặt lại mật khẩu.</p></div>
+        ? <div className="av3-alert av3-alert--danger" role="alert"><strong>Email hoặc mật khẩu chưa đúng.</strong><p>Kiểm tra lại hoặc đặt lại mật khẩu.</p></div>
         : <div className="av3-alert av3-alert--danger" role="alert"><strong>{error.message}</strong></div>)}
       <div className="av3-field"><label htmlFor="login-email">Email</label><input id="login-email" type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="username" required /></div>
       <div className="av3-field"><label htmlFor="login-password">Mật khẩu</label>

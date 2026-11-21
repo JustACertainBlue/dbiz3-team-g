@@ -9,7 +9,7 @@ export function passwordChecks(password: string): PasswordCheck[] {
     { id: 'length', label: 'Ít nhất 8 ký tự', ok: password.length >= 8 && password.length <= 64 },
     { id: 'case', label: 'Có chữ hoa và chữ thường', ok: /[a-z]/.test(password) && /[A-Z]/.test(password) },
     { id: 'digit', label: 'Có ít nhất một chữ số', ok: /[0-9]/.test(password) },
-    { id: 'special', label: 'Có ít nhất một ký tự đặc biệt (!@#...)', ok: /[^A-Za-z0-9\s]/.test(password) },
+    { id: 'special', label: 'Có ít nhất một ký tự đặc biệt (!@#…)', ok: /[^A-Za-z0-9\s]/.test(password) },
   ]
 }
 

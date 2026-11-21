@@ -32,8 +32,9 @@ export default function ChangePasswordPage() {
             {passwordChecks(fresh).map(check => <li key={check.id} className={check.ok ? 'av3-rules__ok' : ''}><span aria-hidden="true">{check.ok ? '✓' : '○'}</span>{check.label}<span className="av3-sr">{check.ok ? ' (đã đạt)' : ' (chưa đạt)'}</span></li>)}
           </ul>
           <div className="av3-field"><label htmlFor="cp-confirm">Nhập lại mật khẩu mới</label><input id="cp-confirm" name="confirm_password" type="password" autoComplete="new-password" required /></div>
+          <p className="av3-caption">Sau khi đổi, bạn cần đăng nhập lại.</p>
           {error && <div className="av3-alert av3-alert--danger" role="alert"><strong>{error}</strong></div>}
-          <div className="av3-actions"><button className="av3-btn av3-btn--primary" disabled={!hydrated || busy}>{busy ? 'Đang lưu…' : 'Lưu và đăng nhập lại'}</button></div>
+          <div className="av3-actions"><button className="av3-btn av3-btn--primary" disabled={!hydrated || busy}>{busy ? 'Đang lưu…' : 'Đổi mật khẩu'}</button></div>
         </form>
       </section>
     </div>

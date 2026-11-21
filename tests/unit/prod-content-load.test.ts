@@ -39,8 +39,8 @@ const makeSnapshot = (mutate?: (content: ReturnType<typeof snapshotContent>) => 
   return { kind: 'hab-content-snapshot', version: 1, sourceRef: DEV_PROJECT_REF, createdAt: '2026-11-21T00:00:00.000Z', sha256: checksum(content), ...content }
 }
 
-type Opts = { ledger?: string[]; changed?: boolean; leak?: string; slotsInDb?: Record<string, unknown[]>; nonSynthetic?: number }
-function fakeDb({ ledger = [...REQUIRED_MIGRATIONS], changed = true, leak, slotsInDb, nonSynthetic = 0 }: Opts = {}) {
+type Opts = { ledger?: string[]; changed?: boolean; leak?: string; slotsInDb?: Record<string, unknown[]>; nonSynthetic?: number; absent?: string[] }
+function fakeDb({ ledger = [...REQUIRED_MIGRATIONS], changed = true, leak, slotsInDb, nonSynthetic = 0, absent = [] }: Opts = {}) {
   const state = { written: false, log: [] as string[], queries: [] as Array<{ text: string; values?: unknown[] }>,
     counts: { experiences: 2, villages: 1, provider_profiles: 1, provider_profile_versions: 1, audit_logs: 5, user_accounts: 9, agency_profiles: 3 } as Record<string, number>,
     slots: slotsInDb ?? { [E1]: [{ ...SLOT, label: 'Ca cũ' }], [E2]: [SLOT, { ...SLOT, label: 'Ca chiều', start_time: '14:00', end_time: '15:00' }] } as Record<string, unknown[]> }
@@ -65,6 +65,7 @@ function fakeDb({ ledger = [...REQUIRED_MIGRATIONS], changed = true, leak, slots
       if (text.includes(' AS changed ')) return { rows: [{ changed: !state.written && changed }] }
       if (text.startsWith('SELECT label')) return { rows: state.slots[String(values![0])] ?? [] }
       if (text.startsWith('SELECT ')) {
+        if (absent.includes(String(values?.[0]))) return { rows: [] } // the row does not exist on this database
         const columns = text.slice(7, text.indexOf(' FROM ')).split(', ').map(part => part.split(' AS ').pop()!)
         return { rows: [Object.fromEntries(columns.map(column => [column, column === 'founded_year' ? 1900 : column === 'distance_km' ? 1 : 'old']))] }
       }
@@ -79,7 +80,7 @@ function fakeDb({ ledger = [...REQUIRED_MIGRATIONS], changed = true, leak, slots
 }
 const quiet = () => { const lines: string[] = []; return { lines, log: (line: string) => { lines.push(String(line)) } } }
 const dir = () => mkdtempSync(join(tmpdir(), 'hab-prod-content-'))
-const setup = (over: Partial<{ apply: boolean; undo: string; targetProd: boolean }> = {}, db: Opts = {}, snapshot = makeSnapshot()) => {
+const setup = (over: Partial<{ apply: boolean; undo: string; targetProd: boolean; onlyExisting: boolean }> = {}, db: Opts = {}, snapshot = makeSnapshot()) => {
   const client = fakeDb(db), out = dir(), log = quiet()
   const options = { apply: false, targetProd: false, ...over }
   return { client, out, log, options, deps: { client, snapshot, vocab: VOCAB, outDir: out, now: new Date('2026-11-21T10:00:00Z'), projectRef: DEV_PROJECT_REF, log } }
@@ -99,6 +100,12 @@ describe('parseArgs', () => {
     expect(parseArgs(['--list-missing', '--target-prod', '--snapshot', 's.json'])).toMatchObject({ listMissing: true, targetProd: true, apply: false, snapshot: 's.json' })
     expect(parseArgs([])).toMatchObject({ listMissing: false })
     for (const other of [['--apply'], ['--dry-run'], ['--export'], ['--undo', 'u.json']]) expect(() => parseArgs(['--list-missing', ...other])).toThrow(/--list-missing/)
+  })
+  it('--only-existing is a load option: not with --export, --list-missing or --undo', () => {
+    expect(parseArgs(['--only-existing', '--target-prod'])).toMatchObject({ onlyExisting: true, apply: false })
+    expect(parseArgs(['--only-existing', '--apply'])).toMatchObject({ onlyExisting: true, apply: true })
+    expect(parseArgs([])).toMatchObject({ onlyExisting: false })
+    for (const other of [['--export'], ['--list-missing'], ['--undo', 'u.json']]) expect(() => parseArgs(['--only-existing', ...other])).toThrow(/--only-existing/)
   })
   it('refuses contradictory or unknown options', () => {
     expect(() => parseArgs(['--apply', '--dry-run'])).toThrow(/either/)
@@ -186,6 +193,60 @@ describe('run: only synthetic accounts are renamed', () => {
     await expect(run(options, deps)).rejects.toThrow(/not synthetic/)
     expect(writes(client)).toEqual([])
     expect(client.state.log).not.toContain('COMMIT')
+  })
+})
+
+describe('run: --only-existing (stage 1: only the rows this database has)', () => {
+  const absent = [E2, V]
+  it('without the flag a missing row still stops the load; with it the missing rows are skipped and every other check stays', async () => {
+    const strict = setup({ apply: true }, { absent })
+    await expect(run(strict.options, strict.deps)).rejects.toThrow(/not found/)
+    const lenient = setup({ apply: false, onlyExisting: true }, { absent })
+    const report = await run(lenient.options, lenient.deps)
+    expect(report).toMatchObject({ rows: 7, changedRows: 5, skippedRows: 2, applied: false })
+    expect(report.skipped.tables).toEqual({ experiences: [E2], villages: [V] })
+    expect(report.skipped.slots).toEqual({ experiences: 1, rows: 2 })
+  })
+  it('writes nothing for a skipped row or for the slots of a skipped experience', async () => {
+    const { client, options, deps } = setup({ apply: false, onlyExisting: true }, { absent })
+    await run(options, deps)
+    const updated = client.state.queries.filter(q => q.text.startsWith('UPDATE ')).map(q => q.values![0])
+    expect(updated).not.toContain(E2)
+    expect(updated).not.toContain(V)
+    expect(updated).toEqual(expect.arrayContaining([E1, P, U, A]))
+    expect(client.state.queries.some(q => q.text.startsWith('DELETE FROM experience_slots') && q.values![0] === E2)).toBe(false)
+    expect(client.state.slots[E2]).toHaveLength(2)
+  })
+  it('apply: the undo file lists what was skipped (ids and slot counts), the row counts are checked, then COMMIT', async () => {
+    const { client, options, deps } = setup({ apply: true, onlyExisting: true }, { absent })
+    const before = { ...client.state.counts }
+    const report = await run(options, deps)
+    expect(client.state.log.at(-1)).toBe('COMMIT')
+    expect(client.state.counts).toEqual({ ...before, audit_logs: before.audit_logs + 1 })
+    const undo = JSON.parse(readFileSync(report.undoFile, 'utf8'))
+    expect(undo).toMatchObject({ kind: 'hab-content-load-undo', onlyExisting: true, skipped: { tables: { experiences: [E2], villages: [V] }, slots: { experiences: 1, rows: 2 } } })
+    expect(undo.before).toHaveLength(5)
+  })
+  it('an --only-existing load can be undone like any other', async () => {
+    const first = setup({ apply: true, onlyExisting: true }, { absent })
+    const { undoFile } = await run(first.options, first.deps)
+    first.client.state.log.length = 0
+    first.client.state.written = true
+    const dry = await run({ apply: false, undo: undoFile, targetProd: false }, { ...first.deps, client: first.client, log: quiet() })
+    expect(dry).toMatchObject({ restorable: 5 })
+  })
+  it('still refuses a non-synthetic target user, a missing ledger entry and a count change', async () => {
+    const synthetic = setup({ apply: true, onlyExisting: true }, { absent, nonSynthetic: 1 })
+    await expect(run(synthetic.options, synthetic.deps)).rejects.toThrow(/not synthetic/)
+    const ledger = setup({ apply: true, onlyExisting: true }, { absent, ledger: REQUIRED_MIGRATIONS.slice(1) })
+    await expect(run(ledger.options, ledger.deps)).rejects.toThrow(/ledger/)
+    const leak = setup({ apply: true, onlyExisting: true }, { absent, leak: 'agency_profiles' })
+    await expect(run(leak.options, leak.deps)).rejects.toThrow(/agency_profiles/)
+    for (const t of [synthetic, ledger, leak]) expect(t.client.state.log).not.toContain('COMMIT')
+  })
+  it('when nothing is missing it behaves like a normal load (0 skipped)', async () => {
+    const { options, deps } = setup({ apply: false, onlyExisting: true })
+    expect(await run(options, deps)).toMatchObject({ rows: 7, changedRows: 7, skippedRows: 0 })
   })
 })
 

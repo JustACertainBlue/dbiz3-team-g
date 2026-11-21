@@ -16,6 +16,10 @@
 //   For each table it counts the snapshot ids the connected database has and lacks, lists the lacking ids (also written to
 //   <out dir>/content-missing-<UTC>.json, ids only), the snapshot slots that belong to lacking experiences, and the target users
 //   whose e-mail is not @example.invalid. It does not need the migrations applied. It never writes; exit code 2 when rows are missing.
+// - --only-existing (human decision 2026-11-21, stage 1 of the PROD release): rows that do not exist on the connected database are
+//   skipped instead of stopping the load, together with the slots of a skipped experience. Everything else stays: ref guard, ledger,
+//   columns, the @example.invalid check, the count checks. The skipped ids and slot counts are printed, written into the undo file
+//   and into the audit row. Without the flag a missing row still stops the load before any write.
 // - --export reads DEV (ref guarded, READ ONLY transaction) and writes a checksummed snapshot under .demo-data/prod-content/.
 // - The load refuses unless DATABASE_URL names DEV, or, with --target-prod, PROD and CONFIRM_PROJECT_REF equals the PROD ref
 //   (typed in the shell, not read from a .env file). Checked before any connection.
@@ -62,7 +66,7 @@ export const checksum = content => createHash('sha256').update(JSON.stringify(co
 const keyOf = update => Object.values(update.key)[0]
 
 export function parseArgs(argv) {
-  const options = { apply: false, targetProd: false, export: false, listMissing: false, undo: undefined, snapshot: DEFAULT_SNAPSHOT }
+  const options = { apply: false, targetProd: false, export: false, listMissing: false, onlyExisting: false, undo: undefined, snapshot: DEFAULT_SNAPSHOT }
   let dryRun = false, apply = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
@@ -71,16 +75,18 @@ export function parseArgs(argv) {
     else if (arg === '--target-prod') options.targetProd = true
     else if (arg === '--export') options.export = true
     else if (arg === '--list-missing') options.listMissing = true
+    else if (arg === '--only-existing') options.onlyExisting = true
     else if (arg === '--undo' || arg === '--snapshot') {
       const value = argv[index + 1]
       if (!value || value.startsWith('--')) refuse(`${arg} needs a file.`)
       options[arg === '--undo' ? 'undo' : 'snapshot'] = value
       index += 1
-    } else refuse(`Unknown option ${arg}; use --export, --list-missing, --dry-run (default), --apply, --undo <file>, --snapshot <file> or --target-prod.`)
+    } else refuse(`Unknown option ${arg}; use --export, --list-missing, --only-existing, --dry-run (default), --apply, --undo <file>, --snapshot <file> or --target-prod.`)
   }
   if (dryRun && apply) refuse('Choose either --dry-run or --apply.')
   if (options.export && (apply || dryRun || options.targetProd || options.undo)) refuse('--export is DEV only and takes no other mode (only --snapshot).')
   if (options.listMissing && (apply || dryRun || options.export || options.undo)) refuse('--list-missing is a read-only survey and takes no other mode (only --snapshot and --target-prod).')
+  if (options.onlyExisting && (options.export || options.listMissing || options.undo)) refuse('--only-existing only goes with a load (--dry-run or --apply), not with --export, --list-missing or --undo.')
   if (options.undo && apply) refuse('--undo writes by itself; use --undo <file> --dry-run to preview.')
   options.apply = options.undo ? !dryRun : apply
   return options
@@ -193,13 +199,20 @@ export async function run(options, deps) {
 async function load(options, { client, work, now, log, outDir, projectRef }) {
   await assertReady(client)
   const before = await countRows(client)
-  const olds = [], missing = []
+  const olds = [], missing = [], present = []
   for (const update of work.updates) {
     const { rows } = await client.query(selectSql(update, true), [keyOf(update)])
-    if (rows.length !== 1) { missing.push(`${update.table} ${keyOf(update)}`); continue }
+    if (rows.length !== 1) { missing.push(update); continue }
+    present.push(update)
     olds.push(rows[0])
   }
-  if (missing.length) refuse(`${missing.length} target row(s) not found: ${missing.slice(0, 5).join('; ')}.`)
+  if (missing.length && !options.onlyExisting) refuse(`${missing.length} target row(s) not found: ${missing.slice(0, 5).map(update => `${update.table} ${keyOf(update)}`).join('; ')}.`)
+  const skipped = { tables: {}, slots: { experiences: 0, rows: 0 } }
+  for (const update of missing) (skipped.tables[update.table] ??= []).push(keyOf(update))
+  const skippedExperiences = new Set(missing.filter(update => update.table === 'experiences').map(keyOf))
+  for (const id of skippedExperiences) if (work.slots[id]) { skipped.slots.experiences += 1; skipped.slots.rows += work.slots[id].length }
+  const allUpdates = work.updates
+  work = { updates: present, slots: Object.fromEntries(Object.entries(work.slots).filter(([id]) => !skippedExperiences.has(id))) }
   const userIds = work.updates.filter(update => update.table === 'user_accounts').map(keyOf)
   if (userIds.length) {
     const { rows } = await client.query(`SELECT count(*)::int AS n FROM public.user_accounts WHERE user_id = ANY($1::uuid[]) AND email NOT LIKE '%@example.invalid'`, [userIds])
@@ -216,12 +229,13 @@ async function load(options, { client, work, now, log, outDir, projectRef }) {
     if (slotKey(oldSlots[experienceId]) !== slotKey(rows)) changedSlotIds.push(experienceId)
   }
   const snapshotSlots = Object.values(work.slots).reduce((n, rows) => n + rows.length, 0)
-  const plan = { rows: work.updates.length, snapshotSlots, changedRows: changedUpdates.length, slotExperiencesChanged: changedSlotIds.length }
+  const plan = { rows: allUpdates.length, snapshotSlots: snapshotSlots + skipped.slots.rows, changedRows: changedUpdates.length, slotExperiencesChanged: changedSlotIds.length, skippedRows: missing.length }
   log.log(JSON.stringify({ snapshot: plan }))
-  log.log(`${plan.changedRows} of ${plan.rows} row(s) would change; slots of ${plan.slotExperiencesChanged} experience(s) would change.`)
+  if (missing.length) log.log(`Skipped (not on this database): ${missing.length} row(s) ${JSON.stringify(Object.fromEntries(Object.entries(skipped.tables).map(([table, ids]) => [table, ids.length])))}; slots of ${skipped.slots.experiences} experience(s) = ${skipped.slots.rows} slot(s) not loaded.`)
+  log.log(`${plan.changedRows} of ${plan.rows - missing.length} row(s) would change; slots of ${plan.slotExperiencesChanged} experience(s) would change.`)
   if (!plan.changedRows && !plan.slotExperiencesChanged) {
     log.log('Already up to date: 0 changes, nothing written.')
-    return { commit: false, result: { ...plan, applied: false } }
+    return { commit: false, result: { ...plan, skipped, applied: false } }
   }
 
   let undoFile
@@ -229,7 +243,7 @@ async function load(options, { client, work, now, log, outDir, projectRef }) {
     mkdirSync(outDir, { recursive: true })
     undoFile = join(resolve(outDir), `content-load-undo-${stamp(now)}.json`)
     const doc = {
-      kind: 'hab-content-load-undo', version: 1, projectRef, createdAt: now.toISOString(),
+      kind: 'hab-content-load-undo', version: 1, projectRef, createdAt: now.toISOString(), onlyExisting: Boolean(options.onlyExisting), skipped,
       before: changedUpdates.map(({ update, old }) => ({ table: update.table, key: update.key, published: update.published, before: old, after: update.set })),
       slotsBefore: Object.fromEntries(changedSlotIds.map(id => [id, oldSlots[id]])), slotsAfter: Object.fromEntries(changedSlotIds.map(id => [id, work.slots[id]])),
     }
@@ -240,7 +254,7 @@ async function load(options, { client, work, now, log, outDir, projectRef }) {
     if ((await client.query(text, values)).rowCount !== 1) refuse(`Update of ${update.table} ${keyOf(update)} did not hit one row; rolled back.`)
   }
   for (const id of changedSlotIds) await replaceSlots(client, id, work.slots[id])
-  await audit(client, now, { mode: options.apply ? 'load' : 'load dry-run', changedRows: plan.changedRows, slotExperiencesChanged: plan.slotExperiencesChanged, undoFile: undoFile ? 'written' : null })
+  await audit(client, now, { mode: options.apply ? 'load' : 'load dry-run', changedRows: plan.changedRows, slotExperiencesChanged: plan.slotExperiencesChanged, skippedRows: missing.length, skipped, undoFile: undoFile ? 'written' : null })
 
   // Verify: every row now equals the snapshot, and no table changed except slots and one audit row.
   for (const update of work.updates) {
@@ -255,10 +269,10 @@ async function load(options, { client, work, now, log, outDir, projectRef }) {
   checkCounts(before, await countRows(client), expected, log)
   if (!options.apply) {
     log.log('Dry run: every write passed the database rules and the checks; rolled back, nothing kept.')
-    return { commit: false, result: { ...plan, applied: false } }
+    return { commit: false, result: { ...plan, skipped, applied: false } }
   }
   log.log(`Committed. Undo file: ${undoFile}`)
-  return { commit: true, result: { ...plan, applied: true, undoFile } }
+  return { commit: true, result: { ...plan, skipped, applied: true, undoFile } }
 }
 
 function readUndo(file, projectRef, vocab) {

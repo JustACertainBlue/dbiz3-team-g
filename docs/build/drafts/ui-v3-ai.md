@@ -99,3 +99,4 @@
 
 ## Round 9: browser test, 6 items
 - **6. "Vì sao hợp" for a different craft:** `Không hợp sở thích {nghề} của bạn.` → `Gợi ý thêm, khác nghề {nghề} bạn chọn.` (`recommendation-service.ts` `explain()`). Test wording line changed: `tests/unit/recommendations.test.ts:163` (`toContain('Không hợp sở thích Gốm sứ')` → `toContain('Gợi ý thêm, khác nghề Gốm sứ bạn chọn.')`).
+- **5. Card price:** under the group total a line "X ₫/khách" (total ÷ guests, after the group discount; `perGuest()` in `card-view.ts`). "Đã gồm vật liệu và người hướng dẫn" (same text as the card of screen 02) only when `card.included` (the experience has inclusions). Test: `tests/unit/ai-matching-price-line.test.ts`.

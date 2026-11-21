@@ -19,3 +19,8 @@ export function recommendationCardView(rec: Partial<RecommendationView> & Pick<R
     score: rec.match_score ?? null,
   }
 }
+
+/** Per-guest price shown under the group total (mockup 22): total ÷ guests after the discount; null when there is no group price. */
+export function perGuest(price: { kind: string; guests?: number; total?: number }): number | null {
+  return price.kind === 'group' && price.guests && price.total !== undefined ? Math.round(price.total / price.guests) : null
+}

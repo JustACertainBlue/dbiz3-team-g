@@ -7,7 +7,7 @@ import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodChips, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 import { historyDate, historyTitle } from './history-view'
-import { recommendationCardView } from './card-view'
+import { perGuest, recommendationCardView } from './card-view'
 import { useAgencyName } from './agency-name'
 import { ArrowUp, Check, ChevronDown, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users } from 'lucide-react'
 import CoverImage from '../explore/v3/CoverImage'
@@ -358,9 +358,11 @@ export default function AiMatchingScreen() {
                               {rec.card?.price.kind === 'group' ? <>
                                 <p className="v3r__guests">{rec.card.price.guests} khách</p>
                                 <b className="v3r__total">{vnd(rec.card.price.total)}</b>
+                                {perGuest(rec.card.price) !== null && <span className="v3-cap v3r__perguest">{vnd(perGuest(rec.card.price)!)}/khách</span>}
                                 {rec.card.price.old !== null && <span className="v3r__old">{vnd(rec.card.price.old)}</span>}
                                 {rec.card.price.note && <span className={rec.card.price.old !== null ? 'v3r__disc' : 'v3r__nodisc'}>{rec.card.price.note}</span>}
                               </> : cardOf(rec).pricePerPerson && <><span className="v3-cap">Giá từ</span><b className="v3r__total">{cardOf(rec).pricePerPerson}<span className="v3-cap"> /khách</span></b></>}
+                              {rec.card?.included && <p className="v3-cap v3r__incl">Đã gồm vật liệu và người hướng dẫn</p>}
                               <div className="aim__acts">
                                 <button
                                   id={`chat-btn-${rec.provider_id}`}

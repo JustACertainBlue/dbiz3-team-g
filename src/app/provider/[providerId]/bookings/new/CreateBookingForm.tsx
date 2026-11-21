@@ -1,7 +1,7 @@
 'use client'
 // Screen 35 form (mockup TaoDatCho, "Tạo mới"): sections "Đoàn & trải nghiệm" and "Giá đã thống nhất".
 // Booking conditions stay a snapshot of the Experience (hidden). "Điều kiện đã thống nhất" goes into the system message
-// "Xưởng đã giữ chỗ"; the price is the list price with the Group Discount (read only); contact columns are written by the Agency on 06.
+// "Xưởng đã giữ chỗ"; the price per guest defaults to the list price and is editable (bookings.agreed_price_total stores the agreed total); contact columns are written by the Agency on 06.
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { useMemo, useState } from 'react'
@@ -32,6 +32,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
   const [time, setTime] = useState(initial?.time ?? '')
   const [groupSize, setGroupSize] = useState(initial?.guests ?? '')
   const experience = useMemo(() => experiences.find(row => row.experience_id === experienceId), [experiences, experienceId])
+  const [perGuest, setPerGuest] = useState(String(experiences.find(e => e.experience_id === initial?.experienceId)?.price_per_person ?? experiences[0]?.price_per_person ?? ''))
   const [conditions, setConditions] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,8 +40,13 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
   const experienceSlots = slots.filter(slot => slot.experience_id === experienceId)
   const duration = experience?.duration_minutes ?? 60
   const guests = Number(groupSize)
-  const price = experience && guests > 0 ? groupPrice(experience.price_per_person, guests, experience.rules ?? []) : null
-  const selectExperience = (id: string) => { setExperienceId(id); setTime('') }
+  const each = Number(perGuest)
+  const price = experience && guests > 0 && each > 0 ? groupPrice(each, guests, experience.rules ?? []) : null
+  const selectExperience = (id: string) => {
+    setExperienceId(id); setTime('')
+    const next = experiences.find(row => row.experience_id === id)
+    if (next) setPerGuest(String(next.price_per_person))
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -50,7 +56,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
       const response = await fetch('/api/bkg/bookings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          experience_id: experienceId, agency_id: agencyId, start_at: `${date}T${time}:00+07:00`, duration, group_size: guests,
+          experience_id: experienceId, agency_id: agencyId, start_at: `${date}T${time}:00+07:00`, duration, group_size: guests, agreed_price: price?.total,
           booking_conditions: experience.conditions, agreed_conditions: conditions, request_message_id: requestMessageId || undefined,
         }),
       })
@@ -88,8 +94,9 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
     <section className="v3b-card">
       <h2 className="v3b-h2">Giá đã thống nhất</h2>
       <div className="v3b-row">
-        <div className="v3b-f"><span className="v3b-lab">Giá mỗi khách</span><p className="v3b-per">{experience ? vnd(experience.price_per_person) : '—'}</p>
-          <p className="v3b-help">Giá niêm yết của trải nghiệm, không sửa ở đây.</p></div>
+        <div className="v3b-f"><label htmlFor="pp">Giá mỗi khách <span className="v3b-req">*</span></label>
+          <input id="pp" type="number" min={1} step="any" value={perGuest} onChange={event => setPerGuest(event.target.value)} required />
+          <p className="v3b-help">Mặc định theo giá niêm yết, sửa nếu đã thoả thuận khác trong tin nhắn.</p></div>
         <div className="v3b-f"><span className="v3b-lab">Tổng</span><p className="v3b-total">{price ? vnd(price.total) : '—'}</p>
           {price && price.old !== null && <p className="v3b-help"><s className="v3b-old">{vnd(price.old)}</s> · đã giảm {price.pct}% giá đoàn</p>}</div>
       </div>

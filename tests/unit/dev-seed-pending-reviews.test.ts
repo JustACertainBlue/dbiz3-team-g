@@ -42,10 +42,15 @@ describe('CLI order', () => {
   it('loads the env files before the DEV target check, and the target check before any connection or hashing', () => {
     const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
     const at = (needle: string) => source.indexOf(needle)
-    expect(at('loadEnvConfig(process.cwd())')).toBeGreaterThan(-1)
-    expect(at('loadEnvConfig(process.cwd())')).toBeLessThan(at('assertDevTarget(process.env)'))
+    expect(at('loadEnvConfig(envDir)')).toBeGreaterThan(-1)
+    expect(at('loadEnvConfig(envDir)')).toBeLessThan(at('assertDevTarget(process.env)'))
     expect(at('assertDevTarget(process.env)')).toBeLessThan(at("import('bcryptjs')"))
     expect(at('assertDevTarget(process.env)')).toBeLessThan(at("connection('application')"))
+  })
+  it('reads the env files of the directory the command was run from when it has a .env.local, else those of the repository', () => {
+    const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')
+    expect(source).toMatch(/const envDir = existsSync\(join\(runDir, '\.env\.local'\)\) \? runDir : repoRoot/)
+    expect(source).toContain('const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), \'..\', \'..\')')
   })
   it('defers the provider version foreign keys right after BEGIN (they are DEFERRABLE, but a migration made them INITIALLY IMMEDIATE)', () => {
     const source = readFileSync('scripts/db/dev-seed-pending-reviews.mjs', 'utf8')

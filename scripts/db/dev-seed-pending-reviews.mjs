@@ -2,6 +2,7 @@
 //
 // Run it from ~/Desktop/dbiz3-devload so every undo file lands in one place:
 //   cd ~/Desktop/dbiz3-devload && node ../dbiz3-admin/scripts/db/dev-seed-pending-reviews.mjs [flags]
+// (DATABASE_APP_URL and DEV_TEST_PASSWORD are read from that directory's .env.local if it has one; a value already exported in the shell wins.)
 //
 //   (no flag)                     dry run: writes, then ROLLBACK (default)
 //   --apply                       writes for real and saves .demo-data/dev-seed-undo-<time>.json in the directory you ran it from
@@ -213,12 +214,15 @@ async function main(argv) {
   if (undoFile && (apply || admins)) throw new Error('--undo cannot be combined with --apply or --create-demo-admins. Nothing was changed.')
   if (!seed && !admins) throw new Error('--no-seed is only for --create-demo-admins. Nothing was changed.')
 
-  const { mkdirSync, readFileSync, writeFileSync, unlinkSync } = await import('node:fs')
-  // The db helpers (env files, TLS certificate) expect the repository root as the working directory.
-  process.chdir(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..'))
-  // Same env loading as the other db scripts (.env.local etc.), done before the target check so DATABASE_APP_URL is visible.
+  const { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } = await import('node:fs')
+  // The db helpers (TLS certificate path) expect the repository root as the working directory.
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
+  process.chdir(repoRoot)
+  // Env files: those of the directory the command was run from when it has a .env.local (e.g. ~/Desktop/dbiz3-devload), else the repository's.
+  // Variables already set in the shell win. Done before the target check so DATABASE_APP_URL and DEV_TEST_PASSWORD are visible.
+  const envDir = existsSync(join(runDir, '.env.local')) ? runDir : repoRoot
   const nextEnv = (await import('@next/env')).default
-  nextEnv.loadEnvConfig(process.cwd())
+  nextEnv.loadEnvConfig(envDir)
   const ref = assertDevTarget(process.env) // before any connection
 
   let hash = null

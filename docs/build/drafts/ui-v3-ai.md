@@ -23,9 +23,19 @@
 - Quick prompts (3, label in Vietnamese, text sent to the AI unchanged) replace the follow-up chips of the mockup.
 - Rank / match score badge is not in the mockup and was removed from the card.
 
-## Not done / open
-- Step 6 (screenshots 1440 and 390 with a DEV Agency login): NOT done. The worktree has no `.env.local` (`ls -a` shows only `.env.example`),
-  the dev server on 3203 failed on `/api/auth/login` with "DATABASE_APP_URL is not configured". Server stopped. No env file was read.
-- Text that still comes from the server and stays English: clarification questions from the AI, the relaxation `conversation_prompt`
-  and relaxation values (e.g. "Consider flexible dates (+/- 2 days)") in `src/lib/matching/recommendation-service.ts` / AI extraction.
-- Mockup items not built: none of the chips for "buổi sáng" / "Tiếng Việt" (not extracted by the AI).
+## Round 3 (21/11)
+- A: `/api/ait/matching` already blocks non-Agency: Guest → 401, provider/ubnd/hdt → 403 (route checks `actor.authenticated`, `role === 'Tour_Agency'`).
+  Proof: tests/integration/ait-matching-api.test.ts "Guest → 401 and non-Agency → 403 on sessions, messages and matching (BR-001, BR-002)" (passes). Guests never get group prices.
+- B: relaxation values mapped to Vietnamese in the view (`matching-view.ts`, `VALUE_TEXT`, `CRITERION_LABELS`); server untouched.
+- C: `recommendation-service.ts` is imported only by `/api/ait/matching` (AI module) and `src/lib/ai/extractor.ts` only by `/api/ait/sessions/[id]/messages`.
+  Questions and prompts are constants/templates → translated to Vietnamese. Test wording lines changed:
+  - tests/unit/clarification.test.ts lines 29, 38, 100, 107, 125 (regex on question wording → Vietnamese words).
+  - tests/unit/ait-date-year.test.ts line 70 (`/date/i` → `/ngày/i`).
+  - tests/integration/ait-matching-api.test.ts line 189 (`/start|origin|from/i` → `/xuất phát/i`).
+  - tests/unit/ai-matching-view.test.ts: noMatchView line expectation for Dates (`'Ngày: Có thể linh hoạt ngày đi (± 2 ngày)'`).
+  New tests: tests/unit/ait-vietnamese-copy.test.ts, noMatchView value mapping in ai-matching-view.test.ts.
+- Still English: the card text "Vì sao hợp" (`explain()` in recommendation-service.ts: "Match score 91/100. Matches your … preference …"). Tests assert its wording
+  (ait-matching-api.test.ts:214-215 `group of 10`, `estimated`; multi-turn-api.test.ts:54 `silk weaving`), not in the scope of this round.
+- D (screenshots at 1440 with a DEV Agency login): NOT done. `/api/auth/login` with `thanhvien13@example.invalid` returns 401 INVALID_CREDENTIALS
+  in this DEV database (docs/build/demo-login.md says any non-empty password works; it does not here, so DEV accounts have real passwords).
+  Desktop only from now on (human decision 21/11); phone layout is kept as it is.

@@ -17,7 +17,7 @@ let chromium
 try { ({ chromium } = require('playwright')) } catch { console.error(`Playwright not found. Run: npm i --prefix ${join(dir, 'pw')} playwright@1.48.2`); process.exit(1) }
 
 mkdirSync(dir, { recursive: true, mode: 0o700 })
-const browser = await chromium.launch({ headless: false })
+const browser = await chromium.launch({ channel: 'chrome', headless: false })
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } })
 const page = await context.newPage()
 await page.goto(`${base}/login`)

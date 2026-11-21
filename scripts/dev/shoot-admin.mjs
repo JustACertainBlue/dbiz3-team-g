@@ -10,7 +10,7 @@ const base = process.env.DEV_BASE_URL || 'http://localhost:3204'
 const dir = join(homedir(), '.dbiz3-auth')
 const { chromium } = createRequire(join(dir, 'pw', 'noop.js'))('playwright')
 mkdirSync(out, { recursive: true })
-const browser = await chromium.launch()
+const browser = await chromium.launch({ channel: 'chrome' })
 for (const [label, width, height] of [['1440', 1440, 900], ['390', 390, 844]]) {
   const context = await browser.newContext({ storageState: join(dir, `${name}.json`), viewport: { width, height } })
   const page = await context.newPage()

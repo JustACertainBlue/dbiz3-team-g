@@ -1,6 +1,6 @@
 // One table of Vietnamese display labels for every business status (Design System v9 §2, Figma "Status Badge";
 // spec-BKG #49 and screen-spec-DSH018 §8 as amended 2026-11-08). Stored and API values stay the canonical English
-// enums; only what people read changes. Client-safe: no server imports.
+// enums; only what people read changes. Payment wording (UI v3 integration 21/11): On hold = Chờ thanh toán, Booked = Đã thanh toán. Client-safe: no server imports.
 
 export type StatusFamily = 'booking' | 'calendar' | 'provider' | 'agency' | 'account' | 'legal' | 'chat' | 'flag'
 export type StatusIcon = 'clock' | 'circle-check' | 'check-check' | 'ban' | 'calendar' | 'lock' | 'pen' | 'shield' | 'alert' | 'layers' | 'check' | 'x' | 'bell'
@@ -14,8 +14,8 @@ export interface StatusLook {
 }
 
 const BOOKING: Record<string, StatusLook> = {
-  'On hold': { label: 'Tạm giữ', icon: 'clock', tone: 'booking-onhold' },
-  Booked: { label: 'Đã đặt', icon: 'circle-check', tone: 'booking-booked', outlined: true },
+  'On hold': { label: 'Chờ thanh toán', icon: 'clock', tone: 'booking-onhold' },
+  Booked: { label: 'Đã thanh toán', icon: 'circle-check', tone: 'booking-booked', outlined: true },
   Completed: { label: 'Hoàn tất', icon: 'check-check', tone: 'booking-completed' },
   Cancelled: { label: 'Đã huỷ', icon: 'ban', tone: 'booking-cancelled' },
 }
@@ -24,8 +24,8 @@ export const STATUS_LOOKS: Record<StatusFamily, Record<string, StatusLook>> = {
   booking: BOOKING,
   calendar: {
     Available: { label: 'Còn trống', icon: 'calendar', tone: 'calendar-available' },
-    'On hold': { label: 'Tạm giữ', icon: 'clock', tone: 'calendar-onhold' },
-    Booked: { label: 'Đã đặt', icon: 'circle-check', tone: 'calendar-booked', outlined: true },
+    'On hold': { label: 'Chờ thanh toán', icon: 'clock', tone: 'calendar-onhold' },
+    Booked: { label: 'Đã thanh toán', icon: 'circle-check', tone: 'calendar-booked', outlined: true },
     Unavailable: { label: 'Không khả dụng', icon: 'lock', tone: 'calendar-unavailable' },
   },
   provider: {

@@ -79,5 +79,5 @@ describe('MonthCalendar selected-day panel (screen 29)', () => {
     expect(html).not.toContain('Đã đặt chỗ')
   })
   it('an On hold day keeps "Chờ thanh toán"', () => { expect(panel('hold')).toContain('Nặn gốm thủ công · 09:00 · Chờ thanh toán') })
-  it('the shared Booking status label is not changed', () => { expect(statusLabel('booking', 'Booked')).not.toBe('Đã thanh toán') })
+  it('the shared Booking status label is the payment wording (UI v3 integration 21/11, was: unchanged)', () => { expect(statusLabel('booking', 'Booked')).toBe('Đã thanh toán') })
 })

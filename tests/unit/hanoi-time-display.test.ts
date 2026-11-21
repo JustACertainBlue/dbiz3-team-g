@@ -101,9 +101,9 @@ describe('#87 spec-BKG #31 | Booking times from PostgreSQL (UTC) are shown in As
     }))
     const day = (d: string) => markup.match(new RegExp(`<section[^>]*aria-label="${d}"[\\s\\S]*?</section>`))?.[0] ?? ''
     // spec đổi (nhãn tiếng Việt, DSH018/SCH139 amended 2026-11-08) → kỳ vọng đổi; phần kiểm giờ #70/#87 không đổi.
-    expect(day('2026-11-23')).toContain('09:00–10:30 Đã đặt')
-    expect(day('2026-11-23')).toContain('06:30–07:30 Tạm giữ')
-    expect(day('2026-11-22')).not.toContain('Tạm giữ')
+    expect(day('2026-11-23')).toContain('09:00–10:30 Đã thanh toán')
+    expect(day('2026-11-23')).toContain('06:30–07:30 Chờ thanh toán')
+    expect(day('2026-11-22')).not.toContain('Chờ thanh toán')
   })
 })
 

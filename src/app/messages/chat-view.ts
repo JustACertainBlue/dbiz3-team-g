@@ -83,6 +83,9 @@ export function mergeLatestPage<M extends { message_id: string }, H extends { ch
 // Pill of a Booking Update message (mockup 25 ".evt", UI v3 decision #6). The stored sentence (spec-BKG #49,
 // "Booking {status label}: …") stays the sub line; the title is derived from its status label.
 const EVENT_TITLE: Record<string, string> = {
+  'Chờ thanh toán': 'Xưởng đã giữ chỗ',
+  'Đã thanh toán': 'Xưởng đã nhận tiền',
+  // Sentences stored before the 21/11 wording change.
   'Tạm giữ': 'Xưởng đã giữ chỗ',
   'Đã đặt': 'Xưởng đã nhận tiền',
   'Hoàn tất': 'Tour đã hoàn thành',

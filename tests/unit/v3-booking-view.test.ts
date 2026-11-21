@@ -43,3 +43,26 @@ describe('bookingView', () => {
     expect(view).toMatchObject({ contactName: 'Lý Gia Hân', contactPhone: '0932000002', note: 'Cần ghế thấp', address: 'Bát Tràng, Gia Lâm, Hà Nội' })
   })
 })
+
+describe('bookingView edge cases', () => {
+  const at = (iso: string, extra: Record<string, string> = {}) => bookingView({ booking: { ...booking, ...extra }, experience, providerName: '', agencyName: '', now: new Date(iso) })
+  it('under one day left prints hours and minutes', () => {
+    expect(at('2026-11-27T08:30:00+07:00').holdLeft).toBe('5 giờ 30 phút')
+  })
+  it('after the deadline nothing is negative', () => {
+    expect(at('2026-11-28T09:00:00+07:00').holdLeft).toBe('0 giờ 0 phút')
+  })
+  it('a snapshot that is not JSON gives no cancel line and does not throw', () => {
+    expect(at('2026-11-25T09:00:00+07:00', { conditions_snapshot: 'not json' }).cancelLine).toBe('')
+  })
+  it('a missing experience prints empty names and a zero list price (no discount, no NaN)', () => {
+    const view = bookingView({ booking, experience: undefined, providerName: '', agencyName: '', now: new Date() })
+    expect(view.experienceName).toBe('')
+    expect(view.price.discount).toBe(0)
+    expect(Number.isNaN(view.price.discountPct)).toBe(false)
+  })
+  it('a start after 17:00 is Ca tối; an agreed price above the list price is not a discount', () => {
+    expect(at('2026-11-25T09:00:00+07:00', { start_at: '2026-11-24T18:00:00+07:00', end_at: '2026-11-24T19:00:00+07:00' }).period).toBe('Ca tối')
+    expect(at('2026-11-25T09:00:00+07:00', { agreed_price_total: '1600000.00' }).price.discount).toBe(0)
+  })
+})

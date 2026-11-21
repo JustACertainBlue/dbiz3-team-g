@@ -4,7 +4,7 @@
 import type { CsvRow, ExploreSeed, Viewer } from './catalog'
 import { eligibleRows } from './catalog'
 import { calculateAvailability } from './availability'
-import { durationLabel, experienceImage, placeLine } from './v3-home'
+import { cardImage, durationLabel, listableRows, placeLine } from './v3-home'
 import type { ImageRef } from '../prf/media-urls'
 import { craftLabel, parseDistance, parseHighlights, parseInclusions, rowCraft } from './vocabulary'
 
@@ -97,7 +97,7 @@ export function resultView(seed: ExploreSeed, row: Row, query: Pick<SearchQuery,
   const km = parseDistance(village.distance_km)
   const notice = Number(experience.notice_period_hours)
   return {
-    id: experience.experience_id, name: experience.name, image: experienceImage(seed, experience.experience_id),
+    id: experience.experience_id, name: experience.name, image: cardImage(seed, row),
     villageId: village.village_id, villageLine: [village.name, village.district].filter(Boolean).join(', '), providerName: version.business_name,
     distance: km === null ? '' : `Cách trung tâm Hà Nội khoảng ${km.toLocaleString('vi-VN')} km`,
     craft: rowCraft(version.craft_type, village),
@@ -125,7 +125,7 @@ export interface SearchResult {
 export function searchExperiences(seed: ExploreSeed, query: SearchQuery, viewer: Viewer, _ranked = true): SearchResult {
   const isAgency = viewer.kind === 'agency'
   const folded = foldText(query.q)
-  const base = eligibleRows(seed).map(row => ({ row, score: matches(row, folded) })).filter(item => item.score > 0)
+  const base = listableRows(seed).map(row => ({ row, score: matches(row, folded) })).filter(item => item.score > 0)
   const free = new Map<string, boolean>()
   const isFree = (row: Row) => {
     if (!query.date) return true

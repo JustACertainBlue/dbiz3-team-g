@@ -5,9 +5,11 @@
 import { describe, expect, it } from 'vitest'
 import type { ExploreSeed } from '@/lib/explore/catalog'
 import { monthCalendar, providerView } from '@/lib/explore/v3-provider'
+import { withVillageCovers } from '../helpers/village-covers'
 
 const NOW = new Date('2026-11-18T03:00:00.000Z')
-function seed(): ExploreSeed {
+const seed = () => withVillageCovers(rawSeed())
+function rawSeed(): ExploreSeed {
   return {
     villages: [
       { village_id: 'v1', name: 'Bát Tràng', district: 'Gia Lâm', city_province: 'Hà Nội', is_active: 'true', distance_km: '13' },

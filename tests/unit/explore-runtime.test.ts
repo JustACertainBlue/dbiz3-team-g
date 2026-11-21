@@ -9,10 +9,10 @@ const base: ExploreSeed = {
   ],
   provider_profiles: [{ provider_id: 'provider', user_id: 'owner', village_id: 'village', verification_status: 'Verified', published_version_no: '1' }],
   provider_profile_versions: [{ provider_id: 'provider', version_no: '1', version_status: 'Verified', business_name: 'Xưởng' }],
-  villages: [{ village_id: 'village', name: 'Làng', is_active: 'true' }],
+  villages: [{ village_id: 'village', name: 'Làng', is_active: 'true', cover_image_id: 'test-cover' }],
   user_accounts: [{ user_id: 'owner', account_status: 'Active' }, { user_id: 'a-user', role_code: 'Tour_Agency', account_status: 'Approved' }, { user_id: 'b-user', role_code: 'Tour_Agency', account_status: 'Approved' }],
   agency_profiles: [{ agency_id: 'a', user_id: 'a-user' }, { agency_id: 'b', user_id: 'b-user' }],
-  agency_preference_profiles: [], profile_media: [], stored_files: [],
+  agency_preference_profiles: [], profile_media: [], stored_files: [{ file_id: 'test-cover', storage_key: 'prf-media/test-cover', media_type: 'image/webp', file_size_bytes: '1000', width_px: '1600', height_px: '900' }],
   ranking_parameter_versions: [{ version_id: 'v-active', parameter_map: '{"relevance":0.5,"quality":0.5}', version_status: 'Active' }]
 };
 

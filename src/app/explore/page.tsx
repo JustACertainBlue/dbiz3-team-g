@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { eligibleRows, resolveViewer } from '../../lib/explore/catalog';
 import { demoRuntime } from '../../lib/explore/demo-runtime';
 import { loadExploreRuntime } from '../../lib/explore/seed-repository';
-import { applyQuickFilter, cardView, holdBanner, preferenceKeys, QUICK_FILTERS, villageTiles } from '../../lib/explore/v3-home';
+import { applyQuickFilter, cardView, holdBanner, listableRows, preferenceKeys, QUICK_FILTERS, villageTiles } from '../../lib/explore/v3-home';
 import ExploreTracker from './ExploreTracker';
 import { currentServerSession } from '../../lib/auth/server-session';
 import AppFooter from '../components/footer/AppFooter';
@@ -36,7 +36,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
   const rankOrder = tracked && tracked.agency_id === agencyId ? (await engine.resultsFor(tracked.session_id)).map(row => row.experience_id) : undefined;
 
   const quick = QUICK_FILTERS.some(item => item.key === searchParams.loc) ? searchParams.loc : undefined;
-  let rows = applyQuickFilter(eligibleRows(seed), quick);
+  let rows = applyQuickFilter(listableRows(seed), quick);
   if (rankOrder) {
     const positions = new Map(rankOrder.map((id, index) => [id, index]));
     rows = [...rows].sort((a, b) => (positions.get(a.experience.experience_id) ?? Number.MAX_SAFE_INTEGER) - (positions.get(b.experience.experience_id) ?? Number.MAX_SAFE_INTEGER));

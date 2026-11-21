@@ -6,6 +6,7 @@ import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
 import * as quoteRoute from '@/app/api/ait/sessions/[id]/quote/route'
 import * as chatRoute from '@/app/api/ait/sessions/[id]/chat/route'
+import { addVillageCovers } from '../helpers/village-covers'
 
 // Round 3 (specs/001-ait-core/tasks.md Phase 5): AIT through the route handlers the UI calls.
 // T034 (D8), T055 (D11) and the route-level parts of T035, T037, T039, T041, T043, T051.
@@ -57,7 +58,7 @@ const budgetSuggestion = (matching: Json | null) =>
 const commercialRows = () => JSON.stringify(['quote_requests', 'chat_sessions', 'chat_messages', 'bookings'].map(table => demoRepository().all(table as never)))
 
 describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8, BR-005)', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addVillageCovers(demoRepository()) })
 
   it('one session: Silk → 10 → 15 → 13 → 200 pax updates the results every turn', async () => {
     const id = await openSession()
@@ -136,7 +137,7 @@ describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8
 })
 
 describe('T055 | D11 Quote / Chat authorize before validate (BR-001, BR-002, lesson #15)', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addVillageCovers(demoRepository()) })
 
   it('Guest → 401 even with an empty or invalid body; nothing is written', async () => {
     const id = await openSession()
@@ -180,7 +181,7 @@ describe('T055 | D11 Quote / Chat authorize before validate (BR-001, BR-002, les
 })
 
 describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34, #35)', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addVillageCovers(demoRepository()) })
 
   it('T035: no profile until origin and an Experience preference are stated', async () => {
     const noOrigin = await send(await openSession(), 'silk weaving, 10 pax on 2026-11-20')

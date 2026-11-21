@@ -6,8 +6,10 @@
 import { describe, expect, it } from 'vitest'
 import type { ExploreSeed } from '@/lib/explore/catalog'
 import { foldText, parseSearch, searchExperiences } from '@/lib/explore/v3-search'
+import { withVillageCovers } from '../helpers/village-covers'
 
-function seed(): ExploreSeed {
+const seed = () => withVillageCovers(rawSeed())
+function rawSeed(): ExploreSeed {
   const village = (id: string, name: string, district: string, km = '') => ({ village_id: id, name, district, city_province: 'Hà Nội', is_active: 'true', distance_km: km })
   const exp = (id: string, provider: string, name: string, minutes: number, max: number, price: number, extra: Record<string, string> = {}) =>
     ({ experience_id: id, provider_id: provider, name, category: 'Workshop/Hands-on', description: '', duration_minutes: String(minutes), max_participants: String(max), price_per_person: String(price), notice_period_hours: '24', archived_at: '', ...extra })

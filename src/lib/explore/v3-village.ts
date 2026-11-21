@@ -5,7 +5,7 @@
 // the computed counter card second; empty distance_km hides the distance line.
 import type { ExploreSeed, Viewer } from './catalog'
 import { eligibleRows } from './catalog'
-import { experienceImages, mainCraft, placeLine, villageImage } from './v3-home'
+import { experienceImages, listableRows, mainCraft, placeLine, villageImage } from './v3-home'
 import { resultView, type ResultView } from './v3-search'
 import { SUITABLE_FOR, craftLabel, parseDistance, parseHighlights, parseStringList, parseTourDetail, parseVisitNotes, type TourDetail } from './vocabulary'
 import { initials } from '../../app/components/nav/nav-model'
@@ -103,7 +103,9 @@ function daysOff(seed: ExploreSeed, providerIds: string[]): string {
 export function villageView(seed: ExploreSeed, villageId: string, viewer: Viewer, query: { date: string; guests: number | null; ex: string }): VillageView | null {
   const village = seed.villages.find(row => row.village_id === villageId)
   if (!village || village.is_active !== 'true') return null
-  const rows = (rowsByVillage(seed).get(villageId) ?? []).sort(byName)
+  // Experiences without any image (own or village cover) are not listed (UI v3 integration 21/11).
+  const listed = new Set(listableRows(seed).map(row => row.experience.experience_id))
+  const rows = (rowsByVillage(seed).get(villageId) ?? []).filter(row => listed.has(row.experience.experience_id)).sort(byName)
   const providerIds = [...new Set(rows.map(row => row.provider.provider_id))]
   const craft = village.editorial_craft || craftLabel(mainCraft(rows))
   const distance = distanceText(village.distance_km)

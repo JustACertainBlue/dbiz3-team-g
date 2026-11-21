@@ -3,7 +3,7 @@
 import type { CsvRow, ExploreSeed, Viewer } from './catalog'
 import { eligibleRows } from './catalog'
 import { calculateAvailability } from './availability'
-import { cardView, experienceImage, experienceImages, providerImages, type CardView } from './v3-home'
+import { cardView, experienceImage, listableRows, experienceImages, providerImages, type CardView } from './v3-home'
 import { resultView, type ResultView } from './v3-search'
 import { aboutParagraphs } from './v3-detail'
 import { craftLabel, parseDistance, parseStringList, SUITABLE_FOR, rowCraft } from './vocabulary'
@@ -57,6 +57,9 @@ export interface ProviderView {
 export function providerView(seed: ExploreSeed, providerId: string, viewer: Viewer, now: Date, payments: boolean, query: { date: string; guests: number | null } = { date: '', guests: null }): ProviderView | null {
   const all = eligibleRows(seed)
   const own = all.filter(row => row.provider.provider_id === providerId)
+  // Cards without any image (own or village) are not listed (UI v3 integration 21/11).
+  const listedIds = new Set(listableRows(seed).map(row => row.experience.experience_id))
+  const listed = own.filter(row => listedIds.has(row.experience.experience_id))
   const provider = seed.provider_profiles.find(row => row.provider_id === providerId)
   const version = provider && seed.provider_profile_versions.find(row => row.provider_id === providerId && row.version_no === provider.published_version_no)
   const village = provider && seed.villages.find(row => row.village_id === provider.village_id)
@@ -127,7 +130,7 @@ export function providerView(seed: ExploreSeed, providerId: string, viewer: View
     images,
     owner: { initials: initials(owner || version.business_name), name: owner, title: 'Chủ xưởng', phone: isAgency ? contact.phone_number || null : null, email: isAgency ? contact.business_email || null : null },
     together, highlights, about: aboutParagraphs(version.description ?? ''), suitableFor,
-    experiences: own.map(row => resultView(seed, row, query, isAgency)), firstExperienceId: own[0]?.experience.experience_id ?? null,
+    experiences: listed.map(row => resultView(seed, row, query, isAgency)), firstExperienceId: own[0]?.experience.experience_id ?? null,
     similar: otherVillages.slice(0, 3).map(row => cardView(seed, row, [])), info, faq, payments,
   }
 }

@@ -57,6 +57,25 @@ export function providerImages(seed: ExploreSeed, providerId: string, versionNo:
     .map(item => fileImage(files.get(item.file_id)!)).filter((image): image is ImageRef => Boolean(image))
 }
 
+/**
+ * Image of an experience card (UI v3 integration 21/11): its own first image, else the cover of its village (villageImage).
+ * An experience with neither is not shown in lists or AI results (listableRows); its detail page still works.
+ */
+export function cardImage(seed: ExploreSeed, row: Row): ImageRef | null {
+  return experienceImage(seed, row.experience.experience_id) ?? villageImage(seed, row.village.village_id)
+}
+
+/** eligibleRows that can show a card image. Lists, search and AI results use this; detail and booking pages use eligibleRows. */
+export function listableRows(seed: ExploreSeed): Row[] {
+  const villageHas = new Map<string, boolean>()
+  return eligibleRows(seed).filter(row => {
+    if (experienceImage(seed, row.experience.experience_id)) return true
+    const id = row.village.village_id
+    if (!villageHas.has(id)) villageHas.set(id, Boolean(villageImage(seed, id)))
+    return villageHas.get(id)!
+  })
+}
+
 export const placeLine = (village: CsvRow) => [village.name, village.district, village.city_province].filter(Boolean).join(', ')
 
 export interface CardView {
@@ -72,7 +91,7 @@ export function cardView(seed: ExploreSeed, row: Row, preferenceKeys: string[]):
     craft: rowCraft(version.craft_type, village), location: placeLine(village),
     meta: `${durationLabel(Number(experience.duration_minutes))} · Tối đa ${Number(experience.max_participants)} khách/ca`,
     highlights: parseHighlights(experience.highlights).slice(0, 3).map(item => item.title),
-    priceFrom: Number(experience.price_per_person), image: experienceImage(seed, experience.experience_id),
+    priceFrom: Number(experience.price_per_person), image: cardImage(seed, row),
     why: preferenceKeys.length ? whyLine(experience.suitable_for, preferenceKeys) : null,
   }
 }

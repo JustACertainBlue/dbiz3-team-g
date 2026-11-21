@@ -22,6 +22,7 @@ import {
 } from '@/lib/matching/recommendation-service'
 import { loadExperiences } from '@/lib/db/seed-loader'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
+import { listableRows } from '@/lib/explore/v3-home'
 import { craftDisplay, matchingCardView, profileGuests } from '@/lib/matching/card-data'
 
 export async function POST(request: Request) {
@@ -48,7 +49,10 @@ export async function POST(request: Request) {
     }
 
     // 1. Retrieve verified candidates from seed catalog (BR-003)
-    const rawCandidates = await getVerifiedCandidates(profile)
+    const exploreSeed = await loadExploreRuntime()
+    // Experiences with no card image (own or village cover) are not recommended (UI v3 integration 21/11).
+    const listedIds = new Set(listableRows(exploreSeed).map(row => row.experience.experience_id))
+    const rawCandidates = (await getVerifiedCandidates(profile)).filter(candidate => listedIds.has(candidate.experience_id))
 
     // Enrich candidates with village_name for display (look up from experience location)
     const allExperiences = await loadExperiences()
@@ -89,7 +93,6 @@ export async function POST(request: Request) {
 
     // 5. Build recommendation output (FR-008, BR-007, #25)
     // Screen 22: card data of screen 02 added to every recommendation (additive; no existing field changes).
-    const exploreSeed = await loadExploreRuntime()
     const recs = await buildRecommendations(ranked.map(c => ({ ...c, craft_display: craftDisplay(exploreSeed, c.experience_id) })))
     const withCard = <T extends { experience_id: string }>(m: T) => ({ ...m, card: matchingCardView(exploreSeed, m.experience_id, profileGuests(profile)) })
 

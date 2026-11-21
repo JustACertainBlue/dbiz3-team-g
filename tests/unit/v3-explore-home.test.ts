@@ -79,8 +79,9 @@ describe('cardView', () => {
     expect(cardView(data, row('e2'), []).highlights).toEqual(['Ngồi khung dệt', 'Mang lụa về'])
     expect(cardView(data, row('e2'), []).meta).toBe('2 giờ · Tối đa 16 khách/ca')
   })
-  it('has no image when the experience has none, or only a non-servable seed key', () => {
-    expect(cardView(data, row('e3'), []).image).toBeNull()
+  it('uses the village image when the experience has none (UI v3 integration 21/11, was: no image); still none for a non-servable seed key and no village image', () => {
+    expect(cardView(data, row('e3'), []).image).toEqual(cardView(data, row('e1'), []).image)
+    expect(cardView(data, row('e3'), []).image).not.toBeNull()
     expect(cardView(data, row('e2'), []).image).toBeNull()
   })
 })

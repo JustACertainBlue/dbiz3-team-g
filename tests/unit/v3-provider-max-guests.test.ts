@@ -6,6 +6,7 @@ vi.mock('next/headers', () => ({ cookies: () => ({ get: () => ({ value: cookie.a
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {}, refresh: () => {} }), redirect: () => { throw new Error('redirect') }, notFound: () => { throw new Error('notFound') } }))
 import { demoRepository } from '@/lib/demo/json-repository'
 import ProviderPage from '@/app/explore/providers/[id]/page'
+import { addVillageCovers } from '../helpers/village-covers'
 
 // Screen 24: the request form gets each experience's maximum guests from the stored experiences.max_participants
 // (loadExploreRuntime = snapshot of the application store: PostgreSQL in dev and production), not from a constant or the CSV seed.
@@ -24,7 +25,7 @@ function find(node: unknown, predicate: (props: Record<string, unknown>) => bool
 }
 
 describe('24: guests maximum per experience comes from the stored experience', () => {
-  beforeEach(() => demoRepository().reset())
+  beforeEach(() => { demoRepository().reset(); addVillageCovers(demoRepository()) })
   const experiences = async () => {
     cookie.account = 'agency'
     const tree = await ProviderPage({ params: { id: PROVIDER }, searchParams: {} })

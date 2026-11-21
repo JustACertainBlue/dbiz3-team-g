@@ -29,6 +29,7 @@
     "storage:catalog": "node scripts/storage/bootstrap-catalog.mjs",
     "storage:seed-images": "node scripts/storage/import-seed-images.mjs",
     "storage:media-variants": "node scripts/storage/backfill-media-variants.mjs",
+    "db:content-load": "node scripts/db/prod-content-load.mjs",
     "storage:catalog-copies": "node scripts/storage/refresh-catalog-copies.mjs",
     "test:storage": "node scripts/storage/test.mjs"
   },

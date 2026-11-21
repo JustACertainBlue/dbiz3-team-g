@@ -50,3 +50,11 @@ describe('hoursSummary', () => {
   })
   it('hoursByWeekday has only open days', () => { expect(hoursByWeekday(hours)).toEqual({ 1: '08:00 – 17:00', 2: '08:00 – 17:00', 3: '08:00 – 17:00', 4: '08:00 – 17:00', 5: '08:00 – 17:00' }) })
 })
+
+import { monthWindow } from '@/lib/provider/month-window'
+describe('monthWindow', () => {
+  it('covers the previous, current and next month', () => {
+    expect(monthWindow('2026-11-21')).toEqual({ from: '2026-10-01', to: '2026-12-31' })
+    expect(monthWindow('2027-01-31')).toEqual({ from: '2026-12-01', to: '2027-02-28' })
+  })
+})

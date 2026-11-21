@@ -2,11 +2,12 @@
 import Link from 'next/link'
 import { currentServerSession } from '@/lib/auth/server-session'
 import { canOpenCreateBooking } from '@/lib/booking/create-booking'
-import { addDays, hanoiDate } from '@/lib/booking/clock'
+import { hanoiDate } from '@/lib/booking/clock'
 import { providerBookingSummary } from '@/lib/booking/list-bookings'
 import { demoRepository } from '@/lib/db/application-store'
 import { Button } from '@/app/components/ui'
 import { hoursByWeekday, hoursSummary, monthDays, providerStats } from '@/lib/provider/month-calendar'
+import { monthWindow } from '@/lib/provider/month-window'
 import MonthCalendar from '../../v3/MonthCalendar'
 import '../../v3/provider-v3.css'
 
@@ -28,9 +29,7 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
   const hours = allHours.filter(row => row.provider_id === params.providerId)
   const ownExperiences = experiences.filter(row => row.provider_id === params.providerId)
   const stats = providerStats({ bookings: own, experiences }, params.providerId, now)
-  const monthStart = `${today.slice(0, 7)}-01`
-  const from = addDays(monthStart, -1).slice(0, 7) + '-01'
-  const to = addDays(`${addDays(addDays(monthStart, 32).slice(0, 7) + '-01', 32).slice(0, 7)}-01`, -1)
+  const { from, to } = monthWindow(today)
   const cells = monthDays({ hours, bookings: own, experiences: ownExperiences }, from, to, today)
   const revision = reviews.filter(row => row.provider_id === params.providerId && row.version_no === profile?.current_version_no && row.revision_comments).sort((a, b) => b.reviewed_at.localeCompare(a.reviewed_at))[0]
   const id = params.providerId
@@ -45,7 +44,7 @@ export default async function ProviderDashboardPage({ params }: { params: { prov
       <div className="pv3-stat"><span className="pv3-stat__t">Đã nhận qua QR tháng {Number(today.slice(5, 7))}</span><b className="pv3-stat__v">—</b></div>
       <Link className="pv3-stat" href={`/provider/${id}/experiences`}><span className="pv3-stat__t">Trải nghiệm đang hiển thị</span><b className="pv3-stat__v">{stats.activeExperiences}</b></Link>
     </section>
-    <div className="pv3-head pv3-head--cal"><h2 className="pv3-h2">Lịch xưởng</h2><Button size="sm" href={`/provider/${id}/bookings/new`}>+ Tạo đặt chỗ</Button></div>
+    <div id="lich" className="pv3-head pv3-head--cal"><h2 className="pv3-h2">Lịch xưởng</h2><Button size="sm" href={`/provider/${id}/bookings/new`}>+ Tạo đặt chỗ</Button></div>
     <div className="pv3-dash">
       <MonthCalendar cells={cells} today={today} variant="full" hoursByWeekday={hoursByWeekday(hours)}
         bookingHref={`/provider/${id}/bookings/__ID__`} scheduleHref={`/provider/${id}/schedule`} />

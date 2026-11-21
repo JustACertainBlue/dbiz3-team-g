@@ -189,7 +189,7 @@ index cc3f3537..d8605b52 100644
 
 </details>
 
-## 5. Ảnh gallery cho 7 xưởng (ứng viên, chưa nhập)
+## 5. Ảnh gallery cho 7 xưởng (ứng viên, chưa nhập; bản chốt ở mục 8)
 
 14 ảnh Pexels (mỗi xưởng 2), không có người; không trùng ảnh trải nghiệm đã chọn; ≥ 1280×720; mỗi ảnh đã xem. Ở trong `review.html` (mục "Xưởng") và `xuong-2111.json` (provider_id, version, file_id cũ cần thay, page_url, author, sha256) trong thư mục notes của phiên.
 
@@ -243,3 +243,98 @@ Cách dùng: script tính sha256 từng object `prf-media/<file_id>` trên môi 
 - Đổi `EXCLUDED_ENTRIES` sang sha256 (mục 4), cần duyệt trước khi sửa.
 - Hàng profile_media của file chỉ 1 trải nghiệm dùng không bị gỡ (8 hàng có mặt người, danh sách ở mục 2). Cần quyết định: (a) thêm tuỳ chọn gỡ các file_id có mặt người đã liệt kê, có ghi vào `undo.json`; (b) con người gỡ bằng tay; (c) chấp nhận chúng nằm ở vị trí thứ 2.
 - Báo cáo dry run đã in "unlinkedSharedRows" và "shiftedRows"; nên in thêm danh sách hàng được giữ có mặt người để thấy trước.
+
+## 7. Kiểm ảnh xưởng Chuông và danh sách gỡ theo sha256 (21/11, chỉ đọc DEV)
+
+**Ảnh xưởng Chuông.** 8 ảnh của 4 xưởng (Mai Khê, Thanh Liễu, Diệp Hà, Hoài Thu) là **8 ảnh khác nhau** (8 mã ảnh Pexels, 8 sha256 khác nhau), **không có 31624715**, và không trùng ảnh nào trong 31 vị trí bìa/trải nghiệm đã chọn hay 6 xưởng khác (14 ảnh xưởng đều khác nhau).
+
+**Danh sách gỡ ảnh có mặt người: 7 hash.** Số hàng khớp trên DEV (tìm theo 28 file_id có cùng nội dung; đã tính hash từng object Storage):
+
+| sha256 | Ảnh | File | profile_media: trải nghiệm | profile_media: xưởng | provider_version_media (version đang hiển thị) | Bìa làng |
+|---|---|---|---|---|---|---|
+| `d8a165bf17c7cd58b0e563f4c4bc59c2f2967ba60f9173c3b048507ff10ce51f` | bà làm nón (Chuông) | 13 | 21 | 9 | 10 (10) | 0 |
+| `6ef25de0a50e87b4afbe0b4368b7ea9752085b014e8392df1c1c554c2426af34` | chị ngồi dệt (Vạn Phúc) | 10 | 15 | 6 | 7 (7) | 0 |
+| `bef18c7d7e8703d231393517998a584099c445a3d60d781dd2b9e524e9507fb5` | người đàn ông sau rối (Đào Thục) | 1 | 1 | 0 | 0 (0) | 0 |
+| `978152f57b4538b3e2992006b4c195bb1d8dc30ada5c3a7c719eb6ad39383320` | người đàn ông trong hơi nước (Yên Thái) | 1 | 1 | 0 | 0 (0) | 0 |
+| `5f4580501d68322d13016bc6ea8429d1b57991f1007985cafd4a4503a8d10a61` | chị ở quầy tò he (bìa Xuân La) | 1 | 0 | 0 | 0 (0) | 1 |
+| `7631d15e343def85a4c8e566e2bb28eb9a0f367fa16c72dab83b681dddc66e37` | chị giữa nón lá (bìa Chuông) | 1 | 0 | 0 | 0 (0) | 1 |
+| `bcbdd9a2719ff38bb77af4cd3a938a90df99fedddbd49b7b766a0168fdd0421c` | anh giữa lụa vàng (bìa Vạn Phúc) | 1 | 0 | 0 | 0 (0) | 1 |
+| **Cộng** | | **28** | **38** | **15** | **17** | **3** |
+
+Phát hiện thêm: **15 hàng `profile_media` ở cấp xưởng** (cột "xưởng"; `experience_id` rỗng, có `provider_id`) cũng đang giữ ảnh có mặt người: Hà Vân 3, Thục Khuê 3 (hash `6ef25de0…`), Mai Khê 3, Thanh Liễu 3, Diệp Hà 3 (hash `d8a165bf…`). Đây là gallery nháp của hồ sơ xưởng (trang sửa hồ sơ), tách với `provider_version_media` là bản đã duyệt đang hiển thị công khai. Hà Liên và Hoài Thu không có hàng cấp xưởng. Script import hiện tại không đụng các hàng này; nếu chỉ thay `provider_version_media`, lần xuất bản version sau có thể đưa ảnh có mặt người trở lại từ gallery nháp.
+
+Danh sách file_id theo hash (cho truy vấn gỡ):
+
+- `d8a165bf17c7…` (bà làm nón (Chuông)): `791f2241-2f3b-5cd4-84fd-8151d7224f52`, `8ed11bbf-aa44-5c3f-a9c1-c158b5e527d3`, `bb673534-f702-5187-b1d8-c403ca5bf466`, `31fe924e-af88-5bc4-865f-8cb48cde6773`, `658c3d49-c0a4-527f-893e-abe9a4a06678`, `6b3930ae-ab35-5ae1-8b01-61f691512f8e`, `bf1bfee8-5066-56fb-8405-1eaccca051fb`, `da03d290-53c4-52e2-828f-f93d4ae64a4f`, `e8fc5e73-04d7-50b9-a779-ab369a32356b`, `0e605916-a778-525d-82c6-99710bdcb0fd`, `910ebc0d-6f32-57bf-8f98-7f54ae80cc00`, `c4de3a1f-cf7d-5069-8da2-5b3ccd9d15ce`, `c83b0e06-c939-51fa-8f20-7646fe4e1728`
+- `6ef25de0a50e…` (chị ngồi dệt (Vạn Phúc)): `64a9e816-11b6-552b-b704-b2fc62b52ce2`, `35fa9e03-059f-5a13-9152-0203b77a5a72`, `0b0a4ca0-7493-54d2-aa86-36da0eae7ca5`, `113f70fa-5880-5863-b3d3-b00a8e91aae9`, `02a0b3e1-63ff-5db7-89e2-c154a5d62b22`, `aaa5e2fe-b8e1-51f2-88f3-97e08484fd12`, `d185dcab-8f2b-599c-8196-0219d47edfec`, `1e84c9ce-8e21-5a41-8944-dfbfa0cc9e5b`, `53541dd6-1337-5ae4-89b6-8de0d51d146f`, `706a077a-ac48-5625-8bd7-da1de32baf34`
+- `bef18c7d7e87…` (người đàn ông sau rối (Đào Thục)): `56ea4e2a-8e3a-4a2f-a8f4-199f8a7e4697`
+- `978152f57b45…` (người đàn ông trong hơi nước (Yên Thái)): `f67e94a1-0b6e-4aa0-9d87-5036a64b040f`
+- `5f4580501d68…` (chị ở quầy tò he (bìa Xuân La)): `60242583-b487-461a-abeb-946817c05bde`
+- `7631d15e343d…` (chị giữa nón lá (bìa Chuông)): `2eb2a73c-184b-436b-9724-cb5bab15dfb7`
+- `bcbdd9a2719f…` (anh giữa lụa vàng (bìa Vạn Phúc)): `54e11ab7-2426-4cfd-bd89-68dd5f02d032`
+
+Không khớp bằng file_id mà bằng nội dung: mọi file cùng hash coi là cùng ảnh. Hash chỉ đã được kiểm trên DEV; đối chiếu trên PROD trước khi dùng (mục 6).
+
+## 8. Kết quả sau khi Khánh Linh duyệt (21/11) — thay các số ở mục 1 và 5
+
+Quy tắc áp dụng: loại mọi ảnh rối dây; giữ ảnh rối không thấy dây; giữ ảnh tượng đất sét cho bìa Xuân La; loại ảnh marbling của "In thủy ấn" và ảnh nón `31624715`; giữ ảnh bề mặt giấy, vàng lá và tò he phụ; còn lại giữ nguyên.
+
+**Ảnh bị loại (15 mục):**
+
+| Vị trí | Ảnh loại | Lý do | Sau khi loại |
+|---|---|---|---|
+| Ảnh bìa làng Chuông | 31624715 | nón có chữ | 32658054, 32359576 |
+| Vẽ và trang trí nón lá | 31624715 | nón có chữ | 17373219, 32359576 |
+| Xem quy trình làm nón lá Chuông | 31624715 | nón có chữ | 32359576 |
+| Xem rối nước và tô màu con rối | 12580659 | rối dây | 19026103 |
+| Nghe nghệ nhân kể về rối nước | 7511711, 27676231 | rối dây | **không còn ứng viên → tự chụp** |
+| Xem sau mành và nghe kể nghề rối | 12580659, 16034770 | rối dây | **không còn ứng viên → tự chụp** |
+| Sơn trang trí con rối gỗ | 38240478, 31116441 | rối dây | **không còn ứng viên → tự chụp** |
+| Tô màu con rối chú Tễu | 27676231, 31116441 | rối dây | **không còn ứng viên → tự chụp** |
+| In thủy ấn trên giấy dó | 14664552, 10373238, 35985299 | marbling | **không còn ứng viên → tự chụp** |
+
+Ảnh `19026103` ("Xem rối nước và tô màu con rối") được giữ: không thấy dây, nhưng là rối tay bằng vải/nhựa, không phải rối gỗ; ghi trong `quality`, Khánh Linh có thể loại thêm.
+
+### Bìa làng + trải nghiệm: `approved-photos-2111-final.json`
+
+- **63 mục, 26 vị trí** (5 bìa làng + 21 trải nghiệm).
+- `validateEntry`: 0 lỗi. `targetSize`: 0 ảnh dưới 1280×720 sau khi thu nhỏ. sha256 của file khớp 63/63. `co_nguoi_ro_mat` đều là `khong`. Không mục nào trùng 3 hash bị loại của 20/11.
+- `filterEntries` của script hiện tại **vẫn báo lỗi** với id `096fc4d8` (tên đã đổi): cần đổi sang sha256 (mục 4) trước khi nhập.
+
+### Ảnh xưởng: `xuong-2111-final.json`
+
+20 ảnh cho 7 xưởng. Mỗi mục ghi ảnh mới thay cho ảnh cũ nào, ở cả hai nơi: `provider_version_media` (version đang hiển thị, v1) và 15 hàng `profile_media` cấp xưởng (gallery nháp). Ảnh mới thứ k thay hàng thứ k theo `display_order`; ảnh nào không có hàng cũ để thay là thêm mới. Vị trí mới là `display_order` 0, 1, 2 với loại Activity, Space, Product.
+
+| Xưởng | Ảnh mới | Thay (bản duyệt) | Thay (gallery nháp) |
+|---|---|---|---|
+| Xưởng lụa Hà Vân | 6634693, 6634611, 6634602 | `d185dcab`, `02a0b3e1`, `aaa5e2fe` | `d185dcab`, `02a0b3e1`, `aaa5e2fe` |
+| Xưởng lụa Hà Liên | 32277772, 18877232, 6712947 | `0b0a4ca0`, thêm mới, thêm mới | —, —, — |
+| Xưởng lụa Thục Khuê | 6634749, 6634743, 6634758 | `706a077a`, `1e84c9ce`, `53541dd6` | `706a077a`, `1e84c9ce`, `53541dd6` |
+| Xưởng nón Mai Khê | 33206775, 7232683, 36098294 | `da03d290`, `31fe924e`, `c83b0e06` | `da03d290`, `31fe924e`, `c83b0e06` |
+| Xưởng nón Thanh Liễu | 15207113, 4744854, 20448091 | `6b3930ae`, `bf1bfee8`, `658c3d49` | `6b3930ae`, `bf1bfee8`, `658c3d49` |
+| Xưởng nón Diệp Hà | 15207118, 12525308, 19556442 | `0e605916`, `c4de3a1f`, `910ebc0d` | `0e605916`, `c4de3a1f`, `910ebc0d` |
+| Xưởng nón Hoài Thu | 18282623, 7232831 | `791f2241`, thêm mới | —, — |
+
+- **Hà Liên: 3 ảnh** (1 ảnh cũ được thay, 2 ảnh thêm mới; xưởng không có gallery nháp).
+- **Hoài Thu: giữ 2 ảnh.** Chỉ tìm được 3 ảnh nón lá không người và không chữ ngoài những ảnh đã chọn; chúng thuộc Mai Khê, Thanh Liễu, Diệp Hà. Ảnh còn lại là lá cọ cùng một loạt của Mai Khê và Hoài Thu (`7232683`, `7232831`, `7232685` là các góc cắt gần giống nhau), nên không thêm. Ảnh `34320410` bị loại vì có chữ "Việt Nam" trên nón.
+- Cột `go_anh_cu` trống ở mọi xưởng: số ảnh mới (3) không ít hơn số ảnh cũ (3) ở 5 xưởng có 3 ảnh cũ.
+- 20 ảnh khác nhau đôi một, không trùng ảnh bìa/trải nghiệm; 11 ảnh của 4 xưởng Chuông khác nhau, không có `31624715`.
+
+### Danh sách tự chụp cuối cùng: 8 vị trí (`can-tu-chup-final.json`)
+
+| Vị trí | Lý do |
+|---|---|
+| Ảnh bìa làng Phùng Xá, Mỹ Đức (bìa làng) | Nghề làng là dệt tơ sen; trên Pexels chỉ có ảnh hoa/lá sen, không có ảnh rút sợi hay dệt tơ sen. Làng này sẽ không còn ảnh nào (bìa lẫn trải nghiệm). |
+| Tìm hiểu quy trình rút sợi và dệt tơ sen tại xưởng (trải nghiệm) | Cùng lý do: không có ảnh tơ sen đạt. |
+| Xem múa rối nước tại thủy đình Đào Thục (trải nghiệm) | Chỉ có 1 ảnh rối nước đạt (39125133), đã dành cho "Tích trò rối nước". Ảnh hiện tại của trải nghiệm không có mặt người, giữ nguyên cho đến khi có ảnh chụp. |
+| In thủy ấn trên giấy dó (trải nghiệm) | Ảnh marbling bị loại. Ảnh hiện tại (f67e94a1, người đàn ông trong hơi nước) sẽ bị gỡ, nên trải nghiệm này sẽ không còn ảnh nào. |
+| Nghe nghệ nhân kể về rối nước (trải nghiệm) | Cả 2 ứng viên là rối dây (bị loại). Ảnh hiện tại không có mặt người, giữ nguyên cho đến khi có ảnh chụp (đang dùng chung file với "Tô màu con rối chú Tễu"). |
+| Xem sau mành và nghe kể nghề rối (trải nghiệm) | Cả 2 ứng viên là rối dây. Ảnh hiện tại giữ nguyên (dùng chung file với "Sơn trang trí con rối gỗ"). |
+| Sơn trang trí con rối gỗ (trải nghiệm) | Cả 2 ứng viên là rối dây. Ảnh hiện tại giữ nguyên (dùng chung file với "Xem sau mành…"). |
+| Tô màu con rối chú Tễu (trải nghiệm) | Cả 2 ứng viên là rối dây. Ảnh hiện tại giữ nguyên (dùng chung file với "Nghe nghệ nhân kể…"). |
+
+### Làng nào không còn ảnh nào sau khi duyệt (DEV, chỉ đọc)
+
+Tính trên 20 làng có trải nghiệm đang chạy: bỏ các file có mặt người (28 file), thêm ảnh bìa và ảnh trải nghiệm đã duyệt. **Chỉ Phùng Xá, Mỹ Đức không còn ảnh nào** (không có bìa, trải nghiệm tơ sen không có ảnh), nên làng bị ẩn khỏi trang chủ và danh sách làng (quyết định #9: làng không ảnh không hiện). Mọi làng khác còn ít nhất một ảnh bìa hoặc ảnh trải nghiệm. Trải nghiệm không còn ảnh: tơ sen (Phùng Xá) và "In thủy ấn trên giấy dó" (Yên Thái); 5 trải nghiệm rối ("Xem múa rối nước" và 4 trải nghiệm có ứng viên toàn rối dây) vẫn giữ ảnh hiện tại, không có mặt người, cho đến khi có ảnh chụp.
+
+Các tệp ở thư mục notes của phiên: `final/approved-photos-2111-final.json`, `final/xuong-2111-final.json`, `final/can-tu-chup-final.json`, `final/review.html` và cây ảnh `final/`.

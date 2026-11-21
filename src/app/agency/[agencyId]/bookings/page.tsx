@@ -5,6 +5,8 @@ import CoverImage from '@/app/explore/v3/CoverImage'
 import { listAgencyBookings } from '@/lib/booking/agency-bookings'
 import { AGENCY_TABS, agencyRowChips, agencyTabCount, parseAgencyTab } from '@/lib/booking/agency-list'
 import { bookingView } from '@/lib/booking/booking-view'
+import { adjustmentLine } from '@/lib/booking/display'
+import { rulesOf } from '@/lib/booking/group-price'
 import { BookingError } from '@/lib/booking/create-booking'
 import { demoRepository } from '@/lib/db/application-store'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
@@ -35,6 +37,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
   const repository = demoRepository()
   const seed = await loadExploreRuntime()
   const bookings = new Map((await repository.all('bookings')).filter(row => row.agency_id === params.agencyId).map(row => [row.booking_id, row]))
+  const ruleRows = await repository.all('experience_discount_rules')
   const experiences = new Map((await repository.all('experiences')).map(row => [row.experience_id, row]))
   const q = (searchParams.q ?? '').trim().toLowerCase()
   const matches = (row: typeof all[number]) => !q || `HAB-${row.booking_id.slice(0, 6)} ${row.provider_name} ${row.experience_name}`.toLowerCase().includes(q)
@@ -68,7 +71,7 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
       {pageRows.map((row, index) => {
         const booking = bookings.get(row.booking_id)!
         const experience = experiences.get(booking.experience_id)
-        const view = bookingView({ booking, experience, providerName: row.provider_name, agencyName: '', now: new Date() })
+        const view = bookingView({ booking, experience, rules: rulesOf(ruleRows, booking.experience_id), providerName: row.provider_name, agencyName: '', now: new Date() })
         const chips = agencyRowChips(row.status)
         const reason = row.status === 'Cancelled' ? history.filter(item => item.booking_id === row.booking_id && item.to_status === 'Cancelled').at(-1)?.reason ?? '' : ''
         const detail = `${base}/${row.booking_id}`
@@ -87,7 +90,9 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
               <span className="v3g-cap">Mã đặt chỗ: {view.code}</span>
               <p className="v3g-sm">{view.price.guests} khách</p>
               <b className="v3g-total">{vnd(view.price.total)}</b>
-              {view.price.discount > 0 && <><span className="v3g-old">{vnd(view.price.listTotal)}</span><span className="v3g-disc">Giảm {view.price.discountPct}% giá đoàn</span></>}
+              {view.price.strike && <span className="v3g-old">{vnd(view.price.listTotal)}</span>}
+              {view.price.discount > 0 && <span className="v3g-disc">Giảm {view.price.discountPct}% giá đoàn</span>}
+              {view.price.adjustment !== 0 && <span className="v3g-cap" data-testid="adjustment">{adjustmentLine(view.price.adjustment)}</span>}
               {chips.payNow && <Link className="v3g-pay" href={detail}>Thanh toán ngay</Link>}
               <div className="v3g-links"><Link href={detail}>Xem chi tiết</Link><Link href="/messages" aria-label="Nhắn xưởng" title="Nhắn xưởng">Nhắn xưởng</Link></div>
             </div>

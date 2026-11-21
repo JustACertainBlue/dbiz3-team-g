@@ -6,7 +6,8 @@ import CreateBookingForm from '@/app/provider/[providerId]/bookings/new/CreateBo
 
 // Screen 35 price: bookings.agreed_price_total stores the agreed total, so "Giá mỗi khách" is editable (mockup).
 const experience = { experience_id: 'e1', name: 'Nặn gốm', duration_minutes: 60, max_participants: 12, price_per_person: 150000, conditions: { notice_period: 24, cancellation_policy: { a: 1 } }, rules: [{ pax: 5, pct: 5 }] }
-const html = renderToStaticMarkup(React.createElement(CreateBookingForm, { providerId: 'p1', agencies: [{ agency_id: 'a1', company_name: 'Công ty A' }], experiences: [experience], initial: { guests: '10' } }))
+const render = (perGuest?: string) => renderToStaticMarkup(React.createElement(CreateBookingForm, { providerId: 'p1', agencies: [{ agency_id: 'a1', company_name: 'Công ty A' }], experiences: [experience], initial: { guests: '10', perGuest } }))
+const html = render()
 
 describe('CreateBookingForm price', () => {
   it('"Giá mỗi khách" is an editable number input defaulting to the list price', () => {
@@ -19,5 +20,19 @@ describe('CreateBookingForm price', () => {
     expect(html).toContain('1.425.000')
     expect(html).toContain('1.500.000')
     expect(html).toContain('giảm 5% giá đoàn')
+  })
+  it('equal to the rule price: no adjustment line; list price struck out', () => {
+    expect(html).not.toContain('Điều chỉnh theo thoả thuận')
+    expect(html).toContain('<s ')
+  })
+  it('lower per-guest price: negative adjustment against the rule price, list price still struck out', () => {
+    const lower = render('140000') // 140.000 × 10 − 5% = 1.330.000; rule price 1.425.000
+    expect(lower).toContain('Điều chỉnh theo thoả thuận: −95.000 ₫')
+    expect(lower).toContain('1.330.000'); expect(lower).toContain('<s ')
+  })
+  it('higher per-guest price: positive adjustment, no strike once the final price is not below the list price', () => {
+    const higher = render('160000') // 160.000 × 10 − 5% = 1.520.000 > list 1.500.000
+    expect(higher).toContain('Điều chỉnh theo thoả thuận: +95.000 ₫')
+    expect(higher).not.toContain('<s ')
   })
 })

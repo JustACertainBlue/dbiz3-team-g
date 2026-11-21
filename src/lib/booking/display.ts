@@ -13,3 +13,7 @@ export function slotPeriod(startAt: string): 'Ca sáng' | 'Ca chiều' | 'Ca t�
   const hour = Number(hanoiClock(startAt).slice(0, 2))
   return hour < 12 ? 'Ca sáng' : hour < 17 ? 'Ca chiều' : 'Ca tối'
 }
+
+/** "Điều chỉnh theo thoả thuận: +X ₫" / "−X ₫" (U+2212), '' when the agreed price equals the rule price. */
+export const adjustmentLine = (adjustment: number): string =>
+  adjustment === 0 ? '' : `Điều chỉnh theo thoả thuận: ${adjustment > 0 ? '+' : '−'}${Math.abs(adjustment).toLocaleString('vi-VN')} ₫`

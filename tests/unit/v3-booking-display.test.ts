@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookingCode, slotPeriod, slotRange } from '@/lib/booking/display'
+import { adjustmentLine, bookingCode, slotPeriod, slotRange } from '@/lib/booking/display'
 
 describe('booking display helpers (UI v3 decisions #8, #9)', () => {
   it('code is HAB- + first 6 characters of the id, upper case', () => {
@@ -16,5 +16,10 @@ describe('booking display helpers (UI v3 decisions #8, #9)', () => {
     expect(slotPeriod('2026-11-24T12:00:00+07:00')).toBe('Ca chiều')
     expect(slotPeriod('2026-11-24T16:59:00+07:00')).toBe('Ca chiều')
     expect(slotPeriod('2026-11-24T17:00:00+07:00')).toBe('Ca tối')
+  })
+  it('adjustment line: sign, thousands dots, empty when 0', () => {
+    expect(adjustmentLine(75000)).toBe('Điều chỉnh theo thoả thuận: +75.000 ₫')
+    expect(adjustmentLine(-25000)).toBe('Điều chỉnh theo thoả thuận: −25.000 ₫')
+    expect(adjustmentLine(0)).toBe('')
   })
 })

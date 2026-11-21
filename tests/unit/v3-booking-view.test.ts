@@ -12,7 +12,8 @@ const booking = {
 const experience = { name: 'Nặn gốm thủ công', price_per_person: '150000', max_participants: '12', experience_location_address: 'Bát Tràng, Gia Lâm, Hà Nội' }
 
 describe('bookingView', () => {
-  const view = bookingView({ booking, experience, providerName: 'Xưởng thủ công Bát Tràng', agencyName: 'Công ty Du lịch Tràng An', now: new Date('2026-11-25T09:00:00+07:00') })
+  const RULES = [{ pax: 5, pct: 5 }]
+  const view = bookingView({ booking, experience, rules: RULES, providerName: 'Xưởng thủ công Bát Tràng', agencyName: 'Công ty Du lịch Tràng An', now: new Date('2026-11-25T09:00:00+07:00') })
   it('prints code, date, range and period', () => {
     expect(view.code).toBe('HAB-4BF17B')
     expect(view.dateLong).toBe('Thứ Ba, 24/11/2026')
@@ -20,13 +21,12 @@ describe('bookingView', () => {
     expect(view.period).toBe('Ca sáng')
     expect(view.minutes).toBe(60)
   })
-  it('price: list price struck out, discount line, total as agreed', () => {
-    expect(view.price).toEqual({ perGuest: 150000, guests: 10, listTotal: 1500000, total: 1425000, discount: 75000, discountPct: 5 })
+  it('price: the group discount comes from the rules; an agreed price equal to the rule price has no adjustment', () => {
+    expect(view.price).toMatchObject({ perGuest: 150000, guests: 10, listTotal: 1500000, total: 1425000, discount: 75000, discountPct: 5, ruleTotal: 1425000, adjustment: 0, strike: true })
   })
-  it('no discount when the agreed price equals the list price', () => {
-    const plain = bookingView({ booking: { ...booking, agreed_price_total: '1500000.00' }, experience, providerName: '', agencyName: '', now: new Date() })
-    expect(plain.price.discount).toBe(0)
-    expect(plain.price.discountPct).toBe(0)
+  it('no rules and an agreed price equal to the list price: no discount, no adjustment, no strike', () => {
+    const plain = bookingView({ booking: { ...booking, agreed_price_total: '1500000.00' }, experience, rules: [], providerName: '', agencyName: '', now: new Date() })
+    expect(plain.price).toMatchObject({ discount: 0, discountPct: 0, adjustment: 0, strike: false })
   })
   it('hold: until text and remaining text only while On hold', () => {
     expect(view.holdUntil).toBe('14:00, Thứ Sáu 27/11')
@@ -64,5 +64,24 @@ describe('bookingView edge cases', () => {
   it('a start after 17:00 is Ca tối; an agreed price above the list price is not a discount', () => {
     expect(at('2026-11-25T09:00:00+07:00', { start_at: '2026-11-24T18:00:00+07:00', end_at: '2026-11-24T19:00:00+07:00' }).period).toBe('Ca tối')
     expect(at('2026-11-25T09:00:00+07:00', { agreed_price_total: '1600000.00' }).price.discount).toBe(0)
+  })
+})
+
+describe('price display: discount by rules, adjustment line, strike only below the list price', () => {
+  const RULES = [{ pax: 5, pct: 5 }]
+  const price = (agreed: string, rules = RULES) => bookingView({ booking: { ...booking, agreed_price_total: agreed }, experience, rules, providerName: '', agencyName: '', now: new Date() }).price
+  it('equal to the rule price: discount 75.000, no adjustment, list price struck out', () => {
+    expect(price('1425000.00')).toMatchObject({ discount: 75000, adjustment: 0, total: 1425000, strike: true })
+  })
+  it('lower than the rule price: adjustment is negative, the discount line stays the rule discount', () => {
+    expect(price('1400000.00')).toMatchObject({ discount: 75000, adjustment: -25000, total: 1400000, strike: true })
+  })
+  it('higher than the rule price: adjustment is positive; struck out only while the final price is below the list price', () => {
+    expect(price('1450000.00')).toMatchObject({ discount: 75000, adjustment: 25000, strike: true })
+    expect(price('1500000.00')).toMatchObject({ adjustment: 75000, strike: false })
+    expect(price('1600000.00')).toMatchObject({ adjustment: 175000, strike: false })
+  })
+  it('without rules the adjustment is measured against the list price', () => {
+    expect(price('1400000.00', [])).toMatchObject({ discount: 0, discountPct: 0, adjustment: -100000, strike: true })
   })
 })

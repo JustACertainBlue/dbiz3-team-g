@@ -6,6 +6,8 @@ import { demoRepository } from '@/lib/db/application-store'
 import { canViewAgencyBooking } from '@/lib/booking/booking-access'
 import { getBookingDetail } from '@/lib/booking/booking-detail'
 import { bookingView } from '@/lib/booking/booking-view'
+import { adjustmentLine } from '@/lib/booking/display'
+import { rulesOf } from '@/lib/booking/group-price'
 import BookerForm from './BookerForm'
 import ExperienceCard from './ExperienceCard'
 import { resolveViewer } from '@/lib/explore/catalog'
@@ -37,7 +39,8 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
   // Same view model as screen 04 (image, workshop line, tags); null when the experience is no longer listed.
   const seed = await loadExploreRuntime()
   const card = detailView(seed, booking.experience_id, resolveViewer(seed, params.agencyId, true), { date: '', guests: null }, [], false)
-  const view = bookingView({ booking, experience, providerName: version?.business_name ?? '', agencyName: agency?.company_name ?? '', now: new Date() })
+  const rules = rulesOf(await repository.all('experience_discount_rules'), booking.experience_id)
+  const view = bookingView({ booking, experience, rules, providerName: version?.business_name ?? '', agencyName: agency?.company_name ?? '', now: new Date() })
   const history = (await repository.all('booking_status_history')).filter(row => row.booking_id === booking.booking_id).sort((a, b) => Date.parse(b.changed_at) - Date.parse(a.changed_at))
   const cancelled = history.find(row => row.to_status === 'Cancelled')
 
@@ -67,11 +70,10 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
         </div>
         <div className="v3a-card">
           <p className="v3a-ct">Tóm tắt giá</p>
-          {view.price.discount > 0 ? <>
-            <div className="v3a-sp"><span>Giá gốc</span><span>{vnd(view.price.listTotal)}</span></div><p className="v3a-cap">{vnd(view.price.perGuest)} × {view.price.guests} khách</p>
-            <div className="v3a-sp"><span>Giảm giá đoàn</span><span>− {vnd(view.price.discount)}</span></div><p className="v3a-cap">Đoàn được giảm {view.price.discountPct}%.</p>
-          </> : <p className="v3a-cap">{vnd(view.price.perGuest)} × {view.price.guests} khách</p>}
-          <div className="v3a-tot"><span>{view.status === 'On hold' ? 'Giá' : 'Giá đã thống nhất'}</span><span>{view.price.discount > 0 && <span className="v3a-old">{vnd(view.price.listTotal)}</span>}<b>{vnd(view.price.total)}</b></span></div>
+          <div className="v3a-sp"><span>Giá gốc</span><span>{vnd(view.price.listTotal)}</span></div><p className="v3a-cap">{vnd(view.price.perGuest)} × {view.price.guests} khách</p>
+          {view.price.discount > 0 && <><div className="v3a-sp"><span>Giảm giá đoàn</span><span>− {vnd(view.price.discount)}</span></div><p className="v3a-cap">Đoàn được giảm {view.price.discountPct}%.</p></>}
+          {view.price.adjustment !== 0 && <p className="v3a-sm" data-testid="adjustment">{adjustmentLine(view.price.adjustment)}</p>}
+          <div className="v3a-tot"><span>{view.status === 'On hold' ? 'Giá' : 'Giá đã thống nhất'}</span><span>{view.price.strike && <span className="v3a-old">{vnd(view.price.listTotal)}</span>}<b>{vnd(view.price.total)}</b></span></div>
         </div>
       </aside>
       {view.status === 'On hold'

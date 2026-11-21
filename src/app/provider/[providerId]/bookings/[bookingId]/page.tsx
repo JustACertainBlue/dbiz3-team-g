@@ -5,6 +5,8 @@ import AutoRefresh from '@/app/components/AutoRefresh'
 import { demoRepository } from '@/lib/db/application-store'
 import { bookingView } from '@/lib/booking/booking-view'
 import { PAID_MESSAGE } from '@/lib/booking/booker-info'
+import { adjustmentLine } from '@/lib/booking/display'
+import { rulesOf } from '@/lib/booking/group-price'
 import { hanoiClock, hanoiDate } from '@/lib/time/hanoi-time'
 import { bookingDetailStyles } from './BookingDetailView'
 import BookingActionsBar from './BookingActionsBar'
@@ -30,7 +32,8 @@ export default async function ProviderBookingDetailPage({ params }: { params: { 
   const experience = await repository.find('experiences', row => row.experience_id === booking.experience_id)
   const agency = await repository.find('agency_profiles', row => row.agency_id === booking.agency_id)
   const user = agency && await repository.find('user_accounts', row => row.user_id === agency.user_id)
-  const view = bookingView({ booking, experience, providerName: '', agencyName: agency?.company_name ?? '', now: new Date() })
+  const rules = rulesOf(await repository.all('experience_discount_rules'), booking.experience_id)
+  const view = bookingView({ booking, experience, rules, providerName: '', agencyName: agency?.company_name ?? '', now: new Date() })
   const history = (await repository.all('booking_status_history')).filter(row => row.booking_id === booking.booking_id).sort((a, b) => Date.parse(b.changed_at) - Date.parse(a.changed_at))
   const reportedPaid = (await repository.all('chat_messages')).some(row => row.booking_id === booking.booking_id && row.message_kind === 'Booking Update' && row.text.startsWith(PAID_MESSAGE))
   const names = new Map((await repository.all('user_accounts')).map(row => [row.user_id, row.full_name]))
@@ -67,7 +70,8 @@ export default async function ProviderBookingDetailPage({ params }: { params: { 
         <div className="v3a-sp"><span>Ngày giờ</span><b>{view.dateLong.split(', ')[1]} · {view.range.slice(0, 5)}</b></div>
         <div className="v3a-sp"><span>Số khách</span><b>{view.price.guests} khách</b></div>
         <div className="v3a-sp"><span>Tổng tiền</span><b>{vnd(view.price.total)}</b></div>
-        {view.price.discount > 0 && <p className="v3a-cap">{vnd(view.price.perGuest)} × {view.price.guests}, đã giảm {view.price.discountPct}% giá đoàn</p>}
+        <p className="v3a-cap">{vnd(view.price.perGuest)} × {view.price.guests}{view.price.discount > 0 ? `, giảm ${view.price.discountPct}% giá đoàn (− ${vnd(view.price.discount)})` : ''}{view.price.strike ? <> · giá gốc <s className="v3a-old">{vnd(view.price.listTotal)}</s></> : ''}</p>
+        {view.price.adjustment !== 0 && <p className="v3a-cap" data-testid="adjustment">{adjustmentLine(view.price.adjustment)}</p>}
         <div className="v3a-sp"><span>Người phụ trách đoàn</span><b>{view.contactName || 'Chưa có'}</b></div>
         <div className="v3a-sp"><span>Điện thoại công ty lữ hành</span><b>{view.contactPhone || 'Chưa có'}</b></div>
         <div className="v3a-sp"><span>Email</span><b>{user?.email ?? ''}</b></div>

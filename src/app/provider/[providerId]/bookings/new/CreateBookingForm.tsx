@@ -5,7 +5,8 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { useMemo, useState } from 'react'
-import { groupPrice, type DiscountRule } from '@/lib/booking/group-price'
+import { groupPrice, priceBreakdown, type DiscountRule } from '@/lib/booking/group-price'
+import { adjustmentLine } from '@/lib/booking/display'
 
 export interface ExperienceOption {
   experience_id: string; name: string; duration_minutes: number; max_participants: number; price_per_person: number
@@ -23,7 +24,7 @@ const addMinutes = (clock: string, minutes: number) => {
 
 export default function CreateBookingForm({ providerId, experiences, agencies, slots = [], initialAgencyId, requestMessageId, initial }: {
   providerId: string; experiences: ExperienceOption[]; agencies: AgencyOption[]; slots?: SlotOption[]; initialAgencyId?: string; requestMessageId?: string
-  initial?: { experienceId?: string; date?: string; time?: string; guests?: string }
+  initial?: { experienceId?: string; date?: string; time?: string; guests?: string; perGuest?: string }
 }) {
   const router = useRouter()
   const [experienceId, setExperienceId] = useState(experiences.find(e => e.experience_id === initial?.experienceId)?.experience_id ?? experiences[0]?.experience_id ?? '')
@@ -32,7 +33,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
   const [time, setTime] = useState(initial?.time ?? '')
   const [groupSize, setGroupSize] = useState(initial?.guests ?? '')
   const experience = useMemo(() => experiences.find(row => row.experience_id === experienceId), [experiences, experienceId])
-  const [perGuest, setPerGuest] = useState(String(experiences.find(e => e.experience_id === initial?.experienceId)?.price_per_person ?? experiences[0]?.price_per_person ?? ''))
+  const [perGuest, setPerGuest] = useState(initial?.perGuest ?? String(experiences.find(e => e.experience_id === initial?.experienceId)?.price_per_person ?? experiences[0]?.price_per_person ?? ''))
   const [conditions, setConditions] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,6 +43,8 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
   const guests = Number(groupSize)
   const each = Number(perGuest)
   const price = experience && guests > 0 && each > 0 ? groupPrice(each, guests, experience.rules ?? []) : null
+  // Display: the group discount follows the rules on the list price; the difference to the typed price is the adjustment.
+  const shown = experience && price ? priceBreakdown({ perGuest: experience.price_per_person, guests, agreedTotal: price.total, rules: experience.rules ?? [] }) : null
   const selectExperience = (id: string) => {
     setExperienceId(id); setTime('')
     const next = experiences.find(row => row.experience_id === id)
@@ -98,7 +101,12 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
           <input id="pp" type="number" min={1} step="any" value={perGuest} onChange={event => setPerGuest(event.target.value)} required />
           <p className="v3b-help">Mặc định theo giá niêm yết, sửa nếu đã thoả thuận khác trong tin nhắn.</p></div>
         <div className="v3b-f"><span className="v3b-lab">Tổng</span><p className="v3b-total">{price ? vnd(price.total) : '—'}</p>
-          {price && price.old !== null && <p className="v3b-help"><s className="v3b-old">{vnd(price.old)}</s> · đã giảm {price.pct}% giá đoàn</p>}</div>
+          {shown && <>
+            {shown.discount > 0 && <p className="v3b-help">{shown.strike ? <><s className="v3b-old">{vnd(shown.listTotal)}</s> · </> : ''}giảm {shown.discountPct}% giá đoàn (− {vnd(shown.discount)})</p>}
+            {shown.discount === 0 && shown.strike && <p className="v3b-help"><s className="v3b-old">{vnd(shown.listTotal)}</s></p>}
+            {shown.adjustment !== 0 && <p className="v3b-help">{adjustmentLine(shown.adjustment)}</p>}
+          </>}
+        </div>
       </div>
       <div className="v3b-f"><label htmlFor="cd">Điều kiện đã thống nhất <span className="v3b-opt">(không bắt buộc)</span></label>
         <textarea id="cd" rows={3} maxLength={1000} value={conditions} onChange={event => setConditions(event.target.value)} />

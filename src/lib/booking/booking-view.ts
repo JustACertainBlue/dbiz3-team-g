@@ -1,6 +1,7 @@
 import type { DemoRow } from '../demo/types'
 import { hanoiClock, hanoiDate } from '../time/hanoi-time'
 import { bookingCode, slotPeriod, slotRange } from './display'
+import { priceBreakdown, type DiscountRule, type PriceBreakdown } from './group-price'
 
 // View model of the booking screens 06/07 (Tour Agency) and 10/10c (Local Provider), mockup 19/11.
 // Client-safe: pure function of stored rows. Money is VND, dates are Asia/Ho_Chi_Minh.
@@ -11,20 +12,17 @@ const weekday = (date: string) => WEEKDAY[new Date(`${date}T00:00:00Z`).getUTCDa
 export interface BookingView {
   code: string; status: string; experienceName: string; providerName: string; agencyName: string; address: string
   dateLong: string; range: string; period: string; minutes: number
-  price: { perGuest: number; guests: number; listTotal: number; total: number; discount: number; discountPct: number }
+  price: PriceBreakdown
   holdUntil: string; holdLeft: string
   /** 1 Gửi yêu cầu, 2 Xưởng giữ chỗ, 3 Thanh toán, 4 Hoàn thành; value = the current step, 5 = all done, 0 = cancelled. */
   step: 0 | 3 | 4 | 5
   cancelLine: string; contactName: string; contactPhone: string; note: string
 }
 
-export function bookingView(input: { booking: DemoRow; experience: Partial<DemoRow> | undefined; providerName: string; agencyName: string; now: Date }): BookingView {
+export function bookingView(input: { booking: DemoRow; experience: Partial<DemoRow> | undefined; rules?: readonly DiscountRule[]; providerName: string; agencyName: string; now: Date }): BookingView {
   const { booking, experience } = input
   const guests = Number(booking.group_size)
   const perGuest = Number(experience?.price_per_person ?? 0)
-  const listTotal = perGuest * guests
-  const total = Number(booking.agreed_price_total)
-  const discount = listTotal > total ? listTotal - total : 0
   const day = hanoiDate(booking.start_at)
   let holdUntil = '', holdLeft = ''
   if (booking.status === 'On hold' && booking.hold_expires_at) {
@@ -44,7 +42,7 @@ export function bookingView(input: { booking: DemoRow; experience: Partial<DemoR
     code: bookingCode(booking.booking_id), status: booking.status,
     experienceName: experience?.name ?? '', providerName: input.providerName, agencyName: input.agencyName, address: experience?.experience_location_address ?? '',
     dateLong: `${weekday(day)}, ${dmy(day)}`, range: slotRange(booking.start_at, booking.end_at), period: slotPeriod(booking.start_at), minutes: Number(booking.duration_minutes),
-    price: { perGuest, guests, listTotal, total, discount, discountPct: discount ? Math.round(discount * 100 / listTotal) : 0 },
+    price: priceBreakdown({ perGuest, guests, agreedTotal: Number(booking.agreed_price_total), rules: input.rules ?? [] }),
     holdUntil, holdLeft,
     step: booking.status === 'On hold' ? 3 : booking.status === 'Booked' ? 4 : booking.status === 'Completed' ? 5 : 0,
     cancelLine, contactName: booking.contact_name ?? '', contactPhone: booking.contact_phone ?? '', note: booking.note ?? '',

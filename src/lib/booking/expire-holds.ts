@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { demoRepository } from '../db/application-store'
+import { HOLD_HOURS } from '../provider/hold-hours'
 import { bookingUpdateOperations } from './agency-sync'
 import { hanoiTimestamp } from './clock'
 import { withBookingWriteLock } from './write-lock'
 
-// Automatic 72-hour expiry (BR-004, #40, #45, #46, #50, AC-BKG-EXPIRY).
+// Automatic expiry after HOLD_HOURS (72 h, one constant in lib/provider/hold-hours.ts) (BR-004, #40, #45, #46, #50, AC-BKG-EXPIRY).
 export const EXPIRY_REASON = 'Hết hạn giữ chỗ'
 const TIMER_MS = 60_000
 
@@ -43,7 +44,7 @@ declare global {
 // One timer per dev-server process (#50); never under tests (analyze M1).
 export function startExpiryTimer(): void {
   if (process.env.NODE_ENV === 'test' || globalThis.__habBookingExpiryTimer) return
-  console.info(`[hab] hold-expiry scanner started (every ${TIMER_MS / 1000} s)`)
+  console.info(`[hab] hold-expiry scanner started (hold ${HOLD_HOURS} h, every ${TIMER_MS / 1000} s)`)
   globalThis.__habBookingExpiryTimer = setInterval(async () => {
     ;(await expireDueHolds(new Date()).catch(() => undefined))
   }, TIMER_MS)

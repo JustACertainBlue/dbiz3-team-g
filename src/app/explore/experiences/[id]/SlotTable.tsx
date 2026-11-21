@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Check, Info, Lock, Users } from 'lucide-react'
 import type { SlotRow } from '@/lib/explore/v3-detail'
 import type { PriceView } from '@/lib/explore/v3-search'
+import { HOLD_HOURS } from '@/lib/provider/hold-hours'
 import RequestButton from '../../v3/RequestButton'
 
 const vnd = (value: number) => `${value.toLocaleString('vi-VN')} ₫`
@@ -45,9 +46,9 @@ export default function SlotTable({ experienceId, date, name, slots, guests, max
           : <Link className="hab-btn hab-btn--primary" href="/login">Đăng nhập để đặt chỗ</Link>}
         {selected && <p className="v3d-chosen">Đã chọn: <b>{selected.label}, {selected.time}</b></p>}
         {isAgency
-          ? <ul className="v3d-perks"><li><Check aria-hidden="true" />Chỉ mất khoảng 1 phút</li><li><Check aria-hidden="true" />Gửi yêu cầu chưa mất phí</li><li><Check aria-hidden="true" />Xưởng nhận lời thì giữ chỗ 72 giờ</li></ul>
+          ? <ul className="v3d-perks"><li><Check aria-hidden="true" />Chỉ mất khoảng 1 phút</li><li><Check aria-hidden="true" />Gửi yêu cầu chưa mất phí</li><li><Check aria-hidden="true" />Xưởng nhận lời thì giữ chỗ {HOLD_HOURS} giờ</li></ul>
           : <><p className="v3d-chosen">Đặt chỗ dành cho tài khoản công ty lữ hành</p>
-              <ul className="v3d-perks"><li><Check aria-hidden="true" />Gửi yêu cầu chưa mất phí</li><li><Check aria-hidden="true" />Xưởng nhận lời thì giữ chỗ 72 giờ</li></ul>
+              <ul className="v3d-perks"><li><Check aria-hidden="true" />Gửi yêu cầu chưa mất phí</li><li><Check aria-hidden="true" />Xưởng nhận lời thì giữ chỗ {HOLD_HOURS} giờ</li></ul>
               <p className="v3-cap">Chưa có tài khoản? <Link href="/register" className="v3-link">Đăng ký tài khoản công ty lữ hành</Link></p></>}
       </div>
     </div>}

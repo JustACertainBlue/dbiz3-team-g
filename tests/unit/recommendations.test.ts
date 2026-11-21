@@ -91,9 +91,9 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
   it('no craft preference → no craft named; capacity, group and estimated distance are stated', async () => {
     const text = await explain(profileWith())
     expect(text).not.toMatch(/silk|lụa|pottery|weaving/i)
-    expect(text).toMatch(/up to 13/)
-    expect(text).toMatch(/group of 10/)
-    expect(text).toMatch(/estimated/i)
+    expect(text).toMatch(/tối đa 13 khách/)
+    expect(text).toMatch(/đoàn 10 khách/)
+    expect(text).toMatch(/ước tính/)
     expect(text).toMatch(/Hoàn Kiếm/)
   })
 
@@ -103,9 +103,9 @@ describe('T039 | Explanation from evaluated factors (FR-008, BR-007, #25)', () =
 
   it('budget given → price against budget is stated', async () => {
     const text = await explain(profileWith({ max_budget_per_person: 200000 }))
-    expect(text).toMatch(/175,000/)
-    expect(text).toMatch(/200,000/)
-    expect(text).toMatch(/budget/i)
+    expect(text).toMatch(/175\.000/)
+    expect(text).toMatch(/200\.000/)
+    expect(text).toMatch(/ngân sách/)
   })
 })
 

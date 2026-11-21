@@ -211,8 +211,8 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
     expect(result.matching!.top_matches.length).toBeGreaterThan(0)
     for (const match of result.matching!.top_matches) {
       expect(match.explanation).not.toMatch(/silk|pottery|ceramic|embroider|conical|bamboo|lụa|gốm/i)
-      expect(match.explanation).toMatch(/group of 10/)
-      expect(match.explanation).toMatch(/estimated/i)
+      expect(match.explanation).toMatch(/đoàn 10 khách/)
+      expect(match.explanation).toMatch(/ước tính/)
     }
   })
 

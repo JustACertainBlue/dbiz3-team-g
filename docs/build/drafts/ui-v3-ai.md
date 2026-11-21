@@ -48,3 +48,11 @@
   mockup folder is on the machine), no English left, no "Yêu cầu báo giá".
 - Accepted differences: no history/search in the left rail; quick prompts instead of follow-up chips in the chat state; chat title h1 stays "Ghép tour AI".
 - Chips "buổi sáng", "Có sản phẩm mang về", "Tiếng Việt" of the mockup are not produced (the AI does not extract them).
+
+## Round 5: explain() ("Vì sao hợp") in Vietnamese
+- `explanation` from `explain()` is shown on the card as "Vì sao hợp:", so it was translated; prices use `viNumber` (vi-VN, `₫/khách`); the unused en-US `vnd` was removed.
+- The craft label inside the sentence (`craftLabel`, e.g. "silk weaving", `src/lib/matching/craft-taxonomy.ts`) and the experience categories are still English (shared taxonomy values, not templates).
+- Test wording lines changed:
+  - tests/unit/recommendations.test.ts: `up to 13` → `tối đa 13 khách`; `group of 10` → `đoàn 10 khách`; `estimated` → `ước tính`; `175,000` → `175\.000`; `200,000` → `200\.000`; `budget` → `ngân sách`.
+  - tests/integration/ait-matching-api.test.ts (T039): `group of 10` → `đoàn 10 khách`; `estimated` → `ước tính`.
+  - Unchanged and still passing: `silk weaving` (multi-turn-api.test.ts:54) and `/silk/i` (recommendations.test.ts), because the craft label stays English.

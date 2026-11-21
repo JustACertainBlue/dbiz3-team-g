@@ -74,3 +74,7 @@ a.pv3-stat:hover { border-color: var(--c-primary); }
 .pv3-hours dl { margin: 12px 0 0; display: grid; gap: 14px; } .pv3-hours dl div { display: flex; justify-content: space-between; gap: 12px; font: 400 16px/24px var(--font-body); } .pv3-hours dd { margin: 0; font-weight: 700; text-align: right; }
 @media (max-width: 899px) { .pv3-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pv3-dash { grid-template-columns: 1fr; } .pv3-dash .pv3-cal__main, .pv3-dash .pv3-cal__panel, .pv3-dash .pv3-hours { grid-column: 1; grid-row: auto; } }
 @media (max-width: 599px) { .pv3-stats { grid-template-columns: 1fr; } .pv3-stat__v { font-size: 28px; } }
+
+/* Screen 33 title bar */
+.pv3-pill-on { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; background: var(--c-surface-green); color: var(--c-primary-dark); font: 700 16px/24px var(--font-body); }
+.pv3-iconbtn--ring { box-shadow: inset 0 0 0 1.5px var(--c-primary); }

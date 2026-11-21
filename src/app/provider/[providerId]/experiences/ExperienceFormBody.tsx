@@ -9,6 +9,7 @@ import { ExperienceCancellationField, ExperienceDiscountsField } from './Experie
 import ExperienceLocationField from './ExperienceLocationField'
 import ExperienceImagesField, { type ExperienceImageItem } from './ExperienceImagesField'
 import { HighlightsCard, SuitableCard, InclusionsCard, ChildPolicyField, SlotsReadOnly, type SlotLine } from './ExperienceContentFields'
+import { PROVIDER_HOLD_HOURS } from '@/lib/provider/hold-hours'
 import type { ContentForm } from '@/lib/prf/experience-content-form'
 import type { CancellationPolicy, DiscountRule } from '@/lib/prf/experience-terms'
 
@@ -22,6 +23,8 @@ interface Props {
   content: ContentForm; setContent: (next: ContentForm) => void; slots: SlotLine[]
   policy: CancellationPolicy; group: DiscountRule[]; special: DiscountRule[]
   onPolicy: (v: CancellationPolicy) => void; onGroup: (v: DiscountRule[]) => void; onSpecial: (v: DiscountRule[]) => void
+  /** Read only "Gốm sứ · Làng Bát Tràng" (GET /api/prf/provider/:id/craft-line). */
+  craftLine?: string
   aiRefining: boolean; aiDraft: string | null; onAiRefine: () => void; onApplyDraft: () => void; onDismissDraft: () => void
 }
 
@@ -38,15 +41,18 @@ export default function ExperienceFormBody(p: Props) {
         <div className="prf-field-group"><label className="prf-label" htmlFor="experience-field-1">Tên trải nghiệm *</label>
           <input id="experience-field-1" type="text" required value={formData.name} onChange={e => set('name', e.target.value)} className="prf-input" />
           <span className="prf-field-helper">Ngắn gọn, bắt đầu bằng việc khách sẽ làm.</span></div>
-        <div className="prf-field-group"><label className="prf-label" htmlFor="experience-field-2">Loại hoạt động *</label>
-          <select id="experience-field-2" value={formData.category} onChange={e => set('category', e.target.value)} className="prf-select">
-            <option value="Workshop/Hands-on">Tự tay làm</option>
-            <option value="Sightseeing">Tham quan làng nghề / Lò nung cổ</option>
-            <option value="Culinary/Tasting">Ẩm thực làng nghề & Trà đạo</option>
-            <option value="Cultural Show">Xem biểu diễn</option>
-            <option value="Combo">Combo Trọn gói Trải nghiệm</option>
-          </select></div>
+        <div className="prf-field-group"><label className="prf-label" htmlFor="experience-craft">Nghề và làng nghề</label>
+          <input id="experience-craft" type="text" disabled readOnly value={p.craftLine ?? ''} className="prf-input prf-input-locked" />
+          <span className="prf-field-helper">Lấy theo hồ sơ xưởng, không đổi được ở đây.</span></div>
       </div>
+      <div className="prf-field-group"><label className="prf-label" htmlFor="experience-field-2">Loại hoạt động *</label>
+        <select id="experience-field-2" value={formData.category} onChange={e => set('category', e.target.value)} className="prf-select">
+          <option value="Workshop/Hands-on">Tự tay làm</option>
+          <option value="Sightseeing">Tham quan làng nghề / Lò nung cổ</option>
+          <option value="Culinary/Tasting">Ẩm thực làng nghề & Trà đạo</option>
+          <option value="Cultural Show">Xem biểu diễn</option>
+          <option value="Combo">Combo Trọn gói Trải nghiệm</option>
+        </select></div>
       <ExperienceLocationField value={formData.experience_location_address} locked={locked} onChange={value => set('experience_location_address', value)} />
     </div>
 
@@ -92,11 +98,18 @@ export default function ExperienceFormBody(p: Props) {
 
     <div className="prf-section-card">
       <Heading title="Chính sách của xưởng" />
-      <div className="prf-field-group"><label className="prf-label" htmlFor="experience-field-6">Đặt trước ít nhất (giờ) *</label>
-        <input id="experience-field-6" type="number" required min={0} value={formData.notice_period_hours} onChange={e => set('notice_period_hours', Number(e.target.value))} className="prf-input" />
-        <span className="prf-field-helper">Thời gian tối thiểu công ty lữ hành phải chốt đoàn để xưởng chuẩn bị.</span></div>
+      <div className="pv3-grid2">
+        <div className="prf-field-group"><label className="prf-label" htmlFor="experience-field-6">Đặt trước ít nhất (giờ) *</label>
+          <input id="experience-field-6" type="number" required min={0} value={formData.notice_period_hours} onChange={e => set('notice_period_hours', Number(e.target.value))} className="prf-input" />
+          <span className="prf-field-helper">Thời gian tối thiểu công ty lữ hành phải chốt đoàn để xưởng chuẩn bị.</span></div>
+        <div className="prf-field-group"><label className="prf-label" htmlFor="experience-hold">Giữ chỗ chờ thanh toán (giờ)</label>
+          <input id="experience-hold" type="text" disabled readOnly value={String(PROVIDER_HOLD_HOURS)} className="prf-input prf-input-locked" />
+          <span className="prf-field-helper">Hệ thống áp dụng chung cho mọi xưởng.</span></div>
+      </div>
       <ExperienceCancellationField policy={p.policy} onPolicy={p.onPolicy} />
       <ChildPolicyField value={p.content} onChange={p.setContent} />
+      <div className="prf-field-group"><label className="prf-label" htmlFor="experience-payment">Hình thức thanh toán</label>
+        <input id="experience-payment" type="text" disabled readOnly value="Thanh toán QR · tài khoản của xưởng" className="prf-input prf-input-locked" /></div>
     </div>
   </div>
 }

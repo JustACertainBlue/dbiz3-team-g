@@ -89,6 +89,8 @@
   "required": [
    "Thông tin chung",
    "Tên trải nghiệm",
+   "Nghề và làng nghề",
+   "Lấy theo hồ sơ xưởng, không đổi được ở đây.",
    "Loại hoạt động",
    "Địa điểm tổ chức",
    "Ảnh trải nghiệm",
@@ -116,7 +118,10 @@
    "Lưu ý cho đoàn",
    "An toàn",
    "Chính sách của xưởng",
-   "Đặt trước ít nhất"
+   "Đặt trước ít nhất",
+   "Giữ chỗ chờ thanh toán",
+   "Hệ thống áp dụng chung cho mọi xưởng.",
+   "Hình thức thanh toán"
   ],
   "optional": []
  }

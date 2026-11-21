@@ -89,6 +89,16 @@ describe('provider screens follow the mockup blocks, order and words', () => {
     expectBlocks(formMarkup(), '32-FormTraiNghiem')
   })
 
+  it('32 read-only facts: craft and village, 72 h hold (constant), payment method; all disabled, none is sent on save', () => {
+    const markup = formMarkup()
+    for (const value of ['Gốm sứ · Làng Bát Tràng', '72', 'Thanh toán QR · tài khoản của xưởng']) {
+      const input = markup.match(new RegExp(`<input[^>]*value="${value}"[^>]*>`))?.[0]
+      expect(input, value).toBeTruthy()
+      expect(input).toMatch(/disabled=""/)
+      expect(input).not.toMatch(/\sname=/)
+    }
+  })
+
   it('32 group and special discounts sit in "Giá & ca" (before the slots), the cancellation rules stay in "Chính sách của xưởng"', () => {
     const text = visible(formMarkup())
     const at = (item: string, from = 0) => { const found = text.indexOf(item, from); expect(found, item).toBeGreaterThanOrEqual(0); return found }

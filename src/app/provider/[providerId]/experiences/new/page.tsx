@@ -21,6 +21,8 @@ export default function AddExperiencePage({
   params: { providerId: string }
 }) {
   const [content, setContent] = useState(emptyContentForm())
+  const [craftLine, setCraftLine] = useState('')
+  useEffect(() => { fetch(`/api/prf/provider/${params.providerId}/craft-line`).then(r => r.ok ? r.json() : null).then(d => setCraftLine(d?.craft_line ?? '')).catch(() => {}) }, [params.providerId])
   const [slots, setSlots] = useState<SlotLine[]>([])
   const [policy, setPolicy] = useState<CancellationPolicy>({ rules: [] })
   const [group, setGroup] = useState<DiscountRule[]>([])
@@ -208,7 +210,7 @@ export default function AddExperiencePage({
       )}
 
       <form onSubmit={handleSubmit}>
-        <ExperienceFormBody formData={formData} setFormData={setFormData} hasActiveBookings={false} images={images} setImages={setImages} setUploading={setUploading}
+        <ExperienceFormBody craftLine={craftLine} formData={formData} setFormData={setFormData} hasActiveBookings={false} images={images} setImages={setImages} setUploading={setUploading}
           content={content} setContent={setContent} slots={slots} policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}
           aiRefining={aiRefining} aiDraft={aiDraft} onAiRefine={handleAiRefine} onApplyDraft={handleApplyAiDraft} onDismissDraft={() => setAiDraft(null)} />
 

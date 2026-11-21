@@ -143,3 +143,54 @@ Mobile layout already in the code is left as it is. Nothing new for phones, no 3
 ### Not done / limits
 - Real-data look of 19, 28, 28 edit and the forced password page: not done (needs the sign-in; to be taken with the common script). 28 edit and the panels were only rendered in tests, and the password panel was opened in the browser as a guest.
 - Edit page keeps its old tour-type list (6 values) which differs from the registration enum; not changed (API/validation).
+
+## Round 6
+
+### Red tests of the first full run
+The names of the 5 files were not kept (the output was cut to the last lines), so they cannot be listed. Instead the whole suite was run 3 times in a row with 2 threads (`--poolOptions.threads.minThreads=1 --poolOptions.threads.maxThreads=2`; `--maxWorkers=2` alone fails in this config with "minThreads and maxThreads must not conflict"): run 1, 2, 3 = 1823 tests, 0 failed each. Earlier, the full run after the first red one was also green (1795 pass). Verdict: **"đỏ do tải"** (the first run took 1555 s while the dev server and a build were running; the failures were not reproduced). No code was changed for it.
+
+### Tour types and company types: one list
+- Source of truth: `TOUR_TYPES` and `COMPANY_TYPES`, now exported from `src/lib/auth/registration-validation.ts` (the registration schema, the only place that restricts the values). The PRF edit API (`validators.ts`) takes any strings and the database has no CHECK on tour types; `agency_company_type_chk` allows Travel Agency, Tour Operator, TMC.
+- Register page and `CompanyEditView` both use them. The edit page used a different list of 6 values, and offered "DMC", which the database CHECK would refuse; both are gone. A value already stored that is not in the list (old edits) stays visible and checked, so saving does not silently drop it.
+- Test first: `tests/unit/v3-tour-types.test.ts` (red: constants not exported; then green): every registrable value passes the registration schema, shows on the edit page with its Vietnamese label, saves through `PATCH /api/prf/agency/[id]` and reads back; no value outside the list is offered; no DMC.
+- Needs a shared file: no.
+
+### /account/change-password
+Already a server component calling `redirect('/account?tab=password')` (Round 5, test in `v3-account-panels.test.ts`). The temporary-password flow tests are unchanged and green.
+
+### Summary for merging
+
+**Commits** (oldest first, on `ui/v3-account`, base `f45a637`):
+```
+02294436 shared styles, helpers, popups, tests
+df32ed56 15 sign-in            05d50dce 16 forgot/reset password     b3b0bdb0 17 registration
+5902b8b7 17a supplement        30fa8619 18, 18a OTP and status popup 58be1e35 19, 19a account
+1f3ed3d9 28 company profile    26583522 draft                        08470e07 login registration status popups + remember me
+d7757086 remove registration.css   c679e06f draft round 2             f2f2b033 forms method=post, locked until hydrated
+c09e8477 department contact constant + tests   4884681d script + draft round 3   09bb1798 script says why sign-in failed
+935943e0 mockup-text tests, plain views        78961460 /account panels, PRF021 edit view, /login without demo block
+a093980c one tour-type / company-type list
+```
+(plus the commit of this draft section)
+
+**Files changed outside the folders of the screens** (auth API and libraries, tests, config):
+- `src/app/api/auth/login/route.ts`: `remember` flag (30-day cookie, session cookie otherwise); `registration_status` in the refusal of a right password on a waiting/rejected Agency.
+- `src/lib/auth/product-session.ts`: `PRODUCT_SESSION_REMEMBER_TTL_SECONDS` and a TTL parameter (about 12 lines).
+- `src/lib/auth/registration-status.ts`: new, `registrationStatusForLogin()`.
+- `src/lib/auth/account-service.ts`: `ownAccount()` also returns `account_status` and `created_at` (read only).
+- `src/lib/auth/registration-validation.ts`: `TOUR_TYPES` and `COMPANY_TYPES` are now exported (only `export` added).
+- `.gitignore` (+`.local-shots/`), `public/auth/login-hero.webp` (copy of the mockup photo), `scripts/local/*` (screenshot script, text extractor).
+- No migration, no change in `docs/spec`, `data/`, `components/header|nav|ui|footer`, tokens, shell.css, layout, fonts.
+
+**Old test rewritten:** `tests/unit/login-demo-panel.test.ts` (issue #102). It required the "Tài khoản thử nghiệm" block, the four sample emails and the "any password" sentence on `/login` in development. By human instruction (Round 5) the block is gone in every environment, so the test now asserts there is none (development, production, test) and keeps the check that production refuses the prototype login on the server. No other existing test was edited; `aut-self-registration-agency-only` was kept (copy and `label=` adjusted instead).
+
+**Deleted:** `src/app/register/registration.css`.
+**Kept although unused:** `src/app/components/AuthShell.tsx` and `src/app/auth-v9.css`, because `tests/unit/guest-landing.test.ts` still imports AuthShell (delete them together with that test case).
+
+**Still waiting:**
+- Real contact of the Department of Tourism (email, phone, hours) for `auth-v3/department-contact.ts` (empty now: contact block and button hidden).
+- Terms and privacy pages (the two names in the registration box are plain text, agreement not stored).
+- Photographs of the screens that need a sign-in (19, 28, 28 edit, 17a, forced password page, header 20/20a): to be taken with the common script; `scripts/local/account-screens.ts` is ready.
+- Real-data check of the temporary-password forced page in a browser.
+- Screen 19a has no way in (a waiting account cannot sign in): "màn không dùng trong MVP".
+- Shared items for the shared-files session: standard guest header on `/register` (the mockup 17 simple top bar), screens 20/20a in `AppHeader`.

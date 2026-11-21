@@ -49,27 +49,29 @@ describe('#242 | /admin guest redirect', () => {
     expect(adminGuestRedirect({ authenticated: true, role: 'Tour_Agency' } as never)).toBeNull()
   })
 
-  it('the page redirects from an effect, never during render', () => {
+  // v3 screen 38 is a Server Component: the redirect is the server `redirect()` call before any render output.
+  it('the v3 page redirects on the server, never with window.location during render', () => {
     const page = readFileSync('src/app/admin/page.tsx', 'utf8')
     expect(page).not.toContain('window.location.replace')
-    expect(page).toMatch(/const target = adminGuestRedirect\(session\)\s*\n\s*if \(target\) \{ router\.replace\(target\); return \}/)
+    expect(page).toMatch(/const guest = adminGuestRedirect\(session\)\s*\n\s*if \(guest\) redirect\(guest\)/)
   })
 })
 
-describe('#242 | detail as a modal dialog', () => {
-  for (const [file, label] of [['src/app/admin/users/page.tsx', 'Chi tiết tài khoản'], ['src/app/admin/agencies/page.tsx', 'Chi tiết hồ sơ']] as const) {
-    it(`${file}: the detail is a role="dialog" aria-modal overlay that Escape and the backdrop close`, () => {
-      const page = readFileSync(file, 'utf8')
-      expect(page).toContain(`<div className="overlay" role="dialog" aria-modal="true" aria-label="${label}"`)
-      expect(page).toMatch(/onClick=\{e => \{ if \(e\.target === e\.currentTarget/)
-      expect(page).toMatch(/event\.key === 'Escape'/)
-    })
-  }
+// v3 (png/40, png/41, png/41a): account info and the profile review are their own pages, not modal dialogs; the list
+// asks for confirmation before switching an account (Modal from components/ui: role="dialog", aria-modal, Escape closes).
+describe('#242 | v3 detail pages and confirmation dialog', () => {
+  it('the account list confirms the switch in the shared Modal', () => {
+    const page = readFileSync('src/app/admin/users/page.tsx', 'utf8')
+    expect(page).toContain('<Modal open={target !== null}')
+    const modal = readFileSync('src/app/components/ui/Modal.tsx', 'utf8')
+    expect(modal).toContain('role="dialog" aria-modal="true"')
+    expect(modal).toMatch(/event\.key === 'Escape'/)
+  })
 
-  it('the Agency review list is a table of all records and has no unused STATUS_LABEL map', () => {
-    const page = readFileSync('src/app/admin/agencies/page.tsx', 'utf8')
-    expect(page).toContain('<table className="review-table">')
-    expect(page).not.toContain('Hiển thị cả hồ sơ đã xử lý')
+  it('the review list is a table of all records (pending and processed tabs) with no STATUS_LABEL map', () => {
+    const page = readFileSync('src/app/admin/_v3/ReviewList.tsx', 'utf8')
+    expect(page).toContain('<table className="av3-table av3-table--review av3-table--stack">')
+    expect(page).toContain('Đã xử lý (')
     expect(page).not.toContain('STATUS_LABEL')
   })
 })

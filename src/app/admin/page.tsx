@@ -1,221 +1,97 @@
-'use client'
+// ADM079 Tổng quan quản trị, mockup v3 screen 38 (png/38). Server component: the signed-in admin decides the scope
+// (HDT whole city, UBND one village); the page never accepts a village from the URL.
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { currentServerSession } from '@/lib/auth/server-session'
+import { adminGuestRedirect } from './admin-page-access'
+import { adminScope, loadOverview, loadReviewQueue, resolveRange, hanoiToday } from '@/lib/adm/v3-loaders'
+import { STATUS_ORDER, type OverviewStatus } from '@/lib/adm/v3-overview'
+import { Button, Container, StatusPill } from '@/app/components/ui'
+import DateRange from './_v3/DateRange'
+import './_v3/admin-v3.css'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  DashboardFilterParams,
-  DashboardMetricsResponse,
-  VillagesResponse,
-  CollaborationSortBy,
-} from '@/lib/adm/types'
-import { getAuthHeaders } from '@/lib/prf/client-session'
-import type { AdminType, AuthRole } from '@/lib/auth/session'
-import { startAdminRoleSync } from './admin-role-sync'
-import { adminGuestRedirect, adminPageAccess } from './admin-page-access'
-import { useRouter } from 'next/navigation'
-import { nextVillageFilter } from './village-filter-state'
-import { FilterPanel } from '@/app/components/admin/FilterPanel'
-import { MetricCards } from '@/app/components/admin/MetricCards'
-import { PendingVerificationPanel } from '@/app/components/admin/PendingVerificationPanel'
-import { BookingStatusDonut } from '@/app/components/admin/BookingStatusDonut'
-import { ChartsSection } from '@/app/components/admin/ChartsSection'
-import { BookingTable } from '@/app/components/admin/BookingTable'
-import { TopPairsList } from '@/app/components/admin/TopPairsList'
-import { dashboardTitle } from '@/lib/adm/dashboard-view'
-import { filtersChanged } from './filter-draft'
-import './dashboard-v9.css'
+export const dynamic = 'force-dynamic'
 
-export default function AdminDashboardPage() {
-  const router = useRouter()
-  const [role, setRole] = useState<AuthRole | null>(null)
-  const [adminType, setAdminType] = useState<AdminType | null>(null)
-  const [displayName, setDisplayName] = useState('')
-  const [access, setAccess] = useState<'allow' | 'restricted' | null>(null)
-  const villageLockedRef = useRef(false)
-  const [mounted, setMounted] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [modalNotice, setModalNotice] = useState<string | null>(null)
+const COLORS: Record<OverviewStatus, string> = { Completed: '#165235', Booked: '#86C49A', 'On hold': '#E0928A', Cancelled: '#C9C4B5' }
+const NAMES: Record<OverviewStatus, string> = { Completed: 'Hoàn thành tour', Booked: 'Đã thanh toán', 'On hold': 'Chờ thanh toán', Cancelled: 'Đã huỷ' }
+const vi = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`
+const vnd = (n: number) => `${n.toLocaleString('vi-VN')} đ`
+const monthsBetween = (from: string, to: string) => (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5, 7)) - Number(from.slice(5, 7)) + 1
 
-  const [villagesData, setVillagesData] = useState<VillagesResponse>({
-    isLocked: false,
-    assignedVillageId: null,
-    villages: [],
-  })
+export default async function AdminOverviewPage({ searchParams }: { searchParams: { from?: string; to?: string } }) {
+  const session = await currentServerSession()
+  const guest = adminGuestRedirect(session)
+  if (guest) redirect(guest)
+  const scope = adminScope(session)
+  if (!scope) return <Container as="main" className="av3"><h1>Tổng quan</h1><p className="av3-lead">Đăng nhập bằng tài khoản Sở Du lịch hoặc UBND xã để xem trang này.</p><p><Link href="/login">Đăng nhập</Link></p></Container>
 
-  const [dashboardData, setDashboardData] = useState<DashboardMetricsResponse | null>(null)
+  const today = hanoiToday()
+  const { from, to } = resolveRange(today, searchParams.from, searchParams.to)
+  const [o, queue] = await Promise.all([loadOverview(session, from, to), loadReviewQueue(session)])
+  const pending = queue.rows.filter(r => !r.processed).slice(0, 3)
+  const reviewHref = scope.adminType === 'UBND' ? '/admin/providers' : '/admin/agencies'
+  const peak = Math.max(1, ...o.monthly.map(m => m.total))
+  const fn = [['Cuộc trò chuyện mới', o.funnel.chats, '#165235'], ['Có đặt chỗ', o.funnel.withBooking, '#3A6B52'], ['Đã thanh toán', o.funnel.paid, '#5A8570'], ['Hoàn thành tour', o.funnel.completed, '#7B9A8B']] as const
+  const fnMax = Math.max(1, o.funnel.chats)
 
-  const [filters, setFilters] = useState<DashboardFilterParams>({
-    preset: 'Last 30 days',
-    villageId: null,
-    agencyId: null,
-    providerId: null,
-    sortBy: 'Frequency',
-  })
-  // ADM079 #17: the filter controls edit a draft; Apply filters copies it to the applied filters.
-  const [draft, setDraft] = useState<DashboardFilterParams>({
-    preset: 'Last 30 days',
-    villageId: null,
-    agencyId: null,
-    providerId: null,
-    sortBy: 'Frequency',
-  })
+  return <Container as="main" className="av3">
+    <div className="av3-head"><h1>Tổng quan</h1><Button href="/admin/users" variant="secondary" size="sm">Quản lý tài khoản</Button></div>
 
-  // The actor comes from the server-side demo session (A2); non-admins see the restricted state (L3).
-  // #242: a signed-out visitor is sent to Login from this effect (never during render); access stays null meanwhile.
-  useEffect(() => {
-    setMounted(true)
-    return startAdminRoleSync(session => {
-      const target = adminGuestRedirect(session)
-      if (target) { router.replace(target); return }
-      setRole(session.role)
-      setAdminType(session.adminType)
-      setDisplayName(`${session.adminType ?? ''} Admin`.trim())
-      setAccess(adminPageAccess(session))
-    })
-  }, [router])
+    <div className="av3-kpis">
+      <section className="av3-card av3-kpi" aria-label="Công ty lữ hành"><span className="av3-kpi__name">Công ty lữ hành</span><span className="av3-kpi__value">{o.cards.agencies.total}</span><span className="av3-kpi__sub">{o.cards.agencies.pending} hồ sơ đang chờ duyệt</span></section>
+      <section className="av3-card av3-kpi" aria-label="Xưởng nghề"><span className="av3-kpi__name">Xưởng nghề</span><span className="av3-kpi__value">{o.cards.providers.total}</span><span className="av3-kpi__sub">{o.cards.providers.active} đang hoạt động · {o.cards.providers.pending} chờ UBND xã duyệt</span></section>
+      <section className="av3-card av3-kpi" aria-label={`Đặt chỗ tháng ${o.cards.monthNumber}`}><span className="av3-kpi__name">Đặt chỗ tháng {o.cards.monthNumber}</span><span className="av3-kpi__value">{o.cards.bookingsThisMonth}</span><span className="av3-kpi__sub">trong phạm vi bạn quản lý</span></section>
+    </div>
 
-  // Load villages configuration
-  const loadVillages = useCallback(async () => {
-    try {
-      const res = await fetch('/api/adm/villages', {
-        headers: getAuthHeaders(),
-      })
-      if (res.ok) {
-        const data: VillagesResponse = await res.json()
-        setVillagesData(data)
-        // A7: UBND → assigned village; HDT after a locked village → All Villages; HDT's own choice is kept
-        const prevLocked = villageLockedRef.current
-        villageLockedRef.current = data.isLocked
-        const lockVillage = (prev: DashboardFilterParams) => ({ ...prev, villageId: nextVillageFilter({ villageId: prev.villageId ?? null, locked: prevLocked }, data).villageId })
-        setFilters(lockVillage)
-        setDraft(lockVillage)
-      } else {
-        const err = await res.json().catch(() => ({}))
-        setError(err.error || `Failed to load villages: HTTP ${res.status}`)
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Error connecting to village service')
-    }
-  }, [])
+    <div className="av3-head av3-sect">
+      <div><h2>Hợp tác Xưởng nghề &amp; Công ty lữ hành</h2><p className="av3-lead" style={{ marginTop: 4 }}>Từ {vi(from)} đến {vi(to)} · {monthsBetween(from, to)} tháng</p></div>
+      <DateRange from={from} to={to} />
+    </div>
 
-  // Fetch dashboard data whenever filters or role changes
-  const loadDashboard = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    <div className="av3-row2 av3-row2--wide">
+      <section className="av3-card" aria-labelledby="av3-chart"><h3 id="av3-chart">Đặt chỗ theo tháng</h3>
+        <div className="av3-legend">{STATUS_ORDER.map(s => <span key={s}><i className="av3-sw" style={{ background: COLORS[s] }} />{NAMES[s]}</span>)}</div>
+        {o.monthly.every(m => m.total === 0) ? <p className="av3-empty">Chưa có đặt chỗ trong khoảng thời gian này.</p> : <>
+          <div className="av3-cols" role="img" aria-label={`Đặt chỗ theo tháng: ${o.monthly.map(m => `${m.label} ${m.total}`).join(', ')}`}>{o.monthly.map(m => <div className="av3-col" key={m.key}>
+            <span className="av3-col__tot">{m.total}</span>
+            <div className="av3-stack-bar" style={{ height: `${(m.total / peak) * 78}%` }}>{STATUS_ORDER.filter(s => m.counts[s] > 0).map(s => <i key={s} style={{ background: COLORS[s], height: `${(m.counts[s] / Math.max(1, m.total)) * 100}%`, flex: m.counts[s] }} />)}</div>
+          </div>)}</div>
+          <div className="av3-xl" aria-hidden="true">{o.monthly.map(m => <span key={m.key}>{m.label}</span>)}</div></>}
+      </section>
+      <section className="av3-card" aria-labelledby="av3-funnel"><h3 id="av3-funnel">Từ trò chuyện đến hoàn thành tour</h3>
+        <p className="av3-cap" style={{ marginTop: 8 }}>Tính theo cuộc trò chuyện mới giữa công ty lữ hành và xưởng.</p>
+        <div style={{ marginTop: 12 }}>{fn.map(([label, n, color]) => <div className="av3-fn" key={label}><span>{label}</span><span className="av3-fn__track"><i className="av3-fn__fill" style={{ width: `${(n / fnMax) * 100}%`, background: color }} /></span><b>{n}</b></div>)}</div>
+        <p className="av3-lead">{o.funnel.chats === 0 ? 'Chưa có cuộc trò chuyện mới trong khoảng này.' : `Cứ 100 cuộc trò chuyện thì khoảng ${o.funnel.bookingsPer100Chats} cuộc thành đặt chỗ.`}</p>
+      </section>
+    </div>
 
-    try {
-      const params = new URLSearchParams()
-      if (filters.preset) params.set('preset', filters.preset)
-      if (filters.startDate) params.set('startDate', filters.startDate)
-      if (filters.endDate) params.set('endDate', filters.endDate)
-      if (filters.villageId) params.set('villageId', filters.villageId)
-      if (filters.agencyId) params.set('agencyId', filters.agencyId)
-      if (filters.providerId) params.set('providerId', filters.providerId)
-      if (filters.sortBy) params.set('sortBy', filters.sortBy)
+    <div className="av3-row2">
+      <Rank title="5 Xưởng nghề nhận nhiều đặt chỗ nhất" rows={o.topProviders} />
+      <Rank title="5 Công ty lữ hành đặt nhiều nhất" rows={o.topAgencies} />
+    </div>
 
-      const res = await fetch(`/api/adm/dashboard?${params.toString()}`, {
-        headers: getAuthHeaders(),
-      })
+    <div className="av3-row2 av3-row2--need">
+    <section className="av3-card" aria-labelledby="av3-need">
+      <div className="av3-head"><h2 id="av3-need">Hồ sơ cần bạn xem</h2><Link href={reviewHref} className="av3-ul">Tất cả ›</Link></div>
+      {pending.length === 0 ? <p className="av3-empty">Không có hồ sơ nào đang chờ.</p> : pending.map(r => <div className="av3-need" key={r.key}>
+        <StatusPill tone="warn">{r.kindLabel}</StatusPill>
+        <div className="av3-need__main"><b>{r.name}</b><span className="av3-cap">{r.subtitle}{r.note ? ` · ${r.note}` : ''}</span></div>
+        <Link href={r.href} className="av3-ul">Xem chi tiết</Link>
+      </div>)}
+    </section>
+      <section className="av3-card" aria-labelledby="av3-tx"><h2 id="av3-tx">Giao dịch T{o.transactions.month}/{o.transactions.year}</h2>
+        <p className="av3-cap" style={{ marginTop: 6 }}>Chỉ hiện số tổng, không hiện giao dịch hay số tài khoản.</p>
+        <div className="av3-need" style={{ marginTop: 14, justifyContent: 'space-between' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}><i className="av3-sw" style={{ background: '#2B663C', borderRadius: '50%' }} />Đã nhận tiền</span><b>{o.transactions.count}</b></div>
+        <div className="av3-total"><b className="av3-total__label">Tổng giao dịch T{o.transactions.month}/{o.transactions.year}</b><span className="av3-total__value">{vnd(o.transactions.total)}</span></div>
+      </section>
+    </div>
+  </Container>
+}
 
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || `HTTP ${res.status}`)
-      }
-
-      const data: DashboardMetricsResponse = await res.json()
-      setDashboardData(data)
-    } catch (err: any) {
-      setError(err?.message || 'Unable to load dashboard data')
-    } finally {
-      setLoading(false)
-    }
-  }, [filters, role])
-
-  useEffect(() => {
-    if (mounted && access === 'allow') {
-      loadVillages()
-    }
-  }, [mounted, access, role, loadVillages])
-
-  useEffect(() => {
-    if (mounted && access === 'allow') {
-      loadDashboard()
-    }
-  }, [mounted, access, loadDashboard])
-
-  const handleFilterChange = (updated: Partial<DashboardFilterParams>) => {
-    setDraft(prev => ({ ...prev, ...updated }))
-  }
-
-  const handleSortChange = (sortBy: CollaborationSortBy) => {
-    setFilters(prev => ({ ...prev, sortBy }))
-    setDraft(prev => ({ ...prev, sortBy }))
-  }
-
-  if (!mounted || access === null) return null
-
-  if (access === 'restricted') {
-    return (
-      <main className="ad9-state">
-        <h1>Admin Dashboard</h1>
-        <p>Đăng nhập bằng tài khoản UBND Admin hoặc HDT Admin để truy cập.</p>
-        <a href="/login">Đăng nhập</a>
-      </main>
-    )
-  }
-
-  // SR-003: UBND is fixed to its village; HDT is city-wide unless a village filter is chosen.
-  const scopeVillageId = villagesData.isLocked ? villagesData.assignedVillageId : filters.villageId // applied, not draft
-  const villageName = villagesData.villages.find(village => village.villageId === scopeVillageId)?.name ?? null
-
-  return (
-    <main className="ad9">
-      {modalNotice && (
-        <div className="ad9-modal" role="dialog" aria-modal="true" aria-labelledby="ad9-modal-title">
-          <div className="ad9-modal__box">
-            <h3 id="ad9-modal-title">Information Notice</h3>
-            <p>{modalNotice}</p>
-            <button type="button" className="ad9-btn ad9-btn--primary" onClick={() => setModalNotice(null)}>Understood</button>
-          </div>
-        </div>
-      )}
-
-      {error && <p className="ad9-alert" role="alert">{error}</p>}
-
-      {/* ADM079 #1–#9 and #18: title, filters and Manage accounts (ADM095) */}
-      <FilterPanel
-        filters={draft}
-        onFilterChange={handleFilterChange}
-        villageOptions={villagesData.villages}
-        isVillageLocked={villagesData.isLocked}
-        assignedVillageId={villagesData.assignedVillageId}
-        title={dashboardTitle(villageName)}
-        onApply={() => setFilters(prev => ({ ...draft, sortBy: prev.sortBy }))}
-        applyDisabled={!filtersChanged(draft, filters) || loading}
-        actions={<div className="ad9-title__actions">
-          <a href="/admin/users" className="ad9-btn">Quản lý tài khoản</a>
-        </div>}
-      />
-
-      {dashboardData && <>
-        {/* #10–#13, #22: the four FR-003 cards */}
-        <MetricCards cards={dashboardData.metricCards} loading={loading} />
-        <div className="ad9-grid-2">
-          <PendingVerificationPanel items={dashboardData.pendingVerification} />
-          {/* #16: status breakdown */}
-          <BookingStatusDonut bookingMetrics={dashboardData.bookingMetrics} />
-        </div>
-        {/* #19 trend, #14 / #15 account and provider status */}
-        <ChartsSection
-          agencyMetrics={dashboardData.agencyMetrics}
-          providerMetrics={dashboardData.providerMetrics}
-          bookingMetrics={dashboardData.bookingMetrics}
-          granularity={dashboardData.period.granularity}
-        />
-        {/* #20 booking table, #21 top 10 pairs */}
-        <BookingTable bookings={dashboardData.bookingMetrics.bookingTable} />
-        <TopPairsList collaboration={dashboardData.collaborationMetrics} onSortChange={handleSortChange} />
-      </>}
-    </main>
-  )
+function Rank({ title, rows }: { title: string; rows: Array<{ id: string; name: string; bookings: number; guests: number }> }) {
+  const max = Math.max(1, ...rows.map(r => r.bookings))
+  return <section className="av3-card" aria-label={title}><h2 style={{ fontSize: 22 }}>{title}</h2><p className="av3-cap" style={{ marginTop: 4 }}>Không tính đặt chỗ đã huỷ</p>
+    <div style={{ marginTop: 12 }}>{rows.length === 0 ? <p className="av3-empty">Chưa có đặt chỗ.</p> : rows.map(r => <div className="av3-rank" key={r.id}>
+      <span className="av3-rank__name" title={r.name}>{r.name}</span><span className="av3-rank__track"><i className="av3-rank__fill" style={{ width: `${(r.bookings / max) * 100}%` }} /></span>
+      <span className="av3-rank__v"><b>{r.bookings}</b> · {r.guests} khách</span></div>)}</div></section>
 }

@@ -27,9 +27,10 @@ describe('#225 | VER119 account id, role and organization', () => {
   })
 
   it('the review page labels the new fields', () => {
-    const page = readFileSync('src/app/admin/agencies/page.tsx', 'utf8')
-    for (const [key, label] of [['user_id', 'Mã tài khoản'], ['role', 'Vai trò'], ['organization', 'Tổ chức']]) {
-      expect(page).toContain(`${key}:'${label}'`)
-    }
+    // v3 screen 40 shows the account block (png/40); the Agency profile (41a) links to it.
+    const page = readFileSync('src/app/admin/users/[userId]/page.tsx', 'utf8')
+    for (const label of ['Mã tài khoản', 'Vai trò', 'Ngày đăng ký', 'Đăng nhập gần nhất']) expect(page).toContain(`<dt>${label}</dt>`)
+    expect(page).toContain('{account.organization}')
+    expect(readFileSync('src/app/admin/agencies/[id]/page.tsx', 'utf8')).toContain('/admin/users/${item.account.user_id}')
   })
 })

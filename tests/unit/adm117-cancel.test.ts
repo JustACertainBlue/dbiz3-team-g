@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const page = readFileSync('src/app/admin/create-account/page.tsx', 'utf8')
+const page = readFileSync('src/app/admin/create-account/CreateAccountForm.tsx', 'utf8')
 
 describe('#185 | ADM117 Cancel next to "Tạo tài khoản"', () => {
   it('the form ends with the create button followed by a "Huỷ" link to /admin/users (no submit, no handler)', () => {

@@ -2,7 +2,10 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarCheck, MessageSquare, Sparkles, Tag } from "lucide-react";
 import { registrationSchema } from "@/lib/auth/registration-validation";
+import { COMPANY_LABELS, TOUR_LABELS } from "../auth-v3/labels";
+import "../auth-v3/auth-v3.css";
 
 const TOUR_TYPES = [
   "Cultural/Heritage",
@@ -15,6 +18,23 @@ const TOUR_TYPES = [
 ] as const;
 
 const COMPANY_TYPES = ["Travel Agency", "Tour Operator", "TMC"] as const;
+
+const FieldContext = React.createContext<{ errors: Record<string, string>; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void }>({ errors: {}, onChange: () => {} });
+
+// Defined outside RegisterPage so the inputs keep focus while typing.
+function Field({ id, label, name, type = "text", value, placeholder, hint, full, required = true, autoComplete }: {
+  id: string; label: string; name: string; type?: string; value: string | number; placeholder?: string; hint?: string; full?: boolean; required?: boolean; autoComplete?: string;
+}) {
+  const { errors, onChange } = React.useContext(FieldContext);
+  return (
+    <div className={`av3-field${full ? " av3-field--full" : ""}`}>
+      <label htmlFor={id}>{label}{required && <span className="av3-req" aria-hidden="true"> *</span>}</label>
+      <input id={id} name={name} type={type} value={value} placeholder={placeholder} onChange={onChange} autoComplete={autoComplete}
+        className={errors[name] ? "av3-invalid" : ""} aria-invalid={errors[name] ? true : undefined} aria-describedby={`${id}-note`} />
+      {errors[name] ? <span id={`${id}-note`} className="av3-field__err" role="alert">{errors[name]}</span> : hint ? <span id={`${id}-note`} className="av3-field__hint">{hint}</span> : null}
+    </div>
+  );
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -196,6 +216,9 @@ export default function RegisterPage() {
           data.registration_request_id
         );
         sessionStorage.setItem("registration_email", formData.email);
+        // Display only (png/18, png/18a): the OTP and status screens name the company and the send time.
+        sessionStorage.setItem("registration_company", formData.company_name);
+        sessionStorage.setItem("registration_submitted_at", new Date().toISOString());
       }
 
       router.push("/register/otp");
@@ -205,392 +228,117 @@ export default function RegisterPage() {
     }
   };
 
+  // Mockup v3 png/17: four numbered section cards, a side panel with the next steps and what the account gives.
+  // Fields and validation are unchanged. Mockup items with no field in the registration schema are not added.
   return (
-    <div className="card">
-      <div className="card-header">
-        <h1 className="card-title">Agency Registration</h1>
-        <p className="card-subtitle">
-          Create an account and submit your company information for HDT verification.
-          Self-registration is available for Tour Agencies.
-        </p>
-      </div>
+    <div className="av3-reg">
+      <header className="av3-reg__head">
+        <h1 className="av3-h1">Đăng ký tài khoản công ty lữ hành</h1>
+        <p className="av3-lead">Dành cho công ty lữ hành muốn đặt trải nghiệm làng nghề cho đoàn khách. Sở Du lịch Hà Nội sẽ kiểm tra thông tin trước khi kích hoạt tài khoản.</p>
+      </header>
 
-      {globalError && <div className="alert alert-danger">{globalError}</div>}
+      {globalError && <div className="av3-alert av3-alert--danger" role="alert"><strong>{globalError}</strong></div>}
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-grid">
-          {/* Section 1: Account Information */}
-          <div className="form-section">Account Credentials</div>
-
-          <div className="form-group">
-            <label htmlFor="full_name">
-              Full name <span className="required-star">*</span>
-            </label>
-            <input
-              id="full_name"
-              name="full_name"
-              type="text"
-              placeholder="e.g. Nguyen Van A"
-              value={formData.full_name}
-              onChange={handleInputChange}
-              className={errors["full_name"] ? "is-invalid" : ""}
-            />
-            {errors["full_name"] && (
-              <span className="field-error">{errors["full_name"]}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">
-              Email <span className="required-star">*</span>
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="agency@example.com"
-              value={formData.email}
-              onChange={handleInputChange}
-              className={errors["email"] ? "is-invalid" : ""}
-            />
-            {errors["email"] && (
-              <span className="field-error">{errors["email"]}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">
-              Password <span className="required-star">*</span>
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="8+ chars, upper, lower, digit, special"
-              value={formData.password}
-              onChange={handleInputChange}
-              className={errors["password"] ? "is-invalid" : ""}
-            />
-            {errors["password"] && (
-              <span className="field-error">{errors["password"]}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirm_password">
-              Confirm password <span className="required-star">*</span>
-            </label>
-            <input
-              id="confirm_password"
-              name="confirm_password"
-              type="password"
-              placeholder="Re-enter password"
-              value={formData.confirm_password}
-              onChange={handleInputChange}
-              className={errors["confirm_password"] ? "is-invalid" : ""}
-            />
-            {errors["confirm_password"] && (
-              <span className="field-error">{errors["confirm_password"]}</span>
-            )}
-          </div>
-
-          {/* Section 2: Company Information */}
-          <div className="form-section">Company & Legal Information</div>
-
-          <div className="form-group">
-            <label htmlFor="company_name">
-              Company name <span className="required-star">*</span>
-            </label>
-            <input
-              id="company_name"
-              name="company_name"
-              type="text"
-              placeholder="Company / Travel Agency Name"
-              value={formData.company_name}
-              onChange={handleInputChange}
-              className={errors["company_name"] ? "is-invalid" : ""}
-            />
-            {errors["company_name"] && (
-              <span className="field-error">{errors["company_name"]}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="company_type">
-              Company type <span className="required-star">*</span>
-            </label>
-            <select
-              id="company_type"
-              name="company_type"
-              value={formData.company_type}
-              onChange={handleInputChange}
-            >
-              {COMPANY_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="tax_id">
-              Tax ID <span className="required-star">*</span>
-            </label>
-            <input
-              id="tax_id"
-              name="tax_id"
-              type="text"
-              placeholder="10 or 13 digits"
-              value={formData.tax_id}
-              onChange={handleInputChange}
-              className={errors["tax_id"] ? "is-invalid" : ""}
-            />
-            {errors["tax_id"] && (
-              <span className="field-error">{errors["tax_id"]}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="team_size">
-              Team size <span className="required-star">*</span>
-            </label>
-            <input
-              id="team_size"
-              name="team_size"
-              type="number"
-              min="1"
-              value={formData.team_size}
-              onChange={handleInputChange}
-              className={errors["team_size"] ? "is-invalid" : ""}
-            />
-            {errors["team_size"] && (
-              <span className="field-error">{errors["team_size"]}</span>
-            )}
-          </div>
-
-          {/* Section 3: Location */}
-          <div className="form-section">Location</div>
-
-          <div className="form-group">
-            <label htmlFor="location_street">
-              Street address <span className="required-star">*</span>
-            </label>
-            <input
-              id="location_street"
-              name="location.street"
-              type="text"
-              placeholder="e.g. 12 Hang Gai"
-              value={formData.location.street}
-              onChange={handleInputChange}
-              className={errors["location.street"] ? "is-invalid" : ""}
-            />
-            {errors["location.street"] && (
-              <span className="field-error">{errors["location.street"]}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="location_ward">
-              Ward <span className="required-star">*</span>
-            </label>
-            <input
-              id="location_ward"
-              name="location.ward"
-              type="text"
-              placeholder="e.g. Hang Trong"
-              value={formData.location.ward}
-              onChange={handleInputChange}
-              className={errors["location.ward"] ? "is-invalid" : ""}
-            />
-            {errors["location.ward"] && (
-              <span className="field-error">{errors["location.ward"]}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="location_district">
-              District <span className="required-star">*</span>
-            </label>
-            <input
-              id="location_district"
-              name="location.district"
-              type="text"
-              placeholder="e.g. Hoan Kiem"
-              value={formData.location.district}
-              onChange={handleInputChange}
-              className={errors["location.district"] ? "is-invalid" : ""}
-            />
-            {errors["location.district"] && (
-              <span className="field-error">{errors["location.district"]}</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="location_city">
-              City / Province <span className="required-star">*</span>
-            </label>
-            <input
-              id="location_city"
-              name="location.city_province"
-              type="text"
-              value={formData.location.city_province}
-              onChange={handleInputChange}
-              className={errors["location.city_province"] ? "is-invalid" : ""}
-            />
-            {errors["location.city_province"] && (
-              <span className="field-error">
-                {errors["location.city_province"]}
-              </span>
-            )}
-          </div>
-
-          {/* Section 4: Contact Information */}
-          <div className="form-section">Contact Information</div>
-
-          <div className="form-group">
-            <label htmlFor="contact_person_name">
-              Contact person name <span className="required-star">*</span>
-            </label>
-            <input
-              id="contact_person_name"
-              name="contact_information.contact_person_name"
-              type="text"
-              placeholder="Full name of representative"
-              value={formData.contact_information.contact_person_name}
-              onChange={handleInputChange}
-              className={
-                errors["contact_information.contact_person_name"]
-                  ? "is-invalid"
-                  : ""
-              }
-            />
-            {errors["contact_information.contact_person_name"] && (
-              <span className="field-error">
-                {errors["contact_information.contact_person_name"]}
-              </span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="phone_number">
-              Phone number <span className="required-star">*</span>
-            </label>
-            <input
-              id="phone_number"
-              name="contact_information.phone_number"
-              type="tel"
-              placeholder="10-15 digits (e.g. +84912345678)"
-              value={formData.contact_information.phone_number}
-              onChange={handleInputChange}
-              className={
-                errors["contact_information.phone_number"] ? "is-invalid" : ""
-              }
-            />
-            {errors["contact_information.phone_number"] && (
-              <span className="field-error">
-                {errors["contact_information.phone_number"]}
-              </span>
-            )}
-          </div>
-
-          <div className="form-group full-width">
-            <label htmlFor="business_email">Business email (optional)</label>
-            <input
-              id="business_email"
-              name="contact_information.business_email"
-              type="email"
-              placeholder="contact@agency.com"
-              value={formData.contact_information.business_email}
-              onChange={handleInputChange}
-              className={
-                errors["contact_information.business_email"] ? "is-invalid" : ""
-              }
-            />
-            {errors["contact_information.business_email"] && (
-              <span className="field-error">
-                {errors["contact_information.business_email"]}
-              </span>
-            )}
-          </div>
-
-          {/* Section 5: Tour Types */}
-          <div className="form-section">
-            Tour Types (select at least one) <span className="required-star">*</span>
-          </div>
-
-          <div className="form-group full-width">
-            <div className="checkbox-grid">
-              {TOUR_TYPES.map((type) => (
-                <label key={type} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.tour_types.includes(type)}
-                    onChange={() => handleTourTypeToggle(type)}
-                  />
-                  {type}
-                </label>
-              ))}
+      <div className="av3-reg__grid">
+        <FieldContext.Provider value={{ errors, onChange: handleInputChange }}>
+        <form onSubmit={handleSubmit} className="av3-reg__form">
+          <section className="av3-section">
+            <h2><span className="av3-num">1</span>Tài khoản đăng nhập</h2>
+            <div className="av3-cols">
+              <Field id="email" label="Email đăng nhập" name="email" type="email" value={formData.email} placeholder="agency@example.com" hint="Mã OTP xác minh sẽ gửi về email này." autoComplete="email" />
+              <Field id="password" label="Mật khẩu" name="password" type="password" value={formData.password} hint="Ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt." autoComplete="new-password" />
+              <Field id="confirm_password" label="Nhập lại mật khẩu" name="confirm_password" type="password" value={formData.confirm_password} autoComplete="new-password" />
             </div>
-            {errors["tour_types"] && (
-              <span className="field-error">{errors["tour_types"]}</span>
-            )}
-          </div>
+          </section>
 
-          {/* Section 6: Registration Documents */}
-          <div className="form-section">
-            Registration Documents (PDF/JPG/PNG, ≤10MB each, max 5 files){" "}
-            <span className="required-star">*</span>
-          </div>
-
-          <div className="form-group full-width">
-            <div className="file-input-wrapper">
-              <label htmlFor="registration_documents" style={{ cursor: "pointer" }}>
-                <div>Click to select documents (Business Registration Certificate required)</div>
-                <input
-                  id="registration_documents"
-                  type="file"
-                  multiple
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={handleFileChange}
-                  style={{ display: "none" }}
-                />
-              </label>
+          <section className="av3-section">
+            <h2><span className="av3-num">2</span>Thông tin công ty</h2>
+            <div className="av3-cols">
+              <Field id="company_name" label="Tên công ty" name="company_name" value={formData.company_name} hint="Đúng như trên giấy phép kinh doanh." />
+              <Field id="tax_id" label="Mã số thuế" name="tax_id" value={formData.tax_id} hint="10 hoặc 13 chữ số." />
+              <div className="av3-field">
+                <label htmlFor="company_type">Loại hình <span className="av3-req" aria-hidden="true">*</span></label>
+                <select id="company_type" name="company_type" value={formData.company_type} onChange={handleInputChange}>
+                  {COMPANY_TYPES.map((type) => <option key={type} value={type} label={COMPANY_LABELS[type] ?? type}>{type}</option>)}
+                </select>
+              </div>
+              <Field id="team_size" label="Số nhân viên" name="team_size" type="number" value={formData.team_size} />
+              <Field id="location_street" label="Địa chỉ" name="location.street" value={formData.location.street} placeholder="22 phố Huế" />
+              <Field id="location_ward" label="Phường" name="location.ward" value={formData.location.ward} />
+              <Field id="location_district" label="Quận/Huyện" name="location.district" value={formData.location.district} />
+              <Field id="location_city" label="Tỉnh/Thành phố" name="location.city_province" value={formData.location.city_province} />
             </div>
+            <fieldset className="av3-tours">
+              <legend>Loại tour công ty thường tổ chức <span className="av3-req" aria-hidden="true">*</span></legend>
+              <div>
+                {TOUR_TYPES.map((type) => (
+                  <label key={type} className={`av3-chipcheck${formData.tour_types.includes(type) ? " av3-chipcheck--on" : ""}`}>
+                    <input type="checkbox" checked={formData.tour_types.includes(type)} onChange={() => handleTourTypeToggle(type)} />{TOUR_LABELS[type] ?? type}
+                  </label>
+                ))}
+              </div>
+              {errors["tour_types"] && <span className="av3-field__err" role="alert">{errors["tour_types"]}</span>}
+            </fieldset>
+          </section>
 
+          <section className="av3-section">
+            <h2><span className="av3-num">3</span>Người liên hệ</h2>
+            <div className="av3-cols">
+              <Field id="full_name" label="Họ và tên" name="full_name" value={formData.full_name} placeholder="Nguyễn Văn A" autoComplete="name" />
+              <Field id="phone_number" label="Số điện thoại" name="contact_information.phone_number" type="tel" value={formData.contact_information.phone_number} placeholder="+84912345678" autoComplete="tel" />
+              <Field id="contact_person_name" label="Người liên hệ" name="contact_information.contact_person_name" value={formData.contact_information.contact_person_name} hint="Họ tên người đại diện." />
+              <Field id="business_email" label="Email công việc" name="contact_information.business_email" type="email" value={formData.contact_information.business_email} required={false} hint="Nghệ nhân sẽ thấy email này khi trao đổi với bạn. Không bắt buộc." />
+            </div>
+          </section>
+
+          <section className="av3-section">
+            <h2><span className="av3-num">4</span>Giấy tờ pháp lý</h2>
+            <label htmlFor="registration_documents" className="av3-drop">
+              <strong>Kéo thả hoặc <span className="av3-link">chọn tệp</span></strong>
+              <small>Giấy chứng nhận đăng ký doanh nghiệp, giấy phép lữ hành (nếu có). PDF, JPG hoặc PNG, tối đa 10 MB mỗi tệp, tối đa 5 tệp.</small>
+              <input id="registration_documents" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} className="av3-sr" />
+            </label>
             {files.length > 0 && (
-              <ul className="file-list">
+              <ul className="av3-files">
                 {files.map((file, idx) => (
-                  <li key={idx} className="file-item">
-                    <span>{file.name}</span>
-                    <span style={{ color: "#64748b" }}>
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB
-                    </span>
+                  <li key={`${file.name}-${idx}`}>
+                    <span><strong>{file.name}</strong> · {(file.size / (1024 * 1024)).toFixed(1).replace(".", ",")} MB</span>
+                    <button type="button" aria-label={`Xoá ${file.name}`} onClick={() => setFiles(files.filter((_, i) => i !== idx))}>
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                    </button>
                   </li>
                 ))}
               </ul>
             )}
-            {errors["registration_documents"] && (
-              <span className="field-error">
-                {errors["registration_documents"]}
-              </span>
-            )}
-          </div>
-        </div>
+            {errors["registration_documents"] && <span className="av3-field__err" role="alert">{errors["registration_documents"]}</span>}
+          </section>
 
-        <div className="btn-group">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Continue to email verification"}
-          </button>
-          <a href="/login" className="btn btn-secondary">
-            Sign in
-          </a>
-        </div>
-      </form>
+          <div className="av3-reg__submit">
+            <button type="submit" className="av3-btn av3-btn--primary" disabled={isSubmitting}>{isSubmitting ? "Đang gửi…" : "Xác minh email ›"}</button>
+          </div>
+        </form>
+        </FieldContext.Provider>
+
+        <aside className="av3-reg__side" aria-label="Thông tin thêm">
+          <div className="av3-after">
+            <h2>Sau khi gửi</h2>
+            <ol>
+              <li><strong>Nhập mã OTP</strong> gửi về email để xác minh.</li>
+              <li><strong>Sở Du lịch Hà Nội kiểm tra</strong> giấy tờ. Thường xong trong 2 ngày làm việc.</li>
+              <li><strong>Nhận email kết quả.</strong> Được duyệt là dùng được ngay.</li>
+            </ol>
+          </div>
+          <div className="av3-perks">
+            <h2>Có tài khoản công ty lữ hành, bạn có thể</h2>
+            <ul>
+              <li><span aria-hidden="true"><Tag size={20} /></span><div><strong>Xem giá từng trải nghiệm</strong><small>Giá mỗi khách và giá đoàn hiện rõ trước khi đặt.</small></div></li>
+              <li><span aria-hidden="true"><MessageSquare size={20} /></span><div><strong>Nhắn tin trực tiếp với nghệ nhân</strong><small>Hỏi lịch, thống nhất yêu cầu của đoàn ngay trên web.</small></div></li>
+              <li><span aria-hidden="true"><Sparkles size={20} /></span><div><strong>Nhờ AI gợi ý trải nghiệm</strong><small>Kể yêu cầu của đoàn, AI tìm trải nghiệm phù hợp.</small></div></li>
+              <li><span aria-hidden="true"><CalendarCheck size={20} /></span><div><strong>Theo dõi đặt chỗ và thanh toán</strong><small>Giữ chỗ, thanh toán, hoàn tiền đều xem ở một nơi.</small></div></li>
+            </ul>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

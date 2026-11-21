@@ -235,15 +235,15 @@ describe('the built data shows up on the review screens (fixture repository, rea
     for (const op of data.ops as any[]) repo().insert(op.table, Object.fromEntries(Object.entries(op.row).map(([k, v]) => [k, asFixture(v)])))
     return { data, villages }
   }
-  it('HDT: three Agency rows (two waiting, one rejected) and both workshops view only', async () => {
+  it('HDT: three Agency rows (one waiting, one needing more information, one rejected) and both workshops view only', async () => {
     const { data } = await seed()
     const hdt = await demoSessionContextFor('hdt')
     const { rows: queue } = await loadReviewQueue(hdt)
     const names = (kind: string) => queue.filter(r => r.kind === kind).map(r => r.name)
     for (const item of data.summary.filter((s: any) => s.kind === 'agency')) expect(queue.map(r => r.name)).toContain(item.name)
     const mine = queue.filter(r => data.summary.some((s: any) => s.kind === 'agency' && s.name === r.name))
-    expect(mine.filter(r => !r.processed)).toHaveLength(2)
-    expect(mine.filter(r => r.processed && r.statusLabel === 'Từ chối')).toHaveLength(1)
+    expect(mine.filter(r => !r.processed).map(r => r.statusLabel)).toEqual(['Chờ duyệt'])
+    expect(mine.filter(r => r.processed).map(r => r.statusLabel).sort()).toEqual(['Cần bổ sung', 'Từ chối'])
     for (const item of data.summary.filter((s: any) => s.kind === 'workshop')) {
       const row = queue.find(r => r.name === item.name)!
       expect(row.processed).toBe(false)

@@ -7,6 +7,7 @@ import { demoRepository } from '@/lib/db/application-store'
 import { hanoiClock } from '@/lib/time/hanoi-time'
 import { adminGuestRedirect } from '../../admin-page-access'
 import { formatDate } from '@/lib/adm/v3-accounts'
+import { agencyStatus } from '@/lib/adm/v3-review-queue'
 import { COMPANY_TYPE, fileSize, readable } from '../../_v3/profile-format'
 import DecisionForm from '../../_v3/DecisionForm'
 import { Button, Container, StatusPill } from '@/app/components/ui'
@@ -25,7 +26,7 @@ export default async function AgencyProfilePage({ params }: { params: { id: stri
 
   const files = await demoRepository().all('stored_files')
   const f = item.fields as Record<string, unknown>
-  const pending = item.status === 'Pending Approval' || item.status === 'Pending Review'
+  const status = agencyStatus(item, new Date().toISOString()) ?? { label: item.status, tone: 'neutral' as const, processed: true, canDecide: false, note: '' }
   const rows: Array<[string, React.ReactNode]> = item.kind === 'change'
     ? [['Tên công ty', f.proposed_company_name ? <><span className="av3-old">{String(f.company_name)}</span><span className="av3-new">{String(f.proposed_company_name)}</span></> : String(f.company_name || '')],
       ['Mã số thuế', f.proposed_tax_id ? <><span className="av3-old">{String(f.tax_id)}</span><span className="av3-new">{String(f.proposed_tax_id)}</span></> : String(f.tax_id || '')]]
@@ -38,7 +39,7 @@ export default async function AgencyProfilePage({ params }: { params: { id: stri
     <div className="av3-stack" style={{ marginTop: 8 }}>
       <section className="av3-card" aria-labelledby="av3-name">
         <div className="av3-profile-head"><div><h1 id="av3-name" style={{ fontSize: 30, lineHeight: '38px' }}>{item.name}</h1>
-          <p className="av3-lead">{item.kind === 'change' ? 'Đổi thông tin pháp lý' : 'Đăng ký mới'} · {submitted} · <StatusPill tone={pending ? 'warn' : item.status === 'Approved' ? 'success' : 'danger'}>{pending ? 'Chờ duyệt' : item.status === 'Approved' ? 'Đã duyệt' : 'Từ chối'}</StatusPill></p></div>
+          <p className="av3-lead">{item.kind === 'change' ? 'Đổi thông tin pháp lý' : 'Đăng ký mới'} · {submitted} · <StatusPill tone={status.tone}>{status.label}</StatusPill></p></div>
           {item.account && <Button href={`/admin/users/${item.account.user_id}`} variant="secondary" size="sm">Thông tin tài khoản</Button>}</div>
         <dl className="av3-dl">{rows.map(([k, v]) => <div className="av3-kv" key={k}><dt>{k}</dt><dd>{v || 'Chưa có'}</dd></div>)}</dl>
       </section>
@@ -48,7 +49,7 @@ export default async function AgencyProfilePage({ params }: { params: { id: stri
           <span><b>{d.name}</b>{size ? ` · ${size}` : ''}{!d.available && <span className="av3-cap"> · chưa có file gốc để mở</span>}</span>
           {d.available && d.href && <a className="av3-ul" href={d.href} target="_blank" rel="noreferrer" aria-label={`Mở ${d.name}`}>Mở</a>}</div> })}</div></section>}
 
-      {pending ? <DecisionForm target={{ type: 'agency', id: item.id, kind: item.kind === 'change' ? 'change' : 'registration' }} backHref="/admin/agencies" />
+      {status.canDecide ? <DecisionForm target={{ type: 'agency', id: item.id, kind: item.kind === 'change' ? 'change' : 'registration' }} backHref="/admin/agencies" />
         : item.history.length > 0 && <section className="av3-card" aria-labelledby="av3-hist"><h2 id="av3-hist">Lịch sử quyết định</h2><ul className="av3-hist">{item.history.map(h => <li key={String(h.review_id)}><span><b>{({ Approve: 'Đã duyệt', Reject: 'Từ chối', 'Request More Information': 'Yêu cầu bổ sung' } as Record<string, string>)[String(h.decision)] ?? String(h.decision)}</b> · {formatDate(String(h.decided_at))}{h.comments ? ` · ${String(h.comments)}` : ''}</span></li>)}</ul></section>}
     </div>
   </Container>

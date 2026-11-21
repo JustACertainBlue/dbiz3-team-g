@@ -7,7 +7,7 @@ export type QueueKind = 'registration' | 'change' | 'workshop'
 export type QueueTone = 'warn' | 'success' | 'danger' | 'neutral'
 
 /** Row of `agencyReviews(session)` (src/lib/auth/agency-review.ts), the fields this list uses. */
-export interface AgencyReviewItem { id: string; kind: string; name: string; status: string; submitted: string; fields: Record<string, unknown> }
+export interface AgencyReviewItem { id: string; kind: string; name: string; status: string; submitted: string; fields: Record<string, unknown>; /** Review records of the item (agencyReviews().history); the latest decides "Cần bổ sung". */ history?: Array<{ decision?: unknown; decided_at?: unknown }> }
 /** One provider of `adminProviderQueue(...)`, flattened by the page. */
 export interface ProviderQueueRow { provider_id: string; name: string; villageName: string; reviewStatus: string; submitted: string }
 
@@ -36,21 +36,39 @@ export function waitingText(submitted: string, now: string): string {
   return days <= 0 ? 'Gửi hôm nay' : `Đã chờ ${days} ngày`
 }
 
+export interface AgencyStatus { label: string; tone: QueueTone; processed: boolean; canDecide: boolean; note: string }
+
+/**
+ * Status of an Agency item as HDT sees it. "Yêu cầu bổ sung" (reviewAgency) leaves a registration in "Pending Approval" with a
+ * review record "Request More Information", and closes a legal change as "Rejected" with the same record. While the latest record is
+ * that decision and the Agency has not sent a newer version, HDT has nothing to decide: the item is "Cần bổ sung".
+ * Returns null for a status that is not shown.
+ */
+export function agencyStatus(item: Pick<AgencyReviewItem, 'kind' | 'status' | 'submitted' | 'history'>, now: string): AgencyStatus | null {
+  const pending = item.status === 'Pending Approval' || item.status === 'Pending Review'
+  const latest = [...(item.history ?? [])].sort((a, b) => text(b.decided_at).localeCompare(text(a.decided_at)))[0]
+  const askedMore = latest !== undefined && text(latest.decision) === 'Request More Information'
+  if (pending && askedMore && text(latest.decided_at) >= item.submitted) return { label: 'Cần bổ sung', tone: 'warn', processed: true, canDecide: false, note: 'Chờ công ty gửi lại hồ sơ' }
+  if (pending) return { label: 'Chờ duyệt', tone: 'warn', processed: false, canDecide: true, note: waitingText(item.submitted, now) }
+  if (item.status === 'Rejected' && askedMore && item.kind === 'change') return { label: 'Cần bổ sung', tone: 'warn', processed: true, canDecide: false, note: '' }
+  if (item.status === 'Approved') return { label: 'Đã duyệt', tone: 'success', processed: true, canDecide: false, note: '' }
+  if (item.status === 'Rejected') return { label: 'Từ chối', tone: 'danger', processed: true, canDecide: false, note: '' }
+  return null
+}
+
 function agencyRow(item: AgencyReviewItem, now: string): QueueRow | null {
   const kind: QueueKind = item.kind === 'change' ? 'change' : 'registration'
-  const pending = item.status === 'Pending Approval' || item.status === 'Pending Review'
-  const closed: Record<string, [string, QueueTone]> = { Approved: ['Đã duyệt', 'success'], Rejected: ['Từ chối', 'danger'] }
-  if (!pending && !closed[item.status]) return null
+  const status = agencyStatus(item, now)
+  if (!status) return null
   const f = item.fields
   const subtitle = kind === 'registration'
     ? `Người gửi: ${text(f.full_name) || 'Chưa có'}`
     : text(f.proposed_company_name) && text(f.proposed_tax_id) ? 'Đổi tên công ty và mã số thuế'
       : text(f.proposed_company_name) ? 'Đổi tên công ty' : text(f.proposed_tax_id) ? 'Đổi mã số thuế' : 'Đổi thông tin pháp lý'
-  const [statusLabel, tone] = pending ? ['Chờ duyệt', 'warn' as QueueTone] : closed[item.status]
   return {
     key: `${kind}:${item.id}`, kind, kindLabel: KIND_LABEL[kind], name: item.name, subtitle, submitted: item.submitted,
-    statusLabel, tone, note: pending ? waitingText(item.submitted, now) : '', href: `/admin/agencies/${item.id}`,
-    processed: !pending, canDecide: pending,
+    statusLabel: status.label, tone: status.tone, note: status.note, href: `/admin/agencies/${item.id}`,
+    processed: status.processed, canDecide: status.canDecide,
   }
 }
 

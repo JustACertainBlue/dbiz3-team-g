@@ -79,9 +79,9 @@
 .aim__hist .aim__cur { background: #fff; box-shadow: inset 0 0 0 1px #D8D3C4; }
 .aim__cbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .v3r__price .aim__acts { margin-top: 10px; }
-/* Desktop: the rail stays in place under the navigation bar while the chat scrolls; only its list scrolls. */
+/* Desktop: the rail stays in place (top 0, full viewport height) while the chat scrolls; only its list scrolls. */
 @media (min-width: 900px) {
-  .aim__side { position: sticky; top: var(--nav-h); align-self: flex-start; height: calc(100vh - var(--nav-h)); display: flex; flex-direction: column; overflow: hidden; }
+  .aim__side { position: sticky; top: 0; align-self: flex-start; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
   .aim__new { flex: none; }
   .aim__shead { flex: none; }
 }

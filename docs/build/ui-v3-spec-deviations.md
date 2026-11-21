@@ -16,6 +16,14 @@ these branches; each row below is a known gap between the built UI and the writt
 | 8 | Content fields | No spec fields for highlights (4 items with sub-line), inclusions, guide languages, child policy, suitable-for tags, fixed time slots, workshop founding year, parking note, village distance / visit notes / tour suggestion detail / highlights (19/11) | Added by `supabase/migrations/20261118120000_hab_ui_v3_content.sql` (ADD only, not applied yet) and read with `src/lib/explore/vocabulary.ts` | Human, 18/11 (Đợt 1 #5) |
 | 9 | Village images | No village media in the data model | Village image = `villages.cover_image_id`, else the first image of the village's live experiences. A village without any image is left out of 01/21 and 03a; its page 03 shows no gallery (no empty frame) | Human, 18/11 (Đợt 1 #7); 19/11 (pack 19/11: every village has a cover image) |
 | 10 | Removed elements | Various screen-spec elements (breadcrumbs, verified badges, "Lịch của xưởng" link, separate detail-page footers, village catalogue box, inactive-provider text) | Removed because the approved mockup does not show them; `/explore/providers/[id]/schedule` stays until the embedded calendar on 24 works | Human, 18/11 (Đợt 1 #10) |
+| 11 | Gallery order | Mockups 03/04/23/24 show the images in data order | The gallery puts landscape images (width > height) first, then the rest in their old order (stable), so the large tile gets a landscape image when the workshop has one; portrait images use `object-position: 50% 40%`. Only the order of the images changes, not the layout; an image without stored width/height counts as "not landscape". Applies to 03, 04/23 and 24 (shared `Gallery`). Also: the first image of each page (03 gallery, 04/24 large tile, 02 first card from 900 px, 03a first card) is the LCP image: eager, `fetchpriority=high`, preloaded | Human, 21/11 (step 2B image delivery; "ảnh ngang lên trước") |
+
+## Điện thoại (dưới 768 px)
+
+| # | Màn | Mockup / trước đây | Bây giờ | Quyết định |
+|---|---|---|---|---|
+| M1 | Thẻ kết quả 02, 03, 24 (`ResultCard`) | Khung ảnh `min-height: 180px`, chiều cao chạy theo tỉ lệ ảnh (ảnh dọc làm khung cao 450 px) | Khung tỉ lệ cố định `aspect-ratio: 5 / 8` (bằng khung 220 × 352 ở desktop), ảnh `object-fit: cover` phủ khung, điểm lấy nét `50% 40%` cho ảnh dọc. Khung không còn chạy theo ảnh. Ở desktop, khung 220 px cao 260–384 px tuỳ nội dung thẻ; 5/8 là mức điển hình | Human, 21/11 (bước 2B) |
+| M2 | Ô nhỏ gallery 03, 04/23, 24 | Cùng ưu tiên tải với ô lớn | Ô nhỏ `loading=eager`, `fetchpriority=low`; chỉ ô lớn (ảnh LCP) là `high` | Human, 21/11 (bước 2B) |
 
 ## Follow-ups recorded with the deviations
 

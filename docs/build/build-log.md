@@ -1616,6 +1616,32 @@ Edits to existing tests (approved in chat 2026-11-04: image categories to data/ 
 | Checks | `npm run lint` 0; `npx vitest run` 257 files, 1567 passed (22 skipped); `npm run build` passes |
 | Not done | Human: `--only-oversize` dry run then `--apply` on DEV after merge; decide what to do with the 14 variants still over the cap; step 2B (UI `?w=`/`?v=`) |
 
+### Entry 117: 21/11 Claude Code + human — step 2B image delivery in the v3 UI (`ui/v3-public`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Sonnet 5.5); requested by linhkhanh-vu. Agent rebased `ui/v3-public` onto `main` @ `7c4d40b` (one conflict: fonts README and test, kept the Lora/Pacifico removal), ran `npm ci` (sharp missing), built and ran `next start` locally on DEV data (env not read), Lighthouse 13.5.0 via npx. Committed on `ui/v3-public` in several commits; not pushed; `docs/build/ui-v3-2b-screens/` stays local (excluded). Rebased onto `main` @ `e648511` (PR #278, which owns Entry 116) |
+| Change | `src/lib/prf/media-urls.ts`: `?v=` URLs, `ImageRef {url,width,height}`, `variantSrc/variantSrcSet` (400w/800w/1600w), portrait test. `CoverImage`: `src=?w=800&v=`, `srcSet`, `sizes`, `width/height`, `decoding=async`, portrait `object-position: 50% 40%`, priority `lcp\|eager\|lazy` (lcp: eager, `fetchPriority=high`, `<link rel=preload as=image imageSrcSet imageSizes>`, optional `media`). `Gallery`: landscape first (stable), tile 1 = LCP (high), other tiles eager with `fetchpriority=low`, sizes per tile (`gallerySizes`). View models of 01–04/24 carry `ImageRef`; catalog/details/provider public APIs add `?v=` (editor URLs unchanged: the write validator accepts only the bare URL) |
+| Test-first | `tests/unit/v3-image-delivery.test.ts` (21 tests) red first (17 of 19 failed on missing exports/behaviour). Existing expectations changed on purpose: image values are objects (`v3-village`, `v3-explore-home`, `v3-gallery` fixtures), `src` is `?w=800` (`v3-village-pages`), page-source check of `ResultCard` (`vil030-experience-cards`), Explore gallery URLs end `?v=<size>` (`profile-media`). Regression caught by tests: `?v=` on the upload/editor URL made the experience validator reject it, so those two producers were reverted |
+| Frames | Same rects at 1440 and 390 on 01, 02, 03, 04, 24 before and after (x, y, width, height). Below 768 px a 02/03/24 result card frame follows the image ratio (`min-height: 180` only), already so before: a portrait image makes it 450 px high; now known from first paint (no shift). Then fixed on human request 21/11: below 768 px the 02/03/24 card frame is `aspect-ratio: 5 / 8` (the desktop frame 220 × 352), image `position: absolute; inset: 0` with cover, so the frame no longer follows the image |
+| Which image is LCP | 03 gallery tile 1; 04 and 24 gallery tile 1; 02 first card (preload only from 900 px); 03a first card. 01 has no image in the first screen (H1 is LCP). Eager (small gallery tiles `fetchpriority=low`): other gallery tiles, 02 second card, 03a cards 2–3, 21 hold banner. Everything else lazy |
+| Checks | `npm run lint` 0; `npm test` 275 files passed (5 skipped), 1 711 tests; `npm run build` passes; Lighthouse 30 runs + 9 re-runs (mobile 03/04/24 after the frame and priority changes: 89 / 92 / 89), results in `image-perf-baseline.md` ("Sau bước 2B") |
+| Not done | Commit/push; CLS 0.083 from `#page-content` (not images, origin not checked); chat has no images (attachments are download links), so no `sizes` there |
+
+**Table "vị trí → sizes"** (CSS size measured on the built app at 1440 / 390; `object-fit: cover` needs height × 4/3 for a landscape image, shown as "eff"):
+
+| Position | CSS box 1440 | CSS box 390 | `sizes` |
+|---|---|---|---|
+| 01/21 experience card; 24 similar card (`CARD_SIZES`) | 258 × 145 | 340 × 191 | `(min-width: 1140px) 260px, (min-width: 868px) 36vw, (min-width: 600px) 50vw, 100vw` |
+| 01/21 village tile, large (`VILLAGE_BIG_SIZES`) | 356 × 340 (eff 453) | 342 × 340 | `460px` |
+| 01/21 village tile, others | 356 × 162 | 342 × 162 | `(min-width: 1140px) 360px, (min-width: 600px) 50vw, 100vw` |
+| 03a village card | 349 × 218 | 340 × 212 | `(min-width: 1140px) 350px, (min-width: 900px) 34vw, (min-width: 600px) 50vw, 100vw` |
+| 02 result card (also on 03, 24) | 220 × 352–384 (eff 512) | 300 × 180–450 | `(min-width: 768px) 520px, calc(100vw - 90px)` |
+| 21 hold banner | 96 × 54 | 96 × 54 | `96px` |
+| 03 gallery, 5 tiles: large / small | 546 × 440 / 269 × 216 | 167 × 280 / 79.5 × 136 | `gallerySizes(5, i, 1100)`: large `(min-width: 900px) max(587px, min(550px, 50vw)), max(373px, 50vw)`; small `… max(288px, min(275px, 25vw)), max(181px, 25vw)` |
+| 04/24 gallery (width 804 at 1440), 4 tiles: large / wide / small | 398 × 440 / 398 × 216 / 195 × 216 | 167 × 280 / 167 × 136 / 79.5 × 136 | `gallerySizes(4, i, 804)` (same formula, share 1/2, 1/2, 1/4, 1/4) |
+| Chat | no image (attachments are links) | | n/a |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

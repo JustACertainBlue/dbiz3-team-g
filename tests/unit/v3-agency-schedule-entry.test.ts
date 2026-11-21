@@ -34,4 +34,15 @@ describe('screen 05 → screen 27', () => {
     expect(html).toMatch(/<h1[^>]*>Lịch Công ty<\/h1>/)
     expect(html).not.toContain('Agency Schedule</h1>')
   })
+  it('ends with a centred "Xem thêm" link to the booking history (mockup 27), after the month list', async () => {
+    const html = renderToStaticMarkup(await AgencySchedulePage({ params: { agencyId: TRANG_AN }, searchParams: {} }))
+    const more = html.match(/<div class="v3s-more"><a[^>]*href="([^"]+)"[^>]*>Xem thêm<\/a><\/div>/)
+    expect(more?.[1]).toBe(`/agency/${TRANG_AN}/bookings`)
+    expect(html.indexOf('v3s-more')).toBeGreaterThan(html.indexOf('v3s-list'))
+  })
+  it('keeps the "‹ Lịch sử đặt chỗ" link above the title (spec #68)', async () => {
+    const html = renderToStaticMarkup(await AgencySchedulePage({ params: { agencyId: TRANG_AN }, searchParams: {} }))
+    expect(html.indexOf('‹ Lịch sử đặt chỗ')).toBeGreaterThan(-1)
+    expect(html.indexOf('‹ Lịch sử đặt chỗ')).toBeLessThan(html.indexOf('Lịch Công ty'))
+  })
 })

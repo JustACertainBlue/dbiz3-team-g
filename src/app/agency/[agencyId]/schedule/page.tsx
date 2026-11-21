@@ -88,5 +88,6 @@ export default async function AgencySchedulePage({ params, searchParams }: { par
           <Link className="v3l-link" href={detail(event.bookingId)}>Xem chi tiết</Link>
         </div>)}
     </section>
+    <div className="v3s-more"><Link href={`/agency/${params.agencyId}/bookings`}>Xem thêm</Link></div>
   </main>
 }

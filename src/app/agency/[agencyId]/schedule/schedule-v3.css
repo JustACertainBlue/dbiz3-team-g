@@ -22,3 +22,6 @@
 .v3s-ev.k-hold{border-left-color:#D9A441;background:#fff;color:inherit}.v3s-ev.k-booked{border-left-color:#4FA06E;background:#fff;color:inherit}.v3s-ev.k-done{border-left-color:#165235;background:#fff;color:inherit}
 .v3s-evdate{min-width:72px;text-align:center;font-size:14px;color:#5F6B64}.v3s-evdate b{display:block;font-size:26px;line-height:32px;color:#1F2A25}
 .v3s-evbody{flex:1;min-width:0}.v3s-evbody p{margin:0;font-size:16px;line-height:23px}
+
+.v3s-more{display:flex;justify-content:center;margin-top:28px}
+.v3s-more a{font-weight:700;font-size:17px;line-height:24px;color:#165235;text-underline-offset:3px;padding:10px 4px}

@@ -35,7 +35,7 @@ export default function RequestButton({ experiences, date = '', guests = null, s
   return <>
     <button type="button" className={className} onClick={() => setOpen(true)}>{label}</button>
     {open && <div className="v3rq" role="dialog" aria-modal="true" aria-labelledby="v3rq-t">
-      <form className="v3rq__box" onSubmit={submit}>
+      <form className="v3rq__box" method="post" onSubmit={submit}>
         <h2 id="v3rq-t" className="v3rq__t">Gửi yêu cầu đặt chỗ</h2>
         <p className="v3rq__cap">Gửi yêu cầu chưa mất phí. Xưởng nhận lời thì giữ chỗ 72 giờ.</p>
         {experiences.length > 1 && <label className="v3rq__f"><span>Trải nghiệm</span>

@@ -69,7 +69,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
   if (!experiences.length) return <p className="v3b-card">Xưởng chưa có trải nghiệm nào đang hoạt động, nên chưa tạo được đặt chỗ.</p>
   if (!agencies.length) return <p className="v3b-card">Chưa có công ty lữ hành nào đã trò chuyện với xưởng. Đặt chỗ chỉ tạo cho công ty đã nhắn tin.</p>
 
-  return <form className="v3b-form" onSubmit={submit} onChange={() => setError(null)} aria-label="Thông tin đặt chỗ">
+  return <form className="v3b-form" method="post" onSubmit={submit} onChange={() => setError(null)} aria-label="Thông tin đặt chỗ">
     <section className="v3b-card">
       <h2 className="v3b-h2">Đoàn &amp; trải nghiệm</h2>
       <div className="v3b-row">

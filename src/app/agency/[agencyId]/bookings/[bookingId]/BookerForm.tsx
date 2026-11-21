@@ -27,7 +27,7 @@ export default function BookerForm({ bookingId, companyName, email, contactName,
       setDone(true); router.refresh()
     } catch { setError('Không kết nối được máy chủ. Thử lại.') } finally { setPending(false) }
   }
-  return <form onSubmit={submit} className="v3a-right" aria-label="Thông tin người đặt">
+  return <form method="post" onSubmit={submit} className="v3a-right" aria-label="Thông tin người đặt">
     <section className="v3a-card" aria-labelledby="v3a-info">
       <h2 id="v3a-info" className="v3a-h2">Thông tin người đặt</h2>
       <p className="v3a-sm">Gần xong rồi! Chỉ cần kiểm tra phần thông tin <span className="v3a-req">*</span> bắt buộc.</p>

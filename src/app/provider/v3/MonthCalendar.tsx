@@ -63,7 +63,7 @@ export default function MonthCalendar({ cells, today, variant, hoursByWeekday, b
       {current.guests
         ? <>
             <p className="pv3-cal__strong">{full ? `${current.company} · ${current.guests} khách` : current.state === 'hold' ? 'Có đoàn giữ chỗ' : 'Đã có đoàn'}</p>
-            {full && <p className="pv3-cal__muted">{current.experience} · {current.startTime} · {current.state === 'hold' ? 'Chờ thanh toán' : 'Đã đặt chỗ'}</p>}
+            {full && <p className="pv3-cal__muted">{current.experience} · {current.startTime} · {current.state === 'hold' ? 'Chờ thanh toán' : 'Đã thanh toán'}</p>}
             {full && <Link className="pv3-link" href={bookingHref.replace('__ID__', current.bookingId ?? '')}>Xem đặt chỗ ›</Link>}
             {!full && <Link className="pv3-link" href={scheduleHref}>Mở lịch xưởng ›</Link>}
           </>

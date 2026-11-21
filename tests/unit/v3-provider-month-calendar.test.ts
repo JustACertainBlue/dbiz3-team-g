@@ -59,3 +59,25 @@ describe('monthWindow', () => {
     expect(monthWindow('2027-01-31')).toEqual({ from: '2026-12-01', to: '2027-02-28' })
   })
 })
+
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import MonthCalendar from '@/app/provider/v3/MonthCalendar'
+import { statusLabel } from '@/lib/status-labels'
+;(globalThis as { React?: typeof React }).React = React
+
+// Screen 29 panel, mockup line 2: "<experience> · <time> · Đã thanh toán". Mapped here only; the shared Booking status label is untouched.
+describe('MonthCalendar selected-day panel (screen 29)', () => {
+  const panel = (state: 'booked' | 'hold') => {
+    const cells = monthDays({ hours, bookings: [booking('b1', '2026-11-24T09:00:00', state === 'booked' ? 'Booked' : 'On hold')], experiences, agencies }, '2026-11-01', '2026-11-30', '2026-11-24')
+    return renderToStaticMarkup(React.createElement(MonthCalendar, { cells, today: '2026-11-24', variant: 'full', hoursByWeekday: hoursByWeekday(hours), bookingHref: '/b/__ID__', scheduleHref: '/s' }))
+  }
+  it('a Booked day reads "Đã thanh toán"', () => {
+    const html = panel('booked')
+    expect(html).toContain('Du lịch Tràng An · 10 khách')
+    expect(html).toContain('Nặn gốm thủ công · 09:00 · Đã thanh toán')
+    expect(html).not.toContain('Đã đặt chỗ')
+  })
+  it('an On hold day keeps "Chờ thanh toán"', () => { expect(panel('hold')).toContain('Nặn gốm thủ công · 09:00 · Chờ thanh toán') })
+  it('the shared Booking status label is not changed', () => { expect(statusLabel('booking', 'Booked')).not.toBe('Đã thanh toán') })
+})

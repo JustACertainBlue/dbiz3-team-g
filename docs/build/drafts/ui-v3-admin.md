@@ -18,29 +18,29 @@ HDT sees workshops as view only ("Sở chỉ xem, UBND xã quyết định"); on
 
 ## Differences from the old screens (decided by the mockup)
 
-- Account list: no action column, no "Tạo tài khoản mới" link, no "Duyệt Agency / Hồ sơ chờ thẩm định" links, no reset-password button
+- `/admin/create-account` now redirects (server) to `/admin/users`; the old form is kept unused in `create-account/CreateAccountForm.tsx`.
+- **Removed from 39:** no action column, no "Tạo tài khoản mới" link, no "Duyệt Agency / Hồ sơ chờ thẩm định" links, no reset-password button
   (the reset-password API still exists, only the button is gone). `/admin/create-account` still opens by URL.
 - Account info and profile review are pages, not modal dialogs (old #242 modals).
 - Disable keeps the optional reason (FR-022) inside the confirmation popup of the switch.
 - "Đóng → /admin/users" on the workshop page (#187) became "‹ Danh sách hồ sơ" (png/41a).
-- Old dashboard filter panel (village, preset, Apply, agency/provider pickers, booking table, top-10 pairs, donut) is not on screen 38.
+- **Removed from 38:** old dashboard filter panel (village, preset, Apply, agency/provider pickers, booking table, top-10 pairs, donut) is not on screen 38.
   Old components in `components/admin/*` and `dashboard-v9.css` are untouched and now unused by `/admin`.
 - Tests rewritten because they grep the old page source: `adm095-review-entry-last-login`, `adm118-identity-role`, `adm145-close-target`,
   `ver119-account-fields`, `tests/adm/unit/adm-242-ui`. Assertions were moved to the new pages, not weakened; `adm118-disable-reason` passes unchanged.
 
 ## Mockup gaps / data gaps
 
-1. **Giao dịch T11/2026 card (png/38) not built.** No payment data exists (payment/refund is the last wave, README rule 8). Needs a decision.
-2. Chart labels follow the mockup (Hoàn thành / Đã thanh toán / Chờ thanh toán / Đã huỷ) and map to the stored booking status
-   `Completed / Booked / On hold / Cancelled`. "Booked" = "Đã thanh toán" is an assumption until payments exist.
+1. **Card "Giao dịch T<m>/<year>" (png/38) is built from Booked only**, not from payments (payment/refund is the last wave, README rule 8). It shows one row "Đã nhận tiền" = bookings whose current status is Booked and whose latest move to Booked (`booking_status_history`, Hanoi date) is in the month of the end date, plus the sum of `agreed_price_total` (agreed price, taken as the price after discount). The mockup rows "Chờ thanh toán", "Cần hoàn tiền" (and "quá hạn"), "Cần đối chiếu / tranh chấp" are not built: no data.
+2. **"Đã thanh toán" and "Giao dịch" both come from Booked.** Chart labels follow the mockup (Hoàn thành / Đã thanh toán / Chờ thanh toán / Đã huỷ) and map to the stored booking status `Completed / Booked / On hold / Cancelled`. "Booked" = "Đã thanh toán" is an assumption until payments exist.
 3. Funnel: "Cuộc trò chuyện mới" = chat_sessions started in the range; "Có đặt chỗ" = those chats that have a booking
    (`bookings.source_chat_session_id`); "Đã thanh toán" = Booked or Completed; "Hoàn thành tour" = Completed. Counts are distinct chats.
 4. Top five: bookings created in the range, cancelled excluded, ranked by bookings then guests (`group_size`).
 5. Cards: "đang hoạt động" = account Active and not pending verification; pending = workshop version in Pending Verification; Agency pending = Pending Approval.
    "Đặt chỗ tháng N" counts bookings created in the current month (all statuses, in scope).
-6. Provider decision has two options (Duyệt, Yêu cầu bổ sung): `/api/prf/provider/[id]/verify` has no Reject. Agency has three.
+6. **Workshop decision has only Duyệt / Yêu cầu bổ sung** (the mockup has Từ chối too): `/api/prf/provider/[id]/verify` has no Reject. Agency has all three.
 7. Company type labels in 41a are my wording (Travel Agency = Công ty lữ hành, Tour Operator = Nhà điều hành tour, TMC); the mockup shows "Công ty lữ hành nội địa".
-8. Mockup 41a shows "Đã xác minh email"; there is no such flag in the data, so the subtitle shows kind, submit time and status instead.
+8. **"Đã xác minh email" is not shown** (mockup 41a): there is no such flag in the data, so the subtitle shows kind, submit time and status instead.
 9. UBND version of 38, 41 and 41a is not in the mockup: same layout, UBND wording on the list lead ("Hồ sơ xác minh xưởng của làng bạn quản lý…").
 10. Agency "Xem hồ sơ" from a pending row on screen 39 opens `/admin/agencies?q=<company>` (the list has no registration id in the account API).
 11. Page size of the account list stays 20 (existing); the mockup shows 6 of 20.
@@ -58,3 +58,45 @@ HDT sees workshops as view only ("Sở chỉ xem, UBND xã quyết định"); on
   so this works; a single target (e.g. `/admin/review`) and a shared `alsoActive` for `/admin/agencies/*` and `/admin/providers/*` is cleaner.
 - The admin bar title in the mockup is "HAB · Quản trị" with the unit name chip; check the header shows "UBND xã <tên làng>" for UBND.
 - `.sr-only` utility is not in shared CSS (the review list uses an inline style for the hidden "Thao tác" header).
+
+## Mutation check (3 logic modules)
+
+Script outside the repo; each mutation applied to a copy, the module's own test file run, source restored from the copy (no `git checkout`).
+
+| Module | Mutation | Result |
+|---|---|---|
+| v3-overview | cancelled bookings counted in top five | red (1) |
+| v3-overview | UBND scope not applied to bookings | red (2) |
+| v3-overview | transactions use first Booked date, not last | red (1) |
+| v3-overview | transactions ignore current status | red (3) |
+| v3-overview | funnel "paid" = Booked only | red (1) |
+| v3-overview | transactions sum ignores price | red (4) |
+| v3-overview | range end day excluded | **green** → added test "range edges" → red (1) |
+| v3-review-queue | HDT may decide workshops | red (1) |
+| v3-review-queue | UBND also sees agencies | red (1) |
+| v3-review-queue | workshop drafts listed | red (1) |
+| v3-review-queue | same day not "Gửi hôm nay" | red (1) |
+| v3-review-queue | tabs inverted / accents kept in search / default sort newest | red (1 each) |
+| v3-accounts | pending account gets a switch | red (1) |
+| v3-accounts | last login day and month swapped | red (1) |
+| v3-accounts | switch action inverted / UBND label swapped / status group ignored | red (1 each) |
+| v3-accounts | Approved shown as off | red (2) (first attempt was an equivalent mutant, replaced) |
+| v3-accounts | `formatDate` without Hanoi time zone | **green** → added `formatDate` test → red (1) |
+
+## Old test files: assert before → after
+
+"Looser?" is my own judgment; please confirm each row marked yes.
+
+| File | Old assert | New assert | Looser? |
+|---|---|---|---|
+| adm095-review-entry-last-login | page renders `reviewSubmissionLinks(adminType).map(...)` links | page does NOT contain `reviewSubmissionLinks` nor `/admin/create-account` | Inverted on purpose (png/39 has none). `reviewSubmissionLinks()` unit asserts unchanged |
+| adm095-review-entry-last-login | page reads `readSessionContext().then(... setAdminType ...)` | removed | Dropped: the list no longer needs the admin type |
+| adm095-review-entry-last-login | header `<th>Trạng thái</th><th>Đăng nhập gần nhất</th><th>Thao tác</th>` | `...Đăng nhập gần nhất</th>` and no `<th>Thao tác</th>` | Stricter on the action column |
+| adm095-review-entry-last-login | cell `{user.last_login \|\| 'Chưa đăng nhập'}` | cell `{formatLastLogin(u.last_login)}`; "Chưa đăng nhập" and format covered in v3-admin-accounts test | Moved to a unit test |
+| adm118-identity-role | page (list modal) has `<dt>Tổ chức</dt><dd>{organization}</dd><dt>Vai trò</dt><dd>{role} {admin_type}</dd><dt>Trạng thái</dt>` in this order | detail page: `<dt>Vai trò</dt>` exists, comes before `<dt>Trạng thái</dt>`, uses `roleLabel(account.role, account.admin_type)` | **Yes**: organization-before-role order no longer asserted (organization is the subtitle, png/40) |
+| adm145-close-target | `<Link href="/admin/users">Đóng</Link>` | back link `‹ Danh sách hồ sơ` to `listHref`, and the `listHref` expression | Different behaviour by design (png/41a has no Đóng) |
+| ver119-account-fields | agencies page labels `user_id:'Mã tài khoản'`, `role:'Vai trò'`, `organization:'Tổ chức'` | detail page has `<dt>` Mã tài khoản, Vai trò, Ngày đăng ký, Đăng nhập gần nhất; shows `{account.organization}`; agency page links to `/admin/users/${item.account.user_id}` | **Yes**: no "Tổ chức" label (png/40 shows organization in the subtitle) |
+| adm-242-ui | `/admin` redirect from an effect: `const target = adminGuestRedirect(session); if (target) { router.replace(target); return }` | `const guest = adminGuestRedirect(session); if (guest) redirect(guest)` (server component) | Equivalent for the new page |
+| adm-242-ui | users and agencies detail are `<div className="overlay" role="dialog" aria-modal="true" aria-label=...>` closed by backdrop and Escape | users page has `<Modal open={target !== null}`; Modal.tsx has `role="dialog" aria-modal="true"` and Escape | **Yes**: backdrop click and `aria-label` of the detail dialogs no longer asserted; the detail screens are pages now |
+| adm-242-ui | agencies page has `<table className="review-table">`, no `Hiển thị cả hồ sơ đã xử lý`, no `STATUS_LABEL` | `ReviewList.tsx` has `<table className="av3-table av3-table--review">` and `Đã xử lý (`, no `STATUS_LABEL` | **Yes**: "no `Hiển thị cả hồ sơ đã xử lý`" dropped (that text is gone with the old page) |
+| adm117-cancel, adm117-ubnd-empty-suggestions | read `create-account/page.tsx` | read `create-account/CreateAccountForm.tsx` (same code, moved) | Path only |

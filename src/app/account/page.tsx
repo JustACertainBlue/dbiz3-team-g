@@ -1,9 +1,16 @@
 'use client'
 
+// Screens 19 and 19a (mockup v3 png/19, png/19a). Same requests as before: GET/PATCH /api/auth/account,
+// POST/DELETE /api/auth/account/avatar. The account menu (png/20) and the logout popup (png/20a) are in the shared header.
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import AccountSidebar from '../auth-v3/AccountSidebar'
+import { formatViDate, formatViDateTime } from '../auth-v3/rules'
+import '../auth-v3/auth-v3.css'
 
-type Account = { full_name: string; title: string; phone: string; email: string; role: string; admin_type: string | null; data_scope: string; organization: string; business_href: string | null }
+type Account = { full_name: string; title: string; phone: string; email: string; account_status?: string; created_at?: string; role: string; admin_type: string | null; data_scope: string; organization: string; business_href: string | null }
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(-2).map(part => part[0]).join('').toUpperCase() || '?'
+
 export default function AccountPage() {
   const [account, setAccount] = useState<Account | null>(null)
   const [editing, setEditing] = useState(false)
@@ -32,13 +39,58 @@ export default function AccountPage() {
     } catch (error) { setError(error instanceof Error ? error.message : 'Không thể lưu. Vui lòng thử lại.') }
     finally { setSaving(false) }
   }
-  return <section className="account-page"><p>TÀI KHOẢN CÁ NHÂN</p><p><Link href="/account/change-password">Đổi mật khẩu</Link></p><h1>{editing ? 'Chỉnh sửa tài khoản' : 'Tài khoản của tôi'}</h1>
-    {account && <div style={{margin:'20px 0'}}>{!avatarFailed && <img src={`/api/auth/account/avatar?v=${avatarVersion}`} alt="Ảnh đại diện" width={80} height={80} style={{borderRadius:'50%',objectFit:'cover'}} onError={() => setAvatarFailed(true)}/>}<label>Ảnh đại diện — JPG/PNG, tối đa 2 MB<input type="file" accept="image/jpeg,image/png" disabled={saving} onChange={event => { const file = event.target.files?.[0]; if(file) void avatar(file); event.target.value = '' }}/></label><button type="button" disabled={saving} onClick={() => avatar()}>Gỡ ảnh đại diện</button></div>}
-    {error && <p role="alert">{error} {!account && <Link href="/login">Đăng nhập</Link>}</p>}{saved && <p role="status">Đã lưu thông tin.</p>}
-    {!account && !error && <p>Đang tải tài khoản…</p>}
-    {account && <><div className="account-meta"><strong>{account.email}</strong><p>{account.role} {account.admin_type} · {account.data_scope}</p><p>Email, vai trò và quyền được quản lý bởi hệ thống.</p>{account.business_href && <p><Link href={account.business_href}>Hồ sơ doanh nghiệp: {account.organization || 'Xem hồ sơ'} →</Link></p>}</div>
-    {editing ? <form onSubmit={submit}><label>Họ tên<input name="full_name" defaultValue={account.full_name} required maxLength={100}/></label><label>Chức danh<input name="title" defaultValue={account.title} required/></label><label>Số điện thoại<input name="phone" defaultValue={account.phone} required pattern="\+?[0-9]{10,15}"/></label><div><button disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button><button type="button" disabled={saving} onClick={() => setEditing(false)}>Hủy</button></div></form> : <><dl><dt>Họ tên</dt><dd>{account.full_name}</dd><dt>Chức danh</dt><dd>{account.title}</dd><dt>Điện thoại</dt><dd>{account.phone}</dd></dl><button onClick={() => { setEditing(true); setSaved(false) }}>Chỉnh sửa thông tin</button></>}
-    </>}
-    <style jsx>{`.account-page{max-width:740px;margin:40px auto;padding:28px;background:#fffdf8;border:1px solid #ded8cb;border-radius:18px;color:#203229}.account-page h1{font:700 34px var(--font-body);margin:12px 0 24px}.account-meta{padding:18px;background:#eef2e9;border-radius:12px;margin-bottom:24px;overflow-wrap:anywhere}dl{display:grid;grid-template-columns:130px 1fr;gap:14px;margin:20px 0}dt{color:#66746d}label{display:grid;gap:8px;margin-bottom:18px}input{padding:12px;border:1px solid #b8c3b9;border-radius:8px;font:inherit}button{padding:11px 18px;border:1px solid #203229;border-radius:8px;background:#203229;color:white;margin-right:10px;cursor:pointer}button:disabled{opacity:.6;cursor:wait}@media(max-width:600px){.account-page{margin:18px 12px;padding:20px}dl{grid-template-columns:1fr}}`}</style>
-  </section>
+
+  const pending = account?.account_status === 'Pending Approval'
+  const statusText = !account ? '' : pending ? 'Chờ Sở Du lịch duyệt' : account.account_status === 'Active' ? 'Đang hoạt động' : account.account_status === 'Disabled' ? 'Đã khoá' : account.account_status || ''
+  const subtitle = account ? [account.organization, account.title].filter(Boolean).join(' · ') : ''
+
+  return <main className="av3-page">
+    <h1 className="av3-h1">{editing ? 'Chỉnh sửa tài khoản' : 'Tài khoản của tôi'}</h1>
+    <div className="av3-account">
+      <AccountSidebar active="info" businessHref={account?.business_href} />
+      <div className="av3-account__main">
+        {error && <div className="av3-alert av3-alert--danger" role="alert"><strong>{error}</strong>{!account && <p><Link href="/login" className="av3-link">Đăng nhập</Link></p>}</div>}
+        {saved && <div className="av3-alert av3-alert--success" role="status"><strong>Đã lưu thông tin.</strong></div>}
+        {!account && !error && <p>Đang tải tài khoản…</p>}
+        {account && pending && <div className="av3-banner av3-banner--warn av3-banner--row">
+          <div><h2>Đang chờ Sở Du lịch Hà Nội duyệt</h2><p>Thường có kết quả trong 2 ngày làm việc. Trong lúc chờ, bạn chưa đặt chỗ được.</p></div>
+          <Link href="/register/status" className="av3-btn av3-btn--primary">Theo dõi trạng thái hồ sơ</Link>
+        </div>}
+        {account && <section className="av3-card av3-card--account">
+          <div className="av3-profile">
+            <span className="av3-avatar" aria-hidden={avatarFailed ? undefined : true}>
+              {!avatarFailed ? <img src={`/api/auth/account/avatar?v=${avatarVersion}`} alt="Ảnh đại diện" width={72} height={72} onError={() => setAvatarFailed(true)} /> : initials(account.full_name)}
+            </span>
+            <div className="av3-profile__who">
+              <h2>{account.full_name} <span className={`av3-pill ${pending ? 'av3-pill--warn' : 'av3-pill--ok'}`}>{pending ? 'Chờ duyệt' : '✓ Đã xác minh'}</span></h2>
+              <p>{subtitle}</p>
+            </div>
+            {!editing && <button type="button" className="av3-icon-btn" aria-label="Chỉnh sửa thông tin" onClick={() => { setEditing(true); setSaved(false) }}>
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" /></svg>
+            </button>}
+          </div>
+          {editing ? <form onSubmit={submit} className="av3-form av3-form--edit">
+            <div className="av3-avatar-actions">
+              <label className="av3-btn av3-btn--secondary av3-btn--sm">Đổi ảnh đại diện<input type="file" accept="image/jpeg,image/png" className="av3-sr" disabled={saving} onChange={event => { const file = event.target.files?.[0]; if (file) void avatar(file); event.target.value = '' }} /></label>
+              <button type="button" className="av3-link av3-link-button" disabled={saving} onClick={() => avatar()}>Gỡ ảnh đại diện</button>
+              <small>JPG/PNG, tối đa 2 MB</small>
+            </div>
+            <div className="av3-field"><label htmlFor="acc-name">Họ tên</label><input id="acc-name" name="full_name" defaultValue={account.full_name} required maxLength={100} /></div>
+            <div className="av3-field"><label htmlFor="acc-title">Chức danh</label><input id="acc-title" name="title" defaultValue={account.title} required /></div>
+            <div className="av3-field"><label htmlFor="acc-phone">Số điện thoại</label><input id="acc-phone" name="phone" defaultValue={account.phone} required pattern="\+?[0-9]{10,15}" /></div>
+            <div className="av3-actions">
+              <button className="av3-btn av3-btn--primary" disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button>
+              <button type="button" className="av3-btn av3-btn--secondary" disabled={saving} onClick={() => setEditing(false)}>Hủy</button>
+            </div>
+          </form> : <dl className="av3-rows av3-rows--wide">
+            <div><dt>Email đăng nhập</dt><dd>{account.email}</dd></div>
+            <div><dt>Số điện thoại</dt><dd>{account.phone}</dd></div>
+            {account.organization && <div><dt>Doanh nghiệp</dt><dd>{account.business_href ? <Link href={account.business_href} className="av3-link">{account.organization}</Link> : account.organization}</dd></div>}
+            {statusText && <div><dt>Trạng thái</dt><dd className={pending ? 'av3-warn-text' : 'av3-ok-text'}>{statusText}</dd></div>}
+            {account.created_at && <div><dt>Ngày tạo</dt><dd title={formatViDateTime(account.created_at)}>{formatViDate(account.created_at)}</dd></div>}
+          </dl>}
+        </section>}
+      </div>
+    </div>
+  </main>
 }

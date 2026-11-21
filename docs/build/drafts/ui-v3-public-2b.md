@@ -327,7 +327,7 @@ Quy tắc áp dụng: loại mọi ảnh rối dây; giữ ảnh rối không th
 | Ảnh bìa làng Phùng Xá, Mỹ Đức (bìa làng) | Nghề làng là dệt tơ sen; trên Pexels chỉ có ảnh hoa/lá sen, không có ảnh rút sợi hay dệt tơ sen. Làng này sẽ không còn ảnh nào (bìa lẫn trải nghiệm). |
 | Tìm hiểu quy trình rút sợi và dệt tơ sen tại xưởng (trải nghiệm) | Cùng lý do: không có ảnh tơ sen đạt. |
 | Xem múa rối nước tại thủy đình Đào Thục (trải nghiệm) | Chỉ có 1 ảnh rối nước đạt (39125133), đã dành cho "Tích trò rối nước". Ảnh hiện tại của trải nghiệm không có mặt người, giữ nguyên cho đến khi có ảnh chụp. |
-| In thủy ấn trên giấy dó (trải nghiệm) | Ảnh marbling bị loại. Ảnh hiện tại (f67e94a1, người đàn ông trong hơi nước) sẽ bị gỡ, nên trải nghiệm này sẽ không còn ảnh nào. |
+| In thủy ấn trên giấy dó (trải nghiệm) | Ảnh marbling bị loại. Quyết định 21/11: giữ ảnh hiện tại (f67e94a1, người đàn ông trong hơi nước) cho đến khi có ảnh tự chụp. |
 | Nghe nghệ nhân kể về rối nước (trải nghiệm) | Cả 2 ứng viên là rối dây (bị loại). Ảnh hiện tại không có mặt người, giữ nguyên cho đến khi có ảnh chụp (đang dùng chung file với "Tô màu con rối chú Tễu"). |
 | Xem sau mành và nghe kể nghề rối (trải nghiệm) | Cả 2 ứng viên là rối dây. Ảnh hiện tại giữ nguyên (dùng chung file với "Sơn trang trí con rối gỗ"). |
 | Sơn trang trí con rối gỗ (trải nghiệm) | Cả 2 ứng viên là rối dây. Ảnh hiện tại giữ nguyên (dùng chung file với "Xem sau mành…"). |
@@ -335,6 +335,41 @@ Quy tắc áp dụng: loại mọi ảnh rối dây; giữ ảnh rối không th
 
 ### Làng nào không còn ảnh nào sau khi duyệt (DEV, chỉ đọc)
 
-Tính trên 20 làng có trải nghiệm đang chạy: bỏ các file có mặt người (28 file), thêm ảnh bìa và ảnh trải nghiệm đã duyệt. **Chỉ Phùng Xá, Mỹ Đức không còn ảnh nào** (không có bìa, trải nghiệm tơ sen không có ảnh), nên làng bị ẩn khỏi trang chủ và danh sách làng (quyết định #9: làng không ảnh không hiện). Mọi làng khác còn ít nhất một ảnh bìa hoặc ảnh trải nghiệm. Trải nghiệm không còn ảnh: tơ sen (Phùng Xá) và "In thủy ấn trên giấy dó" (Yên Thái); 5 trải nghiệm rối ("Xem múa rối nước" và 4 trải nghiệm có ứng viên toàn rối dây) vẫn giữ ảnh hiện tại, không có mặt người, cho đến khi có ảnh chụp.
+Tính trên 20 làng có trải nghiệm đang chạy: bỏ các file có mặt người (28 file), thêm ảnh bìa và ảnh trải nghiệm đã duyệt. **Chỉ Phùng Xá, Mỹ Đức không còn ảnh nào** (không có bìa, trải nghiệm tơ sen không có ảnh), nên làng bị ẩn khỏi trang chủ và danh sách làng (quyết định #9: làng không ảnh không hiện). Mọi làng khác còn ít nhất một ảnh bìa hoặc ảnh trải nghiệm. Trải nghiệm không còn ảnh: chỉ tơ sen (Phùng Xá); "In thủy ấn trên giấy dó" (Yên Thái) giữ tạm ảnh có mặt người hiện tại (quyết định sau, xem dưới); 5 trải nghiệm rối ("Xem múa rối nước" và 4 trải nghiệm có ứng viên toàn rối dây) vẫn giữ ảnh hiện tại, không có mặt người, cho đến khi có ảnh chụp.
 
-Các tệp ở thư mục notes của phiên: `final/approved-photos-2111-final.json`, `final/xuong-2111-final.json`, `final/can-tu-chup-final.json`, `final/review.html` và cây ảnh `final/`.
+Gói chốt được chép ra `~/Desktop/dbiz3-photos/2111/` (xem cuối mục này).
+
+### Quyết định bổ sung (21/11) và mô phỏng sau khi nhập + gỡ
+
+- Giữ tạm `19026103` (gần đúng).
+- Trải nghiệm nào sau khi nhập ảnh mới và gỡ ảnh có mặt người mà không còn ảnh nào thì **giữ ảnh có mặt người hiện tại** cho đến khi có ảnh tự chụp.
+
+**Mô phỏng chỉ đọc trên DEV** (89 trải nghiệm và 44 xưởng đang chạy; quy tắc script: hàng của file dùng chung bị gỡ, hàng của file một trải nghiệm được giữ và dời xuống; ảnh mới thêm vào; sau đó gỡ theo hash):
+
+| Kết quả | Chi tiết |
+|---|---|
+| Trải nghiệm còn 0 ảnh | **1**: "Tìm hiểu quy trình rút sợi và dệt tơ sen tại xưởng" (Phùng Xá). Đã 0 ảnh từ trước, không có ảnh có mặt người để giữ |
+| Trải nghiệm phải giữ ảnh có mặt người | **1**: "In thủy ấn trên giấy dó" (Yên Thái), giữ file `f67e94a1` (hash `978152f5…`) |
+| Trải nghiệm đang dùng `56ea4e2a` | "Xem rối nước và tô màu con rối": 1 ảnh trước, 1 ảnh sau (nhận `19026103`), nên `56ea4e2a` **được gỡ** |
+| Xưởng còn 0 ảnh | 23 trong 44 xưởng đang chạy có 0 ảnh trong `provider_version_media`; **cả 23 đã 0 ảnh từ trước**, không xưởng nào mới thành 0 ảnh vì 2B. 7 xưởng có ảnh mặt người đều còn ít nhất 2 ảnh (Hà Liên 1→3, Hoài Thu 1→2, 5 xưởng còn lại 3→3) |
+| Làng không còn ảnh bìa | Chỉ Phùng Xá, Mỹ Đức (3 bìa có mặt người đều được thay) |
+
+Hai xưởng không có gallery nháp (Hà Liên, Hoài Thu) nên chỉ cần `provider_version_media`.
+
+### Danh sách gỡ theo từng hàng: `go-anh-mat-nguoi-final.json`
+
+| Bảng | Số hàng | Ghi chú |
+|---|---|---|
+| `profile_media` | **52** | 37 hàng trải nghiệm + 15 hàng cấp xưởng; đã trừ 1 hàng giữ lại (`In thủy ấn`) so với 38 + 15 = 53 |
+| `provider_version_media` | **17** | version đang hiển thị (v1) của 7 xưởng |
+| Trong đó script import cũng tự gỡ | 30 | hàng của file dùng chung giữa trải nghiệm; gỡ theo hash là lặp lại an toàn |
+
+Mỗi hàng ghi bảng, sha256, `experience_id` hoặc `provider_id`, `profile_media_id` (với `profile_media`), `file_id`, `display_order`, `version_no` (với `provider_version_media`). 3 bìa làng có mặt người không nằm trong hai bảng này: script ghi đè `cover_image_id`.
+
+### Gói chốt
+
+Gói nằm ngoài repo và ngoài thư mục phiên: `~/Desktop/dbiz3-photos/2111/` gồm `approved-photos-2111-final.json`, `xuong-2111-final.json`, `go-anh-mat-nguoi-final.json`, `can-tu-chup-final.json`, `review.html` và cây ảnh `village/`, `experience/`, `workshop/` (83 ảnh, 44 MB). `SHA256SUMS` có 88 dòng (5 tệp + 83 ảnh); kiểm bằng `shasum -a 256 -c SHA256SUMS` cho 88/88 OK; sha256 trong hai file JSON khớp với file ảnh 83/83; `review.html` trỏ tới 83 ảnh, không thiếu ảnh nào.
+
+Lưu ý: `~/Desktop/dbiz3-photos` là một worktree git của repo (nhánh `chore/replace-licensed-photos`), nên thư mục `2111/` nằm trong một checkout. Đã thêm `/2111/` vào `.git/info/exclude` để không bị `git add` nhầm; nếu muốn đặt hẳn ngoài mọi worktree thì chuyển sang thư mục khác.
+
+**2B xong, sẵn sàng nhập.** Trước khi nhập vẫn cần: (1) sửa `EXCLUDED_ENTRIES` sang sha256 (mục 4); (2) quyết định cách gỡ hàng ảnh có mặt người (script hiện tại chỉ gỡ hàng của file dùng chung); (3) đối chiếu 7 hash trên PROD (mục 6).

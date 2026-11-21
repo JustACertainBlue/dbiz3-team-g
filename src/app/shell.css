@@ -46,6 +46,9 @@ body { background: var(--c-white); color: var(--c-text); }
 .hab-nav :is(a, button):focus-visible { outline: 3px solid var(--color-brand-300); outline-offset: 2px; }
 
 /* ---- Account chip and menu (png/20) ---- */
+.hab-nav--simple { justify-content: space-between; }
+.hab-nav__ask { color: var(--c-nav-text, #DCEFE2); font-size: 16px; }
+.hab-nav__ask a { color: #fff; font-weight: 700; }
 .hab-account { position: relative; }
 .hab-chip {
   min-height: var(--tap); display: flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border: 0; border-radius: var(--r-button);
@@ -65,11 +68,13 @@ body { background: var(--c-white); color: var(--c-text); }
 .hab-account__person { margin: 0; font: 700 18px/26px var(--font-body); }
 .hab-account__org { margin: 2px 0 0; color: var(--c-muted); font: 400 16px/23px var(--font-body); }
 .hab-account__item {
-  width: 100%; min-height: var(--tap); display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 0; border-radius: var(--r-button);
+  width: 100%; min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 0; border-radius: var(--r-button);
   background: transparent; color: var(--c-text); text-decoration: none; text-align: left; font: 600 16px/24px var(--font-body); cursor: pointer;
 }
 .hab-account__item:hover, .hab-account__item:focus-visible { background: var(--c-border-soft); outline: none; }
 .hab-account__item--danger { color: var(--c-danger); }
+.hab-account__item svg { flex: none; color: var(--c-text-3); }
+.hab-account__item--danger svg { color: inherit; }
 .hab-account__divider { margin: 6px 0; border-top: 1px solid var(--c-border-soft); }
 
 /* ---- Collapsed menu (< 900 px) ---- */

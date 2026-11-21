@@ -6,6 +6,13 @@ Written 2026-11-21 for the human who runs it (the agent never runs a PROD comman
 
 PROD project ref: `euxclvszgiknjosbwjya`. DEV project ref: `jfrpnffknjpgmkyquxql`.
 
+## Release in two stages (decision of the coordinating chat, 2026-11-21)
+
+PROD lacks part of the DEV rows (Step 0.3 on 2026-11-21: 139 rows and 68 slots, see Appendix B and Appendix C). **Stage 1** (this
+runbook, Steps 0 to 10) loads content and images only for the rows PROD already has: `db:content-load --only-existing` and
+`storage:seed-images --skip-missing-targets`. **Stage 2** (Appendix C, description only, nothing built) brings the missing rows
+to PROD and loads their content and photos later.
+
 ## 0. Rules that apply to every step
 
 1. **Check the ref first.** Every command below prints a first line with `projectRef`. It must be
@@ -23,8 +30,8 @@ PROD project ref: `euxclvszgiknjosbwjya`. DEV project ref: `jfrpnffknjpgmkyquxql
 | Command | PROD dry run | PROD real run | Undo |
 |---|---|---|---|
 | `npm run db:migrate` | `-- --dry-run` + `CONFIRM_PROJECT_REF` (transaction, then ROLLBACK) | `-- --target-prod` + `CONFIRM_PROJECT_REF` | none (migrations are forward only; new migration to fix) |
-| `npm run db:content-load` | `-- --list-missing --target-prod` (survey, read only); `-- --target-prod` (default, writes then ROLLBACK) | `-- --target-prod --apply` | `-- --target-prod --undo <file>` |
-| `npm run storage:seed-images` | `-- --json … --photos-dir … [--faces …] [--workshops …] --target-prod` (default, rolls back, uploads nothing) | add `--apply` | `-- --target-prod --undo <dir>/undo.json` |
+| `npm run db:content-load` | `-- --list-missing --target-prod` (survey, read only); `-- --target-prod --only-existing` (default, writes then ROLLBACK) | `-- --target-prod --only-existing --apply` | `-- --target-prod --undo <file>` |
+| `npm run storage:seed-images` | `-- --json … --photos-dir … [--faces …] [--workshops …] --target-prod --skip-missing-targets` (default, rolls back, uploads nothing) | add `--apply` | `-- --target-prod --undo <dir>/undo.json` |
 | `npm run storage:media-variants` | `-- --target-prod` (default, reads and encodes only) | add `--apply` | `-- --target-prod --undo <dir>/undo.json` |
 | `npm run storage:catalog-copies` | `-- --target-prod` | add `--apply` | `-- --target-prod --undo <dir>/undo.json` |
 
@@ -105,28 +112,51 @@ table, `inSnapshot`, `present`, `missing`, and `Nothing missing: every snapshot 
 It works before the migrations are applied. A `Note: N target user_accounts row(s) have an e-mail that is not @example.invalid`
 line means the load would refuse those users: report it too.
 
-> **If anything is missing: STOP.** The command prints `STOP: N snapshot row(s) are missing…`, exits with code 2 and writes
-> the ids to `.demo-data/prod-content/content-missing-<UTC>.json` (ids only). Do not continue with any later step and do not
-> run `--only-existing` or `--insert-missing` (they do not exist). Send the whole output and that file to the coordinating
-> chat, which decides what to do with the missing rows (Appendix B lists the options).
+> **Missing rows are expected in stage 1.** On 2026-11-21 the survey reported 139 missing rows (experiences 34, provider_profiles 25,
+> provider_profile_versions 24, villages 14, user_accounts 35, agency_profiles 7) and `slotsOfMissingExperiences` 68, with
+> `nonSyntheticUsers` 0; the command prints `STOP: …` and exits with code 2 whenever something is missing, which is the normal
+> result now. Keep the output and the `content-missing-<UTC>.json` file. Go on to Step 0.4 and the later steps **only if** every
+> number is the same or lower than those above and `nonSyntheticUsers` is 0. **STOP** and send the output and the file to the
+> coordinating chat if any number is higher, if `nonSyntheticUsers` is not 0, or if a table that was complete is now missing rows.
 
 **0.4 Seed-image dry run, set of 20/11 only (PROD, rolled back, nothing uploaded):**
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod --skip-missing-targets
 ```
 
 Expected: first line `"projectRef":"euxclvszgiknjosbwjya","isDev":false,"isProd":true,"mode":"dry-run (writes, then ROLLBACK; no upload)"`,
-a report with the counts, and `Dry run: every write was rolled back; nothing was uploaded.` Compare the counts with the DEV run
-of the same set.
+a report with `imported` (the photos whose village or experience PROD has), a `skippedMissingTargets` block listing the photos left
+out (`counts.photos`), and `Dry run: every write was rolled back; nothing was uploaded.` Write down `imported` and
+`skippedMissingTargets.counts`: `imported` + `counts.photos` must equal the number of photos of the set that are not excluded.
 
 The set of 21/11 is **not** dry-run here. Its face-removal list was made on DEV after the 20/11 set was applied, so on PROD it
 only matches once 20/11 is applied: its dry run is Step 6, right after Step 5.
 
-> **If a dry run stops because a target row is not found: STOP**, as in 0.3: send the output to the coordinating chat; do not
-> retry with other options.
+> If it stops with an error other than a missing table or column, **STOP** and send the output to the coordinating chat.
 > If it stops with a missing table or column (`does not exist`) and 0.2 listed pending migrations, that is expected before
 > Step 3: write the message down and repeat 0.4 after Step 3 (before Step 4); a second failure is a STOP.
+
+**0.5 Login check (baseline, before any write).** The login code of this release (`src/lib/auth/product-session.ts`) is
+`bcrypt.compare(password, password_hash)`; the prototype "any password" login is off in a production build (`NODE_ENV=production`).
+The seed fixtures hash (`$2b$12$seedhash…`) never matches, so a seed account that still has it cannot log in on PROD; an account
+whose hash was set by `db:set-test-passwords` or `scripts/db/lecturer-accounts.mjs` is a real bcrypt hash (cost 12) and can.
+Checked on PROD on 2026-11-21 (read only; hashes were classified, never printed): 30 accounts have a valid bcrypt hash, 20 active seed
+accounts have the fixture hash and cannot log in. Accounts to use for the demo, one per role (all `@example.invalid`, Active or
+Approved, with their organization or village assignment present; the passwords are the ones you set, kept in the PROD folder's
+`.env.local` or your password manager, not in this repository):
+
+| Role | Email |
+|---|---|
+| Tour agency | `agency-tester@example.invalid` |
+| Local provider (workshop) | `provider-tester@example.invalid` |
+| HDT | `hdt-tester@example.invalid` |
+| UBND | `ubnd-tester@example.invalid` |
+
+Check by logging in on the live PROD site with each of the four. Expected: each lands on its own workspace (Agency `/explore`,
+Provider dashboard, HDT `/admin`, UBND `/admin/providers`). If an account does not log in, **STOP**: do not reset a password by
+hand; send the account and the symptom to the coordinating chat (a reset script with a dry run and an undo file, reading the
+password from an environment variable, is proposed in Appendix C, not built).
 
 ### Step 1. Turn off Render auto-deploy
 
@@ -168,26 +198,28 @@ Expected: `[apply] project ref euxclvszgiknjosbwjya (PROD)`, then `Applied: <nam
 Check: repeat the dry run; it must say `0 pending: none`.
 Undo: none. Migrations are forward only; a problem needs a new migration in a PR.
 
-### Step 4. Content (names, descriptions, editorial, slots, display names)
+### Step 4. Content (names, descriptions, editorial, slots, display names), stage 1: existing rows only
 
 Dry run (default: runs every write inside one transaction, checks, ROLLBACK):
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:content-load -- --target-prod
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:content-load -- --target-prod --only-existing
 ```
 
-Expected: first line `"projectRef":"euxclvszgiknjosbwjya","isProd":true,"mode":"load dry-run"`; `{"snapshot":{"rows":…,"snapshotSlots":190,
-"changedRows":…}}`; a `rowCounts` line where only `experience_slots` and `audit_logs` differ; and
-`Dry run: every write passed the database rules and the checks; rolled back, nothing kept.`
-If it says `N target row(s) not found`, nothing was written: go to Appendix B.
+Expected: first line `"projectRef":"euxclvszgiknjosbwjya","isProd":true,"mode":"load dry-run"`; a `snapshot` line with `rows` 304,
+`skippedRows` (139 on 2026-11-21) and `changedRows`; a line `Skipped (not on this database): 139 row(s) {…}; slots of 34
+experience(s) = 68 slot(s) not loaded.` (the numbers must match the Step 0.3 survey); a `rowCounts` line where only `experience_slots`
+and `audit_logs` differ; and `Dry run: every write passed the database rules and the checks; rolled back, nothing kept.`
+**STOP** if the skipped numbers differ from Step 0.3, or if any check fails.
 
 Apply:
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:content-load -- --target-prod --apply
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:content-load -- --target-prod --only-existing --apply
 ```
 
-Expected: `Committed. Undo file: …/content-load-undo-<UTC>.json`. Note the path.
+Expected: `Committed. Undo file: …/content-load-undo-<UTC>.json`. Note the path; the file also lists the skipped ids and slot counts
+(`skipped`), which stage 2 uses.
 Check: run the dry run again. It must say `0 of N row(s) would change` and `Already up to date: 0 changes, nothing written.`
 Undo (preview, then real; only restores rows that still hold the loaded values):
 
@@ -196,26 +228,27 @@ CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:content-load -- --target-pro
 CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run db:content-load -- --target-prod --undo <undo file>
 ```
 
-### Step 5. Seed images, set of 20/11
+### Step 5. Seed images, set of 20/11, stage 1: targets PROD has
 
 Dry run (all writes, then ROLLBACK; uploads nothing):
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod --skip-missing-targets
 ```
 
 Expected: first line `"projectRef":"euxclvszgiknjosbwjya","isDev":false,"isProd":true,"mode":"dry-run (writes, then ROLLBACK; no upload)"`,
-a report with the photo counts, and `Dry run: every write was rolled back; nothing was uploaded.` Compare the counts with the
-DEV run of the same set (DEV counts: in the build log entry of that run).
+a report with `imported`, `skippedMissingTargets` (the photos left out, with `counts`), and
+`Dry run: every write was rolled back; nothing was uploaded.` The numbers must be the ones of Step 0.4.
 
 Apply:
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod --apply
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2011/approved-photos.json --photos-dir ~/Documents/dbiz3-assets/photos-2011 --target-prod --skip-missing-targets --apply
 ```
 
-Expected: the report ends with the undo folder `.demo-data/seed-image-import/seed-image-import-<UTC>/undo.json`. Note it.
-Undo (preview, then real; removes the uploaded objects and restores the rows):
+Expected: the report ends with the undo folder `.demo-data/seed-image-import/seed-image-import-<UTC>/undo.json` (it also holds
+`skippedMissingTargets`). Note it.
+Undo (preview, then real; removes the uploaded objects and restores the rows; no `--skip-missing-targets` here):
 
 ```bash
 CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target-prod --undo <dir>/undo.json --dry-run
@@ -224,29 +257,34 @@ CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --target
 
 **Next: the dry run of Step 6, immediately after this step is applied.**
 
-### Step 6. Seed images, set of 21/11
+### Step 6. Seed images, set of 21/11, stage 1: targets PROD has
 
 Run it only after step 5 is applied (and its undo file noted), and **dry-run first, right after step 5**: the list of face images
 to remove (`go-anh-mat-nguoi-final.json`) was made on DEV after the 20/11 set was applied, so it only matches PROD in that state.
-The set adds the photos of 21/11, removes the face images of the list (by the SHA-256 of the stored object; a difference between the
-list and the database stops the run before any write) and adds the workshop photos.
+The set adds the photos of 21/11, removes the face images of the list (by the SHA-256 of the stored object) and adds the workshop
+photos. With `--skip-missing-targets` the photos, workshop photos and face-list rows whose village, experience or provider PROD
+does not have are left out and reported, and the face list is cut to the rows PROD can have (and the hashes only they use); what
+is left is compared exactly as before.
 
 Dry run (PROD, rolled back, nothing uploaded):
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod --skip-missing-targets
 ```
 
-Expected: same first line as step 5, a report, and `Dry run: every write was rolled back; nothing was uploaded.`
+Expected: same first line as step 5, a report with `imported`, `importedWorkshopPhotos`, `faces` (listRows, found, removedNow) and
+`skippedMissingTargets` (`counts.photos`, `counts.workshopPhotos`, `counts.faceRows`), and
+`Dry run: every write was rolled back; nothing was uploaded.` Check: `faces.found` equals `faces.listRows.profile_media` +
+`faces.listRows.provider_version_media` + `faces.listRows.kept` (the list rows whose target PROD has).
 
-> **If the dry run reports a hash that is not found (`The face-removal list does not match this database`) or a row count that
-> differs from the DEV run: STOP.** Do not apply and do not retry with other options; send the whole output to the coordinating
-> chat.
+> **If the dry run reports `The face-removal list does not match this database` (a hash not found, a row missing or an
+> unexpected row), or a count that is not explained by `skippedMissingTargets`: STOP.** Do not apply and do not retry with other
+> options; send the whole output to the coordinating chat. Only the rows of targets PROD lacks may differ.
 
 Apply (only after a clean dry run):
 
 ```bash
-CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod --apply
+CONFIRM_PROJECT_REF=euxclvszgiknjosbwjya npm run storage:seed-images -- --json ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json --photos-dir ~/Documents/dbiz3-assets/photos-2111 --faces ~/Documents/dbiz3-assets/photos-2111/go-anh-mat-nguoi-final.json --workshops ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json --target-prod --skip-missing-targets --apply
 ```
 
 Expected: same first line as step 5 with `"mode":"apply"`, a report, and the undo folder
@@ -324,7 +362,7 @@ snapshot with "[DEMO]" in any name is refused; the row counts of both tables are
 
 ## Appendix B. If PROD lacks experiences, villages, providers, users or agencies of the snapshot
 
-Only `--list-missing` (option 1) is built. Options 2 to 5 are proposals; none of them is to be run before the coordinating chat decides.
+Built: `--list-missing` (option 1) and, as stage 1 of the release, `--only-existing` (option 2) for the content and `--skip-missing-targets` for the photos. Options 3 to 5 are proposals (stage 2, Appendix C); none of them is to be run before the coordinating chat decides.
 
 What is known (DEV, read only): the snapshot holds 93 experiences, 22 villages, 49 provider profiles, 79 users, 16 agencies.
 The seed has only 8, 8, 8, 26 and 8 of them. The other rows came from the older runtime data (experiences created
@@ -338,7 +376,7 @@ Options, in the order the agent would try them:
 1. **Find out exactly what is missing (read only). Built.** `db:content-load -- --list-missing --target-prod` (Step 0.3) opens
    the connection in a READ ONLY transaction, prints for each table the number of snapshot ids PROD has and lacks, and writes the
    lacking ids to `.demo-data/prod-content/content-missing-<UTC>.json`. No write.
-2. **`--only-existing` (not built).** Load the content of the rows PROD has and skip the rest, printing the skipped counts per table
+2. **`--only-existing`. Built (stage 1).** Load the content of the rows PROD has and skip the rest, printing the skipped counts per table
    and writing them into the undo file and the audit row. Good if the missing rows are DEV-only test data (the 2026-11-15 to
    2026-11-20 rows are very likely that). Cost: a small flag plus tests; the human reads the skipped list before `--apply`.
 3. **Leave the missing rows out of the snapshot.** `--export` takes only ids that appear in a list the human approves
@@ -351,3 +389,25 @@ Options, in the order the agent would try them:
    product. Slowest, no script risk.
 
 Decision for the human before step 4: which of options 2 to 5 applies to each table.
+
+## Appendix C. Stage 2 (description only; nothing in this appendix is built or to be run)
+
+Goal: the rows that stage 1 skipped exist on PROD, with their content, slots and photos. Input: the `content-missing-<UTC>.json` file of
+Step 0.3, the `skipped` block in the undo file of Step 4 (ids and the 68 slots), and the `skippedMissingTargets` blocks in the undo
+files of Steps 5 and 6 (photos, workshop photos and face rows left out).
+
+1. **Decide how the rows get to PROD** (Appendix B, options 3 to 5; the coordinating chat decides, per table). Likely order if they are
+   copied: users, agencies and villages first, then provider profiles and their published versions, then experiences, in one
+   transaction with an undo file; nothing here is built.
+2. **Content:** run Step 0.3 again; it must report 0 missing. Then `db:content-load -- --target-prod` (without `--only-existing`) loads
+   the whole snapshot; rows already loaded in stage 1 are unchanged (it only writes rows that differ), so it adds the content and the 68
+   slots of the new rows.
+3. **Photos:** do **not** run the two sets again as they are: `storage:seed-images` is not idempotent, a second run would add the photos
+   of the rows PROD already has a second time. Stage 2 needs a smaller `approved-photos.json` (and `xuong` and face lists) that
+   contains only the items listed in `skippedMissingTargets`, made from those lists; the 21/11 face list must be re-made for the
+   new rows in the state they will be in. A `--only-items-from <report>` option would do it without hand-made files (not built).
+4. **WebP variants:** `storage:media-variants` again (dry run, apply); it only creates variants that are missing.
+5. **Login:** if the demo needs more accounts than the four of Step 0.5, a reset script is proposed (not built):
+   `db:demo-passwords`, `--target-prod` + `CONFIRM_PROJECT_REF`, dry run by default, undo file with the old hashes, the new password read
+   from an environment variable (never an argument, never printed), limited to listed `@example.invalid` accounts that are Active or Approved.
+   The 20 active seed accounts with the fixture hash need it to log in at all.

@@ -6,9 +6,11 @@
 // What it loads: experiences (name, description, highlights, group_note, inclusions, guide_languages, child_policy,
 // suitable_for), villages (description, editorial_craft, tour_suggestion, distance_km, visit_notes,
 // tour_suggestion_detail, highlights), provider_profiles (founded_year, parking_note), the published provider_profile_versions
-// (business_name, description) and experience_slots. Never accounts: user_accounts and agency_profiles are not on the allowlist,
-// so a snapshot that names them is refused; PROD keeps its seed accounts. --export takes every experience, village and
-// provider profile DEV has; a row PROD lacks makes the load refuse (nothing written).
+// (business_name, description), experience_slots, and the two display names user_accounts.full_name and
+// agency_profiles.company_name. Nothing else of an account can be written (email, password, role, status, phone are not on the
+// allowlist, so a snapshot that names them is refused), only synthetic accounts (e-mail @example.invalid) are exported, and
+// the load refuses if a target user has any other e-mail. --export takes every experience, village, provider profile, synthetic
+// user and agency DEV has; a row PROD lacks makes the load refuse (nothing written).
 // - --export reads DEV (ref guarded, READ ONLY transaction) and writes a checksummed snapshot under .demo-data/prod-content/.
 // - The load refuses unless DATABASE_URL names DEV, or, with --target-prod, PROD and CONFIRM_PROJECT_REF equals the PROD ref
 //   (typed in the shell, not read from a .env file). Checked before any connection.
@@ -39,11 +41,14 @@ export const ALLOWED_COLUMNS = Object.freeze({
   experiences: { key: 'experience_id', columns: ['name', 'description', 'highlights', 'group_note', 'inclusions', 'guide_languages', 'child_policy', 'suitable_for'] },
   provider_profiles: { key: 'provider_id', columns: ['founded_year', 'parking_note'] },
   provider_profile_versions: { key: 'provider_id', columns: ['business_name', 'description'] },
+  // The two display names only (human request 2026-11-21); never e-mail, password, role, status, phone or any login column.
+  user_accounts: { key: 'user_id', columns: ['full_name'] },
+  agency_profiles: { key: 'agency_id', columns: ['company_name'] },
   villages: { key: 'village_id', columns: ['description', 'editorial_craft', 'tour_suggestion', 'distance_km', 'visit_notes', 'tour_suggestion_detail', 'highlights'] },
 })
 const COUNTED = ['experiences', 'villages', 'provider_profiles', 'provider_profile_versions', 'experience_slots', 'audit_logs', 'user_accounts', 'agency_profiles']
 const JSON_COLUMNS = ['highlights', 'inclusions', 'visit_notes', 'tour_suggestion_detail']
-const NAME_COLUMNS = ['name', 'description', 'business_name']
+const NAME_COLUMNS = ['name', 'description', 'business_name', 'full_name', 'company_name']
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 
@@ -188,6 +193,11 @@ async function load(options, { client, work, now, log, outDir, projectRef }) {
     olds.push(rows[0])
   }
   if (missing.length) refuse(`${missing.length} target row(s) not found: ${missing.slice(0, 5).join('; ')}.`)
+  const userIds = work.updates.filter(update => update.table === 'user_accounts').map(keyOf)
+  if (userIds.length) {
+    const { rows } = await client.query(`SELECT count(*)::int AS n FROM public.user_accounts WHERE user_id = ANY($1::uuid[]) AND email NOT LIKE '%@example.invalid'`, [userIds])
+    if (rows[0].n) refuse(`${rows[0].n} target user_accounts row(s) are not synthetic accounts (e-mail is not @example.invalid); real accounts are never renamed.`)
+  }
   const changedUpdates = []
   for (const [index, update] of work.updates.entries()) {
     const { text, values } = changedSql(update)
@@ -285,16 +295,17 @@ async function undoRun(options, { client, doc, now, log }) {
 
 const SELECT_COLUMNS = columns => columns.map(column => JSON_COLUMNS.includes(column) ? `${column}::text AS ${column}` : column === 'distance_km' ? `${column}::float8 AS ${column}` : column).join(', ')
 
-/** DEV only: read the allowlisted content of the given ids. `ids` = { experiences, provider_profiles, villages } (uuid lists). */
+/** DEV only: read the allowlisted content of the given ids. `ids` = { experiences, provider_profiles, villages, user_accounts?, agency_profiles? } (uuid lists). */
 export async function exportSnapshot(client, { ids, projectRef, now = new Date() }) {
   const updates = []
   /** @type {Record<string, any[]>} */
   const slots = {}
-  const read = async (table, keyColumn, list, whereVersion) => {
+  const read = async (table, keyColumn, list, whereVersion, extraWhere = '') => {
+    if (!list) return
     const { columns } = ALLOWED_COLUMNS[table]
     const sql = whereVersion
       ? `SELECT provider_id AS id, ${SELECT_COLUMNS(columns)} FROM provider_profile_versions v WHERE provider_id = ANY($1::uuid[]) AND version_no = (SELECT published_version_no FROM provider_profiles p WHERE p.provider_id = v.provider_id) ORDER BY provider_id`
-      : `SELECT ${keyColumn} AS id, ${SELECT_COLUMNS(columns)} FROM ${table} WHERE ${keyColumn} = ANY($1::uuid[]) ORDER BY ${keyColumn}`
+      : `SELECT ${keyColumn} AS id, ${SELECT_COLUMNS(columns)} FROM ${table} WHERE ${keyColumn} = ANY($1::uuid[])${extraWhere} ORDER BY ${keyColumn}`
     for (const row of (await client.query(sql, [list])).rows) {
       const { id, ...set } = row
       updates.push({ table, key: { [keyColumn]: id }, ...(whereVersion ? { published: true } : {}), set })
@@ -304,6 +315,8 @@ export async function exportSnapshot(client, { ids, projectRef, now = new Date()
   await read('provider_profiles', 'provider_id', ids.provider_profiles)
   await read('provider_profile_versions', 'provider_id', ids.provider_profiles, true)
   await read('villages', 'village_id', ids.villages)
+  await read('user_accounts', 'user_id', ids.user_accounts, false, " AND email LIKE '%@example.invalid'")
+  await read('agency_profiles', 'agency_id', ids.agency_profiles)
   for (const update of updates.filter(item => item.table === 'experiences')) slots[update.key.experience_id] = await readSlots(client, update.key.experience_id)
   const content = { updates, slots }
   return { kind: 'hab-content-snapshot', version: 1, sourceRef: projectRef, createdAt: now.toISOString(), sha256: checksum(content), ...content }
@@ -326,7 +339,8 @@ async function main() {
     try {
       await client.query('BEGIN'); await client.query('SET TRANSACTION READ ONLY')
       const all = async (table, column) => (await client.query(`SELECT ${column}::text AS id FROM ${table} ORDER BY ${column}`)).rows.map(row => row.id)
-      const ids = { experiences: await all('experiences', 'experience_id'), provider_profiles: await all('provider_profiles', 'provider_id'), villages: await all('villages', 'village_id') }
+      const ids = { experiences: await all('experiences', 'experience_id'), provider_profiles: await all('provider_profiles', 'provider_id'), villages: await all('villages', 'village_id'),
+        user_accounts: await all('user_accounts', 'user_id'), agency_profiles: await all('agency_profiles', 'agency_id') }
       const snapshot = await exportSnapshot(client, { ids, projectRef })
       await client.query('ROLLBACK')
       validateSnapshot(snapshot)

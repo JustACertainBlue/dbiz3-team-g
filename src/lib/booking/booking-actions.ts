@@ -1,6 +1,6 @@
 import type { BookingView } from './booking-access'
 
-// F-SCHED-07 action buttons (FR-007 matrix, BR-017, SC-007). The Agency view never has actions.
+// F-SCHED-07 action buttons (FR-007 matrix, BR-017, SC-007). The Agency view only has Cancel while On hold.
 export interface BookingActions {
   confirm: boolean
   update: boolean
@@ -11,7 +11,8 @@ export interface BookingActions {
 const NONE: BookingActions = { confirm: false, update: false, cancel: false, mark_arrival: false }
 
 export function bookingActions(status: string, now: Date, startAt: string, actor: BookingView): BookingActions {
-  if (actor !== 'provider') return { ...NONE }
+  // UI v3 decision #5: the Tour Agency may only cancel (with a reason) while On hold; once Booked it has no button.
+  if (actor !== 'provider') return { ...NONE, cancel: status === 'On hold' }
   if (status === 'On hold') return { confirm: true, update: true, cancel: true, mark_arrival: false }
   if (status === 'Booked') {
     // BR-017: Mark Group Arrival only from the scheduled start onwards.

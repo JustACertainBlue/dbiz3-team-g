@@ -92,3 +92,16 @@ export function mergeLatestPage<M extends { message_id: string }, H extends { ch
   const older = current.message_history.slice(0, firstIndex).filter(message => !latestIds.has(message.message_id))
   return { ...latest, message_history: [...older, ...latest.message_history], has_more_messages: current.has_more_messages }
 }
+
+// Pill of a Booking Update message (mockup 25 ".evt", UI v3 decision #6). The stored sentence (spec-BKG #49,
+// "Booking {status label}: …") stays the sub line; the title is derived from its status label.
+const EVENT_TITLE: Record<string, string> = {
+  'Tạm giữ': 'Xưởng đã giữ chỗ',
+  'Đã đặt': 'Xưởng đã nhận tiền',
+  'Hoàn tất': 'Tour đã hoàn thành',
+  'Đã huỷ': 'Đặt chỗ đã huỷ',
+}
+export function eventView(text: string): { title: string; sub: string } {
+  const label = /^Booking ([^:]+): /.exec(text)?.[1] ?? ''
+  return { title: EVENT_TITLE[label] ?? 'Cập nhật đặt chỗ', sub: text }
+}

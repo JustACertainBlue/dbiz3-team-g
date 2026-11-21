@@ -8,3 +8,13 @@
 - Scanner moved to `src/instrumentation.ts` (needs `experimental.instrumentationHook` in Next 14). Reads still expire due holds. No scanner existed in Explore.
 - Migration `20261121100000_hab_booking_contact_fields.sql`: contact_name, contact_phone, note (nullable). Applied to DEV by the human on 21/11.
 - Test fixture shim `tests/setup/booking-pair-chat.ts`: the seed has no chat for the demo agency/provider pair. Proper fix: a seed row (data/ owner), then delete the shim.
+
+## Part B progress, 21/11 (desktop only, 1440 px)
+- Mockups read from `~/Desktop/hab-mockup-v3/source` (the path in the brief was a placeholder).
+- quote_requests has only agency, experience, source, matching_session_id, created_at (UNIQUE agency+experience): no column for date, slot, guests, note. No row written. The request is a chat message of kind `Quote Request` whose text is JSON (`src/lib/booking/request-card.ts`); chat_messages has no payload column either.
+- 04/24: the disabled "Gửi yêu cầu" buttons now open `RequestButton` (form: date, guests, note; slot from the chosen row) then `/messages?chat_session_id=`.
+- 25: request shown as pill "Đã gửi yêu cầu đặt chỗ" plus a detail card; Booking Update messages as pills (title by status, original sentence as sub line, "Xem ›"). Pill titles other than "Xưởng đã giữ chỗ" are my wording (mockup shows only that one): Đã đặt = "Xưởng đã nhận tiền", Hoàn tất = "Tour đã hoàn thành", Đã huỷ = "Đặt chỗ đã huỷ". Screen 25 is still the v9 layout, not restyled.
+- 35 (create only): restyled to mockup; added "Người liên hệ" and "Số điện thoại" (not on the mockup) so the three columns can be written; "Điều kiện đã thống nhất" is stored in `note`; conditions stay the Experience snapshot; price discount line not shown. Edit form (BKG144) not restyled.
+- Test edits driven by the decisions: bkg134-cancel-target (label "Huỷ"), bkg-booking-actions and bkg-booking-detail-api (agency may cancel On hold), bkg-screens (button "Đã nhận tiền").
+- 34: lib supports `tab=todo` (On hold, hold_expires_at ascending); the page UI is not restyled yet.
+- Found by running `next dev -p 3205`: `instrumentation.ts` must use `=== 'nodejs'` or the edge bundle pulls in `pg`. Fixed; scanner logs once.

@@ -6,11 +6,12 @@ import { demoRepository } from '@/lib/db/application-store'
 import { canViewAgencyBooking } from '@/lib/booking/booking-access'
 import { getBookingDetail } from '@/lib/booking/booking-detail'
 import { bookingDetailStyles } from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailView'
+import AgencyCancel from './AgencyCancel'
 import BookingDetailScreen from '@/app/provider/[providerId]/bookings/[bookingId]/BookingDetailScreen'
 
 export const dynamic = 'force-dynamic'
 
-// Screen BKG138 Booking Detail (F-SCHED-07, Tour Agency): read-only, no action buttons.
+// Screen BKG138 Booking Detail (F-SCHED-07, Tour Agency): read-only; the only button is Cancel while On hold (UI v3 #5).
 export default async function AgencyBookingDetailPage({ params }: { params: { agencyId: string; bookingId: string } }) {
   const session = (await currentServerSession())
   const booking = (await demoRepository().find('bookings', row => row.booking_id === params.bookingId))
@@ -22,7 +23,7 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
     {/* #157: Provider changes show within ~10 s without a reload (FR-008) */}
     <AutoRefresh />
     <BookingDetailScreen detail={detail} readOnly back={{ href: `/agency/${params.agencyId}/bookings`, label: 'Quay lại đặt chỗ' }}
-      actions={<ChatOpenButton bookingId={params.bookingId} label="Nhắn tin" className="bkg-btn bkg-btn--outline" />} />
+      actions={<><ChatOpenButton bookingId={params.bookingId} label="Nhắn tin" className="bkg-btn bkg-btn--outline" />{detail.actions.cancel && <AgencyCancel bookingId={params.bookingId} />}</>} />
     <style>{bookingDetailStyles}</style>
   </main>
 }

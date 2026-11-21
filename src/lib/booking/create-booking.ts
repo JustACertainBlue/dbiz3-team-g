@@ -68,6 +68,7 @@ interface ValidInput {
   agreed_price: number
   conditions: BookingConditions
   source_chat_session_id: string
+  contact: { contact_name?: string; contact_phone?: string; note?: string }
 }
 
 export const isPositiveInteger = (value: unknown): value is number => Number.isInteger(value) && (value as number) > 0
@@ -103,6 +104,26 @@ export function validateConditions(value: unknown): BookingConditions {
   return { notice_period: notice as number, cancellation_policy: policy }
 }
 
+// Screen 35 (UI v3 decision #4): optional contact person, phone and note. Only given values are written.
+export const CONTACT_NAME_MAX = 120
+export const NOTE_MAX = 1000
+const PHONE = /^[0-9+().\s-]{6,32}$/
+export function validateContact(input: Record<string, unknown>): ValidInput['contact'] {
+  const out: ValidInput['contact'] = {}
+  for (const key of ['contact_name', 'contact_phone', 'note'] as const) {
+    const value = input[key]
+    if (value === undefined || value === null || value === '') continue
+    if (typeof value !== 'string') invalid(`${key} must be text`)
+    const text = value.trim()
+    if (!text) continue
+    if (key === 'contact_name' && [...text].length > CONTACT_NAME_MAX) invalid(`contact_name is longer than ${CONTACT_NAME_MAX} characters`)
+    if (key === 'contact_phone' && !PHONE.test(text)) invalid('contact_phone is not a valid phone number')
+    if (key === 'note' && [...text].length > NOTE_MAX) invalid(`note is longer than ${NOTE_MAX} characters`)
+    out[key] = text
+  }
+  return out
+}
+
 function validateInput(input: Record<string, unknown>): ValidInput {
   if (!isNonEmptyString(input.experience_id)) invalid('experience_id is required')
   if (!isNonEmptyString(input.agency_id)) invalid('agency_id is required')
@@ -116,6 +137,7 @@ function validateInput(input: Record<string, unknown>): ValidInput {
   const chat = input.source_chat_session_id
   if (chat !== undefined && chat !== null && typeof chat !== 'string') invalid('source_chat_session_id must be an ID')
   return {
+    contact: validateContact(input),
     experience_id: input.experience_id,
     agency_id: input.agency_id,
     start,
@@ -217,6 +239,7 @@ export async function createBooking(
       hold_expires_at: holdExpiresAt,
       end_at: endAt,
       arrival_at: '',
+      ...request.contact,
     }
     const history: DemoRow = {
       history_id: randomUUID(),

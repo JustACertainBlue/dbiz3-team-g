@@ -1,17 +1,17 @@
 'use client'
 // "Giá & lịch trống" table of mockup 04/23: free fixed slots of the chosen day; the radio choice is shown in the side
-// panel. "Gửi yêu cầu đặt chỗ" belongs to the booking flow on branch ui/v3-booking; in Đợt 1 the button is shown
-// disabled (human decision 2026-11-18 #3).
+// panel. "Gửi yêu cầu đặt chỗ" opens the request form (ui/v3-booking) and then the chat with the request card.
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { Check, Info, Lock, Users } from 'lucide-react'
 import type { SlotRow } from '@/lib/explore/v3-detail'
 import type { PriceView } from '@/lib/explore/v3-search'
+import RequestButton from '../../v3/RequestButton'
 
 const vnd = (value: number) => `${value.toLocaleString('vi-VN')} ₫`
 
-export default function SlotTable({ name, slots, guests, max, price, perGuest, guide, cancel, isAgency, dateLong, week }: {
-  name: string; slots: SlotRow[]; guests: number | null; max: number; price: PriceView; perGuest: string[]; guide: boolean; cancel: string
+export default function SlotTable({ experienceId, date, name, slots, guests, max, price, perGuest, guide, cancel, isAgency, dateLong, week }: {
+  experienceId: string; date: string; name: string; slots: SlotRow[]; guests: number | null; max: number; price: PriceView; perGuest: string[]; guide: boolean; cancel: string
   isAgency: boolean; dateLong: string; week: string
 }) {
   const [chosen, setChosen] = useState(slots[0]?.id ?? '')
@@ -41,7 +41,7 @@ export default function SlotTable({ name, slots, guests, max, price, perGuest, g
       </table></div>
       <div className="v3d-selp">
         {isAgency
-          ? <button type="button" className="hab-btn hab-btn--primary" disabled title="Luồng đặt chỗ đang được làm">Gửi yêu cầu đặt chỗ</button>
+          ? <RequestButton experiences={[{ id: experienceId, name }]} date={date} guests={guests} slotTime={selected?.time ?? ''} />
           : <Link className="hab-btn hab-btn--primary" href="/login">Đăng nhập để đặt chỗ</Link>}
         {selected && <p className="v3d-chosen">Đã chọn: <b>{selected.label}, {selected.time}</b></p>}
         {isAgency

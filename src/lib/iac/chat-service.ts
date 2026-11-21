@@ -1,4 +1,5 @@
 import { filterAsync } from '@/lib/db/async-collections'
+import { parseBookingRequest, requestPreview } from '../booking/request-card'
 import { randomUUID } from 'node:crypto'
 import type { SessionContext } from '../auth/session'
 import { demoRepository } from '../db/application-store'
@@ -177,6 +178,8 @@ export async function listChats(session: SessionContext): Promise<ChatListEntry[
 
 // spec-IAC #48: a message without text that has attachments previews as its file names.
 async function previewOf(message: DemoRow): Promise<string | undefined> {
+  const request = message.message_kind === 'Quote Request' ? parseBookingRequest(message.text) : null
+  if (request) return requestPreview(request) // UI v3: the stored JSON is never shown as text
   if (message.text) return message.text
   const names = (await attachmentsOf(message.message_id)).map(a => a.file_name)
   return names.length ? `${ATTACHMENT_PREVIEW_PREFIX}${names.join(', ')}` : undefined

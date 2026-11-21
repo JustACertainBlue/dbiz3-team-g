@@ -16,6 +16,7 @@ import ChatButton from '../../v3/ChatButton';
 import ShareButton from '../../v3/ShareButton';
 import { vnd } from '../../v3/ExperienceCard';
 import SlotTable from './SlotTable';
+import RequestButton from '../../v3/RequestButton';
 import '../../v3/explore-v3.css';
 
 export const dynamic = 'force-dynamic';
@@ -102,7 +103,7 @@ export default async function ExperienceEntry({ params, searchParams }: { params
               {view.group.price.kind === 'locked' && <><p className="v3-cap">Giá cho đoàn {view.group.guests} khách</p><Link href="/login" className="v3r__lock"><Lock aria-hidden="true" />Đăng nhập để xem giá đoàn</Link></>}
               {view.group.price.kind === 'from' && <><span className="v3-cap">Giá từ</span><b className="v3r__total">{vnd(view.group.price.perPerson)}<span className="v3-cap"> /khách</span></b></>}
               {isAgency
-                ? <><button type="button" className="hab-btn hab-btn--primary v3d-req" disabled title="Luồng đặt chỗ đang được làm">Gửi yêu cầu đặt chỗ</button><p className="v3-cap">Đừng lo, gửi yêu cầu chưa mất phí. Xưởng nhận lời mới giữ chỗ.</p></>
+                ? <><RequestButton experiences={[{ id: view.id, name: view.name }]} date={query.date} guests={query.guests} className="hab-btn hab-btn--primary v3d-req" /><p className="v3-cap">Đừng lo, gửi yêu cầu chưa mất phí. Xưởng nhận lời mới giữ chỗ.</p></>
                 : <><Link className="hab-btn hab-btn--primary v3d-req" href="/login">Đăng nhập để đặt chỗ</Link><p className="v3-cap">Chưa có tài khoản? <Link className="v3-link" href="/register">Đăng ký tài khoản công ty lữ hành</Link></p></>}
             </div>
           </div>
@@ -130,7 +131,7 @@ export default async function ExperienceEntry({ params, searchParams }: { params
         <label className="v3-seg"><span className="v3-sv"><span className="v3-sl">Số khách trong đoàn</span><select name="guests" defaultValue={query.guests ? String(query.guests) : ''}><option value="">Chọn số khách</option>{Array.from({ length: 60 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n} khách</option>)}</select></span></label>
         <button type="submit" className="v3-sbtn v3d-change__btn">Thay đổi tìm kiếm</button>
       </form>
-      <SlotTable name={view.name} slots={slots} guests={query.guests} max={view.maxGuests} price={view.group.price} perGuest={view.group.perGuest} guide={view.group.guide}
+      <SlotTable experienceId={view.id} date={query.date} name={view.name} slots={slots} guests={query.guests} max={view.maxGuests} price={view.group.price} perGuest={view.group.perGuest} guide={view.group.guide}
         cancel={view.group.cancel} isAgency={isAgency} dateLong={dateLong} week={week} />
     </section>
 

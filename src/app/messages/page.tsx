@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { SessionContext } from '@/lib/auth/session'
 import { readSessionContext } from '@/lib/auth/client-session'
@@ -11,7 +11,8 @@ import { closedNotice, closeReasonState } from './close-chat'
 import { ACCEPT_ATTRIBUTE, ATTACH_ERROR_TEXT, attachState, typeLabel } from './attach-state'
 import { ChevronLeft, Paperclip } from 'lucide-react'
 import { hanoiClock } from '@/lib/time/hanoi-time'
-import { attachmentLine, chatActions, chatStatusLine, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
+import { attachmentLine, chatActions, chatStatusLine, eventView, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
+import { parseBookingRequest } from '@/lib/booking/request-card'
 import { usePolling } from '@/lib/client/use-polling'
 import './chat-v9.css'
 
@@ -238,6 +239,32 @@ function MessagesContent() {
             <p className="ch9-day__label">{group.label}</p>
             {group.items.map(message => {
               const system = message.message_kind === 'Booking Update'
+              const bookingHref = message.booking_id ? (isAgency ? `/agency/${session.agencyId}/bookings/${message.booking_id}` : `/provider/${session.providerId}/bookings/${message.booking_id}`) : ''
+              if (system) {
+                // Mockup 25 pill: one per status change (UI v3 decision #6).
+                const event = eventView(message.text)
+                return <div key={message.message_id} className="ch9-evt" role="status">
+                  <span className="ch9-evt__body"><b>{event.title}</b><span>{event.sub}</span></span>
+                  {bookingHref && <Link href={bookingHref}>Xem ›</Link>}
+                </div>
+              }
+              const card = message.message_kind === 'Quote Request' ? parseBookingRequest(message.text) : null
+              if (card) {
+                const own = message.sender_name !== selected.participant_name
+                return <Fragment key={message.message_id}>
+                  <div className="ch9-evt" role="status"><span className="ch9-evt__body"><b>{own ? 'Đã gửi yêu cầu đặt chỗ' : 'Nhận được yêu cầu đặt chỗ'}</b></span></div>
+                  <article className={own ? 'ch9-msg ch9-msg--mine ch9-req' : 'ch9-msg ch9-req'}>
+                    <dl>
+                      <div><dt>Trải nghiệm</dt><dd><Link href={`/explore/experiences/${card.experience_id}`}>{card.experience_name}</Link></dd></div>
+                      <div><dt>Ngày</dt><dd>{card.date.slice(8, 10)}/{card.date.slice(5, 7)}/{card.date.slice(0, 4)}</dd></div>
+                      {card.slot_start && <div><dt>Khung giờ</dt><dd>{card.slot_start}–{card.slot_end}</dd></div>}
+                      <div><dt>Số khách</dt><dd>{card.group_size}</dd></div>
+                      {card.note && <div><dt>Ghi chú</dt><dd>{card.note}</dd></div>}
+                    </dl>
+                    <time>{hanoiClock(message.sent_at)}</time>
+                  </article>
+                </Fragment>
+              }
               // A message is the reader's own when it is not from the counterpart (participant_name, #22) or the system.
               const mine = !system && message.sender_name !== selected.participant_name
               return <article key={message.message_id} className={system ? 'ch9-msg ch9-msg--system' : mine ? 'ch9-msg ch9-msg--mine' : 'ch9-msg'}>

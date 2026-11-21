@@ -106,3 +106,15 @@
   .ch9-alert, .ch9-notice, .ch9-dialog { margin: 12px 12px 0; }
 }
 @media (prefers-reduced-motion: reduce) { .ch9 * { transition: none !important; } }
+
+/* UI v3 screen 25: event pill (mockup ".evt") and request card */
+.ch9-evt{align-self:center;display:flex;gap:12px;align-items:center;background:#fff;border:1px solid #E2DED2;border-radius:999px;padding:8px 20px;box-shadow:0 1px 4px rgba(15,61,42,.06);max-width:100%;box-sizing:border-box}
+.ch9-evt__body{display:block;min-width:0}
+.ch9-evt__body b{display:block;font-size:15px;line-height:20px;color:#0F3D2A}
+.ch9-evt__body span{display:block;font-size:14px;line-height:19px;color:#5F6B64}
+.ch9-evt a{margin-left:8px;font-weight:700;font-size:15px;white-space:nowrap;color:#165235}
+.ch9-req dl{margin:0;display:flex;flex-direction:column;gap:6px}
+.ch9-req dl div{display:flex;gap:12px}
+.ch9-req dt{flex:0 0 96px;opacity:.75}
+.ch9-req dd{margin:0;font-weight:700;min-width:0;overflow-wrap:anywhere}
+.ch9-req.ch9-msg--mine a{color:#fff}

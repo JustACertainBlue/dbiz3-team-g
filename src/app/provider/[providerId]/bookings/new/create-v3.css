@@ -1,0 +1,21 @@
+/* Screen 35 (mockup TaoDatCho), tokens of design-tokens.md. Prefix v3b-. Content frame max 1100, margin >= 24. */
+.v3b-wrap{max-width:1100px;margin:0 auto;padding:24px 24px 64px;box-sizing:border-box;color:#1F2A25}
+.v3b-back{font-size:16px;line-height:23px;font-weight:700;text-decoration:none;color:#165235}
+.v3b-h1{margin:10px 0 0;font-size:34px;line-height:42px;font-weight:700;color:#0F3D2A}
+.v3b-sub{margin:4px 0 0;color:#4B5851;font-size:16px;line-height:23px}
+.v3b-form{display:flex;flex-direction:column;gap:16px;margin-top:24px;max-width:760px}
+.v3b-card{background:#fff;border:1px solid #E2DED2;border-radius:8px;padding:28px;display:flex;flex-direction:column;gap:16px}
+.v3b-h2{margin:0;font-size:24px;line-height:32px;font-weight:700;color:#0F3D2A}
+.v3b-row{display:flex;gap:16px;flex-wrap:wrap}
+.v3b-f{display:flex;flex-direction:column;gap:6px;flex:1 1 200px;min-width:0}
+.v3b-f label,.v3b-lab{font-weight:700;font-size:16px;line-height:23px}
+.v3b-req{color:#B3261E}.v3b-opt{font-weight:400;color:#5F6B64}
+.v3b-f input,.v3b-f select,.v3b-f textarea{min-height:44px;border:1px solid #9AA39E;border-radius:6px;padding:8px 12px;font:inherit;font-size:16px;line-height:24px;color:#1F2A25;background:#fff;box-sizing:border-box;width:100%}
+.v3b-help{margin:0;font-size:14px;line-height:20px;color:#5F6B64}
+.v3b-total{margin:0;font-size:28px;line-height:40px;font-weight:800;font-variant-numeric:tabular-nums}
+.v3b-err{margin:0;color:#B3261E}
+.v3b-actions{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap}
+.v3b-btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 24px;border-radius:6px;font-size:16px;line-height:24px;font-weight:700;text-decoration:none;border:0;cursor:pointer;box-sizing:border-box}
+.v3b-btn--p{background:#165235;color:#fff}.v3b-btn--p:hover{background:#0F3D2A}.v3b-btn--p:disabled{background:#C9C4B5;cursor:not-allowed}
+.v3b-btn--s{background:#fff;color:#165235;box-shadow:inset 0 0 0 1.5px #165235}
+@media (max-width:600px){.v3b-card{padding:20px}.v3b-h1{font-size:28px;line-height:36px}}

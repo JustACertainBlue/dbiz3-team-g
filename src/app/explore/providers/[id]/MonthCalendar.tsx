@@ -1,15 +1,15 @@
 'use client'
 // "Lịch trống" of mockup 24: month grid (5 states) with the selected day panel. Month changes are links (?thang=);
-// the day choice stays in the page. "Gửi yêu cầu đặt ngày này" belongs to the booking flow (ui/v3-booking), shown
-// disabled in Đợt 1 (human decision 2026-11-18 #3).
+// the day choice stays in the page. "Gửi yêu cầu đặt ngày này" opens the request form (ui/v3-booking).
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { DAY_STATUS, type MonthCalendar as Month } from '@/lib/explore/v3-provider'
+import RequestButton, { type RequestExperience } from '../../v3/RequestButton'
 
 const LONG = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
 
-export default function MonthCalendar({ month, basePath, isAgency, initial }: { month: Month; basePath: string; isAgency: boolean; initial: string }) {
+export default function MonthCalendar({ month, basePath, isAgency, initial, experiences = [] }: { month: Month; basePath: string; isAgency: boolean; initial: string; experiences?: RequestExperience[] }) {
   const firstFree = month.days.find(day => day.state === 'free')?.date ?? ''
   const [selected, setSelected] = useState(month.days.some(day => day.date === initial && day.state !== 'past') ? initial : firstFree)
   const day = month.days.find(item => item.date === selected)
@@ -45,7 +45,7 @@ export default function MonthCalendar({ month, basePath, isAgency, initial }: { 
         <p className={day.state === 'free' ? 'v3-av-ok' : 'v3-av-warn'}>{DAY_STATUS[day.state].label}{day.state === 'free' && day.hours ? ` · ${day.hours}` : ''}</p>
         <p className="v3p-cal__note">{DAY_STATUS[day.state].note}</p>
         {day.state === 'free' && (isAgency
-          ? <button type="button" className="hab-btn hab-btn--primary" disabled title="Luồng đặt chỗ đang được làm">Gửi yêu cầu đặt ngày này</button>
+          ? <RequestButton experiences={experiences} date={day.date} label="Gửi yêu cầu đặt ngày này" />
           : <Link className="hab-btn hab-btn--primary" href="/login">Đăng nhập để đặt chỗ</Link>)}
         {day.state === 'free' && <p className="v3-cap">Không mất phí. Xưởng nhận lời thì giữ chỗ 72 giờ để bạn thanh toán.</p>}
       </> : <p className="v3p-cal__note">Chọn một ngày còn trống trên lịch.</p>}

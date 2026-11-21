@@ -3,6 +3,7 @@
 import type { ExploreSeed } from '../explore/catalog'
 import { eligibleRows } from '../explore/catalog'
 import { resultView, type ResultView } from '../explore/v3-search'
+import { rowCraft } from '../explore/vocabulary'
 
 /** The matching route only serves Tour Agencies, so the group price is shown (isAgency = true). */
 export function matchingCardView(seed: ExploreSeed, experienceId: string, guests: number | null): ResultView | null {
@@ -14,4 +15,10 @@ export function matchingCardView(seed: ExploreSeed, experienceId: string, guests
 export function profileGuests(profile: any): number | null {
   const size = profile?.hard_constraints?.group_size
   return Number.isInteger(size) && size > 0 ? size : null
+}
+
+/** The craft label shown on the card (village editorial_craft, else the Vietnamese label of craft_type); used by the explanation. */
+export function craftDisplay(seed: ExploreSeed, experienceId: string): string | undefined {
+  const row = eligibleRows(seed).find(item => item.experience.experience_id === experienceId)
+  return row ? rowCraft(row.version.craft_type, row.village) : undefined
 }

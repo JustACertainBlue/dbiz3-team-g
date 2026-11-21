@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { ExploreSeed } from '@/lib/explore/catalog'
-import { matchingCardView, profileGuests } from '@/lib/matching/card-data'
+import { craftDisplay, matchingCardView, profileGuests } from '@/lib/matching/card-data'
 
 const seed = {
   villages: [{ village_id: 'v1', name: 'Bát Tràng', district: 'Gia Lâm', city_province: 'Hà Nội', is_active: 'true', distance_km: '13' }],
@@ -47,5 +47,14 @@ describe('profileGuests', () => {
     expect(profileGuests({})).toBeNull()
     expect(profileGuests(null)).toBeNull()
     expect(profileGuests({ hard_constraints: { group_size: 0 } })).toBeNull()
+  })
+})
+
+describe('craftDisplay', () => {
+  it('the craft label of the card: editorial_craft of the village, else the label of craft_type', () => {
+    expect(craftDisplay(seed, 'e1')).toBe('Gốm sứ')
+    const withEditorial = { ...seed, villages: [{ ...(seed.villages[0] as object), editorial_craft: 'Gốm Bát Tràng' }] } as unknown as ExploreSeed
+    expect(craftDisplay(withEditorial, 'e1')).toBe('Gốm Bát Tràng')
+    expect(craftDisplay(seed, 'nope')).toBeUndefined()
   })
 })

@@ -1,6 +1,8 @@
 // Pure helpers for screen AIT121: turn API responses into what the conversation shows.
 // No fabricated results on failure (FR-003, BR-017, #27); Quote/Chat open COM048 on success (#31).
 import type { ResultView } from '@/lib/explore/v3-search'
+import { craftLabel as craftTypeLabel } from '@/lib/explore/vocabulary'
+import { craftTypeForPreference } from '@/lib/matching/craft-taxonomy'
 
 export const AI_FAILURE_TEXT = 'AI đang gặp sự cố tạm thời nên chưa xử lý được yêu cầu. Cuộc trò chuyện của bạn đã được lưu.'
 export const HANDOFF_FAILURE_TEXT = 'Chưa hoàn tất được yêu cầu. Chưa có gì được tạo.'
@@ -90,6 +92,9 @@ export function understoodDateLine(body: any): string | null {
   return `AI hiểu ngày đi là ${parts.weekday} ${parts.d}/${parts.m}/${parts.y}. Nếu chưa đúng, hãy gửi lại ngày kèm năm.`
 }
 
+/** Vietnamese craft label as on the card ("Gốm sứ"); an unknown preference is shown as written. */
+const craftChip = (preference: string) => { const type = craftTypeForPreference(preference.toLowerCase()); return type ? craftTypeLabel(type) : preference }
+
 /** Mockup 22 "AI đã hiểu": chips from the criteria the AI extracted (only what is present). */
 export function understoodChips(body: any): string[] {
   const ctx = body?.extraction?.tour_context
@@ -101,6 +106,6 @@ export function understoodChips(body: any): string[] {
     typeof ctx.visitor_profile === 'string' ? ctx.visitor_profile : '',
     date ? `${date.weekday} ${date.d}/${date.m}` : '',
     typeof budget === 'number' ? `≤ ${budget.toLocaleString('vi-VN')} ₫/khách` : '',
-    typeof ctx.craft_preference === 'string' ? ctx.craft_preference : '',
+    typeof ctx.craft_preference === 'string' ? craftChip(ctx.craft_preference) : '',
   ].filter(Boolean)
 }

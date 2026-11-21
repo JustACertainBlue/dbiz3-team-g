@@ -51,7 +51,7 @@ describe('Multi-Turn Session & API Flow Verification', () => {
     // Silk preference places Vạn Phúc (Dệt lụa truyền thống) at rank #1
     expect(recs.top_matches[0].experience_name).toContain('lụa')
     expect(recs.top_matches[0].rank).toBe(1)
-    expect(recs.top_matches[0].explanation).toContain('silk weaving')
+    expect(recs.top_matches[0].explanation).toContain('Dệt lụa')
 
     // Turn 3: Agency changes group size to 15 in the SAME session
     await addMessage(sessionId, 'Agency', '15 tourists on 2026-11-15, under 500,000 VND per person')

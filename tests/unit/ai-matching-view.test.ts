@@ -67,7 +67,7 @@ describe('T045 | noMatchView renders every relaxation suggestion (BR-011, FR-012
 
 import { understoodChips } from '@/app/ai-matching/matching-view'
 describe('understoodChips (mockup 22 "AI đã hiểu")', () => {
-  const body = { extraction: { tour_context: { group_size: 25, visitor_profile: 'Học sinh lớp 6', craft_preference: 'Gốm sứ',
+  const body = { extraction: { tour_context: { group_size: 25, visitor_profile: 'Học sinh lớp 6', craft_preference: 'pottery',
     target_date_or_range: { start_date: '2026-11-25' }, budget: { max_per_person: 200000 } } } }
   it('lists the criteria the AI understood', () => {
     expect(understoodChips(body)).toEqual(['25 khách', 'Học sinh lớp 6', 'Thứ Tư 25/11', '≤ 200.000 ₫/khách', 'Gốm sứ'])
@@ -89,4 +89,9 @@ describe('noMatchView maps the relaxation values shown to the Agency to Vietname
   it('unknown values pass through unchanged', () => {
     expect(noMatchView({ relaxation_suggestions: { relaxation_suggestions: [{ criterion: 'Other', suggested_value: 'abc' }] } }).lines).toEqual(['Other: abc'])
   })
+})
+
+it('understoodChips shows the craft as the Vietnamese label, never the raw value', () => {
+  expect(understoodChips({ extraction: { tour_context: { craft_preference: 'silk' } } })).toEqual(['Dệt lụa'])
+  expect(understoodChips({ extraction: { tour_context: { craft_preference: 'unknown thing' } } })).toEqual(['unknown thing'])
 })

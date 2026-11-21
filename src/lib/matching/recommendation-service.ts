@@ -1,3 +1,4 @@
+import { craftLabel as craftTypeLabel } from '../explore/vocabulary'
 import type { MatchFactors } from '@/lib/matching/scoring-engine'
 
 export interface RecommendationItem {
@@ -35,13 +36,13 @@ export function applyScoreThreshold<T extends { match_score?: number }>(candidat
 const viNumber = (amount: number) => amount.toLocaleString('vi-VN')
 
 // #25: only factors that the scoring actually evaluated (match_factors), never a craft the Agency did not ask for.
-function explain(item: any, score: number): string {
+function explain(item: any, _score: number): string {
   const f: MatchFactors = item.match_factors || {}
-  const parts = [`Điểm phù hợp ${score}/100.`]
+  const parts = []
   if (f.craft) {
-    parts.push(f.craft.matched
-      ? `Hợp sở thích ${f.craft.label} của bạn (${f.craft.craft_type}).`
-      : `Không hợp sở thích ${f.craft.label} của bạn.`)
+    // Vietnamese label as on the card: the candidate's displayed craft when it matches, else the label of the wanted craft_type.
+    const label = (f.craft.matched ? item.craft_display : undefined) || (f.craft.craft_type ? craftTypeLabel(f.craft.craft_type) : '') || f.craft.label
+    parts.push(f.craft.matched ? `Hợp sở thích ${label} của bạn.` : `Không hợp sở thích ${label} của bạn.`)
   }
   if (f.experience_types) {
     const types = f.experience_types.requested.join(' / ')
@@ -56,6 +57,8 @@ function explain(item: any, score: number): string {
   if (f.distance_km !== undefined) {
     parts.push(`Cách ${f.origin ?? 'điểm xuất phát của bạn'} khoảng ${f.distance_km} km (ước tính).`)
   }
+  // Every shown experience passed the hard constraints, so this is always true when no factor was evaluated (BR-007: never empty).
+  if (parts.length === 0) parts.push('Đáp ứng các yêu cầu bắt buộc của đoàn.')
   return parts.join(' ')
 }
 

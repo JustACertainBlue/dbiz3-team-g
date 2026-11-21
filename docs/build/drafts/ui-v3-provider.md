@@ -1,25 +1,46 @@
 # Draft: branch ui/v3-provider (screens 29–33)
 
-Not merged into build-log.md / ui-v3-spec-deviations.md (human merges the drafts).
+Not merged into build-log.md / ui-v3-spec-deviations.md (human merges the drafts). Desktop (1440 px) only, decision 21/11.
 
 ## Done
-- 31 `/provider/[pid]/experiences`: server page, rows with cover image (CoverImage, srcset), price · duration · capacity · cancel clause, upcoming bookings, updated date, pagination 5/page, edit and delete icons, delete popup (EXP132: delete / archive / blocked, same rule as `deleteExperience`). View-model `src/lib/provider/experience-list-view.ts`.
-- 29 `/provider/[pid]/dashboard`: greeting, 4 stat cells, month calendar (prev/current/next month, selected-day panel), "Giờ mở cửa" card, "+ Tạo đặt chỗ". View-model `src/lib/provider/month-calendar.ts`. Read-only over bookings.
-- 30 `/provider/[pid]`: owner view = mockup 24 data (`providerView`) + edit pencil, own experience links, compact calendar. Previous page kept as `LegacyProviderProfile.tsx` for UBND review panel and for a profile with no published version.
-- 33 `/provider/[pid]/experiences/[eid]`: public detail view (`detailView`, `slotRows`) as owner; previous page kept as `LegacyExperienceDetail.tsx` when the experience is not in the public catalog (archived, provider not verified).
-- 32 new / edit forms: header (breadcrumb, title, "Xem trang chi tiết ›") and v3 look only; fields and rules unchanged.
+- 31 `/provider/[pid]/experiences`: server page; row = cover image (CoverImage), "₫/khách · phút · tối đa khách/ca · huỷ trước … hoàn …%", "N đặt chỗ sắp tới / Chưa có đặt chỗ sắp tới · cập nhật dd/mm/yyyy" or "Chưa có đặt chỗ nào"; pager 5 per page; edit and delete icons; delete popup (EXP132: delete / archive / blocked, same rule as `deleteExperience`).
+- 29 `/provider/[pid]/dashboard`: greeting, 4 stat cells, month calendar (previous / current / next month, selected-day panel with agency · guests and experience · time · status), "Giờ mở cửa", "+ Tạo đặt chỗ" (existing route `bookings/new`), link "Xem lịch đầy đủ ›" to the existing `/schedule` page.
+- 30 `/provider/[pid]`: owner view of mockup 24 data + edit pencil, links to own experiences and village, compact calendar. Old page kept as `LegacyProviderProfile.tsx` for the UBND review panel and for an unpublished profile.
+- 33 `/provider/[pid]/experiences/[eid]`: public detail view as owner. Old page kept as `LegacyExperienceDetail.tsx` when the experience is not in the public catalog.
+- 32 forms (add and edit share `ExperienceFormBody.tsx`): sections in mockup order — Thông tin chung · Ảnh trải nghiệm · Điểm nổi bật · Về trải nghiệm này (+ Rất hợp cho đoàn, hộp "Hoàn hảo cho…") · Giá & ca · Bao gồm & tiện ích · Chính sách của xưởng.
+- 32 part A: `createExperience` / `updateExperience` now write the content columns (`src/lib/prf/experience-content.ts`, validation = the DB CHECK rules).
+- Tests: `v3-provider-mockup-blocks.test.ts` (blocks, order, words; strings in `tests/fixtures/mockup-v3/provider-screens.json`, each verified in order against the mockup html).
+
+## Columns of screen 32 (content block → column → type → written before → written now)
+| Block | Column | Type | Before | Now |
+|---|---|---|---|---|
+| Điểm nổi bật (4 ô) | experiences.highlights | jsonb, NULL or 1–4 items (string or {title, sub}) | no | yes, stored as [{title, sub}] |
+| Rất hợp cho đoàn | experiences.suitable_for | text[], ⊆ 10-term vocabulary | no | yes (JS array, pg serialises) |
+| Hộp "Hoàn hảo cho…" | experiences.group_note | text, not blank | no | yes (public page still hard-codes the box title: needs `detailView`) |
+| Bao gồm & tiện ích | experiences.inclusions | jsonb object {per_guest[], included[], take_home, notes{trong_buoi, chup_anh, an_toan, luu_y}} | no | yes |
+| Ngôn ngữ hướng dẫn | experiences.guide_languages | text[] | no | yes |
+| Trẻ em | experiences.child_policy | text | no | yes, one free-text line |
+| Các ca trong ngày | experience_slots (slot_id, experience_id, label, start_time, end_time, weekdays smallint[]) | table | no | read only (app role has SELECT only) |
+| Câu hỏi thường gặp | none | — | — | hidden (FAQ is computed in code) |
+| "Rất được đoàn khách ưa thích" chips, "Người hướng dẫn" | none | — | — | hidden |
+| Trẻ em từ / cần người lớn dưới (tuổi) | none (child_policy is text) | — | — | hidden; one text line instead |
+| Nghề và làng nghề, Giữ chỗ 72 giờ, Hình thức thanh toán | read-only facts, not columns of experiences | — | — | not shown |
 
 ## Differs from the spec / mockup
-- 29 "Đã nhận qua QR tháng N": no payment data exists yet; the cell shows "—".
-- 29 greeting: "Chào <full name>" (mockup says "Chào chị Anh Thư"; no gender field, not guessed).
-- 29 dropped from the old page (not in the mockup): profile completion bar, recent chats, booking status counts, module link grid. Kept: UBND revision notice (one line, only when a revision comment exists).
-- 30 edit form PRF128 (AI Refine) not redesigned: the mockup has no edit screen.
-- 31 "show archived" checkbox removed (not in the mockup); archived experiences are hidden.
-- 33 "Hiển thị công khai" switch is a read-only pill: no field to toggle visibility without archiving.
-- 33 date/guests shown: nearest day from tomorrow with a free slot, 10 guests (capped at max), as in the mockup example; `?date=&guests=` overrides.
+- 29 "Đã nhận qua QR tháng N": no payment data yet; shows "—". Panel status for a Booked day reads "Đã đặt chỗ" (mockup "Đã thanh toán": payment is a later phase).
+- 29 greeting: "Chào <full name>" (no gender field, not guessed). Dropped from the old page (not in the mockup): profile completion bar, recent chats, booking status counts, module tile grid. Kept: one UBND revision line when a revision comment exists. "Xem lịch đầy đủ ›" is not in the mockup; added so the full schedule page stays reachable.
+- 30 PRF128 (AI Refine) form not redesigned: the mockup has no edit screen.
+- 31 "show archived" checkbox removed (not in the mockup).
+- 33 "Hiển thị công khai" switch is a read-only pill: no visibility field. Default view: nearest day from tomorrow with a free slot, 10 guests (capped at the maximum), as the mockup example; `?date=&guests=` overrides.
+- 32 category select keeps the 5 DB values ("Tự tay làm" = Workshop/Hands-on, "Xem biểu diễn" = Cultural Show); the mockup has 2 radio cards. Group and special discounts sit inside "Chính sách của xưởng" (one existing component), not in "Giá & ca". Chips come from the DB vocabulary (10 terms); mockup chips "Có tạp dề cho khách", "Người cao tuổi", "Team building công ty" are not in it.
 
-## Mockup 32 sections with no place to store data (not built)
-Điểm nổi bật (4 ô), chips "Rất hợp cho đoàn", "Hộp Hoàn hảo cho…", Các ca trong ngày (experience_slots: app role has SELECT only), Bao gồm & tiện ích (8 text areas, chips), FAQ, "Trẻ em", AI gợi ý box. Columns exist in DB (`highlights`, `suitable_for`, `inclusions`, `guide_languages`, `child_policy`) but `createExperience` / `updateExperience` do not write them. Needs a service change (and a grant for slots), not UI only.
+## Old tests changed (requirement changed: the approved v3 mockup replaced the screen; asserts are as strict as before)
+- `tests/unit/dsh018-module-links.test.ts`: the tile grid is gone. Now: the dashboard links to Experiences, Bookings, the full Schedule, Create booking (existing route), profile and edit; the header gives Tổng quan / Trải nghiệm / Lịch sử đặt chỗ and the Messages button.
+- `tests/prf/unit/prf127-links.test.ts`: the owner page links to `/provider/{id}/experiences` and to the village; the previous page (other viewers) still renders both links from the view.
+- `tests/unit/exp070-location-field.test.ts`: label "Địa điểm tổ chức" (mockup), and the field now lives in `ExperienceFormBody`.
 
-## Shared files
-- `src/app/provider/provider-ui.css`: heading and link rules wrapped in `:where()` (0 specificity) so v3 classes win. Legacy pages unchanged visually.
+## Needs a shared / other-owner change (Cần sửa chung)
+- `src/app/provider/provider-ui.css`: heading and link rules wrapped in `:where()` so v3 classes win (legacy pages unchanged).
+- "Các ca trong ngày" editable: needs INSERT/UPDATE/DELETE grant on `experience_slots` for the app role and a write path (migration/grant not done, by instruction).
+- Public detail page: the "Hoàn hảo cho…" box title is hard-coded; to show `group_note` the explore `detailView` must read it.
+- Screens 29–33 not captured: they need a login (batch capture later).

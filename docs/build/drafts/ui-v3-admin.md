@@ -130,3 +130,25 @@ Script outside the repo; each mutation applied to a copy, the module's own test 
 ## Screenshot helpers
 
 The login-session and screenshot scripts (`save-session.mjs`, `shoot-admin.mjs`) are not in the repo. They live in `~/.dbiz3-auth/` next to the saved sessions and the Playwright install (`~/.dbiz3-auth/pw`). They hold no password, cookie or token; the sessions they write are the `*.json` files in the same folder. Usage: `node ~/.dbiz3-auth/save-session.mjs <name>`, `node ~/.dbiz3-auth/shoot-admin.mjs <name> <outDir> <path>...`.
+
+## DEV demo data and click-through (21/11)
+
+Script `scripts/db/dev-seed-pending-reviews.mjs` (DEV project ref only; dry run by default; `--apply`; `--undo <file>`; `--create-demo-admins`; `--no-seed`).
+It never updates an existing account. Run it from `~/Desktop/dbiz3-devload` (env from that folder's `.env.local`, undo files in its `.demo-data/`).
+Creates, all fictional with `@example.invalid` emails: 4 companies (2 waiting, 1 asked for more information, 1 rejected), 2 workshops waiting for UBND
+(Bát Tràng, Chuông) and, with the flag, 2 admins (HDT Sở Du lịch, UBND Bát Tràng assigned through `ubnd_village_assignments`). 36 rows in 11 tables.
+`--undo` also removes rows written about the demo users after the load (sessions, notifications, audit logs, review records) so it works after a click-through.
+
+Clicked for real on DEV, only on `demo-review-*`, then checked in the database (read-only query):
+- UBND Bát Tràng, "Yêu cầu bổ sung" on the Bát Tràng workshop: HTTP 200, review record with the comment, profile `Revision Required`; screen 41a shows "Cần bổ sung" and no decision form.
+- HDT, "Duyệt" on a waiting company: HTTP 200, account and request `Approved`, review record, notification row; screen 39 shows "Đang hoạt động".
+- HDT, "Từ chối": without a comment the page blocks it and sends nothing; with a comment HTTP 200, account and request `Rejected`; screen 41 lists it as "Từ chối".
+- HDT on a company asked for more information: "Cần bổ sung", history, no decision form (the code would answer STALE_REVIEW).
+Not done (needs a password of a demo company or workshop, not available to the script): login popups 18b/18c; the workshop sending its profile again and UBND approving it.
+
+Bug fixed after the click-through plan: a registration asked for more information stays `Pending Approval` (real API), so screen 41 showed "Chờ duyệt".
+Now "Cần bổ sung", in the "Đã xử lý" tab, and decidable again only after the Agency sends a newer version (`agencyStatus` in `lib/adm/v3-review-queue.ts`).
+
+Observation (PRF, not changed): when UBND asks a never-published workshop for changes, `provider_profiles.verification_status` becomes `Revision Required` but
+`provider_profile_versions.version_status` stays `Pending Verification`. The screens read the profile status, so they are right.
+Also: card "Công ty lữ hành · N hồ sơ đang chờ duyệt" on screen 38 counts account status, so it still counts a company asked for more information; the list does not.

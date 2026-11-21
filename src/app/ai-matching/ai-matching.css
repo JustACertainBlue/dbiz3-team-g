@@ -78,3 +78,12 @@
 .aim__sub { font: 700 14px/20px var(--font-body); color: var(--c-muted); }
 .aim__chip { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px; background: var(--c-surface-green); border: 1px solid #B5DDC1; color: var(--c-primary); font: 600 14px/20px var(--font-body); }
 .aim__card .v3r__price .aim__acts { margin-top: 10px; justify-content: flex-end; }
+
+.aim__empty { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 28px; padding-top: 40px; padding-bottom: 120px; min-height: 640px; }
+.aim__hello { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0; font: 700 34px/42px var(--font-body); color: var(--c-primary-dark); text-align: center; }
+.aim__hello svg { width: 38px; height: 38px; color: var(--c-accent); flex: none; }
+.aim__cbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.aim__pill { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 1px solid #D8D3C4; border-radius: 999px; padding: 6px 12px; background: var(--c-white); color: var(--c-text-2); font: 500 15px/20px var(--font-body); cursor: pointer; }
+.aim__pill svg { width: 16px; height: 16px; color: var(--c-primary); }
+.aim__pill:hover { background: var(--c-surface-green); }
+.aim__pill:focus-visible { outline: 3px solid var(--c-primary-dark); outline-offset: 2px; }

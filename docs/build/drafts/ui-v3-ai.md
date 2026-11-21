@@ -36,6 +36,15 @@
   New tests: tests/unit/ait-vietnamese-copy.test.ts, noMatchView value mapping in ai-matching-view.test.ts.
 - Still English: the card text "Vì sao hợp" (`explain()` in recommendation-service.ts: "Match score 91/100. Matches your … preference …"). Tests assert its wording
   (ait-matching-api.test.ts:214-215 `group of 10`, `estimated`; multi-turn-api.test.ts:54 `silk weaving`), not in the scope of this round.
-- D (screenshots at 1440 with a DEV Agency login): NOT done. `/api/auth/login` with `thanhvien13@example.invalid` returns 401 INVALID_CREDENTIALS
-  in this DEV database (docs/build/demo-login.md says any non-empty password works; it does not here, so DEV accounts have real passwords).
-  Desktop only from now on (human decision 21/11); phone layout is kept as it is.
+- D: screenshots NOT taken: screen 22 needs an Agency login (DEV `/api/auth/login` returned 401 for the sample Agency). Per human decision 21/11
+  login-only screens are skipped and shot in one batch script at the end of the day. Screen 22: **chưa chụp vì cần đăng nhập**.
+- Desktop only (human decision 21/11); phone layout left as it is.
+
+## Round 4: new-conversation state and structure test
+- Added the mockup's new-conversation state (no message yet): greeting "Chào {tên liên hệ}, đoàn tiếp theo cần gì?" (name from `sessionDisplayName`
+  in `layout.tsx`, passed by `agency-name.tsx`), composer with pills "Số khách / Ngày đi / Ngân sách" (they append a hint to the input),
+  four example chips (fill the input, never send), note "AI chỉ gợi ý…". The old assistant welcome bubble is removed.
+- Test `tests/unit/ai-matching-mockup22.test.ts`: blocks, order and wording of `source/GhepTourAI.dc.html` (also checked against the file when the
+  mockup folder is on the machine), no English left, no "Yêu cầu báo giá".
+- Accepted differences: no history/search in the left rail; quick prompts instead of follow-up chips in the chat state; chat title h1 stays "Ghép tour AI".
+- Chips "buổi sáng", "Có sản phẩm mang về", "Tiếng Việt" of the mockup are not produced (the AI does not extract them).

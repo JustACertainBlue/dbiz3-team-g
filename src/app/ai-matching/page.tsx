@@ -7,7 +7,8 @@ import { readSessionContext } from '@/lib/auth/client-session'
 import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView, messageOutcome, noMatchView, understoodChips, understoodDateLine, type ApiResult } from './matching-view'
 import { RESTRICTED_TEXT } from './ai-matching-access'
 import { recommendationCardView } from './card-view'
-import { ArrowUp, Check, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users } from 'lucide-react'
+import { useAgencyName } from './agency-name'
+import { ArrowUp, CalendarDays, Check, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users, Wallet } from 'lucide-react'
 import CoverImage from '../explore/v3/CoverImage'
 import { RESULT_SIZES } from '../explore/v3/image-sizes'
 import { vnd } from '../explore/v3/ExperienceCard'
@@ -29,6 +30,7 @@ interface Message {
 }
 
 export default function AiMatchingScreen() {
+  const agencyName = useAgencyName()
   const router = useRouter()
   const [role, setRole] = useState<'Agency' | 'Guest'>('Guest')
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -83,14 +85,6 @@ export default function AiMatchingScreen() {
       if (res.ok) {
         const data = await res.json()
         setSessionId(data.matching_session_id || data.session_id)
-        setMessages([
-          {
-            id: 'welcome',
-            sender: 'Assistant',
-            text: 'Chào bạn! Hãy mô tả nhu cầu của đoàn (số khách, ngày đi, nghề muốn trải nghiệm, ngân sách), mình sẽ gợi ý các trải nghiệm phù hợp từ xưởng đã xác minh.',
-            sent_at: new Date().toLocaleTimeString(),
-          },
-        ])
       }
     } catch {
       // Offline fallback for preview
@@ -200,6 +194,8 @@ export default function AiMatchingScreen() {
   const handleChat = (experienceId: string, providerId: string) => runHandoff('chat', experienceId, providerId)
 
   const cardOf = recommendationCardView
+  const isNew = messages.length === 0 && !loading
+  const addHint = (hint: string) => setInputText(prev => (prev ? `${prev.trimEnd()} ` : '') + hint)
   const spark = <span className="aim__av" aria-hidden="true"><Sparkles /></span>
   const quickPrompts = [
     { label: 'Gốm, 15 khách ngày 15/11', text: '15 French tourists visiting on 2026-11-15 looking for hands-on pottery ceramic experiences near Hanoi under 500,000 VND per person.' },
@@ -214,6 +210,34 @@ export default function AiMatchingScreen() {
       </aside>
 
       <div className="aim__pane">
+        {isNew ? (
+        <div className="aim__col aim__empty">
+          <h1 className="aim__hello"><Sparkles aria-hidden="true" />Chào {agencyName || 'bạn'}, đoàn tiếp theo cần gì?</h1>
+          <form className="aim__comp" onSubmit={e => { e.preventDefault(); handleSendMessage() }}>
+            <label className="v3-sr" htmlFor="matching-prompt-input">Tin nhắn cho Ghép tour AI</label>
+            <textarea
+              id="matching-prompt-input"
+              value={inputText}
+              maxLength={2000}
+              rows={2}
+              onChange={e => setInputText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage() } }}
+              placeholder="Kể về đoàn của bạn: bao nhiêu khách, đi ngày nào, ngân sách, muốn làm gì…"
+            />
+            <div className="aim__cbar">
+              <button type="button" className="aim__pill" onClick={() => addHint('Số khách: ')}><Users aria-hidden="true" />Số khách</button>
+              <button type="button" className="aim__pill" onClick={() => addHint('Ngày đi: ')}><CalendarDays aria-hidden="true" />Ngày đi</button>
+              <button type="button" className="aim__pill" onClick={() => addHint('Ngân sách: ')}><Wallet aria-hidden="true" />Ngân sách</button>
+              <button id="send-message-btn" type="submit" className="aim__send" aria-label="Gửi" disabled={!inputText.trim() || loading}><ArrowUp aria-hidden="true" /></button>
+            </div>
+          </form>
+          <div className="aim__sugg">
+            {/* Mockup 22 examples: they fill the input and are never sent automatically. */}
+            {['25 học sinh, muốn tự làm sản phẩm', 'Khách Hàn Quốc 15 người', 'Team building 30 người', 'Tour nửa ngày, dưới 200.000 ₫/khách'].map(text => <button key={text} type="button" className="aim__sg" onClick={() => setInputText(text)}><Sparkles aria-hidden="true" />{text}</button>)}
+          </div>
+          <p className="aim__note">AI chỉ gợi ý trải nghiệm và ngày còn trống. Bạn tự chọn và gửi yêu cầu đặt chỗ cho xưởng.</p>
+        </div>
+        ) : (<>
         {/* #188, screen-spec-AIT121 §3 #1: the screen heading; brand, navigation and account come from the shared shell. */}
         <div className="aim__top"><div className="aim__col aim__topin">
           <h1 className="aim__h1">Ghép tour AI</h1>
@@ -351,7 +375,7 @@ export default function AiMatchingScreen() {
               value={inputText}
               maxLength={2000}
               rows={2}
-              aria-label="Mô tả nhu cầu của đoàn"
+              aria-label="Tin nhắn cho Ghép tour AI"
               onChange={e => setInputText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage() } }}
               placeholder="Hỏi thêm hoặc sửa yêu cầu…"
@@ -360,6 +384,7 @@ export default function AiMatchingScreen() {
           </form>
           <p className="aim__note">AI có thể gợi ý chưa đúng. Kiểm tra lịch và giá ở trang trải nghiệm trước khi gửi yêu cầu.</p>
         </div>
+        </>)}
       </div>
     </div>
   )

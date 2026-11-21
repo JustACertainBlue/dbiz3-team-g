@@ -1,15 +1,31 @@
 # Draft: ui/v3-ai — screen 22 Ghép tour AI (AIT121)
 
-## Done
-- `/ai-matching` restyled to mockup 22: left rail (new conversation), conversation column (user bubble, AI avatar + plain text), recommendation cards, suggestion pills, rounded composer with arrow send, disclaimer line.
-- Card reuses `.v3-card` / `.v3r` of screen 02 (`explore-v3.css`), without the image (see below). View model in `src/app/ai-matching/card-view.ts` (test first: `tests/unit/ai-matching-card-view.test.ts`).
-- AI logic untouched: `matching-view.ts`, API calls, handlers, ids (`matching-prompt-input`, `send-message-btn`, `quote-btn-*`, `chat-btn-*`, `retry-analysis-btn`, `understood-date`, `clarification-box`, `recommendations-container`) are unchanged.
+## Done (commits on ui/v3-ai)
+1. `1a7a324` first restyle of /ai-matching to mockup 22 (left rail, conversation column, composer, suggestion pills).
+2. `245a1a9` API `/api/ait/matching`: every recommendation (top_matches, additional_suggestions) gets an added `card`
+   = ResultView of screen 02 (cover image ref, craft label via rowCraft, tags incl. duration, 3 highlights, price). Built by
+   `src/lib/matching/card-data.ts` with the existing `resultView` / `eligibleRows`. No existing field changed; selection and ranking untouched; no migration.
+3. `64de4bd` price: group size the AI understood (`hard_constraints.group_size`) goes to the existing `priceFor` → group price,
+   struck-through old price, "Giảm X% giá đoàn"; no group size → "Giá từ … /khách". "2 ca liên tiếp" and "còn trống ngày…" dropped.
+4. `00d21b9` Vietnamese copy in `matching-view.ts` + `understoodChips` ("AI đã hiểu").
+5. `f517e33` card with image (CoverImage + RESULT_SIZES, same helper as 02), craft, tags, highlights, group price; chips in the top bar;
+   "Yêu cầu báo giá" button removed from the card (no behaviour test depended on it; full suite passes); h1 "Ghép tour AI"; page copy in Vietnamese.
 
-## Differs from the mockup (data or logic not available; kept simple)
-- No image on the card: the matching API returns no image, craft, duration, highlights or availability.
-- No group total / old price / discount / "2 ca liên tiếp" / "Còn trống ngày…": not returned by the API, and the 15/11 decision says suggest single experiences, never combine them into an itinerary. Only "/khách" price and "Tối đa N khách/ca" are shown.
-- No "AI đã hiểu" chips and no conversation title in the top bar: the extraction fields are not mapped; the understood date stays as a line in the message. h1 stays "AI Tour Matching" (test of #188).
-- Left rail has only "Cuộc ghép tour mới" (reloads the page); no search and no history: there is no API for past conversations.
-- Mockup follow-up chips ("Xem 2 ca liên tiếp…", "Đổi sang Thứ Năm…") are replaced by the three existing quick prompts.
-- "Yêu cầu báo giá" kept as a secondary button (existing function, not in the mockup).
-- AI texts from `matching-view.ts` and the quick prompt texts sent to the AI stay English (tested strings, AI logic).
+## Test lines changed (assert wording only)
+- tests/unit/ai-matching-view.test.ts: `AI_FAILURE_TEXT` expected text; `HANDOFF_FAILURE_TEXT` expected text; noMatchView `lines` expectation
+  (`'Ngân sách: 150.000 ₫/khách'`, `'Ngày: Consider flexible dates (+/- 2 days)'`). New tests added for `understoodChips`.
+- tests/unit/ait-date-year.test.ts: line 77 `understoodDateLine` expected text (Vietnamese).
+- tests/unit/ait121-additional-suggestions.test.ts: test title and the `<h1>` regex ("Ghép tour AI").
+- New: tests/unit/ait-matching-card-data.test.ts, tests/unit/ai-matching-card-view.test.ts.
+
+## Accepted differences from mockup 22
+- Left rail: only "Cuộc ghép tour mới"; no history, no search (no API).
+- Quick prompts (3, label in Vietnamese, text sent to the AI unchanged) replace the follow-up chips of the mockup.
+- Rank / match score badge is not in the mockup and was removed from the card.
+
+## Not done / open
+- Step 6 (screenshots 1440 and 390 with a DEV Agency login): NOT done. The worktree has no `.env.local` (`ls -a` shows only `.env.example`),
+  the dev server on 3203 failed on `/api/auth/login` with "DATABASE_APP_URL is not configured". Server stopped. No env file was read.
+- Text that still comes from the server and stays English: clarification questions from the AI, the relaxation `conversation_prompt`
+  and relaxation values (e.g. "Consider flexible dates (+/- 2 days)") in `src/lib/matching/recommendation-service.ts` / AI extraction.
+- Mockup items not built: none of the chips for "buổi sáng" / "Tiếng Việt" (not extracted by the AI).

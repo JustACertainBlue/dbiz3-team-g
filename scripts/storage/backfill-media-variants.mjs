@@ -1,6 +1,7 @@
 // Backfill WebP display variants for every showcase image already stored (step 2A, human request 2026-11-20). DEV only.
 //   npm run storage:media-variants [-- --dry-run | --apply] [--only-oversize] [--notes-dir <dir>]
 //   npm run storage:media-variants -- --undo <dir>/undo.json [--dry-run]
+//   CONFIRM_PROJECT_REF=<prod ref> npm run storage:media-variants -- --target-prod [--apply | --undo <file>]
 // Showcase image = an image at prf-media/<file_id> linked as Experience/profile media, workshop version media or village
 // cover, and never a provider document. For each one whose variants are missing, the original is read and
 // prf-media/<file_id>.w400|w800|w1600.webp are made with media-variants.mjs (never enlarged, WebP ~72, no metadata).
@@ -8,11 +9,12 @@
 // <notes-dir>/media-variants-<UTC>/undo.json (the keys it will create) first, then uploads without replacing. --undo
 // removes those keys. --only-oversize (2026-11-20) redoes only the stored variants over their cap (media-variants.mjs
 // VARIANT_CAPS): --apply first saves their current bytes next to undo.json, then replaces them; --undo puts them back.
-// Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project.
+// Refuses to run unless DATABASE_URL and SUPABASE_URL both name the DEV project, or, with --target-prod, both name PROD and
+// CONFIRM_PROJECT_REF equals that ref (typed in the shell, not read from a .env file); checked before any connection.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { DEV_PROJECT_REF, assertDevTargets, resolveNotesDir } from './refresh-catalog-copies.mjs'
+import { DEV_PROJECT_REF, PROD_PROJECT_REF, assertTargets, resolveNotesDir } from './refresh-catalog-copies.mjs'
 import { VARIANT_CAPS, VARIANT_WIDTHS, isVariantKey, makeVariants, oversizeWidths, variantKey } from './media-variants.mjs'
 
 export const DEFAULT_NOTES_DIR = '.demo-data/media-variants'
@@ -46,21 +48,22 @@ export const DISPLAY_IMAGES_SQL = `SELECT f.file_id::text AS file_id,f.storage_k
 
 /** @param {string[]} argv */
 export function parseArgs(argv) {
-  /** @type {{apply:boolean,onlyOversize:boolean,undo?:string,notesDir?:string}} */
-  const options = { apply: false, onlyOversize: false }
+  /** @type {{apply:boolean,onlyOversize:boolean,targetProd:boolean,undo?:string,notesDir?:string}} */
+  const options = { apply: false, onlyOversize: false, targetProd: false }
   let dryRun = false, apply = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--dry-run') dryRun = true
     else if (arg === '--apply') apply = true
     else if (arg === '--only-oversize') options.onlyOversize = true
+    else if (arg === '--target-prod') options.targetProd = true
     else if (arg === '--undo' || arg === '--notes-dir') {
       const value = argv[index + 1]
       if (!value || value.startsWith('--')) refuse(`${arg} needs a value.`)
       if (arg === '--undo') options.undo = value
       else options.notesDir = value
       index += 1
-    } else refuse(`Unknown option ${arg}; use --dry-run (default), --apply, --only-oversize, --undo <file> or --notes-dir <dir>.`)
+    } else refuse(`Unknown option ${arg}; use --dry-run (default), --apply, --only-oversize, --undo <file>, --notes-dir <dir> or --target-prod.`)
   }
   if (dryRun && apply) refuse('Choose either --dry-run or --apply.')
   if (options.undo && apply) refuse('--undo writes by itself; use --undo <file> --dry-run to preview.')
@@ -177,12 +180,13 @@ async function undoBackfill(options, { storage, projectRef }) {
 async function main() {
   const options = parseArgs(process.argv.slice(2))
   const { default: nextEnv } = await import('@next/env')
+  const confirmFromShell = process.env.CONFIRM_PROJECT_REF // typed with the command, not read from a .env file
   nextEnv.loadEnvConfig(process.cwd())
-  const projectRef = assertDevTargets(process.env)
+  const projectRef = assertTargets({ ...process.env, CONFIRM_PROJECT_REF: confirmFromShell }, { targetProd: options.targetProd })
   const notesDir = resolveNotesDir(process.cwd(), options.notesDir ?? DEFAULT_NOTES_DIR)
   const { connection } = await import('../db/shared.mjs')
   const { storageClient } = await import('./client.mjs')
-  console.log(JSON.stringify({ projectRef, isDev: projectRef === DEV_PROJECT_REF, mode: options.undo ? `undo${options.apply ? '' : ' (dry run)'}` : options.apply ? 'apply' : 'dry-run (read and encode only; no upload)' }))
+  console.log(JSON.stringify({ projectRef, isDev: projectRef === DEV_PROJECT_REF, isProd: projectRef === PROD_PROJECT_REF, mode: options.undo ? `undo${options.apply ? '' : ' (dry run)'}` : options.apply ? 'apply' : 'dry-run (read and encode only; no upload)' }))
   if (options.undo) { console.log(JSON.stringify(await undoBackfill(options, { storage: storageClient(), projectRef }), null, 2)); return }
   const client = connection('migration')
   await client.connect()

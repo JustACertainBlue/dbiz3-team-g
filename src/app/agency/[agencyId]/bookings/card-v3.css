@@ -1,0 +1,27 @@
+/* Screen 05 cards (mockup LichSuDatCho). Prefix v3g-. Shares header/tabs/pagination classes (v3l-) of the provider list. */
+.v3g-search{display:flex;align-items:center;gap:8px;min-height:46px;border:1px solid #9AA39E;border-radius:6px;padding:0 12px;min-width:320px;box-sizing:border-box;background:#fff}
+.v3g-search input{border:0;outline:0;font:inherit;font-size:16px;flex:1;min-width:0}
+.v3g-banner{display:flex;gap:12px;align-items:center;background:#FFF7E6;border:1px solid #F0DDB0;border-radius:8px;padding:14px 18px;margin-top:20px}
+.v3g-list{display:flex;flex-direction:column;gap:16px}
+.v3g-card{display:flex;background:#fff;border:1px solid #E2DED2;border-radius:8px;overflow:hidden}
+.v3g-photo{flex:0 0 260px;position:relative;background:#F0EDE4;display:block}
+.v3g-photo .v3-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.v3g-body{flex:1;min-width:0;display:flex;gap:24px;padding:20px 22px}
+.v3g-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.v3g-side{flex:0 0 240px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
+.v3g-chips{display:flex;gap:8px;flex-wrap:wrap}
+.v3g-name{margin:0;font-size:22px;line-height:30px;font-weight:700}
+.v3g-name a{color:#0F3D2A;text-decoration:none}
+.v3g-sm{margin:0;font-size:16px;line-height:23px}
+.v3g-tags{display:flex;gap:8px;flex-wrap:wrap}
+.v3g-tag{display:inline-flex;padding:4px 9px;border:1px solid #9AA39E;border-radius:4px;font-size:14px;line-height:20px;background:#fff;font-variant-numeric:tabular-nums}
+.v3g-note{margin:0;font-size:15px;line-height:22px;color:#4B5851}
+.v3g-note--warn{color:#7A4B00;font-weight:700}
+.v3g-total{font-size:26px;line-height:34px;font-variant-numeric:tabular-nums}
+.v3g-old{color:#B3261E;text-decoration:line-through;font-variant-numeric:tabular-nums}
+.v3g-disc{background:#1F6641;color:#fff;font-size:14px;line-height:20px;font-weight:700;padding:2px 8px;border-radius:4px}
+.v3g-cap{margin:0;font-size:14px;line-height:20px;color:#5F6B64}
+.v3g-links{display:flex;gap:16px;align-items:center;margin-top:8px}
+.v3g-links a{font-weight:700;color:#165235}
+.v3g-pay{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 24px;border-radius:6px;background:#165235;color:#fff!important;font-weight:700;text-decoration:none;margin-top:8px}
+.v3g-cal{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 20px;border-radius:6px;background:#fff;color:#165235;font-weight:700;text-decoration:none;box-shadow:inset 0 0 0 1.5px #165235;box-sizing:border-box}

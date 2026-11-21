@@ -82,8 +82,8 @@ describe('#87 spec-BKG #31 | Booking times from PostgreSQL (UTC) are shown in As
       start_at: new Date(row.start_at).toISOString(), end_at: new Date(row.end_at).toISOString(),
     })
     cookie.account = 'agency'
-    const page = await html(AgencyBookingHistoryPage({ params: { agencyId: TRANG_AN }, searchParams: {} }))
-    expect(page).toContain(`${startLocal} → ${endLocal}`)
+    const page = await html(AgencyBookingHistoryPage({ params: { agencyId: TRANG_AN }, searchParams: { tab: 'all', q: `HAB-${row.booking_id.slice(0, 6)}` } }))
+    expect(page).toContain(`${startLocal.slice(11)}–${endLocal}`) // screen 05 card shows "HH:mm–HH:mm" in Hanoi time
   })
 
   it('FR-004: the edit form pre-fills the start in Hanoi time, so saving it with +07:00 does not move the Booking', () => {

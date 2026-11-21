@@ -19,9 +19,10 @@ const TRANG_AN = '02e568d8-d65e-54b1-a554-b411150d1dcb'
 describe('screen 05 → screen 27', () => {
   it('ends the tab row with a "Xem lịch" link to the Agency schedule', async () => {
     const html = renderToStaticMarkup(await AgencyBookingHistoryPage({ params: { agencyId: TRANG_AN }, searchParams: {} }))
-    const row = html.match(/<div class="bkg-tab-row">([\s\S]*?)<\/div>/)?.[1] ?? ''
-    expect(row).toMatch(/<nav[^>]*aria-label="Lọc theo trạng thái"/)
-    expect(row).toMatch(new RegExp(`<\\/nav><a[^>]*href="/agency/${TRANG_AN}/schedule"[^>]*>[\\s\\S]*Xem lịch<\\/a>$`))
+    const tabs = html.match(/<nav[^>]*aria-label="Lọc theo trạng thái"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? ''
+    expect(tabs).not.toBe('')
+    // the button sits right after the tab nav, in the same row (mockup 05)
+    expect(html).toMatch(new RegExp(`<\\/nav><a[^>]*href="/agency/${TRANG_AN}/schedule"[^>]*>[\\s\\S]*Xem lịch<\\/a>`))
   })
   it('has no quote characters in its inline CSS (the server escapes them and hydration fails)', async () => {
     const html = renderToStaticMarkup(await AgencyBookingHistoryPage({ params: { agencyId: TRANG_AN }, searchParams: {} }))

@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const page = readFileSync('src/app/admin/create-account/page.tsx', 'utf8')
+const page = readFileSync('src/app/admin/create-account/CreateAccountForm.tsx', 'utf8')
 
 describe('#252 | ADM117 create button with no village suggestions', () => {
   it('an empty village list disables Create only for the Provider form, not for UBND', () => {

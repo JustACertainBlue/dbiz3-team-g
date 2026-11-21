@@ -1,5 +1,3 @@
-// The one place the hold length is defined (BKG BR-004, UI v3 integration 21/11): booking creation, the expiry scanner
-// (lib/booking/expire-holds.ts), the explore texts and the workshop form (screen 32, read-only) all import it. Pure, so client code may too.
-export const HOLD_HOURS = 72
-/** Older name used by the workshop form and its test. */
-export const PROVIDER_HOLD_HOURS = HOLD_HOURS
+// "Giữ chỗ chờ thanh toán" shown read-only on screen 32. Same value as the booking rule (create-booking.ts HOLD_HOURS, BKG BR-004,
+// mirrored by explore v3-detail HOLD_HOURS); a test keeps the copies equal. Kept here so the client form imports no server code.
+export const PROVIDER_HOLD_HOURS = 72

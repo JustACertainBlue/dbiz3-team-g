@@ -5,7 +5,6 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { DAY_STATUS, type MonthCalendar as Month } from '@/lib/explore/v3-provider'
-import { HOLD_HOURS } from '@/lib/provider/hold-hours'
 import RequestButton, { type RequestExperience } from '../../v3/RequestButton'
 
 const LONG = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
@@ -48,7 +47,7 @@ export default function MonthCalendar({ month, basePath, isAgency, initial, expe
         {day.state === 'free' && (isAgency
           ? <RequestButton experiences={experiences} date={day.date} label="Gửi yêu cầu đặt ngày này" />
           : <Link className="hab-btn hab-btn--primary" href="/login">Đăng nhập để đặt chỗ</Link>)}
-        {day.state === 'free' && <p className="v3-cap">Không mất phí. Xưởng nhận lời thì giữ chỗ {HOLD_HOURS} giờ để bạn thanh toán.</p>}
+        {day.state === 'free' && <p className="v3-cap">Không mất phí. Xưởng nhận lời thì giữ chỗ 72 giờ để bạn thanh toán.</p>}
       </> : <p className="v3p-cal__note">Chọn một ngày còn trống trên lịch.</p>}
     </aside>
   </div>

@@ -3,7 +3,6 @@
 // The Tour Agency never creates a Booking; the Provider does (screen 35). UI v3 decisions #1, #12.
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { HOLD_HOURS } from '@/lib/provider/hold-hours'
 import GuestsInput, { guestsError } from './GuestsInput'
 import './request-v3.css'
 
@@ -58,7 +57,7 @@ export default function RequestButton({ experiences, date = '', guests = null, s
     {open && <div className="v3rq" role="dialog" aria-modal="true" aria-labelledby="v3rq-t">
       <form className="v3rq__box" method="post" onSubmit={submit}>
         <h2 id="v3rq-t" className="v3rq__t">Gửi yêu cầu đặt chỗ</h2>
-        <p className="v3rq__cap">Gửi yêu cầu chưa mất phí. Xưởng nhận lời thì giữ chỗ {HOLD_HOURS} giờ.</p>
+        <p className="v3rq__cap">Gửi yêu cầu chưa mất phí. Xưởng nhận lời thì giữ chỗ 72 giờ.</p>
         {experiences.length > 1 && <label className="v3rq__f"><span>Trải nghiệm</span>
           <select value={experienceId} onChange={event => setExperienceId(event.target.value)}>{experiences.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
         <label className="v3rq__f"><span>Ngày</span><input type="date" required value={day} onChange={event => setDay(event.target.value)} /></label>

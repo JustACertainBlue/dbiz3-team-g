@@ -10,8 +10,7 @@ import { craftLabel, parseDistance, parseHighlights, parseInclusions, parseSlots
 import { initials } from '../../app/components/nav/nav-model'
 import { uniqueImages, type ImageRef } from '../prf/media-urls'
 
-import { HOLD_HOURS } from '../provider/hold-hours'
-export { HOLD_HOURS }
+export const HOLD_HOURS = 72 // src/lib/booking/create-booking.ts HOLD_HOURS (BKG BR-004)
 const WEEKDAY = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
 const WEEKDAY_LONG = ['', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ nhật']
 const isoWeekday = (date: string) => (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7 + 1

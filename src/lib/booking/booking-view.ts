@@ -50,3 +50,15 @@ export function bookingView(input: { booking: DemoRow; experience: Partial<DemoR
     cancelLine, contactName: booking.contact_name ?? '', contactPhone: booking.contact_phone ?? '', note: booking.note ?? '',
   }
 }
+
+const money = (value: number) => `${value.toLocaleString('vi-VN')} ₫`
+
+/** Rows of screen 10d "Tour đã hoàn thành!" (label, value), from a Completed booking. */
+export function completionRows(view: BookingView, booking: DemoRow): [string, string][] {
+  const arrived = booking.arrival_at ? `${hanoiClock(booking.arrival_at)}, ${hanoiDate(booking.arrival_at).split('-').reverse().join('/')}` : ''
+  return [
+    ['Mã đặt chỗ', view.code], ['Trải nghiệm', view.experienceName],
+    ['Ngày giờ', `${view.range.slice(0, 5)}, ${view.dateLong.replace(', ', ' ')}`], ['Số khách', `${view.price.guests} khách`],
+    ['Đã nhận', money(view.price.total)], ['Xác nhận lúc', arrived], ['Trạng thái', 'Hoàn thành tour'],
+  ]
+}

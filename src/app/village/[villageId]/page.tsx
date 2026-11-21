@@ -10,7 +10,7 @@ import { loadExploreRuntime } from '@/lib/explore/seed-repository'
 import { parseSearch } from '@/lib/explore/v3-search'
 import { villageView } from '@/lib/explore/v3-village'
 import { currentServerSession } from '@/lib/auth/server-session'
-import { GUEST_OPTIONS } from '@/app/explore/v3/SearchBar'
+import { GuestsField } from '@/app/explore/v3/GuestsInput'
 import AiBox from '@/app/explore/v3/AiBox'
 import ChatButton from '@/app/explore/v3/ChatButton'
 import Gallery from '@/app/explore/v3/Gallery'
@@ -73,8 +73,7 @@ export default async function VillagePage({ params, searchParams }: { params: { 
           <label className="v3-seg"><CalendarDays aria-hidden="true" /><span className="v3-sv"><span className="v3-sl">Ngày đưa đoàn đi</span>
             <input name="date" type="date" defaultValue={query.date} /></span></label>
           <label className="v3-seg"><Users aria-hidden="true" /><span className="v3-sv"><span className="v3-sl">Số khách trong đoàn</span>
-            <select name="guests" defaultValue={query.guests ?? ''}><option value="">Chọn số khách</option>{GUEST_OPTIONS.map(n => <option key={n} value={n}>{n} khách</option>)}</select></span>
-            <ChevronDown aria-hidden="true" className="v3-seg__chev" /></label>
+            <GuestsField id="v3v-guests" name="guests" defaultValue={query.guests ? String(query.guests) : ''} max={null} /></span></label>
           <button type="submit" className="v3-sbtn">Xem lịch trống</button>
         </form>
       </section>}

@@ -14,7 +14,7 @@
 .provider-workspace .spec-form-section-header{border-color:#ded8cb}
 .provider-workspace .prf-sticky-footer{background:#fffdf8;border-top:1px solid #ded8cb}
 .provider-workspace .spec-hero-title{font-size:clamp(30px,4vw,48px)}
-.provider-workspace :where(a){color:#355b46;text-underline-offset:3px}
+.provider-workspace :where(a:not(.hab-btn)){color:#355b46;text-underline-offset:3px}
 .provider-workspace .spec-btn-black,.provider-workspace .prf-btn-primary,.provider-workspace .bkg-link-btn{color:white}
 .provider-dashboard{display:grid;grid-template-columns:1fr 1fr;gap:22px}
 .provider-dashboard>header,.provider-dashboard>.provider-modules{grid-column:1/-1}

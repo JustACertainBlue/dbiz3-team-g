@@ -1,7 +1,7 @@
 // Pure helpers for screen AIT121: turn API responses into what the conversation shows.
 // No fabricated results on failure (FR-003, BR-017, #27); Quote/Chat open COM048 on success (#31).
 
-export const AI_FAILURE_TEXT = "Temporary AI Failure — we couldn't process your request right now. Your conversation is saved."
+export const AI_FAILURE_TEXT = 'Dịch vụ AI đang tạm gián đoạn. Vui lòng thử lại sau ít phút.'
 export const HANDOFF_FAILURE_TEXT = 'Could not complete the request. Nothing was created.'
 
 export type ApiResult = { networkError: true } | { ok: boolean; status: number; body: any }
@@ -22,7 +22,16 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
   // #36: a network error means the message never reached the server, so Retry resends it;
   // any server response means it was stored, so Retry re-analyzes (#33).
   if ('networkError' in result) return { kind: 'failure', text: AI_FAILURE_TEXT, retry: 'resend' }
-  if (!result.ok) return AI_FAILURE
+  if (!result.ok) {
+    if (result.status === 503 && result.body?.error === 'AI_SERVICE_UNAVAILABLE' && result.body?.retryable === true) {
+      return {
+        kind: 'failure',
+        text: typeof result.body.message === 'string' ? result.body.message : AI_FAILURE_TEXT,
+        retry: 'reanalyze',
+      }
+    }
+    return AI_FAILURE
+  }
   const extraction = result.body?.extraction
   // Platform knowledge or general guidance questions — check extraction.intent (not top-level body.intent)
   const intent = extraction?.intent ?? result.body?.intent

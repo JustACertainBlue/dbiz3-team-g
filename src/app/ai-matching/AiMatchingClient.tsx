@@ -1056,11 +1056,7 @@ export default function AiMatchingScreen({
                     )}
                   </div>
                   <div className="ait-assistant-bubble">
-                    {renderFormattedContent(
-                      msg.text === AI_FAILURE_TEXT
-                        ? 'Hệ thống AI tạm thời gián đoạn — chúng tôi chưa thể xử lý yêu cầu lúc này. Hội thoại của bạn đã được lưu lại an toàn.'
-                        : msg.text
-                    )}
+                    {renderFormattedContent(msg.text)}
 
                     {/* #156: Ngày được trợ lý nhận diện */}
                     {msg.dateLine && (

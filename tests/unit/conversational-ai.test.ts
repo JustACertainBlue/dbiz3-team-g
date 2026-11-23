@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
+  AiServiceUnavailableError,
   ConversationalAiService,
   detectWaivers,
   isRepeatedReply,
@@ -15,12 +16,107 @@ import { detectPromptInjection, buildSystemPrompt } from '@/lib/ai/prompt-templa
 import { queryKnowledgeBase, PLATFORM_KNOWLEDGE_BASE } from '@/lib/ai/knowledge-base'
 import { extractTourContext } from '@/lib/ai/extractor'
 
+const ruleAnalysis = (messages: Array<{ sender?: string; text: string }>) =>
+  ConversationalAiService.fallbackAnalysis(
+    messages,
+    { inCooldown: false, provider: 'test', model: 'test' },
+    () => new Date('2026-11-17T00:00:00Z')
+  )
+
 describe('Conversational AI & LLM Integration Test Suite', () => {
   beforeEach(async () => {
     await QuotaManager.resetCooldown()
   })
 
   describe('1. Multilingual Natural Language Tour Matching', () => {
+    it('keeps extracted tour slots and asks for missing details when the model labels a request as guidance', async () => {
+      const fakeCloudflare = {
+        isConfigured: () => true,
+        runChat: async () => ({
+          success: true,
+          modelUsed: 'fake-llm',
+          text: JSON.stringify({
+            intent: 'platform_guidance',
+            conversational_reply: 'Tôi có thể giúp ghép tour cho đoàn.',
+            extracted_context: { group_size: 10, origin: 'Ý', craft_preference: 'pottery' },
+            follow_up_questions: [],
+          }),
+        }),
+      } as unknown as CloudflareAiClient
+      ConversationalAiService.setClients(fakeCloudflare, new OpenRouterClient({ apiKey: '' }))
+      try {
+        const result = await ConversationalAiService.processConversation([
+          { sender: 'Agency', text: 'nhóm 10 khách từ Ý đi Bát Tràng' },
+        ])
+
+        expect(result.intent).toBe('tour_matching')
+        expect(result.tour_context).toMatchObject({
+          group_size: 10,
+          craft_preference: 'pottery',
+          origin_or_route: { origin_address: 'Ý' },
+        })
+        expect(result.follow_up_questions.join(' ')).toMatch(/ngày/)
+      } finally {
+        ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
+      }
+    })
+
+    it('does not ask tour follow-ups for platform guidance without tour slots', async () => {
+      const fakeCloudflare = {
+        isConfigured: () => true,
+        runChat: async () => ({
+          success: true,
+          modelUsed: 'fake-llm',
+          text: JSON.stringify({
+            intent: 'platform_guidance',
+            conversational_reply: 'Bạn có thể dùng Fit Score để so sánh đề xuất.',
+            extracted_context: {},
+            follow_up_questions: [],
+          }),
+        }),
+      } as unknown as CloudflareAiClient
+      ConversationalAiService.setClients(fakeCloudflare, new OpenRouterClient({ apiKey: '' }))
+      try {
+        const result = await ConversationalAiService.processConversation([
+          { sender: 'Agency', text: 'Hệ thống tính điểm phù hợp như thế nào?' },
+        ])
+
+        expect(result.intent).toBe('platform_guidance')
+        expect(result.tour_context).toEqual({})
+        expect(result.follow_up_questions).toEqual([])
+      } finally {
+        ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
+      }
+    })
+
+    it.each([
+      ['từ Ý đi Bát Tràng', 'Ý'],
+      ['từ Hoàn Kiếm', 'Hoàn Kiếm'],
+      ['từ Hà Nội đến Bát Tràng', 'Hà Nội'],
+    ])('extracts only the origin from "%s"', (text, origin) => {
+      const result = ConversationalAiService.fallbackAnalysis(
+        [{ sender: 'Agency', text }],
+        { inCooldown: false, provider: 'test', model: 'test' },
+        () => new Date('2026-11-17T00:00:00Z')
+      )
+
+      expect(result.tour_context.origin_or_route?.origin_address).toBe(origin)
+    })
+
+    it('throws an explicit unavailable error when no LLM provider is configured', async () => {
+      ConversationalAiService.setClients(
+        { isConfigured: () => false } as unknown as CloudflareAiClient,
+        { isConfigured: () => false } as unknown as OpenRouterClient
+      )
+      try {
+        await expect(ConversationalAiService.processConversation([
+          { sender: 'Agency', text: 'Tìm tour gốm cho 10 khách' },
+        ])).rejects.toBeInstanceOf(AiServiceUnavailableError)
+      } finally {
+        ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
+      }
+    })
+
     it('extracts structured requirements from Vietnamese natural language prompt', async () => {
       const messages = [
         {
@@ -29,7 +125,7 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
         },
       ]
 
-      const result = await ConversationalAiService.processConversation(messages)
+      const result = ruleAnalysis(messages)
       expect(result.tour_context.group_size).toBe(15)
       expect(result.tour_context.craft_preference).toBe('pottery')
       expect(result.tour_context.budget?.max_per_person).toBe(400000)
@@ -46,7 +142,7 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
         },
       ]
 
-      const result = await ConversationalAiService.processConversation(messages)
+      const result = ruleAnalysis(messages)
       expect(result.tour_context.group_size).toBe(10)
       expect(result.tour_context.craft_preference).toBe('silk')
       expect(result.tour_context.budget?.max_per_person).toBe(500000)
@@ -63,7 +159,7 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
         },
       ]
 
-      const result = await ConversationalAiService.processConversation(messages)
+      const result = ruleAnalysis(messages)
       expect(result.is_complete).toBe(false)
       expect(result.follow_up_questions.length).toBeGreaterThan(0)
       // Follow-up asks for group size or date
@@ -78,7 +174,7 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
         { sender: 'Agency', text: 'Đoàn có 12 người, đi vào ngày 15/12/2026 từ Ba Đình' },
       ]
 
-      const result = await ConversationalAiService.processConversation(messages)
+      const result = ruleAnalysis(messages)
       expect(result.tour_context.craft_preference).toBe('silk')
       expect(result.tour_context.group_size).toBe(12)
       expect(result.tour_context.target_date_or_range?.start_date).toBe('2026-12-15')
@@ -92,7 +188,7 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
         { sender: 'Agency', text: 'Hệ thống tính điểm phù hợp (Fit Score) như thế nào?' },
       ]
 
-      const result = await ConversationalAiService.processConversation(messages)
+      const result = ruleAnalysis(messages)
       expect(result.intent).toBe('platform_guidance')
       expect(result.conversational_reply).toContain('Fit Score')
       expect(result.conversational_reply).toContain('40%')
@@ -103,7 +199,7 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
         { sender: 'Agency', text: 'How do I contact a Local Provider or request a quote?' },
       ]
 
-      const result = await ConversationalAiService.processConversation(messages)
+      const result = ruleAnalysis(messages)
       expect(result.intent).toBe('platform_guidance')
       expect(result.conversational_reply).toMatch(/Request Quote|Chat/i)
     })
@@ -265,13 +361,18 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
       expect(statusAfter.remainingMs).toBeGreaterThan(23 * 60 * 60 * 1000) // ~24h
       expect(statusAfter.remainingMs).toBeLessThanOrEqual(24 * 60 * 60 * 1000)
 
-      // Conversational service falls back gracefully during cooldown without calling Cloudflare
+      // Cooldown with no secondary provider is an explicit temporary failure, not a local fallback.
       const messages = [{ sender: 'Agency', text: 'Đoàn 10 khách gốm Bát Tràng' }]
-      const result = await ConversationalAiService.processConversation(messages)
-      expect(result.quota_status.inCooldown).toBe(true)
-      expect(result.usedLlm).toBe(false)
-      expect(result.tour_context.group_size).toBe(10)
-      expect(result.conversational_reply).toContain('bảo vệ hạn ngạch 24h')
+      ConversationalAiService.setClients(
+        { isConfigured: () => true, runChat: async () => { throw new Error('Cloudflare must not be called during cooldown') } } as unknown as CloudflareAiClient,
+        { isConfigured: () => false } as unknown as OpenRouterClient
+      )
+      try {
+        await expect(ConversationalAiService.processConversation(messages)).rejects.toBeInstanceOf(AiServiceUnavailableError)
+        expect((await QuotaManager.checkCooldown()).inCooldown).toBe(true)
+      } finally {
+        ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
+      }
     })
 
     it('resumes requests after cooldown is reset', async () => {
@@ -285,14 +386,31 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
 
   describe('5. Backward Compatibility with Existing Extractor & Matching Engine', () => {
     it('extractTourContext preserves the exact ExtractionResult contract', async () => {
-      const result = await extractTourContext([
-        { sender: 'Agency', text: '15 guests on 2026-11-15 pottery under 500k VND from Hoan Kiem' },
-      ])
-      expect(result.processing_status).toBe('Success')
-      expect(result.is_complete).toBe(true)
-      expect(result.retry_available).toBe(false)
-      expect(result.tour_context.group_size).toBe(15)
-      expect(result.tour_context.budget?.max_per_person).toBe(500000)
+      ConversationalAiService.setClients({
+        isConfigured: () => true,
+        runChat: async () => ({
+          success: true,
+          modelUsed: 'fake-llm',
+          text: JSON.stringify({
+            intent: 'tour_matching',
+            conversational_reply: 'Đã ghi nhận yêu cầu.',
+            extracted_context: { group_size: 15, target_date: '2026-11-15', craft_preference: 'pottery' },
+            follow_up_questions: [],
+          }),
+        }),
+      } as unknown as CloudflareAiClient, new OpenRouterClient({ apiKey: '' }))
+      try {
+        const result = await extractTourContext([
+          { sender: 'Agency', text: '15 guests on 2026-11-15 pottery under 500k VND from Hoan Kiem' },
+        ])
+        expect(result.processing_status).toBe('Success')
+        expect(result.is_complete).toBe(true)
+        expect(result.retry_available).toBe(false)
+        expect(result.tour_context.group_size).toBe(15)
+        expect(result.tour_context.budget?.max_per_person).toBe(500000)
+      } finally {
+        ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
+      }
     })
 
     it('handles simulateFailure option cleanly for #27 fault injection testing', async () => {
@@ -363,7 +481,7 @@ describe('Conversational AI & LLM Integration Test Suite', () => {
         { sender: 'Agency', text: 'tầm 15 khách, không có yêu cầu cụ thể về ngân sách hay thời gian' },
       ]
 
-      const result = await ConversationalAiService.processConversation(messages)
+      const result = ruleAnalysis(messages)
       expect(result.usedLlm).toBe(false)
       expect(result.tour_context.group_size).toBe(15)
       // The waived date must not be asked again, and the bogus "15" must not become a budget.

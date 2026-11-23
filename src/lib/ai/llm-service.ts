@@ -157,6 +157,17 @@ export function isOriginGroundedInUserText(origin: string, userText: string): bo
   return normalize(userText).includes(needle)
 }
 
+export class AiServiceUnavailableError extends Error {
+  readonly code = 'AI_SERVICE_UNAVAILABLE'
+
+  constructor() {
+    super('AI_SERVICE_UNAVAILABLE')
+    this.name = 'AiServiceUnavailableError'
+  }
+}
+
+const ORIGIN_CAPTURE_PATTERN = /(?:from|near|xuất\s*phát\s*từ|xuat\s*phat\s*tu|từ|cách|gần|tại khu vực|ở|khu vực)\s+(.+?)(?=\s+(?:đi|đến|tới|sang|về|qua|tham quan|under|below|dưới|trong|không quá|tối đa|hơn|more|on|with|for|budget|looking|and|to|in|at|vào ngày|ngày|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu
+
 export class ConversationalAiService {
   private static client: CloudflareAiClient = new CloudflareAiClient()
   private static openRouterClient: OpenRouterClient = new OpenRouterClient()
@@ -170,8 +181,7 @@ export class ConversationalAiService {
   }
 
   /**
-   * Processes a multi-turn conversation using Cloudflare Workers AI with fallback to OpenRouter AI,
-   * followed by intelligent rule-based heuristic extraction.
+   * Processes a multi-turn conversation using Cloudflare Workers AI, with OpenRouter as a secondary provider.
    */
   static async processConversation(
     messages: Array<{ sender?: string; text: string; sent_at?: string }>,
@@ -222,12 +232,12 @@ export class ConversationalAiService {
 
     // 3. Evaluate availability of LLM providers:
     // Primary: Cloudflare Workers AI (10,000 free daily Neurons)
-    // Secondary fallback: OpenRouter AI (when Cloudflare is in cooldown, out of tokens, or fails)
+    // Secondary provider: OpenRouter AI (when Cloudflare is in cooldown, out of tokens, or fails)
     const canUseCloudflare = !quotaStatus.inCooldown && this.client.isConfigured()
     const canUseOpenRouter = this.openRouterClient.isConfigured()
 
     if (!canUseCloudflare && !canUseOpenRouter) {
-      return this.fallbackAnalysis(messages, quotaStatus, now)
+      throw new AiServiceUnavailableError()
     }
 
     // 4. Retrieve matching knowledge items for context grounding
@@ -291,9 +301,9 @@ export class ConversationalAiService {
       }
     }
 
-    // 7. If both LLM providers failed or are unavailable, fall back to intelligent rule-based analysis
+    // 7. Do not invent an analysis when both LLM providers are unavailable.
     if (!aiResponse.success || !aiResponse.text) {
-      return this.fallbackAnalysis(messages, quotaStatus, now)
+      throw new AiServiceUnavailableError()
     }
 
     // 8. Parse and validate LLM JSON response
@@ -322,7 +332,9 @@ export class ConversationalAiService {
       // Intent handling: platform guidance vs tour matching
       const rawIntent = parsed.intent || 'tour_matching'
       const isGuidance = rawIntent === 'platform_guidance' || detectedGuidance
-      const hasTourIntent = !isGuidance && (rawIntent === 'tour_matching' || rawIntent === 'mixed' || Object.keys(tourContext).length > 0)
+      const hasTourDetails = Object.keys(tourContext).length > 0
+      const isPlatformOnlyGuidance = isGuidance && !hasTourDetails
+      const hasTourIntent = !isPlatformOnlyGuidance && (rawIntent === 'tour_matching' || rawIntent === 'mixed' || hasTourDetails)
       const waivers = detectWaivers(latestUserMsg)
       const followUps: string[] = Array.isArray(parsed.follow_up_questions)
         ? parsed.follow_up_questions.filter((question: unknown): question is string =>
@@ -337,7 +349,7 @@ export class ConversationalAiService {
       const hasGroupSize = tourContext.group_size !== undefined && tourContext.group_size > 0
       const hasDate = Boolean(tourContext.target_date_or_range?.start_date)
 
-      if (!isGuidance && (!hasPreference || !hasGroupSize || !hasDate)) {
+      if (!isPlatformOnlyGuidance && (!hasPreference || !hasGroupSize || !hasDate)) {
         if (!hasGroupSize && !followUps.some(q => /số lượng khách|group size|pax|khách/i.test(q))) {
           followUps.push(isVi ? 'Quý khách vui lòng cho biết số lượng khách dự kiến tham gia đoàn?' : 'Could you please specify your expected group size?')
         }
@@ -349,12 +361,12 @@ export class ConversationalAiService {
         }
       }
 
-      const finalContext = isGuidance ? (tourContext.craft_preference ? { craft_preference: tourContext.craft_preference } : {}) : tourContext
+      const finalContext = tourContext
       // If user has all 4 core fields, mark complete and match right away, but STILL keep follow-up questions to refine!
-      const isComplete = Boolean(!isGuidance && hasGroupSize && (hasDate || waivers.date) && (hasPreference || waivers.craft))
+      const isComplete = Boolean(!isPlatformOnlyGuidance && hasGroupSize && (hasDate || waivers.date) && (hasPreference || waivers.craft))
 
       return {
-        intent: isGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
+        intent: isPlatformOnlyGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
         conversational_reply: this.resolveReply(parsed.conversational_reply, previousAssistantReplies, finalContext, waivers, isVi),
         tour_context: finalContext,
         is_complete: isComplete,
@@ -388,7 +400,7 @@ export class ConversationalAiService {
       }
     }
 
-    return this.fallbackAnalysis(messages, quotaStatus, now)
+    throw new AiServiceUnavailableError()
   }
 
   /**
@@ -591,7 +603,7 @@ export class ConversationalAiService {
     } else if (!relativeCenterPreference) {
       for (const m of [...relevantMsgs].reverse()) {
         const text = m.text || ''
-        const originMatch = text.match(/(?:from|near|xuất phát từ|từ|cách|gần|tại khu vực|ở|khu vực)\s+(.+?)(?=\s+(?:under|below|dưới|trong|không quá|tối đa|hơn|more|on|with|for|budget|looking|and|to|in|at|vào ngày|ngày|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu)
+        const originMatch = text.match(ORIGIN_CAPTURE_PATTERN)
         if (originMatch) {
           context.origin_or_route = { origin_address: originMatch[1].trim() }
           break
@@ -646,7 +658,7 @@ export class ConversationalAiService {
   }
 
   /**
-   * Fallback rule-based analysis (used when quota is in cooldown, offline, or API error).
+   * Explicit rule-based analysis retained for tests and non-request tooling. User requests must use an LLM.
    */
   static fallbackAnalysis(
     messages: Array<{ sender?: string; text: string }>,
@@ -754,7 +766,7 @@ export class ConversationalAiService {
         && !/(?:xuất phát từ|điểm đón|pickup|from)\b/iu.test(text)
       if (!tourContext.origin_or_route && !relativeCenterPreference) {
         // Supports accented (xuất phát từ) and unaccented (xuat phat tu, tu trung tam).
-        const originMatch = text.match(/(?:from|near|xu[aấ]t\s*ph[aá]t\s*t[uừ]|xuat\s*phat\s*tu|từ|cách|gần)\s+(.+?)(?=\s+(?:under|below|dưới|trong|không quá|tối đa|hơn|more|on|with|for|budget|looking|and|to|in|at|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu)
+        const originMatch = text.match(ORIGIN_CAPTURE_PATTERN)
         if (originMatch) {
           tourContext.origin_or_route = { origin_address: originMatch[1].trim() }
         } else if (/(?:hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i.test(text)) {

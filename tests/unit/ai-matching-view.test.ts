@@ -4,17 +4,21 @@ import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, messageOutcome, 
 // Round 3 screen helpers for AIT121: T045 (D2), T047 (D1), T049 (D10).
 describe('T047 | messageOutcome never shows fabricated results (FR-003, BR-017, #27, #33)', () => {
   it('uses the #27 wording', () => {
-    expect(AI_FAILURE_TEXT).toBe("Temporary AI Failure — we couldn't process your request right now. Your conversation is saved.")
+    expect(AI_FAILURE_TEXT).toBe('Dịch vụ AI đang tạm gián đoạn. Vui lòng thử lại sau ít phút.')
     expect(HANDOFF_FAILURE_TEXT).toBe('Could not complete the request. Nothing was created.')
   })
 
   it.each([
-    ['503', { ok: false, status: 503, body: { error_code: 'AI_SERVICE_UNAVAILABLE', retry_available: true } }],
+    ['503', { ok: false, status: 503, body: { error: 'AI_SERVICE_UNAVAILABLE', message: 'Dịch vụ AI đang tạm gián đoạn. Vui lòng thử lại sau ít phút.', retryable: true } }],
     ['500', { ok: false, status: 500, body: { error: 'x' } }],
     ['incomplete without follow-ups', { ok: true, status: 201, body: { extraction: { is_complete: false, follow_up_questions: [] }, tour_preference_profile: null } }],
   ])('%s → failure with a re-analyze Retry, no cards', (_label, input) => {
     const outcome = messageOutcome(input as never)
-    expect(outcome).toEqual({ kind: 'failure', text: AI_FAILURE_TEXT, retry: 'reanalyze' })
+    expect(outcome).toEqual({
+      kind: 'failure',
+      text: _label === '503' ? 'Dịch vụ AI đang tạm gián đoạn. Vui lòng thử lại sau ít phút.' : AI_FAILURE_TEXT,
+      retry: 'reanalyze',
+    })
   })
 
   it('#36: network error → failure whose Retry resends the unsent message, no cards', () => {

@@ -10,6 +10,7 @@ import {
   withMatchingSessionWriteLock,
 } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
+import { AiServiceUnavailableError } from '@/lib/ai/llm-service'
 import {
   resolveVillageCards,
   resolveProviderCards,
@@ -703,20 +704,32 @@ async function handlePost(
       return NextResponse.json({ message, turn, conversational_reply: clarification }, { status: 201 })
     }
 
-    const extraction = await extractTourContext({
-      sessionId: params.id,
-      messages: analysisMessages,
-      state: conversationState,
-      recentTurns: recentUserTurns,
-    })
+    let extraction: Awaited<ReturnType<typeof extractTourContext>>
+    try {
+      extraction = await extractTourContext({
+        sessionId: params.id,
+        messages: analysisMessages,
+        state: conversationState,
+        recentTurns: recentUserTurns,
+      })
+    } catch (error) {
+      if (!(error instanceof AiServiceUnavailableError)) throw error
+      return NextResponse.json(
+        {
+          error: 'AI_SERVICE_UNAVAILABLE',
+          message: 'Dịch vụ AI đang tạm gián đoạn. Vui lòng thử lại sau ít phút.',
+          retryable: true,
+        },
+        { status: 503 }
+      )
+    }
 
     if (extraction.processing_status === 'Temporary AI Failure') {
       return NextResponse.json(
         {
-          error_code: 'AI_SERVICE_UNAVAILABLE',
-          message:
-            "Temporary AI Failure — we couldn't process your request right now. Your conversation is saved.",
-          retry_available: true,
+          error: 'AI_SERVICE_UNAVAILABLE',
+          message: 'Dịch vụ AI đang tạm gián đoạn. Vui lòng thử lại sau ít phút.',
+          retryable: true,
         },
         { status: 503 }
       )

@@ -133,7 +133,7 @@ describe('OpenRouter Client & Fallback Integration', () => {
       ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
     })
 
-    it('falls back to rule-based heuristic when both Cloudflare and OpenRouter fail', async () => {
+    it('throws an unavailable error when both Cloudflare and OpenRouter fail', async () => {
       const mockCloudflare = {
         isConfigured: () => true,
         runChat: vi.fn().mockResolvedValue({ success: false, error: 'Cloudflare 500' }),
@@ -147,15 +147,11 @@ describe('OpenRouter Client & Fallback Integration', () => {
       ConversationalAiService.setClients(mockCloudflare, mockOpenRouter)
 
       const messages = [{ sender: 'Agency', text: 'Đoàn 10 khách gốm Bát Tràng ngày 20/11/2026 xuất phát từ Hoàn Kiếm' }]
-      const result = await ConversationalAiService.processConversation(messages)
-
-      // Falls back to rule-based heuristic
-      expect(result.usedLlm).toBe(false)
-      expect(result.tour_context.group_size).toBe(10)
-      expect(result.tour_context.craft_preference).toBe('pottery')
-
-      // Restore
-      ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
+      try {
+        await expect(ConversationalAiService.processConversation(messages)).rejects.toThrow('AI_SERVICE_UNAVAILABLE')
+      } finally {
+        ConversationalAiService.setClients(new CloudflareAiClient(), new OpenRouterClient())
+      }
     })
   })
 })

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { extractTourContext } from '@/lib/ai/extractor'
+import { AiServiceUnavailableError } from '@/lib/ai/llm-service'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 
@@ -25,12 +26,16 @@ async function post(handler: Handler, path: string, body: unknown, params?: Reco
   return { status: response.status, json: await response.json() as Record<string, any> }
 }
 
-const FAILURE = {
-  is_complete: false,
-  processing_status: 'Temporary AI Failure' as const,
-  retry_available: true,
+const RETRY_SUCCESS = {
+  is_complete: true,
+  processing_status: 'Success' as const,
+  retry_available: false,
   follow_up_questions: [],
-  tour_context: {},
+  tour_context: { group_size: 10, craft_preference: 'silk', target_date_or_range: { start_date: '2026-12-05' } },
+  conversational_reply: 'Đã ghi nhận yêu cầu.',
+  intent: 'tour_matching' as const,
+  usedLlm: true,
+  missing_primary: [],
 }
 
 describe('T047 | D1 messages route on AI failure and Retry', () => {
@@ -40,11 +45,16 @@ describe('T047 | D1 messages route on AI failure and Retry', () => {
     const id = (await post(POST_SESSIONS, '/api/ait/sessions', {})).json.session_id as string
     const count = () => demoRepository().all('matching_messages').filter(row => row.matching_session_id === id).length
 
-    vi.mocked(extractTourContext).mockResolvedValueOnce(FAILURE)
+    vi.mocked(extractTourContext)
+      .mockRejectedValueOnce(new AiServiceUnavailableError())
+      .mockResolvedValueOnce(RETRY_SUCCESS)
     const failed = await post(POST_MESSAGES, `/api/ait/sessions/${id}/messages`, { sender: 'Agency', text: 'Silk weaving, 10 pax on 2026-11-20 from Hoàn Kiếm' }, { id })
     expect(failed.status).toBe(503)
-    expect(failed.json.error_code).toBe('AI_SERVICE_UNAVAILABLE')
-    expect(failed.json.retry_available).toBe(true)
+    expect(failed.json).toEqual({
+      error: 'AI_SERVICE_UNAVAILABLE',
+      message: 'Dịch vụ AI đang tạm gián đoạn. Vui lòng thử lại sau ít phút.',
+      retryable: true,
+    })
     expect(failed.json.tour_preference_profile ?? null).toBeNull()
     expect(count()).toBe(1)
 

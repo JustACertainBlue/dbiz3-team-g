@@ -27,7 +27,7 @@ import {
   findFixtureVillageMentions,
   stripTestPromptMarker,
 } from '@/lib/matching/test-dataset'
-import { craftTypeForPreference, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
+import { craftTypeForPreference, detectAllCraftPreferences, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
 import { withVillageStartingPrices } from '@/lib/village-starting-price'
 import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
@@ -1114,18 +1114,53 @@ async function handlePost(
         const originUnresolved = originNotice?.startsWith('Chưa nhận ra')
           ? originNotice
           : undefined
+        const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(conversationState.date || '')
+          ? conversationState.date as string
+          : undefined
+        const allRejectedDueToDate = totalCount === 0
+          && dateStr !== undefined
+          && matching.rejected.length > 0
+          && matching.rejected.every(({ reason }) =>
+            ['date_in_past', 'notice', 'date_conflict', 'operating_hours'].includes(reason)
+          )
+        const noResultsDueToDateInPast = allRejectedDueToDate
+          && matching.rejected.some(({ reason }) => reason === 'date_in_past')
+          && !matching.rejected.some(({ reason }) => !['date_in_past'].includes(reason) && reason !== 'operating_hours')
+        const noResultsDueToNotice = allRejectedDueToDate
+          && !noResultsDueToDateInPast
+          && matching.rejected.some(({ reason }) => reason === 'notice')
+          && !matching.rejected.some(({ reason }) => reason === 'date_in_past')
+
+        // Compute earliest available date for date-rejection notices
+        let earliestAvailableDate: string | undefined
+        let maxNoticePeriodHours: number | undefined
+        if ((noResultsDueToDateInPast || noResultsDueToNotice) && dateStr) {
+          const nowTs = Date.now()
+          const maxNoticeMs = experiences
+            .map(e => (typeof e.notice_period_hours === 'number' ? e.notice_period_hours : 24) * 3600 * 1000)
+            .reduce((a, b) => Math.max(a, b), 0)
+          if (noResultsDueToNotice) maxNoticePeriodHours = Math.round(maxNoticeMs / 3600000)
+          const earliestMs = nowTs + maxNoticeMs
+          const d = new Date(earliestMs + 86400000) // round up to next day (+7 offset handled via UTC)
+          const hanoiEarliestMs = earliestMs + 7 * 3600 * 1000
+          const hanoiNext = new Date(hanoiEarliestMs)
+          const y = hanoiNext.getUTCFullYear()
+          const m = String(hanoiNext.getUTCMonth() + 1).padStart(2, '0')
+          const day = String(hanoiNext.getUTCDate() + 1).padStart(2, '0')
+          earliestAvailableDate = `${y}-${m}-${day}`
+          void d
+        }
+
         const resultMessage = buildResultsMessage({
           count: totalCount,
           group_size: conversationState.group_size,
-          start_date: /^\d{4}-\d{2}-\d{2}$/.test(conversationState.date || '')
-            ? conversationState.date
-            : undefined,
+          start_date: dateStr,
           max_budget_per_person: conversationState.budget_per_person,
           craft: typeof craftPreference === 'string' ? craftLabelVi(craftPreference) : undefined,
           origin: requestedOrigin || 'trung tâm Hà Nội',
           originUnresolved,
           radiusKm: conversationState.radius_km,
-          dateScheduleUnconfirmed: /^\d{4}-\d{2}-\d{2}$/.test(conversationState.date || ''),
+          dateScheduleUnconfirmed: dateStr !== undefined,
           noResultsWithinRadius:
             totalCount === 0
             && conversationState.radius_km !== undefined
@@ -1134,6 +1169,10 @@ async function handlePost(
             totalCount === 0
             && conversationState.budget_per_person !== undefined
             && matching.rejected.some(({ reason }) => reason === 'budget'),
+          noResultsDueToDateInPast,
+          noResultsDueToNotice,
+          earliestAvailableDate,
+          maxNoticePeriodHours,
           excludedVillages: excludedVillageNames,
           excludedCrafts: excludedCraftNames,
           missingPrimary: extraction.missing_primary,
@@ -1291,6 +1330,21 @@ async function handlePost(
       message: `${turn.message}${turn.turn_type === 'results'
         ? `\n\nĐang lọc: ${activeCriteria.join(', ') || 'các tiêu chí đã nêu'}.`
         : ''}\n\nĐang áp dụng: ${activeCriteria.join(', ') || 'trống'}.`,
+    }
+
+    const detectedCrafts = extraction.craft_detected || detectAllCraftPreferences(originalText)
+    if (detectedCrafts.length > 1) {
+      const currentCraft = conversationState.craft || detectedCrafts[0]
+      const otherCrafts = detectedCrafts.filter(c => c !== currentCraft)
+      if (otherCrafts.length > 0) {
+        const currentLabel = craftLabelVi(currentCraft)
+        const otherLabels = otherCrafts.map(craftLabelVi).join(', ')
+        const multiCraftNotice = `AI ghép từng nghề một. Đang hiển thị: ${currentLabel}. Bạn muốn xem ${otherLabels} thì gửi thêm yêu cầu riêng.`
+        turn = {
+          ...turn,
+          message: `${turn.message}\n\n${multiCraftNotice}`,
+        }
+      }
     }
 
     const statusCode = isE2E ? 200 : isRetry ? 200 : 201

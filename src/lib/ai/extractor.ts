@@ -3,7 +3,7 @@ import { ConversationalAiService, type ConversationalAiResult } from './llm-serv
 import type { QuotaStatus } from './quota-manager'
 import type { AitConversationState } from '@/lib/ait/conversation-state'
 import type { ValidatedConversationDelta } from '@/lib/ait/conversation-delta-schema'
-import { craftTypeForPreference } from '@/lib/matching/craft-taxonomy'
+import { craftTypeForPreference, detectAllCraftPreferences } from '@/lib/matching/craft-taxonomy'
 
 export interface MessageInput {
   sender?: string
@@ -30,6 +30,7 @@ export interface ExtractionResult {
   quota_status?: QuotaStatus
   usedLlm?: boolean
   delta_validation?: ValidatedConversationDelta
+  craft_detected?: string[]
 }
 
 export async function extractTourContext(
@@ -61,6 +62,13 @@ export async function extractTourContext(
     { ...options, state, recentTurns }
   )
 
+  const lastUserMsg = [...messages].reverse().find(m => !m.sender || m.sender.toLowerCase() === 'agency' || m.sender.toLowerCase() === 'user')?.text || ''
+  const detectedInMsg = detectAllCraftPreferences(lastUserMsg)
+  const craft_detected = detectedInMsg.length > 0 ? detectedInMsg : undefined
+  if (craft_detected && craft_detected.length > 0) {
+    result.tour_context.craft_preference = craft_detected[0]
+  }
+
   return {
     is_complete: result.is_complete,
     processing_status: 'Success',
@@ -73,6 +81,7 @@ export async function extractTourContext(
     quota_status: result.quota_status,
     usedLlm: result.usedLlm,
     delta_validation: result.delta_validation,
+    craft_detected,
   }
 }
 

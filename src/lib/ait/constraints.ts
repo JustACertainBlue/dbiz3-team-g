@@ -1,5 +1,6 @@
 import { matchesCraftPreference } from '@/lib/matching/craft-taxonomy'
 import { filterCandidateByRadius } from '@/lib/matching/geo'
+import { hanoiDate } from '@/lib/time/hanoi-time'
 
 function getNextDayUTC7(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -109,7 +110,13 @@ export function applyHardFilters({
       continue;
     }
 
-    // 5. Date conflict check
+    // 5. Date in past check
+    if (startDateStr && startDateStr < hanoiDate(new Date(now))) {
+      rejected.push({ id: candidate.id, reason: 'date_in_past' });
+      continue;
+    }
+
+    // 6. Date conflict check
     if (rangeStartMs !== null && rangeEndMs !== null) {
       const hasConflict = bookings.some((b: any) => {
         if (b.experience_id !== candidate.id) return false;
@@ -126,7 +133,7 @@ export function applyHardFilters({
       }
     }
 
-    // 6. Notice period check
+    // 7. Notice period check
     if (rangeStartMs !== null && candidate.notice_period_hours != null) {
       const noticeMs = candidate.notice_period_hours * 3600 * 1000;
       if (rangeStartMs - now < noticeMs) {

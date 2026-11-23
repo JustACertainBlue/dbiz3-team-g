@@ -74,7 +74,7 @@ describe('#156 | no invented date', () => {
 describe('#156 | the extracted date is shown so the Agency can correct it', () => {
   it('names the date the assistant understood and how to change it', () => {
     const body = { extraction: { tour_context: { target_date_or_range: { start_date: '2026-12-20' } } } }
-    expect(understoodDateLine(body)).toBe('Tour date understood: Sun 20 Dec 2026. If this is wrong, send the correct date with the year.')
+    expect(understoodDateLine(body)).toBe('Ngày đi dự kiến: Chủ nhật, 20/12/2026. Nếu chưa đúng, hãy gửi lại ngày kèm năm.')
   })
 
   it('shows nothing when no date was extracted or the response has no extraction', () => {

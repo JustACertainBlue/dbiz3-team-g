@@ -121,8 +121,8 @@ function localizeRelaxationLine(line: string): string {
   if (line.startsWith('Dates:')) {
     return line.replace(/^Dates:\s*/i, '📅 Thời gian: ').replace(/Consider flexible dates \(\+\/- 2 days\)/i, 'Cân nhắc ngày linh hoạt (+/- 2 ngày)')
   }
-  if (line.startsWith('Budget:')) {
-    return line.replace(/^Budget:\s*/i, '💰 Ngân sách: ').replace(/per person/i, '/ khách')
+  if (line.startsWith('Budget:') || line.startsWith('Ngân sách đề xuất:')) {
+    return line.replace(/^Budget:\s*/i, '💰 Ngân sách: ').replace(/^Ngân sách đề xuất:\s*/i, '💰 Ngân sách đề xuất: ').replace(/per person/i, '/ khách')
   }
   return line
 }
@@ -1065,7 +1065,9 @@ export default function AiMatchingScreen({
                     {/* #156: Ngày được trợ lý nhận diện */}
                     {msg.dateLine && (
                       <div id="understood-date" style={{ marginTop: '8px', fontSize: '13px', color: '#166534', fontWeight: 600 }}>
-                        {msg.dateLine.replace(/^Tour date understood: ([^.]+)\. If this is wrong, send the correct date with the year\./i, '📅 Ngày tour được ghi nhận: $1. Nếu sai, bạn có thể gửi lại ngày kèm năm để điều chỉnh.')}
+                        {msg.dateLine.startsWith('Ngày đi dự kiến:')
+                          ? `📅 ${msg.dateLine}`
+                          : msg.dateLine.replace(/^Tour date understood: ([^.]+)\. If this is wrong, send the correct date with the year\./i, '📅 Ngày tour được ghi nhận: $1. Nếu sai, bạn có thể gửi lại ngày kèm năm để điều chỉnh.')}
                       </div>
                     )}
 

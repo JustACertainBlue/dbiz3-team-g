@@ -3,7 +3,13 @@ import { join } from 'node:path'
 import { storageClient } from '../../../scripts/storage/client.mjs'
 
 // prf-media/<id>.w400|800|1600.webp: WebP display variants (scripts/storage/media-variants.mjs, step 2A 2026-11-20).
-export function validObjectKey(key:string){if(!/^(prf-media|chat-files|registration-documents|account-avatars)\/[0-9a-f-]{36}$/i.test(key)&&!/^prf-media\/[0-9a-f-]{36}\.w(400|800|1600)\.webp$/i.test(key))throw new Error('Invalid object key');return key}
+export function validObjectKey(key:string){
+  if(!/^(prf-media|chat-files|registration-documents|account-avatars)\/[0-9a-f-]{36}$/i.test(key)
+    &&!/^prf-media\/[0-9a-f-]{36}\.w(400|800|1600)\.webp$/i.test(key)
+    &&!/^seed\/.*$/i.test(key))
+    throw new Error('Invalid object key')
+  return key
+}
 const fixturePath=(key:string)=>join(process.cwd(),'.demo-data',validObjectKey(key))
 const fixtureMode=()=>process.env.NODE_ENV==='test'&&process.env.HAB_TEST_STORAGE!=='1'
 /** Live storage never falls back to disk; disk remains an explicit automated-test fixture. */

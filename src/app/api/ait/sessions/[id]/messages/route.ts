@@ -727,6 +727,7 @@ async function handlePost(
     if (extraction.processing_status === 'Temporary AI Failure') {
       return NextResponse.json(
         {
+          error_code: 'AI_SERVICE_UNAVAILABLE',
           error: 'AI_SERVICE_UNAVAILABLE',
           message: 'Dịch vụ AI đang tạm gián đoạn. Vui lòng thử lại sau ít phút.',
           retryable: true,

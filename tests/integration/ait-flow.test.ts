@@ -4,7 +4,8 @@
  *
  * CONSTITUTION II: Must FAIL before implementation is complete.
  */
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect } from 'vitest'
+import { installAitLlmMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
 import { createMatchingSession } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
 import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
@@ -20,6 +21,9 @@ import { saveAgencyPreferenceProfile } from '@/lib/preferences/preference-servic
 
 describe('T030 | End-to-End Conversational AI Matching Journey (US-1)', () => {
   const agencyId = 'agency-hanoi-tours-001'
+
+  beforeEach(() => installAitLlmMock())
+  afterEach(() => restoreAitLlmMock())
 
   it('executes the full matching journey from initial prompt to quote handoff', async () => {
     // 1. Session creation (FR-001, BR-016)

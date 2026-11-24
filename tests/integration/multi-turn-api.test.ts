@@ -8,41 +8,45 @@
  * 4. Idempotency of Request Quote (same quote ID for same agency + experience) (BR-018)
  * 5. Singleton Active Chat per Agency-Provider pair (same chat ID) (BR-019)
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, beforeEach } from 'vitest'
+import { installAitExtractionMock, installAitLlmMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
 import { createMatchingSession, addMessage, getMessages } from '@/lib/matching/session-service'
-import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
+import * as extractor from '@/lib/ai/extractor'
 import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
 import { applyHardConstraints } from '@/lib/matching/constraint-engine'
 import { rankCandidates } from '@/lib/matching/scoring-engine'
 import { buildRecommendations, buildRelaxationSuggestions } from '@/lib/matching/recommendation-service'
 import { createOrReuseQuoteRequest, openOrReuseChat } from '@/lib/matching/handoff-service'
+import type { ExtractionResult } from '@/lib/ai/extractor'
 
 describe('Multi-Turn Session & API Flow Verification', () => {
   const agencyId = 'agency-multi-turn-001'
   let sessionId: string
 
   beforeEach(async () => {
+    installAitLlmMock()
     const session = await createMatchingSession({ agencyId })
     sessionId = session.session_id
   })
+  afterEach(() => restoreAitLlmMock())
 
   it('updates requirements across turns and excludes capacities < 15 on turn 3', async () => {
     // Turn 1: Incomplete prompt
     await addMessage(sessionId, 'Agency', 'authentic silk workshop in Van Phuc')
     let history = await getMessages(sessionId)
-    let extraction = await extractTourContext({ sessionId, messages: history })
+    let extraction = await extractor.extractTourContext({ sessionId, messages: history })
     expect(extraction.is_complete).toBe(false)
     expect(extraction.follow_up_questions.length).toBeGreaterThan(0)
 
     // Turn 2: Provide group size 10 and date
     await addMessage(sessionId, 'Agency', '10 khách, ngày 20/10/2026, xuất phát từ Hoàn Kiếm')
     history = await getMessages(sessionId)
-    extraction = await extractTourContext({ sessionId, messages: history })
+    extraction = await extractor.extractTourContext({ sessionId, messages: history })
     expect(extraction.is_complete).toBe(true)
     expect(extraction.tour_context.group_size).toBe(10)
     expect(extraction.tour_context.craft_preference).toBe('silk')
 
-    let profile = await buildTourPreferenceProfile(extraction.tour_context)
+    let profile = await extractor.buildTourPreferenceProfile(extraction.tour_context)
     let candidates = await getVerifiedCandidates(profile)
     let filtered = await applyHardConstraints(candidates, profile.hard_constraints)
     let ranked = await rankCandidates(filtered.eligible_candidates, profile)
@@ -56,10 +60,10 @@ describe('Multi-Turn Session & API Flow Verification', () => {
     // Turn 3: Agency changes group size to 15 in the SAME session
     await addMessage(sessionId, 'Agency', '15 tourists on 2026-11-15, under 500,000 VND per person')
     history = await getMessages(sessionId)
-    extraction = await extractTourContext({ sessionId, messages: history })
+    extraction = await extractor.extractTourContext({ sessionId, messages: history })
     expect(extraction.tour_context.group_size).toBe(15)
 
-    profile = await buildTourPreferenceProfile(extraction.tour_context)
+    profile = await extractor.buildTourPreferenceProfile(extraction.tour_context)
     filtered = await applyHardConstraints(candidates, profile.hard_constraints)
 
     // L7 capacities now allow Bát Tràng, Vạn Phúc, and Phú Vinh for 15 guests.
@@ -73,10 +77,10 @@ describe('Multi-Turn Session & API Flow Verification', () => {
     // Turn 4: Agency changes group size to 13
     await addMessage(sessionId, 'Agency', '13 tourists')
     history = await getMessages(sessionId)
-    extraction = await extractTourContext({ sessionId, messages: history })
+    extraction = await extractor.extractTourContext({ sessionId, messages: history })
     expect(extraction.tour_context.group_size).toBe(13)
 
-    profile = await buildTourPreferenceProfile(extraction.tour_context)
+    profile = await extractor.buildTourPreferenceProfile(extraction.tour_context)
     filtered = await applyHardConstraints(candidates, profile.hard_constraints)
     const cap13Names = filtered.eligible_candidates.map(c => c.name)
     // L7 capacity keeps Bát Tràng and Vạn Phúc eligible for a group of 13.
@@ -86,13 +90,31 @@ describe('Multi-Turn Session & API Flow Verification', () => {
   })
 
   it('triggers relaxation suggestions on impossible group size (200 pax) and tiny budget (20k VND)', async () => {
+    const fixedAnalysis = (tour_context: ExtractionResult['tour_context']): ExtractionResult => ({
+      is_complete: true,
+      processing_status: 'Success',
+      retry_available: false,
+      follow_up_questions: [],
+      tour_context,
+    })
+    installAitExtractionMock([
+      fixedAnalysis({
+        group_size: 200,
+        target_date_or_range: { start_date: '2026-11-20' },
+        budget: { max_per_person: 500000, currency: 'VND' },
+      }),
+      fixedAnalysis({
+        group_size: 5,
+        budget: { max_per_person: 20000, currency: 'VND' },
+      }),
+    ])
     // 200 tourists: all L7 seed capacities are at most 50.
     await addMessage(sessionId, 'Agency', 'Group of 200 tourists on 2026-11-20, under 500,000 VND per person')
     let history = await getMessages(sessionId)
-    let extraction = await extractTourContext({ sessionId, messages: history })
+    let extraction = await extractor.extractTourContext({ sessionId, messages: history })
     expect(extraction.tour_context.group_size).toBe(200)
 
-    let profile = await buildTourPreferenceProfile(extraction.tour_context)
+    let profile = await extractor.buildTourPreferenceProfile(extraction.tour_context)
     let candidates = await getVerifiedCandidates(profile)
     let filtered = await applyHardConstraints(candidates, profile.hard_constraints)
     expect(filtered.eligible_candidates).toHaveLength(0)
@@ -104,10 +126,10 @@ describe('Multi-Turn Session & API Flow Verification', () => {
     // Tight budget 20,000 VND: all seed experiences are >= 150,000 VND
     await addMessage(sessionId, 'Agency', 'Tight budget 20,000 VND for 5 pax')
     history = await getMessages(sessionId)
-    extraction = await extractTourContext({ sessionId, messages: history })
+    extraction = await extractor.extractTourContext({ sessionId, messages: history })
     expect(extraction.tour_context.budget?.max_per_person).toBe(20000)
 
-    profile = await buildTourPreferenceProfile(extraction.tour_context)
+    profile = await extractor.buildTourPreferenceProfile(extraction.tour_context)
     filtered = await applyHardConstraints(candidates, profile.hard_constraints)
     expect(filtered.eligible_candidates).toHaveLength(0)
 

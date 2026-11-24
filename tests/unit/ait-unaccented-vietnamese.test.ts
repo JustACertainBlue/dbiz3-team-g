@@ -1,37 +1,20 @@
 /**
- * TC08 — Heuristic fallback parses unaccented (no-diacritic) Vietnamese input
- * Covers: FR-003, BR-004, BR-017
- *
- * This test must FAIL on the commit before 8ee5d2f7 and PASS after.
- * Root cause: group_size regex only matched khách/người (accented).
- * Fix: PR on feat/ait-conversational-llm, commit 8ee5d2f7.
- *
- * NOTE: extractTourContext uses the heuristic fallback when
- * CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN are absent (isConfigured()=false)
- * or when the LLM is in cooldown. In the hosted deploy the LLM is live; the
- * fallback is the safety net for quota exhaustion. Both paths must handle
- * unaccented input correctly — these tests cover the fallback path directly.
+ * TC08 — Extractor parses unaccented Vietnamese with a deterministic mock LLM.
+ * The mock returns no extracted slots, so these assertions cover local text parsing.
  */
-import { describe, it, expect } from 'vitest'
-import { ConversationalAiService } from '@/lib/ai/llm-service'
-
-// Access the fallback parser directly — bypass LLM so we test the regex we patched.
-// ConversationalAiService.fallbackAnalysis is private; we call it via the public
-// analyse() surface by temporarily removing the Cloudflare env vars.
-// Instead, import the internal helper used by fallbackAnalysis through the module
-// boundary that is already unit-tested in clarification.test.ts.
-// We can test indirectly: extractTourContext calls llm-service which calls fallback
-// when client is not configured. In the vitest environment Cloudflare creds are
-// not set (no .env loaded), so isConfigured() returns false → fallback runs.
-
+import { afterEach, beforeEach, describe, it, expect } from 'vitest'
+import { installAitLlmMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
 import { extractTourContext } from '@/lib/ai/extractor'
 
-describe('TC08 | Heuristic fallback: unaccented Vietnamese (FR-003, BR-004)', () => {
+describe('TC08 | Extractor: unaccented Vietnamese (FR-003, BR-004)', () => {
+  beforeEach(() => installAitLlmMock())
+  afterEach(() => restoreAitLlmMock())
+
   const P7 = 'Nhom 10 khach, ngan sach 200000 VND, di ngay 20/11/2026, muon trai nghiem gom su, trong vong 30 km tu trung tam Ha Noi.'
 
   it('BR-004 / TC08-group: extracts group_size from "Nhom 10 khach"', async () => {
     const result = await extractTourContext([{ sender: 'Agency', text: P7 }])
-    // group_size must be 10 regardless of whether LLM or fallback ran
+    // The test LLM returns no slots; the extractor parses this value from the input.
     expect(result.tour_context.group_size).toBe(10)
   })
 

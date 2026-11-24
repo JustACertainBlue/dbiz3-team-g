@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { installAitExtractionMock, installAitLlmMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
 import { demoRepository } from '@/lib/demo/json-repository'
 import { createMatchingSession } from '@/lib/matching/session-service'
 import * as handoffService from '@/lib/demo/commercial-handoff-service'
@@ -62,6 +63,9 @@ const villages = (matching: Json | null) => (matching?.top_matches ?? []).map((m
 const budgetSuggestion = (matching: Json | null) =>
   matching?.relaxation_suggestions?.relaxation_suggestions?.find((s: Json) => s.criterion === 'Budget')
 const commercialRows = () => JSON.stringify(['quote_requests', 'chat_sessions', 'chat_messages', 'bookings'].map(table => demoRepository().all(table as never)))
+
+beforeEach(() => installAitLlmMock())
+afterEach(() => restoreAitLlmMock())
 
 describe('T034 | D8 AIT journey through the route handlers (FR-009, BR-008, AS-8, BR-005)', () => {
   beforeEach(() => demoRepository().reset())
@@ -215,6 +219,18 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
   })
 
   it('T039: explanations name only evaluated factors; no craft the Agency did not ask for', async () => {
+    installAitExtractionMock([{
+      is_complete: true,
+      processing_status: 'Success',
+      retry_available: false,
+      follow_up_questions: [],
+      tour_context: {
+        group_size: 10,
+        target_date_or_range: { start_date: futureDate() },
+        origin_or_route: { origin_address: 'Hoàn Kiếm' },
+        experience_types: ['Workshop/Hands-on'],
+      },
+    }])
     const result = await turn(await openSession(), `hands-on workshop, 10 pax on ${futureDate()} from Hoàn Kiếm`)
     expect(result.matching!.top_matches.length).toBeGreaterThan(0)
     for (const match of result.matching!.top_matches) {

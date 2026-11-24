@@ -6,7 +6,8 @@
  * to verify that real constraints (capacity, budget) are enforced and that
  * multi-turn clarification accumulates context correctly (F-MATCH-03).
  */
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect } from 'vitest'
+import { installAitLlmMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
 import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
 import { applyHardConstraints } from '@/lib/matching/constraint-engine'
@@ -20,6 +21,9 @@ import { buildRecommendations, buildRelaxationSuggestions } from '@/lib/matching
 // Quất Động  "Thêu họa tiết" → max_participants = 16
 
 describe('T031 | Matching Scenarios — Seed-Data Assertions (AS-5/6/8/9)', () => {
+  beforeEach(() => installAitLlmMock())
+  afterEach(() => restoreAitLlmMock())
+
   // -------------------------------------------------------------------------
   // AS-5 / AS-6 / BR-005 : L7 capacities now allow Bát Tràng and Vạn Phúc for a group of 15.
   // -------------------------------------------------------------------------

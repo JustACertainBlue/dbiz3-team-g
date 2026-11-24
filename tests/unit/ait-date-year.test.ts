@@ -5,12 +5,16 @@
  * Decision (linhkhanh-vu, 09/11): next upcoming occurrence; the extracted date is shown so the
  * Agency can correct it.
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { extractTourContext } from '@/lib/ai/extractor'
 import { understoodDateLine } from '@/app/ai-matching/matching-view'
+import { installAitLlmMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
 
 // 2026-11-09 10:00 in Hanoi.
 const NOV_9 = () => new Date('2026-11-09T03:00:00Z')
+
+beforeEach(() => installAitLlmMock())
+afterEach(() => restoreAitLlmMock())
 
 async function dateOf(text: string, now: () => Date = NOV_9) {
   const result = await extractTourContext([{ sender: 'Agency', text }], { now })
@@ -65,6 +69,9 @@ describe('#156 | a date with an explicit year is unchanged', () => {
 
 describe('#156 | no invented date', () => {
   it('an impossible date ("31/02") is not extracted, so the date follow-up question is asked', async () => {
+    installAitLlmMock({
+      follow_up_questions: ['What is your desired date or date range for the tour?'],
+    })
     const result = await extractTourContext([{ sender: 'Agency', text: '12 pax on 31/02 from Hoàn Kiếm, pottery' }], { now: NOV_9 })
     expect(result.tour_context.target_date_or_range).toBeUndefined()
     expect(result.follow_up_questions.some(q => /date/i.test(q))).toBe(true)

@@ -4,8 +4,12 @@
  *
  * CONSTITUTION II: Must FAIL before T012 (extractor.ts) is implemented.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
+import { installAitLlmMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
+
+beforeEach(() => installAitLlmMock())
+afterEach(() => restoreAitLlmMock())
 
 describe('T011 | Intent Extraction & Clarification (FR-003, FR-004, BR-004, BR-017)', () => {
   it('FR-003 / AC-AIT-ORDER: extracts complete tour context from full input', async () => {
@@ -102,6 +106,9 @@ describe('T035 | Completeness per OQ #4 (FR-003, BR-004, #29, #34, #35)', () => 
   })
 
   it('#29: no Experience preference → incomplete with a preference follow-up and no default experience_types', async () => {
+    installAitLlmMock({
+      follow_up_questions: ['Which craft or type of experience are you looking for?'],
+    })
     const result = await extract('10 pax on 2026-11-20 from Hoàn Kiếm')
     expect(result.is_complete).toBe(false)
     expect(result.follow_up_questions.some((q: string) => /craft|experience/i.test(q))).toBe(true)

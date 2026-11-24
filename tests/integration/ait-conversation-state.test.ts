@@ -5,6 +5,7 @@ import * as llmRouter from '@/lib/ait/llm-router'
 import { updateMatchingSessionContext } from '@/lib/matching/session-service'
 import { mergeConversationState, normalizeConversationState } from '@/lib/ait/conversation-state'
 import { loadExperiences } from '@/lib/db/seed-loader'
+import { installAitRouteAnalysisMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
@@ -58,9 +59,10 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     demoRepository().reset()
     vi.spyOn(Date, 'now').mockReturnValue(rateWindowStart)
     rateWindowStart += 60001
+    installAitRouteAnalysisMock()
   })
 
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => restoreAitLlmMock())
 
   it('merges updates through eight turns without losing untouched fields (T1-T4, T21)', async () => {
     const sessionId = await openSession()

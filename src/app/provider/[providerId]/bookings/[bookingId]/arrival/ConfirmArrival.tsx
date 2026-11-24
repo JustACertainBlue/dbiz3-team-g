@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { useState } from 'react'
+import '@/app/agency/[agencyId]/bookings/[bookingId]/agency-booking-v3.css'
 
 // BKG136 action. F-SCHED-06 answers 200 even when the arrival is rejected; validation_error says why.
 // #192, screen-spec-BKG136 §3 #5: enabled only when the F-SCHED-06 guard succeeds (Booked and start reached);
@@ -26,8 +27,7 @@ export default function ConfirmArrival({ bookingId, backHref, allowed, lockReaso
         setError(json.data.validation_error ?? 'Không xác nhận được.')
         return
       }
-      router.push(backHref)
-      router.refresh()
+      router.refresh() // the page now shows the completion view (10d)
     } catch {
       setError('Không kết nối được máy chủ. Thử lại.')
     } finally {
@@ -36,11 +36,11 @@ export default function ConfirmArrival({ bookingId, backHref, allowed, lockReaso
   }
 
   return <>
-    {error && <p className="bkg-error" role="alert">{error}</p>}
-    <div className="bkg-actions">
-      <button type="button" disabled={!allowed || pending} aria-describedby={!allowed && lockReason ? 'bkg136-lock-reason' : undefined} onClick={confirm}>{pending ? 'Đang xác nhận…' : 'Confirm Group Arrival'}</button>
-      <Link href={backHref}>Cancel</Link>
+    {error && <p className="v3a-err" role="alert">{error}</p>}
+    <div className="v3a-actions">
+      <button type="button" className="v3a-btn v3a-btn--p" disabled={!allowed || pending} aria-describedby={!allowed && lockReason ? 'bkg136-lock-reason' : undefined} onClick={confirm}>{pending ? 'Đang xác nhận…' : 'Xác nhận đoàn đã đến'}</button>
+      <Link className="v3a-btn v3a-btn--s" href={backHref}>Quay lại</Link>
     </div>
-    {!allowed && lockReason && <p id="bkg136-lock-reason" className="bkg-reason">{lockReason}</p>}
+    {!allowed && lockReason && <p id="bkg136-lock-reason" className="v3a-cap">{lockReason}</p>}
   </>
 }

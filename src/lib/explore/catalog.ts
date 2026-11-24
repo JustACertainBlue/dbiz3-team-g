@@ -1,4 +1,5 @@
 import { villageStartingPrices } from '../village-starting-price'
+import { mediaUrl } from '../prf/media-urls'
 
 export type CsvRow = Record<string, string>;
 
@@ -88,7 +89,7 @@ export function toCard(seed: ExploreSeed, row: ReturnType<typeof eligibleRows>[n
   const images = seed.profile_media
     .filter(media => media.experience_id === experience.experience_id && files.get(media.file_id)?.media_type.startsWith('image/'))
     .sort((a, b) => Number(a.display_order) - Number(b.display_order))
-    .map(media => ({ storage_key: files.get(media.file_id)!.storage_key.startsWith('prf-media/') ? `/api/prf/media/${files.get(media.file_id)!.file_id}` : files.get(media.file_id)!.storage_key }));
+    .map(media => { const file = files.get(media.file_id)!; return { storage_key: file.storage_key.startsWith('prf-media/') ? mediaUrl(`prf-media/${file.file_id}`, file.file_size_bytes) : file.storage_key } });
   const isAgency = viewer.kind === 'agency';
   return {
     id: experience.experience_id,

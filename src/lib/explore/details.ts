@@ -18,7 +18,7 @@ function mediaKeys(seed: ExploreSeed, fileIds: string[]): string[] {
   const files = new Map(seed.stored_files.map(file => [file.file_id, file]));
   return fileIds.flatMap(id => {
     const file = files.get(id);
-    return file?.media_type.startsWith('image/') ? [mediaUrl(file.storage_key)] : [];
+    return file?.media_type.startsWith('image/') ? [mediaUrl(file.storage_key, file.file_size_bytes)] : [];
   });
 }
 

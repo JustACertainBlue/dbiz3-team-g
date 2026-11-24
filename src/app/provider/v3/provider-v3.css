@@ -1,0 +1,104 @@
+/* Provider screens 29-33 (UI v3). Tokens only from tokens.css; nothing here touches shared files. */
+.pv3-page { max-width: 1100px; margin: 0 auto; padding: 28px 24px 72px; color: var(--c-text); font-family: var(--font-body); }
+.pv3-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.pv3-h1 { margin: 0; font: 700 36px/44px var(--font-body); color: var(--c-primary-dark); }
+.pv3-empty { padding: 32px; border: 1px dashed var(--c-border); border-radius: 8px; color: var(--c-text-3); }
+.pv3-error { color: var(--c-danger); }
+.pv3-list { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 16px; }
+.pv3-xrow { display: grid; grid-template-columns: 220px 1fr auto; gap: 24px; align-items: center; padding: 24px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-white); }
+.pv3-xrow__img { display: block; width: 220px; height: 124px; border-radius: 8px; overflow: hidden; background: var(--c-border-soft); }
+.pv3-xrow__img .v3-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pv3-xrow__noimg { display: grid; place-items: center; width: 100%; height: 100%; color: var(--c-text-3); font-weight: 700; }
+.pv3-xrow__name { margin: 0 0 8px; font: 700 22px/28px var(--font-body); }
+.pv3-xrow__name a { color: var(--c-primary-dark); text-decoration: none; }
+.pv3-xrow__meta, .pv3-xrow__note { margin: 0 0 6px; font: 400 16px/24px var(--font-body); color: var(--c-text-2); }
+.pv3-xrow__note { color: var(--c-text-3); }
+.pv3-xrow__note--on { color: var(--c-primary); font-weight: 700; }
+.pv3-xrow__actions { display: flex; gap: 8px; }
+.pv3-iconbtn { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--c-primary); cursor: pointer; }
+.pv3-iconbtn:hover { background: var(--c-surface-green); }
+.pv3-iconbtn--danger { color: var(--c-danger); }
+.pv3-iconbtn:focus-visible { outline: 3px solid var(--color-border-focus, var(--c-primary)); outline-offset: 2px; }
+@media (max-width: 767px) {
+  .pv3-page { padding: 20px 16px 72px; }
+  .pv3-h1 { font-size: 28px; line-height: 36px; }
+  .pv3-xrow { grid-template-columns: 112px 1fr; padding: 16px; gap: 14px; }
+  .pv3-xrow__img { width: 112px; height: 112px; }
+  .pv3-xrow__actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .pv3-xrow__name { font-size: 18px; line-height: 24px; }
+}
+
+/* Month calendar (screens 29, 30, 33): colours of the mockup. */
+.pv3-cal { --cal-free: #BAE288; --cal-hold: #F3E7B8; --cal-booked: #D3DCD6; --cal-closed: #E9E5DA; --cal-sel: #0F3D2A; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.pv3-cal__main { padding: 24px 28px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-white); }
+.pv3-cal__nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font: 700 20px/28px var(--font-body); color: var(--c-primary-dark); }
+.pv3-cal__legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 12px; padding: 0; list-style: none; font: 400 16px/24px var(--font-body); color: var(--c-text-2); }
+.pv3-cal__legend li { display: flex; align-items: center; gap: 8px; }
+.pv3-cal__dot { width: 20px; height: 20px; border-radius: 6px; display: inline-block; }
+.pv3-cal__dot--free { background: var(--cal-free); } .pv3-cal__dot--hold { background: var(--cal-hold); } .pv3-cal__dot--booked { background: var(--cal-booked); }
+.pv3-cal__dot--closed { background: var(--cal-closed); } .pv3-cal__dot--selected { background: var(--cal-sel); }
+.pv3-cal__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.pv3-cal__wd { text-align: center; font: 700 14px/20px var(--font-body); color: var(--c-text-3); padding: 8px 0; }
+.pv3-cal__day { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 84px; padding: 10px; border: 0; border-radius: 6px; text-align: left; cursor: pointer; font: 400 14px/18px var(--font-body); color: var(--c-text); }
+.pv3-cal__day b { font: 700 18px/22px var(--font-body); }
+.pv3-cal--compact .pv3-cal__day { min-height: 44px; align-items: center; justify-content: center; padding: 0; }
+.pv3-cal__day--free { background: var(--cal-free); } .pv3-cal__day--hold { background: var(--cal-hold); }
+.pv3-cal__day--booked { background: var(--cal-booked); } .pv3-cal__day--closed { background: var(--cal-closed); }
+.pv3-cal__day.is-past { opacity: .6; }
+.pv3-cal__day.is-selected { background: var(--cal-sel); color: var(--c-white); opacity: 1; box-shadow: 0 0 0 3px var(--c-white), 0 0 0 5px var(--cal-sel); }
+.pv3-cal__day:focus-visible { outline: 3px solid var(--color-border-focus, var(--c-primary)); outline-offset: 2px; }
+.pv3-cal__sub { font-weight: 700; } .pv3-cal__sub--s { font-weight: 400; }
+.pv3-cal__panel { padding: 24px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-white); }
+.pv3-cal__eyebrow { margin: 0 0 8px; font: 700 14px/20px var(--font-body); letter-spacing: .08em; color: var(--c-text-3); }
+.pv3-cal__date { margin: 0 0 12px; font: 700 26px/32px var(--font-body); color: var(--c-primary-dark); }
+.pv3-cal__strong { margin: 0 0 6px; font: 700 18px/26px var(--font-body); } .pv3-cal__muted { margin: 0 0 12px; color: var(--c-text-3); font: 400 16px/24px var(--font-body); }
+.pv3-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--c-primary); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 899px) { .pv3-cal { grid-template-columns: 1fr; } }
+@media (max-width: 599px) { .pv3-cal__main { padding: 16px; } .pv3-cal__day { min-height: 52px; padding: 6px; } .pv3-cal--full .pv3-cal__sub { display: none; } .pv3-cal__legend { font-size: 14px; } }
+
+/* Screen 29 dashboard */
+.pv3-head__btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.pv3-head--cal { margin: 32px 0 16px; } .pv3-h2 { margin: 0; font: 700 28px/36px var(--font-body); color: var(--c-primary-dark); }
+.pv3-notice { margin: 0 0 20px; padding: 14px 18px; border-radius: 8px; background: var(--c-warn-soft); color: var(--c-warn); font: 400 16px/24px var(--font-body); }
+.pv3-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.pv3-stat { display: flex; flex-direction: column; gap: 10px; padding: 24px 20px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-white); color: inherit; text-decoration: none; }
+a.pv3-stat:hover { border-color: var(--c-primary); }
+.pv3-stat__t { font: 700 18px/24px var(--font-body); color: var(--c-text-2); }
+.pv3-stat__v { font: 700 32px/40px var(--font-body); color: var(--c-primary-dark); } .pv3-stat__v--alert { color: var(--c-danger); }
+.pv3-dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.pv3-dash > .pv3-cal { display: contents; }
+.pv3-dash .pv3-cal__main { grid-column: 1; grid-row: 1 / span 2; }
+.pv3-dash .pv3-cal__panel { grid-column: 2; grid-row: 1; } .pv3-dash .pv3-hours { grid-column: 2; grid-row: 2; }
+.pv3-hours { padding: 24px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-white); }
+.pv3-hours__head { display: flex; align-items: center; justify-content: space-between; } .pv3-hours h3 { margin: 0; font: 700 20px/28px var(--font-body); }
+.pv3-hours dl { margin: 12px 0 0; display: grid; gap: 14px; } .pv3-hours dl div { display: flex; justify-content: space-between; gap: 12px; font: 400 16px/24px var(--font-body); } .pv3-hours dd { margin: 0; font-weight: 700; text-align: right; }
+@media (max-width: 899px) { .pv3-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pv3-dash { grid-template-columns: 1fr; } .pv3-dash .pv3-cal__main, .pv3-dash .pv3-cal__panel, .pv3-dash .pv3-hours { grid-column: 1; grid-row: auto; } }
+@media (max-width: 599px) { .pv3-stats { grid-template-columns: 1fr; } .pv3-stat__v { font-size: 28px; } }
+
+/* Screen 33 title bar */
+.pv3-pill-on { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; background: var(--c-surface-green); color: var(--c-primary-dark); font: 700 16px/24px var(--font-body); }
+.pv3-iconbtn--ring { box-shadow: inset 0 0 0 1.5px var(--c-primary); }
+
+/* Screen 32: the existing forms (PRF classes) take the v3 look: white cards, 8 px radius, token colours, 44 px controls. */
+.provider-workspace .pv3-form { max-width: 1100px; font-family: var(--font-body); color: var(--c-text); }
+.provider-workspace .pv3-form .prf-spec-title { font: 700 36px/44px var(--font-body); color: var(--c-primary-dark); margin: 12px 0 8px; }
+.provider-workspace .pv3-form .prf-spec-subtitle { font: 400 16px/24px var(--font-body); color: var(--c-text-3); }
+.provider-workspace .pv3-form .prf-section-card { background: var(--c-white); border: 1px solid var(--c-border); border-radius: 8px; box-shadow: none; padding: 28px; }
+.provider-workspace .pv3-form .prf-label { font: 700 16px/24px var(--font-body); }
+.provider-workspace .pv3-form .prf-input, .provider-workspace .pv3-form .prf-select, .provider-workspace .pv3-form .prf-textarea { border-color: var(--c-border); border-radius: 8px; font-size: 16px; }
+.provider-workspace .pv3-form .prf-btn-primary { background: var(--c-primary); border-color: var(--c-primary); border-radius: 8px; min-height: 48px; }
+.provider-workspace .pv3-form .prf-btn-outline { background: var(--c-white); color: var(--c-primary); border-color: var(--c-primary); border-radius: 8px; min-height: 48px; box-shadow: inset 0 0 0 .5px var(--c-primary); }
+.provider-workspace .pv3-form .prf-sticky-footer { background: transparent; border-top: 0; }
+.provider-workspace .pv3-form .prf-sticky-footer-content { justify-content: space-between; padding: 0; }
+
+/* Screen 32 content blocks */
+.provider-workspace .pv3-form .pv3-sec-h { margin: 0; font: 700 24px/32px var(--font-body); color: var(--c-primary-dark); text-transform: none; letter-spacing: 0; }
+.pv3-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; } .pv3-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 24px; }
+.pv3-fieldset { margin: 0 0 16px; padding: 0; border: 0; } .pv3-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.pv3-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-white); font: 400 16px/24px var(--font-body); cursor: pointer; }
+.pv3-chip input { width: 20px; height: 20px; accent-color: var(--c-primary); }
+.provider-workspace .pv3-form .pv3-ta { min-height: 120px; }
+.pv3-slots { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 8px; } .pv3-slots li { display: flex; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: var(--c-border-soft); }
+.pv3-stack { display: grid; gap: 20px; } .pv3-rowbetween { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pv3-ai { margin-top: 12px; padding: 18px 20px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface-green); }
+.pv3-ai__t { margin: 0 0 6px; font: 700 16px/24px var(--font-body); color: var(--c-primary-dark); } .pv3-ai__b { margin: 0 0 12px; font: 400 16px/24px var(--font-body); white-space: pre-line; } .pv3-ai__btns { display: flex; gap: 12px; flex-wrap: wrap; }

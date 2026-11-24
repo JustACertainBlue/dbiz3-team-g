@@ -10,7 +10,7 @@ import { expireDueHolds, expireDueHoldsLocked } from '@/lib/booking/expire-holds
 // T013: BR-004, #26, #40, #45, #46, #50, AC-BKG-EXPIRY; analyze H1 (no deadlock) and M2 (create over an expired hold).
 const ON_HOLD = '54d7a276-90a2-5c70-be22-cb59ea95ea14' // Provider 70efa801, hold until 2026-10-01 08:00
 const OTHER_BOOKED = '0d7cb86c-36c2-5c6e-876d-2437c0e5b4e4' // Booked of the same Provider (Tue 2026-10-06)
-const EXPIRY_REASON = 'Automatic expiry: 72-hour On hold elapsed'
+const EXPIRY_REASON = 'Hết hạn giữ chỗ'
 const row = (id: string) => demoRepository().find('bookings', r => r.booking_id === id)!
 const messagesFor = (id: string) => demoRepository().all('chat_messages').filter(r => r.booking_id === id && r.message_kind === 'Booking Update')
 const historyOf = (id: string) => demoRepository().all('booking_status_history').filter(r => r.booking_id === id)

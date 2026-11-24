@@ -10,6 +10,7 @@ import { findConflict } from './conflicts'
 import { BookingError, invalid, isPositiveInteger, validateConditions } from './create-booking'
 import { expireDueHoldsLocked } from './expire-holds'
 import { fitsOperatingHours } from './operating-hours'
+import { assertSlotAndCapacity } from './slot-rules'
 import { withBookingWriteLock } from './write-lock'
 
 // F-SCHED-04 Update Booking details (spec-BKG US-5). Contract: specs/011-bkg-manage/contracts/manage-booking-api.md
@@ -107,6 +108,10 @@ export async function updateBooking(
         throw new BookingError('SLOT_UNAVAILABLE', 'Slot Unavailable: the time overlaps another Booking')
       }
       if (options.afterConflictCheck) await options.afterConflictCheck()
+    }
+    // Same slot + capacity rule as create. The slot rule applies only when the start moved; capacity when time or group changed.
+    if (experience && (timeChanged || 'group_size' in changes)) {
+      await assertSlotAndCapacity(repository, { experience, startAt, endAt, groupSize, excludeBookingId: booking.booking_id, checkSlot: 'start_at' in changes })
     }
 
     const at = hanoiTimestamp(now)

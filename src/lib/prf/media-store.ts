@@ -1,9 +1,11 @@
-import { writeObject,readObject,removeObject } from '../storage/object-store'
+import { writeObject,readObject,readObjectStream,removeObject } from '../storage/object-store'
 import { imageSize } from 'image-size'
 import { randomUUID } from 'node:crypto'
 import { demoRepository } from '../db/application-store'
 import type { SessionContext } from '../auth/session'
 import { imageMetadataError } from './experience-images'
+import { decideMediaAccess, loadMediaFacts, mediaVersion, type MediaFacts } from './media-access'
+import { makeVariants, variantKey } from '../../../scripts/storage/media-variants.mjs'
 export class MediaError extends Error { constructor(message: string, public status = 400) { super(message) } }
 export { mediaUrl } from './media-urls'
 export async function uploadProfileMedia(session: SessionContext, providerId: string, file: File, certificate = false) {
@@ -22,30 +24,45 @@ export async function uploadProfileMedia(session: SessionContext, providerId: st
   try {
   ;(await demoRepository().insert('stored_files',{file_id:id,storage_key:`prf-media/${id}`,file_name:file.name,media_type,file_size_bytes:String(bytes.length),width_px:width ? String(width) : '',height_px:height ? String(height) : '',uploaded_by:session.userId!,created_at:new Date().toISOString()}))
   } catch(error){await removeObject(`prf-media/${id}`);throw error}
+  if (!certificate) await storeVariants(id,bytes)
   return {file_id:id,url:`/api/prf/media/${id}`,file_name:file.name,media_type,file_size_bytes:bytes.length,width_px:width,height_px:height}
 }
-export async function readProfileMedia(session: SessionContext, id: string) {
+/** WebP display variants (400/800/1600) next to a showcase image; never for documents. Best effort: the media route
+ * serves the original while a variant is missing, and scripts/storage/backfill-media-variants.mjs can make it later. */
+async function storeVariants(id:string,bytes:Buffer) {
+  const written:string[]=[]
+  try {
+    for (const variant of await makeVariants(bytes)) { const key=variantKey(id,variant.width); await writeObject(key,variant.bytes,'image/webp'); written.push(key) }
+  } catch {
+    console.error('Media variants could not be stored; the original is served until backfill.')
+    for (const key of written) await removeObject(key).catch(()=>{})
+  }
+}
+
+/** Facts + decision for one file (one keyed query on PostgreSQL); throws MediaError 404/403 as before. */
+export async function authorizeProfileMedia(session: SessionContext, id: string): Promise<{file:MediaFacts['file'],public:boolean,version:string}> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw new MediaError('Không tìm thấy file.',404)
-  const repo=demoRepository(), file=(await repo.find('stored_files',row=>row.file_id===id))
-  if (!file || file.storage_key !== `prf-media/${id}`) throw new MediaError('File gốc chưa được tải lên.',404)
-  let allowed=session.authenticated && file.uploaded_by===session.userId
-  const canManage=async (providerId:string)=>{
-    const provider=(await repo.find('provider_profiles',row=>row.provider_id===providerId))
-    return Boolean(provider && session.authenticated && (session.providerId===providerId || (session.role==='ADMIN' && (session.adminType==='HDT' || session.adminType==='UBND' && session.assignedVillageId===provider.village_id))))
-  }
-  const isPublicProvider=async (provider:Awaited<ReturnType<typeof repo.find>>)=>Boolean(provider && provider.verification_status==='Verified' && provider.published_version_no && (await repo.find('provider_profile_versions',row=>row.provider_id===provider.provider_id && row.version_no===provider.published_version_no && row.version_status==='Verified')) && (await repo.find('user_accounts',row=>row.user_id===provider.user_id && row.account_status==='Active')) && (await repo.find('villages',row=>row.village_id===provider.village_id && row.is_active==='true')))
-  for (const version of (await repo.all('provider_version_documents')).filter(row=>row.file_id===id)) if((await canManage(version.provider_id)))allowed=true
-  for(const media of (await repo.all('provider_version_media')).filter(row=>row.file_id===id)) {
-    const provider=(await repo.find('provider_profiles',row=>row.provider_id===media.provider_id))
-    if((await canManage(media.provider_id)) || file.media_type.startsWith('image/') && (await isPublicProvider(provider)) && provider!.published_version_no===media.version_no)allowed=true
-  }
-  for(const media of (await repo.all('profile_media')).filter(row=>row.file_id===id && row.experience_id)) {
-    const exp=(await repo.find('experiences',row=>row.experience_id===media.experience_id))
-    const provider=exp && (await repo.find('provider_profiles',row=>row.provider_id===exp.provider_id))
-    if(exp && ((await canManage(exp.provider_id)) || file.media_type.startsWith('image/') && !exp.archived_at && (await isPublicProvider(provider))))allowed=true
-  }
-  if(!allowed)throw new MediaError('Không có quyền xem tài liệu.',403)
+  const facts=await loadMediaFacts(id)
+  if (!facts) throw new MediaError('File gốc chưa được tải lên.',404)
+  const decision=decideMediaAccess(session,facts)
+  if(!decision.allowed)throw new MediaError('Không có quyền xem tài liệu.',403)
+  return {file:facts.file,public:decision.public,version:mediaVersion(facts.file)}
+}
+
+export async function readProfileMedia(session: SessionContext, id: string) {
+  const {file}=await authorizeProfileMedia(session,id)
   const bytes=await readObject(file.storage_key)
   if(!bytes)throw new MediaError('File gốc không còn trên kho lưu trữ.',404)
   return {file,bytes}
+}
+
+/** The object to send: the WebP variant of `width` when it exists, else the original; streamed, not buffered. */
+export async function openProfileMediaObject(file: MediaFacts['file'], width: number|null) {
+  if (width && file.media_type.startsWith('image/')) {
+    const variant=await readObjectStream(variantKey(file.file_id,width))
+    if (variant) return {...variant,contentType:'image/webp',variant:`w${width}`}
+  }
+  const original=await readObjectStream(file.storage_key)
+  if(!original)throw new MediaError('File gốc không còn trên kho lưu trữ.',404)
+  return {...original,contentType:file.media_type,variant:'orig'}
 }

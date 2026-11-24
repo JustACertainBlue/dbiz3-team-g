@@ -7,6 +7,8 @@ import { verifyPassword } from './password'
 
 export const PRODUCT_SESSION_COOKIE = 'hab_session'
 export const PRODUCT_SESSION_TTL_SECONDS = 60 * 60 * 12
+/** Screen 15 "Ghi nhớ đăng nhập": ticked = 30 days. */
+export const PRODUCT_SESSION_REMEMBER_TTL_SECONDS = 60 * 60 * 24 * 30
 
 export type LoginFailure = 'INVALID_CREDENTIALS' | 'ACCOUNT_INACTIVE'
 export type LoginResult =
@@ -53,7 +55,7 @@ function cookieValue(request: NextRequest | Request, name: string): string | nul
  * has a production identity provider, a seeded email plus any non-empty password enters the demo.
  * Role and organization IDs always come from stored account data, never client input.
  */
-export async function authenticatePrototype(email: string, password: string): Promise<LoginResult> {
+export async function authenticatePrototype(email: string, password: string, ttlSeconds?: number): Promise<LoginResult> {
   if (!prototypeLoginEnabled()) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const normalizedEmail = email.trim().toLowerCase()
   if (!normalizedEmail || !password) return { ok: false, reason: 'INVALID_CREDENTIALS' }
@@ -68,16 +70,16 @@ export async function authenticatePrototype(email: string, password: string): Pr
   const identity = (await identityForUser(account.user_id))
   if (!identity) return { ok: false, reason: 'INVALID_CREDENTIALS' }
 
-  return (await createSession(identity))
+  return (await createSession(identity, ttlSeconds))
 }
 
-async function createSession(identity: DemoSession): Promise<LoginResult> {
+async function createSession(identity: DemoSession, ttlSeconds = PRODUCT_SESSION_TTL_SECONDS): Promise<LoginResult> {
   const token = randomBytes(32).toString('base64url')
   const now = new Date()
   ;(await demoRepository().insert('sessions', {
     session_id: randomUUID(), user_id: identity.userId!, role_context: identity.role === 'TourAgency' ? 'Tour_Agency' : identity.role === 'LocalProvider' ? 'Local_Provider' : 'ADMIN',
     token_hash: hashToken(token),
-    expires_at: new Date(now.getTime() + PRODUCT_SESSION_TTL_SECONDS * 1000).toISOString(),
+    expires_at: new Date(now.getTime() + ttlSeconds * 1000).toISOString(),
     revoked_at: '', created_at: now.toISOString(),
   }))
   // spec-AUT FR-021 §5.1 / F-AUTH-07 (#56): the account list shows the last successful login.
@@ -92,15 +94,16 @@ export async function inactiveLoginMessage(email: string): Promise<'Account not 
 }
 
 /** Password verification reused from PR #11, adapted to the shared repository and session. */
-export async function authenticateAccount(email: string, password: string): Promise<LoginResult> {
+export async function authenticateAccount(email: string, password: string, remember = false): Promise<LoginResult> {
+  const ttlSeconds = remember ? PRODUCT_SESSION_REMEMBER_TTL_SECONDS : PRODUCT_SESSION_TTL_SECONDS
   if (!email.trim() || !password.trim()) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const account = (await demoRepository().find('user_accounts', row => row.email.toLowerCase() === email.trim().toLowerCase()))
   if (!account) return { ok: false, reason: 'INVALID_CREDENTIALS' }
-  if (prototypeLoginEnabled() && account.password_hash.includes('seedhash')) return (await authenticatePrototype(email, password))
+  if (prototypeLoginEnabled() && account.password_hash.includes('seedhash')) return (await authenticatePrototype(email, password, ttlSeconds))
   if (!await verifyPassword(password, account.password_hash)) return { ok: false, reason: 'INVALID_CREDENTIALS' }
   const identity = (await identityForUser(account.user_id))
   if (!identity) return { ok: false, reason: 'ACCOUNT_INACTIVE' }
-  return (await createSession(identity))
+  return (await createSession(identity, ttlSeconds))
 }
 
 export async function productSessionFromRequest(request: NextRequest | Request): Promise<DemoSession | null> {

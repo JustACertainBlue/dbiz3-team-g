@@ -70,11 +70,11 @@ describe('#156 | a date with an explicit year is unchanged', () => {
 describe('#156 | no invented date', () => {
   it('an impossible date ("31/02") is not extracted, so the date follow-up question is asked', async () => {
     installAitLlmMock({
-      follow_up_questions: ['What is your desired date or date range for the tour?'],
+      follow_up_questions: ['Bạn muốn đi vào ngày nào, hoặc trong khoảng ngày nào?'],
     })
     const result = await extractTourContext([{ sender: 'Agency', text: '12 pax on 31/02 from Hoàn Kiếm, pottery' }], { now: NOV_9 })
     expect(result.tour_context.target_date_or_range).toBeUndefined()
-    expect(result.follow_up_questions.some(q => /date/i.test(q))).toBe(true)
+    expect(result.follow_up_questions.some(q => /ngày/i.test(q))).toBe(true)
   })
 })
 

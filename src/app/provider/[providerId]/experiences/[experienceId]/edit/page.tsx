@@ -1,12 +1,18 @@
 'use client'
 
+import { useHydrated } from '@/app/provider/v3/useHydrated'
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Breadcrumb } from '@/app/components/ui'
+import '../../../../v3/provider-v3.css'
+import ExperienceFormBody from '../../ExperienceFormBody'
 import ExperienceTermsField from '../../ExperienceTermsField'
 import { readCancellationPolicy, cancellationPatch, type CancellationPolicy, type DiscountRule } from '@/lib/prf/experience-terms'
 import ExperienceImagesField, { toImagesPayload, type ExperienceImageItem } from '../../ExperienceImagesField'
 import ExperienceLocationField from '../../ExperienceLocationField'
+import { HighlightsCard, SuitableCard, InclusionsCard, ChildPolicyField, SlotsReadOnly, type SlotLine } from '../../ExperienceContentFields'
+import { contentFormFromRow, contentPayload, emptyContentForm } from '@/lib/prf/experience-content-form'
 import { getAuthHeaders } from '@/lib/prf/client-session'
 import { readSessionContext } from '@/lib/auth/client-session'
 
@@ -16,6 +22,11 @@ export default function EditExperiencePage({
   params: { providerId: string; experienceId: string }
 }) {
   const [initialPolicy, setInitialPolicy] = useState<CancellationPolicy>({ rules: [] })
+  const [content, setContent] = useState(emptyContentForm())
+  const hydrated = useHydrated()
+  const [craftLine, setCraftLine] = useState('')
+  useEffect(() => { fetch(`/api/prf/provider/${params.providerId}/craft-line`).then(r => r.ok ? r.json() : null).then(d => setCraftLine(d?.craft_line ?? '')).catch(() => {}) }, [params.providerId])
+  const [slots, setSlots] = useState<SlotLine[]>([])
   const [policy, setPolicy] = useState<CancellationPolicy>({ rules: [] })
   const [group, setGroup] = useState<DiscountRule[]>([])
   const [special, setSpecial] = useState<DiscountRule[]>([])
@@ -31,22 +42,12 @@ export default function EditExperiencePage({
 
   const [hasActiveBookings, setHasActiveBookings] = useState(false)
 
-  const [formData, setFormData] = useState<{
-    name: string
-    category: string
-    duration_minutes: number | ''
-    price_per_person: number
-    max_participants: number | ''
-    notice_period_hours: number
-    experience_location_address: string
-    cancellation_rules_text: string
-    description: string
-  }>({
+  const [formData, setFormData] = useState({
     name: '',
     category: 'Workshop/Hands-on',
-    duration_minutes: '',
+    duration_minutes: 90,
     price_per_person: 150000,
-    max_participants: '',
+    max_participants: 25,
     notice_period_hours: 24,
     experience_location_address: '',
     cancellation_rules_text: '',
@@ -58,7 +59,7 @@ export default function EditExperiencePage({
   useEffect(() => {
     let alive = true
     readSessionContext().then(session => {
-      if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId)
+      if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId && !session.mustChangePassword)
       return fetch(`/api/prf/experience/${params.experienceId}`)
     }).then(response => response.ok ? response.json() : Promise.reject(new Error('Experience not found')))
       .then(data => {
@@ -67,10 +68,8 @@ export default function EditExperiencePage({
         setInitialPolicy(readCancellationPolicy(data.cancellation_policy)); setPolicy(readCancellationPolicy(data.cancellation_policy)); setGroup(data.group_discounts || []); setSpecial(data.special_rates || [])
         setFormData({
           name: data.name || '', category: data.category || 'Workshop/Hands-on',
-          duration_minutes: data.duration_minutes == null || data.duration_minutes === '' ? '' : Number(data.duration_minutes),
-          price_per_person: Number(data.price_per_person || 0),
-          max_participants: data.max_participants == null || data.max_participants === '' ? '' : Number(data.max_participants),
-          notice_period_hours: Number(data.notice_period_hours ?? 24),
+          duration_minutes: Number(data.duration_minutes || 60), price_per_person: Number(data.price_per_person || 0),
+          max_participants: Number(data.max_participants || 1), notice_period_hours: Number(data.notice_period_hours ?? 24),
           experience_location_address: data.experience_location_address || '',
           cancellation_rules_text: (() => {
             try { return JSON.parse(data.cancellation_policy || '{}').notes || '' } catch { return data.cancellation_policy || '' }
@@ -79,10 +78,11 @@ export default function EditExperiencePage({
         })
         setHasActiveBookings(Boolean(data.has_active_bookings))
         setImages((data.images || []) as ExperienceImageItem[])
+        setContent(contentFormFromRow(data)); setSlots(data.slots || [])
       }).catch(cause=>{if(alive)setLoadError(cause instanceof Error?cause.message:'Không thể tải trải nghiệm.')}).finally(() => { if (alive) setSessionReady(true) })
     const onRoleChanged = () => {
       readSessionContext()
-        .then(session => { if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId) })
+        .then(session => { if (alive) setAuthorized(session.role === 'Local_Provider' && session.providerId === params.providerId && !session.mustChangePassword) })
         .catch(() => { if (alive) setAuthorized(false) })
     }
     window.addEventListener('hab_role_changed', onRoleChanged)
@@ -135,12 +135,13 @@ export default function EditExperiencePage({
         notice_period_hours: Number(formData.notice_period_hours),
         experience_location_address: formData.experience_location_address,
         ...(!hasActiveBookings ? {
-          ...(formData.duration_minutes === '' ? {} : { duration_minutes: Number(formData.duration_minutes) }),
+          duration_minutes: Number(formData.duration_minutes),
           price_per_person: Number(formData.price_per_person),
-          ...(formData.max_participants === '' ? {} : { max_participants: Number(formData.max_participants) }),
+          max_participants: Number(formData.max_participants),
         } : {}),
         ...cancellationPatch(initialPolicy, policy),
         group_discounts: group, special_rates: special,
+        ...contentPayload(content),
         images: toImagesPayload(images),
       }
 
@@ -177,23 +178,18 @@ export default function EditExperiencePage({
   const isLocalProvider = authorized
 
   return (
-    <div className="prf-container" style={{ paddingBottom: '7rem' }}>
-      {/* Header */}
+    <div className="prf-container pv3-form" style={{ paddingBottom: '7rem' }}>
+      {/* Header (screen 32, mockup 32) */}
+      <Breadcrumb items={[{ label: 'Tổng quan', href: `/provider/${params.providerId}/dashboard` }, { label: 'Trải nghiệm của xưởng', href: `/provider/${params.providerId}/experiences` }, { label: formData.name ? `Sửa “${formData.name}”` : 'Sửa trải nghiệm' }]} />
       <div className="prf-spec-header">
         <div>
-          <span className="prf-spec-code">CHỈNH SỬA TRẢI NGHIỆM</span>
-          <h1 className="prf-spec-title">Chỉnh sửa Hoạt động Trải nghiệm</h1>
+          <h1 className="prf-spec-title">{formData.name ? `Sửa “${formData.name}”` : 'Sửa trải nghiệm'}</h1>
           <p className="prf-spec-subtitle">
-            Cập nhật nội dung mô tả, bộ sưu tập hình ảnh và điều kiện đón tiếp
+            Các phần được đặt đúng thứ tự trên trang chi tiết trải nghiệm mà công ty lữ hành thấy.
           </p>
         </div>
         <div className="prf-spec-actions">
-          <Link
-            href={`/provider/${params.providerId}/experiences`}
-            className="prf-btn prf-btn-outline"
-          >
-            ← Danh sách trải nghiệm
-          </Link>
+          <Link href={`/provider/${params.providerId}/experiences/${params.experienceId}`} className="pv3-link">Xem trang chi tiết ›</Link>
         </div>
       </div>
 
@@ -274,204 +270,10 @@ export default function EditExperiencePage({
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1.2fr)', gap: '1.75rem' }}>
-          {/* Main Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-            <div className="prf-section-card">
-              <div className="prf-section-heading">
-                <span className="prf-step-badge">01</span>
-                <div>
-                  <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Tên & Phân loại Hoạt động
-                  </h2>
-                </div>
-              </div>
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-1">Tên hoạt động trải nghiệm</label>
-                <input id="experience-field-1"
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="prf-input"
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="prf-field-group">
-                  <label className="prf-label" htmlFor="experience-field-2">Phân loại hoạt động</label>
-                  <select id="experience-field-2"
-                    value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                    className="prf-select"
-                  >
-                    <option value="Workshop/Hands-on">Workshop / Thực hành nặn gốm</option>
-                    <option value="Sightseeing">Tham quan làng nghề / Lò nung cổ</option>
-                    <option value="Culinary/Tasting">Ẩm thực làng nghề & Trà đạo</option>
-                    <option value="Combo">Combo Trọn gói Trải nghiệm</option>
-                  </select>
-                </div>
-
-                <div className="prf-field-group">
-                  <label className="prf-label" htmlFor="experience-field-3">
-                    Thời lượng (phút)
-                    {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>Đang khóa</span>}
-                  </label>
-                  <input id="experience-field-3"
-                    type="number"
-                    disabled={hasActiveBookings}
-                    value={formData.duration_minutes}
-                    onChange={e => setFormData({ ...formData, duration_minutes: e.target.value === '' ? '' : Number(e.target.value) })}
-                    className="prf-input prf-input-locked"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Narrative & AI Refine */}
-            <div className="prf-section-card">
-              <div className="prf-section-heading">
-                <span className="prf-step-badge">02</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      Nội dung Mô tả Trải nghiệm
-                    </h2>
-                    <button
-                      type="button"
-                      onClick={handleAiRefine}
-                      disabled={aiRefining}
-                      className="prf-btn prf-btn-outline"
-                      style={{ fontSize: '0.75rem', borderColor: '#b84c24', color: '#b84c24' }}
-                    >
-                      {aiRefining ? 'Đang phân tích...' : '✨ AI Refine Mô Tả'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="prf-field-group">
-                <textarea
-                  rows={4}
-                  required
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  className="prf-textarea"
-                />
-              </div>
-
-              {aiDraft && (
-                <div
-                  style={{
-                    padding: '0.85rem 1rem',
-                    background: '#fffbeb',
-                    border: '1px solid #fcd34d',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem',
-                    color: '#78350f',
-                    marginTop: '0.75rem',
-                  }}
-                >
-                  <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>Gợi ý mô tả chuẩn hóa từ AI:</div>
-                  <div style={{ lineHeight: 1.5, marginBottom: '0.75rem' }}>{aiDraft}</div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      type="button"
-                      onClick={handleApplyAiDraft}
-                      className="prf-btn prf-btn-primary"
-                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.75rem' }}
-                    >
-                      Áp dụng bản thảo
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAiDraft(null)}
-                      className="prf-btn prf-btn-outline"
-                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.75rem' }}
-                    >
-                      Bỏ qua
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 3 Images */}
-            <div className="prf-section-card">
-              <div className="prf-section-heading">
-                <span className="prf-step-badge">03</span>
-                <div>
-                  <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Bộ Sưu Tập Hình Ảnh Bắt Buộc
-                  </h2>
-                </div>
-              </div>
-
-              <ExperienceImagesField images={images} onChange={setImages} onBusyChange={setUploading} />
-            </div>
-          </div>
-
-          {/* Right Column: Pricing & Booking conditions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-            <div className="prf-section-card">
-              <div className="prf-section-heading">
-                <span className="prf-step-badge">04</span>
-                <div>
-                  <h2 style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Biểu phí & Điều kiện
-                  </h2>
-                </div>
-              </div>
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-4">
-                  Giá niêm yết (VND)
-                  {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>Đang khóa</span>}
-                </label>
-                <input id="experience-field-4"
-                  type="number"
-                  disabled={hasActiveBookings}
-                  value={formData.price_per_person}
-                  onChange={e => setFormData({ ...formData, price_per_person: Number(e.target.value) })}
-                  className="prf-input prf-input-locked"
-                />
-              </div>
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-5">
-                  Sức chứa tối đa (người)
-                  {hasActiveBookings && <span className="prf-badge prf-badge-warning" style={{ marginLeft: '0.5rem' }}>Đang khóa</span>}
-                </label>
-                <input id="experience-field-5"
-                  type="number"
-                  disabled={hasActiveBookings}
-                  value={formData.max_participants}
-                  onChange={e => setFormData({ ...formData, max_participants: e.target.value === '' ? '' : Number(e.target.value) })}
-                  className="prf-input prf-input-locked"
-                />
-              </div>
-
-              <ExperienceLocationField value={formData.experience_location_address} locked={hasActiveBookings}
-                onChange={value => setFormData({ ...formData, experience_location_address: value })} />
-
-              <div className="prf-field-group">
-                <label className="prf-label" htmlFor="experience-field-6">Thời gian báo trước (giờ)</label>
-                <input id="experience-field-6"
-                  type="number"
-                  required
-                  min={0}
-                  value={formData.notice_period_hours}
-                  onChange={e => setFormData({ ...formData, notice_period_hours: Number(e.target.value) })}
-                  className="prf-input"
-                />
-              </div>
-
-              <ExperienceTermsField policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}/>
-            </div>
-          </div>
-        </div>
+      <form method="post" onSubmit={handleSubmit}>
+        <ExperienceFormBody craftLine={craftLine} formData={formData} setFormData={setFormData} hasActiveBookings={hasActiveBookings} images={images} setImages={setImages} setUploading={setUploading}
+          content={content} setContent={setContent} slots={slots} policy={policy} group={group} special={special} onPolicy={setPolicy} onGroup={setGroup} onSpecial={setSpecial}
+          aiRefining={aiRefining} aiDraft={aiDraft} onAiRefine={handleAiRefine} onApplyDraft={handleApplyAiDraft} onDismissDraft={() => setAiDraft(null)} />
 
         {/* Sticky Actions Bar */}
         <div className="prf-sticky-footer">
@@ -489,7 +291,7 @@ export default function EditExperiencePage({
               </Link>
               <button
                 type="submit"
-                disabled={saving || uploading}
+                disabled={saving || uploading || !hydrated}
                 className="prf-btn prf-btn-primary"
               >
                 {saving ? 'Đang lưu...' : 'Lưu thay đổi'}

@@ -27,6 +27,10 @@
     "storage:setup": "node scripts/storage/setup.mjs",
     "storage:import-local": "node scripts/storage/import-local.mjs",
     "storage:catalog": "node scripts/storage/bootstrap-catalog.mjs",
+    "storage:seed-images": "node scripts/storage/import-seed-images.mjs",
+    "storage:media-variants": "node scripts/storage/backfill-media-variants.mjs",
+    "db:content-load": "node scripts/db/prod-content-load.mjs",
+    "storage:catalog-copies": "node scripts/storage/refresh-catalog-copies.mjs",
     "test:storage": "node scripts/storage/test.mjs"
   },
   "dependencies": {
@@ -39,6 +43,7 @@
     "pg": "8.23.1",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "sharp": "^0.33.5",
     "zod": "^3.23.0"
   },
   "devDependencies": {

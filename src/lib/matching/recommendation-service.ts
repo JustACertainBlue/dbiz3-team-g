@@ -1,3 +1,4 @@
+import { craftLabel as craftTypeLabel } from '../explore/vocabulary'
 import type { MatchFactors } from '@/lib/matching/scoring-engine'
 import { selectTiers } from '@/lib/ait/scoring'
 import { DEFAULT_HANOI_ORIGIN_LABEL, originDisplayLabel } from '@/lib/matching/geo'
@@ -67,10 +68,13 @@ export function explain(item: any, _score: number | null): string {
   const f: MatchFactors = item.match_factors || {}
   const parts: string[] = []
   if (f.craft) {
-    const craft = CRAFT_LABELS_VI[f.craft.preference] || f.craft.preference
+    const label = (f.craft.matched ? item.craft_display : undefined)
+      || (f.craft.craft_type ? craftTypeLabel(f.craft.craft_type) : '')
+      || CRAFT_LABELS_VI[f.craft.preference]
+      || f.craft.preference
     parts.push(f.craft.matched
-      ? `Phù hợp với sở thích nghề ${craft} của đoàn.`
-      : `Chưa khớp với yêu cầu nghề ${craft} của đoàn.`)
+      ? `Phù hợp với sở thích nghề ${label} của đoàn.`
+      : `Chưa khớp với yêu cầu nghề ${label} của đoàn.`)
   }
   if (f.experience_types) {
     const types = f.experience_types.requested
@@ -177,12 +181,12 @@ export async function buildRelaxationSuggestions(
   const groupSize = criteria?.group_size
   const largest = options.largest_group_size
   let conversation_prompt = criteria?.radius_km == null
-    ? 'Hiện chưa có trải nghiệm nào phù hợp với toàn bộ yêu cầu của đoàn. Bạn có thể nới lỏng ngân sách, mở rộng khoảng cách hoặc điều chỉnh số lượng khách để xem thêm các lựa chọn làng nghề.'
+    ? 'Chưa có trải nghiệm nào đạt đủ tiêu chí trên 60/100. Bạn có thể nới ngân sách hoặc khoảng cách di chuyển, hoặc đổi số khách để xem thêm lựa chọn.'
     : 'Hiện chưa có trải nghiệm phù hợp với toàn bộ yêu cầu. Mình giữ nguyên bán kính đã chọn; bạn có thể điều chỉnh ngân sách, ngày hoặc số khách.'
   if (groupSize !== undefined && largest !== undefined && groupSize > largest) {
-    conversation_prompt = `No Experience can take a group of ${groupSize} pax: the largest group an eligible Experience accepts is ${largest} pax. You can split the group or reduce the number of guests.`
+    conversation_prompt = `Chưa có trải nghiệm nào nhận đoàn ${groupSize} khách: đoàn lớn nhất một trải nghiệm phù hợp nhận được là ${largest} khách. Bạn có thể chia đoàn hoặc giảm số khách.`
   } else if (suggestions[0]?.criterion === 'Budget' && cheapest !== undefined) {
-    conversation_prompt = `No Experience fits a budget of ${vnd(budget)} VND per person. The lowest price that meets your other requirements is ${vnd(cheapest)} VND per person.`
+    conversation_prompt = `Chưa có trải nghiệm nào có giá trong ngân sách ${viNumber(budget)} ₫/khách. Giá thấp nhất đáp ứng các yêu cầu còn lại là ${viNumber(cheapest)} ₫/khách.`
   }
 
   return {

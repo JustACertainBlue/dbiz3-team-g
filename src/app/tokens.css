@@ -24,8 +24,8 @@
  *   980px  (max-width)
  */
 
-/* Web fonts: Lora, Inter and Pacifico are self-hosted by next/font (src/app/fonts.ts) and exposed as
-   --font-lora / --font-inter / --font-pacifico on <html>. */
+/* Web fonts: Inter and Pacifico are self-hosted by next/font (src/app/fonts.ts) and exposed as
+   --font-inter / --font-pacifico on <html>. Mockup v3: one sans family for every text, headings included. */
 
 
 :root {
@@ -431,11 +431,11 @@
   --color-neutral-700: #34403A;
   --color-neutral-800: #1F2A25;
   --color-neutral-900: #121A16;
-  --color-text-primary: #121A16;
+  --color-text-primary: #1F2A25;
   --color-text-secondary: #4B5851;
   --color-text-muted: #5F6B64;
   --color-text-onbrand: #FFFFFF;
-  --color-surface-page: #F8F6F0;
+  --color-surface-page: #FFFFFF;
   --color-surface-card: #FFFFFF;
   --color-surface-dark: #0F3D2A;
   --color-border-default: #E2DED2;
@@ -526,14 +526,14 @@
   --text-display-ls: -0.02em;
   --text-display-size-mobile: 32px;
   --text-display-line-mobile: 40px;
-  --text-h1-family: "Lora", Georgia, serif;
+  --text-h1-family: var(--font-body);
   --text-h1-size: 32px;
   --text-h1-line: 40px;
   --text-h1-weight: 700;
   --text-h1-ls: -0.01em;
   --text-h1-size-mobile: 26px;
   --text-h1-line-mobile: 34px;
-  --text-h2-family: "Lora", Georgia, serif;
+  --text-h2-family: var(--font-body);
   --text-h2-size: 24px;
   --text-h2-line: 32px;
   --text-h2-weight: 600;
@@ -586,15 +586,15 @@
   --bp-mobile: 360px;
   --bp-tablet: 768px;
   --bp-desktop: 1024px;
-  --bp-content-max: 1280px;
+  --bp-content-max: 1100px;
   --focus-ring-width: 3px;
   --focus-ring-offset: 2px;
   --motion-duration-base: 150ms;
   --icon-size-sm: 16px;
   --icon-size-md: 20px;
   --icon-size-lg: 24px;
-  --font-heading: var(--font-lora), "Lora", Georgia, serif;
-  --font-body: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-heading: var(--font-body);
+  --font-body: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --color-brand-primary: var(--color-brand-700);
   --color-brand-primary-hover: var(--color-brand-800);
   --color-brand-primary-pressed: var(--color-brand-900);
@@ -632,6 +632,56 @@
   --layout-hero-strip-overlap: -112px;
   --layout-hero-next-size: 48px;
   --layout-hero-next-inset: 48px;
+
+  /* ---- Mockup v3 (hab-mockup-v3/design-tokens.md, 18 Nov 2026). New UI code uses these. ---- */
+  --c-primary: var(--color-brand-700);          /* #165235 primary button, link, selected */
+  --c-primary-dark: var(--color-brand-800);     /* #0F3D2A guest / agency / provider bar, h1-h2, primary hover */
+  --c-admin-nav: var(--color-neutral-800);      /* #1F2A25 admin bar */
+  --c-text: var(--color-neutral-800);           /* #1F2A25 */
+  --c-text-2: var(--color-neutral-700);         /* #34403A */
+  --c-text-3: var(--color-neutral-600);         /* #4B5851 */
+  --c-muted: var(--color-neutral-500);          /* #5F6B64 */
+  --c-border: var(--color-neutral-200);         /* #E2DED2 */
+  --c-border-soft: var(--color-neutral-100);    /* #F0EDE4 */
+  --c-input-border: #9AA39E;
+  --c-disabled: var(--color-neutral-300);       /* #C9C4B5 */
+  --c-surface-green: var(--color-brand-50);     /* #F0F8F2 */
+  --c-green-soft: var(--color-brand-100);       /* #DCEFE2 */
+  --c-success: var(--color-brand-600);          /* #1F6641 */
+  --c-accent: #A4452A;
+  --c-accent-soft: #F6E3D8;                     /* avatar chip background (mockup nav) */
+  --c-danger: #8A3A22;
+  --c-danger-soft: #FDF3EC;
+  --c-error: #B3261E;
+  --c-warn-soft: #FFF7E6;
+  --c-warn: #7A4B00;
+  --c-search-border: #D9A441;
+  --c-badge: #C8432B;
+  --c-ghost: #E9E5DA;
+  --c-white: #FFFFFF;
+  --c-on-dark: var(--color-brand-50);           /* nav link text #F0F8F2 */
+  --c-nav-active: rgba(255,255,255,.14);        /* selected nav item */
+  --c-nav-hover: rgba(255,255,255,.12);
+  --c-chip-bg: rgba(255,255,255,.10);
+  --c-ring-on-dark: rgba(255,255,255,.6);       /* round message button ring */
+  --c-overlay: rgba(18,26,22,.55);              /* modal overlay */
+  --c-chart-completed: #165235;
+  --c-chart-paid: #86C49A;
+  --c-chart-pending: #E0928A;
+  --c-chart-cancelled: #C9C4B5;
+
+  --r-card: 8px;
+  --r-button: 6px;
+  --r-tag: 4px;
+  --r-popup: 12px;
+  --r-round: 999px;
+  --shadow-popup: 0 24px 64px rgba(0,0,0,.25);
+  --shadow-menu: 0 14px 40px rgba(0,0,0,.18);
+
+  --layout-max: 1100px;                         /* content frame */
+  --gx: max(24px, calc((100% - var(--layout-max)) / 2)); /* side padding of full-bleed bands */
+  --nav-h: 68px;
+  --tap: 44px;                                  /* minimum touch target */
 
   /* ---- Semantic tokens used by the existing screens, now pointing at v9 (design wave 1, PR 1b) ---- */
   --font-sans: var(--font-body);

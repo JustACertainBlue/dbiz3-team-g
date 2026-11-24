@@ -1,42 +1,74 @@
+// VER146 / ADM145 Chi tiết hồ sơ xưởng, mockup v3 screen 41a (png/41a). HDT views, UBND of the same village decides.
 import { objectExists } from '@/lib/storage/object-store'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import MediaImage from '@/app/components/MediaImage'
 import { mediaUrl } from '@/lib/prf/media-urls'
-import { notFound } from 'next/navigation'
 import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/db/application-store'
-import ReviewActions from './ReviewActions'
 import { providerReviewState, reviewHistoryRows } from '@/lib/prf/provider-review-view'
+import { hanoiClock } from '@/lib/time/hanoi-time'
+import { adminGuestRedirect } from '../../admin-page-access'
+import { formatDate } from '@/lib/adm/v3-accounts'
+import { rowCraft } from '@/lib/explore/vocabulary'
+import { fileSize, readable, viReviewHeading, viReviewStatus } from '../../_v3/profile-format'
+import DecisionForm from '../../_v3/DecisionForm'
+import { Button, Container, StatusPill } from '@/app/components/ui'
+import '../../_v3/admin-v3.css'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminProviderDetail({ params }: { params: { id: string } }) {
-  const session = (await currentServerSession())
+  const session = await currentServerSession()
+  const guest = adminGuestRedirect(session)
+  if (guest) redirect(guest)
+  const listHref = session.adminType === 'UBND' ? '/admin/providers' : '/admin/agencies'
+  const back = <Link href={listHref} className="av3-back">‹ Danh sách hồ sơ</Link>
   const repository = demoRepository()
-  const provider = (await repository.find('provider_profiles', row => row.provider_id === params.id))
-  if (!provider) notFound()
-  const allowed = session.role === 'ADMIN' && (
-    session.adminType === 'HDT'
-    || (session.adminType === 'UBND' && session.assignedVillageId === provider.village_id)
-  )
-  if (!allowed) return <main className="admin-detail"><h1>Không có quyền xem hồ sơ này</h1><Link href="/admin/providers">Quay lại danh sách</Link></main>
-  const version = (await repository.find('provider_profile_versions', row => row.provider_id === params.id && row.version_no === provider.current_version_no))
-  const village = (await repository.find('villages', row => row.village_id === provider.village_id))
+  const provider = await repository.find('provider_profiles', row => row.provider_id === params.id)
+  const allowed = provider && session.role === 'ADMIN' && (session.adminType === 'HDT' || (session.adminType === 'UBND' && session.assignedVillageId === provider.village_id))
+  if (!provider || !allowed) return <Container as="main" className="av3">{back}<h1>Không xem được hồ sơ này</h1><p className="av3-lead">Hồ sơ không tồn tại hoặc nằm ngoài phạm vi bạn quản lý.</p></Container>
+
+  const version = await repository.find('provider_profile_versions', row => row.provider_id === params.id && row.version_no === provider.current_version_no)
+  const village = await repository.find('villages', row => row.village_id === provider.village_id)
   const reviews = reviewHistoryRows((await repository.all('provider_verification_reviews')).filter(row => row.provider_id === params.id))
+  const certificateLink = await repository.find('provider_version_documents', row => row.provider_id === params.id && row.version_no === version?.version_no && row.document_type === 'Business Registration Certificate')
+  const certificate = certificateLink && await repository.find('stored_files', row => row.file_id === certificateLink.file_id)
+  const certificateAvailable = Boolean(certificate && certificate.storage_key === `prf-media/${certificate.file_id}` && await objectExists(certificate.storage_key))
+  const mediaRows = (await repository.all('provider_version_media')).filter(row => row.provider_id === params.id && row.version_no === version?.version_no).sort((a, b) => Number(a.display_order) - Number(b.display_order))
+  const images = (await Promise.all(mediaRows.map(async row => { const file = await repository.find('stored_files', item => item.file_id === row.file_id); return file ? [file] : [] }))).flat()
+  const state = providerReviewState(provider, await repository.all('provider_profile_versions'))
+  const account = await repository.find('user_accounts', row => row.user_id === provider.user_id)
+  let contact: Record<string, unknown> = {}; try { contact = JSON.parse(String(version?.contact_information || '{}')) } catch { /* keep empty */ }
+  const pending = state.review_status === 'Pending Verification'
+  const canDecide = pending && session.adminType === 'UBND'
+  const tone = pending ? 'warn' : state.review_status === 'Verified' ? 'success' : 'warn'
+  const rows: Array<[string, string]> = [
+    ['Mã đăng ký kinh doanh', String(version?.business_registration_number || '')], ['Làng nghề', String(village?.name || '')], ['Nghề', rowCraft(String(version?.craft_type || ''), village as { editorial_craft?: string } | undefined)],
+    ['Địa chỉ', String(version?.location_address || '')], ['Nghệ nhân', readable(version?.artisan_names)],
+    ['Liên hệ', [contact.phone_number, contact.business_email].filter(Boolean).join(' · ')], ['Mô tả', String(version?.description || '')],
+  ]
 
-  const certificateLink=(await repository.find('provider_version_documents',row=>row.provider_id===params.id && row.version_no===version?.version_no && row.document_type==='Business Registration Certificate'))
-  const certificate=certificateLink && (await repository.find('stored_files',row=>row.file_id===certificateLink.file_id))
-  const certificateAvailable=certificate && certificate.storage_key===`prf-media/${certificate.file_id}` && (await objectExists(certificate.storage_key))
-  const images=(await Promise.all((await repository.all('provider_version_media')).filter(row=>row.provider_id===params.id && row.version_no===version?.version_no).sort((a,b)=>Number(a.display_order)-Number(b.display_order)).map(async row=>{const file=(await repository.find('stored_files',item=>item.file_id===row.file_id));return file?[file]:[]}))).flat()
-  const state=providerReviewState(provider,(await repository.all('provider_profile_versions')))
-  const currentStatus=state.review_status
-  let contact:Record<string,unknown>={};try{contact=JSON.parse(version?.contact_information||'{}')}catch{}
-  let artisans:string[]=[];try{artisans=JSON.parse(version?.artisan_names||'[]')}catch{}
+  return <Container as="main" className="av3">
+    {back}
+    <div className="av3-stack" style={{ marginTop: 8 }}>
+      <section className="av3-card" aria-labelledby="av3-name">
+        <div className="av3-profile-head"><div><h1 id="av3-name" style={{ fontSize: 30, lineHeight: '38px' }}>{String(version?.business_name || 'Hồ sơ xưởng')}</h1>
+          <p className="av3-lead">Xác minh xưởng · phiên bản {String(version?.version_no ?? '')}{version?.submitted_at ? ` · gửi ${hanoiClock(String(version.submitted_at))}, ${formatDate(String(version.submitted_at))}` : ''} · <StatusPill tone={tone}>{pending ? (session.adminType === 'HDT' ? 'Chờ UBND xã duyệt' : 'Chờ duyệt') : state.revision_open ? `Bản công khai v${state.published_version_no}: ${viReviewStatus(state.published_status ?? '')} · Bản đang xét v${state.review_version_no}: ${viReviewStatus(state.review_status)}` : viReviewStatus(state.review_status)}</StatusPill></p></div>
+          {account && <Button href={`/admin/users/${account.user_id}`} variant="secondary" size="sm">Thông tin tài khoản</Button>}</div>
+        {pending && session.adminType === 'HDT' && <p className="av3-notice">Sở chỉ xem hồ sơ này, UBND xã quyết định.</p>}
+        <dl className="av3-dl">{rows.map(([k, v]) => <div className="av3-kv" key={k}><dt>{k}</dt><dd style={{ whiteSpace: 'pre-wrap' }}>{v || 'Chưa có'}</dd></div>)}</dl>
+      </section>
 
-  return <main className="admin-detail"><Link href="/admin/providers">← Hồ sơ chờ thẩm định</Link><header><p>{village?.name} · {version?.craft_type}</p><h1>{version?.business_name || 'Hồ sơ xưởng'}</h1><mark>{state.label}</mark><p>Đang xem phiên bản {version?.version_no}{provider.published_version_no ? ` · Bản công khai: ${provider.published_version_no}` : ' · Chưa có bản công khai'}</p></header>
-    <div className="admin-detail__grid"><section><h2>Thông tin hồ sơ hiện tại</h2><dl><dt>Mã đăng ký</dt><dd>{version?.business_registration_number}</dd><dt>Địa chỉ</dt><dd>{version?.location_address}</dd><dt>Nghệ nhân</dt><dd>{artisans.join(', ') || 'Chưa bổ sung'}</dd><dt>Mô tả</dt><dd>{version?.description}</dd><dt>Liên hệ</dt><dd>{String(contact.phone_number || '')} · {String(contact.business_email || '')}</dd></dl></section><aside><h2>Lịch sử thẩm định</h2>{reviews.length ? reviews.map(review => <article key={review.review_id}><strong>{review.heading}</strong><p>{review.comments || 'Không có nhận xét.'}</p><small>{review.reviewed_at}</small></article>) : <p>Chưa có lần thẩm định nào.</p>}</aside></div>
-    <section className="review-actions"><h2>Giấy đăng ký kinh doanh · phiên bản {version?.version_no}</h2>{certificateAvailable && certificate?<a href={mediaUrl(certificate.storage_key)}>{certificate.file_name}</a>:<p>{certificate?'Dữ liệu hiện chỉ có thông tin file; chưa có file gốc để xem.':'Hồ sơ chưa có giấy đăng ký kinh doanh.'}</p>}<h2>Ảnh xưởng</h2><div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:16}}>{images.map(file=><MediaImage key={file.file_id} src={mediaUrl(file.storage_key)} alt={file.file_name}/>)}</div>{!images.length&&<p>Chưa có ảnh xưởng.</p>}</section>
-    {session.adminType === 'UBND' && currentStatus === 'Pending Verification' && <ReviewActions providerId={params.id}/>}{/* #187, screen-spec-ADM145 §5 #2: Close, no mutation → ADM095 */}<p className="admin-detail__close"><Link href="/admin/users">Đóng</Link></p><style>{detailStyles}</style></main>
+      <section className="av3-card" aria-labelledby="av3-docs"><h2 id="av3-docs">Giấy tờ đính kèm</h2>
+        <div className="av3-docs">{certificate ? <div className="av3-doc"><span><b>{String(certificate.file_name)}</b>{fileSize(certificate.file_size_bytes) ? ` · ${fileSize(certificate.file_size_bytes)}` : ''}{!certificateAvailable && <span className="av3-cap"> · chưa có file gốc để mở</span>}</span>
+          {certificateAvailable && <a className="av3-ul" href={mediaUrl(String(certificate.storage_key))} target="_blank" rel="noreferrer" aria-label={`Mở ${String(certificate.file_name)}`}>Mở</a>}</div> : <p className="av3-empty" style={{ padding: 0 }}>Hồ sơ chưa có giấy đăng ký kinh doanh.</p>}</div>
+        {images.length > 0 && <><h3 style={{ marginTop: 24 }}>Ảnh xưởng</h3><div className="av3-gallery">{images.map(file => <MediaImage key={String(file.file_id)} src={mediaUrl(String(file.storage_key))} alt={String(file.file_name)} />)}</div></>}
+      </section>
+
+      {canDecide && <DecisionForm target={{ type: 'provider', id: params.id }} backHref="/admin/providers" />}
+
+      {reviews.length > 0 && <section className="av3-card" aria-labelledby="av3-hist"><h2 id="av3-hist">Lịch sử thẩm định</h2><ul className="av3-hist">{reviews.map(r => <li key={r.review_id}><span><b>{viReviewHeading(r.heading)}</b> · {formatDate(r.reviewed_at)}{r.comments ? ` · ${r.comments}` : ''}</span></li>)}</ul></section>}
+    </div>
+  </Container>
 }
-
-const detailStyles = `.admin-detail{max-width:1050px;margin:auto;padding:42px 24px 80px;color:#203229}.admin-detail>a{color:#9a4a2a}.admin-detail header{padding:30px 0}.admin-detail header p{color:#9a4a2a;text-transform:uppercase;font-size:11px;font-weight:800}.admin-detail h1{font:600 45px Georgia,serif;margin:8px 0}.admin-detail mark{padding:5px 10px;border-radius:99px;background:#f3dfbd}.admin-detail__grid{display:grid;grid-template-columns:2fr 1fr;gap:22px}.admin-detail__grid>section,.admin-detail__grid>aside,.review-actions{padding:24px;border:1px solid #ddd6ca;border-radius:14px;background:white}.admin-detail dl{display:grid;grid-template-columns:140px 1fr;gap:13px}.admin-detail dt{font-weight:800}.admin-detail dd{margin:0;white-space:pre-wrap}.admin-detail aside article{padding:12px 0;border-top:1px solid #eee}.review-actions{margin-top:22px}.review-actions label{display:grid;gap:8px}.review-actions textarea{min-height:90px;padding:10px}.review-actions div{display:flex;gap:10px;margin-top:14px}.review-actions button{padding:10px 16px;border:0;border-radius:999px;background:#2f5b46;color:white;font-weight:800}.review-actions button+button{background:#a94f2d}@media(max-width:700px){.admin-detail__grid{grid-template-columns:1fr}.admin-detail dl{grid-template-columns:1fr}}`

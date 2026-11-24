@@ -37,6 +37,8 @@ import { originDisplayNotice } from '@/lib/matching/geo'
 import { isTestPrompt } from '@/lib/matching/test-dataset'
 import { isAitGeoDebugEnabled, logAitGeoDebug } from '@/lib/ait/geo-debug'
 import { normalizeVillageName } from '@/lib/matching/village-coordinate-lookup'
+import { listableRows } from '@/lib/explore/v3-home'
+import { craftDisplay, matchingCardView, profileGuests } from '@/lib/matching/card-data'
 
 export async function POST(request: Request) {
   try {
@@ -70,6 +72,9 @@ export async function POST(request: Request) {
       )
     }
 
+    const exploreSeed = await loadExploreRuntime()
+    const listedIds = new Set(listableRows(exploreSeed).map(row => row.experience.experience_id))
+
     const messages = body.session_id ? await getMessages(body.session_id) : []
     const latestUserMessage = [...messages].reverse().find(message => message.sender === 'Agency')
     const isTest = latestUserMessage ? isTestPrompt(latestUserMessage.text) : false
@@ -77,7 +82,7 @@ export async function POST(request: Request) {
     // Retrieve candidates
     const rawCandidates = isTest
       ? getTestCandidates(rawProfile)
-      : await getVerifiedCandidates(rawProfile)
+      : (await getVerifiedCandidates(rawProfile)).filter(candidate => listedIds.has(candidate.experience_id))
 
     // Enrich candidates with village_name for display
     const allExperiences = isTest
@@ -245,8 +250,12 @@ export async function POST(request: Request) {
         ...(isTest && candidate.image_url ? { image_url: candidate.image_url } : {}),
       }
     }
-    const topMatches = matching.topMatches.map(addRouteDetails)
-    const additionalMatches = matching.additionalMatches.map(addRouteDetails)
+    const withCard = <T extends { experience_id: string }>(m: T) => ({
+      ...m,
+      card: isTest ? null : matchingCardView(exploreSeed, m.experience_id, profileGuests(rawProfile)),
+    })
+    const topMatches = matching.topMatches.map(addRouteDetails).map(withCard)
+    const additionalMatches = matching.additionalMatches.map(addRouteDetails).map(withCard)
     if (body.session_id) {
       await updateMatchingSessionContext(
         body.session_id,

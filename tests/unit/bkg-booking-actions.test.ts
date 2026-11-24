@@ -28,10 +28,11 @@ describe('T028 | bookingActions (FR-007 matrix)', () => {
     expect(bookingActions('Cancelled', before, START, 'provider')).toEqual(none)
   })
 
-  it('Agency → no action in any status', () => {
+  it('Agency → only Cancel, and only while On hold (UI v3 decision #5)', () => {
     for (const status of ['On hold', 'Booked', 'Completed', 'Cancelled']) {
-      expect(bookingActions(status, before, START, 'agency')).toEqual(none)
-      expect(bookingActions(status, after, START, 'agency')).toEqual(none)
+      const expected = status === 'On hold' ? { ...none, cancel: true } : none
+      expect(bookingActions(status, before, START, 'agency')).toEqual(expected)
+      expect(bookingActions(status, after, START, 'agency')).toEqual(expected)
     }
   })
 })

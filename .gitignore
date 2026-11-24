@@ -31,3 +31,6 @@ CLAUDE.local.md
 .demo-data/
 
 ait-scorecard.json
+
+# Local screenshots (scripts/local)
+.local-shots/

@@ -8,33 +8,26 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { localizeExplanation, matchResultsView } from '@/app/ai-matching/matching-view'
+import { matchResultsView, localizeExplanation } from '@/app/ai-matching/matching-view'
 
 const item = (n: number) => ({ experience_id: `e${n}`, provider_id: `p${n}`, name: `Exp ${n}`, provider_name: `Prov ${n}`, village_name: 'Bát Tràng',
   rank: n, match_score: 90 - n, price_per_person: 100000, max_participants: 20, explanation: `why ${n}` })
 
 describe('#188 | AIT121 shows additional suggestions (FR-008)', () => {
-  it('limits visible recommendations to three cards total', () => {
+  it('maps top_matches and up to five additional_suggestions with the same card fields', () => {
     const view = matchResultsView({ top_matches: [item(1), item(2)], additional_suggestions: [6, 7, 8, 9, 10, 11].map(item) })
     expect(view.top.map(r => r.experience_id)).toEqual(['e1', 'e2'])
-    expect(view.additional.map(r => r.experience_id)).toEqual(['e6'])
+    expect(view.additional.map(r => r.experience_id)).toEqual(['e6', 'e7', 'e8', 'e9', 'e10'])
     expect(view.additional[0]).toEqual({ experience_id: 'e6', provider_id: 'p6', experience_name: 'Exp 6', provider_name: 'Prov 6', village_name: 'Bát Tràng',
-      rank: 6, match_score: 84, price_per_person: 100000, max_participants: 20, explanation: 'why 6', village_starting_price: null })
+      rank: 6, match_score: 84, price_per_person: 100000, max_participants: 20, explanation: 'why 6' })
   })
 
   it('no additional_suggestions → an empty list', () => {
     expect(matchResultsView({ top_matches: [item(1)] }).additional).toEqual([])
   })
 
-  it('preserves the test-dataset image URL for the recommendation card', () => {
-    const view = matchResultsView({
-      top_matches: [{ ...item(1), image_url: '/api/ait/test-media/activities/bat-trang-a01.jpg' }],
-    })
-    expect(view.top[0].image_url).toBe('/api/ait/test-media/activities/bat-trang-a01.jpg')
-  })
-
   it('the page keeps them on the message and renders them under "Gợi ý thêm" with the same card actions', () => {
-    const page = readFileSync('src/app/ai-matching/AiMatchingClient.tsx', 'utf8')
+    const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
     expect(page).toContain('const { top: topMatches, additional } = matchResultsView(result.body)')
     expect(page).toContain('additionalSuggestions: additional,')
     expect(page).toContain('[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (')
@@ -43,18 +36,11 @@ describe('#188 | AIT121 shows additional suggestions (FR-008)', () => {
 })
 
 describe('#188 | AIT121 sits inside the app shell (one header)', () => {
-  it('has no own top bar and no fixed 100vh frame; the heading reads "AI Tour Matching"', () => {
-    const page = readFileSync('src/app/ai-matching/AiMatchingClient.tsx', 'utf8')
+  it('has no own top bar and no fixed 100vh frame; the heading reads "Ghép tour AI"', () => {
+    const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
     expect(page).not.toContain('Screen AIT121 — Conversational AI Tour Matching')
     expect(page).not.toMatch(/height: '100vh'/)
-    expect(page).toMatch(/<h1[^>]*>\s*AI Tour Matching\s*<\/h1>/)
-  })
-
-  it('clamps recommendation descriptions to two visible lines', () => {
-    const styles = readFileSync('src/app/ai-matching/ai-matching.css', 'utf8')
-    const reasonStyle = styles.match(/\.rec-card-reason-text\s*\{([^}]+)\}/)?.[1] ?? ''
-    expect(reasonStyle).toContain('-webkit-line-clamp: 2')
-    expect(reasonStyle).toContain('overflow: hidden')
+    expect(page).toMatch(/<h1[^>]*>\s*Ghép tour AI\s*<\/h1>/)
   })
 })
 

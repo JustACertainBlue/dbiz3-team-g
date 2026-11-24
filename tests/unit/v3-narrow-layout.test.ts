@@ -1,0 +1,24 @@
+/**
+ * Human review 2026-11-19: no horizontal overflow at 390 px. The AI request row (01/21/03/04) overflowed by 22 px because
+ * its flex input box kept the input's intrinsic width; flex children that hold inputs need min-width: 0.
+ */
+import { readFileSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
+
+const css = readFileSync('src/app/explore/v3/explore-v3.css', 'utf8')
+const rule = (selector: string) => css.match(new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'm'))?.[1] ?? ''
+
+describe('narrow layout', () => {
+  it('the AI request box can shrink below its input width', () => {
+    expect(rule('.v3-aiin')).toMatch(/min-width: 0;/)
+  })
+  it('the price and booking button beside the 04/23 title wrap instead of overflowing', () => {
+    expect(rule('.v3d-titleside')).toMatch(/flex-wrap: wrap;/)
+  })
+  it('below 600 px the craft tag of a result card sits above the title so the title keeps the full width', () => {
+    expect(css).toMatch(/@media \(max-width: 599px\) \{ \.v3r__top \{ flex-direction: column-reverse; align-items: flex-start; gap: 8px; \} \}/)
+  })
+  it('below 600 px the 24 message button stays on the avatar + name row, aligned right', () => {
+    expect(css).toMatch(/@media \(max-width: 599px\) \{ \.v3p-head \{ flex-wrap: nowrap; align-items: flex-start; \} \.v3p-head__who \{ min-width: 0; gap: 12px; align-items: flex-start; \} \.v3p-head__who > div \{ min-width: 0; \} \.v3p-mark \{ width: 56px; height: 56px; font-size: 22px; \} \.v3p-h1 \{ font-size: 28px; line-height: 34px; \} \.v3p-chat \{ flex: none; margin-left: auto; \} \}/)
+  })
+})

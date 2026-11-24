@@ -28,17 +28,10 @@ describe('#227 | VIL030 Experience cards follow the F-EXPLORE-02 card', () => {
       expect(card.image === null || typeof card.image === 'string').toBe(true)
       expect(card.price_per_person).toBe(Number(row.price_per_person))
     }
-    const listedProviderIds = new Set(body.providers.map((provider: { provider_id: string }) => provider.provider_id))
-    const actualPrices = repo.all('experiences')
-      .filter(row => listedProviderIds.has(row.provider_id) && !row.archived_at)
-      .map(row => Number(row.price_per_person))
-      .filter(Number.isFinite)
-    expect(body.starting_price).toBe(Math.min(...actualPrices))
   })
 
   it('a Guest gets the image and workshop name but no price', async () => {
     const body = await call()
-    expect(body.starting_price).toBeNull()
     expect(body.featured_experiences.length).toBeGreaterThan(0)
     for (const card of body.featured_experiences) {
       expect(card).toHaveProperty('provider_name')
@@ -47,12 +40,14 @@ describe('#227 | VIL030 Experience cards follow the F-EXPLORE-02 card', () => {
     }
   })
 
-  it('the page renders the image, workshop name and (when present) the price', () => {
+  // Rewritten for UI v3 (mockup 03, pack 19/11/2026): the page renders the shared result card (image, workshop name,
+  // "Giá từ … /khách" for everyone, group price for a Tour Agency; human decision 2026-11-18, ui-v3-spec-deviations.md).
+  it('the page renders the image, workshop name and the price through the shared result card', () => {
     const page = readFileSync('src/app/village/[villageId]/page.tsx', 'utf8')
-    expect(page).toContain('<MediaImage src={item.image} alt={item.name} />')
-    expect(page).toContain('{item.provider_name}')
-    expect(page).toContain('starting_price')
-    expect(page).toContain('Giá chỉ từ')
-    expect(page).toMatch(/item\.price_per_person !== undefined && .*\/khách/)
+    const card = readFileSync('src/app/explore/v3/ResultCard.tsx', 'utf8')
+    expect(page).toMatch(/<ResultCard key=\{item\.id\} item=\{item\} query=\{searchParams\}[^>]*\/>/)
+    expect(card).toMatch(/<CoverImage image=\{item\.image\} alt="" sizes=\{RESULT_SIZES\}/)
+    expect(card).toContain('<span>{item.providerName}</span>')
+    expect(card).toMatch(/Giá từ<\/span><b className="v3r__total">\{vnd\(item\.price\.perPerson\)\}<span className="v3-cap"> \/khách/)
   })
 })

@@ -40,12 +40,12 @@ describe('T031 | GET /api/bkg/bookings/{id}', () => {
     expect(result.json.data?.actions).toEqual({ confirm: true, update: true, cancel: true, mark_arrival: false })
   })
 
-  it('agency (Tràng An) on its own Booking → 200 read-only, all actions false', async () => {
+  it('agency (Tràng An) on its own On hold Booking → 200 read-only, only Cancel enabled (UI v3 decision #5)', async () => {
     const id = await fixture()
     const result = await call('GET', id, 'agency')
     expect(result.status).toBe(200)
     expect(result.json.data?.provider_profile_link).toBe('/explore/providers/50f2c8fc-3f94-5c6e-b3e3-a1bfb13c5374')
-    expect(result.json.data?.actions).toEqual({ confirm: false, update: false, cancel: false, mark_arrival: false })
+    expect(result.json.data?.actions).toEqual({ confirm: false, update: false, cancel: true, mark_arrival: false })
   })
 
   it('agency on another Agency Booking, ubnd, hdt, guest → 403; unknown → 404', async () => {

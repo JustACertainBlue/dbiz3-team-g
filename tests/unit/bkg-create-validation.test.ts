@@ -82,7 +82,8 @@ describe('T014 | createBooking input validation', () => {
     expect(bookingRow(withoutChat.booking_id).source_chat_session_id).toBe('')
   })
 
-  it.each(['experience_id', 'agency_id', 'start_at', 'duration', 'group_size', 'agreed_price', 'booking_conditions'])(
+  // agreed_price is optional since Part B step 1 (the server prices from the list price; see v3-booking-step1.test.ts).
+  it.each(['experience_id', 'agency_id', 'start_at', 'duration', 'group_size', 'booking_conditions'])(
     'a missing required field (%s) is rejected',
     async field => {
       const body = input()

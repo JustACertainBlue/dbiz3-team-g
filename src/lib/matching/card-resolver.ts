@@ -532,11 +532,27 @@ export const CATALOG_PROVIDERS: ProviderCardData[] = [
   },
 ]
 
+function normalizeVi(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function hasNormWord(text: string, keyword: string): boolean {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![a-z0-9])${escaped}(?![a-z0-9])`, 'i').test(text)
+}
+
 /**
  * Resolves Village Cards relevant to user query or AI response.
  */
 export function resolveVillageCards(text: string, includeAll = false): VillageCardData[] {
   const lower = text.toLowerCase()
+  const norm = normalizeVi(text)
   const matched = new Map<string, VillageCardData>()
   const startingPrices = villageStartingPrices(CATALOG_ACTIVITIES)
   const withStartingPrice = (village: VillageCardData): VillageCardData => ({
@@ -545,14 +561,20 @@ export function resolveVillageCards(text: string, includeAll = false): VillageCa
   })
 
   const check = (keywords: string[], villageId: string) => {
-    if (keywords.some(k => lower.includes(k))) {
+    const isMatched = keywords.some(k => {
+      const lowerK = k.toLowerCase()
+      if (lower.includes(lowerK) && hasNormWord(norm, normalizeVi(lowerK))) return true
+      const normK = normalizeVi(k)
+      return hasNormWord(norm, normK)
+    })
+    if (isMatched) {
       const v = CATALOG_VILLAGES.find(x => x.village_id === villageId)
       if (v) matched.set(v.village_id, v)
     }
   }
 
   check(['mộc', 'chàng sơn', 'sơn đồng', 'gỗ', 'tạc tượng'], '85ec7215-3ec1-5792-afcc-a72d89a3a214')
-  check(['gốm', 'bát tràng', 'vuốt', 'nặn gốm', 'gốm sứ'], '20896522-6235-5699-aeaf-f48b8150d895')
+  check(['gốm', 'bát tràng', 'vuốt', 'nặn gốm', 'gốm sứ', 'bt', 'bat trang'], '20896522-6235-5699-aeaf-f48b8150d895')
   check(['lụa', 'vạn phúc', 'dệt', 'tơ tằm'], 'c0d0d95f-d59c-5c35-946a-f397e380dd14')
   check(['rối', 'rối nước', 'đào thục', 'thủy đình'], '3527fadf-18ef-58d0-95c6-dc3729650f6a')
   check(['mây', 'tre', 'phú vinh', 'đan'], 'e482884e-7190-56cf-bc03-4e69614b1fe5')
@@ -589,11 +611,18 @@ export function parseBudgetConstraint(text: string): { maxPrice: number; isStric
  */
 export function resolveProviderCards(text: string): ProviderCardData[] {
   const lower = text.toLowerCase()
+  const norm = normalizeVi(text)
   const budgetConstraint = parseBudgetConstraint(text)
   const matched = new Map<string, ProviderCardData>()
 
   const check = (keywords: string[], villageId: string) => {
-    if (keywords.some(k => lower.includes(k))) {
+    const isMatched = keywords.some(k => {
+      const lowerK = k.toLowerCase()
+      if (lower.includes(lowerK) && hasNormWord(norm, normalizeVi(lowerK))) return true
+      const normK = normalizeVi(k)
+      return hasNormWord(norm, normK)
+    })
+    if (isMatched) {
       CATALOG_PROVIDERS.filter(p => p.village_id === villageId).forEach(p => {
         if (budgetConstraint) {
           const hasAffordable = p.activities.some(act => (act.price ?? 0) <= budgetConstraint.maxPrice)
@@ -606,7 +635,7 @@ export function resolveProviderCards(text: string): ProviderCardData[] {
   }
 
   check(['mộc', 'chàng sơn', 'sơn đồng', 'gỗ'], '85ec7215-3ec1-5792-afcc-a72d89a3a214')
-  check(['gốm', 'bát tràng'], '20896522-6235-5699-aeaf-f48b8150d895')
+  check(['gốm', 'bát tràng', 'bt', 'bat trang'], '20896522-6235-5699-aeaf-f48b8150d895')
   check(['lụa', 'vạn phúc'], 'c0d0d95f-d59c-5c35-946a-f397e380dd14')
   check(['rối', 'đào thục'], '3527fadf-18ef-58d0-95c6-dc3729650f6a')
   check(['mây', 'tre', 'phú vinh'], 'e482884e-7190-56cf-bc03-4e69614b1fe5')
@@ -653,6 +682,7 @@ export function detectPriceSortPreference(text: string): 'lowest' | 'highest' | 
  */
 export function resolveActivityCards(text: string): ActivityCardData[] {
   const lower = text.toLowerCase()
+  const norm = normalizeVi(text)
   const budgetConstraint = parseBudgetConstraint(text)
   const priceSort = detectPriceSortPreference(text)
   const isSightseeingOnly = /(?:chỉ muốn tham quan|chỉ tham quan|không trải nghiệm|không làm|không workshop|muốn tham quan thôi|chỉ ngắm|không làm đồ)/i.test(lower)
@@ -672,7 +702,13 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
   }
 
   const check = (keywords: string[], expId: string) => {
-    if (keywords.some(k => lower.includes(k))) {
+    const isMatched = keywords.some(k => {
+      const lowerK = k.toLowerCase()
+      if (lower.includes(lowerK) && hasNormWord(norm, normalizeVi(lowerK))) return true
+      const normK = normalizeVi(k)
+      return hasNormWord(norm, normK)
+    })
+    if (isMatched) {
       const act = CATALOG_ACTIVITIES.find(a => a.experience_id === expId)
       if (act) {
         if (budgetConstraint && (act.price_per_person == null || act.price_per_person > budgetConstraint.maxPrice)) {
@@ -683,7 +719,7 @@ export function resolveActivityCards(text: string): ActivityCardData[] {
     }
   }
 
-  check(['gốm', 'bát tràng', 'nặn gốm', 'vuốt gốm'], 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69')
+  check(['gốm', 'bát tràng', 'nặn gốm', 'vuốt gốm', 'bt', 'bat trang'], 'c9f9faf7-2987-5ae4-b1ed-95c095fcce69')
   check(['lụa', 'vạn phúc', 'dệt lụa', 'ươm tơ'], 'c8281688-2dc1-5cb1-9ff6-139df04ba562')
   check(['mộc', 'chàng sơn', 'sơn đồng', 'tạc tượng', 'gỗ'], '67a2cbab-850c-5f69-b496-59f2e9a5f594')
   check(['rối', 'rối nước', 'đào thục', 'thủy đình'], '8e485337-5a2c-5703-9fbf-5e0c6492cd87')

@@ -44,8 +44,38 @@ function hasWord(text: string, keyword: string): boolean {
   return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu').test(text)
 }
 
+export function detectAllCraftPreferences(text: string): string[] {
+  if (!text) return []
+  const matches: { preference: string; index: number }[] = []
+  for (const entry of CRAFTS) {
+    let earliestIndex = -1
+    for (const keyword of entry.keywords) {
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const rx = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'giu')
+      const m = rx.exec(text)
+      if (m && (earliestIndex === -1 || m.index < earliestIndex)) {
+        earliestIndex = m.index
+      }
+    }
+    if (earliestIndex !== -1) {
+      matches.push({ preference: entry.preference, index: earliestIndex })
+    }
+  }
+  matches.sort((a, b) => a.index - b.index)
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const item of matches) {
+    if (!seen.has(item.preference)) {
+      seen.add(item.preference)
+      result.push(item.preference)
+    }
+  }
+  return result
+}
+
 export function detectCraftPreference(text: string): string | undefined {
-  return CRAFTS.find(entry => entry.keywords.some(keyword => hasWord(text, keyword)))?.preference
+  const all = detectAllCraftPreferences(text)
+  return all.length > 0 ? all[0] : undefined
 }
 
 export function craftTypeForPreference(preference: string): CraftType | undefined {

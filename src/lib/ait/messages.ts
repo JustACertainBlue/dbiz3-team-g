@@ -63,6 +63,10 @@ export function buildResultsMessage({
   dateScheduleUnconfirmed = false,
   noResultsWithinRadius = false,
   noResultsDueToBudget = false,
+  noResultsDueToDateInPast = false,
+  noResultsDueToNotice = false,
+  earliestAvailableDate,
+  maxNoticePeriodHours,
   excludedVillages = [],
   excludedCrafts = [],
   missingPrimary = [],
@@ -82,6 +86,10 @@ export function buildResultsMessage({
   dateScheduleUnconfirmed?: boolean;
   noResultsWithinRadius?: boolean;
   noResultsDueToBudget?: boolean;
+  noResultsDueToDateInPast?: boolean;
+  noResultsDueToNotice?: boolean;
+  earliestAvailableDate?: string;
+  maxNoticePeriodHours?: number;
   excludedVillages?: string[];
   excludedCrafts?: string[];
   missingPrimary?: string[];
@@ -146,6 +154,14 @@ export function buildResultsMessage({
     return withNotices(
       `Không tìm thấy trải nghiệm nào phù hợp với ngân sách tối đa ${formatVND(max_budget_per_person)}đ/người.`,
     )
+  }
+  if (count === 0 && noResultsDueToDateInPast && start_date) {
+    const earliest = earliestAvailableDate ? ` Bạn chọn ngày khác từ ${toDDMMYYYY(earliestAvailableDate)}.` : ''
+    return withNotices(`Ngày ${toDDMMYYYY(start_date)} đã qua.${earliest}`)
+  }
+  if (count === 0 && noResultsDueToNotice && maxNoticePeriodHours != null) {
+    const earliest = earliestAvailableDate ? ` Ngày sớm nhất có thể khởi hành: ${toDDMMYYYY(earliestAvailableDate)}.` : ''
+    return withNotices(`Trải nghiệm cần đặt trước ít nhất ${maxNoticePeriodHours} giờ.${earliest}`)
   }
   if (radiusKm != null && count === 0 && noResultsWithinRadius) {
     const from = isDefaultOrigin

@@ -85,6 +85,6 @@ describe('T045 | noMatchView renders every relaxation suggestion (BR-011, FR-012
       },
     })
     expect(view.prompt).toBe('No Experience fits a budget of 20,000 VND per person.')
-    expect(view.lines).toEqual(['Budget: 150,000 VND per person', 'Dates: Consider flexible dates (+/- 2 days)'])
+    expect(view.lines).toEqual(['Ngân sách đề xuất: 150.000đ/người', 'Dates: Consider flexible dates (+/- 2 days)'])
   })
 })

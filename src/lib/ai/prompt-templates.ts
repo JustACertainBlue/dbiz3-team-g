@@ -236,7 +236,7 @@ Extract tour parameters from the ongoing dialogue:
 - group_size: integer (number of guests/pax)
 - target_date: string (e.g. "2026-11-20", next Thursday, etc.)
 - budget_per_person: integer in VND (e.g. 400000)
-- craft_preference: string — use the canonical key ONLY: "silk", "embroidery", "pottery", "woodcarving", "food", "metalwork", "painting", "conical hat" or "bamboo". Never a free phrase such as "dệt lụa" or "làm gốm".
+- craft_preference: string — use the canonical key ONLY: "silk", "embroidery", "pottery", "woodcarving", "food", "metalwork", "painting", "conical hat" or "bamboo". Never a free phrase such as "dệt lụa" or "làm gốm". If the user mentions multiple crafts, return ONLY the first craft mentioned. Never combine multiple crafts into one string.
 - experience_types: array of strings (e.g. ["Workshop/Hands-on", "Cultural Show", "Sightseeing"])
 - origin: string only when the user explicitly names a starting location
 

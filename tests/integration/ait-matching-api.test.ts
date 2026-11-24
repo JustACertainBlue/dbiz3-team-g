@@ -34,6 +34,12 @@ async function call(handler: Handler, path: string, account: string, body?: unkn
   return { status: response.status, json: json as Json }
 }
 
+const futureDate = (days = 7) => {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 async function openSession(account = 'agency') {
   const result = await call(POST_SESSIONS, '/api/ait/sessions', account, {})
   return result.json.session_id as string
@@ -198,18 +204,18 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
     expect(noPreference.json.extraction.is_complete).toBe(false)
     expect(noPreference.json.tour_preference_profile).not.toBeNull()
 
-    const workshop = await send(await openSession(), 'workshop, 10 pax on 2026-11-20 from Hoàn Kiếm')
+    const workshop = await send(await openSession(), `workshop, 10 pax on ${futureDate()} from Hoàn Kiếm`)
     expect(workshop.json.extraction.is_complete).toBe(true)
     expect(workshop.json.tour_preference_profile).not.toBeNull()
   })
 
   it('T037: the Silk demo keeps Vạn Phúc #1 with craft matching by craft_type', async () => {
-    const result = await turn(await openSession(), 'Silk weaving, 10 pax on 2026-11-20 from Hoàn Kiếm')
+    const result = await turn(await openSession(), `Silk weaving, 10 pax on ${futureDate()} from Hoàn Kiếm`)
     expect(result.matching!.top_matches[0].village_name).toBe('Vạn Phúc')
   })
 
   it('T039: explanations name only evaluated factors; no craft the Agency did not ask for', async () => {
-    const result = await turn(await openSession(), 'hands-on workshop, 10 pax on 2026-11-20 from Hoàn Kiếm')
+    const result = await turn(await openSession(), `hands-on workshop, 10 pax on ${futureDate()} from Hoàn Kiếm`)
     expect(result.matching!.top_matches.length).toBeGreaterThan(0)
     for (const match of result.matching!.top_matches) {
       expect(match.explanation).not.toMatch(/silk|pottery|ceramic|embroider|conical|bamboo|lụa|gốm/i)

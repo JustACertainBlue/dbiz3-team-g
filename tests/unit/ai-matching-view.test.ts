@@ -36,6 +36,21 @@ describe('T047 | messageOutcome never shows fabricated results (FR-003, BR-017, 
     expect(outcome).toEqual({ kind: 'match', profile })
   })
 
+  it('complete matching response preserves route notices', () => {
+    const profile = { hard_constraints: { group_size: 10 } }
+    const notice = 'Ngày 20/11/2026 đã qua.\n\nAI ghép từng nghề một. Đang hiển thị: làm gốm.'
+    const outcome = messageOutcome({
+      ok: true,
+      status: 201,
+      body: {
+        extraction: { is_complete: true, follow_up_questions: [] },
+        tour_preference_profile: profile,
+        turn: { turn_type: 'no_results', message: notice },
+      },
+    } as never)
+    expect(outcome).toEqual({ kind: 'match', profile, intro: notice })
+  })
+
   it('partial matching with server results → match and preserves its data-rendered summary', () => {
     const profile = { hard_constraints: { group_size: 10 } }
     const summary = 'Mình tìm được 1 trải nghiệm.\n\n1. Dệt lụa: 175.000đ/người\n\nTôi có thể tư vấn cụ thể hơn nếu bạn cho biết ngày đi.'

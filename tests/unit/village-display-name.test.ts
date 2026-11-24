@@ -59,7 +59,7 @@ describe('formatVillageName', () => {
   )
 
   it('does not render the unsupported cultural-affinity badge', () => {
-    const component = readFileSync('src/app/ai-matching/AiMatchingClient.tsx', 'utf8')
+    const component = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
     expect(component).not.toContain('GẮN VỚI VĂN HOÁ CAO')
   })
 })

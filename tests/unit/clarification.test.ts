@@ -24,6 +24,9 @@ describe('T011 | Intent Extraction & Clarification (FR-003, FR-004, BR-004, BR-0
   })
 
   it('FR-003 / AC-AIT-CLARIFY: returns follow-up when group_size is missing', async () => {
+    installAitLlmMock({
+      follow_up_questions: ['Đoàn của bạn dự kiến có bao nhiêu người? Vui lòng cho biết số khách.'],
+    })
     const messages = [
       { sender: 'Agency', text: 'We want a silk experience in Van Phuc on Dec 5th' },
     ]
@@ -34,6 +37,9 @@ describe('T011 | Intent Extraction & Clarification (FR-003, FR-004, BR-004, BR-0
   })
 
   it('FR-003 / AC-AIT-CLARIFY: returns follow-up when target_date is missing', async () => {
+    installAitLlmMock({
+      follow_up_questions: ['Bạn muốn đi vào ngày nào, hoặc trong khoảng ngày nào?'],
+    })
     const messages = [
       { sender: 'Agency', text: '20 guests want a craft workshop in Hanoi' },
     ]

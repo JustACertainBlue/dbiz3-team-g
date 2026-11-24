@@ -255,4 +255,3 @@ export async function listMatchingSessions(agencyId: string, limit = 20): Promis
       last_activity_at: row.last_activity_at,
     }))
 }
-}

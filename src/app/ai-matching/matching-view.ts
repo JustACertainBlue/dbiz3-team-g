@@ -60,7 +60,14 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
     }
     return AI_FAILURE
   }
-  return profile ? { kind: 'match', profile, followUps: questions.length > 0 ? questions : undefined } : AI_FAILURE
+  return profile
+    ? {
+      kind: 'match',
+      profile,
+      followUps: questions.length > 0 ? questions : undefined,
+      ...(typeof turn?.message === 'string' ? { intro: turn.message } : {}),
+    }
+    : AI_FAILURE
 }
 
 export function handoffOutcome(result: ApiResult): HandoffOutcome {
@@ -72,7 +79,7 @@ export function handoffOutcome(result: ApiResult): HandoffOutcome {
 export interface RecommendationView {
   experience_id: string; provider_id: string; experience_name: string; provider_name: string; village_name: string
   rank: number; match_score: number | null; price_per_person: number | null; max_participants: number | null
-  village_starting_price?: number | null; explanation: string; image_url?: string
+  explanation: string; image_url?: string
   card?: ResultView | null // screen 22: card data of screen 02 added by /api/ait/matching
 }
 
@@ -80,7 +87,7 @@ const recommendationView = (m: any): RecommendationView => ({
   experience_id: m.experience_id, provider_id: m.provider_id, experience_name: m.experience_name || m.name,
   provider_name: m.provider_name, village_name: m.village_name, rank: m.rank, match_score: m.match_score ?? null,
   price_per_person: m.price_per_person ?? null, max_participants: m.max_participants ?? null,
-  village_starting_price: m.village_starting_price ?? null, explanation: m.explanation,
+  explanation: m.explanation,
   ...(typeof m.image_url === 'string' ? { image_url: m.image_url } : {}),
   ...(m.card ? { card: m.card as ResultView } : {}),
 })
@@ -181,7 +188,7 @@ export function localizeExplanation(explanation: string): string {
 
 // #156: show the date the assistant understood, so the Agency can correct it with a new message
 // (a later message replaces it, FR-009 / BR-008).
-const WEEKDAYS = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
+const WEEKDAYS = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ Tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
 
 function isoParts(date: unknown): { weekday: string; d: string; m: string; y: number } | null {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
@@ -211,5 +218,4 @@ export function understoodChips(body: any): string[] {
     typeof budget === 'number' ? `≤ ${budget.toLocaleString('vi-VN')} ₫/khách` : '',
     typeof ctx.craft_preference === 'string' ? craftChip(ctx.craft_preference) : '',
   ].filter(Boolean)
-}
 }

@@ -211,8 +211,13 @@ export default function AiMatchingScreen() {
       if (outcome.kind === 'clarify') {
         addAssistant({ text: 'Mình cần thêm một vài thông tin để tìm trải nghiệm hợp với đoàn của bạn:', clarificationQuestions: outcome.questions, dateLine })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile, dateLine, id)
+        // outcome.intro carries route notices (date_in_past, notice period, craft_detected) — displayed above cards
+        await fetchMatchingResults(outcome.profile, dateLine, id, outcome.intro)
+      } else if (outcome.kind === 'guidance') {
+        // Platform knowledge / general guidance reply (no Retry button)
+        addAssistant({ text: outcome.reply, dateLine })
       } else {
+        // kind === 'failure': 503 / AI_SERVICE_UNAVAILABLE / network error → Vietnamese error + Thử lại
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
     } finally {
@@ -233,8 +238,9 @@ export default function AiMatchingScreen() {
   /**
    * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
    * no offline or fabricated result is ever shown (FR-003, BR-017).
+   * @param intro Optional route notice (date_in_past / notice period / craft_detected) shown above cards.
    */
-  const fetchMatchingResults = async (profile: unknown, dateLine?: string, id: string | null = sessionId) => {
+  const fetchMatchingResults = async (profile: unknown, dateLine?: string, id: string | null = sessionId, intro?: string) => {
     const epoch = epochRef.current
     const result = await postJson('/api/ait/matching', { session_id: id, tour_preference_profile: profile })
     if (epoch !== epochRef.current) return
@@ -245,7 +251,7 @@ export default function AiMatchingScreen() {
     const { top: topMatches, additional } = matchResultsView(result.body)
     if (topMatches.length > 0) {
       addAssistant({
-        text: 'Mình đã đối chiếu yêu cầu của đoàn với các xưởng đã xác minh. Đây là các trải nghiệm gợi ý:',
+        text: intro ?? 'Mình đã đối chiếu yêu cầu của đoàn với các xưởng đã xác minh. Đây là các trải nghiệm gợi ý:',
         dateLine,
         recommendations: topMatches,
         additionalSuggestions: additional,
@@ -253,7 +259,7 @@ export default function AiMatchingScreen() {
     } else {
       // No candidate reaches the constraints or 60/100 → relaxation suggestions (BR-011, FR-012)
       const view = noMatchView(result.body)
-      addAssistant({ text: view.prompt, relaxationLines: view.lines, dateLine })
+      addAssistant({ text: intro ?? view.prompt, relaxationLines: view.lines, dateLine })
     }
   }
 

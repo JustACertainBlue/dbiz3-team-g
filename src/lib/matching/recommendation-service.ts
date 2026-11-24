@@ -71,10 +71,11 @@ export function explain(item: any, _score: number | null): string {
     const label = (f.craft.matched ? item.craft_display : undefined)
       || (f.craft.craft_type ? craftTypeLabel(f.craft.craft_type) : '')
       || CRAFT_LABELS_VI[f.craft.preference]
+      || f.craft.label
       || f.craft.preference
     parts.push(f.craft.matched
-      ? `Phù hợp với sở thích nghề ${label} của đoàn.`
-      : `Chưa khớp với yêu cầu nghề ${label} của đoàn.`)
+      ? `Hợp sở thích ${label} của bạn.`
+      : `Gợi ý thêm, khác nghề ${label} bạn chọn.`)
   }
   if (f.experience_types) {
     const types = f.experience_types.requested
@@ -186,7 +187,7 @@ export async function buildRelaxationSuggestions(
   if (groupSize !== undefined && largest !== undefined && groupSize > largest) {
     conversation_prompt = `Chưa có trải nghiệm nào nhận đoàn ${groupSize} khách: đoàn lớn nhất một trải nghiệm phù hợp nhận được là ${largest} khách. Bạn có thể chia đoàn hoặc giảm số khách.`
   } else if (suggestions[0]?.criterion === 'Budget' && cheapest !== undefined) {
-    conversation_prompt = `Chưa có trải nghiệm nào có giá trong ngân sách ${viNumber(budget)} ₫/khách. Giá thấp nhất đáp ứng các yêu cầu còn lại là ${viNumber(cheapest)} ₫/khách.`
+    conversation_prompt = `Chưa có trải nghiệm nào có giá trong ngân sách ${vnd(budget)} ₫/khách. Giá thấp nhất đáp ứng các yêu cầu còn lại là ${vnd(cheapest)} ₫/khách.`
   }
 
   return {

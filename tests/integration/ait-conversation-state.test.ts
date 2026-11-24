@@ -6,6 +6,7 @@ import { updateMatchingSessionContext } from '@/lib/matching/session-service'
 import { mergeConversationState, normalizeConversationState } from '@/lib/ait/conversation-state'
 import { loadExperiences } from '@/lib/db/seed-loader'
 import { installAitRouteAnalysisMock, restoreAitLlmMock } from '../helpers/ait-ai-mocks'
+import { addVillageCovers } from '../helpers/village-covers'
 import * as sessionsRoute from '@/app/api/ait/sessions/route'
 import * as messagesRoute from '@/app/api/ait/sessions/[id]/messages/route'
 import * as matchingRoute from '@/app/api/ait/matching/route'
@@ -57,6 +58,7 @@ async function getContext(sessionId: string) {
 describe('AIT multi-turn state, pending questions and scope regressions', () => {
   beforeEach(() => {
     demoRepository().reset()
+    addVillageCovers(demoRepository())
     vi.spyOn(Date, 'now').mockReturnValue(rateWindowStart)
     rateWindowStart += 60001
     installAitRouteAnalysisMock()

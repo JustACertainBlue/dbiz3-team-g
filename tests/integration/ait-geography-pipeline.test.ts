@@ -15,6 +15,7 @@ import { detectCraftPreference } from '@/lib/matching/craft-taxonomy'
 import * as geo from '@/lib/matching/geo'
 import type { ConversationDelta } from '@/lib/ait/conversation-delta-schema'
 import { extractTourDate } from '@/lib/ai/tour-date'
+import { isBookingActionRequest } from '@/lib/ait/conversation-state'
 import {
   conversationStateBytes,
   emptyConversationState,
@@ -164,6 +165,34 @@ function installLlmMock(
     source: 'llm',
   })
   return { llmCall, classify }
+}
+
+describe('booking action intent guard', () => {
+  it.each(['\u0111\u1eb7t tour lu\u00f4n cho t\u00f4i', '\u0111\u1eb7t l\u1ecbch ngay gi\u00fap t\u00f4i', '\u0111\u1eb7t lu\u00f4n'])('recognizes %s as a booking action', text => {
+    expect(isBookingActionRequest(text)).toBe(true)
+  })
+})
+
+function addServableSeedImages(): void {
+  const repository = demoRepository()
+  for (const experience of repository.all('experiences')) {
+    const fileId = `test-image-${experience.experience_id}`
+    repository.insert('stored_files', {
+      file_id: fileId,
+      storage_key: `prf-media/${fileId}`,
+      media_type: 'image/jpeg',
+      file_size_bytes: '1024',
+      width_px: '1200',
+      height_px: '800',
+    })
+    repository.insert('profile_media', {
+      profile_media_id: `test-media-${experience.experience_id}`,
+      file_id: fileId,
+      experience_id: experience.experience_id,
+      category: 'Activity',
+      display_order: '0',
+    })
+  }
 }
 
 describe('AIT geography pipeline through the real extractor', () => {
@@ -592,6 +621,7 @@ describe('AIT geography pipeline through the real extractor', () => {
   })
 
   it('keeps geo debug logs opt-in and does not change the response', async () => {
+    addServableSeedImages()
     const info = vi.spyOn(console, 'info').mockImplementation(() => {})
     const debugCalls = () => info.mock.calls.filter(([message]) =>
       typeof message === 'string' && message.startsWith('ref=')
@@ -623,9 +653,9 @@ describe('AIT geography pipeline through the real extractor', () => {
     }
     expect(responseContent(withDebug.json)).toEqual(responseContent(withoutDebug.json))
     expect(debugCalls()).toHaveLength(1)
-    expect(debugCalls()[0]).toEqual([
-      expect.stringContaining('ref=21.0285,105.8542 (default: trung tâm Hà Nội)'),
-      expect.arrayContaining([
+    expect(debugCalls()[0]).toHaveLength(2)
+    expect(debugCalls()[0][0]).toContain('ref=21.0285,105.8542 (default: trung t\u00e2m H\u00e0 N\u1ed9i)')
+    expect(debugCalls()[0][1]).toEqual(expect.arrayContaining([
         expect.objectContaining({
           id: expect.any(String),
           precision: expect.any(String),
@@ -635,8 +665,7 @@ describe('AIT geography pipeline through the real extractor', () => {
           decision: expect.any(String),
           reason: expect.any(String),
         }),
-      ]),
-    ])
+      ]))
   })
 
   it.each([
@@ -980,30 +1009,23 @@ describe('AIT geography pipeline through the real extractor', () => {
     expect(response.json.village_cards).toEqual([])
   })
 
-  it('replays BUG-27 with fallback and catalog-query classifier outputs [MOCK]', async () => {
-    installLlmMock('Mình đang tìm các làng nghề phù hợp.')
+  it('routes the direct booking request to guidance before intent classification', async () => {
     const classifier = vi.spyOn(llmRouter, 'classifyIntent')
-    const outcomes = [
+    const outcomes: Array<Awaited<ReturnType<typeof llmRouter.classifyIntent>>> = [
       null,
       { intent: 'catalog_query', confidence: 1, source: 'llm' },
-    ] as const
-    const replay: Array<{ classifier: string; status: number; cards: number; text: string }> = []
-
+    ]
     for (const outcome of outcomes) {
       demoRepository().reset()
       classifier.mockResolvedValue(outcome)
-      const response = await send(await openSession(), 'đặt tour luôn cho tôi')
-      replay.push({
-        classifier: outcome?.intent ?? 'fallback',
-        status: response.status,
-        cards: response.json.turn.top_matches.length,
-        text: String(response.json.turn.message),
-      })
-    }
+      const response = await send(await openSession(), '\u0111\u1eb7t tour lu\u00f4n cho t\u00f4i')
 
-    expect(replay).toHaveLength(2)
-    expect(replay.every(result => result.status === 201 && result.cards > 0)).toBe(true)
-    console.info('[MOCK-BUG-27-CLASSIFIER-COMPARISON]', JSON.stringify(replay))
+      expect(response.status).toBe(200)
+      expect(response.json.turn.turn_type).toBe('answer')
+      expect(response.json.turn.message).toContain('AI kh\u00f4ng t\u1ef1 \u0111\u1eb7t ho\u1eb7c x\u00e1c nh\u1eadn tour.')
+      expect(response.json.turn.top_matches).toEqual([])
+      expect(classifier).not.toHaveBeenCalled()
+    }
   })
 
   it.each([
@@ -1172,6 +1194,7 @@ describe('AIT geography pipeline through the real extractor', () => {
     ['seed', false],
     ['fixture', true],
   ] as const)('logs normalized explicit weights for %s data without exposing debug output', async (_source, isTest) => {
+    if (!isTest) addServableSeedImages()
     const info = vi.spyOn(console, 'info').mockImplementation(() => {})
     vi.stubEnv('AIT_DEBUG', '1')
     installLlmMock('Mình tìm thấy các làng nghề phù hợp.')
@@ -1280,6 +1303,7 @@ describe('AIT geography pipeline through the real extractor', () => {
     ['seed', false],
     ['fixture', true],
   ] as const)('replaces fabricated distance and facility claims on %s data', async (_source, isTest) => {
+    if (!isTest) addServableSeedImages()
     installLlmMock('Bát Tràng cách 999 km và có wifi, xe lăn.', undefined, [], undefined)
     const sessionId = await openSession()
 
@@ -1480,6 +1504,7 @@ describe('AIT geography pipeline through the real extractor', () => {
   })
 
   it('explains that budget removed every match instead of reporting missing distance', async () => {
+    addServableSeedImages()
     installLlmMock('Mình đang tìm làng gốm phù hợp.')
     const response = await send(
       await openSession(),

@@ -28,6 +28,7 @@ export const TourContextSchema = z.object({
   distance_preference: z.record(z.unknown()).optional(),
   experience_types: z.array(z.string()).optional(),
   craft_preference: z.string().optional(),
+  craft_preferences: z.array(z.string()).optional(),
   experience_intensity: z.enum(['Low', 'Medium', 'High']).optional(),
   budget: z.object({
     max_per_person: z.number().optional(),

@@ -95,7 +95,7 @@ const recommendationView = (m: any): RecommendationView => ({
 /** FR-008 (#188): the Top 5 and up to 5 additional suggestions, both shown with the same card. */
 export function matchResultsView(body: any): { top: RecommendationView[]; additional: RecommendationView[] } {
   return {
-    top: (body?.top_matches ?? []).map(recommendationView),
+    top: (body?.top_matches ?? []).slice(0, 5).map(recommendationView),
     additional: (body?.additional_suggestions ?? []).slice(0, 5).map(recommendationView),
   }
 }

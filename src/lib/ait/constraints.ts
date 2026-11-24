@@ -96,16 +96,16 @@ export function applyHardFilters({
       radiusUnconfirmed = radiusDecision.status === 'unconfirmed'
     }
 
-    const includedCraft = matchingAttrs.find(
+    const includedCrafts = matchingAttrs.filter(
       (attr: any) => attr.type === 'craft_preference' && attr.polarity !== 'exclude' && attr.value !== 'all'
     )
-    if (includedCraft && !matchesCraftPreference(includedCraft.value, {
+    if (includedCrafts.length > 0 && !includedCrafts.some((attr: any) => matchesCraftPreference(attr.value, {
       craft_type: candidate.craft_type ?? candidate.craft,
       name: candidate.name,
       experience_name: candidate.experience_name,
       village_name: candidate.village_name,
       provider_name: candidate.provider_name,
-    })) {
+    }))) {
       rejected.push({ id: candidate.id, reason: 'craft_preference' });
       continue;
     }

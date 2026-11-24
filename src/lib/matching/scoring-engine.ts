@@ -1,4 +1,4 @@
-import { craftLabel, craftTypeForPreference } from '@/lib/matching/craft-taxonomy'
+import { craftLabel, craftTypeForPreference, matchesCraftPreference } from '@/lib/matching/craft-taxonomy'
 
 export interface MatchFactors {
   craft?: { preference: string; label: string; craft_type?: string; matched: boolean }
@@ -58,10 +58,16 @@ export async function scoreCandidate(
   }
 
   // Craft preference alignment by the Provider's published craft_type (#26, #32)
-  const craftAttr = matchingAttr.find((a: any) => a.type === 'craft_preference')?.value?.toLowerCase()
+  const craftAttrs = matchingAttr.filter((a: any) => a.type === 'craft_preference' && a.polarity !== 'exclude')
+  const craftAttr = craftAttrs[0]?.value?.toLowerCase()
   const expName = (candidate.name || candidate.experience_name || '').toLowerCase()
   const wantedCraftType = craftAttr ? craftTypeForPreference(craftAttr) : undefined
-  const craftMatched = Boolean(wantedCraftType) && candidate.craft_type === wantedCraftType
+  const matchingCraft = craftAttrs.find((attribute: any) => matchesCraftPreference(attribute.value, {
+    craft_type: candidate.craft_type, name: candidate.name, experience_name: candidate.experience_name,
+    village_name: candidate.village_name, provider_name: candidate.provider_name,
+  }))
+  const craftMatched = Boolean(matchingCraft)
+  const matchedCraftType = matchingCraft ? craftTypeForPreference(matchingCraft.value) : wantedCraftType
 
   if (craftAttr) {
     const baseFit = craftMatched ? 100 : 65
@@ -122,7 +128,7 @@ export async function scoreCandidate(
   // Factors actually evaluated for this candidate; the explanation is built from these only (#25).
   const hard = profile?.hard_constraints || {}
   const matchFactors: MatchFactors = {
-    craft: craftAttr ? { preference: craftAttr, label: craftLabel(craftAttr), craft_type: wantedCraftType, matched: craftMatched } : undefined,
+    craft: craftAttr ? { preference: matchingCraft?.value ?? craftAttr, label: craftLabel(matchingCraft?.value ?? craftAttr), craft_type: matchedCraftType, matched: craftMatched } : undefined,
     experience_types: requestedTypes.length > 0 ? { requested: requestedTypes, matched: requestedTypes.includes(candidateType) } : undefined,
     group_size: hard.group_size,
     max_participants: candidate.max_participants ?? candidate.max_capacity,

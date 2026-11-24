@@ -87,7 +87,7 @@ export class OpenRouterClient {
 
   async runChat(
     messages: OpenRouterChatMessage[],
-    options?: { model?: string; temperature?: number; max_tokens?: number }
+    options?: { model?: string; temperature?: number; max_tokens?: number; response_format?: { type: 'json_object' } }
   ): Promise<OpenRouterResponse> {
     if (!this.isConfigured()) {
       return {
@@ -120,6 +120,7 @@ export class OpenRouterClient {
           messages,
           temperature: options?.temperature ?? 0.3,
           max_tokens: options?.max_tokens ?? 2048,
+          ...(options?.response_format ? { response_format: options.response_format } : {}),
         }),
         signal: controller.signal,
       })

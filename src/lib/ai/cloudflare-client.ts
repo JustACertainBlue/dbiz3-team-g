@@ -85,7 +85,7 @@ export class CloudflareAiClient {
 
   async runChat(
     messages: CloudflareChatMessage[],
-    options?: { model?: string; temperature?: number; max_tokens?: number }
+    options?: { model?: string; temperature?: number; max_tokens?: number; response_format?: { type: 'json_object' } }
   ): Promise<CloudflareAiResponse> {
     if (!this.isConfigured()) {
       return {
@@ -119,7 +119,7 @@ export class CloudflareAiClient {
   private async executeRequest(
     model: string,
     messages: CloudflareChatMessage[],
-    options?: { temperature?: number; max_tokens?: number }
+    options?: { temperature?: number; max_tokens?: number; response_format?: { type: 'json_object' } }
   ): Promise<CloudflareAiResponse> {
     const url = `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/ai/run/${model}`
     const controller = new AbortController()
@@ -136,6 +136,7 @@ export class CloudflareAiClient {
           messages,
           temperature: options?.temperature ?? 0.3,
           max_tokens: options?.max_tokens ?? 2048,
+          ...(options?.response_format ? { response_format: options.response_format } : {}),
         }),
         signal: controller.signal,
       })

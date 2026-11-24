@@ -78,7 +78,11 @@ describe('createBookingRequest', () => {
 })
 
 describe('freeSlotsOn (the form of 04/24 asks for it)', () => {
-  beforeEach(() => { demoRepository().reset(); addSlots() })
+  beforeEach(() => {
+    demoRepository().reset()
+    addSlots()
+    demoRepository().remove('provider_operating_hours', row => row.provider_id === provider.providerId && row.weekday !== '1')
+  })
   it('lists the free slots of the day, earliest first', async () => {
     expect(await freeSlotsOn(EXPERIENCE, MONDAY)).toEqual([{ start: '09:00', end: '10:00', label: 'Ca sáng' }])
     // the demo workshop is open on Mondays only (provider_operating_hours): a Tuesday has no free slot, whatever the slots say

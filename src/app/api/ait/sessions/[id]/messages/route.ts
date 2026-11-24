@@ -32,8 +32,10 @@ import { craftTypeForPreference, detectAllCraftPreferences, detectExperienceType
 import { withVillageStartingPrices } from '@/lib/village-starting-price'
 import { eligibleVillageStartingPrices } from '@/lib/explore/catalog'
 import { loadExploreRuntime } from '@/lib/explore/seed-repository'
+import { listableRows } from '@/lib/explore/v3-home'
 import { loadBookings, loadExperiences, loadVillages } from '@/lib/db/seed-loader'
 import { loadOperatingHours } from '@/lib/prf/seed-reader'
+import { hanoiDate } from '@/lib/booking/clock'
 import {
   priceSortDirection,
   runAitMatchingPipeline,
@@ -810,9 +812,12 @@ async function handlePost(
         ...(isReset ? matchingContextResults([], '') : {}),
       })
     } else {
+      const pendingAfterGuidance = isReset || acceptsInScopeOffer
+        ? null
+        : activePendingQuestion ?? nextPendingQuestion(conversationState)
       await updateMatchingSessionContext(params.id, {
         state: conversationState,
-        pending_question: isReset || acceptsInScopeOffer ? null : activePendingQuestion,
+        pending_question: pendingAfterGuidance,
         out_of_scope_refusal_count: 0,
       })
     }
@@ -883,10 +888,14 @@ async function handlePost(
         ranking_preferences: conversationState.ranking_preferences,
         is_test: true,
       }
-      if (extraction.tour_context.craft_preference) {
+      for (const craft of [...new Set([
+        ...(extraction.tour_context.craft_preferences ?? []),
+        ...(extraction.tour_context.craft_preference ? [extraction.tour_context.craft_preference] : []),
+        ...(conversationState.crafts ?? []),
+      ])]) {
         tourPreferenceProfile.matching_attributes.push({
           type: 'craft_preference',
-          value: extraction.tour_context.craft_preference,
+          value: craft,
           polarity: 'include',
         })
       }
@@ -1027,12 +1036,19 @@ async function handlePost(
     if (tourPreferenceProfile) {
       // Execute matching call internally
       try {
-        const [experiences, bookings, operatingHours, villages] = await Promise.all([
+        const [candidateExperiences, bookings, operatingHours, villages, exploreSeed] = await Promise.all([
           isTest ? getTestCandidates(tourPreferenceProfile) : loadExperiences(),
           loadBookings(),
           loadOperatingHours(),
           loadVillages(),
+          isTest ? Promise.resolve(undefined) : loadExploreRuntime(),
         ])
+        const listableIds = exploreSeed
+          ? new Set(listableRows(exploreSeed).map(row => row.experience.experience_id))
+          : undefined
+        const experiences = listableIds
+          ? candidateExperiences.filter(experience => listableIds.has(experience.experience_id))
+          : candidateExperiences
         const matching = await runAitMatchingPipeline({
           candidates: experiences,
           profile: tourPreferenceProfile,
@@ -1154,15 +1170,7 @@ async function handlePost(
             .map(e => (typeof e.notice_period_hours === 'number' ? e.notice_period_hours : 24) * 3600 * 1000)
             .reduce((a, b) => Math.max(a, b), 0)
           if (noResultsDueToNotice) maxNoticePeriodHours = Math.round(maxNoticeMs / 3600000)
-          const earliestMs = nowTs + maxNoticeMs
-          const d = new Date(earliestMs + 86400000) // round up to next day (+7 offset handled via UTC)
-          const hanoiEarliestMs = earliestMs + 7 * 3600 * 1000
-          const hanoiNext = new Date(hanoiEarliestMs)
-          const y = hanoiNext.getUTCFullYear()
-          const m = String(hanoiNext.getUTCMonth() + 1).padStart(2, '0')
-          const day = String(hanoiNext.getUTCDate() + 1).padStart(2, '0')
-          earliestAvailableDate = `${y}-${m}-${day}`
-          void d
+          earliestAvailableDate = hanoiDate(nowTs + maxNoticeMs)
         }
 
         const resultMessage = buildResultsMessage({
@@ -1224,6 +1232,14 @@ async function handlePost(
         }
       } catch (e) {
         console.warn('[AIT] Failed to build match cards for turn:', e)
+        return NextResponse.json(
+          {
+            error: 'AI_SERVICE_UNAVAILABLE',
+            message: 'Dá»‹ch vá»¥ ghÃ©p tour Ä‘ang táº¡m giáº£n Ä‘oáº¡n. Vui lÃ²ng thá»­ láº¡i sau Ã­t phÃºt.',
+            retryable: true,
+          },
+          { status: 503 }
+        )
       }
     }
 
@@ -1242,7 +1258,10 @@ async function handlePost(
       }
     }
 
-    if (!turn && extraction.intent === 'platform_guidance' && (isHelpQuestion || acceptsInScopeOffer)) {
+    if (!turn && extraction.intent === 'platform_guidance') {
+      const pendingAfterGuidance = normalizePendingQuestion(
+        (await getMatchingSessionContext(params.id))?.pending_question
+      )
       turn = {
         turn_type: 'answer' as const,
         message: (extraction.conversational_reply || 'Mình có thể hỗ trợ tìm hiểu làng nghề và ghép tour phù hợp.').slice(0, 500),
@@ -1250,7 +1269,7 @@ async function handlePost(
         additional_suggestions: [],
         comparison: null,
         quick_replies: [],
-        follow_up_questions: [],
+        follow_up_questions: pendingAfterGuidance ? [pendingAfterGuidance.text] : [],
         relaxation_suggestions: [],
         sources: [{
           type: 'knowledge_base',
@@ -1357,6 +1376,21 @@ async function handlePost(
         turn = {
           ...turn,
           message: `${turn.message}\n\n${multiCraftNotice}`,
+        }
+      }
+    }
+
+    if (extraction.intent === 'platform_guidance' && turn.turn_type === 'answer') {
+      const pendingAfterGuidance = normalizePendingQuestion(
+        (await getMatchingSessionContext(params.id))?.pending_question
+      )
+      if (pendingAfterGuidance) {
+        turn = {
+          ...turn,
+          message: turn.message.includes(pendingAfterGuidance.text)
+            ? turn.message
+            : `${turn.message}\n\n${pendingAfterGuidance.text}`.slice(0, 500),
+          follow_up_questions: [pendingAfterGuidance.text],
         }
       }
     }

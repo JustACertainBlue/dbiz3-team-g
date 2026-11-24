@@ -2,11 +2,12 @@ import type { TourContext } from '@/lib/matching/types'
 import { isOriginGroundedInUserText, resolveCraftPreference } from '@/lib/ai/llm-service'
 import { extractTourDate } from '@/lib/ai/tour-date'
 import { CATALOG_VILLAGES } from '@/lib/matching/card-resolver'
-import { craftTypeForPreference, detectCraftPreference } from '@/lib/matching/craft-taxonomy'
+import { craftTypeForPreference, detectCraftPreference, detectAllCraftPreferences } from '@/lib/matching/craft-taxonomy'
 import { parseExplicitBudgetAmount } from './budget'
 
 export interface AitConversationState {
   craft?: string
+  crafts?: string[]
   craft_no_data?: boolean
   group_size?: number
   budget_per_person?: number
@@ -150,6 +151,8 @@ export function normalizeConversationState(value: unknown): AitConversationState
   ]
 
   if (typeof raw.craft === 'string') state.craft = raw.craft
+  if (Array.isArray(raw.crafts)) state.crafts = [...new Set(raw.crafts.filter((item): item is string => typeof item === 'string'))]
+  if (state.craft && !state.crafts?.includes(state.craft)) state.crafts = [...(state.crafts ?? []), state.craft]
   if (typeof raw.craft_no_data === 'boolean') state.craft_no_data = raw.craft_no_data
   if (typeof raw.group_size === 'number' && Number.isInteger(raw.group_size) && raw.group_size > 0) {
     state.group_size = raw.group_size
@@ -287,7 +290,7 @@ export function isBookingHelpRequest(text: string): boolean {
 }
 
 export function isBookingActionRequest(text: string): boolean {
-  return /(?:đặt\s+(?:luôn|ngay)(?:\s+(?:cho tôi|giúp tôi))?|(?:chốt|xác nhận)\s+(?:tour|lịch|chuyến)(?:\s+này)?|book\s+(?:it|this|now)|confirm\s+(?:this\s+)?tour)/i
+  return /(?:đặt\s+(?:(?:tour|lịch|chuyến)\s+)?(?:luôn|ngay)(?:\s+(?:cho tôi|giúp tôi))?|(?:chốt|xác nhận)\s+(?:tour|lịch|chuyến)(?:\s+này)?|book\s+(?:it|this|now)|confirm\s+(?:this\s+)?tour)/i
     .test(text)
 }
 
@@ -346,11 +349,10 @@ function excludedVillageIds(text: string): string[] {
 }
 
 function excludedCraft(text: string): string | undefined {
-  const normalized = normalizeText(text)
-  if (!/(?:khong phai|bo|loai tru|khong chon|khong muon|exclude)\s+/i.test(normalized)) {
-    return undefined
-  }
-  return detectCraftPreference(text)
+  const marker = /(?:khong phai|bo|loai tru|khong chon|khong muon|exclude)\s+/i.exec(normalizeText(text))
+  if (!marker || marker.index === undefined) return undefined
+  const suffix = text.slice(marker.index + marker[0].length)
+  return detectCraftPreference(suffix)
 }
 
 export function mergeConversationState(
@@ -366,7 +368,7 @@ export function mergeConversationState(
   const updatedSlots: AitConversationState['slots'] = {}
   const clearSlotValue = (name: ConversationSlotName) => {
     switch (name) {
-      case 'craft': delete next.craft; break
+      case 'craft': delete next.craft; delete next.crafts; break
       case 'group_size': delete next.group_size; break
       case 'budget_per_person':
         delete next.budget_per_person
@@ -468,11 +470,22 @@ export function mergeConversationState(
 
   if (craftExclusion) {
     next.exclusions.crafts = [...new Set([...next.exclusions.crafts, craftExclusion])]
-    if (next.craft === craftExclusion) delete next.craft
+    next.crafts = (next.crafts ?? []).filter(craft => craft !== craftExclusion)
+    if (next.craft === craftExclusion) {
+      delete next.craft
+      next.craft = next.crafts.at(-1)
+    }
+    const includedInTurn = detectAllCraftPreferences(text).filter(craft => craft !== craftExclusion)
+    if (includedInTurn.length > 0) {
+      next.crafts = [...new Set([...(next.crafts ?? []), ...includedInTurn])]
+      next.craft = includedInTurn[0]
+      setSlot('craft', includedInTurn[0], text)
+    }
   } else {
     const unsupportedPair = text.match(/\b(hương|tò\s*he)\s+(?:hay|hoặc)\s+(?:làm\s+)?(hương|tò\s*he)\b/iu)
     const unsupportedCraft = text.match(/(?:đổi\s+sang|hay\s+là|làm|thử)\s+(hương|tò\s*he)\b/iu)?.[1]
-    const explicitCraft = detectCraftPreference(text)
+    const explicitCrafts = detectAllCraftPreferences(text)
+    const explicitCraft = explicitCrafts[0] || detectCraftPreference(text)
       || (unsupportedPair ? `${unsupportedPair[1]}/${unsupportedPair[2]}`.toLocaleLowerCase('vi') : unsupportedCraft?.toLocaleLowerCase('vi'))
     const craft = explicitCraft || (next.craft === undefined
       ? resolveCraftPreference(extracted.craft_preference, [{ text }])
@@ -482,6 +495,10 @@ export function mergeConversationState(
       setSlot('craft', craft, text.match(/(?:làng\s+(?:nghề\s+)?)?(?:gốm|lụa|dệt|mộc|gỗ|nón|mây tre|hương|tò\s*he)/iu)?.[0] ?? text,
         explicitCraft ? 'explicit' : 'inferred')
       next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'craft')
+      const replacesCraft = /(?:đổi|chuyển|thay)\s+(?:sang|qua|bằng)|switch\s+to|replace\s+with/i.test(text)
+      next.crafts = replacesCraft
+        ? [...new Set([...explicitCrafts, craft])]
+        : [...new Set([...(next.crafts ?? []), ...explicitCrafts, craft])]
     }
   }
 
@@ -572,6 +589,7 @@ export function mergeConversationState(
 export function applyConversationState(context: TourContext, state: AitConversationState): TourContext {
   const next: TourContext = { ...context }
   if (state.craft) next.craft_preference = state.craft
+  if (state.crafts?.length) next.craft_preferences = [...new Set(state.crafts)]
   if (state.group_size !== undefined) next.group_size = state.group_size
   if (state.budget_per_person !== undefined) {
     next.budget = { max_per_person: state.budget_per_person, currency: 'VND' }

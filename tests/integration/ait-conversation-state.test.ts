@@ -1068,6 +1068,44 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
     expect((await getContext(sessionId)).state.group_size).toBeUndefined()
   })
 
+  it('keeps craft and group size through platform guidance and resumes the pending date question', async () => {
+    const sessionId = await openSession()
+    vi.spyOn(extractor, 'extractTourContext')
+      .mockResolvedValueOnce({
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        tour_context: { craft_preference: 'pottery', group_size: 10 },
+        conversational_reply: 'ÄÃ£ ghi nháº­n yÃªu cáº§u.',
+        intent: 'tour_matching',
+        usedLlm: false,
+      })
+      .mockResolvedValueOnce({
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        tour_context: {},
+        conversational_reply: 'Báº¡n cÃ³ thá»ƒ xem cÃ¡c tour trong má»¥c GhÃ©p tour.',
+        intent: 'platform_guidance',
+        usedLlm: false,
+      })
+
+    const first = await send(sessionId, 'TÃ¬m tour lÃ m gá»‘m cho 10 khÃ¡ch')
+    expect(first.json.extraction.follow_up_questions.join(' ')).toMatch(/ng.y/i)
+    const beforeGuidance = await getContext(sessionId)
+    expect(beforeGuidance.pending_question.field).toBe('date')
+
+    const guidance = await send(sessionId, 'TÃ´i dÃ¹ng ná»n táº£ng Ä‘á»ƒ xem tour nhÆ° tháº¿ nÃ o?')
+    const afterGuidance = await getContext(sessionId)
+    expect(guidance.json.extraction.intent).toBe('platform_guidance')
+    expect(guidance.json.tour_preference_profile).toBeNull()
+    expect(afterGuidance.state).toMatchObject({ craft: 'pottery', group_size: 10 })
+    expect(afterGuidance.pending_question).toEqual(beforeGuidance.pending_question)
+    expect(guidance.json.turn.follow_up_questions.join(' ')).toMatch(/ng.y/i)
+  })
+
   it('does not classify supported workshop phrases as meal-service refusals (T18)', async () => {
     const sessionId = await openSession()
     for (const text of ['workshop này ăn khách không', 'có buổi trưa không', 'ăn ý với nhóm 10 người']) {

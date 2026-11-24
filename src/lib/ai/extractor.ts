@@ -62,11 +62,13 @@ export async function extractTourContext(
     { ...options, state, recentTurns }
   )
 
-  const lastUserMsg = [...messages].reverse().find(m => !m.sender || m.sender.toLowerCase() === 'agency' || m.sender.toLowerCase() === 'user')?.text || ''
-  const detectedInMsg = detectAllCraftPreferences(lastUserMsg)
+  const detectedInMsg = [...new Set(messages
+    .filter(m => !m.sender || ['agency', 'user'].includes(m.sender.toLowerCase()))
+    .flatMap(m => detectAllCraftPreferences(m.text)))]
   const craft_detected = detectedInMsg.length > 0 ? detectedInMsg : undefined
   if (craft_detected && craft_detected.length > 0) {
     result.tour_context.craft_preference = craft_detected[0]
+    result.tour_context.craft_preferences = craft_detected
   }
 
   return {
@@ -103,10 +105,13 @@ export async function buildTourPreferenceProfile(
     value: type,
   }))
 
-  if (tourContext.craft_preference) {
+  const excludedCrafts = new Set(state?.exclusions.crafts ?? [])
+  for (const craft of [...new Set([...(tourContext.craft_preferences ?? []), ...(tourContext.craft_preference ? [tourContext.craft_preference] : []), ...(state?.crafts ?? [])])]) {
+    if (excludedCrafts.has(craft)) continue
+    if (!craftTypeForPreference(craft) || matchingAttributes.some(attribute => attribute.type === 'craft_preference' && attribute.value === craft)) continue
     matchingAttributes.push({
       type: 'craft_preference',
-      value: tourContext.craft_preference,
+      value: craft,
     })
   }
   for (const villageId of state?.exclusions.villages ?? []) {

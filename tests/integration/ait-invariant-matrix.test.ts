@@ -337,7 +337,8 @@ describe('AIT invariant matrix across seed and fixture', () => {
               : []),
           ] as Json[]
           check((json.village_cards?.length ?? 0) <= 3, 'more than 3 village cards')
-          check(visibleExperienceCards.length <= 3, 'more than 3 visible experience cards')
+          check((matchingView?.top.length ?? 0) <= 5, 'more than 5 top experience cards')
+          check((matchingView?.additional.length ?? 0) <= 5, 'more than 5 additional experience cards')
 
           for (const card of cards) {
             const name = String(card.name ?? card.experience_name ?? '')

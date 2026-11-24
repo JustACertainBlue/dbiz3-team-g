@@ -47,6 +47,37 @@ export interface AitMatchingPipelineResult {
   additionalMatches: ReturnType<typeof buildMatchCard>[]
 }
 
+export function prioritizeCraftCoverage<T>(
+  rankedCandidates: T[],
+  requestedCrafts: string[],
+  candidateId: (candidate: T) => string,
+  matchesCraft: (candidate: T, craft: string) => boolean,
+): T[] {
+  const selected: T[] = []
+  const selectedIds = new Set<string>()
+
+  for (const craft of [...new Set(requestedCrafts)]) {
+    if (selected.length >= 5) break
+    if (selected.some(candidate => matchesCraft(candidate, craft))) continue
+    const candidate = rankedCandidates.find(item =>
+      !selectedIds.has(candidateId(item)) && matchesCraft(item, craft),
+    )
+    if (!candidate) continue
+    selected.push(candidate)
+    selectedIds.add(candidateId(candidate))
+  }
+
+  const ordered = [...selected]
+  const seenIds = new Set(selectedIds)
+  for (const candidate of rankedCandidates) {
+    const id = candidateId(candidate)
+    if (seenIds.has(id)) continue
+    ordered.push(candidate)
+    seenIds.add(id)
+  }
+  return ordered
+}
+
 export interface AitRankedCandidate extends Omit<ScoredCandidate, 'match_score'> {
   match_score: number | null
   ranking_score: number | null
@@ -264,9 +295,9 @@ export async function runAitMatchingPipeline({
     price_sort_direction: !budgetRequested ? requestedPriceSort : undefined,
   })
   const rankedCandidates = ranking.ranked as AitRankedCandidate[]
-  const craftAttribute = profile?.matching_attributes?.find(
+  const craftAttributes = profile?.matching_attributes?.filter(
     (attribute: any) => attribute.type === 'craft_preference' && attribute.polarity !== 'exclude'
-  )
+  ) ?? []
   const requestedTypes = profile?.matching_attributes
     ?.filter((attribute: any) => attribute.type === 'experience_type')
     .map((attribute: any) => attribute.value) ?? []
@@ -276,17 +307,21 @@ export async function runAitMatchingPipeline({
     candidate.flags = flags
     const candidateType = candidate.experience_type || candidate.category || ''
     candidate.match_factors = {
-      craft: craftAttribute ? {
-        preference: craftAttribute.value,
-        label: craftLabel(craftAttribute.value),
-        matched: matchesCraftPreference(craftAttribute.value, {
+      craft: craftAttributes.length ? (() => {
+        const matchedAttribute = craftAttributes.find((attribute: any) => matchesCraftPreference(attribute.value, {
           craft_type: candidate.craft_type,
           name: candidate.name,
           experience_name: candidate.experience_name,
           village_name: candidate.village_name,
           provider_name: candidate.provider_name,
-        }),
-      } : undefined,
+        }))
+        const attribute = matchedAttribute ?? craftAttributes[0]
+        return {
+          preference: attribute.value,
+          label: craftLabel(attribute.value),
+          matched: Boolean(matchedAttribute),
+        }
+      })() : undefined,
       experience_types: requestedTypes.length > 0
         ? { requested: requestedTypes, matched: requestedTypes.includes(candidateType) }
         : undefined,
@@ -303,9 +338,21 @@ export async function runAitMatchingPipeline({
     }
   }
 
-  const candidatesById = new Map(rankedCandidates.map((candidate) => [candidate.experience_id, candidate]))
-  const primaryIds = rankedCandidates.slice(0, 5).map(candidate => candidate.experience_id)
-  const secondaryIds = rankedCandidates.slice(5).map(candidate => candidate.experience_id)
+  const prioritizedCandidates = prioritizeCraftCoverage(
+    rankedCandidates,
+    craftAttributes.map((attribute: any) => String(attribute.value)),
+    candidate => candidate.experience_id,
+    (candidate, craft) => matchesCraftPreference(craft, {
+      craft_type: candidate.craft_type,
+      name: candidate.name,
+      experience_name: candidate.experience_name,
+      village_name: candidate.village_name,
+      provider_name: candidate.provider_name,
+    }),
+  )
+  const candidatesById = new Map(prioritizedCandidates.map((candidate) => [candidate.experience_id, candidate]))
+  const primaryIds = prioritizedCandidates.slice(0, 5).map(candidate => candidate.experience_id)
+  const secondaryIds = prioritizedCandidates.slice(5).map(candidate => candidate.experience_id)
 
   const buildCards = (ids: string[], rankOffset: number) => ids.map((id, index) => {
     const candidate = candidatesById.get(id)!

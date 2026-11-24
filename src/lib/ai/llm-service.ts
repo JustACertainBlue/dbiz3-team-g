@@ -264,6 +264,7 @@ export class ConversationalAiService {
       ...(latestUserMsg ? [{ role: 'user' as const, content: latestUserMsg }] : []),
     ]
 
+    const jsonMode = { response_format: { type: 'json_object' as const } }
     let aiResponse: {
       success: boolean
       text?: string
@@ -274,7 +275,7 @@ export class ConversationalAiService {
 
     // 5. Try Cloudflare Workers AI first if available (with an anti-repetition retry)
     if (canUseCloudflare) {
-      aiResponse = await this.generateReply(cfMessages, knowledge, previousAssistantReplies)
+      aiResponse = await this.generateReply(cfMessages, knowledge, previousAssistantReplies, jsonMode)
 
       // Handle confirmed Cloudflare Quota Exhaustion
       if (!aiResponse.success && aiResponse.isQuotaExhausted) {
@@ -289,7 +290,7 @@ export class ConversationalAiService {
     // 6. Secondary LLM Fallback: If Cloudflare failed, ran out of tokens, or is in cooldown, fallback to OpenRouter
     if ((!aiResponse.success || !aiResponse.text) && canUseOpenRouter) {
       console.info('[AIT] Cloudflare AI unavailable or quota exhausted. Falling back to OpenRouter API...')
-      const orResponse = await this.openRouterClient.runChat(cfMessages)
+      const orResponse = await this.openRouterClient.runChat(cfMessages, jsonMode)
       if (orResponse.success && orResponse.text) {
         aiResponse = {
           success: true,
@@ -307,11 +308,48 @@ export class ConversationalAiService {
     }
 
     // 8. Parse and validate LLM JSON response
-    let parsed: any = null
+    let parsed: any
     try {
       parsed = this.cleanAndParseJson(aiResponse.text)
-    } catch (err) {
-      console.warn('[AIT] LLM returned non-JSON text. Using text as conversational_reply directly. Raw:', aiResponse.text?.slice(0, 200), err)
+      this.validateStructuredResponse(parsed)
+    } catch {
+      const retryMessages = [
+        ...cfMessages,
+        { role: 'system' as const, content: 'Your previous response was invalid. Return only valid JSON matching the required response schema. Do not return prose or markdown.' },
+      ]
+      let retried: { success: boolean; text?: string; modelUsed?: string } = { success: false }
+      if (aiResponse.modelUsed?.startsWith('openrouter:')) {
+        const response = await this.openRouterClient.runChat(retryMessages, jsonMode)
+        retried = response
+      } else if (canUseCloudflare) {
+        retried = await this.client.runChat(retryMessages, jsonMode)
+      }
+      let cloudflareRetryValid = false
+      if (retried.success && retried.text) {
+        try {
+          parsed = this.cleanAndParseJson(retried.text)
+          this.validateStructuredResponse(parsed)
+          cloudflareRetryValid = true
+        } catch {
+          // Fall through to the configured secondary provider below.
+        }
+      }
+      if (cloudflareRetryValid) {
+        aiResponse = { ...aiResponse, text: retried.text, modelUsed: retried.modelUsed || aiResponse.modelUsed }
+      } else {
+        if (aiResponse.modelUsed?.startsWith('openrouter:') || !canUseOpenRouter) {
+          throw new AiServiceUnavailableError()
+        }
+        const fallback = await this.openRouterClient.runChat(retryMessages, jsonMode)
+        if (!fallback.success || !fallback.text) throw new AiServiceUnavailableError()
+        try {
+          parsed = this.cleanAndParseJson(fallback.text)
+          this.validateStructuredResponse(parsed)
+        } catch {
+          throw new AiServiceUnavailableError()
+        }
+        aiResponse = { ...aiResponse, text: fallback.text, modelUsed: `openrouter:${fallback.modelUsed || 'default'}` }
+      }
     }
 
     const hasFaqIndicators = /(?:như thế nào|là gì|làm sao|cách nào|thế nào|giải thích|hướng dẫn|thang điểm|công thức|quy trình|cách ghép|how |what is|how to|explain|tell me about)/i.test(latestUserMsg)
@@ -379,27 +417,6 @@ export class ConversationalAiService {
       }
     }
 
-    // JSON parse failed but we have a plain-text reply from the LLM — use it directly
-    // rather than falling back to AI failure.
-    if (aiResponse.text && aiResponse.text.trim().length > 5) {
-      console.warn('[AIT] Using plain-text LLM response as conversational_reply (non-JSON fallback).')
-      const isVi = isVietnameseText(latestUserMsg)
-      const waivers = detectWaivers(latestUserMsg)
-      const tourContext = detectedGuidance ? {} : this.mapExtractedToTourContext({}, messages, now)
-      const isComplete = Boolean(!detectedGuidance && tourContext.group_size && (tourContext.target_date_or_range || waivers.date))
-      return {
-        intent: detectedGuidance ? 'platform_guidance' : 'tour_matching',
-        conversational_reply: this.resolveReply(aiResponse.text, previousAssistantReplies, tourContext, waivers, isVi),
-        tour_context: tourContext,
-        is_complete: isComplete,
-        follow_up_questions: [],
-        missing_primary: fallbackMissingPrimary(latestUserMsg),
-        quota_status: quotaStatus,
-        usedLlm: true,
-        modelUsed: aiResponse.modelUsed,
-      }
-    }
-
     throw new AiServiceUnavailableError()
   }
 
@@ -411,9 +428,10 @@ export class ConversationalAiService {
   private static async generateReply(
     cfMessages: CloudflareChatMessage[],
     knowledge: KnowledgeItem[] | undefined,
-    previousAssistantReplies: string[]
+    previousAssistantReplies: string[],
+    options?: { response_format: { type: 'json_object' } }
   ): Promise<Awaited<ReturnType<CloudflareAiClient['runChat']>>> {
-    const first = await this.client.runChat(cfMessages)
+    const first = await this.client.runChat(cfMessages, options)
     if (!first.success || !first.text) return first
 
     const firstReply = this.extractReplyText(first.text)
@@ -422,13 +440,29 @@ export class ConversationalAiService {
     console.warn('[AIT] The model repeated an earlier answer. Retrying once with the fallback model and an anti-repetition instruction.')
     const retry = await this.client.runChat(
       [{ role: 'system', content: buildSystemPrompt(knowledge, { antiRepetition: true }) }, ...cfMessages.slice(1)],
-      { model: this.client.fallbackModel }
+      { model: this.client.fallbackModel, ...options }
     )
     if (!retry.success || !retry.text) return first
 
     const retryReply = this.extractReplyText(retry.text)
     if (retryReply && !isRepeatedReply(retryReply, previousAssistantReplies)) return retry
     return retry
+  }
+
+  private static validateStructuredResponse(value: any): void {
+    if (!value || typeof value !== 'object' || Array.isArray(value)
+      || !['tour_matching', 'platform_guidance', 'mixed'].includes(value.intent)
+      || typeof value.conversational_reply !== 'string'
+      || (value.conversation_delta === undefined
+        && (!value.extracted_context || typeof value.extracted_context !== 'object' || Array.isArray(value.extracted_context)))
+      || (value.conversation_delta !== undefined
+        && (!value.conversation_delta || typeof value.conversation_delta !== 'object' || Array.isArray(value.conversation_delta)))
+      || (value.follow_up_questions !== undefined && (!Array.isArray(value.follow_up_questions)
+        || value.follow_up_questions.some((question: unknown) => typeof question !== 'string')))
+      || (value.missing_primary !== undefined && (!Array.isArray(value.missing_primary)
+        || value.missing_primary.some((field: unknown) => typeof field !== 'string')))) {
+      throw new Error('Invalid structured AIT response')
+    }
   }
 
   /** Reads the conversational reply from a model answer, whether it is JSON or plain prose. */
@@ -598,14 +632,17 @@ export class ConversationalAiService {
     // The model may echo a village it suggested as the group's origin (e.g. "Vạn Phúc" right after
     // proposing it). Accept an origin only when the user actually wrote it; otherwise fall back to the
     // text scan so the assistant never treats its own suggestion as the starting point.
-    if (!relativeCenterPreference && extracted?.origin && isOriginGroundedInUserText(String(extracted.origin), fullText)) {
-      context.origin_or_route = { origin_address: String(extracted.origin) }
-    } else if (!relativeCenterPreference) {
+    if (!relativeCenterPreference) {
       for (const m of [...relevantMsgs].reverse()) {
         const text = m.text || ''
         const originMatch = text.match(ORIGIN_CAPTURE_PATTERN)
         if (originMatch) {
-          context.origin_or_route = { origin_address: originMatch[1].trim() }
+          const groundedOrigin = originMatch[1].trim()
+          context.origin_or_route = {
+            origin_address: extracted?.origin && isOriginGroundedInUserText(String(extracted.origin), groundedOrigin)
+              ? String(extracted.origin)
+              : groundedOrigin,
+          }
           break
         }
         const mLoc = text.match(/(hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|sóc sơn|đông anh|thạch thất|hoài đức|gia lâm|thanh oai|thường tín|chương mỹ|hà nội)/i)

@@ -1,3 +1,5 @@
+
+import { formatVillageName } from '@/lib/village-name'
 // Screen 41 (mockup v3 png/41): Agency registrations, Agency legal-information changes and workshop (Provider) profiles in
 // one list. HDT decides Agencies and only views workshops ("Sở chỉ xem, UBND xã quyết định"); UBND sees and decides the
 // workshops of its own village. Pure: the page loads the rows (scope is applied there with the existing guards).
@@ -80,7 +82,7 @@ function workshopRow(p: ProviderQueueRow, adminType: 'HDT' | 'UBND', now: string
   const [statusLabel, tone] = pending ? [hdt ? 'Chờ UBND xã duyệt' : 'Chờ duyệt', 'warn' as QueueTone] : closed[p.reviewStatus]
   return {
     key: `workshop:${p.provider_id}`, kind: 'workshop', kindLabel: KIND_LABEL.workshop, name: p.name,
-    subtitle: p.villageName ? `Làng ${p.villageName}` : '', submitted: p.submitted, statusLabel, tone,
+    subtitle: p.villageName ? formatVillageName(p.villageName) : '', submitted: p.submitted, statusLabel, tone,
     note: pending ? (hdt ? 'Sở chỉ xem, UBND xã quyết định' : waitingText(p.submitted, now)) : '',
     href: `/admin/providers/${p.provider_id}`, processed: !pending, canDecide: pending && !hdt,
   }

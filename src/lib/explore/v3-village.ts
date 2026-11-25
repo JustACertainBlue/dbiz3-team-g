@@ -1,3 +1,5 @@
+
+import { formatVillageName } from '@/lib/village-name'
 // UI v3 Đợt 1, screens 03 (VIL030 /village/[villageId]) and 03a (/villages), mockup pack 19/11/2026.
 // Human decisions 2026-11-19: village image = cover_image_id, else the first experience image, and villages without any
 // image are left out of the lists; "Vì sao nên đưa đoàn đến…" = suitable_for of the live experiences (vocabulary order,
@@ -125,7 +127,7 @@ export function villageView(seed: ExploreSeed, villageId: string, viewer: Viewer
   const notes = parseVisitNotes(village.visit_notes)
   const off = daysOff(seed, providerIds)
   return {
-    id: villageId, name: village.name, eyebrow: craft ? `LÀNG NGHỀ ${craft.toUpperCase()}` : 'LÀNG NGHỀ', title: `Làng ${village.name}`,
+    id: villageId, name: village.name, eyebrow: craft ? `LÀNG NGHỀ ${craft.toUpperCase()}` : 'LÀNG NGHỀ', title: formatVillageName(village.name),
     place: [placeLine(village), distance].filter(Boolean).join(' · '), images, highlights,
     options: rows.map(row => ({ id: row.experience.experience_id, name: row.experience.name })),
     about: (village.description ?? '').split(/\n+/).map(text => text.trim()).filter(Boolean),

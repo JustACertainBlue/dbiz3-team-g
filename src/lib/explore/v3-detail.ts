@@ -1,3 +1,5 @@
+
+import { formatVillageName } from '@/lib/village-name'
 // UI v3 Đợt 1, screens 04 (Tour Agency) and 23 (Guest) on /explore/experiences/[id]: view model of the detail page
 // (human decisions 2026-11-18 #3, #4, #5, #9; deviations in docs/build/ui-v3-spec-deviations.md). Rows of a list
 // hide when their field is empty; blocks follow the mockup.
@@ -145,7 +147,7 @@ export function detailView(seed: ExploreSeed, id: string, viewer: Viewer, query:
 
   return {
     id, providerId: provider.provider_id, villageId: village.village_id, villageName: village.name, name: experience.name,
-    eyebrow: [craft, `Làng ${village.name}`].filter(Boolean).join(' · ').toUpperCase(),
+    eyebrow: [craft, formatVillageName(village.name)].filter(Boolean).join(' · ').toUpperCase(),
     providerLine: `${version.business_name} · ${placeLine(village)}`, priceFrom: Number(experience.price_per_person),
     images: uniqueImages([...experienceImages(seed, id), ...providerImages(seed, provider.provider_id, version.version_no)]),
     owner: { initials: initials(owner || version.business_name), name: owner, title: `Chủ ${version.business_name}`, phone: isAgency ? contact.phone_number || null : null },

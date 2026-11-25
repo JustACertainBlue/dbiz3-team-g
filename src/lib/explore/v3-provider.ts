@@ -1,3 +1,5 @@
+
+import { formatVillageName } from '@/lib/village-name'
 // UI v3 Đợt 1, screen 24 (/explore/providers/[id]; DSC122 Tour Agency, DSC123 Guest): view model of the workshop page
 // (human decisions 2026-11-18 #4, #5, #9, #10). Rows of a list hide when their field is empty.
 import type { CsvRow, ExploreSeed, Viewer } from './catalog'
@@ -125,7 +127,7 @@ export function providerView(seed: ExploreSeed, providerId: string, viewer: View
   const craft = rowCraft(version.craft_type, village)
   const otherVillages = all.filter(row => row.village.village_id !== village.village_id && row.version.craft_type === version.craft_type)
   return {
-    id: providerId, initials: initials(version.business_name), eyebrow: [craft, `Làng ${village.name}`].filter(Boolean).join(' · ').toUpperCase(),
+    id: providerId, initials: initials(version.business_name), eyebrow: [craft, formatVillageName(village.name)].filter(Boolean).join(' · ').toUpperCase(),
     name: version.business_name, address: [village.name, village.district, village.city_province].filter(Boolean).join(', '), villageId: village.village_id, villageTitle: `Làng ${village.name}`,
     images,
     owner: { initials: initials(owner || version.business_name), name: owner, title: 'Chủ xưởng', phone: isAgency ? contact.phone_number || null : null, email: isAgency ? contact.business_email || null : null },

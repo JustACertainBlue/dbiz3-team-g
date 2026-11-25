@@ -29,8 +29,11 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
   if ('networkError' in result) return { kind: 'failure', text: AI_FAILURE_TEXT, retry: 'resend' }
   if (!result.ok) {
     // The language-model route says in its own words that the service is unavailable.
-    const unavailable = result.status === 503 && typeof result.body?.user_message === 'string' ? result.body.user_message : null
-    return unavailable ? { kind: 'failure', text: unavailable, retry: 'reanalyze' } : AI_FAILURE
+    const userMessage = typeof result.body?.user_message === 'string' ? result.body.user_message : null
+    if (userMessage && result.status === 503) return { kind: 'failure', text: userMessage, retry: 'reanalyze' }
+    // 400 / 429: the message was refused before it was stored, so Retry sends it again.
+    if (userMessage && (result.status === 429 || result.status === 400)) return { kind: 'failure', text: userMessage, retry: 'resend' }
+    return AI_FAILURE
   }
   const extraction = result.body?.extraction
   if (!extraction || extraction.processing_status === 'Temporary AI Failure') return AI_FAILURE

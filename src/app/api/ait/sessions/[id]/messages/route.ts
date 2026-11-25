@@ -5,6 +5,8 @@ import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extract
 import { AiServiceUnavailableError, ConversationalAiService } from '@/lib/ai/llm-service'
 import { runLlmTurn } from '@/lib/ai/llm-turn'
 import { isProductionRuntime } from '@/lib/ai/runtime-mode'
+import { sanitizeInput } from '@/lib/ai/guard'
+import { checkAiRateLimit } from '@/lib/ai/ai-rate-limit'
 
 const AI_UNAVAILABLE_BODY = {
   error_code: 'AI_SERVICE_UNAVAILABLE',
@@ -49,13 +51,40 @@ async function handlePost(
 
     // #33: Retry re-analyzes the stored conversation and adds no message.
     const isRetry = body.retry === true
-    const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', body.text || '')
-    const allMessages = await getMessages(params.id)
 
     // With AI credentials configured, every request goes through the language model and a failure is a
     // 503: there is no silent fallback to rules. In production, missing credentials are also a 503.
     // In development and test without credentials the route keeps the existing rule-based extractor.
     const configured = ConversationalAiService.isConfigured()
+    let text: string = body.text || ''
+    if (configured || isProductionRuntime()) {
+      // Before the paid model is called: clean the text and limit the rate. Message content is never logged.
+      if (!isRetry) {
+        const cleaned = sanitizeInput(body.text)
+        if (!cleaned.ok) {
+          return NextResponse.json({
+            error_code: 'INVALID_MESSAGE',
+            error: 'Invalid message',
+            user_message: 'Tin nhắn đang trống hoặc quá dài (tối đa 2000 ký tự). Bạn vui lòng gửi lại.',
+          }, { status: 400 })
+        }
+        text = cleaned.text
+      }
+      const limit = checkAiRateLimit(access.actor!.agencyId!)
+      if (!limit.allowed) {
+        const seconds = Math.max(1, Math.ceil((limit.retryAfterMs ?? 1000) / 1000))
+        return NextResponse.json({
+          error_code: 'RATE_LIMITED',
+          error: 'Too many requests',
+          user_message: `Bạn gửi quá nhanh, hãy thử lại sau ${seconds} giây.`,
+          retry_after_seconds: seconds,
+        }, { status: 429, headers: { 'Retry-After': String(seconds) } })
+      }
+    }
+
+    const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', text)
+    const allMessages = await getMessages(params.id)
+
     if (!configured && isProductionRuntime()) {
       console.error('[AIT] AI provider credentials are not configured (Cloudflare Workers AI / OpenRouter). Returning 503; production never falls back to rules.')
       return NextResponse.json(AI_UNAVAILABLE_BODY, { status: 503 })

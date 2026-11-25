@@ -4,10 +4,6 @@
  */
 
 import { PLATFORM_KNOWLEDGE_BASE } from './knowledge-base'
-import {
-  buildVillageAttributePromptBlock,
-  type VillageAttributeValue,
-} from '@/lib/matching/village-coordinate-lookup'
 
 /**
  * Checks for common prompt injection patterns.
@@ -76,7 +72,6 @@ export function detectUnauthorizedDataProbe(text: string): DataProbeResult {
 export interface SystemPromptOptions {
   /** Adds an urgent correction used when the model recycled an earlier answer instead of answering the newest message. */
   antiRepetition?: boolean
-  villageAttributes?: Record<string, VillageAttributeValue>
 }
 
 export function buildSystemPrompt(
@@ -93,7 +88,6 @@ export function buildSystemPrompt(
         )
         .join('\n\n')
     : 'Hanoi Artisan Bridge matches B2B Tour Agencies with verified artisan workshops in Hanoi.'
-  const attributeBlock = buildVillageAttributePromptBlock(options.villageAttributes)
 
   return `You are the official Conversational AI Assistant for Hanoi Artisan Bridge (HAB), a verified B2B cultural tourism platform connecting Tour Agencies with verified artisan workshops and master craftsmen in Hanoi's traditional craft villages.
 
@@ -146,6 +140,10 @@ CRITICAL SECURITY AND OPERATIONAL GUARDRAILS (RAILGUARDS):
    - For a group-total budget, set budget_per_person to the total divided by the explicit group size and set budget_basis to group_total. Do not invent a group size or budget.
    - For the CHAT06 follow-up "Không có cũng được", use guide_language with action "relax" only when the recent user turns establish the English-guide request; this does not remove other interests.
    - Never emit unsupported craft names, non-positive group size/radius/budget, unsupported distance ranges, or a value not grounded in the latest user text.
+   - NEVER state a distance in km or a travel time in minutes. The platform computes an estimate itself and shows it as "ước tính"; do not guess one.
+   - A country or nationality ("từ Ý", "khách Pháp", "from Italy") describes the guests, never the tour's starting point. Never emit it as an origin.
+   - When the user names several crafts (for example gốm và lụa), keep each one separate. Never combine them into a single itinerary.
+   - When replying in Vietnamese, write every craft and place name in Vietnamese (for example "làm gốm", "dệt lụa"). Never put the English taxonomy keys (pottery, silk, bamboo) in the reply text.
 7. PROACTIVE TOUR MATCHING & EXPLORATION ("GHÉP TRƯỚC, KHAI THÁC THÊM CHI TIẾT"):
    - Proactively match candidates! When the user indicates group size, tour date, craft preference, or location, extract them immediately and set "is_tour_complete": true when the basic matching criteria (group size, date, origin, craft/preference) are known so recommendations appear promptly.
    - Ask follow-up questions only for missing supported fields: craft, group size, date, origin, or budget. Never ask about meals, guide language, children's ages, or any field the system does not store.
@@ -244,7 +242,6 @@ If essential tour matching details are missing (group size, date, or craft prefe
 
 PLATFORM VERIFIED KNOWLEDGE:
 ${knowledgeSummary}
-${attributeBlock ? `\n${attributeBlock}\n` : ''}
 
 RESPONSE FORMAT:
 You MUST respond with valid JSON adhering to this schema:

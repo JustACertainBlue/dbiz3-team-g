@@ -44,6 +44,22 @@ function hasWord(text: string, keyword: string): boolean {
   return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu').test(text)
 }
 
+/** Every craft the text names, in the order they first appear. Additive: detectCraftPreference is unchanged. */
+export function detectAllCraftPreferences(text: string): string[] {
+  if (!text) return []
+  const found: { preference: string; index: number }[] = []
+  for (const entry of CRAFTS) {
+    let earliest = -1
+    for (const keyword of entry.keywords) {
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const match = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu').exec(text)
+      if (match && (earliest === -1 || match.index < earliest)) earliest = match.index
+    }
+    if (earliest !== -1) found.push({ preference: entry.preference, index: earliest })
+  }
+  return found.sort((a, b) => a.index - b.index).map(item => item.preference)
+}
+
 export function detectCraftPreference(text: string): string | undefined {
   return CRAFTS.find(entry => entry.keywords.some(keyword => hasWord(text, keyword)))?.preference
 }

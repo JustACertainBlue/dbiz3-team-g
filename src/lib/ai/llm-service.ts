@@ -5,9 +5,10 @@ import { buildSystemPrompt, detectPromptInjection, detectUnauthorizedDataProbe }
 import { queryKnowledgeBase, type KnowledgeItem } from './knowledge-base'
 import type { TourContext } from '@/lib/matching/types'
 import { extractTourDate } from './tour-date'
-import { detectCraftPreference, detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
+import { detectExperienceTypes } from '@/lib/matching/craft-taxonomy'
 import { systemClock } from '@/lib/booking/clock'
-import { fallbackMissingPrimary, normalizeMissingPrimary } from './missing-primary'
+import { isNationalityOrigin, isUsableOrigin, resolveCraftPreference } from './grounding'
+import { craftLabelVi } from './turn-guards'
 import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
 import type { AitConversationState } from '@/lib/ait/conversation-state'
 import { validateConversationDelta } from '@/lib/ait/conversation-delta'
@@ -119,44 +120,6 @@ export function isRepeatedReply(reply: string, previousAssistantReplies: string[
   })
 }
 
-/**
- * Resolves the craft preference for one turn. The model may answer with a free phrase ("dệt lụa")
- * instead of a canonical taxonomy key, so map it through the taxonomy first; otherwise every candidate
- * is reported as a mismatch and the raw phrase leaks into the match reason (#25, #32). Falls back to the
- * newest user message that names a craft.
- */
-export function resolveCraftPreference(
-  extractedCraft: unknown,
-  userMessages: Array<{ text?: string }>
-): string | undefined {
-  const raw = extractedCraft ? String(extractedCraft) : ''
-  const canonical = raw ? detectCraftPreference(raw) : undefined
-  if (canonical) return canonical
-  for (const m of [...userMessages].reverse()) {
-    const found = detectCraftPreference(m.text || '')
-    if (found) return found
-  }
-  return raw || undefined
-}
-
-/**
- * True when an origin returned by the model is actually present in what the user wrote. Prevents the
- * assistant from treating a village it suggested itself as the group's starting point.
- */
-export function isOriginGroundedInUserText(origin: string, userText: string): boolean {
-  const normalize = (value: string) =>
-    value
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-  const needle = normalize(origin)
-  if (!needle) return false
-  return normalize(userText).includes(needle)
-}
-
 export class AiServiceUnavailableError extends Error {
   readonly code = 'AI_SERVICE_UNAVAILABLE'
 
@@ -166,11 +129,30 @@ export class AiServiceUnavailableError extends Error {
   }
 }
 
-const ORIGIN_CAPTURE_PATTERN = /(?:from|near|xuất\s*phát\s*từ|xuat\s*phat\s*tu|từ|cách|gần|tại khu vực|ở|khu vực)\s+(.+?)(?=\s+(?:đi|đến|tới|sang|về|qua|tham quan|under|below|dưới|trong|không quá|tối đa|hơn|more|on|with|for|budget|looking|and|to|in|at|vào ngày|ngày|\d+(?:[.,]\d+)?\s*km)\b|[,.;!?]|$)/iu
+/**
+ * Keeps only what the model reports as unavailable if the user actually wrote it, so the reply never
+ * claims a gap for something nobody asked about.
+ */
+function groundedMissingPrimary(values: unknown, userText: string): string[] {
+  if (!Array.isArray(values)) return []
+  const haystack = userText.toLowerCase()
+  const kept: string[] = []
+  for (const raw of values) {
+    if (typeof raw !== 'string') continue
+    const value = raw.replace(/\s+/g, ' ').trim().slice(0, 80)
+    if (value && haystack.includes(value.toLowerCase()) && !kept.includes(value)) kept.push(value)
+  }
+  return kept
+}
 
 export class ConversationalAiService {
   private static client: CloudflareAiClient = new CloudflareAiClient()
   private static openRouterClient: OpenRouterClient = new OpenRouterClient()
+
+  /** True when at least one AI provider has credentials. Without any, requests cannot be analysed. */
+  static isConfigured(): boolean {
+    return this.client.isConfigured() || this.openRouterClient.isConfigured()
+  }
 
   /**
    * Helper to set custom or mock clients (for testing or reconfiguration)
@@ -363,6 +345,7 @@ export class ConversationalAiService {
         latestUserMsg,
         recentUserTurns,
         options?.state,
+        now(),
       )
       const tourContext = parsed.conversation_delta === undefined
         ? this.mapExtractedToTourContext(parsed.extracted_context, messages, now)
@@ -386,6 +369,7 @@ export class ConversationalAiService {
       const hasPreference = Boolean(tourContext.craft_preference || (tourContext.experience_types && tourContext.experience_types.length > 0))
       const hasGroupSize = tourContext.group_size !== undefined && tourContext.group_size > 0
       const hasDate = Boolean(tourContext.target_date_or_range?.start_date)
+      const hasBudget = tourContext.budget?.max_per_person !== undefined
 
       if (!isPlatformOnlyGuidance && (!hasPreference || !hasGroupSize || !hasDate)) {
         if (!hasGroupSize && !followUps.some(q => /số lượng khách|group size|pax|khách/i.test(q))) {
@@ -399,9 +383,14 @@ export class ConversationalAiService {
         }
       }
 
+      // A missing budget is asked again, unless the Agency said the budget does not matter.
+      if (!isPlatformOnlyGuidance && !hasBudget && !waivers.budget && !followUps.some(q => /ngân sách|budget/i.test(q))) {
+        followUps.push(isVi ? 'Ngân sách dự kiến cho mỗi khách khoảng bao nhiêu?' : 'What is your expected budget per guest?')
+      }
+
       const finalContext = tourContext
       // If user has all 4 core fields, mark complete and match right away, but STILL keep follow-up questions to refine!
-      const isComplete = Boolean(!isPlatformOnlyGuidance && hasGroupSize && (hasDate || waivers.date) && (hasPreference || waivers.craft))
+      const isComplete = Boolean(!isPlatformOnlyGuidance && hasGroupSize && (hasDate || waivers.date) && (hasPreference || waivers.craft) && (hasBudget || waivers.budget))
 
       return {
         intent: isPlatformOnlyGuidance ? 'platform_guidance' : (hasTourIntent ? 'tour_matching' : 'platform_guidance'),
@@ -409,7 +398,7 @@ export class ConversationalAiService {
         tour_context: finalContext,
         is_complete: isComplete,
         follow_up_questions: followUps,
-        missing_primary: normalizeMissingPrimary(parsed.missing_primary, latestUserMsg),
+        missing_primary: groundedMissingPrimary(parsed.missing_primary, latestUserMsg),
         quota_status: quotaStatus,
         usedLlm: true,
         modelUsed: aiResponse.modelUsed,
@@ -510,7 +499,7 @@ export class ConversationalAiService {
     const date = tourContext.target_date_or_range?.start_date
     const acknowledged: string[] = []
     if (group) acknowledged.push(isVi ? `đoàn khoảng ${group} khách` : `a group of about ${group} guests`)
-    if (craft) acknowledged.push(isVi ? `trải nghiệm ${craft}` : `a ${craft} experience`)
+    if (craft) acknowledged.push(isVi ? `trải nghiệm ${craftLabelVi(craft)}` : `a ${craft} experience`)
     if (date) acknowledged.push(isVi ? `ngày ${date}` : `the date ${date}`)
 
     const waived: string[] = []
@@ -528,10 +517,6 @@ export class ConversationalAiService {
     sentences.push(acknowledged.length > 0
       ? (isVi ? `Tôi đã ghi nhận ${acknowledged.join(', ')}.` : `I have noted ${acknowledged.join(', ')}.`)
       : (isVi ? 'Tôi đã ghi nhận yêu cầu mới nhất của đoàn.' : 'I have noted your latest request.'))
-    // Name the whole craft family rather than one village, so a bare "silk"/"lụa" input is not narrowed
-    // to Vạn Phúc alone (rule 15).
-    const craftOptions = craft ? ConversationalAiService.craftFamilyOptions(craft, isVi) : null
-    if (craftOptions) sentences.push(craftOptions)
     if (waived.length > 0) {
       sentences.push(isVi
         ? `Đoàn linh hoạt về ${waived.join(' và ')}, nên tôi sẽ không hỏi lại các mục này.`
@@ -629,27 +614,12 @@ export class ConversationalAiService {
       }
     }
 
-    // The model may echo a village it suggested as the group's origin (e.g. "Vạn Phúc" right after
-    // proposing it). Accept an origin only when the user actually wrote it; otherwise fall back to the
-    // text scan so the assistant never treats its own suggestion as the starting point.
-    if (!relativeCenterPreference) {
-      for (const m of [...relevantMsgs].reverse()) {
-        const text = m.text || ''
-        const originMatch = text.match(ORIGIN_CAPTURE_PATTERN)
-        if (originMatch) {
-          const groundedOrigin = originMatch[1].trim()
-          context.origin_or_route = {
-            origin_address: extracted?.origin && isOriginGroundedInUserText(String(extracted.origin), groundedOrigin)
-              ? String(extracted.origin)
-              : groundedOrigin,
-          }
-          break
-        }
-        const mLoc = text.match(/(hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|sóc sơn|đông anh|thạch thất|hoài đức|gia lâm|thanh oai|thường tín|chương mỹ|hà nội)/i)
-        if (mLoc) {
-          context.origin_or_route = { origin_address: mLoc[1] }
-          break
-        }
+    // The model may echo a village it suggested, or a nationality ("từ Ý"), as the group's origin.
+    // Accept an origin only when the user wrote it and it is a place, never a country.
+    if (!relativeCenterPreference && typeof extracted?.origin === 'string') {
+      const origin = extracted.origin.trim()
+      if (origin && !isNationalityOrigin(origin) && isUsableOrigin(origin, fullText)) {
+        context.origin_or_route = { origin_address: origin }
       }
     }
 
@@ -667,219 +637,5 @@ export class ConversationalAiService {
     if (!match) return undefined
     const value = parseInt(match[1] || match[2], 10)
     return Number.isFinite(value) && value > 0 ? value : undefined
-  }
-
-  /**
-   * A short broadening suggestion naming the verified workshops of a craft family. Used when the Agency
-   * names only a craft, so the assistant does not fixate on a single village (rule 15, BR-003).
-   */
-  private static craftFamilyOptions(craft: string, isVi: boolean): string | null {
-    const options: Record<string, string> = {
-      silk: isVi
-        ? 'Về dệt lụa, đoàn có thể cân nhắc làng lụa Vạn Phúc (dệt lụa, ươm tơ) và xưởng thêu tay Quất Động — cùng nhóm nghề dệt – may.'
-        : 'For silk weaving you can consider Vạn Phúc silk village and the Quất Động embroidery workshop — both in the Silk/Textile family.',
-      embroidery: isVi
-        ? 'Về thêu tay, đoàn có thể cân nhắc xưởng thêu Quất Động và làng lụa Vạn Phúc — cùng nhóm nghề dệt – may.'
-        : 'For embroidery you can consider the Quất Động embroidery workshop and Vạn Phúc silk village — both in the Silk/Textile family.',
-      pottery: isVi
-        ? 'Về gốm, đoàn có thể cân nhắc xưởng gốm sứ Bát Tràng.'
-        : 'For pottery you can consider the Bát Tràng ceramics workshop.',
-      bamboo: isVi
-        ? 'Về mây tre đan, đoàn có thể cân nhắc xưởng thủ công Phú Vinh.'
-        : 'For bamboo and rattan weaving you can consider the Phú Vinh workshop.',
-      'conical hat': isVi
-        ? 'Về nón lá, đoàn có thể cân nhắc xưởng nón lá Chuông.'
-        : 'For conical hats you can consider the Chuông workshop.',
-    }
-    return options[craft.toLowerCase()] ?? null
-  }
-
-  /**
-   * Explicit rule-based analysis retained for tests and non-request tooling. User requests must use an LLM.
-   */
-  static fallbackAnalysis(
-    messages: Array<{ sender?: string; text: string }>,
-    quotaStatus: QuotaStatus,
-    now: () => Date
-  ): ConversationalAiResult {
-    const latestUserMsg = [...messages].reverse().find(m => m.sender?.toLowerCase() !== 'assistant')?.text || ''
-    const isVi = isVietnameseText(latestUserMsg)
-    // A field the Agency explicitly left open is settled, not missing (rule 13). Reading the waiver
-    // here keeps the rule-based fallback from re-asking the same fixed questions every turn.
-    const waivers = detectWaivers(latestUserMsg)
-
-    // Check if this is a greeting
-    const isGreeting = /^(?:xin chào|chào bạn|chào|hello|hi|hey|alo|good morning|good afternoon)[\s!.]*$/i.test(latestUserMsg.trim())
-    if (isGreeting) {
-      return {
-        intent: 'platform_guidance',
-        conversational_reply: isVi
-          ? 'Xin chào! Tôi là trợ lý AI của Hanoi Artisan Bridge. Tôi có thể giúp gì cho bạn hôm nay? Bạn có thể yêu cầu ghép tour cho đoàn khách hoặc hỏi về thông tin các làng nghề truyền thống Hà Nội.'
-          : 'Hello! I am the Hanoi Artisan Bridge AI Assistant. How can I help you today? You can request a tour match for your group or ask about traditional Hanoi craft villages.',
-        tour_context: {},
-        is_complete: false,
-        follow_up_questions: [],
-        missing_primary: fallbackMissingPrimary(latestUserMsg),
-        quota_status: quotaStatus,
-        usedLlm: false,
-      }
-    }
-
-    // Check if this is a platform guidance question (interrogative FAQ rather than tour search)
-    const knowledgeMatches = queryKnowledgeBase(latestUserMsg)
-    const isExplicitTourAction = /(?:tìm|muốn|cần|tổ chức|book|đặt|find|want|need|organize|looking for)\s+(?:tour|xưởng|chỗ|trải nghiệm)/i.test(latestUserMsg)
-    const isFitScoreQuestion = /(?:thang điểm|công thức|tính điểm|fit score|scoring|weights)/i.test(latestUserMsg)
-    const isSystemHelpQuestion = /(?:system_help|system help|cách (?:sử dụng|dùng)|hướng dẫn sử dụng|how (?:to use|do i use|does the system work))/i.test(latestUserMsg)
-    const isBookingHelpQuestion = /(?:book_now|book now|how (?:do i|to) book|cách đặt tour|đặt (?:tour|lịch) (?:thế nào|như thế nào)|how to request a quote)/i.test(latestUserMsg)
-    const isContactQuestion = /(?:liên hệ|nhắn tin|báo giá|chat|contact|how to contact|request quote)/i.test(latestUserMsg)
-      || isSystemHelpQuestion
-      || isBookingHelpQuestion
-    const isVillagesQuestion = /(?:những làng nghề nào|làng nghề nào được hỗ trợ|danh sách làng nghề|verified craft villages)/i.test(latestUserMsg)
-    const isPlatformQuestion = isSystemHelpQuestion || isBookingHelpQuestion
-      || ((isFitScoreQuestion || isContactQuestion || isVillagesQuestion) && !isExplicitTourAction)
-
-    if (isPlatformQuestion && knowledgeMatches.length > 0) {
-      const best = knowledgeMatches.find(k =>
-        isFitScoreQuestion ? k.id === 'fit_score_calculation' :
-        isContactQuestion ? k.id === 'contact_and_booking' :
-        k.id === 'verified_craft_villages'
-      ) || knowledgeMatches[0]
-      const craft = detectCraftPreference(latestUserMsg)
-      return {
-        intent: 'platform_guidance',
-        conversational_reply: isVi ? `${best.contentVi}` : `${best.contentEn}`,
-        tour_context: craft ? { craft_preference: craft } : {},
-        is_complete: false,
-        follow_up_questions: [],
-        missing_primary: fallbackMissingPrimary(latestUserMsg),
-        quota_status: quotaStatus,
-        usedLlm: false,
-      }
-    }
-
-    // Otherwise, perform structured requirement extraction from conversation history
-    // scanning from newest to oldest so latest changes take precedence.
-    // Only user messages are read: the assistant's own prose must never be re-extracted as a
-    // requirement (mapExtractedToTourContext filters the same way).
-    const userMessages = messages.filter(m => m.sender?.toLowerCase() !== 'assistant')
-    const extractionMessages = userMessages.length > 0 ? userMessages : messages
-
-    const tourContext: TourContext = {}
-    let craftPref: string | undefined = undefined
-
-    for (const m of [...extractionMessages].reverse()) {
-      const text = m.text || ''
-
-      if (!craftPref) {
-        const craft = detectCraftPreference(text)
-        if (craft) craftPref = craft
-      }
-
-      if (tourContext.group_size === undefined) {
-        const detected = ConversationalAiService.parseGroupSize(text)
-        if (detected !== undefined) tourContext.group_size = detected
-      }
-
-      if (!tourContext.target_date_or_range) {
-        const startDate = extractTourDate(text, now())
-        if (startDate) {
-          tourContext.target_date_or_range = { start_date: startDate }
-        }
-      }
-
-      if (!tourContext.budget && !waivers.budget) {
-        const explicitBudget = parseExplicitBudgetAmount(text)
-        if (explicitBudget !== undefined) {
-          tourContext.budget = { max_per_person: explicitBudget, currency: 'VND' }
-        }
-      }
-
-      const types = detectExperienceTypes(text)
-      if (types.length > 0 && !tourContext.experience_types?.length) {
-        tourContext.experience_types = types
-      }
-
-      const relativeCenterPreference = /(?:gần|near)\s+(?:trung tâm|center)(?:\s+ấy)?/iu.test(text)
-        && !/(?:xuất phát từ|điểm đón|pickup|from)\b/iu.test(text)
-      if (!tourContext.origin_or_route && !relativeCenterPreference) {
-        // Supports accented (xuất phát từ) and unaccented (xuat phat tu, tu trung tam).
-        const originMatch = text.match(ORIGIN_CAPTURE_PATTERN)
-        if (originMatch) {
-          tourContext.origin_or_route = { origin_address: originMatch[1].trim() }
-        } else if (/(?:hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i.test(text)) {
-          const mLoc = text.match(/(hồ gươm|ho guom|trung tâm hà nội|trung tam ha noi|hoàn kiếm|old quarter|ba đình|tây hồ|hà đông|hà nội|hoan kiem|ba dinh|tay ho|ha dong|ha noi)/i)
-          if (mLoc) tourContext.origin_or_route = { origin_address: mLoc[1] }
-        }
-      }
-    }
-
-    if (craftPref) tourContext.craft_preference = craftPref
-
-    const hasGroupSize = tourContext.group_size !== undefined && tourContext.group_size > 0
-    const hasDate = Boolean(tourContext.target_date_or_range)
-    const hasCraft = Boolean(tourContext.craft_preference || tourContext.experience_types?.length)
-
-    const followUps: string[] = []
-    if (!hasGroupSize) {
-      followUps.push(
-        isVi
-          ? 'Quý khách vui lòng cho biết số lượng khách dự kiến tham gia đoàn?'
-          : 'Could you please specify your expected group size or number of guests/pax?'
-      )
-    }
-    if (!hasDate && !waivers.date) {
-      followUps.push(
-        isVi
-          ? 'Đoàn dự kiến khởi hành vào ngày nào (date, ví dụ: 25/11 hoặc Thứ Năm tuần tới)?'
-          : 'What is your desired date or date range for the tour?'
-      )
-    }
-    if (!hasCraft && !waivers.craft) {
-      followUps.push(
-        isVi
-          ? 'Đoàn quan tâm đến loại craft / experience nào (ví dụ: làm gốm Bát Tràng, dệt lụa Vạn Phúc)?'
-          : 'Which craft or type of experience are you looking for (for example silk weaving, pottery or a hands-on workshop)?'
-      )
-    }
-
-    const isComplete = hasGroupSize && (hasDate || waivers.date) && (hasCraft || waivers.craft)
-    let conversationalReply = ''
-    if (craftPref === 'woodcarving' || /(?:làng mộc|chàng sơn|sơn đồng)/i.test(latestUserMsg)) {
-      conversationalReply = isVi
-        ? 'Làng mộc Chàng Sơn (Thạch Thất) và Sơn Đồng (Hoài Đức) nổi tiếng với nghệ thuật chạm khắc gỗ cổ truyền, làm quạt và tạc tượng dân gian. Các nghệ nhân có thể tổ chức workshop thực hành chạm khắc hoa văn nhỏ cho đoàn.'
-        : 'Chang Son and Son Dong traditional woodcarving villages are renowned for timber architecture, folk statue carving, and traditional fans.'
-    } else if (/(?:sóc sơn|ngoài trời|teambuilding|team building)/i.test(latestUserMsg)) {
-      conversationalReply = isVi
-        ? 'Hanoi Artisan Bridge chuyên về du lịch văn hóa làng nghề truyền thống Hà Nội. Gần khu vực Sóc Sơn, chúng tôi có Làng múa rối nước Đào Thục (Đông Anh, cách khoảng 20-25 phút) với không gian thủy đình ngoài trời biểu diễn và thi đấu tiểu phẩm rối nước rất thích hợp cho teambuilding tập thể, cùng với các workshop gốm Bát Tràng và mộc Chàng Sơn.'
-        : 'Hanoi Artisan Bridge focuses on traditional Hanoi craft villages. Near Soc Son, Dao Thuc water puppetry village (~20 mins) features open-air puppet pavilion activities ideal for group cohesion.'
-    } else if (/(?:chỉ muốn tham quan|chỉ tham quan|không trải nghiệm|không làm đồ|tham quan thôi|đi ngắm cảnh|chỉ ngắm)/i.test(latestUserMsg)) {
-      conversationalReply = isVi
-        ? 'Rất sẵn lòng! Hanoi Artisan Bridge kết nối đầy đủ các tuyến tham quan di sản, làng cổ và bảo tàng làng nghề đặc sắc (như Bảo tàng Gốm Bát Tràng & Lò Bầu cổ, Tuyến phố lụa Vạn Phúc, Di tích đình làng Chàng Sơn...). Dưới đây là các điểm đến tham quan phù hợp cho bạn:'
-        : 'Certainly! Hanoi Artisan Bridge connects heritage sightseeing tours, ancient villages and craft museums. Here are the top destinations for your tour:'
-    } else if (isComplete) {
-      conversationalReply = this.contextualReply(tourContext, waivers, isVi)
-    } else {
-      // Build the reply from what this turn actually contains, so two different inputs never get the
-      // same canned sentence (rules 12 and 13).
-      conversationalReply = ConversationalAiService.contextualReply(tourContext, waivers, isVi)
-    }
-
-    if (quotaStatus.inCooldown) {
-      const cooldownNote = isVi
-        ? '\n\n[Lưu ý: Hệ thống đang vận hành ở chế độ dự phòng bảo vệ hạn ngạch 24h].'
-        : '\n\n[Note: Running in resilient rule-based matching mode under 24h quota cooldown].'
-      conversationalReply += cooldownNote
-    }
-
-    return {
-      intent: 'tour_matching',
-      conversational_reply: conversationalReply,
-      tour_context: tourContext,
-      is_complete: isComplete,
-      follow_up_questions: followUps,
-      missing_primary: fallbackMissingPrimary(latestUserMsg),
-      quota_status: quotaStatus,
-      usedLlm: false,
-    }
   }
 }

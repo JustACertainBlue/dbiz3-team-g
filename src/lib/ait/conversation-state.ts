@@ -1,7 +1,6 @@
 import type { TourContext } from '@/lib/matching/types'
-import { isOriginGroundedInUserText, resolveCraftPreference } from '@/lib/ai/llm-service'
+import { isUsableOrigin, resolveCraftPreference } from '@/lib/ai/grounding'
 import { extractTourDate } from '@/lib/ai/tour-date'
-import { CATALOG_VILLAGES } from '@/lib/matching/card-resolver'
 import { craftTypeForPreference, detectCraftPreference, detectAllCraftPreferences } from '@/lib/matching/craft-taxonomy'
 import { parseExplicitBudgetAmount } from './budget'
 
@@ -329,10 +328,15 @@ function normalizeText(text: string): string {
     .replace(/đ/g, 'd')
 }
 
-function excludedVillageIds(text: string): string[] {
+export interface CatalogVillage {
+  village_id: string
+  name: string
+}
+
+function excludedVillageIds(text: string, villages: CatalogVillage[]): string[] {
   const normalized = normalizeText(text)
   const ids = new Set<string>()
-  for (const village of CATALOG_VILLAGES) {
+  for (const village of villages) {
     const name = normalizeText(village.name).replace(/^lang(?: nghe)?\s+/, '')
     const aliases = new Set([name, name.split(/\s+/).slice(-2).join(' ')])
     for (const alias of aliases) {
@@ -360,7 +364,9 @@ export function mergeConversationState(
   text: string,
   extracted: TourContext,
   now: Date,
-  pendingField?: PendingQuestionField
+  pendingField?: PendingQuestionField,
+  // Villages are read at run time (loadVillages) by the caller; the list is never hard-coded here.
+  villages: CatalogVillage[] = []
 ): AitConversationState {
   const next = normalizeConversationState(current)
   if (!text.trim()) return next
@@ -466,7 +472,7 @@ export function mergeConversationState(
     delete next.slots.radius
   }
   const craftExclusion = excludedCraft(text)
-  const newVillageExclusions = excludedVillageIds(text)
+  const newVillageExclusions = excludedVillageIds(text, villages)
 
   if (craftExclusion) {
     next.exclusions.crafts = [...new Set([...next.exclusions.crafts, craftExclusion])]
@@ -550,7 +556,7 @@ export function mergeConversationState(
     next.dismissed_questions = next.dismissed_questions.filter(field => field !== 'date')
   }
   if (extracted.origin_or_route?.origin_address
-    && isOriginGroundedInUserText(extracted.origin_or_route.origin_address, text)
+    && isUsableOrigin(extracted.origin_or_route.origin_address, text)
     && !/\b\d+(?:[.,]\d+)?\s*(?:km|kilometers?|cây\s*số)\b/iu.test(extracted.origin_or_route.origin_address)) {
     const origin = extracted.origin_or_route.origin_address
     setSlot('origin', origin, text)
@@ -613,6 +619,9 @@ export function missingQuestions(state: AitConversationState): PendingQuestion[]
   if (state.craft === undefined && state.exclusions.crafts.length === 0) {
     questions.push({ field: 'craft', text: 'Tôi có thể gợi ý sát hơn nếu bạn cho biết nghề hoặc trải nghiệm muốn thử.' })
   }
+  if (state.budget_per_person === undefined && !state.relaxed_fields.includes('budget_per_person')) {
+    questions.push({ field: 'budget_per_person', text: 'Bạn có thể cho mình biết ngân sách dự kiến cho mỗi khách không?' })
+  }
   return questions.filter(question => !state.dismissed_questions.includes(question.field))
 }
 
@@ -639,7 +648,11 @@ export function nextPendingQuestion(state: AitConversationState): PendingQuestio
 }
 
 export function isCompleteConversationState(state: AitConversationState): boolean {
+  const budgetSettled = state.budget_per_person !== undefined
+    || state.relaxed_fields.includes('budget_per_person')
+    || state.dismissed_questions.includes('budget_per_person')
   return state.group_size !== undefined
     && state.date !== undefined
     && (state.craft !== undefined || state.exclusions.crafts.length > 0)
+    && budgetSettled
 }

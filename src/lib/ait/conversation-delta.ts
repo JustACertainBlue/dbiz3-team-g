@@ -1,4 +1,5 @@
 import { extractTourDate } from '@/lib/ai/tour-date'
+import { isNationalityOrigin } from '@/lib/ai/grounding'
 import { parseExplicitBudgetAmount } from '@/lib/ait/budget'
 import { craftTypeForPreference, detectCraftPreference } from '@/lib/matching/craft-taxonomy'
 import {
@@ -92,6 +93,7 @@ function validateSet(
   userText: string,
   groupSize: number | undefined,
   budgetBasis: unknown,
+  now: Date,
 ): string | undefined {
   const { value, raw_span: rawSpan } = operation
   if (!isGrounded(rawSpan, userText)) return 'raw_span_not_in_latest_user_turn'
@@ -135,11 +137,13 @@ function validateSet(
       return
     case 'date': {
       if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'invalid_date'
-      const parsed = extractTourDate(rawSpan, new Date('2026-11-18T00:00:00.000Z'))
+      const parsed = extractTourDate(rawSpan, now)
       return parsed === value ? undefined : 'date_not_supported_by_raw_span'
     }
-    case 'duration':
-    case 'origin': {
+    case 'origin':
+      if (typeof value === 'string' && isNationalityOrigin(value)) return 'origin_is_nationality'
+    // falls through to the shared non-empty / raw-span checks
+    case 'duration': {
       if (typeof value !== 'string' || value.trim().length === 0) return `${slot}_must_be_non_empty_text`
       return normalizeText(rawSpan).includes(normalizeText(value))
         ? undefined
@@ -177,6 +181,7 @@ export function validateConversationDelta(
   userText: string,
   recentUserTurns: string[],
   currentState?: AitConversationState,
+  now: Date = new Date(),
 ): ValidatedConversationDelta {
   const accepted: ConversationDelta = {}
   const unsupported: ConversationDelta = {}
@@ -220,7 +225,7 @@ export function validateConversationDelta(
         unsupported.craft = operation
         continue
       }
-      const reason = validateSet(slot, operation, userText, groupSize, budgetBasis)
+      const reason = validateSet(slot, operation, userText, groupSize, budgetBasis, now)
       if (reason) rejected.push({ slot, reason })
       else accepted[slot] = operation
       continue

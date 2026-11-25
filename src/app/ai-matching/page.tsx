@@ -209,9 +209,13 @@ export default function AiMatchingScreen() {
       if ('body' in result) { const found = understoodChips(result.body); if (found.length > 0) setChips(found) }
       const dateLine = 'body' in result ? understoodDateLine(result.body) ?? undefined : undefined
       if (outcome.kind === 'clarify') {
-        addAssistant({ text: 'Mình cần thêm một vài thông tin để tìm trải nghiệm hợp với đoàn của bạn:', clarificationQuestions: outcome.questions, dateLine })
+        addAssistant({ text: outcome.reply ?? 'Mình cần thêm một vài thông tin để tìm trải nghiệm hợp với đoàn của bạn:', clarificationQuestions: outcome.questions, dateLine })
       } else if (outcome.kind === 'match') {
-        await fetchMatchingResults(outcome.profile, dateLine, id)
+        if (outcome.profiles) {
+          for (const item of outcome.profiles) await fetchMatchingResults(item.profile, dateLine, id, item.label)
+        } else {
+          await fetchMatchingResults(outcome.profile, dateLine, id)
+        }
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }
@@ -234,7 +238,7 @@ export default function AiMatchingScreen() {
    * Calls the real matching pipeline via the server API. A failure shows the #27 message with Retry;
    * no offline or fabricated result is ever shown (FR-003, BR-017).
    */
-  const fetchMatchingResults = async (profile: unknown, dateLine?: string, id: string | null = sessionId) => {
+  const fetchMatchingResults = async (profile: unknown, dateLine?: string, id: string | null = sessionId, craftLabel?: string) => {
     const epoch = epochRef.current
     const result = await postJson('/api/ait/matching', { session_id: id, tour_preference_profile: profile })
     if (epoch !== epochRef.current) return
@@ -245,7 +249,9 @@ export default function AiMatchingScreen() {
     const { top: topMatches, additional } = matchResultsView(result.body)
     if (topMatches.length > 0) {
       addAssistant({
-        text: 'Mình đã đối chiếu yêu cầu của đoàn với các xưởng đã xác minh. Đây là các trải nghiệm gợi ý:',
+        text: craftLabel
+          ? `Gợi ý riêng cho ${craftLabel}, đối chiếu với các xưởng đã xác minh:`
+          : 'Mình đã đối chiếu yêu cầu của đoàn với các xưởng đã xác minh. Đây là các trải nghiệm gợi ý:',
         dateLine,
         recommendations: topMatches,
         additionalSuggestions: additional,

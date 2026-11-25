@@ -6,6 +6,7 @@ import { AiServiceUnavailableError, ConversationalAiService } from '@/lib/ai/llm
 import { runLlmTurn } from '@/lib/ai/llm-turn'
 import { isProductionRuntime } from '@/lib/ai/runtime-mode'
 import { sanitizeInput } from '@/lib/ai/guard'
+import { errorResponse } from '@/lib/ai/safe-error'
 import { checkAiRateLimit } from '@/lib/ai/ai-rate-limit'
 
 const AI_UNAVAILABLE_BODY = {
@@ -35,7 +36,7 @@ export async function GET(
     const messages = await getMessages(params.id)
     return NextResponse.json(messages)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 })
+    return errorResponse(err, 'read messages')
   }
 }
 
@@ -124,7 +125,9 @@ async function handlePost(
       tour_preference_profile: tourPreferenceProfile,
     }, { status: isRetry ? 200 : 201 })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 400 })
+    // Text validation and unknown-session errors are the Agency's to fix; anything else stays on the server.
+    return errorResponse(err, 'analyse message', e =>
+      e instanceof Error && /^(Message text invalid|Matching session not found)/.test(e.message) ? { status: 400 } : null)
   }
 }
 

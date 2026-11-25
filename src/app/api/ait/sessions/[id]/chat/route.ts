@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { errorResponse } from '@/lib/ai/safe-error'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { createChatHandoff, HandoffError } from '@/lib/demo/commercial-handoff-service'
 import { getMatchingSession } from '@/lib/matching/session-service'
@@ -25,6 +26,6 @@ export async function POST(
     // spec-IAC #19: source AI Matching with the checked Matching Session.
     return NextResponse.json(await createChatHandoff(actor, experienceId, { source: 'AI Matching', matchingSessionId: params.id }), { status: 200 })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: err instanceof HandoffError ? err.statusCode : 500 })
+    return errorResponse(err, 'chat handoff', e => (e instanceof HandoffError && e.statusCode < 500 ? { status: e.statusCode } : null))
   }
 }

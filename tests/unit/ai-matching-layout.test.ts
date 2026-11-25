@@ -57,6 +57,12 @@ describe('phone (< 768 px)', () => {
     expect(page).toMatch(/style\.height/)
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.aim__dock \.aim__comp\s*\{[^}]*flex-direction:\s*row/)
   })
+  it('gives mobile card actions room to stay readable and tappable', () => {
+    const phone = css.slice(css.lastIndexOf('@media (max-width: 767px)'))
+    expect(phone).toMatch(/\.aim__card-footer\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/)
+    expect(phone).toMatch(/\.aim__card-action:last-child\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/)
+    expect(phone).toMatch(/\.aim__card-action\s*\{[^}]*font-size:\s*13px/)
+  })
 })
 
 describe('independent history and chat scroll frames', () => {

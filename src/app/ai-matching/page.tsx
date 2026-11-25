@@ -7,9 +7,9 @@ import { AI_FAILURE_TEXT, HANDOFF_FAILURE_TEXT, handoffOutcome, matchResultsView
 import { RESTRICTED_TEXT } from './ai-matching-access'
 import { historyDate, historyTitle } from './history-view'
 import { loadTurns, saveTurns, type StorageLike } from './turn-store'
-import { perGuest, recommendationCardView } from './card-view'
+import { conciseExplanation, perGuest, recommendationCardView } from './card-view'
 import { useAgencySession } from './agency-name'
-import { ArrowUp, Check, ChevronDown, ChevronRight, Clock, MessageSquare, Package, Plus, Sparkles, Users } from 'lucide-react'
+import { ArrowUp, Check, ChevronDown, ChevronRight, MessageSquare, Plus, Sparkles } from 'lucide-react'
 import CoverImage from '../explore/v3/CoverImage'
 import { RESULT_SIZES } from '../explore/v3/image-sizes'
 import { vnd } from '../explore/v3/ExperienceCard'
@@ -373,68 +373,119 @@ export default function AiMatchingScreen() {
                   </div>
                 )}
 
-                {/* Recommendation cards: the card of screen 02 (mockup 22) */}
+                {/* Result cards (v2 of PR #286): image, heading, facts, why, highlights, price, then Chat / schedule / quote */}
                 {msg.recommendations && msg.recommendations.length > 0 && (
                   <div id="recommendations-container" className="aim__cards">
-                    {[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (
-                      <React.Fragment key={rec.experience_id}>
-                      {index === msg.recommendations!.length && <h4 className="aim__more">Gợi ý thêm</h4>}
-                      <article className="v3-card v3r aim__card">
-                        {rec.card && <Link href={cardOf(rec).href} className="v3r__media" tabIndex={-1} aria-hidden="true"><CoverImage image={rec.card.image} alt="" sizes={RESULT_SIZES} priority="lazy" /></Link>}
-                        <div className="v3r__main">
-                          <div className="v3r__top">
-                            <div className="v3r__titles">
-                              <h3 className="v3r__name"><Link href={cardOf(rec).href}>{cardOf(rec).name}</Link></h3>
-                              <p className="v3r__where">
+                    {[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => {
+                      const view = cardOf(rec)
+                      const tags = rec.card?.tags ?? view.tags
+                      const metadata = tags.filter((tag: string) =>
+                        /^(Tối đa|Đặt trước)\b/.test(tag) || /\d.*(phút|giờ)/i.test(tag)
+                      )
+                      const takeHome = tags.includes('Mang sản phẩm về')
+                      const quoteStatus = chatStatus[rec.experience_id]
+                      const providerStatus = chatStatus[rec.provider_id]
+                      return (
+                        <React.Fragment key={rec.experience_id}>
+                        {index === msg.recommendations!.length && <h4 className="aim__more">Gợi ý thêm</h4>}
+                        <article className="v3-card aim__card">
+                          {rec.card && (
+                            <Link href={view.href} className="aim__card-media" tabIndex={-1} aria-hidden="true">
+                              <CoverImage image={rec.card.image} alt="" sizes={RESULT_SIZES} priority="lazy" />
+                            </Link>
+                          )}
+                          <div className="aim__card-main">
+                            <header className="aim__card-heading">
+                              <h3 className="aim__card-title v3r__name"><Link href={view.href}>{view.name}</Link></h3>
+                              <p className="aim__card-location v3r__where">
                                 {rec.card
                                   ? <Link href={`/village/${rec.card.villageId}`} className="v3r__village">{rec.card.villageLine}</Link>
-                                  : cardOf(rec).where}
-                                {cardOf(rec).providerName && <><span className="v3r__dot"> · </span><span>{cardOf(rec).providerName}</span></>}
+                                  : view.where}
+                                {view.providerName && <><span className="v3r__dot"> · </span><span>{view.providerName}</span></>}
                               </p>
-                            </div>
-                            {rec.card?.craft && <span className="v3r__craft">{rec.card.craft}</span>}
-                          </div>
-                          {(rec.card?.tags ?? cardOf(rec).tags).length > 0 && <div className="v3-ftags">{(rec.card?.tags ?? cardOf(rec).tags).map((tag: string) => <span key={tag} className="v3-ftag">{tag.startsWith('Tối đa') ? <Users aria-hidden="true" /> : tag === 'Mang sản phẩm về' ? <Package aria-hidden="true" /> : <Clock aria-hidden="true" />}{tag}</span>)}</div>}
-                          {cardOf(rec).why && <p className="aim__why"><Sparkles aria-hidden="true" /><span><b>Vì sao hợp:</b> {cardOf(rec).why}</span></p>}
-                          <div className="v3r__cols">
-                            <div className="v3r__left">
-                              {rec.card && rec.card.highlights.length > 0 && <ul className="v3-ben" aria-label="Điểm nổi bật">{rec.card.highlights.map((text: string) => <li key={text}><Check aria-hidden="true" /><span>{text}</span></li>)}</ul>}
-                            </div>
-                            <div className="v3r__price">
-                              {rec.card?.price.kind === 'group' ? <>
-                                <p className="v3r__guests">{rec.card.price.guests} khách</p>
-                                <b className="v3r__total">{vnd(rec.card.price.total)}</b>
-                                {perGuest(rec.card.price) !== null && <span className="v3-cap v3r__perguest">{vnd(perGuest(rec.card.price)!)}/khách</span>}
-                                {rec.card.price.old !== null && <span className="v3r__old">{vnd(rec.card.price.old)}</span>}
-                                {rec.card.price.note && <span className={rec.card.price.old !== null ? 'v3r__disc' : 'v3r__nodisc'}>{rec.card.price.note}</span>}
-                              </> : cardOf(rec).pricePerPerson && <><span className="v3-cap">Giá từ</span><b className="v3r__total">{cardOf(rec).pricePerPerson}<span className="v3-cap"> /khách</span></b></>}
-                              {rec.card?.included && <p className="v3-cap v3r__incl">Đã gồm vật liệu và người hướng dẫn</p>}
-                              <div className="aim__acts">
-                                <button
-                                  id={`chat-btn-${rec.provider_id}`}
-                                  className="aim__btn aim__btn--s aim__btn--icon"
-                                  aria-label="Nhắn tin cho xưởng"
-                                  title="Nhắn tin cho xưởng"
-                                  onClick={() => handleChat(rec.experience_id, rec.provider_id)}
-                                >
-                                  <MessageSquare aria-hidden="true" />
-                                </button>
-                                <Link className="aim__btn aim__btn--p" href={cardOf(rec).scheduleHref}>Xem lịch trống <ChevronRight aria-hidden="true" /></Link>
-                              </div>
-                            </div>
-                          </div>
+                              {rec.card?.craft && <p className="aim__card-craft v3r__craft">{rec.card.craft}</p>}
+                            </header>
 
-                          {chatStatus[rec.provider_id] && (
-                            <div className="aim__status">
-                              {chatStatus[rec.provider_id] === HANDOFF_FAILURE_TEXT ? (
-                                <>{HANDOFF_FAILURE_TEXT}{' '}<button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Thử lại</button></>
-                              ) : chatStatus[rec.provider_id]}
-                            </div>
-                          )}
-                        </div>
-                      </article>
-                      </React.Fragment>
-                    ))}
+                            {metadata.length > 0 && (
+                              <ul className="aim__card-meta" aria-label="Thông tin trải nghiệm">
+                                {metadata.map((tag: string) => <li key={tag}>{tag}</li>)}
+                              </ul>
+                            )}
+
+                            {view.why && (
+                              <p className="aim__why">
+                                <b>Vì sao hợp:</b> {conciseExplanation(view.why)}
+                              </p>
+                            )}
+
+                            {rec.card?.highlights?.length > 0 && (
+                              <section className="aim__card-highlights" aria-label="Điểm nổi bật">
+                                <h4>Điểm nổi bật</h4>
+                                <ul className="v3-ben">
+                                  {rec.card.highlights.map((text: string) => <li key={text}><Check aria-hidden="true" /><span>{text}</span></li>)}
+                                </ul>
+                              </section>
+                            )}
+
+                            {(rec.card?.price.kind === 'group' || view.pricePerPerson) && (
+                              <section className="aim__card-price" aria-label="Giá trải nghiệm">
+                                <div className="aim__price-primary">
+                                  {rec.card?.price.kind === 'group' ? <>
+                                    <span className="aim__price-total"><b className="v3r__total">{vnd(rec.card.price.total)}</b></span>
+                                    {perGuest(rec.card.price) !== null && <span className="aim__price-perguest">{vnd(perGuest(rec.card.price)!)}/khách</span>}
+                                    <span className="aim__price-guests">{rec.card.price.guests} khách</span>
+                                  </> : <>
+                                    <span className="aim__price-label">Giá từ</span>
+                                    <b className="v3r__total">{view.pricePerPerson}<span className="aim__price-perguest">/khách</span></b>
+                                  </>}
+                                </div>
+                                <div className="aim__price-details">
+                                  {rec.card?.price.kind === 'group' && rec.card.price.old !== null && <span className="v3r__old">{vnd(rec.card.price.old)}</span>}
+                                  {rec.card?.price.kind === 'group' && rec.card.price.note && <span className={rec.card.price.old !== null ? 'v3r__disc' : 'v3r__nodisc'}>{rec.card.price.note}</span>}
+                                  {rec.card?.included && <span className="aim__included">Đã gồm vật liệu và người hướng dẫn</span>}
+                                  {takeHome && <span className="aim__included">Mang sản phẩm về</span>}
+                                </div>
+                              </section>
+                            )}
+
+                            <footer className="aim__card-footer">
+                              <button
+                                id={`chat-btn-${rec.provider_id}`}
+                                className="aim__btn aim__btn--s aim__card-action"
+                                onClick={() => handleChat(rec.experience_id, rec.provider_id)}
+                              >
+                                <MessageSquare aria-hidden="true" /><span>Chat</span>
+                              </button>
+                              <Link className="aim__btn aim__btn--p aim__card-action" href={view.scheduleHref}>
+                                Xem lịch trống <ChevronRight aria-hidden="true" />
+                              </Link>
+                              <button
+                                className="aim__btn aim__btn--s aim__card-action"
+                                onClick={() => handleRequestQuote(rec.experience_id)}
+                              >
+                                Xin báo giá
+                              </button>
+                            </footer>
+
+                            {providerStatus && (
+                              <div className="aim__status">
+                                {providerStatus === HANDOFF_FAILURE_TEXT ? (
+                                  <>{HANDOFF_FAILURE_TEXT}{' '}<button className="handoff-retry-btn" onClick={() => handleChat(rec.experience_id, rec.provider_id)}>Thử lại</button></>
+                                ) : providerStatus}
+                              </div>
+                            )}
+                            {quoteStatus && (
+                              <div className="aim__status">
+                                {quoteStatus === HANDOFF_FAILURE_TEXT ? (
+                                  <>{HANDOFF_FAILURE_TEXT}{' '}<button className="handoff-retry-btn" onClick={() => handleRequestQuote(rec.experience_id)}>Thử lại</button></>
+                                ) : quoteStatus}
+                              </div>
+                            )}
+                          </div>
+                        </article>
+                        </React.Fragment>
+                      )
+                    })}
                   </div>
                 )}
               </div>

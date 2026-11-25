@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
-import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/session-service'
+import { addMessage, getMatchingSession, getMessages, withMatchingSessionWriteLock } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
 import { AiServiceUnavailableError, ConversationalAiService } from '@/lib/ai/llm-service'
 import { runLlmTurn } from '@/lib/ai/llm-turn'
@@ -37,7 +37,7 @@ export async function GET(
   }
 }
 
-export async function POST(
+async function handlePost(
   request: Request,
   { params }: { params: { id: string } }
 ) {
@@ -97,4 +97,11 @@ export async function POST(
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal error' }, { status: 400 })
   }
+}
+
+export async function POST(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  return withMatchingSessionWriteLock(context.params.id, () => handlePost(request, context))
 }

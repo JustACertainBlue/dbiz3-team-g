@@ -13,6 +13,7 @@ import {
 import { buildTourPreferenceProfile } from './extractor'
 import { loadConversationState, saveConversationState } from './conversation-store'
 import { ConversationalAiService } from './llm-service'
+import { postCheckReply } from './postcheck'
 import { craftLabelVi, craftSuggestionTargets, pastDateNotice } from './turn-guards'
 
 export interface CraftProfile {
@@ -61,7 +62,7 @@ export async function runLlmTurn(sessionId: string, messages: ConversationMessag
         retry_available: false,
         follow_up_questions: [],
         tour_context: applyConversationState({}, current),
-        conversational_reply: result.conversational_reply,
+        conversational_reply: postCheckReply(result.conversational_reply).message,
         intent: result.intent,
         missing_primary: result.missing_primary,
       },
@@ -109,7 +110,7 @@ export async function runLlmTurn(sessionId: string, messages: ConversationMessag
       retry_available: false,
       follow_up_questions: pastNotice ? ['Bạn muốn đi vào ngày nào?'] : questions,
       tour_context: tourContext,
-      conversational_reply: pastNotice ?? result.conversational_reply,
+      conversational_reply: pastNotice ?? postCheckReply(result.conversational_reply).message,
       intent: result.intent,
       missing_primary: result.missing_primary,
     },

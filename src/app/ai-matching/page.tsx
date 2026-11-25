@@ -8,6 +8,7 @@ import { RESTRICTED_TEXT } from './ai-matching-access'
 import { historyDate, historyTitle } from './history-view'
 import { loadTurns, saveTurns, type StorageLike } from './turn-store'
 import { conciseExplanation, perGuest, recommendationCardView } from './card-view'
+import { additionalSuggestionPrompt } from './suggestion-prompt'
 import { useAgencySession } from './agency-name'
 import { ArrowUp, Check, ChevronDown, ChevronRight, MessageSquare, Plus, Sparkles } from 'lucide-react'
 import CoverImage from '../explore/v3/CoverImage'
@@ -376,7 +377,7 @@ export default function AiMatchingScreen() {
                 {/* Result cards (v2 of PR #286): image, heading, facts, why, highlights, price, then Chat / schedule / quote */}
                 {msg.recommendations && msg.recommendations.length > 0 && (
                   <div id="recommendations-container" className="aim__cards">
-                    {[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => {
+                    {msg.recommendations.map((rec) => {
                       const view = cardOf(rec)
                       const tags = rec.card?.tags ?? view.tags
                       const metadata = tags.filter((tag: string) =>
@@ -386,9 +387,7 @@ export default function AiMatchingScreen() {
                       const quoteStatus = chatStatus[rec.experience_id]
                       const providerStatus = chatStatus[rec.provider_id]
                       return (
-                        <React.Fragment key={rec.experience_id}>
-                        {index === msg.recommendations!.length && <h4 className="aim__more">Gợi ý thêm</h4>}
-                        <article className="v3-card aim__card">
+                        <article key={rec.experience_id} className="v3-card aim__card">
                           {rec.card && (
                             <Link href={view.href} className="aim__card-media" tabIndex={-1} aria-hidden="true">
                               <CoverImage image={rec.card.image} alt="" sizes={RESULT_SIZES} priority="lazy" />
@@ -483,10 +482,30 @@ export default function AiMatchingScreen() {
                             )}
                           </div>
                         </article>
-                        </React.Fragment>
                       )
                     })}
                   </div>
+                )}
+                {/* "Gợi ý thêm": choosing one sends a follow-up question through the composer path (additionalSuggestionPrompt) */}
+                {msg.additionalSuggestions && msg.additionalSuggestions.length > 0 && (
+                  <section className="aim__suggestions" aria-label="Gợi ý thêm">
+                    <h4>Gợi ý thêm</h4>
+                    <ul>
+                      {msg.additionalSuggestions.map((rec) => (
+                        <li key={rec.experience_id}>
+                          <button
+                            type="button"
+                            className="aim__suggestion"
+                            onClick={() => handleSendMessage(additionalSuggestionPrompt(rec))}
+                            disabled={loading}
+                          >
+                            <span>{rec.experience_name || 'Trải nghiệm được gợi ý'}{rec.village_name ? ` · ${rec.village_name}` : ''}</span>
+                            <ChevronRight aria-hidden="true" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
                 )}
               </div>
             </div>

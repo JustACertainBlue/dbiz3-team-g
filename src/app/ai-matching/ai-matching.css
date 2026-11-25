@@ -27,7 +27,6 @@ body:has(.aim) .hab-nav { position: sticky; top: 0; }
 .aim__clar strong { display: block; margin-bottom: 6px; font: 700 15px/22px var(--font-body); color: var(--c-primary-dark); }
 .aim__clar ul { margin: 0; padding-left: 18px; font: 400 15px/22px var(--font-body); }
 .aim__cards { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
-.aim__more { margin: 10px 0 0; font: 700 16px/24px var(--font-body); color: var(--c-text-3); }
 .aim__score { flex: none; padding: 3px 8px; border-radius: 4px; background: var(--c-surface-green); color: var(--c-success); font: 700 14px/20px var(--font-body); white-space: nowrap; }
 .aim__rank { font: 700 14px/20px var(--font-body); color: var(--c-accent); }
 .aim__why { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 12px; background: var(--c-surface-green); border-radius: 6px; font: 400 15px/22px var(--font-body); color: var(--c-primary-dark); }
@@ -132,6 +131,16 @@ body:has(.aim) .hab-nav { position: sticky; top: 0; }
 .aim__card-action { min-width: 0; min-height: 44px; padding: 6px 10px; font-size: 14px; line-height: 19px; text-align: center; white-space: normal; }
 .aim__card-action svg { flex: none; width: 17px; height: 17px; }
 .aim__status { overflow-wrap: anywhere; }
+
+.aim__suggestions { margin-top: 16px; }
+.aim__suggestions h4 { margin: 0 0 5px; color: var(--c-text-3); font: 700 14px/20px var(--font-body); }
+.aim__suggestions ul { list-style: none; }
+.aim__suggestion { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--c-border-soft); background: transparent; color: var(--c-primary); font: 500 15px/21px var(--font-body); text-align: left; cursor: pointer; }
+.aim__suggestion:hover:not(:disabled) { color: var(--c-primary-dark); background: var(--c-surface-green); }
+.aim__suggestion:disabled { cursor: wait; opacity: .65; }
+.aim__suggestion span { min-width: 0; overflow-wrap: anywhere; }
+.aim__suggestion svg { flex: none; width: 18px; height: 18px; }
+.aim__suggestion:focus-visible { outline: 3px solid var(--c-primary-dark); outline-offset: 2px; }
 
 @media (max-width: 767px) {
   .aim__card-media { aspect-ratio: 16 / 7; max-height: 160px; }

@@ -26,12 +26,25 @@ describe('#188 | AIT121 shows additional suggestions (FR-008)', () => {
     expect(matchResultsView({ top_matches: [item(1)] }).additional).toEqual([])
   })
 
-  it('the page keeps them on the message and renders them under "Gợi ý thêm" with the same card actions', () => {
+  it('the page renders full cards only for top matches and the additional ones as text actions under "Gợi ý thêm"', () => {
     const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
     expect(page).toContain('const { top: topMatches, additional } = matchResultsView(result.body)')
     expect(page).toContain('additionalSuggestions: additional,')
-    expect(page).toContain('[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (')
+    expect(page).toContain('msg.recommendations.map((rec) => {')
+    expect(page).toContain('msg.additionalSuggestions.map((rec) => (')
+    expect(page).not.toContain('[...msg.recommendations, ...(msg.additionalSuggestions ?? [])]')
     expect(page).toContain('Gợi ý thêm')
+  })
+
+  it('choosing one sends its prompt through the composer path (same send function, same user bubble, disabled while busy)', () => {
+    const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
+    expect(page).toContain("import { additionalSuggestionPrompt } from './suggestion-prompt'")
+    expect(page).toMatch(/onClick=\{\(\) => handleSendMessage\(additionalSuggestionPrompt\(rec\)\)\}/)
+    expect(page).toMatch(/className="aim__suggestion"[\s\S]{0,200}disabled=\{loading\}/)
+    // The composer's own send path: it adds the Agency bubble, then analyzes through the same API call as typed text.
+    expect(page).toMatch(/const handleSendMessage = async \(customPrompt\?: string\)/)
+    expect(page).toContain("await analyze({ sender: 'Agency', text: textToSend })")
+    expect(page).toContain("if (!customPrompt) setInputText('')")
   })
 })
 

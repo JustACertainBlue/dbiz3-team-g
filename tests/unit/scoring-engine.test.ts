@@ -86,19 +86,43 @@ describe('T037 | Craft match by craft_type (FR-007, BR-006, #26, #32)', () => {
   it('silk: Quất Động (Silk/Textile) gets the same craft fit as Vạn Phúc', async () => {
     const vanPhuc = await scoreCandidate(exp('Dệt lụa truyền thống', 'Vạn Phúc', 'Silk/Textile'), withCraft('silk'))
     const quatDong = await scoreCandidate(exp('Thêu họa tiết', 'Quất Động', 'Silk/Textile'), withCraft('silk'))
-    expect(quatDong.experience_fit_score).toBe(vanPhuc.experience_fit_score)
+    expect(vanPhuc.experience_fit_score).toBe(100)
+    expect(quatDong.experience_fit_score).toBe(100)
   })
 
   it('silk: an Experience with no craft keyword in its name or village still matches by craft_type', async () => {
     const plain = await scoreCandidate(exp('Workshop A', 'Làng X', 'Silk/Textile'), withCraft('silk'))
     const other = await scoreCandidate(exp('Workshop B', 'Làng Y', 'Ceramics'), withCraft('silk'))
-    expect(plain.experience_fit_score).toBeGreaterThan(other.experience_fit_score)
+    expect(plain.experience_fit_score).toBe(100)
+    expect(other.experience_fit_score).toBe(65)
   })
 
-  it.each(['conical hat', 'bamboo'])('%s: Chuông and Phú Vinh (both Other) get the same craft fit (#32 limitation)', async value => {
-    const chuong = await scoreCandidate(exp('Làm nón lá', 'Chuông', 'Other'), withCraft(value))
-    const phuVinh = await scoreCandidate(exp('Đan mây tre', 'Phú Vinh', 'Other'), withCraft(value))
-    expect(chuong.experience_fit_score).toBe(phuVinh.experience_fit_score)
+  it('distinguishes conical-hat and bamboo experiences by their craft tags', async () => {
+    const chuong = await scoreCandidate({ ...exp('Workshop A', 'Làng X', 'Other'), tags: ['làm nón'] }, withCraft('conical hat'))
+    const phuVinh = await scoreCandidate({ ...exp('Workshop B', 'Làng Y', 'Other'), tags: ['mây tre đan'] }, withCraft('bamboo'))
+    const wrongCraftForHat = await scoreCandidate({ ...exp('Workshop C', 'Làng Z', 'Other'), tags: ['mây tre đan'] }, withCraft('conical hat'))
+    const wrongCraftForBamboo = await scoreCandidate({ ...exp('Workshop D', 'Làng W', 'Other'), tags: ['làm nón'] }, withCraft('bamboo'))
+
+    expect(chuong.experience_fit_score).toBe(100)
+    expect(phuVinh.experience_fit_score).toBe(100)
+    expect(wrongCraftForHat.experience_fit_score).toBe(65)
+    expect(wrongCraftForBamboo.experience_fit_score).toBe(65)
+  })
+
+  it('keeps the #32 Other fallback when no informative craft tag is available', async () => {
+    const hat = await scoreCandidate({ ...exp('Workshop A', 'Làng X', 'Other'), tags: ['traditional craft'] }, withCraft('conical hat'))
+    const bamboo = await scoreCandidate(exp('Workshop B', 'Làng Y', 'Other'), withCraft('bamboo'))
+
+    expect(hat.experience_fit_score).toBe(100)
+    expect(bamboo.experience_fit_score).toBe(100)
+  })
+
+  it('handles missing tags without throwing and does not match a different craft_type', async () => {
+    const noTags = await scoreCandidate(exp('Workshop A', 'Làng X', 'Other'), withCraft('conical hat'))
+    const wrongType = await scoreCandidate({ ...exp('Workshop B', 'Làng Y', 'Ceramics'), tags: ['làm nón'] }, withCraft('conical hat'))
+
+    expect(noTags.experience_fit_score).toBe(100)
+    expect(wrongType.experience_fit_score).toBe(65)
   })
 
   it('no craft preference: no candidate gets a craft-match bonus', async () => {

@@ -15,6 +15,7 @@ interface CraftEntry {
   label: string
   craftType: CraftType
   keywords: string[]
+  tagKeywords?: string[]
 }
 
 // Order matters only when one message names several crafts: the first entry wins.
@@ -26,8 +27,8 @@ const CRAFTS: CraftEntry[] = [
   { preference: 'food', label: 'food and cooking', craftType: 'Food/Culinary', keywords: ['culinary', 'cooking', 'food', 'ẩm thực', 'am thuc', 'cự đà', 'cu da'] },
   { preference: 'metalwork', label: 'metalwork', craftType: 'Metalwork', keywords: ['metal', 'bronze', 'đúc đồng', 'duc dong', 'đồ đồng', 'do dong', 'đúc', 'duc', 'định công', 'dinh cong', 'ngũ xã', 'ngu xa'] },
   { preference: 'painting', label: 'lacquer and painting', craftType: 'Paper/Painting', keywords: ['lacquer', 'painting', 'paper', 'sơn mài', 'son mai', 'tranh', 'hạ thái', 'ha thai', 'điệp', 'diep'] },
-  { preference: 'conical hat', label: 'conical hat making', craftType: 'Other', keywords: ['conical hat', 'nón', 'non', 'chuông', 'chuong'] },
-  { preference: 'bamboo', label: 'bamboo and rattan weaving', craftType: 'Other', keywords: ['bamboo', 'rattan', 'mây', 'may', 'tre', 'phú vinh', 'phu vinh'] },
+  { preference: 'conical hat', label: 'conical hat making', craftType: 'Other', keywords: ['conical hat', 'nón', 'non', 'chuông', 'chuong'], tagKeywords: ['conical hat', 'nón', 'non'] },
+  { preference: 'bamboo', label: 'bamboo and rattan weaving', craftType: 'Other', keywords: ['bamboo', 'rattan', 'mây', 'may', 'tre', 'phú vinh', 'phu vinh'], tagKeywords: ['bamboo', 'rattan', 'mây', 'may', 'tre'] },
 ]
 
 const EXPERIENCE_TYPES: { category: string; keywords: string[] }[] = [
@@ -84,34 +85,22 @@ export function craftTypeForPreference(preference: string): CraftType | undefine
 
 export function matchesCraftPreference(
   preference: string,
-  candidate: { craft_type?: string | null; name?: string; experience_name?: string; village_name?: string; provider_name?: string }
+  candidate: { craft_type?: string | null; tags?: string[] | null }
 ): boolean {
-  const expectedType = craftTypeForPreference(preference)
+  const normalizedPreference = preference.toLowerCase()
+  const expectedType = craftTypeForPreference(normalizedPreference)
   if (!expectedType || candidate.craft_type !== expectedType) return false
+  if (expectedType !== 'Other') return true
 
-  const text = [
-    candidate.name,
-    candidate.experience_name,
-    candidate.village_name,
-    candidate.provider_name,
-  ].filter(Boolean).join(' ')
+  const tags = Array.isArray(candidate.tags) ? candidate.tags : []
+  const informativePreferences = CRAFTS.filter(entry =>
+    entry.craftType === 'Other'
+    && entry.tagKeywords?.some(keyword => tags.some(tag => hasWord(tag, keyword)))
+  )
 
-  if (preference === 'silk') {
-    return ['silk', 'lụa', 'vạn phúc', 'nha xá'].some(term => hasWord(text, term))
-      && !['thêu', 'embroidery', 'quất động'].some(term => hasWord(text, term))
-  }
-  if (preference === 'embroidery') {
-    return ['thêu', 'embroidery', 'quất động'].some(term => hasWord(text, term))
-  }
-  if (preference === 'conical hat') {
-    return ['nón', 'conical hat', 'chuông'].some(term => hasWord(text, term))
-      && !['mây', 'tre', 'bamboo', 'rattan', 'phú vinh'].some(term => hasWord(text, term))
-  }
-  if (preference === 'bamboo') {
-    return ['mây', 'tre', 'bamboo', 'rattan', 'phú vinh'].some(term => hasWord(text, term))
-  }
-
-  return true
+  // §10 #32 treats Other as a shared fallback only when tags cannot identify its craft.
+  return informativePreferences.length === 0
+    || informativePreferences.some(entry => entry.preference === normalizedPreference)
 }
 
 export function craftLabel(preference: string): string {

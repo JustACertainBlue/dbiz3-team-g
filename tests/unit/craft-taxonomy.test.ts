@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { craftTypeForPreference, detectCraftPreference } from '@/lib/matching/craft-taxonomy'
+import { craftTypeForPreference, detectCraftPreference, matchesCraftPreference } from '@/lib/matching/craft-taxonomy'
 
 // T037 (Round 3, D5): every keyword of spec #32 maps to its Provider craft_type.
 const MAPPING: Record<string, string[]> = {
@@ -29,5 +29,24 @@ describe('T037 | #32 craft preference → craft_type', () => {
 describe('#37 | "đồng" alone is the currency, not a craft', () => {
   it.each(['budget 500.000 đồng per person', 'đồng'])('"%s" → no preference', text => {
     expect(detectCraftPreference(text)).toBeUndefined()
+  })
+})
+
+describe('craft preference matching', () => {
+  it('accepts an exact specific craft_type without requiring candidate names', () => {
+    expect(matchesCraftPreference('silk', { craft_type: 'Silk/Textile' })).toBe(true)
+  })
+
+  it('uses informative tags to distinguish generic Other craft types', () => {
+    expect(matchesCraftPreference('conical hat', { craft_type: 'Other', tags: ['làm nón'] })).toBe(true)
+    expect(matchesCraftPreference('bamboo', { craft_type: 'Other', tags: ['mây tre đan'] })).toBe(true)
+    expect(matchesCraftPreference('conical hat', { craft_type: 'Other', tags: ['mây tre đan'] })).toBe(false)
+    expect(matchesCraftPreference('bamboo', { craft_type: 'Other', tags: ['làm nón'] })).toBe(false)
+  })
+
+  it('preserves the #32 Other fallback when tags are missing or uninformative', () => {
+    expect(matchesCraftPreference('conical hat', { craft_type: 'Other' })).toBe(true)
+    expect(matchesCraftPreference('bamboo', { craft_type: 'Other', tags: ['traditional craft'] })).toBe(true)
+    expect(matchesCraftPreference('conical hat', { craft_type: 'Ceramics' })).toBe(false)
   })
 })

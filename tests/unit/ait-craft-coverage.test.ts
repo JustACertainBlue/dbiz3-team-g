@@ -1,7 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { runAitMatchingPipeline, prioritizeCraftCoverage } from '@/lib/ait/matching-pipeline'
 
-function candidate(id: string, craftType: string, name: string) {
+interface CraftCandidate {
+  experience_id: string
+  provider_id: string
+  name: string
+  experience_name: string
+  village_name: string
+  craft_type: string
+  experience_type: string
+  category: string
+  price_per_person: number
+  max_participants: number
+  provider_status: string
+  provider_verification_status: string
+  has_published_profile_version: boolean
+  tags?: string[]
+}
+
+function candidate(id: string, craftType: string, name: string): CraftCandidate {
   return {
     experience_id: id,
     provider_id: `provider-${id}`,
@@ -19,7 +36,7 @@ function candidate(id: string, craftType: string, name: string) {
   }
 }
 
-async function match(candidates: ReturnType<typeof candidate>[], crafts: string[]) {
+async function match(candidates: CraftCandidate[], crafts: string[]) {
   return runAitMatchingPipeline({
     candidates,
     profile: {
@@ -31,6 +48,26 @@ async function match(candidates: ReturnType<typeof candidate>[], crafts: string[
 }
 
 describe('AIT top-five craft coverage', () => {
+  it('uses detailed tags to avoid covering the wrong Other craft preference', async () => {
+    const result = await match([
+      { ...candidate('hat', 'Other', 'Workshop A'), tags: ['làm nón'] },
+      { ...candidate('bamboo', 'Other', 'Workshop B'), tags: ['mây tre đan'] },
+    ], ['conical hat'])
+
+    const hat = result.rankedCandidates.find(item => item.experience_id === 'hat')
+    expect(hat?.match_factors.craft?.matched).toBe(true)
+    expect(result.eligibleCandidates.map(item => item.experience_id)).toEqual(['hat'])
+    expect(result.rejected).toContainEqual({ id: 'bamboo', reason: 'craft_preference' })
+  })
+
+  it('retains the #32 fallback for Other candidates without informative tags', async () => {
+    const result = await match([
+      candidate('other', 'Other', 'Workshop A'),
+    ], ['conical hat', 'bamboo'])
+
+    expect(result.rankedCandidates[0].match_factors.craft?.matched).toBe(true)
+  })
+
   it('includes at least one ranked result for each requested craft when both are available', async () => {
     const result = await match([
       candidate('pottery-1', 'Ceramics', 'Bat Trang pottery'),

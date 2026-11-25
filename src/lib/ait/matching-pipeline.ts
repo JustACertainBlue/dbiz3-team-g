@@ -310,10 +310,7 @@ export async function runAitMatchingPipeline({
       craft: craftAttributes.length ? (() => {
         const matchedAttribute = craftAttributes.find((attribute: any) => matchesCraftPreference(attribute.value, {
           craft_type: candidate.craft_type,
-          name: candidate.name,
-          experience_name: candidate.experience_name,
-          village_name: candidate.village_name,
-          provider_name: candidate.provider_name,
+          tags: candidate.tags,
         }))
         const attribute = matchedAttribute ?? craftAttributes[0]
         return {
@@ -344,10 +341,7 @@ export async function runAitMatchingPipeline({
     candidate => candidate.experience_id,
     (candidate, craft) => matchesCraftPreference(craft, {
       craft_type: candidate.craft_type,
-      name: candidate.name,
-      experience_name: candidate.experience_name,
-      village_name: candidate.village_name,
-      provider_name: candidate.provider_name,
+      tags: candidate.tags,
     }),
   )
   const candidatesById = new Map(prioritizedCandidates.map((candidate) => [candidate.experience_id, candidate]))

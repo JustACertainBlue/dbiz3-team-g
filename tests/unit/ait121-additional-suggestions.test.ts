@@ -2,7 +2,7 @@
  * Issue #188 — AIT121 AI Tour Matching.
  * - spec-AIT FR-008 (`docs/spec/specs/spec-AIT.md:239`, Must): "Generate and display the highest-ranked Experience
  *   recommendations and additional suitable suggestions"; §5.1 (:260) `additional_suggestions (Array<Object>; Optional —
- *   up to 5 additional eligible Experiences after the Top 5)`. The API already returns them; the screen must show them.
+ *   up to 5 additional eligible Experiences after the Top 5)`. The API already returns them; the screen shows them as text actions.
  * - screen-spec-AIT121 §3 #1 heading "AI Tour Matching": the page renders inside the shared app shell, so its own
  *   "Hanoi Artisan Bridge" top bar (a second header over the shell) and the fixed 100vh frame are removed.
  */
@@ -26,12 +26,16 @@ describe('#188 | AIT121 shows additional suggestions (FR-008)', () => {
     expect(matchResultsView({ top_matches: [item(1)] }).additional).toEqual([])
   })
 
-  it('the page keeps them on the message and renders them under "Gợi ý thêm" with the same card actions', () => {
+  it('the page renders full cards only for top matches and text-only suggestions separately', () => {
     const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
     expect(page).toContain('const { top: topMatches, additional } = matchResultsView(result.body)')
     expect(page).toContain('additionalSuggestions: additional,')
-    expect(page).toContain('[...msg.recommendations, ...(msg.additionalSuggestions ?? [])].map((rec, index) => (')
+    expect(page).toContain('msg.recommendations.map((rec) => {')
+    expect(page).toContain('msg.additionalSuggestions.map((rec) => (')
     expect(page).toContain('Gợi ý thêm')
+    expect(page).toContain('additionalSuggestionPrompt(rec)')
+    expect(page).toMatch(/onClick=\{\(\) => handleSendMessage\(additionalSuggestionPrompt\(rec\)\)\}/)
+    expect(page).not.toContain('[...msg.recommendations, ...(msg.additionalSuggestions ?? [])]')
   })
 })
 

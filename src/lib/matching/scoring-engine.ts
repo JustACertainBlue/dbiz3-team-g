@@ -63,8 +63,7 @@ export async function scoreCandidate(
   const expName = (candidate.name || candidate.experience_name || '').toLowerCase()
   const wantedCraftType = craftAttr ? craftTypeForPreference(craftAttr) : undefined
   const matchingCraft = craftAttrs.find((attribute: any) => matchesCraftPreference(attribute.value, {
-    craft_type: candidate.craft_type, name: candidate.name, experience_name: candidate.experience_name,
-    village_name: candidate.village_name, provider_name: candidate.provider_name,
+    craft_type: candidate.craft_type, tags: candidate.tags,
   }))
   const craftMatched = Boolean(matchingCraft)
   const matchedCraftType = matchingCraft ? craftTypeForPreference(matchingCraft.value) : wantedCraftType

@@ -8,7 +8,7 @@ body { background: var(--c-white); color: var(--c-text); }
 
 /* ---- Bar (png/01, 21, 29: #0F3D2A; png/38: #1F2A25). Full width; content padded to the 1100 px frame by --gx. ---- */
 .hab-nav {
-  position: relative; z-index: 1000; min-height: var(--nav-h); padding: 10px var(--gx); display: flex; align-items: center; gap: 8px;
+  position: sticky; top: 0; z-index: 1000; min-height: var(--nav-h); padding: 10px var(--gx); display: flex; align-items: center; gap: 8px;
   color: var(--c-white); font-family: var(--font-body);
 }
 .hab-nav--green { background: var(--c-primary-dark); }

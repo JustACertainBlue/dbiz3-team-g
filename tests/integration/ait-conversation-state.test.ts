@@ -414,15 +414,15 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
 
   it('T2: updates the craft preference to the latest choice across repeated changes', async () => {
     const sessionId = await openSession()
-    const choices = [
-      ['Tìm trải nghiệm làm gốm', 'pottery', 'Nặn gốm thủ công'],
-      ['Đổi sang dệt lụa', 'silk', 'Dệt lụa truyền thống'],
-      ['Đổi sang nón lá', 'conical hat', 'Làm nón lá'],
-      ['Đổi sang gốm', 'pottery', 'Nặn gốm thủ công'],
+    const choices: [string, string, string[]][] = [
+      ['Tìm trải nghiệm làm gốm', 'pottery', ['Nặn gốm thủ công']],
+      ['Đổi sang dệt lụa', 'silk', ['Thêu họa tiết', 'Dệt lụa truyền thống']],
+      ['Đổi sang nón lá', 'conical hat', ['Làm nón lá']],
+      ['Đổi sang gốm', 'pottery', ['Nặn gốm thủ công']],
     ]
     const extraction = vi.spyOn(extractor, 'extractTourContext')
 
-    for (const [text, expectedCraft, expectedExperience] of choices) {
+    for (const [text, expectedCraft, expectedExperiences] of choices) {
       extraction.mockResolvedValueOnce({
         is_complete: true,
         processing_status: 'Success',
@@ -447,7 +447,9 @@ describe('AIT multi-turn state, pending questions and scope regressions', () => 
       expect((await getContext(sessionId)).state.craft).toBe(expectedCraft)
       expect(response.json.turn.turn_type).toBe('results')
       expect(response.json.turn.message).toContain('Đang lọc:')
-      expect(cards.map((card: Json) => card.experience_name)).toEqual([expectedExperience])
+      const experienceNames = cards.map((card: Json) => card.experience_name)
+      expect(experienceNames).toHaveLength(expectedExperiences.length)
+      expect(experienceNames).toEqual(expect.arrayContaining(expectedExperiences))
     }
   })
 

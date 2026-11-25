@@ -214,9 +214,10 @@ describe('Round 3 route-level checks for D6, D5, D4, D2 (#23, #24, #25, #29, #34
     expect(workshop.json.tour_preference_profile).not.toBeNull()
   })
 
-  it('T037: the Silk demo keeps Vạn Phúc #1 with craft matching by craft_type', async () => {
+  it('T037: the Silk demo matches all candidates with the published Silk/Textile craft_type', async () => {
     const result = await turn(await openSession(), `Silk weaving, 10 pax on ${futureDate()} from Hoàn Kiếm`)
-    expect(result.matching!.top_matches[0].village_name).toBe('Vạn Phúc')
+    expect(result.matching!.top_matches.map((match: Json) => match.village_name))
+      .toEqual(expect.arrayContaining(['Vạn Phúc', 'Quất Động']))
   })
 
   it('T039: explanations name only evaluated factors; no craft the Agency did not ask for', async () => {

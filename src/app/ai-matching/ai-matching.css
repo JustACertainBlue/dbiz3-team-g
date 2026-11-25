@@ -98,3 +98,77 @@
   .aim__dock .aim__comp textarea { flex: 1; min-width: 0; min-height: 28px; max-height: 160px; padding: 8px 0; font-size: 16px; line-height: 24px; }
   .aim__dock .aim__send { margin-left: 0; flex: none; }
 }
+
+/* Screen 22 keeps the shared header outside its two independent scroll regions. */
+.aim { height: calc(100dvh - var(--nav-h)); min-height: 0; overflow: hidden; }
+.aim__side { display: flex; min-height: 0; flex-direction: column; overflow: hidden; }
+.aim__pane { min-height: 0; overflow: hidden; }
+.aim__hist { flex: 1; }
+.aim__stream { min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.aim__dock { position: relative; flex: none; bottom: auto; padding: 12px 0; border-top: 1px solid var(--c-border-soft); background: var(--c-white); }
+.aim__empty { min-height: 0; overflow-y: auto; }
+
+.aim__card { display: flex; flex-direction: column; gap: 0; padding: 0; overflow: hidden; border-radius: 12px; }
+.aim__card-media { display: block; width: 100%; max-height: 180px; aspect-ratio: 16 / 6; overflow: hidden; background: var(--c-ghost); }
+.aim__card-main { display: flex; min-width: 0; flex-direction: column; gap: 12px; padding: 16px 18px; }
+.aim__card-heading { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.aim__card-title { font-size: 22px; line-height: 29px; overflow-wrap: anywhere; }
+.aim__card-title a { color: var(--c-primary-dark); }
+.aim__card-location { margin: 0; overflow-wrap: anywhere; }
+.aim__card-craft { flex: none; align-self: flex-start; padding: 0; border: 0; color: var(--c-accent); font-size: 14px; line-height: 20px; letter-spacing: 0; text-transform: none; }
+.aim__card-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; list-style: none; color: var(--c-text-2); font: 500 14px/20px var(--font-body); }
+.aim__card-meta li + li::before { content: "·"; margin-right: 18px; color: var(--c-muted); }
+.aim__why { display: block; padding: 0; background: transparent; color: var(--c-text-2); font-size: 15px; line-height: 22px; }
+.aim__why b { color: var(--c-primary-dark); }
+.aim__card-highlights h4 { margin: 0 0 5px; font: 700 15px/21px var(--font-body); color: var(--c-text); }
+.aim__card-highlights .v3-ben { gap: 3px; }
+.aim__card-highlights .v3-ben li { font-size: 15px; line-height: 21px; }
+.aim__card-price { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 16px; padding-top: 10px; border-top: 1px solid var(--c-border-soft); }
+.aim__price-primary, .aim__price-details { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.aim__price-primary { flex: 1 1 auto; }
+.aim__price-total { white-space: nowrap; }
+.aim__price-perguest, .aim__price-guests, .aim__price-label { color: var(--c-text-3); font: 500 14px/20px var(--font-body); }
+.aim__price-guests { font-variant-numeric: tabular-nums; }
+.aim__card .v3r__total { font-size: 24px; line-height: 30px; white-space: normal; }
+.aim__price-details { gap: 4px 10px; }
+.aim__card .v3r__old { font-size: 14px; line-height: 20px; }
+.aim__card .v3r__disc { padding: 0; background: transparent; color: var(--c-success); font-size: 14px; line-height: 20px; white-space: normal; }
+.aim__card .v3r__nodisc, .aim__included { color: var(--c-text-3); font: 400 14px/20px var(--font-body); }
+.aim__card-footer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.aim__card-action { min-width: 0; min-height: 44px; padding: 6px 10px; font-size: 14px; line-height: 19px; text-align: center; white-space: normal; }
+.aim__card-action svg { flex: none; width: 17px; height: 17px; }
+.aim__status { overflow-wrap: anywhere; }
+
+.aim__suggestions { margin-top: 16px; }
+.aim__suggestions h4 { margin: 0 0 5px; color: var(--c-text-3); font: 700 14px/20px var(--font-body); }
+.aim__suggestions ul { list-style: none; }
+.aim__suggestion { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--c-border-soft); background: transparent; color: var(--c-primary); font: 500 15px/21px var(--font-body); text-align: left; cursor: pointer; }
+.aim__suggestion:hover:not(:disabled) { color: var(--c-primary-dark); background: var(--c-surface-green); }
+.aim__suggestion:disabled { cursor: wait; opacity: .65; }
+.aim__suggestion span { min-width: 0; overflow-wrap: anywhere; }
+.aim__suggestion svg { flex: none; width: 18px; height: 18px; }
+.aim__suggestion:focus-visible { outline: 3px solid var(--c-primary-dark); outline-offset: 2px; }
+
+@media (min-width: 900px) {
+  .aim__side { position: static; align-self: stretch; height: auto; }
+}
+
+@media (max-width: 899px) {
+  .aim { height: calc(100dvh - var(--nav-h)); min-height: 0; flex-direction: column; }
+  .aim__side { flex: none; height: clamp(112px, 20vh, 156px); padding: 8px 12px; }
+  .aim__new { min-height: 36px; padding: 7px 10px; font-size: 14px; }
+  .aim__shead { flex: none; margin: 3px 8px; font-size: 13px; }
+  .aim__pane { flex: 1; }
+  .aim__col { padding-right: 16px; padding-left: 16px; }
+}
+
+@media (max-width: 767px) {
+  .aim__card-media { aspect-ratio: 16 / 7; max-height: 160px; }
+  .aim__card-main { gap: 10px; padding: 12px; }
+  .aim__card-title { font-size: 20px; line-height: 26px; }
+  .aim__card-footer { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .aim__card-action { gap: 5px; padding-right: 5px; padding-left: 5px; font-size: 13px; line-height: 17px; }
+  .aim__card-action:last-child { grid-column: 1 / -1; }
+  .aim__card-price { gap: 4px 10px; }
+  .aim__price-primary, .aim__price-details { gap: 3px 8px; }
+}

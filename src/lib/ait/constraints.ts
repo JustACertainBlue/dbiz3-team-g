@@ -101,10 +101,7 @@ export function applyHardFilters({
     )
     if (includedCrafts.length > 0 && !includedCrafts.some((attr: any) => matchesCraftPreference(attr.value, {
       craft_type: candidate.craft_type ?? candidate.craft,
-      name: candidate.name,
-      experience_name: candidate.experience_name,
-      village_name: candidate.village_name,
-      provider_name: candidate.provider_name,
+      tags: candidate.tags,
     }))) {
       rejected.push({ id: candidate.id, reason: 'craft_preference' });
       continue;

@@ -25,3 +25,11 @@ export function recommendationCardView(rec: Partial<RecommendationView> & Pick<R
 export function perGuest(price: PriceView): number | null {
   return price.kind === 'group' && price.guests > 0 ? Math.round(price.total / price.guests) : null
 }
+
+export function conciseExplanation(explanation: string): string {
+  const sentences = explanation.trim().split(/(?<=\.)\s+(?=\p{Lu})/u)
+  const distinctReasons = sentences.filter(sentence =>
+    !/^(Sức chứa tối đa|\d[\d.,]*đ\/người, trong ngân sách)/i.test(sentence.trim())
+  )
+  return (distinctReasons.length > 0 ? distinctReasons : sentences.slice(0, 1)).join(' ').trim()
+}

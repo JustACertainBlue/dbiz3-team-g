@@ -1,9 +1,6 @@
 /**
- * Screen 22 (AIT121): blocks, order and wording follow hab-mockup-v3 source/GhepTourAI.dc.html.
- * The wording lists below are copied from that file. If the mockup folder is on this machine, they are also checked
- * against it. Accepted differences (human decision): no "Tìm cuộc trò chuyện" in the left rail, quick prompts instead of
- * follow-up chips, no "2 ca liên tiếp" text. 2026-11-21: the three pills (Số khách, Ngày đi, Ngân sách) were removed from the
- * mockup's new-conversation composer, so they are removed here too.
+ * Screen 22 (AIT121): preserve its core content while applying the compact result-card and CTA refinements.
+ * The static wording checks remain aligned with the mockup where the requested UI changes do not replace them.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -14,6 +11,7 @@ const code = (file: string) => readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\
 const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
 const view = code('src/app/ai-matching/matching-view.ts')
 const pageCode = code('src/app/ai-matching/page.tsx')
+const screenCss = readFileSync('src/app/ai-matching/ai-matching.css', 'utf8')
 const mockupFile = join(homedir(), 'Desktop/hab-mockup-v3/source/GhepTourAI.dc.html')
 
 const SIDEBAR = ['Các cuộc ghép tour', 'Cuộc ghép tour mới', 'Gần đây']
@@ -30,8 +28,9 @@ const CHAT_STATE = [
   'Cuộc trò chuyện với AI',
   'Vì sao hợp:',
   'Điểm nổi bật',
-  'Nhắn tin cho xưởng',
+  'Chat',
   'Xem lịch trống',
+  'Xin báo giá',
   'Tin nhắn cho Ghép tour AI',
   'Hỏi thêm hoặc sửa yêu cầu…',
   'Gửi',
@@ -64,12 +63,23 @@ describe('screen 22 follows mockup GhepTourAI.dc.html', () => {
     inOrder(page, ['aim__top', 'AI đã hiểu:', 'aim__stream', 'aim__dock', 'aim__comp'])
   })
 
-  it('card blocks in mockup order: name, village · workshop, craft, tags, why, highlights, price, message, schedule', () => {
-    inOrder(page, ['v3r__media', 'v3r__name', 'v3r__where', 'v3r__craft', 'v3-ftags', 'Vì sao hợp:', 'v3-ben', 'v3r__price', 'v3r__guests', 'v3r__total', 'v3r__old', 'Nhắn tin cho xưởng', 'Xem lịch trống'])
+  it('result cards use the new hierarchy and keep the three actions in the requested order', () => {
+    inOrder(page, ['aim__card-media', 'aim__card-heading', 'v3r__name', 'v3r__where', 'v3r__craft', 'aim__card-meta', 'Vì sao hợp:', 'aim__card-highlights', 'aim__card-price', 'v3r__total', 'aim__price-perguest', 'aim__price-guests', 'v3r__old', 'aim__card-footer', '<span>Chat</span>', 'Xem lịch trống', 'Xin báo giá'])
+    const footer = page.slice(page.indexOf('className="aim__card-footer"'), page.indexOf('</footer>'))
+    inOrder(footer, ['<span>Chat</span>', 'Xem lịch trống', 'Xin báo giá'])
   })
 
-  it('"Yêu cầu báo giá" is not on the card (mockup has no such button)', () => {
-    expect(page).not.toContain('Yêu cầu báo giá')
+  it('keeps the existing quote handoff and does not add a new quotation flow', () => {
+    expect(page).toContain('handleRequestQuote(rec.experience_id)')
+    expect(page).toContain("runHandoff('quote'")
+  })
+
+  it('lets long titles and explanations wrap and renders every available highlight', () => {
+    expect(screenCss).toMatch(/\.aim__card-title\s*\{[^}]*overflow-wrap:\s*anywhere/)
+    expect(screenCss).toMatch(/\.aim__card-location\s*\{[^}]*overflow-wrap:\s*anywhere/)
+    expect(screenCss).not.toMatch(/\.aim__card-title[^}]*line-clamp/)
+    expect(screenCss).not.toMatch(/\.aim__why[^}]*line-clamp/)
+    expect(page).toMatch(/rec\.card\.highlights\.map\(/)
   })
 
   it('no English left in the visible texts of the page and the view', () => {

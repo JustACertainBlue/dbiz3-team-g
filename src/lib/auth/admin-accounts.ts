@@ -13,14 +13,63 @@ async function allowed(session: SessionContext, account: DemoRow) {
 export async function listAccounts(session: SessionContext) {
   if (!session.authenticated || session.role !== 'ADMIN' || !session.permissions.includes('manage_users')) throw new Error('FORBIDDEN')
   const repo = demoRepository()
-  return (await Promise.all((await filterAsync((await repo.all('user_accounts')),async account => (await allowed(session, account)))).map(async account => {
-    const agency = (await repo.find('agency_profiles', row => row.user_id === account.user_id))
-    const provider = (await repo.find('provider_profiles', row => row.user_id === account.user_id))
-    const version = provider && (await repo.find('provider_profile_versions', row => row.provider_id === provider.provider_id && row.version_no === provider.current_version_no))
-    const assignment = (await repo.find('ubnd_village_assignments', row => row.ubnd_user_id === account.user_id))
-    const village = assignment && (await repo.find('villages', row => row.village_id === assignment.village_id))
-    return { user_id: account.user_id, name: account.full_name, email: account.email, role: account.role_code, admin_type: account.admin_type, status: account.account_status, organization: agency?.company_name || version?.business_name || (account.admin_type === 'HDT' ? 'Sở Du lịch Hà Nội' : account.admin_type === 'UBND' ? `UBND — ${village?.name || ''}` : 'Chưa có hồ sơ'), last_login: account.last_login || null, created_date: account.created_at, provider_id: provider?.provider_id, agency_id: agency?.agency_id }
-  })))
+  const tables = await repo.snapshot([
+    'user_accounts',
+    'agency_profiles',
+    'provider_profiles',
+    'provider_profile_versions',
+    'ubnd_village_assignments',
+    'villages',
+  ])
+  const accounts = tables['user_accounts'] ?? []
+  const agencies = tables['agency_profiles'] ?? []
+  const providers = tables['provider_profiles'] ?? []
+  const versions = tables['provider_profile_versions'] ?? []
+  const assignments = tables['ubnd_village_assignments'] ?? []
+  const villages = tables['villages'] ?? []
+
+  const agencyByUserId = new Map<string, DemoRow>()
+  for (const a of agencies) if (a.user_id) agencyByUserId.set(a.user_id, a)
+
+  const providerByUserId = new Map<string, DemoRow>()
+  for (const p of providers) if (p.user_id) providerByUserId.set(p.user_id, p)
+
+  const versionByKey = new Map<string, DemoRow>()
+  for (const v of versions) if (v.provider_id) versionByKey.set(`${v.provider_id}:${v.version_no}`, v)
+
+  const assignmentByUserId = new Map<string, DemoRow>()
+  for (const a of assignments) if (a.ubnd_user_id) assignmentByUserId.set(a.ubnd_user_id, a)
+
+  const villageById = new Map<string, DemoRow>()
+  for (const v of villages) if (v.village_id) villageById.set(v.village_id, v)
+
+  const allowedAccounts = accounts.filter(account => {
+    if (session.adminType === 'HDT') return true
+    if (account.role_code !== 'Local_Provider' || !session.assignedVillageId) return false
+    const provider = providerByUserId.get(account.user_id)
+    return Boolean(provider && provider.village_id === session.assignedVillageId)
+  })
+
+  return allowedAccounts.map(account => {
+    const agency = agencyByUserId.get(account.user_id)
+    const provider = providerByUserId.get(account.user_id)
+    const version = provider ? versionByKey.get(`${provider.provider_id}:${provider.current_version_no}`) : undefined
+    const assignment = assignmentByUserId.get(account.user_id)
+    const village = assignment ? villageById.get(assignment.village_id) : undefined
+    return {
+      user_id: account.user_id,
+      name: account.full_name,
+      email: account.email,
+      role: account.role_code,
+      admin_type: account.admin_type,
+      status: account.account_status,
+      organization: agency?.company_name || version?.business_name || (account.admin_type === 'HDT' ? 'Sở Du lịch Hà Nội' : account.admin_type === 'UBND' ? `UBND — ${village?.name || ''}` : 'Chưa có hồ sơ'),
+      last_login: account.last_login || null,
+      created_date: account.created_at,
+      provider_id: provider?.provider_id,
+      agency_id: agency?.agency_id,
+    }
+  })
 }
 // #160: optional disable reason (spec-AUT FR-022); empty or missing → the default text.
 export async function accountAction(session: SessionContext, userId: string, action: unknown, reason?: unknown) {

@@ -12,10 +12,10 @@ function ArrowControl({ dir, arrow }: { dir: 'prev' | 'next'; arrow?: Arrow }) {
   return <button type="button" className="hab-pager__arrow" aria-label={label} disabled={!arrow?.onClick} onClick={arrow?.onClick}>{icon}</button>
 }
 
-export default function Pagination({ from, to, total, unit, prev, next }: { from: number; to: number; total: number; unit?: string; prev?: Arrow; next?: Arrow }) {
+export default function Pagination({ from, to, total, unit, prev, next, loading }: { from: number; to: number; total: number; unit?: string; prev?: Arrow; next?: Arrow; loading?: boolean }) {
   const range = total === 0 ? '0' : `${from}–${to}`
   return <nav className="hab-pager" aria-label="Phân trang">
-    <p className="hab-pager__text">Hiển thị {range} / {total}{unit ? ` ${unit}` : ''}</p>
-    <div className="hab-pager__arrows"><ArrowControl dir="prev" arrow={prev} /><ArrowControl dir="next" arrow={next} /></div>
+    <p className="hab-pager__text">{loading ? 'Đang tải…' : `Hiển thị ${range} / ${total}${unit ? ` ${unit}` : ''}`}</p>
+    <div className="hab-pager__arrows"><ArrowControl dir="prev" arrow={loading ? undefined : prev} /><ArrowControl dir="next" arrow={loading ? undefined : next} /></div>
   </nav>
 }

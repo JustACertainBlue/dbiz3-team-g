@@ -78,7 +78,7 @@ export default function UsersPage() {
       {!loading && filtered.length === 0 && <p className="av3-empty" style={{ padding: 24 }}>Không có tài khoản phù hợp.</p>}
     </div>
 
-    <Pagination from={(current - 1) * PAGE + 1} to={(current - 1) * PAGE + rows.length} total={filtered.length} unit="tài khoản"
+    <Pagination loading={loading} from={(current - 1) * PAGE + 1} to={(current - 1) * PAGE + rows.length} total={filtered.length} unit="tài khoản"
       prev={current > 1 ? { onClick: () => setPage(current - 1) } : undefined} next={current < pages ? { onClick: () => setPage(current + 1) } : undefined} />
 
     <Modal open={target !== null} onClose={() => setTarget(null)} closeDisabled={busy} tone={turningOff ? 'danger' : 'default'} width={500}

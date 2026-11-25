@@ -59,6 +59,15 @@ describe('ConversationalAiService with fake providers', () => {
       .rejects.toBeInstanceOf(AiServiceUnavailableError)
   })
 
+  it('a model answering with prose twice → AiServiceUnavailableError', async () => {
+    ConversationalAiService.setClients(
+      { isConfigured: () => true, runChat: async () => ({ success: true, text: 'Xin chào!', modelUsed: 'fake' }), fallbackModel: 'f' } as never,
+      { isConfigured: () => false } as never,
+    )
+    await expect(ConversationalAiService.processConversation(turn('10 khách làm gốm'), { now: NOW }))
+      .rejects.toBeInstanceOf(AiServiceUnavailableError)
+  })
+
   it('has no rule-based analysis path and no rule-based mode text', () => {
     expect((ConversationalAiService as unknown as Record<string, unknown>).fallbackAnalysis).toBeUndefined()
     const source = readFileSync('src/lib/ai/llm-service.ts', 'utf8')

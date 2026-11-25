@@ -91,7 +91,7 @@ async function handlePost(
     }
     if (configured) {
       try {
-        const turn = await runLlmTurn(params.id, allMessages)
+        const turn = await runLlmTurn(params.id, allMessages, { isRetry })
         return NextResponse.json({ message, ...turn }, { status: isRetry ? 200 : 201 })
       } catch (error) {
         if (!(error instanceof AiServiceUnavailableError)) throw error

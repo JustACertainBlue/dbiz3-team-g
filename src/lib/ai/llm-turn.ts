@@ -6,6 +6,8 @@ import { applyConversationDelta } from '@/lib/ait/conversation-delta'
 import {
   type AitConversationState,
   applyConversationState,
+  emptyConversationState,
+  sanitizeUnsupportedFollowUpQuestions,
   isCompleteConversationState,
   mergeConversationState,
   missingQuestions,
@@ -14,6 +16,7 @@ import { buildTourPreferenceProfile } from './extractor'
 import { loadConversationState, saveConversationState } from './conversation-store'
 import { ConversationalAiService } from './llm-service'
 import { postCheckReply } from './postcheck'
+import { preCheckTurn } from './turn-validators'
 import { craftLabelVi, craftSuggestionTargets, pastDateNotice } from './turn-guards'
 
 export interface CraftProfile {
@@ -44,11 +47,42 @@ export interface LlmTurn {
  */
 const exclusionsOf = (state: AitConversationState) => ({ villages: state.exclusions.villages, crafts: state.exclusions.crafts })
 
-export async function runLlmTurn(sessionId: string, messages: ConversationMessage[]): Promise<LlmTurn> {
+/** Model reply after the checks: no question about topics the platform does not handle, no leak or booking claim. */
+function finalReply(reply: string): string {
+  const cleaned = sanitizeUnsupportedFollowUpQuestions(reply).trim()
+  return postCheckReply(cleaned || 'Mình đã ghi nhận yêu cầu của đoàn.').message
+}
+
+export async function runLlmTurn(
+  sessionId: string,
+  messages: ConversationMessage[],
+  options: { isRetry?: boolean } = {}
+): Promise<LlmTurn> {
   const now = systemClock
   const userTurns = messages.filter(message => message.sender?.toLowerCase() !== 'assistant')
   const latest = userTurns.at(-1)?.text ?? ''
   const current = await loadConversationState(sessionId)
+
+  // Invalid or unsupported requests are answered here, without calling the model.
+  const pre = options.isRetry ? null : preCheckTurn(latest)
+  if (pre) {
+    if (pre.kind === 'reset') await saveConversationState(sessionId, emptyConversationState())
+    const kept = pre.kind === 'reset' ? emptyConversationState() : current
+    return {
+      extraction: {
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        tour_context: applyConversationState({}, kept),
+        conversational_reply: pre.reply,
+        intent: 'platform_guidance',
+        missing_primary: [],
+      },
+      tour_preference_profile: null,
+      tour_preference_profiles: [],
+    }
+  }
 
   const result = await ConversationalAiService.processConversation(messages, { now, state: current, recentTurns: messages })
 
@@ -62,7 +96,7 @@ export async function runLlmTurn(sessionId: string, messages: ConversationMessag
         retry_available: false,
         follow_up_questions: [],
         tour_context: applyConversationState({}, current),
-        conversational_reply: postCheckReply(result.conversational_reply).message,
+        conversational_reply: finalReply(result.conversational_reply),
         intent: result.intent,
         missing_primary: result.missing_primary,
       },
@@ -110,7 +144,7 @@ export async function runLlmTurn(sessionId: string, messages: ConversationMessag
       retry_available: false,
       follow_up_questions: pastNotice ? ['Bạn muốn đi vào ngày nào?'] : questions,
       tour_context: tourContext,
-      conversational_reply: pastNotice ?? postCheckReply(result.conversational_reply).message,
+      conversational_reply: pastNotice ?? finalReply(result.conversational_reply),
       intent: result.intent,
       missing_primary: result.missing_primary,
     },

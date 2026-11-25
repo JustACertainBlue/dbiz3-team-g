@@ -15,6 +15,7 @@ export type MessageOutcome =
   | { kind: 'clarify'; questions: string[]; reply?: string }
   | { kind: 'match'; profile: unknown; profiles?: CraftProfileView[] }
   | { kind: 'failure'; text: string; retry: 'reanalyze' | 'resend' }
+  | { kind: 'answer'; text: string }
 
 export type HandoffOutcome =
   | { kind: 'success'; navigateTo: string }
@@ -33,6 +34,10 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
   }
   const extraction = result.body?.extraction
   if (!extraction || extraction.processing_status === 'Temporary AI Failure') return AI_FAILURE
+  // A question about the platform is answered in the conversation; it is not a failure and not a match.
+  if (extraction.intent === 'platform_guidance' && typeof extraction.conversational_reply === 'string' && extraction.conversational_reply) {
+    return { kind: 'answer', text: extraction.conversational_reply }
+  }
   const questions: string[] = extraction.follow_up_questions ?? []
   if (!extraction.is_complete) {
     if (questions.length === 0) return AI_FAILURE

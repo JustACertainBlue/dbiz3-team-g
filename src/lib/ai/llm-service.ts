@@ -353,7 +353,12 @@ export class ConversationalAiService {
       // Intent handling: platform guidance vs tour matching
       const rawIntent = parsed.intent || 'tour_matching'
       const isGuidance = rawIntent === 'platform_guidance' || detectedGuidance
-      const hasTourDetails = Object.keys(tourContext).length > 0
+      // Details counted for the intent are the ones in THIS message, not the ones remembered from earlier
+      // turns; otherwise a question about the platform would always look like a tour request.
+      const latestMessage = [...messages].reverse().find(m => m.sender?.toLowerCase() !== 'assistant')
+      const hasTourDetails = parsed.conversation_delta === undefined
+        ? Object.keys(this.mapExtractedToTourContext(parsed.extracted_context, latestMessage ? [latestMessage] : [], now)).length > 0
+        : Object.keys(deltaValidation.accepted).length > 0
       const isPlatformOnlyGuidance = isGuidance && !hasTourDetails
       const hasTourIntent = !isPlatformOnlyGuidance && (rawIntent === 'tour_matching' || rawIntent === 'mixed' || hasTourDetails)
       const waivers = detectWaivers(latestUserMsg)

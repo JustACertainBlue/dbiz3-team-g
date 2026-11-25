@@ -48,6 +48,25 @@ export async function runLlmTurn(sessionId: string, messages: ConversationMessag
 
   const result = await ConversationalAiService.processConversation(messages, { now, state: current, recentTurns: messages })
 
+  // A question about the platform is answered and nothing else: the criteria stay as they are and no
+  // matching runs again.
+  if (result.intent === 'platform_guidance') {
+    return {
+      extraction: {
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        tour_context: applyConversationState({}, current),
+        conversational_reply: result.conversational_reply,
+        intent: result.intent,
+        missing_primary: result.missing_primary,
+      },
+      tour_preference_profile: null,
+      tour_preference_profiles: [],
+    }
+  }
+
   const villages = await loadVillages()
   let state = Object.keys(result.tour_context).length > 0
     ? mergeConversationState(current, latest, result.tour_context, now(), undefined, villages)

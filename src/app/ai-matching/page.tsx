@@ -216,6 +216,8 @@ export default function AiMatchingScreen() {
         } else {
           await fetchMatchingResults(outcome.profile, dateLine, id)
         }
+      } else if (outcome.kind === 'answer') {
+        addAssistant({ text: outcome.text })
       } else {
         addAssistant({ text: outcome.text, retry: outcome.retry, retryText: typeof body.text === 'string' ? body.text : undefined })
       }

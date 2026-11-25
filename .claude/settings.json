@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project --quiet python \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-push.py\""
+            "command": "node .claude/hooks/block-git-push.mjs"
           }
         ]
       }

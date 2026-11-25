@@ -129,13 +129,16 @@ export async function extractTourContext(
 }
 
 export async function buildTourPreferenceProfile(
-  tourContext: TourContext
+  tourContext: TourContext,
+  exclusions?: { villages?: string[]; crafts?: string[] }
 ): Promise<TourPreferenceProfile> {
-  const hardConstraints = {
+  const hardConstraints: TourPreferenceProfile['hard_constraints'] = {
     group_size: tourContext.group_size,
     max_budget_per_person: tourContext.budget?.max_per_person,
     target_date_or_range: tourContext.target_date_or_range,
     origin: tourContext.origin_or_route,
+    ...(exclusions?.villages?.length ? { excluded_village_ids: exclusions.villages } : {}),
+    ...(exclusions?.crafts?.length ? { excluded_crafts: exclusions.crafts } : {}),
   }
 
   const matchingAttributes = (tourContext.experience_types || []).map(type => ({

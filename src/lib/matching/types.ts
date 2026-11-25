@@ -43,6 +43,8 @@ export const HardConstraintsSchema = z.object({
   max_participants: z.number().int().optional(),
   max_budget_per_person: z.number().min(0, 'Budget cannot be negative').optional(),
   budget_per_person: z.number().min(0).optional(),
+  excluded_village_ids: z.array(z.string()).optional(),
+  excluded_crafts: z.array(z.string()).optional(),
   target_date_or_range: TargetDateOrRangeSchema,
   origin: OriginOrRouteSchema,
 })

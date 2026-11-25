@@ -1,3 +1,4 @@
+import { craftTypeForPreference } from '@/lib/matching/craft-taxonomy'
 export interface LocationCoord {
   lat: number
   lng: number
@@ -10,6 +11,9 @@ export interface HardConstraintsInput {
   max_participants?: number
   max_budget_per_person?: number
   budget_per_person?: number
+  /** Villages and crafts the Agency asked to leave out of the result (AIT conversation exclusions). */
+  excluded_village_ids?: string[]
+  excluded_crafts?: string[]
   target_date_or_range?: {
     start_date?: string
     end_date?: string
@@ -81,6 +85,10 @@ export async function applyHardConstraints(
     if (maxBudget !== undefined && c.price_per_person > maxBudget) {
       continue
     }
+
+    // 2b. Villages and crafts the Agency excluded in the conversation
+    if (constraints.excluded_village_ids?.includes(c.village_id)) continue
+    if (constraints.excluded_crafts?.some(craft => craftTypeForPreference(craft) === c.craft_type)) continue
 
     // 3. Route / Distance calculation
     const route = calculateDistance(c.location, constraints.origin)

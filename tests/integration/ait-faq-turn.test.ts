@@ -48,3 +48,18 @@ describe('a platform-guidance question after the tour is complete', () => {
     expect(outcome).toEqual({ kind: 'answer', text: 'Điểm phù hợp tính từ 4 thành phần.' })
   })
 })
+
+describe('exclusions typed in the conversation', () => {
+  beforeEach(() => demoRepository().reset())
+  afterEach(() => restoreRealClients())
+
+  it('"không muốn thêu" ends up in the matching profile', async () => {
+    const id = await newSession()
+    installFakeModel({ extracted_context: { group_size: 10, craft_preference: 'pottery', target_date: '2030-12-10' } })
+    const result = await send(id, 'Đoàn 10 khách muốn làm gốm và dệt lụa, không muốn thêu, ngày 10/12/2030 ngân sách 500k')
+    expect(result.json.extraction.is_complete).toBe(true)
+    for (const item of result.json.tour_preference_profiles) {
+      expect(item.profile.hard_constraints.excluded_crafts).toEqual(['embroidery'])
+    }
+  })
+})

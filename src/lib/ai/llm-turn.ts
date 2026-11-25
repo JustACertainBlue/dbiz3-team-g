@@ -4,6 +4,7 @@ import { systemClock } from '@/lib/booking/clock'
 import { loadVillages } from '@/lib/db/seed-loader'
 import { applyConversationDelta } from '@/lib/ait/conversation-delta'
 import {
+  type AitConversationState,
   applyConversationState,
   isCompleteConversationState,
   mergeConversationState,
@@ -40,6 +41,8 @@ export interface LlmTurn {
  * answer: the caller returns 503 and never falls back to rules. Matching itself is not done here; the
  * profiles returned feed the existing /api/ait/matching pipeline.
  */
+const exclusionsOf = (state: AitConversationState) => ({ villages: state.exclusions.villages, crafts: state.exclusions.crafts })
+
 export async function runLlmTurn(sessionId: string, messages: ConversationMessage[]): Promise<LlmTurn> {
   const now = systemClock
   const userTurns = messages.filter(message => message.sender?.toLowerCase() !== 'assistant')
@@ -94,9 +97,9 @@ export async function runLlmTurn(sessionId: string, messages: ConversationMessag
     for (const craft of craftSuggestionTargets(state)) {
       const context: TourContext = { ...tourContext, craft_preference: craft }
       delete context.craft_preferences
-      profiles.push({ craft, label: craftLabelVi(craft), profile: await buildTourPreferenceProfile(context) })
+      profiles.push({ craft, label: craftLabelVi(craft), profile: await buildTourPreferenceProfile(context, exclusionsOf(state)) })
     }
-    if (profiles.length === 0) profiles.push({ craft: '', label: '', profile: await buildTourPreferenceProfile(tourContext) })
+    if (profiles.length === 0) profiles.push({ craft: '', label: '', profile: await buildTourPreferenceProfile(tourContext, exclusionsOf(state)) })
   }
 
   return {

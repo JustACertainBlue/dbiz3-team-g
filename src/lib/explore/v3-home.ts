@@ -65,6 +65,15 @@ export function cardImage(seed: ExploreSeed, row: Row): ImageRef | null {
   return experienceImage(seed, row.experience.experience_id) ?? villageImage(seed, row.village.village_id)
 }
 
+/**
+ * Village cover to try when the card's own image fails to load in the browser (D2-D4/D27); null when the card already shows
+ * the cover (no own image) or the village has none.
+ */
+export function cardFallbackImage(seed: ExploreSeed, row: Row): ImageRef | null {
+  if (!experienceImage(seed, row.experience.experience_id)) return null
+  return villageImage(seed, row.village.village_id)
+}
+
 /** eligibleRows that can show a card image. Lists, search and AI results use this; detail and booking pages use eligibleRows. */
 export function listableRows(seed: ExploreSeed): Row[] {
   const villageHas = new Map<string, boolean>()
@@ -80,7 +89,7 @@ export const placeLine = (village: CsvRow) => [village.name, village.district, v
 
 export interface CardView {
   id: string; providerId: string; name: string; craft: string; location: string; meta: string
-  highlights: string[]; priceFrom: number; image: ImageRef | null; why: string | null
+  highlights: string[]; priceFrom: number; image: ImageRef | null; fallbackImage?: ImageRef | null; why: string | null
 }
 
 /** Card of 01/21/24: "Giá từ … /khách" is shown to everyone (human decision; group price stays hidden for Guests). */
@@ -91,7 +100,7 @@ export function cardView(seed: ExploreSeed, row: Row, preferenceKeys: string[]):
     craft: rowCraft(version.craft_type, village), location: placeLine(village),
     meta: `${durationLabel(Number(experience.duration_minutes))} · Tối đa ${Number(experience.max_participants)} khách/ca`,
     highlights: parseHighlights(experience.highlights).slice(0, 3).map(item => item.title),
-    priceFrom: Number(experience.price_per_person), image: cardImage(seed, row),
+    priceFrom: Number(experience.price_per_person), image: cardImage(seed, row), fallbackImage: cardFallbackImage(seed, row),
     why: preferenceKeys.length ? whyLine(experience.suitable_for, preferenceKeys) : null,
   }
 }

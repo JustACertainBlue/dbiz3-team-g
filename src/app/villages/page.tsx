@@ -38,7 +38,7 @@ export default async function VillagesPage({ searchParams }: { searchParams: Par
     </nav>
     {list.items.length === 0 && <p className="v3-empty">Chưa có làng nghề đang nhận đoàn.</p>}
     <div className="v3l-grid">{list.items.map((card, index) => <Link key={card.village_id} href={`/village/${card.village_id}`} className="v3-card v3l-card">
-      <CoverImage image={card.image} alt="" sizes={VILLAGE_CARD_SIZES} priority={index === 0 ? 'lcp' : index < 3 ? 'eager' : 'lazy'} className="v3l-card__img" />
+      <CoverImage image={card.image} hideEmpty alt="" sizes={VILLAGE_CARD_SIZES} priority={index === 0 ? 'lcp' : index < 3 ? 'eager' : 'lazy'} className="v3l-card__img" />
       <span className="v3l-card__body">
         <h2 className="v3l-card__name">{card.name}</h2>
         <p className="v3l-card__craft">{[card.craft, card.area].filter(Boolean).join(' · ')}</p>

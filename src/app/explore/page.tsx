@@ -84,7 +84,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
 
     {banner && <section className="hab-band v3x-sec v3x-sec--remind" aria-label="Đặt chỗ đang giữ">
       <div className="v3-remind" role="status">
-        <CoverImage image={banner.image} alt="" sizes={BANNER_SIZES} priority="eager" className="v3-remind__img" />
+        {banner.image && <CoverImage image={banner.image} hideEmpty alt="" sizes={BANNER_SIZES} priority="eager" className="v3-remind__img" />}
         <p className="v3-remind__text"><b>{banner.title}</b><br />{banner.note}</p>
         <Link className="hab-btn hab-btn--primary" href={banner.href}>Thanh toán ngay</Link>
       </div>

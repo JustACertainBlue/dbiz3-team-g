@@ -107,7 +107,7 @@ export default async function ProviderPage({ params, searchParams }: { params: {
     {view.similar.length > 0 && <section className="hab-band v3d-sec" aria-labelledby="v3p-sim">
       <div className="v3-head"><div><h2 id="v3p-sim" className="v3-h2">Trải nghiệm tương tự ở làng khác</h2></div></div>
       <div className="v3p-simgrid">{view.similar.map(card => <Link key={card.id} href={`/explore/experiences/${card.id}`} className="v3-card v3p-sim">
-        <CoverImage image={card.image} alt="" sizes={CARD_SIZES} className="v3p-sim__img" />
+        <CoverImage image={card.image} fallback={card.fallbackImage} hideEmpty alt="" sizes={CARD_SIZES} className="v3p-sim__img" />
         <span className="v3p-sim__body"><span className="v3-craft">{card.craft}</span><b className="v3p-sim__name">{card.name}</b><span className="v3-cap">{[card.location.split(',')[0], card.meta.split(' · ')[0], card.meta.split(' · ')[1]?.replace('Tối đa', 'tối đa').replace('/ca', '')].filter(Boolean).join(' · ')}</span></span>
       </Link>)}</div><div className="v3-more-row"><Link href="/explore/search" className="v3-more">Xem tất cả ›</Link></div>
     </section>}

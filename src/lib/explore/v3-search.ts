@@ -4,7 +4,7 @@
 import type { CsvRow, ExploreSeed, Viewer } from './catalog'
 import { eligibleRows } from './catalog'
 import { calculateAvailability } from './availability'
-import { cardImage, durationLabel, listableRows, placeLine } from './v3-home'
+import { cardFallbackImage, cardImage, durationLabel, listableRows, placeLine } from './v3-home'
 import type { ImageRef } from '../prf/media-urls'
 import { craftLabel, parseDistance, parseHighlights, parseInclusions, rowCraft } from './vocabulary'
 
@@ -86,7 +86,7 @@ export function priceFor(seed: ExploreSeed, experience: CsvRow, guests: number |
 }
 
 export interface ResultView {
-  id: string; name: string; image: ImageRef | null; villageId: string; villageLine: string; providerName: string
+  id: string; name: string; image: ImageRef | null; fallbackImage?: ImageRef | null; villageId: string; villageLine: string; providerName: string
   distance: string; craft: string; tags: string[]; highlights: string[]; included: boolean
   availability: Availability | null; price: PriceView
 }
@@ -97,7 +97,7 @@ export function resultView(seed: ExploreSeed, row: Row, query: Pick<SearchQuery,
   const km = parseDistance(village.distance_km)
   const notice = Number(experience.notice_period_hours)
   return {
-    id: experience.experience_id, name: experience.name, image: cardImage(seed, row),
+    id: experience.experience_id, name: experience.name, image: cardImage(seed, row), fallbackImage: cardFallbackImage(seed, row),
     villageId: village.village_id, villageLine: [village.name, village.district].filter(Boolean).join(', '), providerName: version.business_name,
     distance: km === null ? '' : `Cách trung tâm Hà Nội khoảng ${km.toLocaleString('vi-VN')} km`,
     craft: rowCraft(version.craft_type, village),

@@ -13,7 +13,7 @@ export default function ExperienceCard({ card, showDetailLink, track }: { card: 
   const href = `/explore/experiences/${card.id}`
   const data = track ? { 'data-exp-action': 'click_card', 'data-exp-id': card.id, 'data-provider-id': card.providerId } : {}
   return <article className="v3-card v3-xcard">
-    <CoverImage image={card.image} alt={card.name} sizes={CARD_SIZES} className="v3-xcard__img" />
+    <CoverImage image={card.image} fallback={card.fallbackImage} hideEmpty alt={card.name} sizes={CARD_SIZES} className="v3-xcard__img" />
     <div className="v3-xcard__body">
       {card.craft && <p className="v3-craft">{card.craft}</p>}
       <h3 className="v3-h3"><Link href={href} className="v3-xcard__title" {...data}>{card.name}</Link></h3>

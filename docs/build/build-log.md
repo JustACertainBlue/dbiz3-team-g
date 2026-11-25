@@ -1759,6 +1759,20 @@ The full text of the six drafts stays in git history (last draft commit `e65cfb7
 | Checks | `npm run lint` 0; related vitest files 8 passed (77 tests); `npm run build` passes |
 | Not done | `--apply` on DEV; PROD (evening 22/11 from `dbiz3-prod`: its dry run will stop if PROD has different rows or lacks a listed hash); draft gallery rows are only added, the old ones are removed by the face step |
 
+### Entry 119: 25/11 Claude Code + human — AIT real-AI call path, clean PR replacing #286 (`feat/ait-llm-clean`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Sonnet 5.5); requested by linhkhanh-vu. Branch from `main` 7e72961. #286 (`feat/ait-on-v3`, Nguyễn Thị Minh Thư) carried the whole old branch and could not merge; only the AI call path was rebuilt. Thư is co-author on every commit. No real model API was called; `.env*` not read. |
+| Taken from #286 | Cloudflare and OpenRouter clients, quota manager, llm-service, prompt templates, knowledge base, `src/lib/ait` conversation-state / delta / delta-schema / budget, the `ai_quota_cooldowns` table (one migration `20261125100000`), test `openrouter-fallback` and 5 of 6 in `ait-review-regressions`. |
+| Left out on purpose | `data/*`, `.claude/*`, `shell.css`, `.vscode/*`, draft docs, `reviews_and_ratings` and `experiences_tags*` migrations, `application-store.ts` changes, `/api/ait/quota`, `/api/ait/test-media`, `missing-primary.ts`, `fallbackAnalysis`, `village-coordinate-lookup`, `card-resolver`, tests `conversational-ai` and `ait-missing-primary` (they test the removed rule paths), the "merge crafts into one OR profile" test. |
+| Decisions (human) | Take the 4 `src/lib/ait` files whole; thin messages route; no coordinates in this PR (`villages` has no coordinate column); dev/test without keys keep the rule-based extractor, `NODE_ENV=production` without keys returns 503; additive edits only to `craft-taxonomy.ts` and `types.ts`. |
+| Changed in Thư's files | `validateConversationDelta` takes `now` (had `2026-11-18` hard-coded); `cooldown_id` is a uuid; conversation-state takes villages from `loadVillages()`; budget counts as required; 5 hard-coded travel times removed from the knowledge base; prompt rules: no km/minutes, a nationality is not an origin, crafts stay separate, no English keys. |
+| Tests | New: `ait-llm-grounding`, `ait-llm-guards`, `ait-llm-service`, `ait-quota-manager`, `ai-matching-llm-outcome`, `ait-llm-route`, `ait-llm-production`, `ait-llm-resilience`. Route, outcome and production tests were red before the code; llm-service / grounding / guards tests were written after the code (file came from #286) and proven by mutation. No old test edited; `ai-matching-mockup22` and `ai-matching-layout` green unchanged. |
+| Mutations | Code broken, tests red, code restored byte-identical: nationality guard off (5 red), past-date notice off (2 red), prose answer not 503 (1 red, route level only, so a unit test was added), production check off (1 red). |
+| Checks | `npx vitest run` green; `npm run lint` OK; `npm run build` OK after deleting `.next` |
+| Not done | Manual run of screen 22 with a real model; hosted Postgres (`npm run test:postgres`); migration not applied to Supabase. Follow-up: village coordinates (column on `villages`, `data/` owner), then a PR letting the model use the platform's estimated distances. |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

@@ -9,9 +9,11 @@ export const HANDOFF_FAILURE_TEXT = 'Chưa hoàn tất được yêu cầu. Chư
 
 export type ApiResult = { networkError: true } | { ok: boolean; status: number; body: any }
 
+export interface CraftProfileView { craft: string; label: string; profile: unknown }
+
 export type MessageOutcome =
-  | { kind: 'clarify'; questions: string[] }
-  | { kind: 'match'; profile: unknown }
+  | { kind: 'clarify'; questions: string[]; reply?: string }
+  | { kind: 'match'; profile: unknown; profiles?: CraftProfileView[] }
   | { kind: 'failure'; text: string; retry: 'reanalyze' | 'resend' }
 
 export type HandoffOutcome =
@@ -24,13 +26,25 @@ export function messageOutcome(result: ApiResult): MessageOutcome {
   // #36: a network error means the message never reached the server, so Retry resends it;
   // any server response means it was stored, so Retry re-analyzes (#33).
   if ('networkError' in result) return { kind: 'failure', text: AI_FAILURE_TEXT, retry: 'resend' }
-  if (!result.ok) return AI_FAILURE
+  if (!result.ok) {
+    // The language-model route says in its own words that the service is unavailable.
+    const unavailable = result.status === 503 && typeof result.body?.user_message === 'string' ? result.body.user_message : null
+    return unavailable ? { kind: 'failure', text: unavailable, retry: 'reanalyze' } : AI_FAILURE
+  }
   const extraction = result.body?.extraction
   if (!extraction || extraction.processing_status === 'Temporary AI Failure') return AI_FAILURE
   const questions: string[] = extraction.follow_up_questions ?? []
-  if (!extraction.is_complete) return questions.length > 0 ? { kind: 'clarify', questions } : AI_FAILURE
+  if (!extraction.is_complete) {
+    if (questions.length === 0) return AI_FAILURE
+    return typeof extraction.conversational_reply === 'string' && extraction.conversational_reply
+      ? { kind: 'clarify', questions, reply: extraction.conversational_reply }
+      : { kind: 'clarify', questions }
+  }
   const profile = result.body.tour_preference_profile
-  return profile ? { kind: 'match', profile } : AI_FAILURE
+  if (!profile) return AI_FAILURE
+  // Several crafts are matched one by one, never merged into one itinerary.
+  const profiles: CraftProfileView[] = Array.isArray(result.body.tour_preference_profiles) ? result.body.tour_preference_profiles : []
+  return profiles.length > 1 ? { kind: 'match', profile, profiles } : { kind: 'match', profile }
 }
 
 export function handoffOutcome(result: ApiResult): HandoffOutcome {

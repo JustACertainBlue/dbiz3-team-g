@@ -134,6 +134,13 @@ export async function rankCandidates(
 
   scored.sort((a, b) => b.match_score - a.match_score)
 
+  // "rẻ nhất": the Agency asked for the lowest price, so price orders the list and the fit score
+  // breaks ties. The scores themselves are not changed.
+  if (profile?.ranking_preferences?.cheapest === true) {
+    const price = (c: ScoredCandidate) => (typeof c.price_per_person === 'number' ? c.price_per_person : Number.POSITIVE_INFINITY)
+    scored.sort((a, b) => price(a) - price(b) || b.match_score - a.match_score)
+  }
+
   return scored.map((candidate, index) => ({
     ...candidate,
     rank: index + 1,

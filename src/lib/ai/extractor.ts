@@ -130,7 +130,8 @@ export async function extractTourContext(
 
 export async function buildTourPreferenceProfile(
   tourContext: TourContext,
-  exclusions?: { villages?: string[]; crafts?: string[] }
+  exclusions?: { villages?: string[]; crafts?: string[] },
+  ranking?: { cheapest?: boolean }
 ): Promise<TourPreferenceProfile> {
   const hardConstraints: TourPreferenceProfile['hard_constraints'] = {
     group_size: tourContext.group_size,
@@ -157,6 +158,7 @@ export async function buildTourPreferenceProfile(
     hard_constraints: hardConstraints,
     matching_attributes: matchingAttributes,
     inferred_preferences: ['Authentic Craft', 'Cultural Immersion'],
+    ...(ranking?.cheapest ? { ranking_preferences: { cheapest: true } } : {}),
     preference_weights: {
       experience_fit: 0.4,
       route_convenience: 0.25,

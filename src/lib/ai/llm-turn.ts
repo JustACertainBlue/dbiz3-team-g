@@ -47,6 +47,8 @@ export interface LlmTurn {
  */
 const exclusionsOf = (state: AitConversationState) => ({ villages: state.exclusions.villages, crafts: state.exclusions.crafts })
 
+const rankingOf = (state: AitConversationState) => ({ cheapest: state.ranking_preferences?.cheapest === true })
+
 /** Model reply after the checks: no question about topics the platform does not handle, no leak or booking claim. */
 function finalReply(reply: string): string {
   const cleaned = sanitizeUnsupportedFollowUpQuestions(reply).trim()
@@ -132,9 +134,9 @@ export async function runLlmTurn(
     for (const craft of craftSuggestionTargets(state)) {
       const context: TourContext = { ...tourContext, craft_preference: craft }
       delete context.craft_preferences
-      profiles.push({ craft, label: craftLabelVi(craft), profile: await buildTourPreferenceProfile(context, exclusionsOf(state)) })
+      profiles.push({ craft, label: craftLabelVi(craft), profile: await buildTourPreferenceProfile(context, exclusionsOf(state), rankingOf(state)) })
     }
-    if (profiles.length === 0) profiles.push({ craft: '', label: '', profile: await buildTourPreferenceProfile(tourContext, exclusionsOf(state)) })
+    if (profiles.length === 0) profiles.push({ craft: '', label: '', profile: await buildTourPreferenceProfile(tourContext, exclusionsOf(state), rankingOf(state)) })
   }
 
   return {

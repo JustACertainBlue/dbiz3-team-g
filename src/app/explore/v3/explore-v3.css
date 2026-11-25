@@ -33,7 +33,7 @@
 
 /* ---- Hero (full width) ---- */
 .v3x-hero { position: relative; height: 540px; overflow: hidden; background: var(--c-primary-dark); }
-.v3x-hero__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; }
+.v3x-hero__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 65% 42%; }
 .v3x-hero__shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,28,19,.82) 0%, rgba(8,28,19,.55) 40%, rgba(8,28,19,.12) 72%, rgba(8,28,19,.4) 100%); }
 .v3x-hero__in { position: relative; height: 100%; box-sizing: border-box; padding: 56px var(--gx) 104px; display: flex; flex-direction: column; justify-content: center; gap: 14px; color: var(--c-white); }
 .v3x-hero__eb { margin: 0; font: 400 24px/32px var(--font-body); color: #F3EEE2; }
@@ -136,6 +136,8 @@
 
 @media (max-width: 767px) {
   .v3x-hero { height: 460px; }
+  .v3x-hero__img { object-position: 60% 35%; }
+  .v3x-hero__shade { background: linear-gradient(180deg, rgba(8,28,19,.85) 0%, rgba(8,28,19,.68) 55%, rgba(8,28,19,.25) 100%); }
   .v3x-hero__h { font-size: 38px; line-height: 46px; }
   .v3x-hero__sub, .v3x-hero__eb { font-size: 18px; line-height: 26px; }
   .v3-sbtn { flex: 1 1 100%; }

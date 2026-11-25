@@ -1,3 +1,4 @@
+import React from 'react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { eligibleRows, resolveViewer } from '../../lib/explore/catalog';
@@ -58,7 +59,16 @@ export default async function ExplorePage({ searchParams }: { searchParams: Para
 
   return <div className="v3x">
     <section className="v3x-hero" aria-label="Giới thiệu">
-      {/* No hero image yet (human decision 2026-11-18 #3a: no CC BY / CC BY-SA images; waiting for a new one). */}
+      <img
+        className="v3x-hero__img"
+        src="/explore-hero.webp"
+        alt="Không gian làng nghề đan lát truyền thống Hà Nội"
+        width={1024}
+        height={682}
+        loading="eager"
+        decoding="async"
+      />
+      <div className="v3x-hero__shade" aria-hidden="true" />
       <div className="v3x-hero__in">
         {isAgency && person && <p className="v3x-hero__eb">Chào {person},</p>}
         {isAgency

@@ -11,6 +11,12 @@ describe('turn guards', () => {
     expect(notice).not.toMatch(/chưa có dữ liệu/i)
   })
 
+  it('a date that does not exist is reported as such, not as a past date (31/02)', () => {
+    const notice = pastDateNotice('đoàn 10 khách ngày 31/02/2030', NOW)
+    expect(notice).toBe('Ngày 31/02/2030 không tồn tại. Bạn vui lòng nhập lại một ngày hợp lệ.')
+    expect(pastDateNotice('ngày 31/02/2020', NOW)).toMatch(/không tồn tại/)
+  })
+
   it('a future or absent date gives no notice', () => {
     expect(pastDateNotice('đoàn 10 khách ngày 10/12/2026', NOW)).toBeUndefined()
     expect(pastDateNotice('đoàn 10 khách', NOW)).toBeUndefined()

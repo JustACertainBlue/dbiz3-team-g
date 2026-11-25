@@ -42,6 +42,27 @@ Screen 17 is not listed here: the new mockup shows Loại hình / Số nhân vi�
 | M1 | Thẻ kết quả 02, 03, 24 (`ResultCard`) | Ảnh trên cả chiều rộng, khung `min-height: 180px` chạy theo tỉ lệ ảnh (ảnh dọc làm khung cao 450 px); thẻ cao ~900 px khi cột chữ chỉ ~210 px | Lưới 2 cột: **hàng trên** ảnh trái 112 px (khung cố định `5 / 8` ≈ 112 × 179, `object-fit: cover`, ảnh dọc lấy nét `50% 40%`) và bên phải nhãn nghề, tên (20 px, tối đa 3 dòng rồi "…"), làng · xưởng, khoảng cách; **phần dưới** trải hết chiều ngang thẻ theo thứ tự desktop: chip (xếp ngang, `flex-wrap`, 13 px), các dòng ✓ (15 px), câu "Không cần trả trước…" (14 px), "Giá từ" + số tiền trên một dòng (22 px), nút (44 px). Chữ dài xuống dòng (`overflow-wrap: anywhere`). Desktop không đổi. Đo ở 390 px: 484 px/thẻ trên 02 và 03, 444 px trên 24 (không có dòng "không cần trả trước"); 320 px: 548–649 px; không tràn ngang ở 320, 360, 390, 600, 767 px | Khánh Linh, 21/11 (bước 2B; thay hai bố cục trước: ảnh trên 5/8, ảnh trái + cột chữ hẹp) |
 | M2 | Ô nhỏ gallery 03, 04/23, 24 | Cùng ưu tiên tải với ô lớn | Ô nhỏ `loading=eager`, `fetchpriority=low`; chỉ ô lớn (ảnh LCP) là `high` | Human, 21/11 (bước 2B) |
 
+## Màn 22 dùng giao diện v2 của Thư thay mockup v3 – Khánh Linh duyệt 25/11
+
+Màn 22 (Ghép tour AI, AIT121) lấy giao diện v2 của Nguyễn Thị Minh Thư (PR #286, nhánh `feat/ait-on-v3`) thay cho
+mockup v3 `22-GhepTourAI`, theo nhận xét của Thư trên PR #290. Chỉ phần giao diện (`src/app/ai-matching/page.tsx`,
+`card-view.ts`, `ai-matching.css`) đổi; pipeline ghép, API, kiểm đầu vào/đầu ra, bảo mật của PR #290 giữ nguyên. Dữ liệu
+thẻ (tên làng, giá, ảnh, điểm nổi bật) vẫn lấy từ `rec.card` do loader hiện có trên `main` dựng; thiếu dữ liệu nào thì
+dòng đó ẩn.
+
+| # | Phần | Mockup v3 (trước) | Giao diện v2 (bây giờ) |
+|---|---|---|---|
+| V2-1 | Khung và cuộn | Cả trang cuộn; ô soạn tin + ghi chú dính đáy với lớp mờ trắng; cột lịch sử dính, cao 100vh | Khung `.aim` cao `100dvh − var(--nav-h)`, `overflow: hidden`; cột lịch sử (`.aim__hist`) và luồng chat (`.aim__stream`) cuộn độc lập; ô soạn tin là chân khung (`flex: none`, viền trên) |
+| V2-2 | Thanh điều hướng | Cuộn đi cùng trang | Đứng yên. **Khác v2 gốc:** v2 sửa `position: sticky` trong `shell.css` (file dùng chung); ở đây dùng `body:has(.aim) .hab-nav { position: sticky; top: 0 }` trong `ai-matching.css`, nên chỉ màn 22 bị ảnh hưởng và `shell.css` không đổi |
+| V2-3 | Bố cục thẻ | Thẻ của màn 02 (`v3r__*`): ảnh trái, hai cột chữ / giá, chip có biểu tượng | Ảnh trên cả chiều rộng (tối đa 180 px), rồi tên, làng · xưởng, nghề, dòng thông tin (Tối đa…, Đặt trước…, thời lượng), "Vì sao hợp", "Điểm nổi bật", khối giá |
+| V2-4 | Giá trên thẻ | Số khách, tổng, giá/khách, giá cũ, ghi chú xếp dọc ở cột phải | Một khối: tổng · giá/khách · số khách, rồi giá cũ / ghi chú giảm giá / "Đã gồm vật liệu…" / "Mang sản phẩm về" |
+| V2-5 | "Vì sao hợp" | Toàn bộ câu giải thích | `conciseExplanation`: bỏ câu về sức chứa và ngân sách (thẻ đã có dòng thông tin và giá), không bao giờ để trống |
+| V2-6 | Nút trên thẻ | Nút tròn "Nhắn tin cho xưởng" + "Xem lịch trống" | Ba nút: **Chat**, **Xem lịch trống**, **Xin báo giá** (lưới 3 cột; 2 cột dưới 768 px). Gọi đúng luồng cũ: `/api/ait/sessions/:id/chat` và `/quote`; "Xem lịch trống" mở trang trải nghiệm `#lich`, nơi gửi yêu cầu đặt chỗ theo luồng v3 có ca trống. Không có luồng đặt chỗ riêng |
+| V2-7 | Gợi ý thêm | Hiện như thẻ đầy đủ dưới tiêu đề "Gợi ý thêm" | Dòng chữ bấm được; bấm một dòng gửi `additionalSuggestionPrompt(rec)` qua đường gửi của ô soạn tin (hiện câu của Agency, phân tích, ghi lịch sử), khoá khi đang xử lý |
+| V2-8 | Không lấy từ v2 | – | `AiMatchingSkeleton`/`loading.tsx` (dùng class `ait-*` không còn trong CSS), sửa `shell.css`, route `/api/ait/quota` và `test-media`, pipeline ghép / router cũ, `localizeExplanation`, đổi nghĩa `messageOutcome` |
+
+Điện thoại: quy tắc dưới 900/768 px của v2 được mang theo cùng CSS nhưng chưa kiểm ở màn hình điện thoại (dự án chỉ đo 1440 px từ 21/11).
+
 ## Follow-ups recorded with the deviations
 
 - `experience_slots` (migration `20261118120000_hab_ui_v3_content.sql`) grants `hab_app` SELECT only. The Provider

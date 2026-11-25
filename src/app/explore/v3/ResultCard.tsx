@@ -21,7 +21,7 @@ export default function ResultCard({ item, query, variant = 'search', showDistan
   const tagIcons = [CalendarClock, Users, Package, CalendarClock]
   const provider = variant === 'provider'
   return <article className={`v3-card v3r${provider ? ' v3r--provider' : ''}`}>
-    <Link href={href} className="v3r__media" tabIndex={-1} aria-hidden="true"><CoverImage image={item.image} alt="" sizes={RESULT_SIZES} priority={priority} preloadMedia="(min-width: 900px)" /></Link>
+    {item.image && <Link href={href} className="v3r__media" tabIndex={-1} aria-hidden="true"><CoverImage image={item.image} alt="" sizes={RESULT_SIZES} fallback={item.fallbackImage} hideEmpty priority={priority} preloadMedia="(min-width: 900px)" /></Link>}
     <div className="v3r__main">
       <div className="v3r__top">
         <div className="v3r__titles">

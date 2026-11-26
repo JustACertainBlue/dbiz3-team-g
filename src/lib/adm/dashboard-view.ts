@@ -2,10 +2,11 @@
 // FR-003 / SR-004 four cards, FR-009 (1) status breakdown with counts + percentages as a stacked bar,
 // FR-009 (2) booking trend as a line with BR-019 granularity, SR-003 HDT platform-wide / UBND own village.
 import { hanoiDate } from '@/lib/time/hanoi-time'
+import { formatVillageName } from '@/lib/village-name'
 import type { BookingStatus, BookingStatusItem, BookingTrendItem, MetricCard, TrendGranularity } from './types'
 
 /** Village scope → that village; no village (HDT, all villages) → the whole city. */
-export const dashboardTitle = (villageName: string | null) => villageName ? `Dashboard làng ${villageName}` : 'Dashboard toàn thành phố'
+export const dashboardTitle = (villageName: string | null) => villageName ? `Dashboard ${formatVillageName(villageName, 'làng')}` : 'Dashboard toàn thành phố'
 
 const METRIC_LABELS: Record<MetricCard['label'], string> = {
   'Total Agencies': 'Tổng số Agency',

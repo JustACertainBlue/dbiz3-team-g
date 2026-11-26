@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
-import { addMessage, getMatchingSession, getMessages } from '@/lib/matching/session-service'
+import { addMessage, getMatchingSession, getMessages, withMatchingSessionWriteLock } from '@/lib/matching/session-service'
 import { extractTourContext, buildTourPreferenceProfile } from '@/lib/ai/extractor'
 import { AiServiceUnavailableError, ConversationalAiService } from '@/lib/ai/llm-service'
 import { runLlmTurn } from '@/lib/ai/llm-turn'
 import { isProductionRuntime } from '@/lib/ai/runtime-mode'
+import { sanitizeInput } from '@/lib/ai/guard'
+import { errorResponse } from '@/lib/ai/safe-error'
+import { checkAiRateLimit } from '@/lib/ai/ai-rate-limit'
 
 const AI_UNAVAILABLE_BODY = {
   error_code: 'AI_SERVICE_UNAVAILABLE',
@@ -33,11 +36,11 @@ export async function GET(
     const messages = await getMessages(params.id)
     return NextResponse.json(messages)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 })
+    return errorResponse(err, 'read messages')
   }
 }
 
-export async function POST(
+async function handlePost(
   request: Request,
   { params }: { params: { id: string } }
 ) {
@@ -49,20 +52,47 @@ export async function POST(
 
     // #33: Retry re-analyzes the stored conversation and adds no message.
     const isRetry = body.retry === true
-    const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', body.text || '')
-    const allMessages = await getMessages(params.id)
 
     // With AI credentials configured, every request goes through the language model and a failure is a
     // 503: there is no silent fallback to rules. In production, missing credentials are also a 503.
     // In development and test without credentials the route keeps the existing rule-based extractor.
     const configured = ConversationalAiService.isConfigured()
+    let text: string = body.text || ''
+    if (configured || isProductionRuntime()) {
+      // Before the paid model is called: clean the text and limit the rate. Message content is never logged.
+      if (!isRetry) {
+        const cleaned = sanitizeInput(body.text)
+        if (!cleaned.ok) {
+          return NextResponse.json({
+            error_code: 'INVALID_MESSAGE',
+            error: 'Invalid message',
+            user_message: 'Tin nhắn đang trống hoặc quá dài (tối đa 2000 ký tự). Bạn vui lòng gửi lại.',
+          }, { status: 400 })
+        }
+        text = cleaned.text
+      }
+      const limit = checkAiRateLimit(access.actor!.agencyId!)
+      if (!limit.allowed) {
+        const seconds = Math.max(1, Math.ceil((limit.retryAfterMs ?? 1000) / 1000))
+        return NextResponse.json({
+          error_code: 'RATE_LIMITED',
+          error: 'Too many requests',
+          user_message: `Bạn gửi quá nhanh, hãy thử lại sau ${seconds} giây.`,
+          retry_after_seconds: seconds,
+        }, { status: 429, headers: { 'Retry-After': String(seconds) } })
+      }
+    }
+
+    const message = isRetry ? null : await addMessage(params.id, body.sender || 'Agency', text)
+    const allMessages = await getMessages(params.id)
+
     if (!configured && isProductionRuntime()) {
       console.error('[AIT] AI provider credentials are not configured (Cloudflare Workers AI / OpenRouter). Returning 503; production never falls back to rules.')
       return NextResponse.json(AI_UNAVAILABLE_BODY, { status: 503 })
     }
     if (configured) {
       try {
-        const turn = await runLlmTurn(params.id, allMessages)
+        const turn = await runLlmTurn(params.id, allMessages, { isRetry })
         return NextResponse.json({ message, ...turn }, { status: isRetry ? 200 : 201 })
       } catch (error) {
         if (!(error instanceof AiServiceUnavailableError)) throw error
@@ -95,6 +125,15 @@ export async function POST(
       tour_preference_profile: tourPreferenceProfile,
     }, { status: isRetry ? 200 : 201 })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 400 })
+    // Text validation and unknown-session errors are the Agency's to fix; anything else stays on the server.
+    return errorResponse(err, 'analyse message', e =>
+      e instanceof Error && /^(Message text invalid|Matching session not found)/.test(e.message) ? { status: 400 } : null)
   }
+}
+
+export async function POST(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  return withMatchingSessionWriteLock(context.params.id, () => handlePost(request, context))
 }

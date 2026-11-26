@@ -129,13 +129,17 @@ export async function extractTourContext(
 }
 
 export async function buildTourPreferenceProfile(
-  tourContext: TourContext
+  tourContext: TourContext,
+  exclusions?: { villages?: string[]; crafts?: string[] },
+  ranking?: { cheapest?: boolean }
 ): Promise<TourPreferenceProfile> {
-  const hardConstraints = {
+  const hardConstraints: TourPreferenceProfile['hard_constraints'] = {
     group_size: tourContext.group_size,
     max_budget_per_person: tourContext.budget?.max_per_person,
     target_date_or_range: tourContext.target_date_or_range,
     origin: tourContext.origin_or_route,
+    ...(exclusions?.villages?.length ? { excluded_village_ids: exclusions.villages } : {}),
+    ...(exclusions?.crafts?.length ? { excluded_crafts: exclusions.crafts } : {}),
   }
 
   const matchingAttributes = (tourContext.experience_types || []).map(type => ({
@@ -154,6 +158,7 @@ export async function buildTourPreferenceProfile(
     hard_constraints: hardConstraints,
     matching_attributes: matchingAttributes,
     inferred_preferences: ['Authentic Craft', 'Cultural Immersion'],
+    ...(ranking?.cheapest ? { ranking_preferences: { cheapest: true } } : {}),
     preference_weights: {
       experience_fit: 0.4,
       route_convenience: 0.25,

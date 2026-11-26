@@ -1,11 +1,12 @@
-// Screen 32, read-only "Nghề và làng nghề": "<craft> · Làng <village>". Craft = villages.editorial_craft, else the Vietnamese label of the
+
+import { formatVillageName } from '@/lib/village-name'// Screen 32, read-only "Nghề và làng nghề": "<craft> · Làng <village>". Craft = villages.editorial_craft, else the Vietnamese label of the
 // published version's craft_type (same rule as every v3 page head: rowCraft). Read only; nothing is written.
 import { demoRepository } from '@/lib/db/application-store'
 import { rowCraft } from '@/lib/explore/vocabulary'
 
 export function craftLine(craftType: string | undefined, village: { name?: string; editorial_craft?: string } | undefined): string {
   const craft = craftType === undefined && !village?.editorial_craft?.trim() ? '' : rowCraft(craftType, village)
-  return [craft, village?.name ? `Làng ${village.name}` : ''].filter(Boolean).join(' · ')
+  return [craft, village?.name ? formatVillageName(village.name) : ''].filter(Boolean).join(' · ')
 }
 
 export async function providerCraftLine(providerId: string): Promise<string> {

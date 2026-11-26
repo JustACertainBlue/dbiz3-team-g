@@ -1,9 +1,24 @@
 /** Screen 22 card (mockup): the per-guest line under the group total; "đã gồm vật liệu" only when the data says so. */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { perGuest } from '@/app/ai-matching/card-view'
+import { conciseExplanation, perGuest } from '@/app/ai-matching/card-view'
 
 const page = readFileSync('src/app/ai-matching/page.tsx', 'utf8')
+
+describe('concise matching explanation (v2 card)', () => {
+  it('keeps distinct reasons while avoiding capacity and budget details shown elsewhere', () => {
+    expect(conciseExplanation(
+      'Hợp sở thích làm nón của bạn. Sức chứa tối đa 25 khách cho đoàn 20 khách. 175.000đ/người, trong ngân sách 200.000đ/người. Cách Hồ Gươm khoảng 8,5 km.'
+    )).toBe('Hợp sở thích làm nón của bạn. Cách Hồ Gươm khoảng 8,5 km.')
+  })
+  it('preserves long, complete non-redundant explanations', () => {
+    const longReason = `Hợp sở thích ${'làm thủ công '.repeat(30)}của đoàn.`
+    expect(conciseExplanation(longReason)).toBe(longReason)
+  })
+  it('never returns an empty line: if every sentence is a shown detail, the first one stays', () => {
+    expect(conciseExplanation('Sức chứa tối đa 25 khách cho đoàn 20 khách.')).toBe('Sức chứa tối đa 25 khách cho đoàn 20 khách.')
+  })
+})
 
 describe('per-guest price line', () => {
   it('is total ÷ guests, rounded to a whole dong (after the group discount)', () => {
@@ -13,8 +28,8 @@ describe('per-guest price line', () => {
   })
   it('is drawn right under the total, before the old price/note', () => {
     const at = (text: string) => { const i = page.indexOf(text); expect(i, text).toBeGreaterThan(-1); return i }
-    expect(at('v3r__total')).toBeLessThan(at('v3r__perguest'))
-    expect(at('v3r__perguest')).toBeLessThan(at('v3r__old'))
+    expect(at('v3r__total')).toBeLessThan(at('aim__price-perguest'))
+    expect(at('aim__price-perguest')).toBeLessThan(at('v3r__old'))
     expect(page).toMatch(/perGuest\(/)
   })
   it('"Đã gồm vật liệu" appears only behind the card.included flag', () => {

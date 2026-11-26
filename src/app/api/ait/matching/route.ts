@@ -10,6 +10,7 @@
  * Body: { session_id?: string, tour_preference_profile: TourPreferenceProfile }
  */
 import { NextResponse } from 'next/server'
+import { errorResponse } from '@/lib/ai/safe-error'
 import { sessionContextFromRequest } from '@/lib/auth/session'
 import { getMatchingSession } from '@/lib/matching/session-service'
 import { getVerifiedCandidates } from '@/lib/matching/candidate-repo'
@@ -108,9 +109,7 @@ export async function POST(request: Request) {
       additional_suggestions: recs.additional_suggestions.map(withCard),
     })
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || 'Internal error during matching' },
-      { status: 500 }
-    )
+    // Database or host details stay on the server; the browser only gets a generic text.
+    return errorResponse(err, 'matching')
   }
 }

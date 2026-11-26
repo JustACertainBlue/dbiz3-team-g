@@ -1773,6 +1773,20 @@ The full text of the six drafts stays in git history (last draft commit `e65cfb7
 | Checks | `npx vitest run` green; `npm run lint` OK; `npm run build` OK after deleting `.next` |
 | Not done | Manual run of screen 22 with a real model; hosted Postgres (`npm run test:postgres`); migration not applied to Supabase. Follow-up: village coordinates (column on `villages`, `data/` owner), then a PR letting the model use the platform's estimated distances. |
 
+### Entry 120: 25/11 Claude Code + human — AIT: the 11 remaining fixes of the Thu branch (`feat/ait-hardening`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Sonnet 5.5); requested by linhkhanh-vu. Branch from `main` `6e3fde2` (contains #289). Input: the commit comparison of `origin/feat/ait-on-v3` (Nguyễn Thị Minh Thư) with `main`. Thư is co-author on every commit. No real model API called; `.env*` not read |
+| Change | 13 commits, one per item, each with a test red on `main` first: (1) platform question answered without matching again, (2) conversation exclusions applied to the result, (3) per-session lock, (4) text clean-up and 20/min limit before the model, no message logging, (5) reply post-check for leaks and booking claims, (6) validators wired before the model, (7) no internal error text in responses (also `/api/ait/matching`, extra commit), (8) "rẻ nhất" orders by price, (9) `formatVillageName`, (10) craft keywords without diacritics and village names, (11) `additionalSuggestionPrompt` module, plus (12) 31/02 reported as non-existent |
+| Taken only in part | (9): village starting price not moved (no "giá chỉ từ" on main; waits for a proposal to change the mockup). (10): Thu's unaccented "go", "may", "non", "duc", "tac", "moc", "chuong" not taken (ordinary words). (11): module only, not wired (Thu's text-only additional suggestions conflict with the card layout and with test `ait121-additional-suggestions`; waits for a proposal to change the mockup). (8): only "cheapest"; "nearest" needs coordinates |
+| Found on the way | Ported phone regex missed a number at the end of a sentence (fixed, tested). `pastDateNotice` of #289 called 31/02 a past date (fixed). D2–D4 work found in this working tree belonged to `fix/D2-D4-D27-khung-anh-trong`; it was moved there (committed `wip`, not pushed). |
+| Checked, nothing to move | Guest-lock flash (`3d4c661`): `layout.tsx` on main already resolves role and Agency id on the server; `ai-matching-no-reload.test.ts` covers it. Not reproduced in a browser |
+| Not moved (listed in the PR as "Left for a decision") | UI differing from mockup v3, regex fallback / rule router, `lib/ait` pipeline and threshold 40, coordinates / distance / radius, test-media / reviews / data L7. The BUG-01..29 table of Thư is mapped in the PR description |
+| Tests | New: `ait-faq-turn`, `ait-exclusions`, `ait-session-lock`, `ait-ai-guard` (unit and integration), `ait-postcheck`, `ait-turn-validators`, `ait-safe-errors`, `ait-matching-safe-error`, `ait-cheapest-ranking`, `village-display-name`, `ait-craft-keywords`, `ai-matching-suggestion-prompt`; one case added to `ait-llm-guards`. No old test edited; `craft-taxonomy`, `ai-matching-mockup22`, `ai-matching-layout`, `ait121-additional-suggestions` green unchanged |
+| Checks | `npx vitest run` green; `npm run lint` OK; `npm run build` OK |
+| Not done | Manual run of screen 22 with a real model; hosted Postgres (`npm run test:postgres`). The lock and the 20/min limiter are in memory, per process (several instances would not share them). Next: scope guardrails not covered by code (amenities, crafts outside the data, `$` currency, GPS / statistics questions), then village coordinates |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

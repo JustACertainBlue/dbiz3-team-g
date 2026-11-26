@@ -1,4 +1,4 @@
-import { hanoiDate } from '@/lib/booking/clock'
+import { hanoiDate, isQueryDate } from '@/lib/booking/clock'
 import { craftLabel } from '@/lib/matching/craft-taxonomy'
 import type { AitConversationState } from '@/lib/ait/conversation-state'
 
@@ -7,7 +7,8 @@ import type { AitConversationState } from '@/lib/ait/conversation-state'
 const EXPLICIT_DATE = /\b(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})\/(\d{1,2})\/(\d{4}))\b/
 
 /**
- * When the Agency wrote a complete date (with a year) that is already behind us, say so plainly.
+ * When the Agency wrote a complete date (with a year) that is already behind us, or that does not exist
+ * (31/02), say so plainly.
  * Without a year the date means its next occurrence, so it can never be in the past.
  */
 export function pastDateNotice(text: string, now: Date): string | undefined {
@@ -15,7 +16,10 @@ export function pastDateNotice(text: string, now: Date): string | undefined {
   if (!m) return undefined
   const [year, month, day] = m[1] ? [m[1], m[2], m[3]] : [m[6], m[5], m[4]]
   const iso = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-  if (Number.isNaN(Date.parse(iso)) || iso >= hanoiDate(now.getTime())) return undefined
+  const shown = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`
+  // A date that does not exist (31/02) is not a past date; say what is wrong with it.
+  if (!isQueryDate(iso)) return `Ngày ${shown} không tồn tại. Bạn vui lòng nhập lại một ngày hợp lệ.`
+  if (iso >= hanoiDate(now.getTime())) return undefined
   return `Ngày ${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year} đã qua. Bạn vui lòng chọn một ngày từ hôm nay trở đi.`
 }
 

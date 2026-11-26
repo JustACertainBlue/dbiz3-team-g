@@ -4,7 +4,10 @@ import { systemClock } from '@/lib/booking/clock'
 import { loadVillages } from '@/lib/db/seed-loader'
 import { applyConversationDelta } from '@/lib/ait/conversation-delta'
 import {
+  type AitConversationState,
   applyConversationState,
+  emptyConversationState,
+  sanitizeUnsupportedFollowUpQuestions,
   isCompleteConversationState,
   mergeConversationState,
   missingQuestions,
@@ -12,6 +15,8 @@ import {
 import { buildTourPreferenceProfile } from './extractor'
 import { loadConversationState, saveConversationState } from './conversation-store'
 import { ConversationalAiService } from './llm-service'
+import { postCheckReply } from './postcheck'
+import { preCheckTurn } from './turn-validators'
 import { craftLabelVi, craftSuggestionTargets, pastDateNotice } from './turn-guards'
 
 export interface CraftProfile {
@@ -40,13 +45,67 @@ export interface LlmTurn {
  * answer: the caller returns 503 and never falls back to rules. Matching itself is not done here; the
  * profiles returned feed the existing /api/ait/matching pipeline.
  */
-export async function runLlmTurn(sessionId: string, messages: ConversationMessage[]): Promise<LlmTurn> {
+const exclusionsOf = (state: AitConversationState) => ({ villages: state.exclusions.villages, crafts: state.exclusions.crafts })
+
+const rankingOf = (state: AitConversationState) => ({ cheapest: state.ranking_preferences?.cheapest === true })
+
+/** Model reply after the checks: no question about topics the platform does not handle, no leak or booking claim. */
+function finalReply(reply: string): string {
+  const cleaned = sanitizeUnsupportedFollowUpQuestions(reply).trim()
+  return postCheckReply(cleaned || 'Mình đã ghi nhận yêu cầu của đoàn.').message
+}
+
+export async function runLlmTurn(
+  sessionId: string,
+  messages: ConversationMessage[],
+  options: { isRetry?: boolean } = {}
+): Promise<LlmTurn> {
   const now = systemClock
   const userTurns = messages.filter(message => message.sender?.toLowerCase() !== 'assistant')
   const latest = userTurns.at(-1)?.text ?? ''
   const current = await loadConversationState(sessionId)
 
+  // Invalid or unsupported requests are answered here, without calling the model.
+  const pre = options.isRetry ? null : preCheckTurn(latest)
+  if (pre) {
+    if (pre.kind === 'reset') await saveConversationState(sessionId, emptyConversationState())
+    const kept = pre.kind === 'reset' ? emptyConversationState() : current
+    return {
+      extraction: {
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        tour_context: applyConversationState({}, kept),
+        conversational_reply: pre.reply,
+        intent: 'platform_guidance',
+        missing_primary: [],
+      },
+      tour_preference_profile: null,
+      tour_preference_profiles: [],
+    }
+  }
+
   const result = await ConversationalAiService.processConversation(messages, { now, state: current, recentTurns: messages })
+
+  // A question about the platform is answered and nothing else: the criteria stay as they are and no
+  // matching runs again.
+  if (result.intent === 'platform_guidance') {
+    return {
+      extraction: {
+        is_complete: false,
+        processing_status: 'Success',
+        retry_available: false,
+        follow_up_questions: [],
+        tour_context: applyConversationState({}, current),
+        conversational_reply: finalReply(result.conversational_reply),
+        intent: result.intent,
+        missing_primary: result.missing_primary,
+      },
+      tour_preference_profile: null,
+      tour_preference_profiles: [],
+    }
+  }
 
   const villages = await loadVillages()
   let state = Object.keys(result.tour_context).length > 0
@@ -75,9 +134,9 @@ export async function runLlmTurn(sessionId: string, messages: ConversationMessag
     for (const craft of craftSuggestionTargets(state)) {
       const context: TourContext = { ...tourContext, craft_preference: craft }
       delete context.craft_preferences
-      profiles.push({ craft, label: craftLabelVi(craft), profile: await buildTourPreferenceProfile(context) })
+      profiles.push({ craft, label: craftLabelVi(craft), profile: await buildTourPreferenceProfile(context, exclusionsOf(state), rankingOf(state)) })
     }
-    if (profiles.length === 0) profiles.push({ craft: '', label: '', profile: await buildTourPreferenceProfile(tourContext) })
+    if (profiles.length === 0) profiles.push({ craft: '', label: '', profile: await buildTourPreferenceProfile(tourContext, exclusionsOf(state), rankingOf(state)) })
   }
 
   return {
@@ -87,7 +146,7 @@ export async function runLlmTurn(sessionId: string, messages: ConversationMessag
       retry_available: false,
       follow_up_questions: pastNotice ? ['Bạn muốn đi vào ngày nào?'] : questions,
       tour_context: tourContext,
-      conversational_reply: pastNotice ?? result.conversational_reply,
+      conversational_reply: pastNotice ?? finalReply(result.conversational_reply),
       intent: result.intent,
       missing_primary: result.missing_primary,
     },

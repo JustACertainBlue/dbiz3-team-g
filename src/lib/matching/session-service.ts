@@ -139,3 +139,24 @@ export async function listMatchingSessions(agencyId: string, limit = 20): Promis
       last_activity_at: row.last_activity_at,
     }))
 }
+
+// One message of a matching session is handled at a time: each turn reads the conversation state,
+// calls the model and writes the state back, so two overlapping turns would overwrite each other.
+const matchingSessionWriteQueues = new Map<string, Promise<void>>()
+
+export async function withMatchingSessionWriteLock<T>(
+  sessionId: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  const previous = matchingSessionWriteQueues.get(sessionId) ?? Promise.resolve()
+  let release!: () => void
+  const current = new Promise<void>(resolve => { release = resolve })
+  matchingSessionWriteQueues.set(sessionId, current)
+  await previous
+  try {
+    return await operation()
+  } finally {
+    release()
+    if (matchingSessionWriteQueues.get(sessionId) === current) matchingSessionWriteQueues.delete(sessionId)
+  }
+}

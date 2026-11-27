@@ -1,3 +1,5 @@
+import { bookingTourPill } from './list-tabs'
+
 // Tabs and chips of screen 05 (agency booking history, mockup 19/11). Client-safe.
 export type AgencyTab = 'upcoming' | 'pending' | 'done' | 'cancel' | 'all'
 export const AGENCY_TABS: { id: AgencyTab; label: string; statuses?: string[] }[] = [
@@ -12,10 +14,14 @@ export const agencyTabCount = (id: AgencyTab, rows: readonly { status: string }[
   const tab = AGENCY_TABS.find(item => item.id === id)!
   return tab.statuses ? rows.filter(row => tab.statuses!.includes(row.status)).length : rows.length
 }
-export function agencyRowChips(status: string): { status: string; pay: string; payNow: boolean } {
+export function agencyRowChips(
+  status: string,
+  startAt?: string | Date | null,
+  now?: string | Date | number,
+): { status: string; pay: string; payNow: boolean } {
   switch (status) {
     case 'On hold': return { status: 'Đang giữ chỗ', pay: 'Chờ thanh toán', payNow: true }
-    case 'Booked': return { status: 'Tour sắp tới', pay: 'Đã thanh toán', payNow: false }
+    case 'Booked': return { status: bookingTourPill('Booked', 'agency', startAt, now).label, pay: 'Đã thanh toán', payNow: false }
     case 'Completed': return { status: 'Hoàn thành tour', pay: '', payNow: false }
     default: return { status: 'Đã huỷ', pay: '', payNow: false }
   }

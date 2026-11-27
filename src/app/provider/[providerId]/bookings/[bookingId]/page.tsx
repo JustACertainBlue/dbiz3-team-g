@@ -7,6 +7,7 @@ import { bookingView } from '@/lib/booking/booking-view'
 import { PAID_MESSAGE } from '@/lib/booking/booker-info'
 import { adjustmentLine } from '@/lib/booking/display'
 import { rulesOf } from '@/lib/booking/group-price'
+import { bookingTourPill, isPastTourDate, PAY_LABEL } from '@/lib/booking/list-tabs'
 import { hanoiClock, hanoiDate } from '@/lib/time/hanoi-time'
 import { bookingDetailStyles } from './BookingDetailView'
 import BookingActionsBar from './BookingActionsBar'
@@ -17,8 +18,6 @@ export const dynamic = 'force-dynamic'
 
 const vnd = (value: number) => `${value.toLocaleString('vi-VN')} ₫`
 const stamp = (value: string) => `${hanoiClock(value)}, ${hanoiDate(value).split('-').reverse().join('/')}`
-const PAY_LABEL: Record<string, string> = { 'On hold': 'Chờ thanh toán', Booked: 'Đã thanh toán', Completed: 'Đã thanh toán', Cancelled: 'Chưa thanh toán' }
-const BOOKING_LABEL: Record<string, string> = { 'On hold': 'Đang giữ chỗ', Booked: 'Tour sắp tới', Completed: 'Hoàn thành tour', Cancelled: 'Đã huỷ' }
 
 // Screens 10c (On hold), 10 (Booked) and the read-only states: BKG135/BKG136 for the Local Provider, mockup 19/11.
 // No QR or bank data: payment is arranged in the chat; the Provider presses "Đã nhận tiền" (On hold → Booked).
@@ -33,7 +32,10 @@ export default async function ProviderBookingDetailPage({ params }: { params: { 
   const agency = await repository.find('agency_profiles', row => row.agency_id === booking.agency_id)
   const user = agency && await repository.find('user_accounts', row => row.user_id === agency.user_id)
   const rules = rulesOf(await repository.all('experience_discount_rules'), booking.experience_id)
-  const view = bookingView({ booking, experience, rules, providerName: '', agencyName: agency?.company_name ?? '', now: new Date() })
+  const now = new Date()
+  const view = bookingView({ booking, experience, rules, providerName: '', agencyName: agency?.company_name ?? '', now })
+  const pill = bookingTourPill(view.status, 'provider', booking.start_at, now)
+  const pastBooked = view.status === 'Booked' && isPastTourDate(booking.start_at, now)
   const history = (await repository.all('booking_status_history')).filter(row => row.booking_id === booking.booking_id).sort((a, b) => Date.parse(b.changed_at) - Date.parse(a.changed_at))
   const reportedPaid = (await repository.all('chat_messages')).some(row => row.booking_id === booking.booking_id && row.message_kind === 'Booking Update' && row.text.startsWith(PAID_MESSAGE))
   const names = new Map((await repository.all('user_accounts')).map(row => [row.user_id, row.full_name]))
@@ -46,7 +48,7 @@ export default async function ProviderBookingDetailPage({ params }: { params: { 
     <h1 className="v3a-name" style={{ marginTop: 16, fontSize: 34, lineHeight: '42px' }}>{view.agencyName} · {view.price.guests} khách</h1>
     <p className="v3a-sm">{view.experienceName} · {view.dateLong} · {view.range}</p>
     <p className="v3a-cap">Mã {view.code}</p>
-    <p className="v3a-actions" style={{ margin: '12px 0 20px' }}><b>{BOOKING_LABEL[view.status]}</b><span aria-hidden="true">·</span><span>{PAY_LABEL[view.status]}</span></p>
+    <p className="v3a-actions" style={{ margin: '12px 0 20px' }}><b>{pill.label}</b><span aria-hidden="true">·</span><span>{PAY_LABEL[view.status]}</span></p>
 
     {view.status === 'On hold' && <div className="v3a-banner" role="status">
       <b>Đang chờ công ty lữ hành thanh toán {vnd(view.price.total)}</b>
@@ -55,7 +57,7 @@ export default async function ProviderBookingDetailPage({ params }: { params: { 
       <p className="v3a-cap">Thanh toán theo hướng dẫn của xưởng trong tin nhắn.</p>
     </div>}
     {view.status === 'Booked' && <div className="v3a-banner" role="status"><b>Công ty lữ hành đã thanh toán {vnd(view.price.total)}. Lịch của đoàn đã chốt!</b>
-      <p className="v3a-sm">Hãy chuẩn bị cho {view.price.guests} khách lúc {view.range.slice(0, 5)}, {view.dateLong}. Khi đoàn đến, bấm “Đánh dấu đoàn đã đến”.</p></div>}
+      <p className="v3a-sm">{pastBooked ? `Ngày tour (${view.dateLong}) đã qua. Khi đoàn đã đến, hãy bấm “Đánh dấu đoàn đã đến”.` : `Hãy chuẩn bị cho ${view.price.guests} khách lúc ${view.range.slice(0, 5)}, ${view.dateLong}. Khi đoàn đến, bấm “Đánh dấu đoàn đã đến”.`}</p></div>}
     {view.status === 'Completed' && <div className="v3a-banner" role="status"><b>Tour đã hoàn thành</b></div>}
     {view.status === 'Cancelled' && <div className="v3a-banner v3a-banner--x" role="status"><b>Đặt chỗ đã huỷ</b><p className="v3a-sm">Lý do: {history.find(row => row.to_status === 'Cancelled')?.reason || '—'}</p></div>}
 

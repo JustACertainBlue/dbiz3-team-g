@@ -91,6 +91,7 @@ describe('request form needs a free slot (21/11)', () => {
   it('the slot picked on 04 is preselected when it is still free', () => {
     const markup = render({ slotTime: '09:00 – 10:00', initialSlots: [{ start: '09:00', end: '10:00', label: 'Ca sáng' }] })
     expect(markup).toMatch(/<option[^>]*selected[^>]*value="09:00"|<option[^>]*value="09:00"[^>]*selected/)
-    expect(markup).not.toMatch(/<button[^>]*type="submit"[^>]*disabled/)
+    // The server-rendered button stays locked until hydration, even with a preselected slot.
+    expect(markup).toMatch(/<button[^>]*type="submit"[^>]*disabled|<button[^>]*disabled[^>]*type="submit"/)
   })
 })

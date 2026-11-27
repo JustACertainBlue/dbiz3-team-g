@@ -14,6 +14,7 @@ import { hanoiClock } from '@/lib/time/hanoi-time'
 import { attachmentLine, chatActions, chatStatusLine, eventView, filterChats, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
 import { parseBookingRequest } from '@/lib/booking/request-card'
 import { usePolling } from '@/lib/client/use-polling'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 import './chat-v9.css'
 
 // Screens COM048 (Tour Agency) and COM065 (Local Provider): F-CHAT-01..05 on /api/iac/chats (spec-IAC FR-001..005);
@@ -35,6 +36,7 @@ export default function MessagesPage() {
 }
 
 function MessagesContent() {
+  const hydrated = useHydrated()
   const searchParams = useSearchParams()
   const requestedId = searchParams.get('chat_session_id')
   const [session, setSession] = useState<SessionContext | null>(null)
@@ -260,11 +262,11 @@ function MessagesContent() {
         </div>}
         {composer.readOnly
           ? <div className="ch9-closed"><p>{closed?.title ?? 'Hội thoại đã đóng — chỉ xem.'}</p><small>{closed?.hint}</small></div>
-          : <form className="ch9-composer" onSubmit={submit}>
+          : <form className="ch9-composer" method="post" onSubmit={submit}>
             <button type="button" className="ch9-clip" onClick={() => setAttachOpen(true)} aria-label="Đính kèm tệp"><Paperclip size={22} aria-hidden="true" /></button>
             <div className="ch9-input"><textarea value={messageText} onChange={event => setMessageText(event.target.value)} placeholder="Nhập tin nhắn…" title="Hỗ trợ **đậm** và *nghiêng*" rows={1} aria-label="Nội dung tin nhắn" />
               <small className={composer.canSend || !messageText.trim() ? '' : 'is-over'}>{composer.counter}</small></div>
-            <button type="submit" className="ch9-btn ch9-btn--primary ch9-send" disabled={!composer.canSend}>{pending ? 'Đang gửi…' : 'Gửi'}</button>
+            <button type="submit" className="ch9-btn ch9-btn--primary ch9-send" disabled={!hydrated || !composer.canSend}>{pending ? 'Đang gửi…' : 'Gửi'}</button>
           </form>}
       </>}
     </section>

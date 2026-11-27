@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { HOLD_HOURS } from '@/lib/provider/hold-hours'
 import GuestsInput, { guestsError } from './GuestsInput'
 import './request-v3.css'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 
 export interface FreeSlotOption { start: string; end: string; label: string }
 export interface RequestExperience { id: string; name: string; /** guests per slot */ max?: number }
@@ -16,6 +17,7 @@ export default function RequestButton({ experiences, date = '', guests = null, s
   experiences: RequestExperience[]; date?: string; guests?: number | null; slotTime?: string; className?: string; label?: string; initialOpen?: boolean
   /** test seam: skip the fetch and start with these free slots */ initialSlots?: FreeSlotOption[]
 }) {
+  const hydrated = useHydrated()
   const router = useRouter()
   const [open, setOpen] = useState(initialOpen)
   const [busy, setBusy] = useState(false)
@@ -74,7 +76,7 @@ export default function RequestButton({ experiences, date = '', guests = null, s
         {error && <p role="alert" className="v3rq__err">{error}</p>}
         <div className="v3rq__row">
           <button type="button" className="hab-btn hab-btn--secondary" onClick={() => setOpen(false)} disabled={busy}>Đóng</button>
-          <button type="submit" className="hab-btn hab-btn--primary" disabled={busy || !chosen}>{busy ? 'Đang gửi…' : 'Gửi yêu cầu'}</button>
+          <button type="submit" className="hab-btn hab-btn--primary" disabled={!hydrated || busy || !chosen}>{busy ? 'Đang gửi…' : 'Gửi yêu cầu'}</button>
         </div>
       </form>
     </div>}

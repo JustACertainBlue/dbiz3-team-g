@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { MessageCircle } from 'lucide-react'
 import AutoRefresh from '@/app/components/AutoRefresh'
 import { currentServerSession } from '@/lib/auth/server-session'
 import { demoRepository } from '@/lib/db/application-store'
@@ -34,6 +35,8 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
   const experience = await repository.find('experiences', row => row.experience_id === booking.experience_id)
   const provider = await repository.find('provider_profiles', row => row.provider_id === booking.provider_id)
   const version = provider && await repository.find('provider_profile_versions', row => row.provider_id === provider.provider_id && row.version_no === provider.published_version_no)
+  const providerUser = provider && await repository.find('user_accounts', row => row.user_id === provider.user_id)
+  const ownerName = providerUser?.full_name || version?.contact_person_name || ''
   const agency = await repository.find('agency_profiles', row => row.agency_id === booking.agency_id)
   const user = agency && await repository.find('user_accounts', row => row.user_id === agency.user_id)
   // Same view model as screen 04 (image, workshop line, tags); null when the experience is no longer listed.
@@ -80,11 +83,28 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
         ? <BookerForm bookingId={booking.booking_id} companyName={view.agencyName} email={user?.email ?? ''} contactName={view.contactName || user?.full_name || ''} contactPhone={view.contactPhone || user?.phone || ''} note={view.note} saved={!!view.contactName} />
         : <div className="v3a-right">
           {view.status === 'Booked' && <div className="v3a-banner"><b>Đặt chỗ của đoàn đã được xác nhận!</b><p className="v3a-sm">{view.providerName} đã nhận {vnd(view.price.total)} và đang chờ đón đoàn {view.price.guests} khách lúc {view.range.slice(0, 5)}, {view.dateLong}.</p></div>}
+          {view.status === 'Booked' && <div className="v3a-card">
+            <p className="v3a-ct">Việc tiếp theo</p>
+            <ol className="v3a-next">
+              <li><b>Báo giờ xe đến cho xưởng</b> trước ngày trải nghiệm để xưởng chuẩn bị đón đoàn.</li>
+              <li><b>Nhắc khách mặc trang phục phù hợp</b> với hoạt động thủ công tại xưởng.</li>
+              <li><b>Đến đúng giờ</b> tại {view.providerName}{view.address ? `, ${view.address}` : ''}. Ca của đoàn bắt đầu lúc {view.range.slice(0, 5)}.</li>
+            </ol>
+          </div>}
           {view.status === 'Completed' && <div className="v3a-banner"><b>Tour đã hoàn thành</b><p className="v3a-sm">Cảm ơn bạn đã đồng hành cùng làng nghề.</p></div>}
           <div className="v3a-card"><p className="v3a-ct">Thông tin người đặt</p>
             <p className="v3a-sm">{view.agencyName}{view.contactName && ` · ${view.contactName}`}{view.contactPhone && ` · ${view.contactPhone}`}</p>
             {view.note && <p className="v3a-cap">Yêu cầu riêng: {view.note}</p>}</div>
           {view.cancelLine && <div className="v3a-card"><p className="v3a-ct">{view.experienceName} · {view.period}</p><p className="v3a-row">{view.cancelLine}</p></div>}
+          {view.status === 'Booked' && <div className="v3a-card v3a-ask">
+            <div>
+              <p className="v3a-ct" style={{ marginBottom: 4 }}>Cần hỏi gì thêm?</p>
+              <p className="v3a-sm">{ownerName ? `Nhắn trực tiếp cho ${ownerName}, chủ xưởng.` : `Nhắn trực tiếp cho ${view.providerName}.`}</p>
+            </div>
+            <Link className="v3a-chat-icon" href="/messages" aria-label="Nhắn tin cho xưởng" title="Nhắn tin cho xưởng">
+              <MessageCircle size={20} aria-hidden="true" />
+            </Link>
+          </div>}
           <div className="v3a-actions"><Link className="v3a-btn v3a-btn--p" href="/explore">Tìm trải nghiệm cho đoàn khác</Link><Link className="v3a-btn v3a-btn--s" href={`/agency/${params.agencyId}/bookings`}>Về lịch sử đặt chỗ</Link></div>
         </div>}
     </div>

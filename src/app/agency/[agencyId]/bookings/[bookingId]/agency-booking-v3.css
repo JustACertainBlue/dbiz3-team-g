@@ -55,3 +55,7 @@
 .v3a-tot b,.v3a-old,.v3a-money{white-space:nowrap}
 .v3a-sp{align-items:baseline}
 .v3a-sp b{text-align:right;min-width:0;overflow-wrap:anywhere}
+.v3a-next{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:22px}
+.v3a-ask{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.v3a-chat-icon{width:42px;height:42px;border-radius:999px;border:1px solid #C9C4B5;display:inline-flex;align-items:center;justify-content:center;color:#1F2A25!important;flex:none;background:#fff}
+.v3a-chat-icon:hover{background:#F0F8F2;border-color:#165235}

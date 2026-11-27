@@ -19,7 +19,7 @@ export default function AccountView({ account, panel, forced, error, saving, sav
   const hydrated = useHydrated()
   const editing = panel === 'edit'
   const pending = account?.account_status === 'Pending Approval'
-  const statusText = !account ? '' : pending ? 'Chờ Sở Du lịch duyệt' : account.account_status === 'Active' ? 'Đang hoạt động' : account.account_status === 'Disabled' ? 'Đã khoá' : account.account_status || ''
+  const statusText = !account ? '' : pending ? 'Chờ Sở Du lịch duyệt' : account.account_status === 'Approved' ? 'Đã duyệt' : account.account_status === 'Active' ? 'Đang hoạt động' : account.account_status === 'Disabled' ? 'Đã khoá' : account.account_status || ''
   const subtitle = account ? [account.organization, account.title].filter(Boolean).join(' · ') : ''
 
   if (forced) return <main className="av3-page">

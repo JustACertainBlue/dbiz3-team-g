@@ -70,6 +70,7 @@ describe('Vietnamese date time like "09:02, 12/11/2026"', () => {
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { ContactDepartmentPopup, RejectedPopup, ReviseDocsPopup, SubmittedPopup } from '@/app/auth-v3/RegistrationPopups'
+import AccountView from '@/app/auth-v3/AccountView'
 ;(globalThis as { React?: typeof React }).React = React
 
 describe('registration status popups', () => {
@@ -107,5 +108,18 @@ describe('registration status popups', () => {
   it('the contact constant is empty until the team supplies a real one (no example.invalid)', async () => {
     const { DEPARTMENT_CONTACT } = await import('@/app/auth-v3/department-contact')
     expect(DEPARTMENT_CONTACT === null || !JSON.stringify(DEPARTMENT_CONTACT).includes('example.invalid')).toBe(true)
+  })
+})
+
+describe('screen 19 account status', () => {
+  it('shows the approved Agency status in Vietnamese', () => {
+    const noop = () => {}
+    const html = renderToStaticMarkup(React.createElement(AccountView, {
+      account: { full_name: 'Nguyễn An', title: 'Điều hành', phone: '0123456789', email: 'an@example.invalid', account_status: 'Approved', role: 'Tour_Agency', admin_type: null, data_scope: '', organization: 'Công ty An', business_href: null },
+      panel: 'info', forced: false, error: '', saving: false, saved: false, avatarVersion: 0, avatarFailed: true,
+      onEdit: noop, onCancel: noop, onSubmit: noop, onAvatar: noop, onAvatarError: noop,
+    }))
+    expect(html).toContain('Đã duyệt')
+    expect(html).not.toContain('>Approved<')
   })
 })

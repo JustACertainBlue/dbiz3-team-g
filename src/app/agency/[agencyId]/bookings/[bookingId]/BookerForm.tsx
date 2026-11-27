@@ -4,6 +4,7 @@
 // built (no column). No payment gateway: "Hoàn tất đặt chỗ" saves the contact and sends "Công ty báo đã thanh toán".
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useHydrated } from '@/app/provider/v3/useHydrated'
 import AgencyCancel from './AgencyCancel'
 import './agency-booking-v3.css'
 
@@ -11,6 +12,7 @@ export default function BookerForm({ bookingId, companyName, email, contactName,
   bookingId: string; companyName: string; email: string; contactName: string; contactPhone: string; note: string; saved: boolean
 }) {
   const router = useRouter()
+  const hydrated = useHydrated()
   const [name, setName] = useState(contactName)
   const [phone, setPhone] = useState(contactPhone)
   const [request, setRequest] = useState(note)
@@ -49,7 +51,7 @@ export default function BookerForm({ bookingId, companyName, email, contactName,
       {error && <p className="v3a-err" role="alert">{error}</p>}
       {done && <p className="v3a-ok" role="status">Đã gửi xưởng thông báo bạn đã thanh toán. Xưởng sẽ xác nhận khi nhận tiền.</p>}
       <div className="v3a-actions">
-        <button type="submit" className="v3a-btn v3a-btn--p" disabled={pending}>{pending ? 'Đang gửi…' : 'Hoàn tất đặt chỗ'}</button>
+        <button type="submit" className="v3a-btn v3a-btn--p" disabled={!hydrated || pending}>{pending ? 'Đang gửi…' : 'Hoàn tất đặt chỗ'}</button>
         <AgencyCancel bookingId={bookingId} />
       </div>
       <p className="v3a-cap" style={{ marginTop: 12 }}>Bạn chưa thanh toán nên báo huỷ lúc này không mất phí.</p>

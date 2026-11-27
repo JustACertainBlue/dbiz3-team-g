@@ -48,8 +48,8 @@ describe('refresh catalog copies (DEV only)', () => {
   })
   it('refuses any target that is not the DEV project, before connecting', () => {
     expect(assertDevTargets(devEnv)).toBe(DEV_PROJECT_REF)
-    expect(() => assertDevTargets({ ...devEnv, SUPABASE_URL: 'https://euxclvszgiknjosbwjya.supabase.co' })).toThrow(/not the DEV project.*Nothing was changed/)
-    expect(() => assertDevTargets({ ...devEnv, DATABASE_URL: devEnv.DATABASE_URL.replace(DEV_PROJECT_REF, 'euxclvszgiknjosbwjya') })).toThrow(/not the DEV project/)
+    expect(() => assertDevTargets({ ...devEnv, SUPABASE_URL: 'https://pdeioligjeksgfnodgzs.supabase.co' })).toThrow(/not the DEV project.*Nothing was changed/)
+    expect(() => assertDevTargets({ ...devEnv, DATABASE_URL: devEnv.DATABASE_URL.replace(DEV_PROJECT_REF, 'pdeioligjeksgfnodgzs') })).toThrow(/not the DEV project/)
     expect(() => assertDevTargets({ SUPABASE_URL: devEnv.SUPABASE_URL })).toThrow(/not configured/)
   })
   it('is a dry run unless --apply is given', () => {

@@ -1,7 +1,9 @@
 // Pure helpers for scripts/db/migrate.mjs (no connection, no env loading on import).
 import { readdirSync } from 'node:fs'
 
-export const PROD_PROJECT_REF = 'euxclvszgiknjosbwjya'
+import { PROD_PROJECT_REF, assertNoRetiredRef } from './project-refs.mjs'
+
+export { PROD_PROJECT_REF }
 
 /** Migration files (`<digits>_<name>.sql`) of a folder, in apply order. */
 export function listMigrations(dir = 'supabase/migrations') {
@@ -35,6 +37,7 @@ function projectRef(value) {
  */
 export function migrationTarget(env, { dryRun = false, targetProd = false } = {}) {
   if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not configured')
+  assertNoRetiredRef('DATABASE_URL', env.DATABASE_URL) // first: a retired project is refused with or without any flag
   const ref = projectRef(env.DATABASE_URL)
   if (!ref) throw new Error('DATABASE_URL does not name a Supabase project ref; refused')
   const isProd = ref === PROD_PROJECT_REF

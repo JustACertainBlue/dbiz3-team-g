@@ -37,6 +37,7 @@ import { pathToFileURL } from 'node:url'
 import { projectRefFromDatabaseUrl } from './lecturer-accounts.mjs'
 import { DEV_PROJECT_REF, PROD_PROJECT_REF, changedSql, replaceSlots, selectSql, slotKey, updateSql, vocabulary } from './dev-load-content.mjs'
 import { resolveNotesDir } from '../storage/refresh-catalog-copies.mjs'
+import { assertNoRetiredRef } from './project-refs.mjs'
 
 export { DEV_PROJECT_REF, PROD_PROJECT_REF }
 export const DEFAULT_DIR = '.demo-data/prod-content'
@@ -95,6 +96,7 @@ export function parseArgs(argv) {
 /** Runs before any connection. DEV unless --target-prod; with it PROD and CONFIRM_PROJECT_REF must both be the PROD ref. */
 export function assertTarget(env, { targetProd = false } = {}) {
   if (!env.DATABASE_URL) refuse('DATABASE_URL is not configured.')
+  assertNoRetiredRef('DATABASE_URL', env.DATABASE_URL)
   const ref = projectRefFromDatabaseUrl(env.DATABASE_URL)
   if (targetProd && env.CONFIRM_PROJECT_REF !== PROD_PROJECT_REF) refuse(`--target-prod needs CONFIRM_PROJECT_REF=${PROD_PROJECT_REF} (missing or different).`)
   const expected = targetProd ? PROD_PROJECT_REF : DEV_PROJECT_REF

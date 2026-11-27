@@ -62,7 +62,8 @@ export async function loadMediaFactsFromSql(db: SqlExecutor, id: string): Promis
     COALESCE((SELECT json_agg(json_build_object('village_id',v.village_id,'active',v.is_active)) FROM public.villages v WHERE v.cover_image_id=f.file_id),'[]'::json) AS covers
     FROM public.stored_files f WHERE f.file_id=$1::uuid`, [id])
   const row = result.rows[0]
-  if (!row || row.storage_key !== `prf-media/${id}`) return null
+  const isMediaKey = row && (row.storage_key === `prf-media/${id}` || row.storage_key.startsWith('seed/'))
+  if (!isMediaKey) return null
   return {
     file: { file_id: row.file_id, storage_key: row.storage_key, file_name: row.file_name, media_type: row.media_type, file_size_bytes: row.file_size_bytes, uploaded_by: row.uploaded_by ?? null },
     documents: row.documents, versionMedia: row.version_media, experienceMedia: row.experience_media, covers: row.covers,
@@ -72,7 +73,8 @@ export async function loadMediaFactsFromSql(db: SqlExecutor, id: string): Promis
 /** Automated-test fixtures (JSON rows, string values): same facts, read from the in-memory tables. */
 async function loadMediaFactsFromStore(repo: ApplicationStore, id: string): Promise<MediaFacts | null> {
   const file = await repo.find('stored_files', row => row.file_id === id)
-  if (!file || file.storage_key !== `prf-media/${id}`) return null
+  const isMediaKey = file && (file.storage_key === `prf-media/${id}` || file.storage_key.startsWith('seed/'))
+  if (!isMediaKey) return null
   const [providers, versions, users, villages, documents, versionMedia, profileMedia, experiences] = await Promise.all(
     ['provider_profiles', 'provider_profile_versions', 'user_accounts', 'villages', 'provider_version_documents', 'provider_version_media', 'profile_media', 'experiences'].map(name => repo.all(name)))
   const provider = (id: string) => providers.find(row => row.provider_id === id)

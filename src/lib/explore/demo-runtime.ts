@@ -19,4 +19,5 @@ class PersistentExploreRuntime {
   async startSession(viewer:Viewer,consent:boolean){return (await this.write(engine=>engine.startSession(viewer,consent)))}
   async recordEvent(id:string,input:Parameters<ExploreRuntime['recordEvent']>[1]){return (await this.write(engine=>engine.recordEvent(id,input)))}
 }
-export async function demoRuntime(){return new PersistentExploreRuntime(await loadExploreRuntime())}
+// Pass the snapshot a page already loaded with loadExploreRuntime({ sessions: true }) to avoid reading it twice.
+export async function demoRuntime(seed?:ExploreSeed){return new PersistentExploreRuntime(seed??await loadExploreRuntime({sessions:true}))}

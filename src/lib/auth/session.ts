@@ -34,8 +34,8 @@ function canonicalRole(session: ActorSession): AuthRole | null {
 
 async function permissionSet(role: AuthRole | null, adminType: AdminType | null): Promise<string[]> {
   if (!role) return []
-  return [...new Set((await demoRepository().all('role_permissions'))
-    .filter(row => row.role_code === role && (!row.admin_type || row.admin_type === adminType))
+  return [...new Set((await demoRepository().where('role_permissions', { role_code: role }))
+    .filter(row => (!row.admin_type || row.admin_type === adminType))
     .map(row => row.permission_code))]
     .sort()
 }
@@ -69,7 +69,7 @@ export async function toSessionContext(session: SessionLike): Promise<SessionCon
 export async function sessionDisplayName(session: SessionLike): Promise<string> {
   const actor = (await toSessionContext(session))
   if (!actor.authenticated || !actor.userId) return 'Khách xem công khai'
-  return (await demoRepository().find('user_accounts', row => row.user_id === actor.userId))?.full_name
+  return (await demoRepository().where('user_accounts', { user_id: actor.userId }))[0]?.full_name
     || (actor.role === 'Tour_Agency' ? 'Tour Agency' : actor.role === 'Local_Provider' ? 'Local Provider' : `${actor.adminType ?? ''} Admin`.trim())
 }
 

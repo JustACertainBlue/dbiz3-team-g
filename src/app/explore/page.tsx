@@ -27,12 +27,12 @@ type Params = { loc?: string };
 // from docs/spec are listed in docs/build/ui-v3-spec-deviations.md). Four cards (Agency: personal ranking order),
 // quick filters by duration and capacity, villages with an image, the hold banner for an Agency On hold booking.
 export default async function ExplorePage({ searchParams }: { searchParams: Params }) {
-  const seed = (await loadExploreRuntime());
+  const seed = (await loadExploreRuntime({ sessions: true }));
   const session = (await currentServerSession());
   const viewer = resolveViewer(seed, session.role === 'Tour_Agency' ? session.agencyId : null, true);
   const isAgency = viewer.kind === 'agency';
   const agencyId = viewer.kind === 'agency' ? viewer.agencyId : null;
-  const engine = await demoRuntime();
+  const engine = await demoRuntime(seed);
   const tracked = await engine.sessionFor(cookies().get('explore_session')?.value ?? '');
   const rankOrder = tracked && tracked.agency_id === agencyId ? (await engine.resultsFor(tracked.session_id)).map(row => row.experience_id) : undefined;
 

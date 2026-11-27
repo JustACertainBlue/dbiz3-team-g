@@ -49,6 +49,11 @@ describe('hoursSummary', () => {
     expect(hoursSummary(rows)[0]).toEqual({ days: 'Thứ 2, Thứ 3', text: '08:00 – 11:00, 13:00 – 17:00' })
     expect(hoursSummary([])).toEqual([{ days: 'Thứ 2 – Chủ nhật', text: 'Nghỉ' }])
   })
+  it('formats PostgreSQL TIME values without seconds in both opening-hours views', () => {
+    const rows = [{ weekday: '3', local_start: '08:00:00', local_end: '17:30:00' }]
+    expect(hoursByWeekday(rows)).toEqual({ 3: '08:00 – 17:30' })
+    expect(hoursSummary(rows).find(row => row.days === 'Thứ 4')?.text).toBe('08:00 – 17:30')
+  })
   it('hoursByWeekday has only open days', () => { expect(hoursByWeekday(hours)).toEqual({ 1: '08:00 – 17:00', 2: '08:00 – 17:00', 3: '08:00 – 17:00', 4: '08:00 – 17:00', 5: '08:00 – 17:00' }) })
 })
 

@@ -140,4 +140,61 @@ describe('Regression test for D2-D4 and D27: image loading and display across 4 
     expect(pGalleryHtml).toContain('<img')
     expect(pGalleryHtml).toContain('/api/prf/media/')
   })
+
+  it('All eligible villages on /villages have valid images that resolve via Media API (200 OK)', async () => {
+    const seed = loadExploreSeed()
+    const { villageCards } = await import('@/lib/explore/v3-village')
+    const cards = villageCards(seed)
+    expect(cards.length).toBeGreaterThanOrEqual(5)
+    for (const card of cards) {
+      expect(card.image).not.toBeNull()
+      expect(card.image.url).toMatch(/^\/api\/prf\/media\/[0-9a-f-]{36}/)
+      const fileId = card.image.url.split('/')[4].split('?')[0]
+      const req = new Request(`http://localhost${card.image.url}`)
+      const res = await GET(req, { params: { fileId } })
+      expect(res.status).toBe(200)
+      expect(res.headers.get('Content-Type')).toMatch(/image\/(jpeg|webp)/)
+      const buffer = await res.arrayBuffer()
+      expect(buffer.byteLength).toBeGreaterThan(0)
+    }
+  })
+
+  it('All 32 seed image files resolve via openProfileMediaObject (stream with bytes)', async () => {
+    const seed = loadExploreSeed()
+    const imageFiles = seed.stored_files.filter(f => f.media_type.startsWith('image/') && !f.file_name.includes('chatfile'))
+    expect(imageFiles.length).toBe(32)
+    for (const f of imageFiles) {
+      const factsFile: MediaFacts['file'] = {
+        file_id: f.file_id,
+        storage_key: f.storage_key,
+        file_name: f.file_name,
+        media_type: f.media_type,
+        file_size_bytes: f.file_size_bytes,
+        uploaded_by: null,
+      }
+      const result = await openProfileMediaObject(factsFile, 800)
+      expect(result, `Failed to open file ${f.file_id} (${f.file_name})`).toBeDefined()
+      expect(result.body).toBeDefined()
+      expect(result.contentType).toMatch(/image\/(jpeg|webp)/)
+    }
+  })
+
+  it('All verified providers have images in providerView that resolve via Media API (200 OK)', async () => {
+    const seed = loadExploreSeed()
+    const verifiedProviders = seed.provider_profiles.filter(p => p.verification_status === 'Verified')
+    expect(verifiedProviders.length).toBeGreaterThan(0)
+    for (const p of verifiedProviders) {
+      const view = providerView(seed, p.provider_id, { kind: 'guest' }, new Date(), true)
+      if (!view) continue
+      expect(view.images.length).toBeGreaterThan(0)
+      for (const img of view.images) {
+        expect(img.url).toMatch(/^\/api\/prf\/media\/[0-9a-f-]{36}/)
+        const fileId = img.url.split('/')[4].split('?')[0]
+        const req = new Request(`http://localhost${img.url}`)
+        const res = await GET(req, { params: { fileId } })
+        expect(res.status, `Failed for provider ${p.provider_id} image ${fileId}`).toBe(200)
+        expect(res.headers.get('Content-Type')).toMatch(/image\/(jpeg|webp)/)
+      }
+    }
+  })
 })

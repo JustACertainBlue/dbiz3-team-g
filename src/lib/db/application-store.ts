@@ -17,7 +17,8 @@ export interface ApplicationStore {
 }
 
 // Ordinary tests explicitly use isolated fixtures. Live failures never fall back to JSON.
-const fixtures:ApplicationStore={
+// Also used as a read-only fallback when DATABASE_APP_URL is not configured (local dev without Postgres).
+export const fixtures:ApplicationStore={
   all:async name=>fixtureRepository().all(name),
   find:async(name,predicate)=>fixtureRepository().find(name,predicate),
   snapshot:async names=>fixtureRepository().snapshot(names),

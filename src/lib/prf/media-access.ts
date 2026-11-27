@@ -5,7 +5,7 @@
 import type { SessionContext } from '../auth/session'
 import type { SqlExecutor } from '../db/client'
 import { AsyncPostgresStore } from '../db/async-store'
-import { demoRepository, type ApplicationStore } from '../db/application-store'
+import { demoRepository, fixtures, type ApplicationStore } from '../db/application-store'
 import type { DemoRow } from '../demo/types'
 
 interface ProviderLink { provider_id: string, village_id: string | null, provider_exists: boolean }
@@ -101,6 +101,14 @@ async function loadMediaFactsFromStore(repo: ApplicationStore, id: string): Prom
 
 export async function loadMediaFacts(id: string): Promise<MediaFacts | null> {
   if (!UUID.test(id)) return null
-  const repo = demoRepository()
-  return repo instanceof AsyncPostgresStore ? loadMediaFactsFromSql(repo.executor(), id) : loadMediaFactsFromStore(repo, id)
+  try {
+    const repo = demoRepository()
+    if (repo instanceof AsyncPostgresStore) {
+      return await loadMediaFactsFromSql(repo.executor(), id)
+    }
+    return await loadMediaFactsFromStore(repo, id)
+  } catch {
+    // DATABASE_APP_URL not configured (local dev without Postgres) — fall through to JSON fixtures
+    return loadMediaFactsFromStore(fixtures, id)
+  }
 }

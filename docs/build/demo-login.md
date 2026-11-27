@@ -5,20 +5,23 @@ set by `/login` (`POST /api/auth/login`). The old cookie `hab_demo_account` and 
 under `NODE_ENV=test` (automated tests); in `npm run dev` they give a Guest. Every quickstart therefore logs in
 first and then sends the saved cookie.
 
-## Tài khoản thật theo vai trên PROD (bàn giao v3)
+## Real role accounts on PROD (v3 handoff)
 
-Danh sách email theo vai do Trúc Linh cấp và Khánh Linh chia riêng cho nhóm. Khi danh sách được bàn giao, dùng tài khoản tương ứng
-với Công ty lữ hành, Xưởng nghề, UBND xã hoặc Sở Du lịch; mật khẩu hỏi người phụ trách trong nhóm, không ghi vào repo.
-Không yêu cầu mật khẩu database để đăng nhập ứng dụng. Tài khoản `*-tester@example.invalid` chỉ dùng tạm và sẽ bị khoá khi
-nhóm chuyển sang bộ tài khoản thật; tài liệu này không khẳng định việc chuyển đổi đã hoàn tất. Không tạo dữ liệu thử mới bằng
-tài khoản tester sau thông báo khoá. Local dùng database DEV và bộ tài khoản DEV riêng; tài khoản PROD không mặc nhiên có trên DEV.
+The list of role accounts (Tour Agency, workshop, commune UBND, Department of Tourism) was issued by Trúc Linh and is held
+by Khánh Linh, who shares it with the team separately. It is not in this repository: no emails and no passwords are written
+here. When the list has been handed over, log in with the account that matches the role you need and ask the account owner
+for its password. The application never asks for a database password to sign in. The `*-tester@example.invalid` accounts are
+temporary and will be locked when the team moves to the real set; this document does not claim that the move is done. Do not
+create new test data with a tester account after the lock announcement. Local development uses the DEV database and its own
+DEV accounts; a PROD account is not assumed to exist on DEV.
 
-Các hướng dẫn seed/CLI bên dưới là quickstart và cách cấp tài khoản cũ, không phải danh sách tài khoản thật đã bàn giao.
+The seed/CLI instructions below are the quickstart and the older way of issuing accounts. They are not the list of real accounts.
 
-## Tài khoản thử nghiệm theo vai trên DEV
+## Test accounts by role on DEV
 
-Trang `/login` không hiển thị danh sách tài khoản thử nghiệm. Các email seed dưới đây chỉ dùng khi database DEV đã có các bản ghi seed tương ứng.
-`demo:seed` chỉ tạo JSON fixture, không cấp tài khoản vào PostgreSQL đang phục vụ ứng dụng.
+The `/login` page does not list test accounts. The seed emails below work only when the DEV database already has the
+matching seed records. `demo:seed` only creates the JSON fixture; it does not create accounts in the PostgreSQL database that
+serves the app.
 
 | Name used in quickstarts | Email | Who |
 |---|---|---|
@@ -27,14 +30,13 @@ Trang `/login` không hiển thị danh sách tài khoản thử nghiệm. Các 
 | `ubnd` | `thanhvien8@example.invalid` | UBND Admin, village Hạ Thái (inactive village, see issue #65) |
 | `hdt` | `thanhvien9@example.invalid` | HDT Admin |
 
-**Mật khẩu trên DEV.** Chỉ bốn tài khoản seed còn mang `seedhash` mới chấp nhận mật khẩu bất kỳ khác rỗng qua
-`authenticatePrototype`; các lệnh quickstart bên dưới dùng chuỗi `demo` cho trường hợp đó. Nếu tài khoản đã được
-đặt mật khẩu thật, hãy dùng mật khẩu được cấp. Bản production luôn từ chối kiểu đăng nhập bằng mật khẩu bất kỳ.
-Mật khẩu thử nghiệm thật cần hỏi trong nhóm hoặc người phụ trách tài khoản; không ghi mật khẩu vào repo. Có thể
-tạo tài khoản qua đăng ký hoặc đặt lại mật khẩu qua HDT/UBND với `HAB_EMAIL_MODE=dev-outbox`; xem
-`specs/AUT-INTEGRATION.md`.
+**Password on DEV.** Only the four seed accounts that still carry `seedhash` accept any non-empty password through
+`authenticatePrototype`; the quickstart commands below type `demo` for that case. If an account already has a real password,
+use the password it was given. Production always rejects the any-password login. Real test passwords come from the team or
+from whoever owns the account; never write a password into the repository. Accounts can also be created through
+registration, or through an HDT/UBND password reset with `HAB_EMAIL_MODE=dev-outbox`; see `specs/AUT-INTEGRATION.md`.
 
-## Tài khoản thử nghiệm trên bản hosted
+## Hosted version: personal test accounts
 
 On the production build (`NODE_ENV=production`) the "any non-empty password" rule is off. Test accounts get
 real passwords from the manual one-off command `npm run db:set-test-passwords` (`scripts/db/set-test-passwords.mjs`,
@@ -49,14 +51,15 @@ target database first; check it.
 | Provider (existing, no new workshop) | `thanhvien19@example.invalid`, Xưởng thủ công Bát Tràng | `HAB_TEST_PASSWORD_PROVIDER` |
 | UBND (existing, no new UBND) | `thanhvien1@example.invalid`, Bát Tràng | `HAB_TEST_PASSWORD_UBND` |
 
-Danh sách thực tế phụ thuộc các biến môi trường đã dùng khi cấp tài khoản. Hỏi người phụ trách tài khoản để lấy
-email theo vai và mật khẩu tương ứng; không dùng `demo` hoặc mật khẩu bất kỳ trên hosted. Chạy lại script với cùng
-biến thì không đổi dữ liệu; đổi mật khẩu sẽ thay hash và đăng xuất các phiên đang mở. Thiếu hoặc sai mật khẩu thì
-tài khoản đó bị bỏ qua và có cảnh báo (không in mật khẩu). Chỉ chia sẻ mật khẩu riêng với người sử dụng.
+The actual list depends on the environment variables used when the accounts were issued. Ask the account owner for the
+email of each role and its password; do not use `demo` or any-password login on the hosted version. Re-running the script with
+the same variables changes nothing; a changed password replaces the old hash and logs out that account's open sessions. A
+missing or invalid password skips that account with a warning (the password is never printed). Share each password only
+with its owner.
 
 ## In the browser
 
-Open `http://localhost:3000/login`, nhập email theo vai và mật khẩu phù hợp ở trên, rồi click **Đăng nhập**.
+Open `http://localhost:3000/login`, type the email for the role and the matching password from above, then click **Đăng nhập**.
 To change role, use **Đăng xuất** in the header (confirm) and log in again with another email.
 
 ## With curl

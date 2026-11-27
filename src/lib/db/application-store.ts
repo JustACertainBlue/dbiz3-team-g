@@ -24,7 +24,7 @@ export interface ApplicationStore {
 
 const matches=(criteria:Readonly<Record<string,string>>)=>(row:DemoRow)=>Object.entries(criteria).every(([key,value])=>row[key]===value)
 // Ordinary tests explicitly use isolated fixtures. Live failures never fall back to JSON.
-// Also used as a read-only fallback when DATABASE_APP_URL is not configured (local dev without Postgres).
+// Fixture rows for ordinary tests. Exported (PR #306, Vu Minh Thu); the live app never reads them as a fallback.
 export const fixtures:KeyedStore={
   all:async name=>fixtureRepository().all(name),
   find:async(name,predicate)=>fixtureRepository().find(name,predicate),

@@ -5,7 +5,8 @@
 import type { SessionContext } from '../auth/session'
 import type { SqlExecutor } from '../db/client'
 import { AsyncPostgresStore } from '../db/async-store'
-import { demoRepository, fixtures, type ApplicationStore } from '../db/application-store'
+import { demoRepository, type ApplicationStore } from '../db/application-store'
+import { demoSlugForSeedFile } from './seed-media'
 import type { DemoRow } from '../demo/types'
 
 interface ProviderLink { provider_id: string, village_id: string | null, provider_exists: boolean }
@@ -62,19 +63,20 @@ export async function loadMediaFactsFromSql(db: SqlExecutor, id: string): Promis
     COALESCE((SELECT json_agg(json_build_object('village_id',v.village_id,'active',v.is_active)) FROM public.villages v WHERE v.cover_image_id=f.file_id),'[]'::json) AS covers
     FROM public.stored_files f WHERE f.file_id=$1::uuid`, [id])
   const row = result.rows[0]
-  const isMediaKey = row && (row.storage_key === `prf-media/${id}` || row.storage_key.startsWith('seed/'))
-  if (!isMediaKey) return null
+  if (!row || !(row.storage_key === `prf-media/${id}` || isSeedImage(row))) return null
   return {
     file: { file_id: row.file_id, storage_key: row.storage_key, file_name: row.file_name, media_type: row.media_type, file_size_bytes: row.file_size_bytes, uploaded_by: row.uploaded_by ?? null },
     documents: row.documents, versionMedia: row.version_media, experienceMedia: row.experience_media, covers: row.covers,
   }
 }
 
+/** A seed placeholder file that has a demo picture (seed-media.ts); other seed files (chat attachments, PDFs) are not media. */
+const isSeedImage = (file: { [column: string]: unknown }) => demoSlugForSeedFile({ file_id: String(file.file_id), storage_key: String(file.storage_key) }) !== null
+
 /** Automated-test fixtures (JSON rows, string values): same facts, read from the in-memory tables. */
 async function loadMediaFactsFromStore(repo: ApplicationStore, id: string): Promise<MediaFacts | null> {
   const file = await repo.find('stored_files', row => row.file_id === id)
-  const isMediaKey = file && (file.storage_key === `prf-media/${id}` || file.storage_key.startsWith('seed/'))
-  if (!isMediaKey) return null
+  if (!file || !(file.storage_key === `prf-media/${id}` || isSeedImage(file))) return null
   const [providers, versions, users, villages, documents, versionMedia, profileMedia, experiences] = await Promise.all(
     ['provider_profiles', 'provider_profile_versions', 'user_accounts', 'villages', 'provider_version_documents', 'provider_version_media', 'profile_media', 'experiences'].map(name => repo.all(name)))
   const provider = (id: string) => providers.find(row => row.provider_id === id)
@@ -101,14 +103,6 @@ async function loadMediaFactsFromStore(repo: ApplicationStore, id: string): Prom
 
 export async function loadMediaFacts(id: string): Promise<MediaFacts | null> {
   if (!UUID.test(id)) return null
-  try {
-    const repo = demoRepository()
-    if (repo instanceof AsyncPostgresStore) {
-      return await loadMediaFactsFromSql(repo.executor(), id)
-    }
-    return await loadMediaFactsFromStore(repo, id)
-  } catch {
-    // DATABASE_APP_URL not configured (local dev without Postgres) — fall through to JSON fixtures
-    return loadMediaFactsFromStore(fixtures, id)
-  }
+  const repo = demoRepository()
+  return repo instanceof AsyncPostgresStore ? loadMediaFactsFromSql(repo.executor(), id) : loadMediaFactsFromStore(repo, id)
 }

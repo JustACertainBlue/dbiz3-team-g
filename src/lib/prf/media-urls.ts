@@ -1,4 +1,5 @@
 // Client-safe media URL helpers (no server imports): the UI builds src/srcset from the URLs made here.
+import { demoSlugForSeedFile } from './seed-media'
 const PRF_PREFIX = 'prf-media/'
 const ROUTE = '/api/prf/media/'
 
@@ -27,14 +28,11 @@ export interface ImageRef { url: string; width: number; height: number }
 
 const dimension = (value: string | number | undefined) => { const number = Number(value); return Number.isFinite(number) && number > 0 ? Math.round(number) : 0 }
 
-const SEED_STORAGE_KEY = /^seed\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.[a-z0-9]+$/i
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-/** Servable image of a stored_files row, or null (seed placeholder keys without an image are not images). */
+/** Servable image of a stored_files row, or null (a seed placeholder key is an image only when it has a demo picture, see seed-media.ts). */
 export function imageRef(file: StoredFileFacts): ImageRef | null {
   let url: string
   if (file.storage_key.startsWith(PRF_PREFIX)) url = mediaUrl(file.file_id ? `${PRF_PREFIX}${file.file_id}` : file.storage_key, file.file_size_bytes)
-  else if (file.file_id && UUID.test(file.file_id) && (SEED_STORAGE_KEY.test(file.storage_key) || file.storage_key.startsWith('seed/'))) {
+  else if (file.file_id && demoSlugForSeedFile({ file_id: file.file_id, storage_key: file.storage_key })) {
     url = mediaUrl(`${PRF_PREFIX}${file.file_id}`, file.file_size_bytes)
   }
   else if (/^https?:\/\//.test(file.storage_key)) url = file.storage_key

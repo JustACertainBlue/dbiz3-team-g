@@ -1,12 +1,13 @@
 import { mkdirSync,readFileSync,writeFileSync,rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { storageClient } from '../../../scripts/storage/client.mjs'
+import { SEED_STORAGE_KEY } from '../prf/seed-media'
 
 // prf-media/<id>.w400|800|1600.webp: WebP display variants (scripts/storage/media-variants.mjs, step 2A 2026-11-20).
 export function validObjectKey(key:string){
   if(!/^(prf-media|chat-files|registration-documents|account-avatars)\/[0-9a-f-]{36}$/i.test(key)
     &&!/^prf-media\/[0-9a-f-]{36}\.w(400|800|1600)\.webp$/i.test(key)
-    &&!/^seed\/.*$/i.test(key))
+    &&!SEED_STORAGE_KEY.test(key))
     throw new Error('Invalid object key')
   return key
 }

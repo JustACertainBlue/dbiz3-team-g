@@ -4,6 +4,7 @@ import AutoRefresh from '@/app/components/AutoRefresh'
 import CoverImage from '@/app/explore/v3/CoverImage'
 import { listAgencyBookings } from '@/lib/booking/agency-bookings'
 import { AGENCY_TABS, agencyRowChips, agencyTabCount, parseAgencyTab } from '@/lib/booking/agency-list'
+import { bookingTourPill } from '@/lib/booking/list-tabs'
 import { bookingView } from '@/lib/booking/booking-view'
 import { adjustmentLine } from '@/lib/booking/display'
 import { rulesOf } from '@/lib/booking/group-price'
@@ -68,18 +69,21 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
       <Link className="v3g-cal" href={`/agency/${params.agencyId}/schedule`}><CalendarDays aria-hidden="true" size={18} />Xem lịch</Link>
     </div>
     {pageRows.length === 0 ? <p className="v3l-empty">Chưa có đặt chỗ.</p> : <div className="v3g-list">
-      {pageRows.map((row, index) => {
-        const booking = bookings.get(row.booking_id)!
-        const experience = experiences.get(booking.experience_id)
-        const view = bookingView({ booking, experience, rules: rulesOf(ruleRows, booking.experience_id), providerName: row.provider_name, agencyName: '', now: new Date() })
-        const chips = agencyRowChips(row.status)
-        const reason = row.status === 'Cancelled' ? history.filter(item => item.booking_id === row.booking_id && item.to_status === 'Cancelled').at(-1)?.reason ?? '' : ''
-        const detail = `${base}/${row.booking_id}`
-        return <article key={row.booking_id} className="v3g-card">
-          <Link href={detail} className="v3g-photo" aria-label={row.experience_name}><CoverImage image={experienceImage(seed, booking.experience_id)} alt="" sizes="260px" priority={index === 0 ? 'eager' : 'lazy'} /></Link>
-          <div className="v3g-body">
-            <div className="v3g-main">
-              <div className="v3g-chips"><span className={`v3l-pill v3l-pill--${row.status === 'On hold' ? 'hold' : row.status === 'Booked' ? 'booked' : row.status === 'Completed' ? 'done' : 'cancel'}`}>{chips.status}</span>{chips.pay && <span className="v3l-pill">{chips.pay}</span>}</div>
+      {(() => {
+        const now = new Date()
+        return pageRows.map((row, index) => {
+          const booking = bookings.get(row.booking_id)!
+          const experience = experiences.get(booking.experience_id)
+          const view = bookingView({ booking, experience, rules: rulesOf(ruleRows, booking.experience_id), providerName: row.provider_name, agencyName: '', now })
+          const chips = agencyRowChips(row.status, booking.start_at, now)
+          const pill = bookingTourPill(row.status, 'agency', booking.start_at, now)
+          const reason = row.status === 'Cancelled' ? history.filter(item => item.booking_id === row.booking_id && item.to_status === 'Cancelled').at(-1)?.reason ?? '' : ''
+          const detail = `${base}/${row.booking_id}`
+          return <article key={row.booking_id} className="v3g-card">
+            <Link href={detail} className="v3g-photo" aria-label={row.experience_name}><CoverImage image={experienceImage(seed, booking.experience_id)} alt="" sizes="260px" priority={index === 0 ? 'eager' : 'lazy'} /></Link>
+            <div className="v3g-body">
+              <div className="v3g-main">
+                <div className="v3g-chips"><span className={`v3l-pill v3l-pill--${pill.cls}`}>{chips.status}</span>{chips.pay && <span className="v3l-pill">{chips.pay}</span>}</div>
               <h2 className="v3g-name"><Link href={detail}>{row.experience_name}</Link></h2>
               <p className="v3g-sm">{row.village_name} · {row.provider_name}</p>
               <div className="v3g-tags"><span className="v3g-tag">{view.dateLong}</span><span className="v3g-tag">{view.range}</span><span className="v3g-tag">{view.price.guests} khách</span></div>
@@ -98,7 +102,8 @@ export default async function AgencyBookingHistoryPage({ params, searchParams }:
             </div>
           </div>
         </article>
-      })}
+        })
+      })()}
     </div>}
     <div className="v3l-foot">
       <p className="v3l-note">{visible.length ? `Hiển thị ${from + 1}–${from + pageRows.length} / ${visible.length} đặt chỗ` : 'Chưa có đặt chỗ'}</p>

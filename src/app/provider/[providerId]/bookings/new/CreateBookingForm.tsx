@@ -9,6 +9,7 @@ import { groupPrice, priceBreakdown, type DiscountRule } from '@/lib/booking/gro
 import { HOLD_HOURS } from '@/lib/provider/hold-hours'
 import { adjustmentLine } from '@/lib/booking/display'
 import GuestsInput, { guestsError } from '@/app/explore/v3/GuestsInput'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 
 export interface ExperienceOption {
   experience_id: string; name: string; duration_minutes: number; max_participants: number; price_per_person: number
@@ -28,6 +29,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
   providerId: string; experiences: ExperienceOption[]; agencies: AgencyOption[]; slots?: SlotOption[]; initialAgencyId?: string; requestMessageId?: string
   initial?: { experienceId?: string; date?: string; time?: string; guests?: string; perGuest?: string }
 }) {
+  const hydrated = useHydrated()
   const router = useRouter()
   const [experienceId, setExperienceId] = useState(experiences.find(e => e.experience_id === initial?.experienceId)?.experience_id ?? experiences[0]?.experience_id ?? '')
   const [agencyId, setAgencyId] = useState(agencies.find(a => a.agency_id === initialAgencyId)?.agency_id ?? agencies[0]?.agency_id ?? '')
@@ -116,7 +118,7 @@ export default function CreateBookingForm({ providerId, experiences, agencies, s
       {error && <p className="v3b-err" role="alert">{error}</p>}
       <div className="v3b-actions">
         <Link className="v3b-btn v3b-btn--s" href={`/provider/${providerId}/bookings`}>Huỷ</Link>
-        <button type="submit" className="v3b-btn v3b-btn--p" disabled={saving}>{saving ? 'Đang tạo…' : `Tạo và giữ chỗ ${HOLD_HOURS} giờ`}</button>
+        <button type="submit" className="v3b-btn v3b-btn--p" disabled={!hydrated || saving}>{saving ? 'Đang tạo…' : `Tạo và giữ chỗ ${HOLD_HOURS} giờ`}</button>
       </div>
     </section>
   </form>

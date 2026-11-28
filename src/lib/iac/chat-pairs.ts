@@ -82,8 +82,7 @@ export async function pairChatPlan(context: PairContext): Promise<{ chat: DemoRo
  */
 export async function nextSentAt(chatId: string, at: string): Promise<string> {
   const chat=await demoRepository().find('chat_sessions',row=>row.chat_session_id===chatId)
-  const latest = (await demoRepository().all('chat_messages'))
-    .filter(row => row.chat_session_id === chatId)
+  const latest = (await demoRepository().where('chat_messages', { chat_session_id: chatId }))
     .reduce((max, row) => Math.max(max, Date.parse(row.sent_at)), chat?Date.parse(chat.started_at)-1:Number.NEGATIVE_INFINITY)
   const wanted = Date.parse(at)
   return wanted > latest ? at : new Date(latest + 1).toISOString()

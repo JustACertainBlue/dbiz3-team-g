@@ -1787,6 +1787,18 @@ The full text of the six drafts stays in git history (last draft commit `e65cfb7
 | Checks | `npx vitest run` green; `npm run lint` OK; `npm run build` OK |
 | Not done | Manual run of screen 22 with a real model; hosted Postgres (`npm run test:postgres`). The lock and the 20/min limiter are in memory, per process (several instances would not share them). Next: scope guardrails not covered by code (amenities, crafts outside the data, `$` currency, GPS / statistics questions), then village coordinates |
 
+### Entry 121: 28/11 Claude Code + human — Supabase pooler egress: read only what is needed (`fix/supabase-egress`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Sonnet 5.5); requested by linhkhanh-vu. Branch from `origin/main` `f9ef6d7`. Supabase org (Free) locked at 29.3 GB / 5 GB, 99% Shared Pooler Egress. DEV/PROD were not contacted (locked); `.env*` not read |
+| Cause (measured on fixtures, not on PROD) | `AsyncPostgresStore.all/find/update/applyBatch` read whole tables. Per-request auth read all of `sessions` and `user_accounts`; the 60 s hold-expiry scanner read all of `bookings` (inside a 13-table lock) even with nothing On hold; `/explore` snapshotted 16 tables twice, including `explore_*` and password hashes; chat polling read all of `chat_messages`. Full table and numbers: `docs/build/drafts/egress-audit.md` |
+| Change | `ApplicationStore.where / project / dueHolds` (SQL filters; hand-made test stores fall back to `all()`). Sweeper: `dueHolds` and no lock when nothing is due (72 h rule unchanged). Keyed reads for auth, chat messages / attachments / files, paid-message checks, matching sessions / messages. `loadExploreRuntime({ sessions? })` without session tables and password hashes, loaded once per `/explore`, catalog tables in a 30 s in-process cache dropped by the writing process (`read-cache.ts`). `HAB_DISABLE_SCHEDULERS=1` (default ON) and `HAB_READ_CACHE_SECONDS` (default 30, 0 under tests) in `.env.example` |
+| Tests | New `tests/unit/egress-budget.test.ts` (rows read per scenario, flag, cache, copy-on-read) with `tests/helpers/counting-store.ts`; red first for the right reason (7 of 8), green after. No old test edited. One real bug caught by the old suite: fixture `where` must `await` `all()` because `ait-llm-resilience` mocks it as async |
+| Result (seed scale) | sweeper tick with nothing due 8 rows → 0; auth 69 → 4 rows; `/explore` 422 → 211 rows cold, 66 warm; chat poll 148 → 71 rows. PROD GB/day not verified: needs 24 h of the Supabase egress chart after unlock |
+| Checks | `npm run lint` OK; `npm run build` OK; `npx vitest run` green (run on this branch) |
+| Not done | Admin dashboard loaders and `bookings` in explore/schedule loaders still read whole tables; no index on `bookings(status, hold_expires_at)` (needs a migration, human decision); another server instance sees a catalog change after up to 30 s |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

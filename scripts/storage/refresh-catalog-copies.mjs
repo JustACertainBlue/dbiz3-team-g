@@ -16,9 +16,9 @@ import { dirname, join, resolve } from 'node:path'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { projectRefFromDatabaseUrl } from '../db/lecturer-accounts.mjs'
+import { DEV_PROJECT_REF, PROD_PROJECT_REF, assertNoRetiredRef } from '../db/project-refs.mjs'
 
-export const DEV_PROJECT_REF = 'jfrpnffknjpgmkyquxql'
-export const PROD_PROJECT_REF = 'euxclvszgiknjosbwjya'
+export { DEV_PROJECT_REF, PROD_PROJECT_REF }
 export const DEFAULT_NOTES_DIR = '.demo-data/catalog-copies'
 
 /** The six photos replaced in PR #270, as they were in git 320bf9a (assets/demo-media/<slug>.jpg). */
@@ -61,6 +61,8 @@ export function parseArgs(argv) {
  */
 export function assertTargets(env, { targetProd = false } = {}) {
   if (!env.DATABASE_URL || !env.SUPABASE_URL) refuse('DATABASE_URL or SUPABASE_URL is not configured.')
+  assertNoRetiredRef('DATABASE_URL', env.DATABASE_URL) // first: a retired project is refused in every mode, confirmed or not
+  assertNoRetiredRef('SUPABASE_URL', env.SUPABASE_URL)
   const dbRef = projectRefFromDatabaseUrl(env.DATABASE_URL)
   let storageRef = null
   try { storageRef = new URL(env.SUPABASE_URL).hostname.match(/^([a-z0-9]+)\.supabase\.co$/i)?.[1] ?? null } catch { storageRef = null }

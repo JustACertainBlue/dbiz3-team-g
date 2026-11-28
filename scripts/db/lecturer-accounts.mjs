@@ -7,6 +7,7 @@
 // Passwords are generated here, returned once to the CLI (which prints them to an interactive terminal only) and never
 // logged. No database access in this file: the caller passes the port { findOne, findAll, insert, update, transaction }.
 import { randomBytes } from 'node:crypto'
+import { assertNoRetiredRef } from './project-refs.mjs'
 import { SEED_HDT_APPROVER, createAgency, createHdt, meetsPasswordRule, setPassword } from './test-accounts.mjs'
 
 export const LECTURER_EMAILS = Object.freeze({
@@ -31,6 +32,8 @@ export function projectRefFromDatabaseUrl(value) {
 
 /** Runs before any connection: HAB_EXPECT_PROJECT_REF must match DATABASE_APP_URL, and a village must be named. */
 export function lecturerPreflight(env) {
+  assertNoRetiredRef('HAB_EXPECT_PROJECT_REF', env.HAB_EXPECT_PROJECT_REF)
+  assertNoRetiredRef('DATABASE_APP_URL', env.DATABASE_APP_URL)
   const expected = String(env.HAB_EXPECT_PROJECT_REF ?? '').trim()
   if (!expected) throw new Error('HAB_EXPECT_PROJECT_REF is required in lecturer mode (the Supabase project ref this run must target). Nothing was changed.')
   if (!env.DATABASE_APP_URL) throw new Error('DATABASE_APP_URL is not configured. Nothing was changed.')

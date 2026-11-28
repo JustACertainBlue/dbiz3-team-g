@@ -35,7 +35,7 @@ export async function confirmBookerInfo(session: SessionLike, bookingId: string,
     const at = hanoiTimestamp(now.getTime())
     const changes = { contact_name: name, contact_phone: phone, note, updated_at: at }
     // One "Công ty báo đã thanh toán" per booking: a repeat press still saves the info but posts nothing.
-    const already = (await repository.all('chat_messages')).some(row => row.booking_id === bookingId && row.message_kind === 'Booking Update' && row.text.startsWith(PAID_MESSAGE))
+    const already = (await repository.where('chat_messages', { booking_id: bookingId })).some(row => row.message_kind === 'Booking Update' && row.text.startsWith(PAID_MESSAGE))
     const sync = already ? { operations: [] } : await bookingUpdateOperations({ ...booking, ...changes }, at, [], { label: PAID_MESSAGE })
     await repository.applyBatch([
       { table: 'bookings', match: row => row.booking_id === bookingId && row.status === 'On hold', changes },

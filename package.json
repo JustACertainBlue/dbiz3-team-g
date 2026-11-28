@@ -32,6 +32,7 @@
     "db:content-load": "node scripts/db/prod-content-load.mjs",
     "storage:catalog-copies": "node scripts/storage/refresh-catalog-copies.mjs",
     "storage:restore-from-sets": "node scripts/storage/restore-from-sets.mjs",
+    "storage:restore-demo-copies": "node scripts/storage/restore-demo-copies.mjs",
     "test:storage": "node scripts/storage/test.mjs"
   },
   "dependencies": {

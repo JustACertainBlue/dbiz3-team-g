@@ -27,6 +27,16 @@ describe('openProfileMediaObject', () => {
     await expect(openProfileMediaObject(upload, 800)).rejects.toThrow('storage 402')
     await expect(openProfileMediaObject(upload, null)).rejects.toThrow('storage 402')
   })
+  it('a storage failure is logged (status only, no credentials) and raised', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    read.stream.mockRejectedValue(new Error('Storage operation failed (402) https://x.supabase.co/storage/v1/object Bearer eyJhbGciOi'))
+    await expect(openProfileMediaObject(upload, null)).rejects.toThrow('Storage operation failed')
+    const logged = log.mock.calls.flat().map(String).join(' ')
+    log.mockRestore()
+    expect(logged).toContain('402')
+    expect(logged).not.toContain('supabase.co')
+    expect(logged).not.toContain('eyJhbGciOi')
+  })
   it('a real upload that is absent from storage is a 404, not a demo picture', async () => {
     read.stream.mockResolvedValue(null)
     await expect(openProfileMediaObject(upload, 800)).rejects.toMatchObject({ status: 404 })

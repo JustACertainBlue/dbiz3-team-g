@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sessionContextFromRequest } from '@/lib/auth/session'
-import { MediaError, authorizeProfileMedia, openProfileMediaObject } from '@/lib/prf/media-store'
+import { MediaError, authorizeProfileMedia, logMediaError, openProfileMediaObject } from '@/lib/prf/media-store'
 import { parseVariantWidth } from '../../../../../../scripts/storage/media-variants.mjs'
 
 // Step 2A (human request 2026-11-20). Query: ?w=400|800|1600 → WebP variant (other values: 800; none: the original; the
@@ -26,5 +26,5 @@ export async function GET(request:Request,{params}:{params:{fileId:string}}) {
     if(object.size)headers['Content-Length']=String(object.size)
     return new NextResponse(object.body,{headers})
   }
-  catch(error){return NextResponse.json({error:error instanceof MediaError?error.message:'Không thể đọc file.'},{status:error instanceof MediaError?error.status:500,headers:{'Cache-Control':PRIVATE}})}
+  catch(error){if(!(error instanceof MediaError))logMediaError('media route failed',error);return NextResponse.json({error:error instanceof MediaError?error.message:'Không thể đọc file.'},{status:error instanceof MediaError?error.status:500,headers:{'Cache-Control':PRIVATE}})}
 }

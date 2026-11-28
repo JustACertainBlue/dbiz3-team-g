@@ -23,11 +23,14 @@ const factsOf = (f: Record<string, string>) => ({ file_id: f.file_id, storage_ke
 const ref = (f: Record<string, string>) => imageRef({ file_size_bytes: '1', width_px: '10', height_px: '10', storage_key: f.storage_key, file_id: f.file_id })
 
 describe('validObjectKey: seed keys only in their exact form', () => {
-  it('rejects path traversal and free-form seed keys', () => {
-    for (const key of ['seed/../x', 'seed/2026/09/../../x', `seed/2026/09/${UUID}.jpg/../x`, 'seed/x', 'seed/', `seed/2026/09/${UUID}.jpg/extra`, `seed/2026/09/..%2f${UUID}.jpg`])
+  it('rejects path traversal and unsafe characters', () => {
+    for (const key of ['seed/../x', 'seed/2026/09/../../x', `seed/2026/09/${UUID}.jpg/../x`, 'seed/a/..', 'seed/..', 'seed/..hidden', 'seed/', 'seed//x', 'seed/a//b', `seed/2026/09/..%2f${UUID}.jpg`, 'seed/a b.jpg', 'seed/a\\b.jpg', 'seed/a%2fb.jpg', 'seed/é.jpg', 'seed/a\u0000b', 'seed/x/'])
       expect(() => validObjectKey(key), key).toThrow('Invalid object key')
   })
-  it('accepts the exact seed form', () => expect(validObjectKey(`seed/2026/09/${UUID}.jpg`)).toBe(`seed/2026/09/${UUID}.jpg`))
+  it('accepts seed keys made only of [A-Za-z0-9._-] segments', () => {
+    for (const key of [`seed/2026/09/${UUID}.jpg`, 'seed/placeholder.jpg', 'seed/a-b_c.D/e.f-1'])
+      expect(validObjectKey(key)).toBe(key)
+  })
   it('still accepts the existing prefixes', () => expect(validObjectKey(`prf-media/${UUID}`)).toBe(`prf-media/${UUID}`))
 })
 
@@ -56,11 +59,30 @@ describe('loadMediaFacts', () => {
 })
 
 describe('openProfileMediaObject: no stand-in picture', () => {
-  it('a seed chat image has no demo picture: 404, not ceramics', async () => {
-    await expect(openProfileMediaObject(factsOf(chatImage), 800)).rejects.toMatchObject({ status: 404 })
-    await expect(openProfileMediaObject(factsOf(chatImage), 800)).rejects.toBeInstanceOf(MediaError)
+  it('a seed image that maps to no craft gets the neutral placeholder, not ceramics', async () => {
+    const result = await openProfileMediaObject(factsOf(chatImage), 800)
+    expect(result.contentType).toBe('image/svg+xml')
+    expect(result.size).toBeGreaterThan(0)
+    const text = await new Response(result.body).text()
+    expect(text).toContain('<svg')
+    expect(text).not.toMatch(/<script|on\w+=/i)
   })
-  it('a seed PDF is never answered with a picture', async () => {
+  it('a seed PDF is never answered with a picture: 404', async () => {
     await expect(openProfileMediaObject(factsOf(pdf), null)).rejects.toMatchObject({ status: 404 })
+  })
+})
+
+describe('errors are logged without credentials', () => {
+  it('the media route logs a failure (no URL, token or key in the log) and answers 500', async () => {
+    const { GET } = await import('@/app/api/prf/media/[fileId]/route')
+    const { vi } = await import('vitest')
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const broken = new Proxy({}, { get: () => async () => { throw new Error('connect failed postgres://user:pw123@db.example.supabase.co:5432/postgres apikey=sk_live_abc Bearer eyJhbGciOi') } }) as unknown as ApplicationStore
+    const response = await withApplicationStore(broken, () => GET(new Request(`http://localhost/api/prf/media/${known.file_id}`), { params: { fileId: known.file_id } }))
+    expect(response.status).toBe(500)
+    const logged = log.mock.calls.flat().map(String).join(' ')
+    log.mockRestore()
+    expect(logged).toContain('connect failed')
+    for (const secret of ['pw123', 'user:', 'sk_live_abc', 'eyJhbGciOi', 'supabase.co']) expect(logged).not.toContain(secret)
   })
 })

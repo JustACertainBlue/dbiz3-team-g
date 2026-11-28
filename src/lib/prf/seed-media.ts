@@ -8,6 +8,9 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 /** The exact form of a seed key; any other `seed/...` key (e.g. with `..`) is refused. */
 export const SEED_STORAGE_KEY = new RegExp(`^seed/\\d{4}/\\d{2}/${UUID}\\.[a-z0-9]+$`, 'i')
 
+/** Any `seed/` object key that is safe to hand to a path or to storage: segments of [A-Za-z0-9._-] only, and never "..". */
+export const isSafeSeedKey = (key: string) => /^seed\/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(key) && !key.includes('..')
+
 export const SEED_FILE_DEMO_SLUGS: Record<string, string> = {
   '0b0a4ca0-7493-54d2-aa86-36da0eae7ca5': 'silk',
   '113f70fa-5880-5863-b3d3-b00a8e91aae9': 'silk',

@@ -103,8 +103,8 @@ describe('the data chain: own image, else village cover, else nothing; seed keys
     village.cover_image_id = ''
     return { seed, row, villageId, village, experienceId: row.experience.experience_id }
   }
-  it('imageRef: a seed/... placeholder key without a valid file is not an image', () => {
-    expect(imageRef({ storage_key: `seed/placeholder.jpg`, file_size_bytes: '1', width_px: '1', height_px: '1' })).toBeNull()
+  it('imageRef: a seed/... placeholder key is not an image', () => {
+    expect(imageRef({ storage_key: `seed/2026/09/${UUID(1)}.jpg`, file_id: UUID(1), file_size_bytes: '1', width_px: '1', height_px: '1' })).toBeNull()
   })
   it('own image: shown; the village cover is kept as the fallback if it fails to load', () => {
     const { seed, row, village, experienceId } = setup()

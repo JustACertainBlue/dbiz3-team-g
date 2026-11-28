@@ -1,5 +1,10 @@
 # PROD runbook, UI v3 content and images (go-live day)
 
+> **Historical (2026-11-28).** This is the record of the release of 21–22/11 on the former PROD project `euxclvszgiknjosbwjya`,
+> which is **retired**: every guard in `scripts/` now refuses that ref. The PROD ref is `pdeioligjeksgfnodgzs` (new project).
+> To repeat any command below, replace the ref in `CONFIRM_PROJECT_REF=` and in the expected output with the new one, and read
+> [`prod-migrate-supabase.md`](prod-migrate-supabase.md) first. The text below is kept unchanged as the record.
+
 Written 2026-11-21 for the human who runs it (the agent never runs a PROD command). Run everything from
 `~/Desktop/dbiz3-prod`, whose `.env.local` holds the **PROD** values. General Render and Supabase setup stays in
 `docs/build/deploy-runbook.md`; this file is only the order of the v3 release.

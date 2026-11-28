@@ -37,7 +37,7 @@ export const STATUS_LOOKS: Record<StatusFamily, Record<string, StatusLook>> = {
   },
   agency: {
     'Pending Approval': { label: 'Chờ phê duyệt', icon: 'clock', tone: 'agency-pending' },
-    Approved: { label: 'Đã phê duyệt', icon: 'check', tone: 'agency-approved' },
+    Approved: { label: 'Đã duyệt', icon: 'check', tone: 'agency-approved' },
     Rejected: { label: 'Bị từ chối', icon: 'x', tone: 'agency-rejected' },
     Disabled: { label: 'Đã vô hiệu', icon: 'lock', tone: 'agency-disabled' },
   },

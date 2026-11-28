@@ -47,7 +47,7 @@ export function providerStats(seed: { bookings: Row[]; experiences: Row[] }, pro
 
 const DAY_NAMES = ['', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật']
 const windowsOf = (hours: Row[], weekday: number) => hours.filter(row => Number(row.weekday) === weekday && row.local_start && row.local_end)
-  .sort((a, b) => (a.local_start as string).localeCompare(b.local_start as string)).map(row => `${row.local_start} – ${row.local_end}`).join(', ')
+  .sort((a, b) => (a.local_start as string).localeCompare(b.local_start as string)).map(row => `${row.local_start!.slice(0, 5)} – ${row.local_end!.slice(0, 5)}`).join(', ')
 
 /** ISO weekday → opening text, open days only. */
 export function hoursByWeekday(hours: Row[]): Record<number, string> {

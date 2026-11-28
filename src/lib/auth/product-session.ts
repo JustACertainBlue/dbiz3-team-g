@@ -21,23 +21,23 @@ function hashToken(token: string): string {
 
 async function identityForUser(userId: string): Promise<DemoSession | undefined> {
   const repo = demoRepository()
-  const account = (await repo.find('user_accounts', row => row.user_id === userId))
+  const account = (await repo.where('user_accounts', { user_id: userId }))[0]
   if (!account) return undefined
   const role = account.role_code
   if (role === 'Tour_Agency' && account.account_status !== 'Approved') return undefined
   if (role !== 'Tour_Agency' && account.account_status !== 'Active') return undefined
   const base = { authenticated: true, userId, displayName: account.full_name, agencyId: null, providerId: null, villageId: null, adminType: null }
   if (role === 'Tour_Agency') {
-    const profile = (await repo.find('agency_profiles', row => row.user_id === userId))
+    const profile = (await repo.where('agency_profiles', { user_id: userId }))[0]
     return profile ? { ...base, accountKey: 'agency', role: 'TourAgency', agencyId: profile.agency_id } : undefined
   }
   if (role === 'Local_Provider') {
-    const profile = (await repo.find('provider_profiles', row => row.user_id === userId))
+    const profile = (await repo.where('provider_profiles', { user_id: userId }))[0]
     return profile ? { ...base, accountKey: 'provider', role: 'LocalProvider', providerId: profile.provider_id, villageId: profile.village_id } : undefined
   }
   if (role === 'ADMIN' && account.admin_type === 'HDT') return { ...base, accountKey: 'hdt', role: 'HDT', adminType: 'HDT' }
   if (role === 'ADMIN' && account.admin_type === 'UBND') {
-    const assignment = (await repo.find('ubnd_village_assignments', row => row.ubnd_user_id === userId))
+    const assignment = (await repo.where('ubnd_village_assignments', { ubnd_user_id: userId }))[0]
     return assignment ? { ...base, accountKey: 'ubnd', role: 'UBND', adminType: 'UBND', villageId: assignment.village_id } : undefined
   }
   return undefined
@@ -109,10 +109,10 @@ export async function authenticateAccount(email: string, password: string, remem
 export async function productSessionFromRequest(request: NextRequest | Request): Promise<DemoSession | null> {
   const token = cookieValue(request, PRODUCT_SESSION_COOKIE)
   if (!token) return null
-  const session = (await demoRepository().find('sessions', row => row.token_hash === hashToken(token)
-    && !row.revoked_at && Date.parse(row.expires_at) > Date.now()))
+  const session = (await demoRepository().where('sessions', { token_hash: hashToken(token) }))
+    .find(row => !row.revoked_at && Date.parse(row.expires_at) > Date.now())
   if (!session) return null
-  const account = (await demoRepository().find('user_accounts', row => row.user_id === session.user_id))
+  const account = (await demoRepository().where('user_accounts', { user_id: session.user_id }))[0]
   if (!account || !['Active', 'Approved'].includes(account.account_status)) return null
   if (session.role_context !== account.role_code) return null
   return (await identityForUser(session.user_id)) ?? null
@@ -135,6 +135,6 @@ export async function workspacePath(identity: DemoSession): Promise<string> {
 }
 
 export async function accountNeedsPasswordChange(userId: string | null): Promise<boolean> {
-  const row = userId && (await demoRepository().find('user_accounts', item => item.user_id === userId))
+  const row = userId && (await demoRepository().where('user_accounts', { user_id: userId }))[0]
   return Boolean(row && row.must_change_password === 'true' && !row.password_hash.includes('seedhash'))
 }

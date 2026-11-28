@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { rootCertificates } from 'node:tls'
+import { assertNoRetiredRef } from './project-refs.mjs'
 
 /**
  * Server-only config. Parse credentials explicitly so URL SSL options cannot override TLS.
@@ -9,6 +10,7 @@ export function databaseConfig(env=process.env, purpose='application') {
   const name=purpose==='migration'?'DATABASE_URL':'DATABASE_APP_URL'
   const value=env[name]
   if(!value)throw new Error(`${name} is not configured`)
+  assertNoRetiredRef(name,value) // a retired (former PROD) project is never connected to, whatever the purpose
   let url
   try{url=new URL(value)}catch{throw new Error(`${name} must be a PostgreSQL URI`)}
   if(!['postgres:','postgresql:'].includes(url.protocol))throw new Error(`${name} must use PostgreSQL`)

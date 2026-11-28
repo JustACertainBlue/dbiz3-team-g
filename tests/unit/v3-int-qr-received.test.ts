@@ -21,6 +21,11 @@ describe('receivedViaQr', () => {
   it('counts a booking once even if it has two presses', () => {
     expect(receivedViaQr({ bookings, history: [...history, press('b1', '2026-11-08T09:00:00+07:00')] }, 'pv-1', '2026-11')).toBe(4_000_000)
   })
+  it('excludes a booking cancelled after the provider received payment', () => {
+    const cancelled = bookings.map(row => row.booking_id === 'b1' ? { ...row, status: 'Cancelled' } : row)
+    const events = [...history, press('b1', '2026-11-09T09:00:00+07:00', 'Booked', 'Cancelled')]
+    expect(receivedViaQr({ bookings: cancelled, history: events }, 'pv-1', '2026-11')).toBe(2_500_000)
+  })
   it('is 0 when nothing was received', () => { expect(receivedViaQr({ bookings, history: [] }, 'pv-1', '2026-11')).toBe(0) })
   it('formats like the other money values', () => {
     expect(formatReceived(4_000_000)).toBe(`${(4_000_000).toLocaleString('vi-VN')} ₫`)

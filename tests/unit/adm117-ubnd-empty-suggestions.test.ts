@@ -11,6 +11,6 @@ const page = readFileSync('src/app/admin/create-account/CreateAccountForm.tsx', 
 
 describe('#252 | ADM117 create button with no village suggestions', () => {
   it('an empty village list disables Create only for the Provider form, not for UBND', () => {
-    expect(page).toContain("disabled={busy || !options.email_configured || (options.kind === 'provider' && !options.villages.length)}")
+    expect(page).toContain("disabled={!hydrated || busy || !options.email_configured || (options.kind === 'provider' && !options.villages.length)}")
   })
 })

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import React from 'react'
 import { arrivalLockReason, type BookingActions } from '@/lib/booking/booking-actions'
-import { useHydrated } from '@/app/provider/v3/useHydrated'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 
 // BKG135 buttons from bookingActions (BR-017): disabled buttons stay visible and disabled (SC-007).
 // The server re-checks every action (SR-001); the buttons are only a guide.
@@ -15,8 +15,8 @@ export default function BookingActionsBar({ providerId, bookingId, actions, stat
   status?: string
   chat?: React.ReactNode
 }) {
-  const router = useRouter()
   const hydrated = useHydrated()
+  const router = useRouter()
   const base = `/provider/${providerId}/bookings/${bookingId}`
   const [pending, setPending] = useState(false)
   const [cancelling, setCancelling] = useState(false)

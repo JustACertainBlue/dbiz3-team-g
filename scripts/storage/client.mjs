@@ -1,9 +1,11 @@
+import { assertNoRetiredRef } from '../db/project-refs.mjs'
 
 export class StorageUnavailableError extends Error { constructor(){super('Supabase Storage is not configured');this.name='StorageUnavailableError'} }
 /** Server-only Storage REST adapter; credentials must never be passed through NEXT_PUBLIC variables. */
 /** @param {Record<string,string|undefined>} [env] */
 export function storageConfig(env=process.env){
   if(!env.SUPABASE_URL||!env.SUPABASE_SECRET_KEY)throw new StorageUnavailableError()
+  assertNoRetiredRef('SUPABASE_URL',env.SUPABASE_URL)
   const url=new URL(env.SUPABASE_URL)
   if(url.protocol!=='https:'||!url.hostname.endsWith('.supabase.co')||url.username||url.password||url.pathname!=='/')throw new Error('Invalid Supabase project URL')
   return {url:url.origin,key:env.SUPABASE_SECRET_KEY,bucket:env.SUPABASE_STORAGE_BUCKET||'hab-private'}

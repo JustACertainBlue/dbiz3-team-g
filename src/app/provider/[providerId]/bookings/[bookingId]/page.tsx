@@ -35,7 +35,7 @@ export default async function ProviderBookingDetailPage({ params }: { params: { 
   const rules = rulesOf(await repository.all('experience_discount_rules'), booking.experience_id)
   const view = bookingView({ booking, experience, rules, providerName: '', agencyName: agency?.company_name ?? '', now: new Date() })
   const history = (await repository.all('booking_status_history')).filter(row => row.booking_id === booking.booking_id).sort((a, b) => Date.parse(b.changed_at) - Date.parse(a.changed_at))
-  const reportedPaid = (await repository.all('chat_messages')).some(row => row.booking_id === booking.booking_id && row.message_kind === 'Booking Update' && row.text.startsWith(PAID_MESSAGE))
+  const reportedPaid = (await repository.where('chat_messages', { booking_id: booking.booking_id })).some(row => row.message_kind === 'Booking Update' && row.text.startsWith(PAID_MESSAGE))
   const names = new Map((await repository.all('user_accounts')).map(row => [row.user_id, row.full_name]))
   const who = (id: string) => (id ? names.get(id) ?? '' : 'Hệ thống')
   const wording: Record<string, string> = { 'On hold': 'Giữ chỗ cho đoàn', Booked: 'Xác nhận đã nhận tiền', Completed: 'Xác nhận đoàn đã đến', Cancelled: 'Đặt chỗ đã huỷ' }

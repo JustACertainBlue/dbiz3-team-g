@@ -5,9 +5,23 @@ set by `/login` (`POST /api/auth/login`). The old cookie `hab_demo_account` and 
 under `NODE_ENV=test` (automated tests); in `npm run dev` they give a Guest. Every quickstart therefore logs in
 first and then sends the saved cookie.
 
-## Demo accounts
+## Real role accounts on PROD (v3 handoff)
 
-Synthetic seed identities, listed on `http://localhost:3000/login` under "Tài khoản thử nghiệm":
+The list of role accounts (Tour Agency, workshop, commune UBND, Department of Tourism) was issued by Trúc Linh and is held
+by Khánh Linh, who shares it with the team separately. It is not in this repository: no emails and no passwords are written
+here. When the list has been handed over, log in with the account that matches the role you need and ask the account owner
+for its password. The application never asks for a database password to sign in. The `*-tester@example.invalid` accounts are
+temporary and will be locked when the team moves to the real set; this document does not claim that the move is done. Do not
+create new test data with a tester account after the lock announcement. Local development uses the DEV database and its own
+DEV accounts; a PROD account is not assumed to exist on DEV.
+
+The seed/CLI instructions below are the quickstart and the older way of issuing accounts. They are not the list of real accounts.
+
+## Test accounts by role on DEV
+
+The `/login` page does not list test accounts. The seed emails below work only when the DEV database already has the
+matching seed records. `demo:seed` only creates the JSON fixture; it does not create accounts in the PostgreSQL database that
+serves the app.
 
 | Name used in quickstarts | Email | Who |
 |---|---|---|
@@ -16,11 +30,11 @@ Synthetic seed identities, listed on `http://localhost:3000/login` under "Tài k
 | `ubnd` | `thanhvien8@example.invalid` | UBND Admin, village Hạ Thái (inactive village, see issue #65) |
 | `hdt` | `thanhvien9@example.invalid` | HDT Admin |
 
-**Password.** In development only, these four identities accept any non-empty password (prototype adapter
-`authenticatePrototype` in `src/lib/auth/product-session.ts`; production rejects it). The commands below type
-`demo`. This is not a secret and no real password is stored anywhere. Every other account needs its real
-password. Create it through registration, or through an HDT/UBND password reset with
-`HAB_EMAIL_MODE=dev-outbox`; see `specs/AUT-INTEGRATION.md`.
+**Password on DEV.** Only the four seed accounts that still carry `seedhash` accept any non-empty password through
+`authenticatePrototype`; the quickstart commands below type `demo` for that case. If an account already has a real password,
+use the password it was given. Production always rejects the any-password login. Real test passwords come from the team or
+from whoever owns the account; never write a password into the repository. Accounts can also be created through
+registration, or through an HDT/UBND password reset with `HAB_EMAIL_MODE=dev-outbox`; see `specs/AUT-INTEGRATION.md`.
 
 ## Hosted version: personal test accounts
 
@@ -37,13 +51,15 @@ target database first; check it.
 | Provider (existing, no new workshop) | `thanhvien19@example.invalid`, Xưởng thủ công Bát Tràng | `HAB_TEST_PASSWORD_PROVIDER` |
 | UBND (existing, no new UBND) | `thanhvien1@example.invalid`, Bát Tràng | `HAB_TEST_PASSWORD_UBND` |
 
-Rerunning with the same variables changes nothing; a changed password replaces the old one and logs out that
-account's open sessions. A missing or invalid password skips that account with a warning (never the password).
-Share each password privately with its owner.
+The actual list depends on the environment variables used when the accounts were issued. Ask the account owner for the
+email of each role and its password; do not use `demo` or any-password login on the hosted version. Re-running the script with
+the same variables changes nothing; a changed password replaces the old hash and logs out that account's open sessions. A
+missing or invalid password skips that account with a warning (the password is never printed). Share each password only
+with its owner.
 
 ## In the browser
 
-Open `http://localhost:3000/login`, click one of the demo emails, type any password, click **Đăng nhập**.
+Open `http://localhost:3000/login`, type the email for the role and the matching password from above, then click **Đăng nhập**.
 To change role, use **Đăng xuất** in the header (confirm) and log in again with another email.
 
 ## With curl

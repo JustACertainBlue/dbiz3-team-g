@@ -18,9 +18,9 @@ import { randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { parse } from 'csv-parse/sync'
 import { projectRefFromDatabaseUrl } from './lecturer-accounts.mjs'
+import { DEV_PROJECT_REF, PROD_PROJECT_REF, assertNoRetiredRef } from './project-refs.mjs'
 
-export const DEV_PROJECT_REF = 'jfrpnffknjpgmkyquxql'
-export const PROD_PROJECT_REF = 'euxclvszgiknjosbwjya'
+export { DEV_PROJECT_REF, PROD_PROJECT_REF }
 const MIGRATION = 'supabase/migrations/20261118120000_hab_ui_v3_content.sql'
 const FILES = ['experiences.csv', 'providers.csv', 'villages.csv', 'agencies.csv', 'users.csv']
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -44,6 +44,7 @@ export function parseArgs(argv) {
 
 export function assertDevTarget(env) {
   if (!env.DATABASE_URL) refuse('DATABASE_URL is not configured.')
+  assertNoRetiredRef('DATABASE_URL', env.DATABASE_URL)
   const ref = projectRefFromDatabaseUrl(env.DATABASE_URL)
   if (ref === PROD_PROJECT_REF) refuse('DATABASE_URL points to PROD.')
   if (ref !== DEV_PROJECT_REF) refuse(`DATABASE_URL points to project ref "${ref}", which is not the DEV project.`)

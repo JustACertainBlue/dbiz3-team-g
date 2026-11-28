@@ -14,7 +14,7 @@ import { hanoiClock } from '@/lib/time/hanoi-time'
 import { attachmentLine, chatActions, chatStatusLine, eventView, filterChats, groupByDay, initials, listTime, mergeLatestPage } from './chat-view'
 import { parseBookingRequest } from '@/lib/booking/request-card'
 import { usePolling } from '@/lib/client/use-polling'
-import { useHydrated } from '@/app/provider/v3/useHydrated'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 import './chat-v9.css'
 
 // Screens COM048 (Tour Agency) and COM065 (Local Provider): F-CHAT-01..05 on /api/iac/chats (spec-IAC FR-001..005);

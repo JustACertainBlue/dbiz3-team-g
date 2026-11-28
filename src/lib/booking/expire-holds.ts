@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { demoRepository } from '../db/application-store'
 import { HOLD_HOURS } from '../provider/hold-hours'
 import { bookingUpdateOperations } from './agency-sync'
+import { schedulersEnabled } from '../scheduler-flag'
 import { hanoiTimestamp } from './clock'
 import { withBookingWriteLock } from './write-lock'
 
@@ -15,8 +16,8 @@ const TIMER_MS = 60_000
 export async function expireDueHoldsLocked(now: Date): Promise<string[]> {
   const repository = demoRepository()
   const at = hanoiTimestamp(now.getTime())
-  const due = (await repository.all('bookings'))
-    .filter(row => row.status === 'On hold' && Date.parse(row.hold_expires_at) <= now.getTime())
+  // The WHERE runs in SQL (egress audit): only due On hold rows leave the database, never the whole table.
+  const due = await repository.dueHolds(now)
   for (const booking of due) {
     const cancelled = { ...booking, status: 'Cancelled', updated_at: at }
     ;(await repository.applyBatch([
@@ -33,6 +34,8 @@ export async function expireDueHoldsLocked(now: Date): Promise<string[]> {
 
 // Locking variant for the timer, read paths and tests.
 export async function expireDueHolds(now: Date): Promise<string[]> {
+  // Quiet path: nothing due → no advisory locks, no transaction, no write (the common case on every tick and page read).
+  if (!(await demoRepository().dueHolds(now)).length) return []
   return (await withBookingWriteLock(async () => (await expireDueHoldsLocked(now))))
 }
 
@@ -42,11 +45,16 @@ declare global {
 }
 
 // One timer per dev-server process (#50); never under tests (analyze M1).
-export function startExpiryTimer(): void {
-  if (process.env.NODE_ENV === 'test' || globalThis.__habBookingExpiryTimer) return
+export function startExpiryTimer(env: Record<string, string | undefined> = process.env): boolean {
+  if (env.NODE_ENV === 'test' || globalThis.__habBookingExpiryTimer) return false
+  if (!schedulersEnabled(env)) {
+    console.info('[hab] hold-expiry scanner off (HAB_DISABLE_SCHEDULERS=1); reads still expire due holds')
+    return false
+  }
   console.info(`[hab] hold-expiry scanner started (hold ${HOLD_HOURS} h, every ${TIMER_MS / 1000} s)`)
   globalThis.__habBookingExpiryTimer = setInterval(async () => {
     ;(await expireDueHolds(new Date()).catch(() => undefined))
   }, TIMER_MS)
   globalThis.__habBookingExpiryTimer.unref?.()
+  return true
 }

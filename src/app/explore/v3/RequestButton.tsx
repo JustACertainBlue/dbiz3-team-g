@@ -4,9 +4,9 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { HOLD_HOURS } from '@/lib/provider/hold-hours'
-import { useHydrated } from '@/app/provider/v3/useHydrated'
 import GuestsInput, { guestsError } from './GuestsInput'
 import './request-v3.css'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 
 export interface FreeSlotOption { start: string; end: string; label: string }
 export interface RequestExperience { id: string; name: string; /** guests per slot */ max?: number }
@@ -17,8 +17,8 @@ export default function RequestButton({ experiences, date = '', guests = null, s
   experiences: RequestExperience[]; date?: string; guests?: number | null; slotTime?: string; className?: string; label?: string; initialOpen?: boolean
   /** test seam: skip the fetch and start with these free slots */ initialSlots?: FreeSlotOption[]
 }) {
-  const router = useRouter()
   const hydrated = useHydrated()
+  const router = useRouter()
   const [open, setOpen] = useState(initialOpen)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')

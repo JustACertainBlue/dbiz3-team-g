@@ -31,6 +31,7 @@
     "storage:media-variants": "node scripts/storage/backfill-media-variants.mjs",
     "db:content-load": "node scripts/db/prod-content-load.mjs",
     "storage:catalog-copies": "node scripts/storage/refresh-catalog-copies.mjs",
+    "storage:restore-from-sets": "node scripts/storage/restore-from-sets.mjs",
     "test:storage": "node scripts/storage/test.mjs"
   },
   "dependencies": {

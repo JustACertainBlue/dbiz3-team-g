@@ -279,7 +279,7 @@ Choose the path **before** starting. Path A is the real migration; Path B is a d
 Prerequisite: the old DB still accepts connections. The old project's egress block (402) is documented for the API/Storage; whether the pooler still
 answers **[UNVERIFIED]**. Test with the read-only connection below; a refusal sends you to Path B.
 
-**A.1 Read-only check of the old project and its table list** (psql, old env loaded in this shell only):
+**A.1 Read-only check of the old project and its table list** (psql, old env loaded in this shell only). **Already done by the §1.2 backup** (done 2026-11-28 02:23 UTC: server 17.11, 49 tables, 53 `TABLE DATA`); this block is only for a re-check, and the counts file to compare against is the backup's `<ts>.counts.tsv`:
 
 ```bash
 # load the PG* variables of OLD PROD with the snippet of §1.2 B.1 (folder ~/Desktop/dbiz3-prod, expected ref euxclvszgiknjosbwjya)
@@ -288,7 +288,7 @@ psql -X -At -F $'\t' -c "SELECT table_name, (xpath('/row/c/text()', query_to_xml
 wc -l ~/oldprod-counts.tsv
 ```
 
-Expected 49 lines (if fewer, the old PROD lacks a migration: stop, tell the owner). Keep `~/oldprod-counts.tsv` (names and numbers only).
+Expected 49 lines. A re-check should equal the backup's counts file unless testers wrote since.
 
 **A.2 Source file and restore list.** Use the archive of §1.2 (dump of `public`, `hab_internal`, `hab_runtime`; take a fresh one with B.3 if it is older than the day you restore).
 Make a table-of-contents list that leaves out what must not be restored, then render the restore as SQL:
@@ -298,20 +298,24 @@ cd ~/Desktop/dbiz3-prod2
 dump=~/Desktop/dbiz3-prod/.demo-data/prod-backup/<ts>.dump
 pg_restore --list "$dump" \
   | grep -v -E ' TABLE DATA (hab_internal|hab_runtime) ' \
-  | grep -v -E ' TABLE DATA public (sessions|password_reset_tokens|registration_otp_challenges) ' > .demo-data/restore.list
+  | grep -v -E ' TABLE DATA public (sessions|registration_resubmission_tokens|password_reset_tokens|registration_otp_challenges) ' > .demo-data/restore.list
 grep -c "TABLE DATA" .demo-data/restore.list
 pg_restore --data-only --no-owner --no-privileges --use-list .demo-data/restore.list --file .demo-data/restore.sql "$dump"
 chmod 600 .demo-data/restore.sql
 ```
 
-Expected count: **46** `TABLE DATA` lines (49 `public` tables − 3 excluded). Left out on purpose: `sessions` (everyone logs in again; no live session tokens move to the new system),
-`password_reset_tokens`, `registration_otp_challenges` (email is not configured, so none is valid), and the two non-public schemas (the new project has its own clean ledger, `db:seed` must **not** be run on
-a restored database, rate-limit and AI-cooldown counters are ephemeral). **Kept**, decision for the human (§10): `registration_resubmission_tokens`. `restore.sql` holds password hashes: mode 600, delete after Step 3 is accepted.
+Expected count: **45** `TABLE DATA` lines (49 `public` tables − 4 short-lived token tables). **Decision 2026-11-28: these four tables are not restored and stay empty on the new project:**
+`sessions` (everyone logs in again; no live session token moves to the new system), `registration_resubmission_tokens`, `password_reset_tokens`, `registration_otp_challenges`
+(email is not configured, so none of them can be valid). Also left out: the two non-public schemas (the new project has its own clean ledger, `db:seed` must **not** be run on a restored
+database, rate-limit and AI-cooldown counters are ephemeral). **Foreign keys into these four tables: none** (checked 2026-11-28 by reading all 12 migrations: no `REFERENCES` names any of them;
+the only look-alikes are `matching_sessions`, `explore_sessions` and `chat_sessions`, which are other tables). Their own foreign keys point outward (to `user_accounts` and
+`agency_registration_requests`), so leaving them empty cannot orphan anything. Consequence to know: an Agency registration still pending on old PROD keeps its request row, but its OTP and
+resubmission token are gone (none could have been delivered anyway). `restore.sql` holds password hashes: mode 600, delete after Step 3 is accepted.
 
 **A.3 Trigger handling and the dry run.** Three triggers fire on insert and could reject old rows: `chat_message_not_closed_trg` (BEFORE INSERT on `chat_messages`), `chat_message_immutable_trg`
 (BEFORE UPDATE OR DELETE on `chat_messages`; not hit by a plain restore) and `booking_group_within_capacity_trg` (BEFORE INSERT OR UPDATE on `bookings`). Only 5 foreign keys are `DEFERRABLE`, so
-`SET CONSTRAINTS ALL DEFERRED` cannot be relied on. The restore therefore runs in one transaction with the triggers off, tried in this order (load the new project's owner connection into the shell
-with the B.1 snippet in `~/Desktop/dbiz3-prod2`, expected ref `pdeioligjeksgfnodgzs`):
+`SET CONSTRAINTS ALL DEFERRED` cannot be relied on. The restore therefore runs in one transaction with the triggers off. **Decision 2026-11-28: try Route 1 first**; use Route 2 only if the privilege test below is refused. Load the new project's owner connection into the shell with the B.1 snippet in
+`~/Desktop/dbiz3-prod2` (expected ref `pdeioligjeksgfnodgzs`), then:
 
 *Route 1, `session_replication_role = replica`* (turns off all non-`ALWAYS` triggers **and** foreign-key enforcement for the session). First test the privilege, read only:
 
@@ -373,7 +377,9 @@ Run the A.5 checks **inside the same transaction** when you can (put the check S
    diff ~/Desktop/dbiz3-prod/.demo-data/prod-backup/<ts>.counts.tsv .demo-data/newprod-counts.tsv
    ```
 
-   Expected: only `sessions`, `password_reset_tokens`, `registration_otp_challenges` differ (new = 0). Any other difference: stop.
+   Expected: **exactly four** lines differ, `sessions`, `registration_resubmission_tokens`, `password_reset_tokens`, `registration_otp_challenges`, and each is **0** on the new project (old value > 0 or = 0 is allowed; new must be 0). Any other table differing, or any of the four above 0: stop.
+   To list only the differences in a readable way: `diff <(grep -v -E '^(sessions|registration_resubmission_tokens|password_reset_tokens|registration_otp_challenges)\t' ~/Desktop/dbiz3-prod/.demo-data/prod-backup/<ts>.counts.tsv) <(grep -v -E '^(sessions|registration_resubmission_tokens|password_reset_tokens|registration_otp_challenges)\t' .demo-data/newprod-counts.tsv)` must print nothing, and `grep -E '^(sessions|registration_resubmission_tokens|password_reset_tokens|registration_otp_challenges)\t' .demo-data/newprod-counts.tsv` must show four rows ending in `0`.
+   Re-check the claim that no foreign key points at these four (read only; **[UNVERIFIED]**, written without running): `psql -X -At -c "SELECT conname, conrelid::regclass, confrelid::regclass FROM pg_constraint WHERE contype='f' AND confrelid IN ('public.sessions'::regclass,'public.registration_resubmission_tokens'::regclass,'public.password_reset_tokens'::regclass,'public.registration_otp_challenges'::regclass)"` → no rows.
 2. *Foreign keys* (needed after Route 1, cheap after Route 2). The generator below builds one `SELECT` per foreign key of `public` and counts child rows whose parent is missing (rows with any NULL key column are skipped, as `MATCH SIMPLE` does).
    Save it as `.demo-data/restore-checks.sql` in `dbiz3-prod2` (Route 1's pipes cat it before `ROLLBACK`/`COMMIT`), or paste it into `psql` after the restore. **[UNVERIFIED: written without running it; its first run is the dry run in A.3, which executes it on the loaded data inside the rolled-back transaction.]**
 
@@ -568,7 +574,7 @@ HTTP 402) until 07/12, so there is no real rollback before then; take the old va
 2. **Images on Path A:** both branches are specified (§7.4); decide which one to **build**: (b) `storage:restore-from-sets` for photos before 07/12, (a) `storage:copy-bucket` after 07/12 (the only way to get user uploads back). Confirm the `file_name` rule in §7.4.2 "Open points" on a real row first.
 3. **Step 0 PR (built, not pushed):** decided — `audit.mjs` stays at 47 for now (hand query used; fixing it to 49 is a **later task**). Still open: pin DEV in `migrationTarget()` (not done in this PR, any non-PROD, non-retired ref still migrates with no flag). Is there a `prod-smoke` script on another branch?
 4. **CA certificate** of the new project (same file or a new one that must be committed for Render).
-5. **Keep or drop** `registration_resubmission_tokens` in the dump; drop `sessions` (assumed yes).
+5. ~~Keep or drop `registration_resubmission_tokens`~~ **Decided 2026-11-28:** `sessions`, `registration_resubmission_tokens`, `password_reset_tokens`, `registration_otp_challenges` are not restored (empty on the new project); no foreign key points at them (§6.A.2).
 6. **Triggers on restore (decided, §6.A.3):** Route 1 `session_replication_role = replica` if the login may set it, else Route 2 (disable the three triggers one by one, enable them again in the same transaction); orphan check and trigger-state check afterwards. If both routes fail, stop and report the error text.
 7. **Free-plan limits** of the new project (database size, 1 week inactivity pausing, Storage size and per-file limit, egress) are not recorded in the repo (ADR 0001 says "to re-check"): confirm
    the Storage total of the old bucket fits, and that the app will not be paused during the 07/12 gap (any traffic, or a cron ping, keeps it active; unverified).

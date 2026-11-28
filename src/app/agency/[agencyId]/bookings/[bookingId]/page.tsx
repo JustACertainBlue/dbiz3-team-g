@@ -35,7 +35,7 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
   const experience = await repository.find('experiences', row => row.experience_id === booking.experience_id)
   const provider = await repository.find('provider_profiles', row => row.provider_id === booking.provider_id)
   const version = provider && await repository.find('provider_profile_versions', row => row.provider_id === provider.provider_id && row.version_no === provider.published_version_no)
-  const providerUser = provider && await repository.find('user_accounts', row => row.user_id === provider.user_id)
+  const providerUser = provider && (await repository.where('user_accounts', { user_id: provider.user_id }))[0] // keyed read: one row, not the whole table
   const ownerName = providerUser?.full_name || version?.contact_person_name || ''
   const agency = await repository.find('agency_profiles', row => row.agency_id === booking.agency_id)
   const user = agency && await repository.find('user_accounts', row => row.user_id === agency.user_id)

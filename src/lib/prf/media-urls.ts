@@ -1,4 +1,5 @@
 // Client-safe media URL helpers (no server imports): the UI builds src/srcset from the URLs made here.
+import { demoSlugForSeedFile } from './seed-media'
 const PRF_PREFIX = 'prf-media/'
 const ROUTE = '/api/prf/media/'
 
@@ -27,10 +28,13 @@ export interface ImageRef { url: string; width: number; height: number }
 
 const dimension = (value: string | number | undefined) => { const number = Number(value); return Number.isFinite(number) && number > 0 ? Math.round(number) : 0 }
 
-/** Servable image of a stored_files row, or null (seed placeholder keys are not images). */
+/** Servable image of a stored_files row, or null (a seed placeholder key is an image only when it has a demo picture, see seed-media.ts). */
 export function imageRef(file: StoredFileFacts): ImageRef | null {
   let url: string
   if (file.storage_key.startsWith(PRF_PREFIX)) url = mediaUrl(file.file_id ? `${PRF_PREFIX}${file.file_id}` : file.storage_key, file.file_size_bytes)
+  else if (file.file_id && demoSlugForSeedFile({ file_id: file.file_id, storage_key: file.storage_key })) {
+    url = mediaUrl(`${PRF_PREFIX}${file.file_id}`, file.file_size_bytes)
+  }
   else if (/^https?:\/\//.test(file.storage_key)) url = file.storage_key
   else return null
   return { url, width: dimension(file.width_px), height: dimension(file.height_px) }

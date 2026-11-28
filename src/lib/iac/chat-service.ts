@@ -122,8 +122,7 @@ export async function sendMessage(
 
 /** Messages of a Chat in history order: sent_at, then message_id (Q6). */
 async function orderedMessages(chatSessionId: string): Promise<DemoRow[]> {
-  return (await demoRepository().all('chat_messages'))
-    .filter(row => row.chat_session_id === chatSessionId)
+  return (await demoRepository().where('chat_messages', { chat_session_id: chatSessionId }))
     .sort((a, b) => (Date.parse(a.sent_at) - Date.parse(b.sent_at)) || a.message_id.localeCompare(b.message_id))
 }
 
@@ -190,8 +189,8 @@ async function previewOf(message: DemoRow): Promise<string | undefined> {
 
 async function attachmentsOf(messageId: string) {
   const repository = demoRepository()
-  return (await Promise.all((await repository.all('chat_attachments')).filter(row => row.message_id === messageId).map(async row => {
-    const file = (await repository.find('stored_files', f => f.file_id === row.file_id))
+  return (await Promise.all((await repository.where('chat_attachments', { message_id: messageId })).map(async row => {
+    const file = row.file_id ? (await repository.where('stored_files', { file_id: row.file_id }))[0] : undefined
     return { attachment_id: row.attachment_id, file_name: file?.file_name ?? '', file_type: file?.media_type ?? '', file_size: Number(file?.file_size_bytes || 0) }
   })))
 }

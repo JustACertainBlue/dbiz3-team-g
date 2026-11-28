@@ -99,8 +99,7 @@ export async function addMessage(
 }
 
 export async function getMessages(sessionId: string): Promise<ConversationMessage[]> {
-  return (await demoRepository().all('matching_messages'))
-    .filter(row => row.matching_session_id === sessionId)
+  return (await demoRepository().where('matching_messages', { matching_session_id: sessionId }))
     .sort((a, b) => a.sent_at.localeCompare(b.sent_at))
     .map(row => ({
       message_id: row.message_id,
@@ -121,8 +120,8 @@ export interface MatchingSessionSummary {
 /** Screen 22 history: the company's own sessions with at least one Agency message, newest first (read-only). */
 export async function listMatchingSessions(agencyId: string, limit = 20): Promise<MatchingSessionSummary[]> {
   const repository = demoRepository()
-  const sessions = (await repository.all('matching_sessions')).filter(row => row.agency_id === agencyId)
-  const messages = (await repository.all('matching_messages')).filter(row => row.sender === 'Agency')
+  const sessions = (await repository.where('matching_sessions', { agency_id: agencyId }))
+  const messages = (await repository.where('matching_messages', { sender: 'Agency' }))
   const firstText = new Map<string, { sent_at: string; text: string }>()
   for (const row of messages) {
     const seen = firstText.get(row.matching_session_id)

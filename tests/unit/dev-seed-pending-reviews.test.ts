@@ -29,7 +29,7 @@ describe('assertDevTarget', () => {
     expect(DEV_PROJECT_REF).toBe('jfrpnffknjpgmkyquxql')
   })
   it('stops for another ref (PROD included), a missing URL, and never echoes the URL', () => {
-    for (const env of [{ DATABASE_APP_URL: url('euxclvszgiknjosbwjya') }, { DATABASE_APP_URL: url('someotherprojectref') }, {}, { DATABASE_APP_URL: 'not a url' }]) {
+    for (const env of [{ DATABASE_APP_URL: url('pdeioligjeksgfnodgzs') }, { DATABASE_APP_URL: url('someotherprojectref') }, {}, { DATABASE_APP_URL: 'not a url' }]) {
       let message = ''
       try { assertDevTarget(env as any) } catch (error) { message = (error as Error).message }
       expect(message).not.toBe('')

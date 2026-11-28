@@ -13,7 +13,14 @@
     "bytes": 173508,
     "illustrative": true,
     "usage": "Illustrative photo for synthetic demo catalog, not a photograph of the named provider.",
-    "presentation": "Original 3500×2333 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed."
+    "presentation": "Original 3500×2333 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed.",
+    "webp": {
+      "file": "silk.webp",
+      "bytes": 90436,
+      "width": 1200,
+      "height": 900,
+      "presentation": "WebP copy of the licensed original above (same photograph, same source, author and licence); lossy WebP quality 78, longest side at most 1200 px, metadata removed. Added by PR #306 as the local stand-in picture for seed files."
+    }
   },
   {
     "slug": "ceramics",
@@ -29,7 +36,14 @@
     "bytes": 76499,
     "illustrative": true,
     "usage": "Illustrative photo for synthetic demo catalog, not a photograph of the named provider.",
-    "presentation": "Original 2624×3936 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed."
+    "presentation": "Original 2624×3936 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed.",
+    "webp": {
+      "file": "ceramics.webp",
+      "bytes": 20552,
+      "width": 1200,
+      "height": 900,
+      "presentation": "WebP copy of the licensed original above (same photograph, same source, author and licence); lossy WebP quality 78, longest side at most 1200 px, metadata removed. Added by PR #306 as the local stand-in picture for seed files."
+    }
   },
   {
     "slug": "bamboo",
@@ -45,7 +59,14 @@
     "bytes": 198350,
     "illustrative": true,
     "usage": "Illustrative photo for synthetic demo catalog, not a photograph of the named provider.",
-    "presentation": "Original 7008×4672 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed."
+    "presentation": "Original 7008×4672 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed.",
+    "webp": {
+      "file": "bamboo.webp",
+      "bytes": 102500,
+      "width": 1200,
+      "height": 900,
+      "presentation": "WebP copy of the licensed original above (same photograph, same source, author and licence); lossy WebP quality 78, longest side at most 1200 px, metadata removed. Added by PR #306 as the local stand-in picture for seed files."
+    }
   },
   {
     "slug": "conical-hats",
@@ -61,7 +82,14 @@
     "bytes": 262693,
     "illustrative": true,
     "usage": "Illustrative photo for synthetic demo catalog, not a photograph of the named provider.",
-    "presentation": "Original 3000×2002 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed."
+    "presentation": "Original 3000×2002 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed.",
+    "webp": {
+      "file": "conical-hats.webp",
+      "bytes": 155382,
+      "width": 1200,
+      "height": 900,
+      "presentation": "WebP copy of the licensed original above (same photograph, same source, author and licence); lossy WebP quality 78, longest side at most 1200 px, metadata removed. Added by PR #306 as the local stand-in picture for seed files."
+    }
   },
   {
     "slug": "embroidery",
@@ -77,7 +105,14 @@
     "bytes": 566783,
     "illustrative": true,
     "usage": "Illustrative photo for synthetic demo catalog, not a photograph of the named provider.",
-    "presentation": "1280px derivative supplied by Wikimedia; displayed with responsive cropping."
+    "presentation": "1280px derivative supplied by Wikimedia; displayed with responsive cropping.",
+    "webp": {
+      "file": "embroidery.webp",
+      "bytes": 337476,
+      "width": 1126,
+      "height": 900,
+      "presentation": "WebP copy of the licensed original above (same photograph, same source, author and licence); lossy WebP quality 78, longest side at most 1200 px, metadata removed. Added by PR #306 as the local stand-in picture for seed files."
+    }
   },
   {
     "slug": "wood-carving",
@@ -93,7 +128,14 @@
     "bytes": 168460,
     "illustrative": true,
     "usage": "Illustrative photo for synthetic demo catalog, not a photograph of the named provider.",
-    "presentation": "Original 8000×5333 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed."
+    "presentation": "Original 8000×5333 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed.",
+    "webp": {
+      "file": "wood-carving.webp",
+      "bytes": 81548,
+      "width": 1200,
+      "height": 900,
+      "presentation": "WebP copy of the licensed original above (same photograph, same source, author and licence); lossy WebP quality 78, longest side at most 1200 px, metadata removed. Added by PR #306 as the local stand-in picture for seed files."
+    }
   },
   {
     "slug": "lacquer",
@@ -109,7 +151,14 @@
     "bytes": 411427,
     "illustrative": true,
     "usage": "Illustrative photo for synthetic demo catalog, not a photograph of the named provider.",
-    "presentation": "1280px derivative supplied by Wikimedia; displayed with responsive cropping."
+    "presentation": "1280px derivative supplied by Wikimedia; displayed with responsive cropping.",
+    "webp": {
+      "file": "lacquer.webp",
+      "bytes": 223834,
+      "width": 1200,
+      "height": 898,
+      "presentation": "WebP copy of the licensed original above (same photograph, same source, author and licence); lossy WebP quality 78, longest side at most 1200 px, metadata removed. Added by PR #306 as the local stand-in picture for seed files."
+    }
   },
   {
     "slug": "water-puppets",
@@ -125,6 +174,13 @@
     "bytes": 220599,
     "illustrative": true,
     "usage": "Illustrative photo for synthetic demo catalog, not a photograph of the named provider.",
-    "presentation": "Original 6720×4480 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed."
+    "presentation": "Original 6720×4480 from the source page; centre-cropped to 4:3, resized to 1280×960, JPEG quality 82, metadata (EXIF/GPS) removed.",
+    "webp": {
+      "file": "water-puppets.webp",
+      "bytes": 130810,
+      "width": 1200,
+      "height": 900,
+      "presentation": "WebP copy of the licensed original above (same photograph, same source, author and licence); lossy WebP quality 78, longest side at most 1200 px, metadata removed. Added by PR #306 as the local stand-in picture for seed files."
+    }
   }
 ]

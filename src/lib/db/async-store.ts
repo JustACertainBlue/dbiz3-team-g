@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { DbClient,SqlExecutor } from './client'
 import type { DemoRow,BatchOperation } from '../demo/types'
 import { legacyRow } from './repository'
+import { invalidateReadCache } from './read-cache'
 
 type Table={schema:string;name:string;columns:Array<{name:string;nullable:boolean}>;keys:string[]}
 const quote=(name:string)=>{if(!/^[a-z][a-z0-9_]*$/.test(name))throw new Error('Invalid identifier');return `"${name}"`}
@@ -38,7 +39,7 @@ export class AsyncPostgresStore {
   /** Transitional aggregate unit of work: declared tables only, one connection, changed rows only.
    * Locks also cover empty tables, preventing duplicate registration/rate-limit races.
    */
-  async transaction<T>(names:readonly string[],work:(tables:Record<string,DemoRow[]>)=>T):Promise<T> {
+  private async transactionRaw<T>(names:readonly string[],work:(tables:Record<string,DemoRow[]>)=>T):Promise<T> {
     const definitions=await Promise.all([...new Set(names)].sort().map(name=>this.table(name)))
     return this.database.transaction(async tx=>{
       await this.lock(tx,names)
@@ -69,6 +70,32 @@ export class AsyncPostgresStore {
     })
   }
   async all(name:string):Promise<DemoRow[]> {const table=await this.table(name);return(await this.database.query(`SELECT * FROM ${qualified(table)}`)).rows.map(legacyRow)}
+  /** Keyed read in SQL (egress audit): reads only the matching rows instead of the whole table. */
+  // Writes drop the in-process read cache for the tables they touch (see read-cache.ts), even when they fail.
+  async transaction<T>(names:readonly string[],work:(tables:Record<string,DemoRow[]>)=>T):Promise<T>{try{return await this.transactionRaw(names,work)}finally{invalidateReadCache(names)}}
+  async insert(name:string,row:DemoRow){try{return await this.insertRaw(name,row)}finally{invalidateReadCache([name])}}
+  async update(name:string,predicate:(row:DemoRow)=>boolean,changes:Partial<DemoRow>){try{return await this.updateRaw(name,predicate,changes)}finally{invalidateReadCache([name])}}
+  async remove(name:string,predicate:(row:DemoRow)=>boolean){try{return await this.removeRaw(name,predicate)}finally{invalidateReadCache([name])}}
+  async applyBatch(operations:readonly BatchOperation[]){try{return await this.applyBatchRaw(operations)}finally{invalidateReadCache(operations.map(operation=>operation.table))}}
+  async where(name:string,criteria:Readonly<Record<string,string>>):Promise<DemoRow[]> {
+    const table=await this.table(name),entries=Object.entries(criteria)
+    if(!entries.length||entries.some(([,value])=>value===''))throw new Error('where() needs non-empty criteria')
+    const known=new Set(table.columns.map(column=>column.name))
+    for(const [column] of entries)if(!known.has(column))throw new Error(`Unmapped persisted field: ${name}.${column}`)
+    const filter=entries.map(([column],index)=>`${quote(column)}=$${index+1}`).join(' AND ')
+    return(await this.database.query(`SELECT * FROM ${qualified(table)} WHERE ${filter}`,entries.map(([,value])=>value))).rows.map(legacyRow)
+  }
+  /** Only the named columns of every row. */
+  async project(name:string,columns:readonly string[]):Promise<DemoRow[]> {
+    const table=await this.table(name),known=new Set(table.columns.map(column=>column.name))
+    for(const column of columns)if(!known.has(column))throw new Error(`Unmapped persisted field: ${name}.${column}`)
+    return(await this.database.query(`SELECT ${columns.map(quote).join(',')} FROM ${qualified(table)}`)).rows.map(legacyRow)
+  }
+  /** Sweeper query: only the due On hold rows leave the database. */
+  async dueHolds(at:Date):Promise<DemoRow[]> {
+    const table=await this.table('bookings')
+    return(await this.database.query(`SELECT * FROM ${qualified(table)} WHERE status='On hold' AND hold_expires_at<=$1`,[at.toISOString()])).rows.map(legacyRow)
+  }
   async find(name:string,predicate:(row:DemoRow)=>boolean){return(await this.all(name)).find(predicate)}
   async snapshot(names:readonly string[]) {return Object.fromEntries(await Promise.all(names.map(async name=>[name,await this.all(name)])))}
   private values(table:Table,row:Partial<DemoRow>) {
@@ -85,7 +112,7 @@ export class AsyncPostgresStore {
     const result=await tx.query(`INSERT INTO ${qualified(table)} (${fields.map(field=>quote(field.name)).join(',')}) VALUES (${fields.map((_,index)=>`$${index+1}`).join(',')}) RETURNING *`,fields.map(field=>field.value))
     return legacyRow(result.rows[0])
   }
-  async insert(name:string,row:DemoRow){const table=await this.table(name);return this.database.transaction(async tx=>{await this.lock(tx,[name]);return this.insertInto(tx,table,row)})}
+  private async insertRaw(name:string,row:DemoRow){const table=await this.table(name);return this.database.transaction(async tx=>{await this.lock(tx,[name]);return this.insertInto(tx,table,row)})}
   private key(table:Table,row:DemoRow,start=1) {
     if(!table.keys.length||table.keys.some(key=>row[key]===undefined))throw new Error(`Missing primary key for ${table.name}`)
     return {sql:table.keys.map((key,index)=>`${quote(key)}=$${start+index}`).join(' AND '),values:table.keys.map(key=>row[key])}
@@ -97,7 +124,7 @@ export class AsyncPostgresStore {
     const result=await tx.query(`UPDATE ${qualified(table)} SET ${fields.map((field,index)=>`${quote(field.name)}=$${index+1}`).join(',')} WHERE ${key.sql} RETURNING *`,[...fields.map(field=>field.value),...key.values])
     return result.rows[0]?legacyRow(result.rows[0]):undefined
   }
-  async update(name:string,predicate:(row:DemoRow)=>boolean,changes:Partial<DemoRow>) {
+  private async updateRaw(name:string,predicate:(row:DemoRow)=>boolean,changes:Partial<DemoRow>) {
     const table=await this.table(name)
     return this.database.transaction(async tx=>{
       await this.lock(tx,[name])
@@ -105,7 +132,7 @@ export class AsyncPostgresStore {
       return row?this.updateRow(tx,table,row,changes):undefined
     })
   }
-  async remove(name:string,predicate:(row:DemoRow)=>boolean) {
+  private async removeRaw(name:string,predicate:(row:DemoRow)=>boolean) {
     const table=await this.table(name)
     return this.database.transaction(async tx=>{
       await this.lock(tx,[name])
@@ -114,7 +141,7 @@ export class AsyncPostgresStore {
       return rows.length
     })
   }
-  async applyBatch(operations:readonly BatchOperation[]) {
+  private async applyBatchRaw(operations:readonly BatchOperation[]) {
     return this.database.transaction(async tx=>{
       await this.lock(tx,operations.map(operation=>operation.table))
       await tx.query('SET CONSTRAINTS ALL DEFERRED')

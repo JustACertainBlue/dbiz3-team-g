@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import React from 'react'
 import { arrivalLockReason, type BookingActions } from '@/lib/booking/booking-actions'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 
 // BKG135 buttons from bookingActions (BR-017): disabled buttons stay visible and disabled (SC-007).
 // The server re-checks every action (SR-001); the buttons are only a guide.
@@ -14,6 +15,7 @@ export default function BookingActionsBar({ providerId, bookingId, actions, stat
   status?: string
   chat?: React.ReactNode
 }) {
+  const hydrated = useHydrated()
   const router = useRouter()
   const base = `/provider/${providerId}/bookings/${bookingId}`
   const [pending, setPending] = useState(false)
@@ -54,12 +56,12 @@ export default function BookingActionsBar({ providerId, bookingId, actions, stat
       <button type="button" className="bkg-btn bkg-btn--primary" disabled={!actions.confirm || pending} onClick={() => changeStatus({ target_status: 'Booked' })}>Đã nhận tiền</button>
     </div>
     {arrivalReason && <p id="bkg-arrival-reason" className="bkg-reason">{arrivalReason}</p>}
-    {cancelling && actions.cancel && <form className="bkg-form" onSubmit={event => { event.preventDefault(); changeStatus({ target_status: 'Cancelled', cancellation_reason: reason }) }}>
+    {cancelling && actions.cancel && <form className="bkg-form" method="post" onSubmit={event => { event.preventDefault(); changeStatus({ target_status: 'Cancelled', cancellation_reason: reason }) }}>
       <label>Lý do huỷ (bắt buộc)
         <input value={reason} onChange={event => { setReason(event.target.value); setError(null) }} required />
       </label>
       <div className="bkg-actions">
-        <button type="submit" className="bkg-btn bkg-btn--danger" disabled={pending || !reason.trim()}>Xác nhận huỷ</button>
+        <button type="submit" className="bkg-btn bkg-btn--danger" disabled={!hydrated || pending || !reason.trim()}>Xác nhận huỷ</button>
         <button type="button" className="bkg-btn bkg-btn--outline" onClick={() => { setCancelling(false); setError(null) }}>Giữ đặt chỗ</button>
       </div>
     </form>}

@@ -6,10 +6,12 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AgencyCancel from './AgencyCancel'
 import './agency-booking-v3.css'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 
 export default function BookerForm({ bookingId, companyName, email, contactName, contactPhone, note, saved }: {
   bookingId: string; companyName: string; email: string; contactName: string; contactPhone: string; note: string; saved: boolean
 }) {
+  const hydrated = useHydrated()
   const router = useRouter()
   const [name, setName] = useState(contactName)
   const [phone, setPhone] = useState(contactPhone)
@@ -49,7 +51,7 @@ export default function BookerForm({ bookingId, companyName, email, contactName,
       {error && <p className="v3a-err" role="alert">{error}</p>}
       {done && <p className="v3a-ok" role="status">Đã gửi xưởng thông báo bạn đã thanh toán. Xưởng sẽ xác nhận khi nhận tiền.</p>}
       <div className="v3a-actions">
-        <button type="submit" className="v3a-btn v3a-btn--p" disabled={pending}>{pending ? 'Đang gửi…' : 'Hoàn tất đặt chỗ'}</button>
+        <button type="submit" className="v3a-btn v3a-btn--p" disabled={!hydrated || pending}>{pending ? 'Đang gửi…' : 'Hoàn tất đặt chỗ'}</button>
         <AgencyCancel bookingId={bookingId} />
       </div>
       <p className="v3a-cap" style={{ marginTop: 12 }}>Bạn chưa thanh toán nên báo huỷ lúc này không mất phí.</p>

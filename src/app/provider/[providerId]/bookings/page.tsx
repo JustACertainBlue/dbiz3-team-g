@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { currentServerSession } from '@/lib/auth/server-session'
 import { BookingError, canOpenCreateBooking } from '@/lib/booking/create-booking'
 import { listProviderBookings } from '@/lib/booking/list-bookings'
-import { BOOKING_PILL, LIST_TABS, PAY_LABEL, parseTab, tabCount } from '@/lib/booking/list-tabs'
+import { bookingTourPill, LIST_TABS, PAY_LABEL, parseTab, tabCount } from '@/lib/booking/list-tabs'
 import { hanoiClock, hanoiDate } from '@/lib/time/hanoi-time'
 import './list-v3.css'
 
@@ -30,6 +30,7 @@ export default async function BookingManagementPage({ params, searchParams }: { 
   }
   const last = Math.max(1, Math.ceil(list.total_count / PAGE))
   const from = (page - 1) * PAGE
+  const now = new Date()
   const href = (nextTab: string, nextPage = 1) => `${base}?tab=${nextTab}&page=${nextPage}`
   return <main className="v3l">
     <div className="v3l-head">
@@ -44,11 +45,11 @@ export default async function BookingManagementPage({ params, searchParams }: { 
       : <table className="v3l-table">
         <thead><tr><th scope="col">Ngày</th><th scope="col">Công ty lữ hành</th><th scope="col">Trải nghiệm</th><th scope="col">Khách</th><th scope="col">Đặt chỗ</th><th scope="col">Thanh toán</th><th scope="col">Thao tác</th></tr></thead>
         <tbody>{list.bookings.map(row => {
-          const pill = BOOKING_PILL[row.status]
+          const pill = bookingTourPill(row.status, 'provider', row.start_at, now)
           return <tr key={row.booking_id}>
             <td>{dmy(row.start_at)}<span className="v3l-time">{hanoiClock(row.start_at)} – {hanoiClock(row.end_at)}</span></td>
             <td>{row.agency_name}</td><td>{row.experience_name}</td><td>{row.group_size}</td>
-            <td><span className={`v3l-pill v3l-pill--${pill?.cls}`}>{pill?.label ?? row.status}</span></td>
+            <td><span className={`v3l-pill v3l-pill--${pill.cls}`}>{pill.label}</span></td>
             <td>{PAY_LABEL[row.status]}</td>
             <td><Link className="v3l-link" href={`${base}/${row.booking_id}`}>Xem chi tiết</Link></td>
           </tr>

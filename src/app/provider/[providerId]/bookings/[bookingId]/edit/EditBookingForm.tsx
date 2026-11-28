@@ -7,6 +7,7 @@ import type { BookingDetail } from '@/lib/booking/booking-detail'
 import { hanoiInputValue } from '@/lib/time/hanoi-time'
 import '../../new/create-v3.css'
 import GuestsInput, { guestsError } from '@/app/explore/v3/GuestsInput'
+import { useHydrated } from '@/app/auth-v3/useHydrated'
 
 type ApiError = { error?: { code: string; message: string } }
 
@@ -18,6 +19,7 @@ const addMinutes = (clock: string, minutes: number) => {
 }
 
 export default function EditBookingForm({ detail, backHref, slots = [], maxGuests = null }: { detail: BookingDetail; backHref: string; slots?: EditSlot[]; maxGuests?: number | null }) {
+  const hydrated = useHydrated()
   const router = useRouter()
   const initial = {
     date: hanoiInputValue(detail.start_at).slice(0, 10), // read as Hanoi time; saved back with +07:00 (#87)
@@ -135,7 +137,7 @@ export default function EditBookingForm({ detail, backHref, slots = [], maxGuest
       {error && <p className="v3b-err" role="alert">{error}</p>}
       <div className="v3b-actions">
         <Link className="v3b-btn v3b-btn--s" href={backHref}>Huỷ</Link>
-        <button type="submit" className="v3b-btn v3b-btn--p" disabled={saving}>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button>
+        <button type="submit" className="v3b-btn v3b-btn--p" disabled={!hydrated || saving}>{saving ? 'Đang lưu…' : 'Lưu thay đổi'}</button>
       </div>
     </section>
   </form>

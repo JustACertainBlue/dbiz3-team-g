@@ -21,7 +21,7 @@ function money(value: string): string {
 export interface MessageExtra { label?: string; suffix?: string }
 function messageText(booking: DemoRow, experienceName: string, changedFields: readonly string[], extra: MessageExtra = {}): string {
   const when = `${hanoiDate(booking.start_at)} ${hanoiClock(booking.start_at)}–${hanoiClock(booking.end_at)}` // spec-BKG #31, #87
-  const text = `${extra.label ?? `Booking ${statusLabel('booking', booking.status)}`}: ${experienceName}, ${when}, ${booking.group_size} pax, ${money(booking.agreed_price_total)} VND`
+  const text = `${extra.label ?? `Đặt chỗ ${statusLabel('booking', booking.status).toLowerCase()}`}: ${experienceName}, ${when}, ${booking.group_size} pax, ${money(booking.agreed_price_total)} VND`
   return (changedFields.length ? `${text}; changed: ${changedFields.join(', ')}` : text) + (extra.suffix ?? '')
 }
 

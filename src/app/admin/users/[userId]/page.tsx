@@ -7,11 +7,12 @@ import { demoRepository } from '@/lib/db/application-store'
 import { adminGuestRedirect } from '../../admin-page-access'
 import { accountStatusView, formatDate, formatLastLogin, roleLabel } from '@/lib/adm/v3-accounts'
 import { Container } from '@/app/components/ui'
+import { statusLabel } from '@/lib/status-labels'
 import '../../_v3/admin-v3.css'
 
 export const dynamic = 'force-dynamic'
 
-const STATUS_WORD: Record<string, string> = { Approved: 'Được duyệt', Active: 'Đang hoạt động', Disabled: 'Đã tắt', 'Pending Approval': 'Chờ duyệt', Rejected: 'Bị từ chối' }
+const STATUS_WORD: Record<string, string> = { Approved: statusLabel('agency', 'Approved'), Active: 'Đang hoạt động', Disabled: 'Đã tắt', 'Pending Approval': 'Chờ duyệt', Rejected: 'Bị từ chối' }
 
 export default async function AccountInfoPage({ params }: { params: { userId: string } }) {
   const session = await currentServerSession()

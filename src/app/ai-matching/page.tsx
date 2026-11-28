@@ -16,6 +16,7 @@ import { RESULT_SIZES } from '../explore/v3/image-sizes'
 import { vnd } from '../explore/v3/ExperienceCard'
 import '../explore/v3/explore-v3.css'
 import './ai-matching.css'
+import { useHydrated } from '../auth-v3/useHydrated'
 
 interface Message {
   id: string
@@ -35,6 +36,7 @@ interface Message {
 const browserStorage = (): StorageLike | null => { try { return window.localStorage } catch { return null } }
 
 export default function AiMatchingScreen() {
+  const hydrated = useHydrated()
   // Name, role and Agency id come from the server layout: nothing to wait for, no flash of the restricted screen.
   const { name: agencyName, role, agencyId } = useAgencySession()
   const router = useRouter()
@@ -317,7 +319,7 @@ export default function AiMatchingScreen() {
               placeholder="Kể về đoàn của bạn: bao nhiêu khách, đi ngày nào, ngân sách, muốn làm gì…"
             />
             <div className="aim__cbar">
-              <button id="send-message-btn" type="submit" className="aim__send" aria-label="Gửi" disabled={!inputText.trim() || loading}><ArrowUp aria-hidden="true" /></button>
+              <button id="send-message-btn" type="submit" className="aim__send" aria-label="Gửi" disabled={!hydrated || !inputText.trim() || loading}><ArrowUp aria-hidden="true" /></button>
             </div>
           </form>
           <div className="aim__sugg">
@@ -538,7 +540,7 @@ export default function AiMatchingScreen() {
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage() } }}
               placeholder="Hỏi thêm hoặc sửa yêu cầu…"
             />
-            <button id="send-message-btn" type="submit" className="aim__send" aria-label="Gửi" disabled={!inputText.trim() || loading}><ArrowUp aria-hidden="true" /></button>
+            <button id="send-message-btn" type="submit" className="aim__send" aria-label="Gửi" disabled={!hydrated || !inputText.trim() || loading}><ArrowUp aria-hidden="true" /></button>
           </form>
           <p className="aim__note">AI có thể gợi ý chưa đúng. Kiểm tra lịch và giá ở trang trải nghiệm trước khi gửi yêu cầu.</p>
         </div>

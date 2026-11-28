@@ -9,6 +9,7 @@ import { getBookingDetail } from '@/lib/booking/booking-detail'
 import { bookingView } from '@/lib/booking/booking-view'
 import { adjustmentLine } from '@/lib/booking/display'
 import { rulesOf } from '@/lib/booking/group-price'
+import { isPastTourDate } from '@/lib/booking/list-tabs'
 import BookerForm from './BookerForm'
 import ExperienceCard from './ExperienceCard'
 import { resolveViewer } from '@/lib/explore/catalog'
@@ -43,7 +44,9 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
   const seed = await loadExploreRuntime()
   const card = detailView(seed, booking.experience_id, resolveViewer(seed, params.agencyId, true), { date: '', guests: null }, [], false)
   const rules = rulesOf(await repository.all('experience_discount_rules'), booking.experience_id)
-  const view = bookingView({ booking, experience, rules, providerName: version?.business_name ?? '', agencyName: agency?.company_name ?? '', now: new Date() })
+  const now = new Date()
+  const view = bookingView({ booking, experience, rules, providerName: version?.business_name ?? '', agencyName: agency?.company_name ?? '', now })
+  const pastBooked = view.status === 'Booked' && isPastTourDate(booking.start_at, now)
   const history = (await repository.all('booking_status_history')).filter(row => row.booking_id === booking.booking_id).sort((a, b) => Date.parse(b.changed_at) - Date.parse(a.changed_at))
   const cancelled = history.find(row => row.to_status === 'Cancelled')
 
@@ -82,7 +85,8 @@ export default async function AgencyBookingDetailPage({ params }: { params: { ag
       {view.status === 'On hold'
         ? <BookerForm bookingId={booking.booking_id} companyName={view.agencyName} email={user?.email ?? ''} contactName={view.contactName || user?.full_name || ''} contactPhone={view.contactPhone || user?.phone || ''} note={view.note} saved={!!view.contactName} />
         : <div className="v3a-right">
-          {view.status === 'Booked' && <div className="v3a-banner"><b>Đặt chỗ của đoàn đã được xác nhận!</b><p className="v3a-sm">{view.providerName} đã nhận {vnd(view.price.total)} và đang chờ đón đoàn {view.price.guests} khách lúc {view.range.slice(0, 5)}, {view.dateLong}.</p></div>}
+          {view.status === 'Booked' && <div className="v3a-banner"><b>Đặt chỗ của đoàn đã được xác nhận!</b>
+            <p className="v3a-sm">{pastBooked ? <><b className="v3a-warn">Chờ xưởng xác nhận</b> — Ngày tour ({view.dateLong}) đã qua; đang chờ {view.providerName} xác nhận đoàn đã đến.</> : <>{view.providerName} đã nhận {vnd(view.price.total)} và đang chờ đón đoàn {view.price.guests} khách lúc {view.range.slice(0, 5)}, {view.dateLong}.</>}</p></div>}
           {view.status === 'Booked' && <div className="v3a-card">
             <p className="v3a-ct">Việc tiếp theo</p>
             <ol className="v3a-next">

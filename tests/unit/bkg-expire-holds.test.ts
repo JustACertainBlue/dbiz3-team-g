@@ -99,6 +99,6 @@ describe('T013 | 72-hour expiry', () => {
     expect(second.status).toBe('On hold')
     expect(row(first.booking_id).status).toBe('Cancelled')
     expect(historyOf(first.booking_id).at(-1)).toMatchObject({ to_status: 'Cancelled', reason: EXPIRY_REASON })
-    expect(messagesFor(first.booking_id).some(m => m.text.startsWith('Booking Đã huỷ'))).toBe(true)
+    expect(messagesFor(first.booking_id).some(m => m.text.startsWith('Đặt chỗ đã huỷ'))).toBe(true)
   })
 })

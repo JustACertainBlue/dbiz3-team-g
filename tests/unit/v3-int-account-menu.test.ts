@@ -24,6 +24,16 @@ describe('20 / 20a account menu and logout popup', () => {
     const text = html.replace(/<[^>]+>/g, '|').replace(/\|+/g, '|')
     expect(text).toContain('Lý Gia Hân|Công ty Du lịch Tràng An|Tài khoản của tôi|Doanh nghiệp của tôi|Đăng xuất')
   })
+  it('menu links point to the Agency account and company, with accessible menu controls', () => {
+    expect(html).toMatch(/aria-haspopup="menu" aria-expanded="true"/)
+    expect(html).toMatch(/role="menu" aria-label="Tài khoản"/)
+    expect(html).toMatch(/<a role="menuitem"[^>]*href="\/account"/)
+    expect(html).toMatch(/<a role="menuitem"[^>]*href="\/agency\/ag-1"/)
+    expect(html).toMatch(/role="menuitem"[^>]*>.*?Đăng xuất/s)
+    const closed = renderToStaticMarkup(React.createElement(AppHeader, { session: agency, pathname: '/explore', account: { full_name: 'Lý Gia Hân' } }))
+    expect(closed).toMatch(/aria-haspopup="menu" aria-expanded="false"/)
+    expect(closed).not.toMatch(/role="menu" aria-label="Tài khoản"/)
+  })
   it('menu items: 48 px high, icons #4B5851 (danger item keeps its colour)', () => {
     const shell = css('shell.css')
     expect(shell).toMatch(/\.hab-account__item\s*\{[^}]*min-height:\s*48px/)

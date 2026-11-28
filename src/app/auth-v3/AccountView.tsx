@@ -5,6 +5,7 @@ import AccountSidebar from './AccountSidebar'
 import PasswordPanel from './PasswordPanel'
 import { formatViDate, formatViDateTime, type AccountPanel } from './rules'
 import { useHydrated } from './useHydrated'
+import { statusLabel } from '@/lib/status-labels'
 import './auth-v3.css'
 
 export type Account = { full_name: string; title: string; phone: string; email: string; account_status?: string; created_at?: string; role: string; admin_type: string | null; data_scope: string; organization: string; business_href: string | null }
@@ -19,7 +20,7 @@ export default function AccountView({ account, panel, forced, error, saving, sav
   const hydrated = useHydrated()
   const editing = panel === 'edit'
   const pending = account?.account_status === 'Pending Approval'
-  const statusText = !account ? '' : pending ? 'Chờ Sở Du lịch duyệt' : account.account_status === 'Active' ? 'Đang hoạt động' : account.account_status === 'Disabled' ? 'Đã khoá' : account.account_status || ''
+  const statusText = !account ? '' : pending ? 'Chờ Sở Du lịch duyệt' : account.account_status === 'Approved' ? statusLabel('agency', 'Approved') : account.account_status === 'Active' ? 'Đang hoạt động' : account.account_status === 'Disabled' ? 'Đã khoá' : account.account_status || ''
   const subtitle = account ? [account.organization, account.title].filter(Boolean).join(' · ') : ''
 
   if (forced) return <main className="av3-page">

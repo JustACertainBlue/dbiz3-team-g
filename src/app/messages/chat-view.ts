@@ -81,19 +81,19 @@ export function mergeLatestPage<M extends { message_id: string }, H extends { ch
 }
 
 // Pill of a Booking Update message (mockup 25 ".evt", UI v3 decision #6). The stored sentence (spec-BKG #49,
-// "Booking {status label}: …") stays the sub line; the title is derived from its status label.
+// "Đặt chỗ {status label}: …" or legacy "Booking {status label}: …") stays the sub line; the title is derived from its status label.
 const EVENT_TITLE: Record<string, string> = {
-  'Chờ thanh toán': 'Xưởng đã giữ chỗ',
-  'Đã thanh toán': 'Xưởng đã nhận tiền',
+  'chờ thanh toán': 'Xưởng đã giữ chỗ',
+  'đã thanh toán': 'Xưởng đã nhận tiền',
   // Sentences stored before the 21/11 wording change.
-  'Tạm giữ': 'Xưởng đã giữ chỗ',
-  'Đã đặt': 'Xưởng đã nhận tiền',
-  'Hoàn tất': 'Tour đã hoàn thành',
-  'Đã huỷ': 'Đặt chỗ đã huỷ',
-  'Công ty báo đã thanh toán': 'Công ty báo đã thanh toán',
+  'tạm giữ': 'Xưởng đã giữ chỗ',
+  'đã đặt': 'Xưởng đã nhận tiền',
+  'hoàn tất': 'Tour đã hoàn thành',
+  'đã huỷ': 'Đặt chỗ đã huỷ',
+  'công ty báo đã thanh toán': 'Công ty báo đã thanh toán',
 }
 export function eventView(text: string): { title: string; sub: string } {
-  const label = /^(?:Booking )?([^:]+): /.exec(text)?.[1] ?? ''
+  const label = (/^(?:Booking |Đặt chỗ )?([^:]+): /.exec(text)?.[1] ?? '').toLowerCase()
   return { title: EVENT_TITLE[label] ?? 'Cập nhật đặt chỗ', sub: text }
 }
 

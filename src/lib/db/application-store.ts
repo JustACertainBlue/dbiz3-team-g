@@ -24,7 +24,8 @@ export interface ApplicationStore {
 
 const matches=(criteria:Readonly<Record<string,string>>)=>(row:DemoRow)=>Object.entries(criteria).every(([key,value])=>row[key]===value)
 // Ordinary tests explicitly use isolated fixtures. Live failures never fall back to JSON.
-const fixtures:KeyedStore={
+// Fixture rows for ordinary tests. Exported (PR #306, Vu Minh Thu); the live app never reads them as a fallback.
+export const fixtures:KeyedStore={
   all:async name=>fixtureRepository().all(name),
   find:async(name,predicate)=>fixtureRepository().find(name,predicate),
   where:async(name,criteria)=>(await fixtureRepository().all(name)).filter(matches(criteria)),

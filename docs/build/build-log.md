@@ -1799,6 +1799,18 @@ The full text of the six drafts stays in git history (last draft commit `e65cfb7
 | Checks | `npm run lint` OK; `npm run build` OK; `npx vitest run` green (run on this branch) |
 | Not done | Admin dashboard loaders and `bookings` in explore/schedule loaders still read whole tables; no index on `bookings(status, hold_expires_at)` (needs a migration, human decision); another server instance sees a catalog change after up to 30 s |
 
+### Entry 122: 28/11 Claude Code + human — Review of PR #306 (Vu Minh Thu): conflict fixed, seed-image fallback tightened (`fix/306-merge`)
+
+| Field | Value |
+|---|---|
+| Path and agent | A (Claude Code, Claude Sonnet 5.5); requested by linhkhanh-vu. Branch `fix/306-merge` from PR #306 head `f0c02f2` (Thu's 2 commits kept untouched), then `origin/main` (`1be7f44`) merged in. Dev server not run (DEV locked until 07/12, PROD not for tests); `.env*` not read; nothing pushed |
+| What #306 was | #285 (closed) plus: new `public/explore-hero.webp`, 8 WebP copies in `assets/demo-media/`, `loadMediaFacts` falling back to JSON fixtures on any error, `media-store.ts` rewritten with `catch {}` and a default "ceramics" picture, `imageRef` accepting any `seed/` key, a regression test, and 2 lines changed in the #291 test. Only conflict with main: `application-store.ts` (#307 `KeyedStore`); resolved keeping Thu's `export const fixtures` |
+| Harm found (human decided 28/11) | `validObjectKey` accepted `seed/.*` (also `seed/../../x`); JSON fallback hid database outages; empty `catch {}` hid storage errors; unmapped seed files (4 chat images, 21 PDFs) and real uploads could be answered with a picture of another craft; #291 test weakened; hero image without recorded source or licence |
+| Change | `validObjectKey`: `seed/` + segments of `[A-Za-z0-9._-]`, never `..` (`isSafeSeedKey`). New `src/lib/prf/seed-media.ts` (Thu's 32-id slug map, exact seed key form). `loadMediaFacts`: no fallback outside fixture mode. `media-store.ts`: demo picture only for a seed key with a mapped craft, neutral SVG placeholder for other seed images, 404 for seed documents (PDF kept 404 by decision), real uploads never replaced; `logMediaError` logs storage and route failures without URLs, bearer tokens or `key=value` secrets. `public/explore-hero.webp` restored to main (Thu must confirm the source and licence of the new one). `assets/demo-media/manifest.json`: `webp` object per photo (file, bytes, size) with the source/author/licence of the original; README line |
+| Tests | New `d2-d4-d27-review-hardening.test.ts`, `d2-d4-d27-review-storage-errors.test.ts`, `demo-media-webp-manifest.test.ts`, red first for the right reasons (12 of the new ones), green after. `d2-d4-d27-empty-frames.test.ts` restored to the main version (Thu's 2-line change reverted); Thu's `d2-d4-d27-regression.test.ts` kept. Two of my own earlier tests changed to the new rule (seed chat image: placeholder instead of 404) |
+| Checks | `npm run lint` OK; `npm run build` OK; `npx vitest run --no-file-parallelism`: 383 files, 2660 tests passed, 22 skipped. Not checked in a browser |
+| Not done / for the human | The 32 demo files stored as `prf-media/<id>` on DEV/PROD get no demo picture when Storage fails (real uploads are never replaced); this reverses the 19/11 and 21/11 rule "seed key is not an image" only for the 32 mapped files; Thu to confirm the hero source; PR description draft kept out of the repo (`docs/build/drafts/pr306-body.md`); rejected earlier option kept local in `~/Desktop/dbiz3-review` (`820b4b7`, demo picture when Storage fails for catalogue ids) |
+
 ## 3. Spec issues found while building
 
 Every gap the build uncovers goes back to `docs/spec/` as an open question or a spec change. It

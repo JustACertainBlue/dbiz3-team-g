@@ -2,7 +2,7 @@
 
 Drafted 2026-11-28 for the human who runs it. **Approved 2026-11-28 with these decisions:** (1) the ref-change PR is built
 (branch `chore/prod-ref-new-project`, §1.1); (2) back up old PROD today (§1.2); (3) trigger handling on restore (§6.A.3–A.5);
-(4) images: two branches, specification only (§7.4); (5) `db:audit` is checked by hand, fixing `audit.mjs` to 49 tables is a later task (§5 row 2.7). **The agent runs nothing from this file**: no command, no DB or Storage
+(4) images: branch (b) `storage:restore-from-sets` built, branch (a) specification only (§7.4); (5) `db:audit` is checked by hand, fixing `audit.mjs` to 49 tables is a later task (§5 row 2.7). **The agent runs nothing from this file**: no command, no DB or Storage
 connection, no `.env*` read, no push. Every command below is typed by a human, from the repository root of the folder named
 in each step. Sources read for this draft: ADR 0001, `docs/build/deploy-runbook.md`, `docs/build/prod-runbook-v3.md`,
 `docs/env/supabase-quickstart.md`, `docs/env/supabase-storage.md`, `supabase/migrations/*`, `scripts/db/*`,
@@ -474,15 +474,15 @@ UUIDs (`randomUUID()` in `import-seed-images.mjs`). What is missing is only the 
 |---|---|---|
 | P1. Seed catalog photos: `npm run storage:catalog -- --refresh-seed-images`, then `-- --apply --refresh-seed-images` | The bundled seed photos (their file ids are in `data/seed/stored_files.csv`). `--refresh-seed-images` is required because the restored keys are `prf-media/<id>`, not `seed/…`. Review the printed plan first (it blocks `--apply` on unmapped files). | existing script; run the dry run to confirm it maps the restored rows **[UNVERIFIED]** |
 | P2. Then `npm run storage:media-variants` (dry run, `--target-prod`, `--apply`) | Variants for whatever originals now exist; it only creates missing variants. | existing script |
-| P3 (branch b, before 07/12). Photos of the 20/11 and 21/11 sets and workshop photos under their **existing** ids | Script `storage:restore-from-sets`, specified in §7.4.2. **Not built.** | specification only |
+| P3 (branch b, before 07/12). Photos of the 20/11 and 21/11 sets and workshop photos under their **existing** ids | Script `storage:restore-from-sets`, usage in §7.4.2. **Built 2026-11-28; not yet run on PROD.** | script, dry run first |
 | P4 (branch a, after 07/12). Copy the whole old bucket to the new bucket, same object keys | Also gives the user-uploaded files (below). Script `storage:copy-bucket`, specified in §7.4.1. **Not built.** | specification only |
 
 Until P3 or P4 is done, Explore cards whose photo has no object return 404/unavailable (the code returns "unavailable", never a fabricated file). Check the damage with
 `npm run storage:media-variants -- --target-prod` (dry run): it lists originals it cannot read **[UNVERIFIED output]**.
 
-### 7.4 Specifications of the two image-restore branches (Path A; **specification only, no script is written**)
+### 7.4 The two image-restore branches (Path A; branch (b) is built, branch (a) is **specification only**)
 
-Decision 2026-11-28: record both branches; build one of them only when the human says which. They never run together on the same rows (both skip objects that already exist and neither replaces one).
+Decision 2026-11-28: record both branches; branch (b) was then built at the human's request, branch (a) stays a specification until the human says to build it. They never run together on the same rows (both skip objects that already exist and neither replaces one).
 
 **7.4.1 Branch (a), after 07/12: `storage:copy-bucket` (copy the old bucket to the new bucket, keys unchanged)**
 
@@ -499,23 +499,38 @@ Decision 2026-11-28: record both branches; build one of them only when the human
 | Tests first | Injectable fetch like `tests/unit/storage-client.test.ts`: refuses a non-retired source, refuses a retired destination, refuses a destination that is not PROD without the confirmation, never issues a write on the source, never upserts, dry run writes nothing, count reconciliation holds, size mismatch is reported not replaced, unknown key skipped, undo deletes only its own keys. |
 | Needs before it can run | 07/12 reached; the old project's secret key available in the old organisation; destination restored (Step 3). A large first pass can be run in chunks with `--max-bytes`. |
 
-**7.4.2 Branch (b), before 07/12: `storage:restore-from-sets` (restore bytes from the local photo sets under the existing object keys), then the existing variant backfill**
+**7.4.2 Branch (b), before 07/12: `storage:restore-from-sets` (built 2026-11-28, `scripts/storage/restore-from-sets.mjs`, tests `tests/unit/restore-from-sets.test.ts`)**
 
-**Matching constraint found while specifying (not what the request assumed):** `public.stored_files` has **no checksum column** (columns: `file_id`, `storage_key`, `file_name`, `media_type`, `file_size_bytes`, `width_px`, `height_px`, `uploaded_by`, `created_at`), and the stored object is not the source file but the importer's re-encoded JPEG (`processImage`: rotate, resize, JPEG quality). So a row cannot be matched to a local photo by the SHA-256 of the source file. The specification therefore matches in two layers: the local file is proven by the approved manifest's `sha256` (as the importer does), and the row is matched by the importer's own naming rule and confirmed by size and dimensions.
+Puts the bytes of the 20/11 and 21/11 photo sets and the workshop photos back under the **existing** object keys `prf-media/<file_id>` of the restored database. It never writes to the database (one READ ONLY transaction of SELECTs, always rolled back) and never replaces an object (`replace:false`). Run it from `~/Desktop/dbiz3-prod`, with `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SECRET_KEY` naming the new PROD project.
 
-| Item | Specification |
-|---|---|
-| Inputs | The restored database (`stored_files`, `profile_media`, `provider_version_media`, `villages.cover_image_id`, `image_sources`); the manifests `~/Documents/dbiz3-assets/photos-2011/approved-photos.json`, `photos-2111/approved-photos-2111-final.json`, `photos-2111/xuong-2111-final.json` with their photo folders; `assets/demo-media/` for the seed catalog (those rows are covered by `storage:catalog -- --refresh-seed-images`, not here). |
-| Target and guards | Same as 7.4.1 for the destination: `--target-prod` + `CONFIRM_PROJECT_REF=pdeioligjeksgfnodgzs`, `DATABASE_URL` and `SUPABASE_URL` both naming the new PROD ref, retired refs refused, everything checked before any connection. Dry run is the default. |
-| Selection | Rows with `storage_key = 'prf-media/' || file_id`, `media_type` image, whose `file_name` matches `seed-<loai>-<id8>-<n>` or `seed-workshop-<provider8>-<n>` (the importer's `toRecords`/`toWorkshopRecords` naming) and whose original object is **absent** from the destination bucket (checked with `exists()`). Rows already present are untouched. |
-| Matching | For each selected row, find the manifest entry with the same kind, same first 8 characters of the target id and same file-number segment; verify that local file's SHA-256 equals the manifest `sha256` (stop on a mismatch, as the importer does); re-process it with `processImage` (the same function, so the same bytes for the same `sharp` version); require `bytes.length = file_size_bytes`, width = `width_px`, height = `height_px`. A row with **no entry**, with **several** entries, or with a size/dimension difference is reported (`unmatched`, `ambiguous`, `size-drift`) and **not uploaded**. Nothing in the database is changed by this script. |
-| Upload | `storageClient().write('prf-media/<file_id>', bytes, 'image/jpeg')` with `replace:false` under the **existing** key; never a new `file_id`, never a new row (this is what keeps it from duplicating photos, unlike `storage:seed-images`). The SHA-256 of each uploaded object is written to the report (the database cannot hold it). |
-| Dry run output | Counts only: selected, already-present, matched, `unmatched`, `ambiguous`, `size-drift`, to-upload with total bytes; per set (20/11, 21/11, workshops); ids of the unresolved rows in `.demo-data/restore-from-sets/<UTC>/plan.json`. |
-| `--apply` | Writes `undo.json` (keys it will create) first, uploads, then verifies `size()` of each object equals `file_size_bytes`. `--undo <dir>/undo.json [--dry-run]` deletes only those keys. Exit 2 if any row stays unresolved. |
-| Then the variants | Run the **existing** `storage:media-variants` (`-- --target-prod` dry run, then `--apply`; `scripts/storage/backfill-media-variants.mjs`): its `DISPLAY_IMAGES_SQL` already selects every display image that has a link row (`profile_media`, `provider_version_media`, `villages.cover_image_id`) and generates the missing `.w400/.w800/.w1600.webp` objects from the original. Variants have no database rows (they are derived objects named from the file id), so "regenerate the variants of the rows in the DB" is exactly that command; no new variant code is needed. Run it after `storage:catalog -- --refresh-seed-images` too. |
-| Result to check | `storage:media-variants` dry run: `0 missing variants`; `/explore` network tab shows the `?w=` images; the dry run of `storage:restore-from-sets` again: `to-upload = 0`. What it cannot restore: user-uploaded files (only branch (a) can). |
-| Tests first | Matching by the naming rule; refuses a manifest whose SHA-256 differs; size-drift and ambiguity reported not uploaded; present objects skipped; `replace:false` always; no row is written; guards (retired ref, missing confirmation). |
-| Open points | The importer's `file_name` includes `item.file.split('/')[2]`, the file-number segment of the manifest path: confirm on a real row that this equals the `<n>` in the stored `file_name` before building (the spec relies on the code above, not on a database read). If the pinned `sharp` version differs from the one used on 21–22/11, `size-drift` will appear; the lock file pins it **[check `package-lock.json` against the 22/11 build]**. |
+**Matching constraint (why it matches by size, not by checksum):** `public.stored_files` has **no checksum column** and the stored object is the importer's re-encoded JPEG (`processImage`), not the source file. The local file is proven by the manifest `sha256` (a mismatch stops the run); the row is matched by the importer's naming rule and confirmed by byte length, width and height of the re-encoding.
+
+1. **Dry run** (default; reads, encodes, uploads nothing; writes `plan.json` with file ids only to `.demo-data/restore-from-sets/<UTC>/`):
+
+   ```bash
+   CONFIRM_PROJECT_REF=pdeioligjeksgfnodgzs npm run storage:restore-from-sets -- --target-prod --set ~/Documents/dbiz3-assets/photos-2011/approved-photos.json ~/Documents/dbiz3-assets/photos-2011 --set ~/Documents/dbiz3-assets/photos-2111/approved-photos-2111-final.json ~/Documents/dbiz3-assets/photos-2111 --set ~/Documents/dbiz3-assets/photos-2111/xuong-2111-final.json ~/Documents/dbiz3-assets/photos-2111
+   ```
+
+2. **Apply**: the same command with `--apply` added. It writes `undo.json` (keys it will create, with sizes) **before** the first upload, uploads, then checks each object's size. Exit code 2 when any row stays unresolved or an upload failed. Run the dry run again: `toUpload` must be 0.
+3. **Undo** (deletes only keys listed in that file whose size is still the recorded one; add `--dry-run` to preview):
+
+   ```bash
+   CONFIRM_PROJECT_REF=pdeioligjeksgfnodgzs npm run storage:restore-from-sets -- --target-prod --undo .demo-data/restore-from-sets/<UTC>/undo.json
+   ```
+
+4. Then the variants with the existing `storage:media-variants -- --target-prod` (dry run, then `--apply`); it reads the originals just restored. Also run `storage:catalog -- --refresh-seed-images` for the seed catalog photos (not covered here).
+
+**Report** (counts only, per group `experience`, `village`, `workshop`, and `totals`): `selected`, `alreadyPresent`, `unlinked`, `toUpload` (+ `bytes`), `sizeDrift`, `noSource`, `ambiguous`, and `unresolved` (= sizeDrift + noSource + ambiguous). The report never prints names, e-mails, URLs or keys.
+
+| Outcome | Meaning | What to do |
+|---|---|---|
+| `unlinked` | The row has no link (`profile_media`, `provider_version_media`, `villages.cover_image_id`). These are the rows the 21/11 face-removal list unlinked: the photos show people with no consent. | **Deliberately not restored** (nothing to fix). |
+| `ambiguous` | Two or more manifest entries share the importer name (same kind, id prefix and file number, e.g. the same photo number in the 20/11 and 21/11 sets) and re-encode to **different** bytes that both match the row's size and dimensions. Entries that re-encode to identical bytes are not ambiguous. | Not uploaded. Send the ids (`plan.json`); decide by hand. |
+| `sizeDrift` | Candidates exist but none re-encodes to the stored size or dimensions (most likely a different `sharp` version from the 21–22/11 build; check `package-lock.json`). | Not uploaded. Report the count. |
+| `noSource` | No manifest entry, or the local file is missing. | Not uploaded; falls to the placeholder/branch (a) after 07/12. |
+| `alreadyPresent` | The object exists. | Untouched. |
+
+**Open points:** the file-number segment of the importer name is `item.file.split('/')[2]` (`<n>.jpg`); it was taken from the code, not from a real PROD row (first dry run will show it: a high `noSource` means the rule differs). The 8-character id prefix can in theory collide between two ids; the size/dimension check is what separates them. **No dry run has been run against PROD yet [UNVERIFIED]**; the script is tested only on fixtures.
 
 ### 7.3 What will be missing and how to get it back after 07/12
 
@@ -571,7 +586,7 @@ HTTP 402) until 07/12, so there is no real rollback before then; take the old va
 ## 10. Points that need Khánh Linh or Hoàng to confirm
 
 1. **Path:** can the old DB be dumped through the pooler (A.1)? If not, are you accepting Path B's 8-experience catalog and loss of tester data? Where did the experiences beyond the seed come from?
-2. **Images on Path A:** both branches are specified (§7.4); decide which one to **build**: (b) `storage:restore-from-sets` for photos before 07/12, (a) `storage:copy-bucket` after 07/12 (the only way to get user uploads back). Confirm the `file_name` rule in §7.4.2 "Open points" on a real row first.
+2. **Images on Path A:** (b) `storage:restore-from-sets` is built (§7.4.2): run its dry run on PROD and check the `file_name` rule in "Open points" first; (a) `storage:copy-bucket` after 07/12 stays a specification and is the only way to get user uploads back.
 3. **Step 0 PR (built, not pushed):** decided — `audit.mjs` stays at 47 for now (hand query used; fixing it to 49 is a **later task**). Still open: pin DEV in `migrationTarget()` (not done in this PR, any non-PROD, non-retired ref still migrates with no flag). Is there a `prod-smoke` script on another branch?
 4. **CA certificate** of the new project (same file or a new one that must be committed for Render).
 5. ~~Keep or drop `registration_resubmission_tokens`~~ **Decided 2026-11-28:** `sessions`, `registration_resubmission_tokens`, `password_reset_tokens`, `registration_otp_challenges` are not restored (empty on the new project); no foreign key points at them (§6.A.2).

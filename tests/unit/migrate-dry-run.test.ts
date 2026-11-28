@@ -1,5 +1,5 @@
 // `npm run db:migrate -- --dry-run` (human decision 2026-11-18): every pending migration runs in one transaction, in
-// order, then ROLLBACK; the ledger is not written; PROD (euxclvszgiknjosbwjya) is refused even with --dry-run.
+// order, then ROLLBACK; the ledger is not written; PROD (pdeioligjeksgfnodgzs) is refused even with --dry-run.
 import { describe, expect, it } from 'vitest'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -23,7 +23,7 @@ describe('listMigrations / pendingMigrations', () => {
 
 describe('dryRunTarget', () => {
   it('refuses PROD, with the pooler or the direct URL', () => {
-    expect(PROD_PROJECT_REF).toBe('euxclvszgiknjosbwjya')
+    expect(PROD_PROJECT_REF).toBe('pdeioligjeksgfnodgzs')
     expect(() => dryRunTarget({ DATABASE_URL: MIGRATION(PROD_PROJECT_REF) })).toThrow(/PROD/)
     expect(() => dryRunTarget({ DATABASE_URL: DIRECT(PROD_PROJECT_REF) })).toThrow(/PROD/)
   })
